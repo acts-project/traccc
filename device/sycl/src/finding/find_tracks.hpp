@@ -239,6 +239,9 @@ track_candidate_container_types::buffer find_tracks(
             n_max_candidates, mr.main);
         copy.setup(updated_liveness_buffer)->wait();
 
+        // Reset the number of tracks per seed
+        copy.memset(n_tracks_per_seed_buffer, 0)->wait();
+
         const unsigned int links_size = copy.get_size(links_buffer);
 
         if (links_size + n_max_candidates > link_buffer_capacity) {
@@ -287,6 +290,8 @@ track_candidate_container_types::buffer find_tracks(
                      updated_params = vecmem::get_data(updated_params_buffer),
                      updated_liveness =
                          vecmem::get_data(updated_liveness_buffer),
+                     n_tracks_per_seed =
+                         vecmem::get_data(n_tracks_per_seed_buffer),
                      shared_candidates_size, shared_num_candidates,
                      shared_candidates](::sycl::nd_item<1> item) {
                         // SYCL wrappers used in the algorithm.
@@ -300,7 +305,8 @@ track_candidate_container_types::buffer find_tracks(
                             {det, measurements, in_params, param_liveness,
                              n_in_params, barcodes, upper_bounds, links_view,
                              prev_links_idx, curr_links_idx, step,
-                             updated_params, updated_liveness},
+                             updated_params, updated_liveness,
+                             n_tracks_per_seed},
                             {&(shared_num_candidates[0]),
                              &(shared_candidates[0]),
                              shared_candidates_size[0]});
@@ -359,9 +365,6 @@ track_candidate_container_types::buffer find_tracks(
              * Kernel5: Propagate to the next surface
              *****************************************************************/
 
-            // Reset the number of tracks per seed
-            copy.memset(n_tracks_per_seed_buffer, 0)->wait();
-
             /// Actor types
             using algebra_type =
                 typename navigator_t::detector_type::algebra_type;
@@ -391,9 +394,7 @@ track_candidate_container_types::buffer find_tracks(
                          param_ids = vecmem::get_data(param_ids_buffer),
                          links_view = vecmem::get_data(links_buffer),
                          prev_links_idx = step_to_link_idx_map[step], step,
-                         n_candidates, tips = vecmem::get_data(tips_buffer),
-                         n_tracks_per_seed =
-                             vecmem::get_data(n_tracks_per_seed_buffer)](
+                         n_candidates, tips = vecmem::get_data(tips_buffer)](
                             ::sycl::nd_item<1> item) {
                             device::propagate_to_next_surface<
                                 propagator_type,
@@ -401,7 +402,7 @@ track_candidate_container_types::buffer find_tracks(
                                 details::global_index(item), config,
                                 {det, field, in_params, param_liveness,
                                  param_ids, links_view, prev_links_idx, step,
-                                 n_candidates, tips, n_tracks_per_seed});
+                                 n_candidates, tips});
                         });
                 })
                 .wait_and_throw();
