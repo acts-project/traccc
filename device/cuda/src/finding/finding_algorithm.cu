@@ -226,6 +226,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 n_max_candidates, m_mr.main);
             m_copy.setup(updated_liveness_buffer)->ignore();
 
+            // Reset the number of tracks per seed
+            m_copy.memset(n_tracks_per_seed_buffer, 0)->ignore();
+
             const unsigned int links_size = m_copy.get_size(links_buffer);
 
             if (links_size + n_max_candidates > link_buffer_capacity) {
@@ -250,14 +253,14 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 links_buffer = std::move(new_links_buffer);
             }
 
-            const unsigned int nThreads = m_warp_size * 2;
-            const unsigned int nBlocks =
-                (n_in_params + nThreads - 1) / nThreads;
-
             const unsigned int prev_link_idx =
                 step == 0 ? 0 : step_to_link_idx_map[step - 1];
 
             assert(links_size == step_to_link_idx_map[step]);
+
+            const unsigned int nThreads = m_warp_size * 2;
+            const unsigned int nBlocks =
+                (n_in_params + nThreads - 1) / nThreads;
 
             find_tracks<std::decay_t<detector_type>>(
                 nBlocks, nThreads,
@@ -278,7 +281,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     .curr_links_idx = step_to_link_idx_map[step],
                     .step = step,
                     .out_params_view = updated_params_buffer,
-                    .out_params_liveness_view = updated_liveness_buffer});
+                    .out_params_liveness_view = updated_liveness_buffer,
+                    .n_tracks_per_seed_view = n_tracks_per_seed_buffer});
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
             std::swap(in_params_buffer, updated_params_buffer);
@@ -334,9 +338,6 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
              *****************************************************************/
 
             {
-                // Reset the number of tracks per seed
-                m_copy.memset(n_tracks_per_seed_buffer, 0)->ignore();
-
                 const unsigned int nThreads = m_warp_size * 2;
                 const unsigned int nBlocks =
                     (n_candidates + nThreads - 1) / nThreads;
@@ -355,8 +356,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                         .prev_links_idx = step_to_link_idx_map[step],
                         .step = step,
                         .n_in_params = n_candidates,
-                        .tips_view = tips_buffer,
-                        .n_tracks_per_seed_view = n_tracks_per_seed_buffer});
+                        .tips_view = tips_buffer});
                 TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
                 m_stream.synchronize();

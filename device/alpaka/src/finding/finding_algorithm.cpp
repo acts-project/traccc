@@ -219,6 +219,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 n_in_params * m_cfg.max_num_branches_per_surface, m_mr.main);
             m_copy.setup(updated_liveness_buffer)->ignore();
 
+            // Reset the number of tracks per seed
+            m_copy.memset(n_tracks_per_seed_buffer, 0)->ignore();
+
             const unsigned int links_size = m_copy.get_size(links_buffer);
 
             if (links_size + n_max_candidates > link_buffer_capacity) {
@@ -259,20 +262,21 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 ::alpaka::allocBuf<PayloadType, Idx>(devHost, 1u);
             PayloadType* payload = ::alpaka::getPtrNative(bufHost_payload);
 
-            new (payload) PayloadType{
-                .det_data = det_view,
-                .measurements_view = measurements,
-                .in_params_view = in_params_buffer,
-                .in_params_liveness_view = param_liveness_buffer,
-                .n_in_params = n_in_params,
-                .barcodes_view = barcodes_buffer,
-                .upper_bounds_view = upper_bounds_buffer,
-                .links_view = links_buffer,
-                .prev_links_idx = prev_link_idx,
-                .curr_links_idx = step_to_link_idx_map[step],
-                .step = step,
-                .out_params_view = updated_params_buffer,
-                .out_params_liveness_view = updated_liveness_buffer};
+            new (payload)
+                PayloadType{.det_data = det_view,
+                            .measurements_view = measurements,
+                            .in_params_view = in_params_buffer,
+                            .in_params_liveness_view = param_liveness_buffer,
+                            .n_in_params = n_in_params,
+                            .barcodes_view = barcodes_buffer,
+                            .upper_bounds_view = upper_bounds_buffer,
+                            .links_view = links_buffer,
+                            .prev_links_idx = prev_link_idx,
+                            .curr_links_idx = step_to_link_idx_map[step],
+                            .step = step,
+                            .out_params_view = updated_params_buffer,
+                            .out_params_liveness_view = updated_liveness_buffer,
+                            .n_tracks_per_seed_view = n_tracks_per_seed_buffer};
 
             auto bufAcc_payload =
                 ::alpaka::allocBuf<PayloadType, Idx>(devAcc, 1u);
@@ -333,9 +337,6 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
              *****************************************************************/
 
             {
-                // Reset the number of tracks per seed
-                m_copy.memset(n_tracks_per_seed_buffer, 0)->ignore();
-
                 Idx blocksPerGrid =
                     (n_candidates + threadsPerBlock - 1) / threadsPerBlock;
                 auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
@@ -348,18 +349,17 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     ::alpaka::allocBuf<PayloadType, Idx>(devHost, 1u);
                 PayloadType* payload = ::alpaka::getPtrNative(bufHost_payload);
 
-                new (payload) PayloadType{
-                    .det_data = det_view,
-                    .field_data = field_view,
-                    .params_view = in_params_buffer,
-                    .params_liveness_view = param_liveness_buffer,
-                    .param_ids_view = param_ids_buffer,
-                    .links_view = links_buffer,
-                    .prev_links_idx = step_to_link_idx_map[step],
-                    .step = step,
-                    .n_in_params = n_candidates,
-                    .tips_view = tips_buffer,
-                    .n_tracks_per_seed_view = n_tracks_per_seed_buffer};
+                new (payload)
+                    PayloadType{.det_data = det_view,
+                                .field_data = field_view,
+                                .params_view = in_params_buffer,
+                                .params_liveness_view = param_liveness_buffer,
+                                .param_ids_view = param_ids_buffer,
+                                .links_view = links_buffer,
+                                .prev_links_idx = step_to_link_idx_map[step],
+                                .step = step,
+                                .n_in_params = n_candidates,
+                                .tips_view = tips_buffer};
 
                 auto bufAcc_payload =
                     ::alpaka::allocBuf<PayloadType, Idx>(devAcc, 1u);

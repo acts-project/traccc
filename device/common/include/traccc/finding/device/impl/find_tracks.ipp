@@ -71,6 +71,8 @@ TRACCC_HOST_DEVICE inline void find_tracks(
         payload.barcodes_view);
     vecmem::device_vector<const unsigned int> upper_bounds(
         payload.upper_bounds_view);
+    vecmem::device_vector<unsigned int> n_tracks_per_seed(
+        payload.n_tracks_per_seed_view);
 
     const unsigned int in_param_id = thread_id.getGlobalThreadIdX();
 
@@ -87,6 +89,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
 
     if (in_param_id < payload.n_in_params &&
         in_params_liveness.at(in_param_id) > 0u) {
+
         /*
          * Get the barcode of this thread's parameters, then find the first
          * measurement that matches it.
@@ -151,6 +154,17 @@ TRACCC_HOST_DEVICE inline void find_tracks(
         for (; curr_meas < num_meas &&
                shared_payload.shared_candidates_size < thread_id.getBlockDimX();
              curr_meas++) {
+            const unsigned int prev_link_idx =
+                payload.prev_links_idx + thread_id.getGlobalThreadIdX();
+            const unsigned int seed_idx = payload.step > 0
+                                              ? links.at(prev_link_idx).seed_idx
+                                              : in_param_id;
+            if (n_tracks_per_seed.at(seed_idx) >=
+                cfg.max_num_branches_per_seed) {
+                // We will not use this parameter anymore
+                curr_meas = num_meas;
+                break;
+            }
             unsigned int idx =
                 vecmem::device_atomic_ref<unsigned int,
                                           vecmem::device_address_space::local>(
@@ -181,6 +195,11 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                 owner_local_thread_id +
                 thread_id.getBlockDimX() * thread_id.getBlockIdX();
             assert(in_params_liveness.at(owner_global_thread_id) != 0u);
+            const unsigned int prev_link_idx =
+                payload.prev_links_idx + owner_global_thread_id;
+            const unsigned int seed_idx =
+                payload.step == 0 ? owner_global_thread_id
+                                  : links.at(prev_link_idx).seed_idx;
             const bound_track_parameters<>& in_par =
                 in_params.at(owner_global_thread_id);
             const unsigned int meas_idx =
@@ -192,51 +211,56 @@ TRACCC_HOST_DEVICE inline void find_tracks(
             track_state<typename detector_t::algebra_type> trk_state(meas);
             const detray::tracking_surface sf{det, in_par.surface_link()};
 
-            // Run the Kalman update
-            const kalman_fitter_status res = sf.template visit_mask<
-                gain_matrix_updater<typename detector_t::algebra_type>>(
-                trk_state, in_par);
+            // Count the number of tracks per seed
+            vecmem::device_atomic_ref<unsigned int> num_tracks_per_seed(
+                n_tracks_per_seed.at(seed_idx));
 
-            const traccc::scalar chi2 = trk_state.filtered_chi2();
+            // Count the number of branches per input parameter
+            vecmem::device_atomic_ref<unsigned int,
+                                      vecmem::device_address_space::local>
+                shared_num_candidates(
+                    shared_payload
+                        .shared_num_candidates[owner_local_thread_id]);
 
-            // The chi2 from Kalman update should be less than chi2_max
-            if (res == kalman_fitter_status::SUCCESS &&
-                trk_state.filtered_chi2() < cfg.chi2_max) {
+            bool add_link =
+                num_tracks_per_seed.load() < cfg.max_num_branches_per_seed;
+            if (add_link) {
+                // Run the Kalman update
+                const kalman_fitter_status res = sf.template visit_mask<
+                    gain_matrix_updater<typename detector_t::algebra_type>>(
+                    trk_state, in_par);
+                // The chi2 from Kalman update should be less than chi2_max
+                add_link = res == kalman_fitter_status::SUCCESS &&
+                           trk_state.filtered_chi2() < cfg.chi2_max;
+            } else {
+                // The seed is already exhausted, avoid adding hole
+                shared_num_candidates.fetch_add(1u);
+            }
+            if (add_link) {
+                // Increase the number of candidates (or branches) per input
+                // parameter. Avoid adding hole when seed is saturated
+                shared_num_candidates.fetch_add(1u);
+
+                const unsigned int s_pos = num_tracks_per_seed.fetch_add(1);
+                add_link = s_pos < cfg.max_num_branches_per_seed;
+            }
+
+            if (add_link) {
                 // Add measurement candidates to link
                 const unsigned int l_pos = links.bulk_append_implicit(1);
 
-                assert(trk_state.filtered_chi2() >= 0.f);
+                const traccc::scalar chi2 = trk_state.filtered_chi2();
+                assert(chi2 >= 0.f);
 
-                if (payload.step == 0) {
-                    links.at(l_pos) = {
-                        .step = payload.step,
-                        .previous_candidate_idx = owner_global_thread_id,
-                        .meas_idx = meas_idx,
-                        .seed_idx = owner_global_thread_id,
-                        .n_skipped = 0,
-                        .chi2 = chi2};
-                } else {
-                    const unsigned int prev_link_idx =
-                        payload.prev_links_idx + owner_global_thread_id;
+                const unsigned int n_skipped =
+                    payload.step == 0 ? 0 : links.at(prev_link_idx).n_skipped;
 
-                    const candidate_link& prev_link = links.at(prev_link_idx);
-
-                    assert(payload.step == prev_link.step + 1);
-
-                    links.at(l_pos) = {.step = payload.step,
-                                       .previous_candidate_idx = prev_link_idx,
-                                       .meas_idx = meas_idx,
-                                       .seed_idx = prev_link.seed_idx,
-                                       .n_skipped = prev_link.n_skipped,
-                                       .chi2 = chi2};
-                }
-
-                // Increase the number of candidates (or branches) per input
-                // parameter
-                vecmem::device_atomic_ref<unsigned int,
-                                          vecmem::device_address_space::local>(
-                    shared_payload.shared_num_candidates[owner_local_thread_id])
-                    .fetch_add(1u);
+                links.at(l_pos) = {.step = payload.step,
+                                   .previous_candidate_idx = prev_link_idx,
+                                   .meas_idx = meas_idx,
+                                   .seed_idx = seed_idx,
+                                   .n_skipped = n_skipped,
+                                   .chi2 = chi2};
 
                 out_params.at(l_pos - payload.curr_links_idx) =
                     trk_state.filtered();
@@ -271,40 +295,37 @@ TRACCC_HOST_DEVICE inline void find_tracks(
      * match any measurements.
      */
     if (in_param_id < payload.n_in_params &&
-        in_params_liveness.at(in_param_id) > 0u &&
+        in_params_liveness.at(in_param_id) != 0u &&
         shared_payload.shared_num_candidates[thread_id.getLocalThreadIdX()] ==
             0u) {
-        // Add measurement candidates to link
-        const unsigned int l_pos = links.bulk_append_implicit(1);
 
-        if (payload.step == 0) {
-            links.at(l_pos) = {
-                .step = payload.step,
-                .previous_candidate_idx = in_param_id,
-                .meas_idx = std::numeric_limits<unsigned int>::max(),
-                .seed_idx = in_param_id,
-                .n_skipped = 1,
-                .chi2 = std::numeric_limits<traccc::scalar>::max()};
-        } else {
-            const unsigned int prev_link_idx =
-                payload.prev_links_idx + in_param_id;
+        const unsigned int prev_link_idx = payload.prev_links_idx + in_param_id;
+        const unsigned int seed_idx =
+            payload.step == 0 ? in_param_id : links.at(prev_link_idx).seed_idx;
 
-            const candidate_link& prev_link = links.at(prev_link_idx);
+        vecmem::device_atomic_ref<unsigned int> num_tracks_per_seed(
+            n_tracks_per_seed.at(seed_idx));
+        const unsigned int s_pos = num_tracks_per_seed.fetch_add(1);
 
-            assert(payload.step == prev_link.step + 1);
+        if (s_pos < cfg.max_num_branches_per_seed) {
+            // Add measurement candidates to link
+            const unsigned int l_pos = links.bulk_append_implicit(1);
+
+            const unsigned int n_skipped =
+                payload.step == 0 ? 0 : links.at(prev_link_idx).n_skipped;
 
             links.at(l_pos) = {
                 .step = payload.step,
                 .previous_candidate_idx = prev_link_idx,
                 .meas_idx = std::numeric_limits<unsigned int>::max(),
-                .seed_idx = prev_link.seed_idx,
-                .n_skipped = prev_link.n_skipped + 1,
+                .seed_idx = seed_idx,
+                .n_skipped = n_skipped + 1,
                 .chi2 = std::numeric_limits<traccc::scalar>::max()};
-        }
 
-        out_params.at(l_pos - payload.curr_links_idx) =
-            in_params.at(in_param_id);
-        out_params_liveness.at(l_pos - payload.curr_links_idx) = 1u;
+            out_params.at(l_pos - payload.curr_links_idx) =
+                in_params.at(in_param_id);
+            out_params_liveness.at(l_pos - payload.curr_links_idx) = 1u;
+        }
     }
 }
 
