@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/io/csv/dfe.hpp"
 #include "traccc/io/csv/hit.hpp"
 #include "traccc/io/csv/measurement.hpp"
 #include "traccc/io/csv/measurement_hit_id.hpp"
@@ -22,10 +23,6 @@
 #include <detray/tracks/bound_track_parameters.hpp>
 #include <detray/tracks/free_track_parameters.hpp>
 
-// DFE include(s).
-#include <dfe/dfe_io_dsv.hpp>
-#include <dfe/dfe_namedtuple.hpp>
-
 // System include(s).
 #include <filesystem>
 #include <string>
@@ -39,10 +36,11 @@ struct smearing_writer : detray::actor {
     using scalar_type = detray::dscalar<algebra_type>;
 
     using measurement_hit_id_writer =
-        dfe::NamedTupleCsvWriter<io::csv::measurement_hit_id>;
-    using measurement_writer = dfe::NamedTupleCsvWriter<io::csv::measurement>;
-    using hit_writer = dfe::NamedTupleCsvWriter<io::csv::hit>;
-    using particle_writer = dfe::NamedTupleCsvWriter<io::csv::particle>;
+        io::dfe::NamedTupleCsvWriter<io::csv::measurement_hit_id>;
+    using measurement_writer =
+        io::dfe::NamedTupleCsvWriter<io::csv::measurement>;
+    using hit_writer = io::dfe::NamedTupleCsvWriter<io::csv::hit>;
+    using particle_writer = io::dfe::NamedTupleCsvWriter<io::csv::particle>;
 
     struct config {
         smearer_t smearer;
