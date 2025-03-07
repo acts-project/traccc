@@ -12,6 +12,7 @@
 #include "traccc/utils/particle.hpp"
 
 // System include(s).
+#include <format>
 #include <sstream>
 
 namespace traccc::opts {
@@ -63,6 +64,10 @@ track_finding::track_finding() : interface("Track Finding Options") {
     m_desc.add_options()("particle-hypothesis",
                          po::value(&m_pdg_number)->default_value(m_pdg_number),
                          "PDG number for the particle hypothesis");
+    m_desc.add_options()(
+        "finding-debug",
+        po::value(&m_config.verbose)->default_value(m_config.verbose),
+        "Extra verbose output");
 }
 
 track_finding::operator finding_config() const {
@@ -102,6 +107,8 @@ std::unique_ptr<configuration_printable> track_finding::as_printable() const {
         std::to_string(m_config.max_num_skipping_per_cand)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "PDG number", std::to_string(m_pdg_number)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Debug output", std::format("{}", m_config.verbose)));
 
     return cat;
 }
