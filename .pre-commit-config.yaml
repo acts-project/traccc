@@ -6,6 +6,16 @@ repos:
         types_or: [file]
         files: \.(cpp|hpp|ipp|cu|cuh|sycl|hip)$
 
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: \.(diff|patch)$
+      - id: end-of-file-fixer
+        exclude: \.(diff|patch)$
+      - id: check-yaml
+      - id: check-added-large-files
+
   - repo: local
     hooks:
       - id: check_quote_includes

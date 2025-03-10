@@ -104,10 +104,6 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
         ptc, n_events, host_det, field, std::move(generator),
         std::move(smearer_writer_cfg), full_path);
 
-    // Set constrained step size to 1 mm
-    sim.get_config().propagation.stepping.step_constraint = step_constraint;
-    sim.get_config().propagation.navigation.min_mask_tolerance =
-        25.f * traccc::unit<float>::um;
     sim.get_config().propagation.navigation.search_window = search_window;
 
     sim.run();
