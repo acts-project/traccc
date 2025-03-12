@@ -26,7 +26,6 @@
 #include "traccc/finding/device/find_tracks.hpp"
 #include "traccc/finding/device/make_barcode_sequence.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
-#include "traccc/finding/device/prune_tracks.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/projections.hpp"
@@ -66,7 +65,6 @@ struct fill_sort_keys {};
 template <typename T>
 struct propagate_to_next_surface {};
 struct build_tracks {};
-struct prune_tracks {};
 }  // namespace kernels
 
 /// Templated implementation of the track finding algorithm.
@@ -192,6 +190,8 @@ track_candidate_container_types::buffer find_tracks(
         tips_buffer{config.max_num_branches_per_seed * n_seeds, mr.main,
                     vecmem::data::buffer_type::resizable};
     copy.setup(tips_buffer)->wait();
+    vecmem::data::vector_buffer<unsigned int> tip_lengths_buffer{
+        config.max_num_branches_per_seed * n_seeds, mr.main};
 
     // Link size
     std::vector<std::size_t> n_candidates_per_step;
@@ -394,6 +394,7 @@ track_candidate_container_types::buffer find_tracks(
                              vecmem::get_data(link_map.at(step)),
                          step, n_candidates,
                          tips = vecmem::get_data(tips_buffer),
+                         tip_lengths = vecmem::get_data(tip_lengths_buffer),
                          n_tracks_per_seed =
                              vecmem::get_data(n_tracks_per_seed_buffer)](
                             ::sycl::nd_item<1> item) {
@@ -403,7 +404,8 @@ track_candidate_container_types::buffer find_tracks(
                                 details::global_index(item), config,
                                 {det, field, in_params, param_liveness,
                                  param_ids, current_candidate_links, step,
-                                 n_candidates, tips, n_tracks_per_seed});
+                                 n_candidates, tips, tip_lengths,
+                                 n_tracks_per_seed});
                         });
                 })
                 .wait_and_throw();
@@ -433,83 +435,47 @@ track_candidate_container_types::buffer find_tracks(
     }
     queue.wait_and_throw();
 
-    /*****************************************************************
-     * Kernel6: Build tracks
-     *****************************************************************/
+    /*
+     * Kernel 6: Count track lengths
+     */
+    auto n_tips = copy.get_size(tips_buffer);
 
-    // Get the number of tips
-    auto n_tips_total = copy.get_size(tips_buffer);
+    std::vector<unsigned int> valid_tips_length_host;
 
-    // Create track candidate buffer
-    track_candidate_container_types::buffer track_candidates_buffer{
-        {n_tips_total, mr.main},
-        {std::vector<std::size_t>(n_tips_total,
-                                  config.max_track_candidates_per_track),
-         mr.main, mr.host, vecmem::data::buffer_type::resizable}};
-    copy.setup(track_candidates_buffer.headers)->wait();
-    copy.setup(track_candidates_buffer.items)->wait();
-    track_candidate_container_types::view track_candidates =
-        track_candidates_buffer;
-
-    // Create buffer for valid indices
-    vecmem::data::vector_buffer<unsigned int> valid_indices_buffer(n_tips_total,
-                                                                   mr.main);
-    copy.setup(valid_indices_buffer)->wait();
-
-    unsigned int n_valid_tracks = 0u;
-
-    if (n_tips_total > 0) {
-        vecmem::unique_alloc_ptr<unsigned int> n_valid_tracks_device =
-            vecmem::make_unique_alloc<unsigned int>(mr.main);
-        queue.memset(n_valid_tracks_device.get(), 0, sizeof(unsigned int))
-            .wait_and_throw();
+    if (n_tips > 0) {
+        valid_tips_length_host.resize(n_tips);
 
         queue
-            .submit([&](::sycl::handler& h) {
-                h.parallel_for<kernels::build_tracks>(
-                    calculate1DimNdRange(n_tips_total, 64),
-                    [config, measurements, seeds,
-                     links = vecmem::get_data(links_buffer),
-                     tips = vecmem::get_data(tips_buffer), track_candidates,
-                     valid_indices = vecmem::get_data(valid_indices_buffer),
-                     n_valid_tracks =
-                         n_valid_tracks_device.get()](::sycl::nd_item<1> item) {
-                        device::build_tracks(
-                            details::global_index(item), config,
-                            {measurements, seeds, links, tips, track_candidates,
-                             valid_indices, n_valid_tracks});
-                    });
-            })
-            .wait_and_throw();
-
-        queue
-            .memcpy(&n_valid_tracks, n_valid_tracks_device.get(),
-                    sizeof(unsigned int))
+            .memcpy(valid_tips_length_host.data(), tip_lengths_buffer.ptr(),
+                    n_tips * sizeof(unsigned int))
             .wait_and_throw();
     }
 
     // Create pruned candidate buffer
     track_candidate_container_types::buffer prune_candidates_buffer{
-        {n_valid_tracks, mr.main},
-        {std::vector<std::size_t>(n_valid_tracks,
-                                  config.max_track_candidates_per_track),
-         mr.main, mr.host, vecmem::data::buffer_type::resizable}};
-    copy.setup(prune_candidates_buffer.headers)->wait();
+        {n_tips, mr.main}, {valid_tips_length_host, mr.main, mr.host}};
+
+    copy.setup(prune_candidates_buffer.headers)->ignore();
     copy.setup(prune_candidates_buffer.items)->wait();
+
     track_candidate_container_types::view prune_candidates =
         prune_candidates_buffer;
 
-    if (n_valid_tracks > 0) {
-
+    /*
+     * Kernel 7: Build tracks
+     */
+    if (valid_tips_length_host.size() > 0) {
         queue
             .submit([&](::sycl::handler& h) {
-                h.parallel_for<kernels::prune_tracks>(
-                    calculate1DimNdRange(n_valid_tracks, 64),
-                    [track_candidates,
-                     valid_indices = vecmem::get_data(valid_indices_buffer),
+                h.parallel_for<kernels::build_tracks>(
+                    calculate1DimNdRange(valid_tips_length_host.size(), 64),
+                    [config, measurements, seeds,
+                     links = vecmem::get_data(links_buffer),
+                     tips = vecmem::get_data(tips_buffer),
                      prune_candidates](::sycl::nd_item<1> item) {
-                        device::prune_tracks(details::global_index(item),
-                                             {track_candidates, valid_indices,
+                        device::build_tracks(details::global_index(item),
+                                             config,
+                                             {measurements, seeds, links, tips,
                                               prune_candidates});
                     });
             })
