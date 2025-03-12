@@ -13,15 +13,16 @@
 #include "../utils/utils.hpp"
 #include "./kernels/apply_interaction.cuh"
 #include "./kernels/build_tracks.cuh"
+#include "./kernels/count_tracks.cuh"
 #include "./kernels/fill_sort_keys.cuh"
 #include "./kernels/find_tracks.cuh"
 #include "./kernels/make_barcode_sequence.cuh"
 #include "./kernels/propagate_to_next_surface.cuh"
-#include "./kernels/prune_tracks.cuh"
 #include "traccc/cuda/finding/finding_algorithm.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/device/sort_key.hpp"
+#include "traccc/edm/track_candidate.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/projections.hpp"
@@ -344,71 +345,74 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                      in.begin() + n_candidates_per_step[it], out.begin());
     }
 
-    /*****************************************************************
-     * Kernel6: Build tracks
-     *****************************************************************/
-
-    // Get the number of tips
+    /*
+     * Kernel 6: Count track lengths
+     */
     auto n_tips_total = m_copy.get_size(tips_buffer);
 
-    // Create track candidate buffer
-    track_candidate_container_types::buffer track_candidates_buffer{
-        {n_tips_total, m_mr.main},
-        {std::vector<std::size_t>(n_tips_total,
-                                  m_cfg.max_track_candidates_per_track),
-         m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable}};
-
-    m_copy.setup(track_candidates_buffer.headers)->ignore();
-    m_copy.setup(track_candidates_buffer.items)->ignore();
-
-    // Create buffer for valid indices
-    vecmem::data::vector_buffer<unsigned int> valid_indices_buffer(n_tips_total,
+    vecmem::data::vector_buffer<unsigned int> valid_tip_idx_buffer(n_tips_total,
                                                                    m_mr.main);
+    vecmem::data::vector_buffer<unsigned int> valid_tip_length_buffer(
+        n_tips_total, m_mr.main);
+    vecmem::unique_alloc_ptr<unsigned int> n_valid_tips_device =
+        vecmem::make_unique_alloc<unsigned int>(m_mr.main);
 
-    unsigned int n_valid_tracks = 0;
+    TRACCC_CUDA_ERROR_CHECK(cudaMemsetAsync(n_valid_tips_device.get(), 0,
+                                            sizeof(unsigned int), stream));
 
-    // @Note: nBlocks can be zero in case there is no tip. This happens when
-    // chi2_max config is set tightly and no tips are found
+    std::vector<unsigned int> valid_tips_length_host;
+
     if (n_tips_total > 0) {
-        vecmem::unique_alloc_ptr<unsigned int> n_valid_tracks_device =
-            vecmem::make_unique_alloc<unsigned int>(m_mr.main);
-        TRACCC_CUDA_ERROR_CHECK(cudaMemsetAsync(n_valid_tracks_device.get(), 0,
-                                                sizeof(unsigned int), stream));
-
         const unsigned int nThreads = m_warp_size * 2;
         const unsigned int nBlocks = (n_tips_total + nThreads - 1) / nThreads;
 
-        kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(
-            m_cfg, {measurements, seeds_buffer, links_buffer, tips_buffer,
-                    track_candidates_buffer, valid_indices_buffer,
-                    n_valid_tracks_device.get()});
+        kernels::count_tracks<<<nBlocks, nThreads, 0, stream>>>(
+            m_cfg,
+            {measurements, links_buffer, tips_buffer, valid_tip_idx_buffer,
+             valid_tip_length_buffer, n_valid_tips_device.get()});
+
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-        // Global counter object: Device -> Host
+        unsigned int n_valid_tips = 0;
+
         TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
-            &n_valid_tracks, n_valid_tracks_device.get(), sizeof(unsigned int),
+            &n_valid_tips, n_valid_tips_device.get(), sizeof(unsigned int),
             cudaMemcpyDeviceToHost, stream));
+
+        m_stream.synchronize();
+
+        valid_tips_length_host.resize(n_valid_tips);
+
+        TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
+            valid_tips_length_host.data(), valid_tip_length_buffer.ptr(),
+            n_valid_tips * sizeof(unsigned int), cudaMemcpyDeviceToHost,
+            stream));
 
         m_stream.synchronize();
     }
 
     // Create pruned candidate buffer
     track_candidate_container_types::buffer prune_candidates_buffer{
-        {n_valid_tracks, m_mr.main},
-        {std::vector<std::size_t>(n_valid_tracks,
-                                  m_cfg.max_track_candidates_per_track),
-         m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable}};
+        {static_cast<unsigned int>(valid_tips_length_host.size()), m_mr.main},
+        {valid_tips_length_host, m_mr.main, m_mr.host}};
 
     m_copy.setup(prune_candidates_buffer.headers)->ignore();
     m_copy.setup(prune_candidates_buffer.items)->ignore();
 
-    if (n_valid_tracks > 0) {
+    /*
+     * Kernel 7: Build tracks
+     */
+    if (valid_tips_length_host.size() > 0) {
         const unsigned int nThreads = m_warp_size * 2;
-        const unsigned int nBlocks = (n_valid_tracks + nThreads - 1) / nThreads;
+        const unsigned int nBlocks =
+            (static_cast<unsigned int>(valid_tips_length_host.size()) +
+             nThreads - 1) /
+            nThreads;
 
-        kernels::prune_tracks<<<nBlocks, nThreads, 0, stream>>>(
-            {track_candidates_buffer, valid_indices_buffer,
-             prune_candidates_buffer});
+        kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(
+            m_cfg, {measurements, seeds_buffer, links_buffer, tips_buffer,
+                    valid_tip_idx_buffer, n_valid_tips_device.get(),
+                    prune_candidates_buffer});
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
     }
 

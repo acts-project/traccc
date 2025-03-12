@@ -8,10 +8,11 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/finding/device/prune_tracks.hpp"
+#include "traccc/finding/device/count_tracks.hpp"
+#include "traccc/finding/finding_config.hpp"
 
 namespace traccc::cuda::kernels {
 
-__global__ void prune_tracks(device::prune_tracks_payload payload);
-
+__global__ void count_tracks(const finding_config cfg,
+                             device::count_tracks_payload payload);
 }

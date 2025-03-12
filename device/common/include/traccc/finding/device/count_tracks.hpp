@@ -19,24 +19,18 @@
 #include "traccc/finding/finding_config.hpp"
 
 // VecMem include(s).
-#include <vecmem/containers/data/jagged_vector_view.hpp>
 #include <vecmem/containers/data/vector_view.hpp>
 
 namespace traccc::device {
 
 /// (Event Data) Payload for the @c traccc::device::build_tracks function
-struct build_tracks_payload {
+struct count_tracks_payload {
     /**
      * @brief View object to the vector of measurements
      *
      * @warning Measurements on the same surface must be adjacent
      */
     measurement_collection_types::const_view measurements_view;
-
-    /**
-     * @brief View object to the vector of measurements
-     */
-    bound_track_parameters_collection_types::const_view seeds_view;
 
     /**
      * @brief View object to the vector of candidate links
@@ -49,14 +43,13 @@ struct build_tracks_payload {
     vecmem::data::vector_view<const typename candidate_link::link_index_type>
         tips_view;
 
-    vecmem::data::vector_view<const unsigned int> valid_tip_idx_view;
-
-    const unsigned int* num_valid_tips;
+    vecmem::data::vector_view<unsigned int> valid_tip_idx_view;
+    vecmem::data::vector_view<unsigned int> valid_tip_length_view;
 
     /**
-     * @brief View object to the vector of pruned track candidates
+     * @brief The number of valid tracks meeting criteria
      */
-    track_candidate_container_types::view final_candidates_view;
+    unsigned int* num_valid_tips;
 };
 
 /// Function for building full tracks from the link container:
@@ -68,11 +61,11 @@ struct build_tracks_payload {
 /// @param[in] cfg                    Track finding config object
 /// @param[inout] payload      The function call payload
 ///
-TRACCC_DEVICE inline void build_tracks(global_index_t globalIndex,
+TRACCC_DEVICE inline void count_tracks(global_index_t globalIndex,
                                        const finding_config& cfg,
-                                       const build_tracks_payload& payload);
+                                       const count_tracks_payload& payload);
 
 }  // namespace traccc::device
 
 // Include the implementation.
-#include "./impl/build_tracks.ipp"
+#include "./impl/count_tracks.ipp"
