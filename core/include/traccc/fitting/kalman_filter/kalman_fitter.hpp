@@ -106,26 +106,23 @@ class kalman_fitter {
 
         /// @return the actor chain state
         TRACCC_HOST_DEVICE
-        typename actor_chain_type::state operator()() {
-            return detray::tie(m_aborter_state, m_transporter_state,
-                               m_interactor_state, m_fit_actor_state,
-                               m_resetter_state, m_step_aborter_state);
+        typename actor_chain_type::state_ref_tuple operator()() {
+            return detray::tie(m_aborter_state, m_interactor_state,
+                               m_fit_actor_state, m_step_aborter_state);
         }
 
         /// @return the actor chain state
         TRACCC_HOST_DEVICE
-        typename backward_actor_chain_type::state backward_actor_state() {
-            return detray::tie(m_aborter_state, m_transporter_state,
-                               m_fit_actor_state, m_interactor_state,
-                               m_resetter_state, m_step_aborter_state);
+        typename backward_actor_chain_type::state_ref_tuple
+        backward_actor_state() {
+            return detray::tie(m_aborter_state, m_fit_actor_state,
+                               m_interactor_state, m_step_aborter_state);
         }
 
         /// Individual actor states
         typename aborter::state m_aborter_state{};
-        typename transporter::state m_transporter_state{};
         typename interactor::state m_interactor_state{};
         typename fit_actor::state m_fit_actor_state;
-        typename resetter::state m_resetter_state{};
         kalman_step_aborter::state m_step_aborter_state{};
 
         /// Fitting result per track
