@@ -71,6 +71,8 @@ struct propagate_to_next_surface_payload {
     vecmem::data::vector_view<typename candidate_link::link_index_type>
         tips_view;
 
+    vecmem::data::vector_view<unsigned int> tip_lengths_view;
+
     /**
      * @brief View object to the vector of the number of tracks per initial
      * input seed
