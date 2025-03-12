@@ -46,6 +46,7 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
 
     // tips
     vecmem::device_vector<unsigned int> tips(payload.tips_view);
+    vecmem::device_vector<unsigned int> tip_lengths(payload.tip_lengths_view);
 
     // Detector
     typename propagator_t::detector_type det(payload.det_data);
@@ -106,7 +107,8 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
         params_liveness[param_id] = 0u;
 
         if (n_cands >= cfg.min_track_candidates_per_track) {
-            tips.push_back(link_idx);
+            auto tip_pos = tips.push_back(link_idx);
+            tip_lengths.at(tip_pos) = n_cands;
         }
     }
 }

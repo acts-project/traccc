@@ -41,16 +41,9 @@ TRACCC_HOST_DEVICE inline void build_tracks(
     auto L = links.at(tip);
     const unsigned int n_meas = measurements.size();
 
-    const unsigned int n_cands = L.step + 1 - L.n_skipped;
-
-    // Resize the candidates with the exact size
-    cands_per_track.resize(n_cands);
-
     // Track summary variables
     scalar ndf_sum = 0.f;
     scalar chi2_sum = 0.f;
-
-    [[maybe_unused]] std::size_t num_inserted = 0;
 
     // Reversely iterate to fill the track candidates
     for (auto it = cands_per_track.rbegin(); it != cands_per_track.rend();
@@ -64,7 +57,6 @@ TRACCC_HOST_DEVICE inline void build_tracks(
         assert(L.meas_idx < n_meas);
 
         *it = {measurements.at(L.meas_idx)};
-        num_inserted++;
 
         // Sanity check on chi2
         assert(L.chi2 < std::numeric_limits<traccc::scalar>::max());
@@ -87,10 +79,6 @@ TRACCC_HOST_DEVICE inline void build_tracks(
     }
 
 #ifndef NDEBUG
-    // Assert that we inserted exactly as many elements as we reserved
-    // space for.
-    assert(num_inserted == cands_per_track.size());
-
     // Assert that we did not make any duplicate track states.
     for (unsigned int i = 0; i < cands_per_track.size(); ++i) {
         for (unsigned int j = 0; j < cands_per_track.size(); ++j) {

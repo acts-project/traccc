@@ -105,6 +105,11 @@ struct find_tracks_payload {
     vecmem::data::vector_view<unsigned int> tips_view;
 
     /**
+     * @brief Vector to hold the number of track states per tip
+     */
+    vecmem::data::vector_view<unsigned int> tip_lengths_view;
+
+    /**
      * @brief View object to the vector of the number of tracks per initial
      * input seed
      */
