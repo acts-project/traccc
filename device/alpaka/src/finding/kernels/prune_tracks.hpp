@@ -18,7 +18,7 @@ struct PruneTracksKernel {
     ALPAKA_FN_ACC void operator()(TAcc const& acc,
                                   device::prune_tracks_payload payload) const {
 
-        int globalThreadIdx =
+        device::global_index_t globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
 
         device::prune_tracks(globalThreadIdx, payload);

@@ -20,7 +20,7 @@ struct ApplyInteractionKernel {
         TAcc const& acc, const finding_config& cfg,
         device::apply_interaction_payload<detector_t> payload) const {
 
-        int globalThreadIdx =
+        device::global_index_t globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
 
         device::apply_interaction<detector_t>(globalThreadIdx, cfg, payload);

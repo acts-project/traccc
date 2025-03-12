@@ -18,7 +18,7 @@ struct MakeBarcodeSequenceKernel {
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, device::make_barcode_sequence_payload payload) const {
 
-        int globalThreadIdx =
+        device::global_index_t globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
         device::make_barcode_sequence(globalThreadIdx, payload);
     }

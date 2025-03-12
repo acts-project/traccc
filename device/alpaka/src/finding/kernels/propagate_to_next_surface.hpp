@@ -21,7 +21,7 @@ struct PropagateToNextSurfaceKernel {
         device::propagate_to_next_surface_payload<propagator_t, bfield_t>
             payload) const {
 
-        int globalThreadIdx =
+        device::global_index_t globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
 
         device::propagate_to_next_surface<propagator_t, bfield_t>(

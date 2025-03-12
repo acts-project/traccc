@@ -22,7 +22,7 @@ struct BuildTracksKernel {
     ALPAKA_FN_ACC void operator()(TAcc const& acc, const finding_config cfg,
                                   device::build_tracks_payload payload) const {
 
-        int globalThreadIdx =
+        device::global_index_t globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
 
         device::build_tracks(globalThreadIdx, cfg, payload);

@@ -18,7 +18,7 @@ struct FillSortKeysKernel {
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, device::fill_sort_keys_payload payload) const {
 
-        int globalThreadIdx =
+        device::global_index_t globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
 
         device::fill_sort_keys(globalThreadIdx, payload);

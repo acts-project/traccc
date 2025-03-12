@@ -36,7 +36,7 @@ struct FillSortKeysKernel {
         vecmem::data::vector_view<device::sort_key> keys_view,
         vecmem::data::vector_view<unsigned int> ids_view) const {
 
-        int globalThreadIdx =
+        device::global_index_t globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
 
         device::fill_sort_keys(globalThreadIdx, track_candidates_view,
@@ -55,7 +55,7 @@ struct FitTrackKernel {
         vecmem::data::vector_view<const unsigned int> param_ids_view,
         track_state_container_types::view track_states_view) const {
 
-        int globalThreadIdx =
+        device::global_index_t globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
 
         device::fit<fitter_t>(globalThreadIdx, det_data, field_data, cfg,
