@@ -125,6 +125,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
 
         // Same propagation configuration for sim and reco
         apply_propagation_config(sim.get_config().propagation);
+        sim.get_config().propagation.navigation.search_window = {3, 3};
         // Set constrained step size to 1 mm
         sim.get_config().propagation.stepping.step_constraint =
             1.f * traccc::unit<float>::mm;
