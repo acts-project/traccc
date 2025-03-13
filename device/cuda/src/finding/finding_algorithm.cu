@@ -73,6 +73,11 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     const typename measurement_collection_types::view& measurements,
     const bound_track_parameters_collection_types::buffer& seeds_buffer) const {
 
+    assert(m_cfg.min_step_length_for_next_surface >
+               math::fabs(m_cfg.propagation.navigation.overstep_tolerance) &&
+           "Min step length for the next surface should be higher than the "
+           "overstep tolerance");
+
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
 
