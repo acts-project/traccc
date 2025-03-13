@@ -22,6 +22,8 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/device/sort_key.hpp"
 #include "traccc/finding/candidate_link.hpp"
+#include "traccc/finding/device/find_tracks.hpp"
+#include "traccc/finding/device/propagate_to_next_surface.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/projections.hpp"
 
@@ -31,6 +33,7 @@
 #include <detray/propagator/rk_stepper.hpp>
 
 // VecMem include(s).
+#include <ratio>
 #include <vecmem/containers/data/vector_buffer.hpp>
 #include <vecmem/containers/data/vector_view.hpp>
 #include <vecmem/containers/device_vector.hpp>
@@ -240,19 +243,31 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             ::alpaka::memset(queue, bufAcc_n_candidates, 0);
             ::alpaka::wait(queue);
 
+            typedef device::find_tracks_payload<std::decay_t<detector_type>> PayloadType;
+
+            PayloadType host_payload{
+                det_view, measurements, vecmem::get_data(in_params_buffer),
+                vecmem::get_data(param_liveness_buffer), n_in_params,
+                vecmem::get_data(barcodes_buffer),
+                vecmem::get_data(upper_bounds_buffer),
+                vecmem::get_data(link_map[prev_step]), step,
+                n_max_candidates, vecmem::get_data(updated_params_buffer),
+                vecmem::get_data(updated_liveness_buffer),
+                vecmem::get_data(link_map[step]),
+                ::alpaka::getPtrNative(bufAcc_n_candidates)};
+            auto bufHost_payload =
+                ::alpaka::allocBuf<PayloadType, Idx>(devHost, 1u);
+            PayloadType* payload = ::alpaka::getPtrNative(bufHost_payload);
+            *payload = host_payload;
+
+            auto bufAcc_payload =
+                ::alpaka::allocBuf<PayloadType, Idx>(devAcc, 1u);
+            ::alpaka::memcpy(queue, bufAcc_payload, bufHost_payload);
+            ::alpaka::wait(queue);
+
             ::alpaka::exec<Acc>(
                 queue, workDiv, FindTracksKernel<std::decay_t<detector_type>>{},
-                m_cfg,
-                device::find_tracks_payload<std::decay_t<detector_type>>{
-                    det_view, measurements, vecmem::get_data(in_params_buffer),
-                    vecmem::get_data(param_liveness_buffer), n_in_params,
-                    vecmem::get_data(barcodes_buffer),
-                    vecmem::get_data(upper_bounds_buffer),
-                    vecmem::get_data(link_map[prev_step]), step,
-                    n_max_candidates, vecmem::get_data(updated_params_buffer),
-                    vecmem::get_data(updated_liveness_buffer),
-                    vecmem::get_data(link_map[step]),
-                    ::alpaka::getPtrNative(bufAcc_n_candidates)});
+                m_cfg, ::alpaka::getPtrNative(bufAcc_payload));
             ::alpaka::wait(queue);
 
             std::swap(in_params_buffer, updated_params_buffer);
@@ -309,21 +324,36 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     (*n_candidates + threadsPerBlock - 1) / threadsPerBlock;
                 auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
+                typedef device::propagate_to_next_surface_payload<
+                    std::decay_t<propagator_type>, std::decay_t<bfield_type>>
+                    PayloadType;
+
+                PayloadType host_payload{
+                    det_view,
+                    field_view,
+                    vecmem::get_data(in_params_buffer),
+                    vecmem::get_data(param_liveness_buffer),
+                    vecmem::get_data(param_ids_buffer),
+                    vecmem::get_data(link_map[step]),
+                    step,
+                    *n_candidates,
+                    vecmem::get_data(tips_buffer),
+                    vecmem::get_data(n_tracks_per_seed_buffer)};
+                auto bufHost_payload =
+                    ::alpaka::allocBuf<PayloadType, Idx>(devHost, 1u);
+                PayloadType* payload = ::alpaka::getPtrNative(bufHost_payload);
+                *payload = host_payload;
+
+                auto bufAcc_payload =
+                    ::alpaka::allocBuf<PayloadType, Idx>(devAcc, 1u);
+                ::alpaka::memcpy(queue, bufAcc_payload, bufHost_payload);
+                ::alpaka::wait(queue);
+
                 ::alpaka::exec<Acc>(
                     queue, workDiv,
                     PropagateToNextSurfaceKernel<std::decay_t<propagator_type>,
                                                  std::decay_t<bfield_type>>{},
-                    m_cfg,
-                    device::propagate_to_next_surface_payload<
-                        std::decay_t<propagator_type>,
-                        std::decay_t<bfield_type>>{
-                        det_view, field_view,
-                        vecmem::get_data(in_params_buffer),
-                        vecmem::get_data(param_liveness_buffer),
-                        vecmem::get_data(param_ids_buffer),
-                        vecmem::get_data(link_map[step]), step, *n_candidates,
-                        vecmem::get_data(tips_buffer),
-                        vecmem::get_data(n_tracks_per_seed_buffer)});
+                    m_cfg, ::alpaka::getPtrNative(bufAcc_payload));
                 ::alpaka::wait(queue);
             }
         }

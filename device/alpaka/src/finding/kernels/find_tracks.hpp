@@ -20,7 +20,7 @@ struct FindTracksKernel {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, const finding_config& cfg,
-        device::find_tracks_payload<detector_t> payload) const {
+        device::find_tracks_payload<detector_t>* payload) const {
 
         auto& shared_candidates_size =
             ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
@@ -36,7 +36,7 @@ struct FindTracksKernel {
                 &shared_num_candidates[blockDimX]);
 
         device::find_tracks<detector_t>(
-            thread_id, barrier, cfg, payload,
+            thread_id, barrier, cfg, *payload,
             {shared_num_candidates, shared_candidates, shared_candidates_size});
     }
 };

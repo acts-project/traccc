@@ -18,14 +18,14 @@ struct PropagateToNextSurfaceKernel {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, const finding_config cfg,
-        device::propagate_to_next_surface_payload<propagator_t, bfield_t>
+        device::propagate_to_next_surface_payload<propagator_t, bfield_t>*
             payload) const {
 
         device::global_index_t globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
 
         device::propagate_to_next_surface<propagator_t, bfield_t>(
-            globalThreadIdx, cfg, payload);
+            globalThreadIdx, cfg, *payload);
     }
 };
 
