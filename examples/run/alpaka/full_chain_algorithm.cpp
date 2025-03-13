@@ -31,12 +31,8 @@ full_chain_algorithm::full_chain_algorithm(
       m_queue_wrapper(&m_queue),
       m_device_mr(m_queue_wrapper),
       m_copy(m_queue_wrapper),
-#elif defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || \
-    defined(ALPAKA_ACC_GPU_HIP_ENABLED)
-      m_device_mr(),
-      m_copy(),
 #else
-      m_device_mr(host_mr),
+      m_device_mr(),
       m_copy(),
 #endif
       m_cached_device_mr(
@@ -94,12 +90,8 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_queue_wrapper(&m_queue),
       m_device_mr(m_queue_wrapper),
       m_copy(m_queue_wrapper),
-#elif defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || \
-    defined(ALPAKA_ACC_GPU_HIP_ENABLED)
-      m_device_mr(),
-      m_copy(),
 #else
-      m_device_mr(parent.m_host_mr),
+      m_device_mr(),
       m_copy(),
 #endif
       m_cached_device_mr(
