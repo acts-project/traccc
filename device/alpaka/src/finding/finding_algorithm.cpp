@@ -243,15 +243,21 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             ::alpaka::memset(queue, bufAcc_n_candidates, 0);
             ::alpaka::wait(queue);
 
-            typedef device::find_tracks_payload<std::decay_t<detector_type>> PayloadType;
+            typedef device::find_tracks_payload<std::decay_t<detector_type>>
+                PayloadType;
 
             PayloadType host_payload{
-                det_view, measurements, vecmem::get_data(in_params_buffer),
-                vecmem::get_data(param_liveness_buffer), n_in_params,
+                det_view,
+                measurements,
+                vecmem::get_data(in_params_buffer),
+                vecmem::get_data(param_liveness_buffer),
+                n_in_params,
                 vecmem::get_data(barcodes_buffer),
                 vecmem::get_data(upper_bounds_buffer),
-                vecmem::get_data(link_map[prev_step]), step,
-                n_max_candidates, vecmem::get_data(updated_params_buffer),
+                vecmem::get_data(link_map[prev_step]),
+                step,
+                n_max_candidates,
+                vecmem::get_data(updated_params_buffer),
                 vecmem::get_data(updated_liveness_buffer),
                 vecmem::get_data(link_map[step]),
                 ::alpaka::getPtrNative(bufAcc_n_candidates)};
@@ -265,9 +271,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             ::alpaka::memcpy(queue, bufAcc_payload, bufHost_payload);
             ::alpaka::wait(queue);
 
-            ::alpaka::exec<Acc>(
-                queue, workDiv, FindTracksKernel<std::decay_t<detector_type>>{},
-                m_cfg, ::alpaka::getPtrNative(bufAcc_payload));
+            ::alpaka::exec<Acc>(queue, workDiv,
+                                FindTracksKernel<std::decay_t<detector_type>>{},
+                                m_cfg, ::alpaka::getPtrNative(bufAcc_payload));
             ::alpaka::wait(queue);
 
             std::swap(in_params_buffer, updated_params_buffer);
