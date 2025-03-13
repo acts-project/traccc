@@ -26,7 +26,7 @@ void read_spacepoints(edm::spacepoint_collection::host& spacepoints,
                       const traccc::default_detector::host* detector) {
 
     // Read all measurements.
-    static constexpr bool sort_measurements = false;
+    static constexpr bool sort_measurements = true;
     read_measurements(measurements, meas_filename, detector, sort_measurements);
 
     // Measurement hit id reader
