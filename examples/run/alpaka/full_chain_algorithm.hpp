@@ -122,8 +122,16 @@ class full_chain_algorithm
         const edm::silicon_cell_collection::host& cells) const override;
 
     private:
+
     /// Host memory resource
     ::vecmem::memory_resource& m_host_mr;
+
+#if defined(ALPAKA_ACC_SYCL_ENABLED)
+    /// The SYCL queue to use for the computations
+    ::sycl::queue m_queue;
+    vecmem::sycl::queue_wrapper m_queue_wrapper;
+#endif
+
     /// Device memory resource
     traccc::alpaka::vecmem_resources::device_memory_resource m_device_mr;
     /// Memory copy object

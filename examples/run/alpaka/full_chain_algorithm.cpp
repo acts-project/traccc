@@ -24,14 +24,21 @@ full_chain_algorithm::full_chain_algorithm(
     const fitting_algorithm::config_type& fitting_config,
     const silicon_detector_description::host& det_descr,
     host_detector_type* detector, std::unique_ptr<const traccc::Logger> logger)
-    : messaging(std::move(logger->clone())),
+    : messaging(logger->clone()),
       m_host_mr(host_mr),
-#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_GPU_HIP_ENABLED)
+#if defined(ALPAKA_ACC_SYCL_ENABLED)
+      m_queue(::sycl::queue()),
+      m_queue_wrapper(&m_queue),
+      m_device_mr(m_queue_wrapper),
+      m_copy(m_queue_wrapper),
+#elif defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || \
+    defined(ALPAKA_ACC_GPU_HIP_ENABLED)
       m_device_mr(),
+      m_copy(),
 #else
       m_device_mr(host_mr),
-#endif
       m_copy(),
+#endif
       m_cached_device_mr(
           std::make_unique<::vecmem::binary_page_memory_resource>(m_device_mr)),
       m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
@@ -82,12 +89,19 @@ full_chain_algorithm::full_chain_algorithm(
 full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
     : messaging(parent.logger().clone()),
       m_host_mr(parent.m_host_mr),
-#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_GPU_HIP_ENABLED)
+#if defined(ALPAKA_ACC_SYCL_ENABLED)
+      m_queue(parent.m_queue),
+      m_queue_wrapper(&m_queue),
+      m_device_mr(m_queue_wrapper),
+      m_copy(m_queue_wrapper),
+#elif defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || \
+    defined(ALPAKA_ACC_GPU_HIP_ENABLED)
       m_device_mr(),
+      m_copy(),
 #else
       m_device_mr(parent.m_host_mr),
-#endif
       m_copy(),
+#endif
       m_cached_device_mr(
           std::make_unique<::vecmem::binary_page_memory_resource>(m_device_mr)),
       m_field_vec(parent.m_field_vec),
