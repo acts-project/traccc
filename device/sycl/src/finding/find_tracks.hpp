@@ -100,8 +100,8 @@ track_candidate_container_types::buffer find_tracks(
     const finding_config& config, const memory_resource& mr, vecmem::copy& copy,
     ::sycl::queue& queue) {
 
-    assert(m_cfg.min_step_length_for_next_surface >
-               math::fabs(m_cfg.propagation.navigation.overstep_tolerance) &&
+    assert(config.min_step_length_for_next_surface >
+               math::fabs(config.propagation.navigation.overstep_tolerance) &&
            "Min step length for the next surface should be higher than the "
            "overstep tolerance");
 
