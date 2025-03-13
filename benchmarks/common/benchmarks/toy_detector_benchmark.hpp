@@ -155,8 +155,9 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
 
     void apply_propagation_config(detray::propagation::config& cfg) const {
         // Configure the propagation for the toy detector
+        // @NOTE: currently Non-{0,0} search windows cause an error during CKF
         // cfg.navigation.search_window = {3, 3};
-        cfg.navigation.overstep_tolerance = -300.f * traccc::unit<float>::um;
+        cfg.navigation.overstep_tolerance = -1000.f * traccc::unit<float>::um;
         cfg.navigation.min_mask_tolerance = 1e-5f * traccc::unit<float>::mm;
         cfg.navigation.max_mask_tolerance = 3.f * traccc::unit<float>::mm;
         cfg.navigation.mask_tolerance_scalor = 0.05f;
