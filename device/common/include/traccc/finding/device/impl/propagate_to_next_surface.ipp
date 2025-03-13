@@ -47,31 +47,26 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     const unsigned int s_pos = num_tracks_per_seed.fetch_add(1);
     vecmem::device_vector<unsigned int> params_liveness(
         payload.params_liveness_view);
-
-    if (s_pos >= cfg.max_num_branches_per_seed) {
-        params_liveness[param_id] = 0u;
-        return;
-    }
-
-    // tips
     vecmem::device_vector<typename candidate_link::link_index_type> tips(
         payload.tips_view);
+    vecmem::device_vector<unsigned int> tip_lengths(
+        payload.tip_lengths_view);
 
-    if (links.at(param_id).n_skipped > cfg.max_num_skipping_per_cand) {
-        params_liveness[param_id] = 0u;
-        tips.push_back({payload.step, param_id});
-        return;
+    bool create_tip = false;
+
+    if (s_pos >= cfg.max_num_branches_per_seed) {
+        params_liveness.at(param_id) = 0u;
+    } else if (links.at(param_id).n_skipped > cfg.max_num_skipping_per_cand) {
+        params_liveness.at(param_id) = 0u;
+        create_tip = true;
     }
 
+    if (params_liveness.at(param_id) != 0u) {
     // Detector
     typename propagator_t::detector_type det(payload.det_data);
 
     // Parameters
     bound_track_parameters_collection_types::device params(payload.params_view);
-
-    if (params_liveness.at(param_id) == 0u) {
-        return;
-    }
 
     // Input bound track parameter
     const bound_track_parameters<> in_par = params.at(param_id);
@@ -116,7 +111,7 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
         params[param_id] = propagation._stepping.bound_params();
 
         if (payload.step == cfg.max_track_candidates_per_track - 1) {
-            tips.push_back({payload.step, param_id});
+            create_tip = true;
             params_liveness[param_id] = 0u;
         } else {
             params_liveness[param_id] = 1u;
@@ -125,8 +120,22 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
         params_liveness[param_id] = 0u;
 
         if (payload.step >= cfg.min_track_candidates_per_track - 1) {
-            tips.push_back({payload.step, param_id});
+            create_tip = true;
         }
+    }
+    }
+
+    if (create_tip) {
+        const auto & L = links.at(param_id);
+
+    const unsigned int num_meas = payload.step + 1 - L.n_skipped;
+
+    // Criteria for valid tracks
+    if (num_meas >= cfg.min_track_candidates_per_track &&
+        num_meas <= cfg.max_track_candidates_per_track) {
+        const unsigned int tip_pos = tips.push_back({payload.step, param_id});
+        tip_lengths.at(tip_pos) = num_meas;
+    }
     }
 }
 

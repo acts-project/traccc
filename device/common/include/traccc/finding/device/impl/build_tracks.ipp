@@ -26,21 +26,14 @@ TRACCC_DEVICE inline void build_tracks(const global_index_t globalIndex,
     const vecmem::device_vector<const typename candidate_link::link_index_type>
         tips(payload.tips_view);
 
-    const vecmem::device_vector<const unsigned int> valid_tip_idx(
-        payload.valid_tip_idx_view);
-
     track_candidate_container_types::device final_candidates(
         payload.final_candidates_view);
 
-    if (globalIndex >= *payload.num_valid_tips) {
+    if (globalIndex >= tips.size()) {
         return;
     }
 
-    const auto tip_idx = valid_tip_idx.at(globalIndex);
-
-    const auto tip = tips.at(tip_idx);
-    // auto& seed = track_candidates[globalIndex].header.seed_params;
-    // auto& trk_quality = track_candidates[globalIndex].header.trk_quality;
+    const auto tip = tips.at(globalIndex);
 
     // Get the link corresponding to tip
     auto L = links[tip.first][tip.second];

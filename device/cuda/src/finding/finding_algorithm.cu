@@ -13,7 +13,6 @@
 #include "../utils/utils.hpp"
 #include "./kernels/apply_interaction.cuh"
 #include "./kernels/build_tracks.cuh"
-#include "./kernels/count_tracks.cuh"
 #include "./kernels/fill_sort_keys.cuh"
 #include "./kernels/find_tracks.cuh"
 #include "./kernels/make_barcode_sequence.cuh"
@@ -175,6 +174,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         tips_buffer{m_cfg.max_num_branches_per_seed * n_seeds, m_mr.main,
                     vecmem::data::buffer_type::resizable};
     m_copy.setup(tips_buffer)->wait();
+    vecmem::data::vector_buffer<unsigned int>
+        tip_length_buffer{m_cfg.max_num_branches_per_seed * n_seeds, m_mr.main};
 
     // Link size
     std::vector<std::size_t> n_candidates_per_step;
@@ -314,7 +315,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     <<<nBlocks, nThreads, 0, stream>>>(
                         m_cfg, {det_view, field_view, in_params_buffer,
                                 param_liveness_buffer, param_ids_buffer,
-                                link_map[step], step, n_candidates, tips_buffer,
+                                link_map[step], step, n_candidates, tips_buffer, tip_length_buffer,
                                 n_tracks_per_seed_buffer});
                 TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
@@ -345,47 +346,16 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                      in.begin() + n_candidates_per_step[it], out.begin());
     }
 
-    /*
-     * Kernel 6: Count track lengths
-     */
-    auto n_tips_total = m_copy.get_size(tips_buffer);
-
-    vecmem::data::vector_buffer<unsigned int> valid_tip_idx_buffer(n_tips_total,
-                                                                   m_mr.main);
-    vecmem::data::vector_buffer<unsigned int> valid_tip_length_buffer(
-        n_tips_total, m_mr.main);
-    vecmem::unique_alloc_ptr<unsigned int> n_valid_tips_device =
-        vecmem::make_unique_alloc<unsigned int>(m_mr.main);
-
-    TRACCC_CUDA_ERROR_CHECK(cudaMemsetAsync(n_valid_tips_device.get(), 0,
-                                            sizeof(unsigned int), stream));
+    auto n_tips = m_copy.get_size(tips_buffer);
 
     std::vector<unsigned int> valid_tips_length_host;
 
-    if (n_tips_total > 0) {
-        const unsigned int nThreads = m_warp_size * 2;
-        const unsigned int nBlocks = (n_tips_total + nThreads - 1) / nThreads;
-
-        kernels::count_tracks<<<nBlocks, nThreads, 0, stream>>>(
-            m_cfg,
-            {measurements, links_buffer, tips_buffer, valid_tip_idx_buffer,
-             valid_tip_length_buffer, n_valid_tips_device.get()});
-
-        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
-
-        unsigned int n_valid_tips = 0;
+    if (n_tips > 0) {
+        valid_tips_length_host.resize(n_tips);
 
         TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
-            &n_valid_tips, n_valid_tips_device.get(), sizeof(unsigned int),
-            cudaMemcpyDeviceToHost, stream));
-
-        m_stream.synchronize();
-
-        valid_tips_length_host.resize(n_valid_tips);
-
-        TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
-            valid_tips_length_host.data(), valid_tip_length_buffer.ptr(),
-            n_valid_tips * sizeof(unsigned int), cudaMemcpyDeviceToHost,
+            valid_tips_length_host.data(), tip_length_buffer.ptr(),
+            n_tips * sizeof(unsigned int), cudaMemcpyDeviceToHost,
             stream));
 
         m_stream.synchronize();
@@ -393,25 +363,24 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
     // Create pruned candidate buffer
     track_candidate_container_types::buffer prune_candidates_buffer{
-        {static_cast<unsigned int>(valid_tips_length_host.size()), m_mr.main},
+        {n_tips, m_mr.main},
         {valid_tips_length_host, m_mr.main, m_mr.host}};
 
     m_copy.setup(prune_candidates_buffer.headers)->ignore();
     m_copy.setup(prune_candidates_buffer.items)->ignore();
 
     /*
-     * Kernel 7: Build tracks
+     * Kernel 6: Build tracks
      */
-    if (valid_tips_length_host.size() > 0) {
+    if (n_tips > 0) {
         const unsigned int nThreads = m_warp_size * 2;
         const unsigned int nBlocks =
-            (static_cast<unsigned int>(valid_tips_length_host.size()) +
+            (static_cast<unsigned int>(n_tips) +
              nThreads - 1) /
             nThreads;
 
         kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(
             m_cfg, {measurements, seeds_buffer, links_buffer, tips_buffer,
-                    valid_tip_idx_buffer, n_valid_tips_device.get(),
                     prune_candidates_buffer});
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
     }

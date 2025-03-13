@@ -49,10 +49,6 @@ struct build_tracks_payload {
     vecmem::data::vector_view<const typename candidate_link::link_index_type>
         tips_view;
 
-    vecmem::data::vector_view<const unsigned int> valid_tip_idx_view;
-
-    const unsigned int* num_valid_tips;
-
     /**
      * @brief View object to the vector of pruned track candidates
      */
