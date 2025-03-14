@@ -81,7 +81,7 @@ struct event_data {
     ///
     track_candidate_container_types::host generate_truth_candidates(
         seed_generator<detector_type>& sg, vecmem::memory_resource& resource,
-        float pt_cut = 0.f);
+        float pt_cut = 0.f, std::size_t min_measurements = 3);
 
     // Measurement map
     std::map<measurement_id, measurement> m_measurement_map;

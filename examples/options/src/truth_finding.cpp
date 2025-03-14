@@ -15,11 +15,17 @@
 namespace traccc::opts {
 
 truth_finding::truth_finding() : interface("Truth Track Finding Options") {
-    m_desc.add_options()(
+    m_desc.add_options()
+        (
         "truth-finding-min-pt",
         boost::program_options::value(&m_min_pt)->default_value(
-            0.5f * unit<float>::GeV),
-        "Candidate particule pT cut [GeV]");
+         m_min_pt),
+        "Candidate particle pT cut [GeV]")
+        (
+        "truth-finding-min-measurements",
+        boost::program_options::value(&m_min_measurements)->default_value(
+         m_min_measurements),
+        "Candidate particle measurement count minimum");
 }
 
 std::unique_ptr<configuration_printable> truth_finding::as_printable() const {
@@ -27,6 +33,8 @@ std::unique_ptr<configuration_printable> truth_finding::as_printable() const {
 
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Minimum pT", std::format("{} GeV", m_min_pt / unit<float>::GeV)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Minimum measurements", std::format("{}", m_min_measurements)));
 
     return cat;
 }

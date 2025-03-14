@@ -311,11 +311,14 @@ void event_data::fill_cca_result(
 
 track_candidate_container_types::host event_data::generate_truth_candidates(
     seed_generator<detector_type>& sg, vecmem::memory_resource& resource,
-    float pt_cut) {
+    float pt_cut, std::size_t min_measurements) {
 
     traccc::track_candidate_container_types::host track_candidates(&resource);
 
     for (auto const& [ptc, measurements] : m_ptc_to_meas_map) {
+        if (measurements.size() < min_measurements) {
+            continue;
+        }
 
         const auto& param = m_meas_to_param_map.at(measurements[0]);
         const free_track_parameters<> free_param(param.first, 0.f, param.second,

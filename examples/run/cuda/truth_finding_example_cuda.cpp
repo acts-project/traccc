@@ -35,6 +35,7 @@
 #include "traccc/performance/container_comparator.hpp"
 #include "traccc/performance/timer.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
+#include "traccc/utils/logging.hpp"
 #include "traccc/utils/seed_generator.hpp"
 
 // detray include(s).
@@ -185,14 +186,34 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
         traccc::track_candidate_container_types::host truth_track_candidates =
             evt_data.generate_truth_candidates(sg, host_mr,
-                                               truth_finding_opts.m_min_pt);
+                                               truth_finding_opts.m_min_pt, truth_finding_opts.m_min_measurements);
 
         // Prepare truth seeds
         traccc::bound_track_parameters_collection_types::host seeds(mr.host);
         const std::size_t n_tracks = truth_track_candidates.size();
         for (std::size_t i_trk = 0; i_trk < n_tracks; i_trk++) {
+            assert(truth_track_candidates.at(i_trk).items.size() >= 3);
+
             seeds.push_back(
                 truth_track_candidates.at(i_trk).header.seed_params);
+
+            for (std::size_t j = 1; j < std::min(3lu, truth_track_candidates.at(i_trk).items.size()); ++j) {
+                const auto & prev_meas = truth_track_candidates.at(i_trk).items.at(j - 1);
+                const detray::tracking_surface prev_sf{detector, prev_meas.surface_link};
+                const auto prev_global = prev_sf.bound_to_global({}, prev_meas.local, {});
+                
+                const auto & curr_meas = truth_track_candidates.at(i_trk).items.at(j);
+                const detray::tracking_surface curr_sf{detector, curr_meas.surface_link};
+                const auto curr_global = curr_sf.bound_to_global({}, curr_meas.local, {});
+
+                if (curr_meas.time < prev_meas.time) {
+                    TRACCC_WARNING("Track " << i_trk << " measurements " << (j-1) << " and " << j << " have improperly ordered time values (" << prev_meas.time << " and " << curr_meas.time << ")");
+                }
+
+                if (scalar curr_r = std::hypot(curr_global[0], curr_global[1]), prev_r = std::hypot(prev_global[0], prev_global[1]); curr_r < prev_r) {
+                    TRACCC_WARNING("Track " << i_trk << " measurements " << (j-1) << " and " << j << " have improperly ordered r-values (" << prev_r << " and " << curr_r << ")");
+                }
+            }
         }
 
         traccc::bound_track_parameters_collection_types::buffer seeds_buffer{
