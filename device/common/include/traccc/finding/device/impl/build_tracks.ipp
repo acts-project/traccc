@@ -44,24 +44,7 @@ TRACCC_DEVICE inline void build_tracks(const global_index_t globalIndex,
     auto L = links[tip.first][tip.second];
     const unsigned int n_meas = measurements.size();
 
-    // Count the number of skipped steps
-    unsigned int n_skipped{0u};
-    while (true) {
-        if (L.meas_idx > n_meas) {
-            n_skipped++;
-        }
-
-        if (L.previous.first == 0u) {
-            break;
-        }
-
-        L = links[L.previous.first][L.previous.second];
-    }
-
-    // Retrieve tip
-    L = links[tip.first][tip.second];
-
-    const unsigned int n_cands = tip.first + 1 - n_skipped;
+    const unsigned int n_cands = tip.first + 1 - L.n_skipped;
 
     // Resize the candidates with the exact size
     cands_per_track.resize(n_cands);
