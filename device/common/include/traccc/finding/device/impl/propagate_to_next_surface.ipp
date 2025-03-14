@@ -91,17 +91,15 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     // Actor state
     // @TODO: simplify the syntax here
     // @NOTE: Post material interaction might be required here
-    using actor_list_type =
-        typename propagator_t::actor_chain_type::actor_list_type;
-    typename detray::detail::tuple_element<0, actor_list_type>::type::state
+    using actor_tuple_type =
+        typename propagator_t::actor_chain_type::actor_tuple;
+    typename detray::detail::tuple_element<0, actor_tuple_type>::type::state
         s0{};
-    typename detray::detail::tuple_element<1, actor_list_type>::type::state
-        s1{};
-    typename detray::detail::tuple_element<3, actor_list_type>::type::state
+    typename detray::detail::tuple_element<3, actor_tuple_type>::type::state
         s3{};
-    typename detray::detail::tuple_element<2, actor_list_type>::type::state s2{
+    typename detray::detail::tuple_element<2, actor_tuple_type>::type::state s2{
         s3};
-    typename detray::detail::tuple_element<4, actor_list_type>::type::state s4;
+    typename detray::detail::tuple_element<4, actor_tuple_type>::type::state s4;
     s4.min_step_length = cfg.min_step_length_for_next_surface;
     s4.max_count = cfg.max_step_counts_for_next_surface;
 
@@ -110,7 +108,7 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     propagation._navigation.set_volume(in_par.surface_link().volume());
 
     // Propagate to the next surface
-    propagator.propagate_sync(propagation, detray::tie(s0, s1, s2, s3, s4));
+    propagator.propagate_sync(propagation, detray::tie(s0, s2, s3, s4));
 
     // If a surface found, add the parameter for the next step
     if (s4.success) {

@@ -57,6 +57,11 @@ track_candidate_container_types::host find_tracks(
     const bound_track_parameters_collection_types::const_view& seeds_view,
     const finding_config& config) {
 
+    assert(config.min_step_length_for_next_surface >
+               math::fabs(config.propagation.navigation.overstep_tolerance) &&
+           "Min step length for the next surface should be higher than the "
+           "overstep tolerance");
+
     /*****************************************************************
      * Types used by the track finding
      *****************************************************************/

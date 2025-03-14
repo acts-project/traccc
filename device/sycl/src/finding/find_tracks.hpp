@@ -100,6 +100,11 @@ track_candidate_container_types::buffer find_tracks(
     const finding_config& config, const memory_resource& mr, vecmem::copy& copy,
     ::sycl::queue& queue) {
 
+    assert(config.min_step_length_for_next_surface >
+               math::fabs(config.propagation.navigation.overstep_tolerance) &&
+           "Min step length for the next surface should be higher than the "
+           "overstep tolerance");
+
     assert(is_contiguous_on<measurement_collection_types::const_device>(
         measurement_module_projection(), mr.main, copy, queue, measurements));
 
