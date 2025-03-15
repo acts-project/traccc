@@ -403,7 +403,8 @@ track_candidate_container_types::buffer find_tracks(
                                 details::global_index(item), config,
                                 {det, field, in_params, param_liveness,
                                  param_ids, current_candidate_links, step,
-                                 n_candidates, tips, n_tracks_per_seed});
+                                 n_candidates, tips, n_tracks_per_seed,
+                                 nullptr});
                         });
                 })
                 .wait_and_throw();
