@@ -40,6 +40,9 @@ struct measurement {
     /// Geometry ID
     detray::geometry::barcode surface_link;
 
+    /// The time of the measurement
+    scalar time = 0.f;
+
     // Unique measurement ID
     std::size_t measurement_id = 0;
 

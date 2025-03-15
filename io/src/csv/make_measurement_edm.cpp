@@ -45,6 +45,8 @@ traccc::measurement make_measurement_edm(
         }
     }
 
+    meas.time = csv_meas.time;
+
     meas.subs.set_indices(indices);
     if (acts_to_detray_id) {
         meas.surface_link = detray::geometry::barcode{
