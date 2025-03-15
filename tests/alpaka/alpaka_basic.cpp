@@ -1,7 +1,7 @@
 /**
  * TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -15,12 +15,7 @@
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/copy.hpp>
 
-#include "traccc/alpaka/utils/vecmem_types.hpp"
-
-#ifdef ALPAKA_ACC_SYCL_ENABLED
-#include <sycl/sycl.hpp>
-#include <vecmem/utils/sycl/queue_wrapper.hpp>
-#endif
+#include "traccc/alpaka/utils/get_vecmem_resource.hpp"
 
 // GoogleTest include(s).
 #include <gtest/gtest.h>
@@ -139,13 +134,13 @@ GTEST_TEST(AlpakaBasic, VecMemOp) {
 #ifdef ALPAKA_ACC_SYCL_ENABLED
     ::sycl::queue q;
     vecmem::sycl::queue_wrapper qw{&q};
-    traccc::alpaka::vecmem::device_copy vm_copy(qw);
+    traccc::alpaka::vecmem_resources::device_copy vm_copy(qw);
 #else
-    traccc::alpaka::vecmem::device_copy vm_copy;
+    traccc::alpaka::vecmem_resources::device_copy vm_copy;
 #endif
 
-    traccc::alpaka::vecmem::host_memory_resource host_mr;
-    traccc::alpaka::vecmem::device_memory_resource device_mr;
+    traccc::alpaka::vecmem_resources::host_memory_resource host_mr;
+    traccc::alpaka::vecmem_resources::device_memory_resource device_mr;
 
     vecmem::vector<float> host_vector{n, &host_mr};
 
