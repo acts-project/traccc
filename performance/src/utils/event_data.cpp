@@ -8,6 +8,7 @@
 // Local include(s).
 #include "traccc/utils/event_data.hpp"
 
+#include "traccc/edm/measurement.hpp"
 #include "traccc/io/csv/make_cell_reader.hpp"
 #include "traccc/io/csv/make_hit_reader.hpp"
 #include "traccc/io/csv/make_measurement_edm.hpp"
@@ -24,6 +25,7 @@
 #include <detray/io/frontend/detector_reader.hpp>
 
 // System include(s).
+#include <algorithm>
 #include <filesystem>
 
 namespace traccc {
@@ -148,6 +150,22 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
      * Make EDM maps    *
      ********************/
 
+    bool csv_measurements_have_time = false;
+
+    for (const auto& iomeas : csv_measurements) {
+        if (std::fabs(iomeas.time) != 0.f) {
+            csv_measurements_have_time = true;
+            break;
+        }
+    }
+
+    // TODO: Put some proper logging here in a future PR
+    if (csv_measurements_have_time) {
+        std::cout << "Using measurement time" << std::endl;
+    } else {
+        std::cout << "Using hit time" << std::endl;
+    }
+
     // Measurement map
     for (const auto& iomeas : csv_measurements) {
         // Construct the measurement object.
@@ -158,6 +176,14 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
         } else {
             meas = traccc::io::csv::make_measurement_edm(iomeas, nullptr);
         }
+
+        if (!csv_measurements_have_time) {
+            const auto hid = csv_meas_hit_ids.at(iomeas.measurement_id).hit_id;
+            const auto& iohit = csv_hits.at(hid);
+
+            meas.time = iohit.tt;
+        }
+
         m_measurement_map[iomeas.measurement_id] = meas;
     }
 
@@ -227,7 +253,14 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
         m_meas_to_param_map[meas] = std::make_pair(global_pos, global_mom);
 
         // Fill particle to measurement map
-        m_ptc_to_meas_map[ptc].push_back(meas);
+        auto& meas_vec = m_ptc_to_meas_map[ptc];
+
+        meas_vec.insert(std::upper_bound(
+                            meas_vec.begin(), meas_vec.end(), meas,
+                            [](const measurement& val, const measurement& old) {
+                                return old.time > val.time;
+                            }),
+                        meas);
 
         if (!include_silicon_cells) {
             auto insert_return = m_meas_to_ptc_map.insert({meas, {}});
