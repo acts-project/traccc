@@ -88,7 +88,7 @@ TRACCC_DEVICE inline void build_tracks(const global_index_t globalIndex,
         // Break the loop if the iterator is at the first candidate and fill the
         // seed and track quality
         if (it == cands_per_track.rend() - 1) {
-            seed = seeds.at(L.previous.second);
+            seed = seeds.at(L.seed_idx);
             trk_quality.ndf = ndf_sum - 5.f;
             trk_quality.chi2 = chi2_sum;
             trk_quality.n_holes = L.n_skipped;

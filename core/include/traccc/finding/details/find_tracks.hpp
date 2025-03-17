@@ -417,7 +417,7 @@ track_candidate_container_types::host find_tracks(
             // fill the seed
             if (it == cands_per_track.rend() - 1) {
 
-                auto cand_seed = seeds.at(L.previous.second);
+                auto cand_seed = seeds.at(L.seed_idx);
 
                 // Add seed and track candidates to the output container
                 output_candidates.push_back(
