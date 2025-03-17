@@ -102,10 +102,6 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     s4.min_step_length = cfg.min_step_length_for_next_surface;
     s4.max_count = cfg.max_step_counts_for_next_surface;
 
-    // @TODO: Should be removed once detray is fixed to set the volume in the
-    // constructor
-    propagation._navigation.set_volume(in_par.surface_link().volume());
-
     // Propagate to the next surface
     propagator.propagate_sync(propagation, detray::tie(s0, s2, s3, s4));
 

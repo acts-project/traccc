@@ -193,10 +193,6 @@ class kalman_fitter {
         propagation.set_particle(detail::correct_particle_hypothesis(
             m_cfg.ptc_hypothesis, seed_params));
 
-        // @TODO: Should be removed once detray is fixed to set the
-        // volume in the constructor
-        propagation._navigation.set_volume(seed_params.surface_link().volume());
-
         // Set overstep tolerance, stepper constraint and mask tolerance
         propagation._stepping
             .template set_constraint<detray::step::constraint::e_accuracy>(
@@ -276,9 +272,6 @@ class kalman_fitter {
 
             inflate_covariance(propagation._stepping.bound_params(),
                                m_cfg.covariance_inflation_factor);
-
-            propagation._navigation.set_volume(
-                last.smoothed().surface_link().volume());
 
             propagation._navigation.set_direction(
                 detray::navigation::direction::e_backward);
