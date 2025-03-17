@@ -366,24 +366,7 @@ track_candidate_container_types::host find_tracks(
         // Get the link corresponding to tip
         auto L = links.at(tip.first).at(tip.second);
 
-        // Count the number of skipped steps
-        unsigned int n_skipped{0u};
-        while (true) {
-
-            if (L.meas_idx >= n_meas) {
-                n_skipped++;
-            }
-
-            if (L.previous.first == 0u) {
-                break;
-            }
-
-            const unsigned long link_pos =
-                param_to_link.at(L.previous.first).at(L.previous.second);
-            L = links.at(L.previous.first).at(link_pos);
-        }
-
-        const unsigned int n_cands = tip.first + 1 - n_skipped;
+        const unsigned int n_cands = tip.first + 1 - L.n_skipped;
 
         // Skip if the number of tracks candidates is too small
         if (n_cands < config.min_track_candidates_per_track ||
