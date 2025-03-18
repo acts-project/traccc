@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -10,28 +10,32 @@
 // Project include(s).
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
 #include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
-#include "traccc/alpaka/clusterization/spacepoint_formation_algorithm.hpp"
+#include "traccc/alpaka/finding/finding_algorithm.hpp"
+#include "traccc/alpaka/fitting/fitting_algorithm.hpp"
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
+#include "traccc/alpaka/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
-#include "traccc/device/container_h2d_copy_alg.hpp"
-#include "traccc/edm/cell.hpp"
+#include "traccc/alpaka/utils/get_device_info.hpp"
+#include "traccc/alpaka/utils/get_vecmem_resource.hpp"
+#include "traccc/clusterization/clustering_config.hpp"
+#include "traccc/edm/silicon_cell_collection.hpp"
+#include "traccc/edm/track_state.hpp"
+#include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
+#include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/messaging.hpp"
 
+// Detray include(s).
+#include <detray/core/detector.hpp>
+#include <detray/detectors/bfield.hpp>
+#include <detray/navigation/navigator.hpp>
+#include <detray/propagator/propagator.hpp>
+#include <detray/propagator/rk_stepper.hpp>
+
 // VecMem include(s).
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-#include <vecmem/memory/cuda/device_memory_resource.hpp>
-#include <vecmem/utils/cuda/copy.hpp>
-#endif
-
-#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
-#include <vecmem/memory/hip/device_memory_resource.hpp>
-#include <vecmem/utils/hip/copy.hpp>
-#endif
-
+#include <vecmem/containers/vector.hpp>
 #include <vecmem/memory/binary_page_memory_resource.hpp>
-#include <vecmem/memory/memory_resource.hpp>
-#include <vecmem/utils/copy.hpp>
 
 // System include(s).
 #include <memory>
@@ -43,24 +47,58 @@ namespace traccc::alpaka {
 /// At least as much as is implemented in the project at any given moment.
 ///
 class full_chain_algorithm
-    : public algorithm<bound_track_parameters_collection_types::host(
-          const cell_collection_types::host&,
-          const cell_module_collection_types::host&)>,
+    : public algorithm<vecmem::vector<fitting_result<default_algebra>>(
+          const edm::silicon_cell_collection::host&)>,
       public messaging {
 
     public:
+    /// @name Type declaration(s)
+    /// @{
+
+    /// (Host) Detector type used during track finding and fitting
+    using host_detector_type = traccc::default_detector::host;
+    /// (Device) Detector type used during track finding and fitting
+    using device_detector_type = traccc::default_detector::device;
+
+    using scalar_type = device_detector_type::scalar_type;
+
+    /// Stepper type used by the track finding and fitting algorithms
+    using stepper_type =
+        detray::rk_stepper<detray::bfield::const_field_t<scalar_type>::view_t,
+                           device_detector_type::algebra_type,
+                           detray::constrained_step<scalar_type>>;
+    /// Navigator type used by the track finding and fitting algorithms
+    using navigator_type = detray::navigator<const device_detector_type>;
+    /// Spacepoint formation algorithm type
+    using spacepoint_formation_algorithm =
+        traccc::alpaka::spacepoint_formation_algorithm<
+            traccc::default_detector::device>;
+    /// Clustering algorithm type
+    using clustering_algorithm = traccc::alpaka::clusterization_algorithm;
+    /// Track finding algorithm type
+    using finding_algorithm =
+        traccc::alpaka::finding_algorithm<stepper_type, navigator_type>;
+    /// Track fitting algorithm type
+    using fitting_algorithm = traccc::alpaka::fitting_algorithm<
+        traccc::kalman_fitter<stepper_type, navigator_type>>;
+
+    /// @}
+
     /// Algorithm constructor
     ///
     /// @param mr The memory resource to use for the intermediate and result
     ///           objects
-    /// @param target_cells_per_partition The average number of cells in each
-    /// partition.
     ///
     full_chain_algorithm(vecmem::memory_resource& host_mr,
-                         const unsigned short target_cells_per_partiton,
+                         const clustering_config& clustering_config,
                          const seedfinder_config& finder_config,
                          const spacepoint_grid_config& grid_config,
-                         const seedfilter_config& filter_config);
+                         const seedfilter_config& filter_config,
+                         const finding_algorithm::config_type& finding_config,
+                         const fitting_algorithm::config_type& fitting_config,
+                         const silicon_detector_description::host& det_descr,
+                         host_detector_type* detector,
+                         std::unique_ptr<const traccc::Logger> logger);
 
     /// Copy constructor
     ///
@@ -81,37 +119,45 @@ class full_chain_algorithm
     /// @return The track parameters reconstructed
     ///
     output_type operator()(
-        const cell_collection_types::host& cells,
-        const cell_module_collection_types::host& modules) const override;
+        const edm::silicon_cell_collection::host& cells) const override;
 
     private:
     /// Host memory resource
-    vecmem::memory_resource& m_host_mr;
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-    /// Device memory resource
-    vecmem::cuda::device_memory_resource m_device_mr;
-    /// Memory copy object
-    vecmem::cuda::copy m_copy;
-#elif ALPAKA_ACC_GPU_HIP_ENABLED
-    /// Device memory resource
-    vecmem::hip::device_memory_resource m_device_mr;
-    /// Memory copy object
-    vecmem::hip::copy m_copy;
-#else
-    /// Device memory resource
-    vecmem::memory_resource& m_device_mr;
-    /// Memory copy object
-    vecmem::copy m_copy;
+    ::vecmem::memory_resource& m_host_mr;
+
+#if defined(ALPAKA_ACC_SYCL_ENABLED)
+    /// The SYCL queue to use for the computations
+    ::sycl::queue m_queue;
+    vecmem::sycl::queue_wrapper m_queue_wrapper;
 #endif
+
+    /// Device memory resource
+    traccc::alpaka::vecmem_resources::device_memory_resource m_device_mr;
+    /// Memory copy object
+    traccc::alpaka::vecmem_resources::device_copy m_copy;
     /// Device caching memory resource
-    std::unique_ptr<vecmem::binary_page_memory_resource> m_cached_device_mr;
+    std::unique_ptr<::vecmem::binary_page_memory_resource> m_cached_device_mr;
+
+    /// Constant B field for the (seed) track parameter estimation
+    traccc::vector3 m_field_vec;
+    /// Constant B field for the track finding and fitting
+    detray::bfield::const_field_t<traccc::scalar> m_field;
+
+    /// Detector description
+    std::reference_wrapper<const silicon_detector_description::host>
+        m_det_descr;
+    /// Detector description buffer
+    silicon_detector_description::buffer m_device_det_descr;
+    /// Host detector
+    host_detector_type* m_detector;
+    /// Buffer holding the detector's payload on the device
+    host_detector_type::buffer_type m_device_detector;
+    /// View of the detector's payload on the device
+    host_detector_type::view_type m_device_detector_view;
 
     /// @name Sub-algorithms used by this full-chain algorithm
     /// @{
 
-    /// The average number of cells in each partition.
-    /// Adapt to different GPUs' capabilities.
-    unsigned short m_target_cells_per_partition;
     /// Clusterization algorithm
     clusterization_algorithm m_clusterization;
     /// Measurement sorting algorithm
@@ -123,10 +169,29 @@ class full_chain_algorithm
     /// Track parameter estimation algorithm
     track_params_estimation m_track_parameter_estimation;
 
-    /// Configs
+    /// Track finding algorithm
+    finding_algorithm m_finding;
+    /// Track fitting algorithm
+    fitting_algorithm m_fitting;
+
+    /// @}
+
+    /// @name Algorithm configurations
+    /// @{
+
+    /// Configuration for clustering
+    clustering_config m_clustering_config;
+    /// Configuration for the seed finding
     seedfinder_config m_finder_config;
+    /// Configuration for the spacepoint grid formation
     spacepoint_grid_config m_grid_config;
+    /// Configuration for the seed filtering
     seedfilter_config m_filter_config;
+
+    /// Configuration for the track finding
+    finding_algorithm::config_type m_finding_config;
+    /// Configuration for the track fitting
+    fitting_algorithm::config_type m_fitting_config;
 
     /// @}
 

@@ -30,3 +30,19 @@ traccc_add_executable( seq_example_alpaka "seq_example_alpaka.cpp"
     LINK_LIBRARIES ${LIBRARIES} ${DETRAY} )
 traccc_add_executable( seeding_example_alpaka "seeding_example_alpaka.cpp"
     LINK_LIBRARIES ${LIBRARIES} )
+
+#
+# Set up the "throughput applications".
+#
+add_library( traccc_examples_alpaka STATIC
+   "full_chain_algorithm.hpp"
+   "full_chain_algorithm.cpp" )
+target_link_libraries( traccc_examples_alpaka
+   PUBLIC alpaka::alpaka vecmem::core detray::core detray::detectors
+   traccc::core traccc::device_common traccc::alpaka ${EXTRA_LIBS})
+
+traccc_add_executable( throughput_st_alpaka "throughput_st.cpp"
+   LINK_LIBRARIES indicators::indicators ${LIBRARIES} ${DETRAY} traccc_examples_alpaka )
+
+traccc_add_executable( throughput_mt_alpaka "throughput_mt.cpp"
+   LINK_LIBRARIES TBB::tbb indicators::indicators ${LIBRARIES} ${DETRAY} traccc_examples_alpaka )
