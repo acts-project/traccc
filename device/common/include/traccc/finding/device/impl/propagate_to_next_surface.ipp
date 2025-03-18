@@ -17,7 +17,7 @@
 namespace traccc::device {
 
 template <typename propagator_t, typename bfield_t>
-TRACCC_DEVICE inline void propagate_to_next_surface(
+TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     const global_index_t globalIndex, const finding_config& cfg,
     const propagate_to_next_surface_payload<propagator_t, bfield_t>& payload) {
 
@@ -39,6 +39,7 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
 
     // Seed id
     unsigned int orig_param_id = links.at(param_id).seed_idx;
+    unsigned int step = payload.step;
 
     // Count the number of tracks per seed
     vecmem::device_atomic_ref<unsigned int> num_tracks_per_seed(
@@ -59,7 +60,7 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
 
     if (links.at(param_id).n_skipped > cfg.max_num_skipping_per_cand) {
         params_liveness[param_id] = 0u;
-        tips.push_back({payload.step, param_id});
+        tips.push_back({step, param_id});
         return;
     }
 
@@ -109,8 +110,8 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     if (s4.success) {
         params[param_id] = propagation._stepping.bound_params();
 
-        if (payload.step == cfg.max_track_candidates_per_track - 1) {
-            tips.push_back({payload.step, param_id});
+        if (step == cfg.max_track_candidates_per_track - 1) {
+            tips.push_back({step, param_id});
             params_liveness[param_id] = 0u;
         } else {
             params_liveness[param_id] = 1u;
@@ -118,8 +119,8 @@ TRACCC_DEVICE inline void propagate_to_next_surface(
     } else {
         params_liveness[param_id] = 0u;
 
-        if (payload.step >= cfg.min_track_candidates_per_track - 1) {
-            tips.push_back({payload.step, param_id});
+        if (step >= cfg.min_track_candidates_per_track - 1) {
+            tips.push_back({step, param_id});
         }
     }
 }
