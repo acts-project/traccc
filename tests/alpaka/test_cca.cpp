@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -17,7 +17,7 @@
 
 #include "tests/cca_test.hpp"
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
-#include "traccc/alpaka/utils/vecmem_types.hpp"
+#include "traccc/alpaka/utils/get_vecmem_resource.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 
 namespace {
@@ -32,13 +32,13 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
 #ifdef ALPAKA_ACC_SYCL_ENABLED
         ::sycl::queue q;
         vecmem::sycl::queue_wrapper qw{&q};
-        traccc::alpaka::vecmem::host_memory_resource host_mr(qw);
-        traccc::alpaka::vecmem::device_copy copy(qw);
-        traccc::alpaka::vecmem::device_memory_resource device_mr;
+        traccc::alpaka::vecmem_resources::host_memory_resource host_mr(qw);
+        traccc::alpaka::vecmem_resources::device_copy copy(qw);
+        traccc::alpaka::vecmem_resources::device_memory_resource device_mr;
 #else
-        traccc::alpaka::vecmem::host_memory_resource host_mr;
-        traccc::alpaka::vecmem::device_copy copy;
-        traccc::alpaka::vecmem::device_memory_resource device_mr;
+        traccc::alpaka::vecmem_resources::host_memory_resource host_mr;
+        traccc::alpaka::vecmem_resources::device_copy copy;
+        traccc::alpaka::vecmem_resources::device_memory_resource device_mr;
 #endif
 
         traccc::alpaka::clusterization_algorithm cc({device_mr}, copy, cfg);
