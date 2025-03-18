@@ -23,12 +23,12 @@ namespace traccc::alpaka::details {
 /// An Alpaka thread identifier type
 template <typename TAcc>
 struct thread_id1 {
-    ALPAKA_FN_INLINE ALPAKA_FN_ACC explicit thread_id1(const TAcc* acc)
+    ALPAKA_FN_INLINE ALPAKA_FN_ACC explicit thread_id1(const TAcc& acc)
         : m_acc(acc) {}
 
     unsigned int inline ALPAKA_FN_ACC getLocalThreadId() const {
         return static_cast<unsigned int>(
-            ::alpaka::getIdx<::alpaka::Block, ::alpaka::Threads>(*m_acc)[0u]);
+            ::alpaka::getIdx<::alpaka::Block, ::alpaka::Threads>(m_acc)[0u]);
     }
 
     unsigned int inline ALPAKA_FN_ACC getLocalThreadIdX() const {
@@ -45,22 +45,22 @@ struct thread_id1 {
 
     unsigned int inline ALPAKA_FN_ACC getBlockIdX() const {
         return static_cast<unsigned int>(
-            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Blocks>(*m_acc)[0u]);
+            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Blocks>(m_acc)[0u]);
     }
 
     unsigned int inline ALPAKA_FN_ACC getBlockDimX() const {
         return static_cast<unsigned int>(
             ::alpaka::getWorkDiv<::alpaka::Block, ::alpaka::Threads>(
-                *m_acc)[0u]);
+                m_acc)[0u]);
     }
 
     unsigned int inline ALPAKA_FN_ACC getGridDimX() const {
         return static_cast<unsigned int>(
-            ::alpaka::getWorkDiv<::alpaka::Grid, ::alpaka::Blocks>(*m_acc)[0u]);
+            ::alpaka::getWorkDiv<::alpaka::Grid, ::alpaka::Blocks>(m_acc)[0u]);
     }
 
     private:
-    const TAcc* m_acc;
+    const TAcc& m_acc;
 };
 
 /// Verify that @c traccc::alpaka::details::thread_id1 fulfills the

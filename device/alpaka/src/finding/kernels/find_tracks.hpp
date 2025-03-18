@@ -28,7 +28,7 @@ struct FindTracksKernel {
         unsigned int* shared_num_candidates = s;
 
         alpaka::barrier<TAcc> barrier(&acc);
-        details::thread_id1 thread_id(&acc);
+        details::thread_id1 thread_id(acc);
 
         unsigned int blockDimX = thread_id.getBlockDimX();
         std::pair<unsigned int, unsigned int>* shared_candidates =
