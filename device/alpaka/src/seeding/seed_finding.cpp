@@ -210,9 +210,7 @@ edm::seed_collection::buffer seed_finding::operator()(
     auto queue = Queue{devAcc};
     auto const deviceProperties = ::alpaka::getAccDevProps<Acc>(devAcc);
     auto maxThreads = deviceProperties.m_blockThreadExtentMax[0];
-    Idx threadsPerBlock = getWarpSize<Acc>() * 2 < maxThreads
-                              ? getWarpSize<Acc>() * 2
-                              : maxThreads;
+    Idx threadsPerBlock = std::min(getWarpSize<Acc>() * 2, maxThreads);
 
     // Get the sizes from the grid view
     auto grid_sizes = m_copy.get_sizes(g2_view._data_view);
@@ -360,11 +358,6 @@ edm::seed_collection::buffer seed_finding::operator()(
                         vecmem::get_data(triplet_buffer));
     ::alpaka::wait(queue);
 
-    // Calculate the number of threads and thread blocks to run the weight
-    // updating kernel for.
-    threadsPerBlock = getWarpSize<Acc>() * 2 < maxThreads
-                          ? getWarpSize<Acc>() * 2
-                          : maxThreads;
     blocksPerGrid =
         (pBufHost_counter->m_nTriplets + threadsPerBlock - 1) / threadsPerBlock;
     workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
