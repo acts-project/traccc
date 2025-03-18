@@ -325,10 +325,6 @@ track_candidate_container_types::host find_tracks(
             s4.min_step_length = config.min_step_length_for_next_surface;
             s4.max_count = config.max_step_counts_for_next_surface;
 
-            // @TODO: Should be removed once detray is fixed to set the
-            // volume in the constructor
-            propagation._navigation.set_volume(param.surface_link().volume());
-
             // Propagate to the next surface
             propagator.propagate_sync(propagation,
                                       detray::tie(s0, s1, s2, s3, s4));
@@ -370,24 +366,7 @@ track_candidate_container_types::host find_tracks(
         // Get the link corresponding to tip
         auto L = links.at(tip.first).at(tip.second);
 
-        // Count the number of skipped steps
-        unsigned int n_skipped{0u};
-        while (true) {
-
-            if (L.meas_idx >= n_meas) {
-                n_skipped++;
-            }
-
-            if (L.previous.first == 0u) {
-                break;
-            }
-
-            const unsigned long link_pos =
-                param_to_link.at(L.previous.first).at(L.previous.second);
-            L = links.at(L.previous.first).at(link_pos);
-        }
-
-        const unsigned int n_cands = tip.first + 1 - n_skipped;
+        const unsigned int n_cands = tip.first + 1 - L.n_skipped;
 
         // Skip if the number of tracks candidates is too small
         if (n_cands < config.min_track_candidates_per_track ||
@@ -438,7 +417,7 @@ track_candidate_container_types::host find_tracks(
             // fill the seed
             if (it == cands_per_track.rend() - 1) {
 
-                auto cand_seed = seeds.at(L.previous.second);
+                auto cand_seed = seeds.at(L.seed_idx);
 
                 // Add seed and track candidates to the output container
                 output_candidates.push_back(

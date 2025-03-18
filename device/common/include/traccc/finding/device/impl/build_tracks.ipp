@@ -44,24 +44,7 @@ TRACCC_HOST_DEVICE inline void build_tracks(
     auto L = links[tip.first][tip.second];
     const unsigned int n_meas = measurements.size();
 
-    // Count the number of skipped steps
-    unsigned int n_skipped{0u};
-    while (true) {
-        if (L.meas_idx > n_meas) {
-            n_skipped++;
-        }
-
-        if (L.previous.first == 0u) {
-            break;
-        }
-
-        L = links[L.previous.first][L.previous.second];
-    }
-
-    // Retrieve tip
-    L = links[tip.first][tip.second];
-
-    const unsigned int n_cands = tip.first + 1 - n_skipped;
+    const unsigned int n_cands = tip.first + 1 - L.n_skipped;
 
     // Resize the candidates with the exact size
     cands_per_track.resize(n_cands);
@@ -105,7 +88,7 @@ TRACCC_HOST_DEVICE inline void build_tracks(
         // Break the loop if the iterator is at the first candidate and fill the
         // seed and track quality
         if (it == cands_per_track.rend() - 1) {
-            seed = seeds.at(L.previous.second);
+            seed = seeds.at(L.seed_idx);
             trk_quality.ndf = ndf_sum - 5.f;
             trk_quality.chi2 = chi2_sum;
             trk_quality.n_holes = L.n_skipped;
