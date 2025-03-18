@@ -56,6 +56,9 @@ traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   "src/finding/kernels/build_tracks.hpp"
   "src/finding/kernels/find_tracks.hpp"
   "src/finding/kernels/propagate_to_next_surface.hpp"
+  # Fitting
+  "include/traccc/alpaka/fitting/fitting_algorithm.hpp"
+  "src/fitting/fitting_algorithm.cpp"
 )
 
 # Set up Thrust specifically for the traccc::alpaka library.
