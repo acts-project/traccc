@@ -15,6 +15,8 @@
 // Project include(s)
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/clusterization/device/ccl_kernel.hpp"
+#include "traccc/utils/projections.hpp"
+#include "traccc/utils/relations.hpp"
 
 // System include(s).
 #include <algorithm>
@@ -81,7 +83,13 @@ clusterization_algorithm::clusterization_algorithm(
       m_gf_backup(m_config.backup_size(), m_mr.main),
       m_adjc_backup(m_config.backup_size(), m_mr.main),
       m_adjv_backup(m_config.backup_size() * 8, m_mr.main),
-      m_backup_mutex(vecmem::make_unique_alloc<unsigned int>(m_mr.main)) {}
+      m_backup_mutex(vecmem::make_unique_alloc<unsigned int>(m_mr.main)) {
+
+    m_copy.get().setup(m_f_backup)->wait();
+    m_copy.get().setup(m_gf_backup)->wait();
+    m_copy.get().setup(m_adjc_backup)->wait();
+    m_copy.get().setup(m_adjv_backup)->wait();
+}
 
 clusterization_algorithm::output_type clusterization_algorithm::operator()(
     const edm::silicon_cell_collection::const_view& cells,
