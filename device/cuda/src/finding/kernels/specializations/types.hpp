@@ -15,9 +15,9 @@
 #include "traccc/utils/detector_type_utils.hpp"
 #include "traccc/utils/propagation.hpp"
 
-namespace traccc::cuda::kernels {
+namespace traccc::cuda {
 using default_finding_algorithm =
     finding_algorithm<stepper_for_t<traccc::default_detector::device>,
                       navigator_for_t<traccc::default_detector::device>>;
 
-}  // namespace traccc::cuda::kernels
+}  // namespace traccc::cuda
