@@ -24,7 +24,7 @@ if( "${CMAKE_CUDA_COMPILER_ID}" MATCHES "NVIDIA" )
 endif()
 
 # Set the CUDA architecture to build code for.
-set( CMAKE_CUDA_ARCHITECTURES "52" CACHE STRING
+set( CMAKE_CUDA_ARCHITECTURES "75" CACHE STRING
    "CUDA architectures to build device code for" )
 
 # Allow to use functions in device code that are constexpr, even if they are
