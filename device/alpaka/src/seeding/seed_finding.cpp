@@ -209,7 +209,7 @@ edm::seed_collection::buffer seed_finding::operator()(
     auto devHost = ::alpaka::getDevByIdx(::alpaka::Platform<Host>{}, 0u);
     auto queue = Queue{devAcc};
     auto const deviceProperties = ::alpaka::getAccDevProps<Acc>(devAcc);
-    auto maxThreads = deviceProperties.m_blockThreadExtentMax[0];
+    Idx maxThreads = deviceProperties.m_blockThreadExtentMax[0];
     Idx threadsPerBlock = std::min(getWarpSize<Acc>() * 2, maxThreads);
 
     // Get the sizes from the grid view
