@@ -225,7 +225,32 @@ using track_state_container_types =
     container_types<fitting_result<default_algebra>,
                     track_state<default_algebra>>;
 
-inline std::size_t count_fitted_tracks(
+inline void print_fitted_tracks_statistics(
+    const track_state_container_types::host& track_states) {
+    const std::size_t n_tracks = track_states.size();
+    std::size_t success = 0;
+    std::size_t non_positive_ndf = 0;
+    std::size_t not_all_smoothed = 0;
+
+    for (std::size_t i = 0; i < n_tracks; i++) {
+        if (track_states.at(i).header.fit_outcome == fitter_outcome::SUCCESS) {
+            success++;
+        } else if (track_states.at(i).header.fit_outcome ==
+                   fitter_outcome::FAILURE_NON_POSITIVE_NDF) {
+            non_positive_ndf++;
+        } else if (track_states.at(i).header.fit_outcome ==
+                   fitter_outcome::FAILURE_NOT_ALL_SMOOTHED) {
+            not_all_smoothed++;
+        }
+    }
+
+    std::cout << "Success: " << success
+              << "  Non positive NDF: " << non_positive_ndf
+              << "  Not all smoothed: " << not_all_smoothed
+              << "  Total: " << n_tracks << std::endl;
+}
+
+inline std::size_t count_successfully_fitted_tracks(
     const track_state_container_types::host& track_states) {
 
     const std::size_t n_tracks = track_states.size();

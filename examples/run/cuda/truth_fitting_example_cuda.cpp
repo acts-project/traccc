@@ -138,6 +138,7 @@ int main(int argc, char* argv[]) {
     traccc::cuda::stream stream;
 
     // Copy object
+    vecmem::copy host_copy;
     vecmem::cuda::async_copy async_copy{stream.cudaStream()};
 
     traccc::device::container_h2d_copy_alg<
@@ -162,7 +163,7 @@ int main(int argc, char* argv[]) {
     fit_cfg.propagation = propagation_opts;
 
     traccc::host::kalman_fitting_algorithm host_fitting(
-        fit_cfg, host_mr, logger().clone("HostFittingAlg"));
+        fit_cfg, host_mr, host_copy, logger().clone("HostFittingAlg"));
     traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
         fit_cfg, mr, async_copy, stream, logger().clone("CudaFittingAlg"));
 

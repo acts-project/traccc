@@ -140,6 +140,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::default_detector::view det_view = detray::get_data(host_det);
 
     // Copy objects
+    vecmem::copy host_copy;
     vecmem::cuda::copy copy;
 
     traccc::device::container_d2h_copy_alg<
@@ -190,7 +191,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     fit_cfg.propagation = propagation_config;
 
     traccc::host::kalman_fitting_algorithm host_fitting(
-        fit_cfg, host_mr, logger().clone("HostFittingAlg"));
+        fit_cfg, host_mr, host_copy, logger().clone("HostFittingAlg"));
     traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
         fit_cfg, mr, async_copy, stream, logger().clone("CudaFittingAlg"));
 
