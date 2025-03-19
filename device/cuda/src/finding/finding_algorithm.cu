@@ -199,10 +199,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             const unsigned int nBlocks =
                 (n_in_params + nThreads - 1) / nThreads;
 
-            kernels::apply_interaction<std::decay_t<detector_type>>
-                <<<nBlocks, nThreads, 0, stream>>>(
-                    m_cfg, {det_view, n_in_params, in_params_buffer,
-                            param_liveness_buffer});
+            kernels::apply_interaction<std::decay_t<detector_type>>(
+                nBlocks, nThreads, 0, stream, m_cfg,
+                {det_view, n_in_params, in_params_buffer,
+                 param_liveness_buffer});
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
         }
 
@@ -245,18 +245,18 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             TRACCC_CUDA_ERROR_CHECK(cudaMemsetAsync(
                 n_candidates_device.get(), 0, sizeof(unsigned int), stream));
 
-            kernels::find_tracks<std::decay_t<detector_type>>
-                <<<nBlocks, nThreads,
-                   nThreads * sizeof(unsigned int) +
-                       2 * nThreads *
-                           sizeof(std::pair<unsigned int, unsigned int>),
-                   stream>>>(
-                    m_cfg, {det_view, measurements, in_params_buffer,
-                            param_liveness_buffer, n_in_params, barcodes_buffer,
-                            upper_bounds_buffer, link_map[prev_step], step,
-                            n_max_candidates, updated_params_buffer,
-                            updated_liveness_buffer, link_map[step],
-                            n_candidates_device.get()});
+            kernels::find_tracks<std::decay_t<detector_type>>(
+                nBlocks, nThreads,
+                nThreads * sizeof(unsigned int) +
+                    2 * nThreads *
+                        sizeof(std::pair<unsigned int, unsigned int>),
+                stream, m_cfg,
+                {det_view, measurements, in_params_buffer,
+                 param_liveness_buffer, n_in_params, barcodes_buffer,
+                 upper_bounds_buffer, link_map[prev_step], step,
+                 n_max_candidates, updated_params_buffer,
+                 updated_liveness_buffer, link_map[step],
+                 n_candidates_device.get()});
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
             std::swap(in_params_buffer, updated_params_buffer);
@@ -314,12 +314,12 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 const unsigned int nBlocks =
                     (n_candidates + nThreads - 1) / nThreads;
                 kernels::propagate_to_next_surface<
-                    std::decay_t<propagator_type>, std::decay_t<bfield_type>>
-                    <<<nBlocks, nThreads, 0, stream>>>(
-                        m_cfg, {det_view, field_view, in_params_buffer,
-                                param_liveness_buffer, param_ids_buffer,
-                                link_map[step], step, n_candidates, tips_buffer,
-                                n_tracks_per_seed_buffer});
+                    std::decay_t<propagator_type>, std::decay_t<bfield_type>>(
+                    nBlocks, nThreads, 0, stream, m_cfg,
+                    {det_view, field_view, in_params_buffer,
+                     param_liveness_buffer, param_ids_buffer, link_map[step],
+                     step, n_candidates, tips_buffer,
+                     n_tracks_per_seed_buffer});
                 TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
                 m_stream.synchronize();
