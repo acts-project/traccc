@@ -188,9 +188,9 @@ track_candidate_container_types::buffer find_tracks(
         link_map;
 
     // Create a buffer of tip links
-    vecmem::data::vector_buffer<typename candidate_link::link_index_type>
-        tips_buffer{config.max_num_branches_per_seed * n_seeds, mr.main,
-                    vecmem::data::buffer_type::resizable};
+    vecmem::data::vector_buffer<candidate_tip> tips_buffer{
+        config.max_num_branches_per_seed * n_seeds, mr.main,
+        vecmem::data::buffer_type::resizable};
     copy.setup(tips_buffer)->wait();
 
     // Link size

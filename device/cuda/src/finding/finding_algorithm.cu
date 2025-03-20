@@ -147,7 +147,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             (barcodes_buffer.size() + nThreads - 1) / nThreads;
 
         kernels::make_barcode_sequence<<<nBlocks, nThreads, 0, stream>>>(
-            {uniques_buffer, barcodes_buffer});
+            device::make_barcode_sequence_payload{
+                .uniques_view = uniques_buffer,
+                .barcodes_view = barcodes_buffer});
 
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
     }
@@ -175,9 +177,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         link_map;
 
     // Create a buffer of tip links
-    vecmem::data::vector_buffer<typename candidate_link::link_index_type>
-        tips_buffer{m_cfg.max_num_branches_per_seed * n_seeds, m_mr.main,
-                    vecmem::data::buffer_type::resizable};
+    vecmem::data::vector_buffer<candidate_tip> tips_buffer{
+        m_cfg.max_num_branches_per_seed * n_seeds, m_mr.main,
+        vecmem::data::buffer_type::resizable};
     m_copy.setup(tips_buffer)->wait();
 
     // Link size
@@ -199,10 +201,14 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             const unsigned int nBlocks =
                 (n_in_params + nThreads - 1) / nThreads;
 
-            kernels::apply_interaction<std::decay_t<detector_type>>
-                <<<nBlocks, nThreads, 0, stream>>>(
-                    m_cfg, {det_view, n_in_params, in_params_buffer,
-                            param_liveness_buffer});
+            kernels::apply_interaction<
+                std::decay_t<detector_type>><<<nBlocks, nThreads, 0, stream>>>(
+                m_cfg,
+                device::apply_interaction_payload<std::decay_t<detector_type>>{
+                    .det_data = det_view,
+                    .n_params = n_in_params,
+                    .params_view = in_params_buffer,
+                    .params_liveness_view = param_liveness_buffer});
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
         }
 
@@ -222,13 +228,11 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 n_in_params * m_cfg.max_num_branches_per_surface;
 
             bound_track_parameters_collection_types::buffer
-                updated_params_buffer(
-                    n_in_params * m_cfg.max_num_branches_per_surface,
-                    m_mr.main);
+                updated_params_buffer(n_max_candidates, m_mr.main);
             m_copy.setup(updated_params_buffer)->ignore();
 
             vecmem::data::vector_buffer<unsigned int> updated_liveness_buffer(
-                n_in_params * m_cfg.max_num_branches_per_surface, m_mr.main);
+                n_max_candidates, m_mr.main);
             m_copy.setup(updated_liveness_buffer)->ignore();
 
             // Create the link map
@@ -251,12 +255,22 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                        2 * nThreads *
                            sizeof(std::pair<unsigned int, unsigned int>),
                    stream>>>(
-                    m_cfg, {det_view, measurements, in_params_buffer,
-                            param_liveness_buffer, n_in_params, barcodes_buffer,
-                            upper_bounds_buffer, link_map[prev_step], step,
-                            n_max_candidates, updated_params_buffer,
-                            updated_liveness_buffer, link_map[step],
-                            n_candidates_device.get()});
+                    m_cfg,
+                    device::find_tracks_payload<std::decay_t<detector_type>>{
+                        .det_data = det_view,
+                        .measurements_view = measurements,
+                        .in_params_view = in_params_buffer,
+                        .in_params_liveness_view = param_liveness_buffer,
+                        .n_in_params = n_in_params,
+                        .barcodes_view = barcodes_buffer,
+                        .upper_bounds_view = upper_bounds_buffer,
+                        .prev_links_view = link_map[prev_step],
+                        .step = step,
+                        .n_max_candidates = n_max_candidates,
+                        .out_params_view = updated_params_buffer,
+                        .out_params_liveness_view = updated_liveness_buffer,
+                        .links_view = link_map[step],
+                        .n_total_candidates = n_candidates_device.get()});
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
             std::swap(in_params_buffer, updated_params_buffer);
@@ -287,7 +301,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 const unsigned int nBlocks =
                     (n_candidates + nThreads - 1) / nThreads;
                 kernels::fill_sort_keys<<<nBlocks, nThreads, 0, stream>>>(
-                    {in_params_buffer, keys_buffer, param_ids_buffer});
+                    device::fill_sort_keys_payload{
+                        .params_view = in_params_buffer,
+                        .keys_view = keys_buffer,
+                        .ids_view = param_ids_buffer});
                 TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
                 // Sort the key and values
@@ -316,9 +333,20 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 kernels::propagate_to_next_surface<
                     std::decay_t<propagator_type>, std::decay_t<bfield_type>>
                     <<<nBlocks, nThreads, 0, stream>>>(
-                        m_cfg, {det_view, field_view, in_params_buffer,
-                                param_liveness_buffer, param_ids_buffer,
-                                link_map[step], step, n_candidates, tips_buffer,
+                        m_cfg,
+                        device::propagate_to_next_surface_payload<
+                            std::decay_t<propagator_type>,
+                            std::decay_t<bfield_type>>{
+                            .det_data = det_view,
+                            .field_data = field_view,
+                            .params_view = in_params_buffer,
+                            .params_liveness_view = param_liveness_buffer,
+                            .param_ids_view = param_ids_buffer,
+                            .links_view = link_map[step],
+                            .step = step,
+                            .n_in_params = n_candidates,
+                            .tips_view = tips_buffer,
+                            .n_tracks_per_seed_view =
                                 n_tracks_per_seed_buffer});
                 TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
@@ -384,9 +412,14 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         const unsigned int nBlocks = (n_tips_total + nThreads - 1) / nThreads;
 
         kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(
-            m_cfg, {measurements, seeds_buffer, links_buffer, tips_buffer,
-                    track_candidates_buffer, valid_indices_buffer,
-                    n_valid_tracks_device.get()});
+            m_cfg, device::build_tracks_payload{
+                       .measurements_view = measurements,
+                       .seeds_view = seeds_buffer,
+                       .links_view = links_buffer,
+                       .tips_view = tips_buffer,
+                       .track_candidates_view = track_candidates_buffer,
+                       .valid_indices_view = valid_indices_buffer,
+                       .n_valid_tracks = n_valid_tracks_device.get()});
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
         // Global counter object: Device -> Host
@@ -412,8 +445,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         const unsigned int nBlocks = (n_valid_tracks + nThreads - 1) / nThreads;
 
         kernels::prune_tracks<<<nBlocks, nThreads, 0, stream>>>(
-            {track_candidates_buffer, valid_indices_buffer,
-             prune_candidates_buffer});
+            device::prune_tracks_payload{
+                .track_candidates_view = track_candidates_buffer,
+                .valid_indices_view = valid_indices_buffer,
+                .prune_candidates_view = prune_candidates_buffer});
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
     }
 
