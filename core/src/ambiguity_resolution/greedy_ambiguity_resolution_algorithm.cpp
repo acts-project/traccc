@@ -41,80 +41,75 @@ track_state_container_types::host
 greedy_ambiguity_resolution_algorithm::operator()(
     const typename track_state_container_types::host& track_states) const {
 
+    /*
     state_t state;
     compute_initial_state(track_states, state);
     resolve(state);
 
-    if (_config.check_obvious_errs) {
-        TRACCC_DEBUG("Checking result validity...");
-        check_obvious_errors(track_states, state);
+    assert(check_obvious_errors(track_states, state));
+    */
+
+    const std::size_t n_tracks = track_states.size();
+
+    for (std::size_t i_trk = 0; i_trk < n_track_states; ++i_trk) {
+        auto const& [fit_res, states] = track_states.at(i_trk);
+
+        // Kick out tracks that do not fulfill our initial requirements
+        if (states.size() < m_config.min_measurements_per_track) {
+            continue;
+        }
     }
+
+    // Vector of pairs of < measurement ID, number of occurences in patterns >
+    //vecmem::vector<traccc::pair<std::size_t, unsigned int>> meas_id_occurence;
+
+    // Number of shared measurements per track
+    vecmem::vector<std::size_t> n_shared_meas_per_track;
+    n_shared_meas_per_track.reserve(n_tracks);
+
+    // Vector of unique measurement ids
+    vecmem::vector<std::size_t> meas_ids;
+    // Vector of vector of track ids associated with each measurement id
+    vecmem::jagged_vector<std::size_t> track_ids;
+
+
 
     // Copy the tracks to be retained in the return value
-
-    track_state_container_types::host res;
-    res.reserve(state.selected_tracks.size());
-
-    TRACCC_DEBUG(
-        "state.selected_tracks.size() = " << state.selected_tracks.size());
+    track_state_container_types::host output;
+    output.reserve(state.selected_tracks.size());
 
     for (std::size_t index : state.selected_tracks) {
-        // track_states is a host_container<fitting_result<default_algebra>,
-        // track_state<default_algebra>>
-        auto const [sm_headers, sm_items] = track_states.at(index);
-
-        // Copy header
-        fitting_result<default_algebra> header = sm_headers;
-
-        // Copy states
-        vecmem::vector<track_state<default_algebra>> states;
-        states.reserve(sm_items.size());
-        for (auto const& item : sm_items) {
-            states.push_back(item);
-        }
-
-        res.push_back(header, states);
+        output.push_back(std::move(track_states.at(index).header),
+                         std::move(track_states.at(index).items));
     }
-    return res;
+
+    return output;
 }
 
 void greedy_ambiguity_resolution_algorithm::compute_initial_state(
     const typename track_state_container_types::host& track_states,
     state_t& state) const {
 
-    // Number of measurements, to display a warning if too many measurements
-    // share the identifier 0
-    std::size_t mcount_all = 0;     // Total number of measurements
-    std::size_t mcount_idzero = 0;  // Number of measurements of id 0
-
-    // Displays a warning if (mcount_idzero / mcount_all) > warning_threshold
-    float warning_threshold = _config.measurement_id_0_warning_threshold;
+    // @TODO: Add assertion to check the number of mcount_id_zero
 
     // For each track of the input container
-    std::size_t n_track_states = track_states.size();
+    const std::size_t n_track_states = track_states.size();
     for (std::size_t track_index = 0; track_index < n_track_states;
          ++track_index) {
 
-        // fit_res is a fitting_result<default_algebra>
-        // states  is a vecmem_vector<track_state<default_algebra>>
         auto const& [fit_res, states] = track_states.at(track_index);
 
         // Kick out tracks that do not fulfill our initial requirements
-        if (states.size() < _config.n_measurements_min) {
+        if (states.size() < m_config.n_measurements_min) {
             continue;
         }
 
         // Create the list of measurement_id of the current track
         std::vector<std::size_t> measurements;
         std::unordered_map<std::size_t, std::size_t> already_added_mes;
-        bool duplicated_measurements = false;
 
         for (auto const& st : states) {
             std::size_t mid = st.get_measurement().measurement_id;
-            ++mcount_all;
-            if (mid == 0) {
-                ++mcount_idzero;
-            }
 
             // If the same measurement is found multiple times in a single
             // track: remove duplicates.
@@ -125,33 +120,12 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
             if (!dm.second) {
                 // Increment the count for this measurement_id
                 ++(dm.first->second);
-                duplicated_measurements = true;
                 TRACCC_DEBUG("(1/3) Track " << track_index
                                             << " has duplicated measurement "
                                             << mid << ".");
             } else {
                 measurements.push_back(mid);
             }
-        }
-
-        // If at least one measurement is found multiple times in this track:
-        // print warning message and display the track's measurement list
-        if (duplicated_measurements) {
-            std::stringstream ss;
-            ss << "Track " << track_index << " has duplicated measurement(s):";
-
-            for (const auto& m : already_added_mes) {
-                if (m.second != 1) {
-                    ss << " " << m.first << " (" << m.second << " times)";
-                }
-            }
-
-            ss << ". Measurement list:";
-            for (auto const& st : states) {
-                ss << " " << st.get_measurement().measurement_id;
-            }
-
-            TRACCC_WARNING(ss.str());
         }
 
         // Add this track chi2 value
@@ -181,30 +155,6 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
         for (auto meas_index : state.measurements_per_track[track_index]) {
             if (state.tracks_per_measurement[meas_index].size() > 1) {
                 ++state.shared_measurements_per_track[track_index];
-            }
-        }
-    }
-
-    if (mcount_all == 0) {
-        TRACCC_ERROR("No measurements.");
-    } else {
-        if (mcount_idzero == mcount_all) {
-            TRACCC_ERROR(
-                "Measurements must have unique IDs. But here, each measurement "
-                "has 0 as ID (measurement.measurement_id == 0). This may be "
-                "solved by loading measurement_id from the appropriate file, "
-                "or by assigning a unique ID to each new measurement during "
-                "CCA.");
-        } else {
-            double ratio = static_cast<float>(mcount_idzero) /
-                           static_cast<float>(mcount_all);
-            if (ratio > warning_threshold) {
-                std::stringstream stream;
-                stream << std::fixed << std::setprecision(2) << (ratio * 100.)
-                       << "% of input measurements have an ID equal to 0 "
-                          "(measurement.measurement_id == 0). This may be "
-                          "suspicious.";
-                TRACCC_WARNING(stream.str());
             }
         }
     }
