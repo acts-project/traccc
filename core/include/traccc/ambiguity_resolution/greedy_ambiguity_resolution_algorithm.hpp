@@ -50,34 +50,8 @@ class greedy_ambiguity_resolution_algorithm
       public messaging {
 
     public:
-    struct config_t {
 
-        config_t(){};
-
-        /// Maximum amount of shared hits per track. One (1) means "no shared
-        /// hit allowed".
-        std::uint32_t maximum_shared_hits = 1;
-
-        /// Maximum number of iterations.
-        std::uint32_t maximum_iterations = 1000000;
-
-        /// Minimum number of measurement to form a track.
-        std::size_t n_measurements_min = 3;
-
-        // True if obvious errors should be checked after the completion
-        // of the algorithm.
-        bool check_obvious_errs = true;
-
-        // Displays a warning if:
-        // (number of measurements of ID 0 / total number of measurements)
-        // is greater than measurement_id_0_warning_threshold.
-        float measurement_id_0_warning_threshold = 0.1f;
-
-        bool verbose_error = true;
-        bool verbose_warning = true;
-        bool verbose_info = false;
-        bool verbose_debug = false;
-    };
+    using config_type = resolution_config;
 
     struct state_t {
         std::size_t number_of_tracks{};
@@ -113,9 +87,9 @@ class greedy_ambiguity_resolution_algorithm
     // greedy_ambiguity_resolution_algorithm(const config_type& cfg) :
     // _config(cfg) {}
     greedy_ambiguity_resolution_algorithm(
-        const config_t cfg,
+        const config_type& cfg,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone())
-        : messaging(std::move(logger)), _config{cfg} {}
+        : messaging(std::move(logger)), m_config{cfg} {}
 
     /// Run the algorithm
     ///
@@ -159,7 +133,10 @@ class greedy_ambiguity_resolution_algorithm
         const typename track_state_container_types::host& initial_track_states,
         state_t& final_state) const;
 
-    config_t _config;
+    /// Algorithm configuration
+    config_type m_config;
+    /// Memory resource to use in the algorithm
+    std::reference_wrapper<vecmem::memory_resource> m_mr;    
 };
 
 }  // namespace traccc
