@@ -209,8 +209,8 @@ edm::seed_collection::buffer seed_finding::operator()(
     auto devHost = ::alpaka::getDevByIdx(::alpaka::Platform<Host>{}, 0u);
     auto queue = Queue{devAcc};
     auto const deviceProperties = ::alpaka::getAccDevProps<Acc>(devAcc);
-    auto maxThreads = deviceProperties.m_blockThreadExtentMax[0];
-    auto threadsPerBlock = maxThreads;
+    Idx maxThreads = deviceProperties.m_blockThreadExtentMax[0];
+    Idx threadsPerBlock = std::min(getWarpSize<Acc>() * 2, maxThreads);
 
     // Get the sizes from the grid view
     auto grid_sizes = m_copy.get_sizes(g2_view._data_view);
@@ -226,15 +226,13 @@ edm::seed_collection::buffer seed_finding::operator()(
 
     // Set up the doublet counter buffer.
     device::doublet_counter_collection_types::buffer doublet_counter_buffer = {
-        m_copy.get_size(sp_grid_prefix_sum_buff), m_mr.main,
-        vecmem::data::buffer_type::resizable};
+        num_spacepoints, m_mr.main, vecmem::data::buffer_type::resizable};
     m_copy.setup(doublet_counter_buffer)->ignore();
 
     // Calculate the number of threads and thread blocks to run the doublet
     // counting kernel for.
-    auto blocksPerGrid =
-        (sp_grid_prefix_sum_buff.size() + threadsPerBlock - 1) /
-        threadsPerBlock;
+    Idx blocksPerGrid =
+        (num_spacepoints + threadsPerBlock - 1) / threadsPerBlock;
     auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
     // Counter for the total number of doublets and triplets
@@ -248,6 +246,7 @@ edm::seed_collection::buffer seed_finding::operator()(
     auto bufAcc_counter =
         ::alpaka::allocBuf<device::seeding_global_counter, Idx>(devAcc, 1u);
     ::alpaka::memcpy(queue, bufAcc_counter, bufHost_counter);
+    ::alpaka::wait(queue);
 
     // Count the number of doublets that we need to produce.
     ::alpaka::exec<Acc>(queue, workDiv, kernels::CountDoublets{},
@@ -259,6 +258,7 @@ edm::seed_collection::buffer seed_finding::operator()(
 
     // Get the summary values per bin.
     ::alpaka::memcpy(queue, bufHost_counter, bufAcc_counter);
+    ::alpaka::wait(queue);
 
     if (pBufHost_counter->m_nMidBot == 0 || pBufHost_counter->m_nMidTop == 0) {
         return {0, m_mr.main};
@@ -328,6 +328,7 @@ edm::seed_collection::buffer seed_finding::operator()(
     ::alpaka::wait(queue);
 
     ::alpaka::memcpy(queue, bufHost_counter, bufAcc_counter);
+    ::alpaka::wait(queue);
 
     if (pBufHost_counter->m_nTriplets == 0) {
         return {0, m_mr.main};
@@ -357,11 +358,6 @@ edm::seed_collection::buffer seed_finding::operator()(
                         vecmem::get_data(triplet_buffer));
     ::alpaka::wait(queue);
 
-    // Calculate the number of threads and thread blocks to run the weight
-    // updating kernel for.
-    threadsPerBlock = getWarpSize<Acc>() * 2 < maxThreads
-                          ? getWarpSize<Acc>() * 2
-                          : maxThreads;
     blocksPerGrid =
         (pBufHost_counter->m_nTriplets + threadsPerBlock - 1) / threadsPerBlock;
     workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);

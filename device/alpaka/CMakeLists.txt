@@ -25,6 +25,8 @@ endif()
 
 traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   # Utility definitions.
+  "include/traccc/alpaka/utils/get_device_info.hpp"
+  "include/traccc/alpaka/utils/get_vecmem_resource.hpp"
   "include/traccc/alpaka/utils/make_prefix_sum_buff.hpp"
   "src/utils/make_prefix_sum_buff.cpp"
   "src/utils/get_device_info.cpp"
