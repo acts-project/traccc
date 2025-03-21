@@ -22,9 +22,6 @@ struct resolution_config {
     /// Maximum amount of shared hits per track. One (1) means "no shared
     /// hit allowed".
     unsigned int maximum_shared_hits = 1;
-
-    /// Maximum number of iterations.
-    unsigned int maximum_iterations = 1000000;
 };
 
 }  // namespace traccc
