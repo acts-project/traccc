@@ -23,6 +23,7 @@ namespace traccc::device {
 /// @param[in] det_data      Detector view object
 /// @param[in] track_candidates_view The input track candidates
 /// @param[out] track_states_view The output of fitted track states
+/// @param[out] barcodes_view The barcode sequence for backward filter
 ///
 template <typename fitter_t>
 TRACCC_HOST_DEVICE inline void fit(
@@ -32,7 +33,8 @@ TRACCC_HOST_DEVICE inline void fit(
     const typename fitter_t::config_type cfg,
     track_candidate_container_types::const_view track_candidates_view,
     const vecmem::data::vector_view<const unsigned int>& param_ids_view,
-    track_state_container_types::view track_states_view);
+    track_state_container_types::view track_states_view,
+    vecmem::data::jagged_vector_view<detray::geometry::barcode> barcodes_view);
 
 }  // namespace traccc::device
 

@@ -23,6 +23,7 @@
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/utils/copy.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>
@@ -59,6 +60,8 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
+    // Copy obejct
+    vecmem::copy copy;
 
     // Read back detector file
     const std::string path = name + "/";
@@ -118,7 +121,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     // Fitting algorithm object
     traccc::fitting_config fit_cfg;
     fit_cfg.ptc_hypothesis = ptc;
-    traccc::host::kalman_fitting_algorithm fitting(fit_cfg, host_mr);
+    traccc::host::kalman_fitting_algorithm fitting(fit_cfg, host_mr, copy);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
@@ -138,7 +141,8 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
 
         // Iterator over tracks
         const std::size_t n_tracks = track_states.size();
-        const std::size_t n_fitted_tracks = count_fitted_tracks(track_states);
+        const std::size_t n_fitted_tracks =
+            count_successfully_fitted_tracks(track_states);
 
         // n_trakcs = 100
         ASSERT_EQ(n_tracks, n_truth_tracks);

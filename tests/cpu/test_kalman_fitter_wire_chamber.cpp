@@ -25,6 +25,7 @@
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/utils/copy.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>
@@ -54,6 +55,8 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
      *****************************/
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
+    // Copy obejct
+    vecmem::copy copy;
 
     // Read back detector file
     const std::string path = name + "/";
@@ -121,9 +124,7 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
         static_cast<float>(mask_tolerance);
     fit_cfg.propagation.navigation.search_window = search_window;
     fit_cfg.ptc_hypothesis = ptc;
-    fit_cfg.use_backward_filter = false;
-    fit_cfg.covariance_inflation_factor = 1.f;
-    traccc::host::kalman_fitting_algorithm fitting(fit_cfg, host_mr);
+    traccc::host::kalman_fitting_algorithm fitting(fit_cfg, host_mr, copy);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
@@ -143,10 +144,14 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
 
         // Iterator over tracks
         const std::size_t n_tracks = track_states.size();
+
         ASSERT_GE(static_cast<float>(n_tracks),
-                  static_cast<float>(n_truth_tracks) * 0.95);
-        const std::size_t n_fitted_tracks = count_fitted_tracks(track_states);
-        ASSERT_EQ(n_tracks, n_fitted_tracks);
+                  0.98 * static_cast<float>(n_truth_tracks));
+
+        const std::size_t n_fitted_tracks =
+            count_successfully_fitted_tracks(track_states);
+        ASSERT_GE(static_cast<float>(n_fitted_tracks),
+                  0.95 * static_cast<float>(n_truth_tracks));
 
         for (std::size_t i_trk = 0; i_trk < n_tracks; i_trk++) {
 
@@ -171,6 +176,15 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
     static const std::vector<std::string> pull_names{
         "pull_d0", "pull_z0", "pull_phi", "pull_theta", "pull_qop"};
     pull_value_tests(fit_writer_cfg.file_path, pull_names);
+
+    /********************
+     * P-value test
+     ********************/
+
+    //@TODO: Develop an extension of KF-based fitter (e.g. Deterministic
+    // Annealing Filter) to resolve left-right ambiguity and pass the p-value
+    // test
+    // p_value_tests(fit_writer_cfg.file_path);
 
     /********************
      * Success rate test

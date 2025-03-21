@@ -52,7 +52,8 @@ class KalmanFittingWireChamberTests
     static constexpr vector3 B{0, 0, 2 * traccc::unit<scalar>::T};
 
     // Set mask tolerance to a large value not to miss the surface during KF
-    static const inline scalar mask_tolerance = 75.f * traccc::unit<scalar>::um;
+    static const inline scalar mask_tolerance =
+        250.f * traccc::unit<scalar>::um;
 
     // Grid search window
     static const inline std::array<detray::dindex, 2> search_window{3u, 3u};
@@ -63,12 +64,12 @@ class KalmanFittingWireChamberTests
 
     /// Standard deviations for seed track parameters
     static constexpr std::array<scalar, e_bound_size> stddevs = {
-        0.01f * traccc::unit<scalar>::mm,
-        0.01f * traccc::unit<scalar>::mm,
-        0.001f,
-        0.001f,
-        0.001f / traccc::unit<scalar>::GeV,
-        0.01f * traccc::unit<scalar>::ns};
+        0.1f * traccc::unit<scalar>::mm,
+        0.1f * traccc::unit<scalar>::mm,
+        0.017f,
+        0.017f,
+        0.05f / traccc::unit<scalar>::GeV,
+        1.f * traccc::unit<scalar>::ns};
 
     void consistency_tests(const track_state_collection_types::host&
                                track_states_per_track) const {

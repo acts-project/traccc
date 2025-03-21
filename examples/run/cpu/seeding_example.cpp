@@ -50,6 +50,7 @@
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/utils/copy.hpp>
 
 // System include(s).
 #include <cassert>
@@ -71,6 +72,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
+    // Copy obejct
+    vecmem::copy copy;
 
     // Performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -131,7 +134,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     fit_cfg.propagation = propagation_config;
 
     traccc::host::kalman_fitting_algorithm host_fitting(
-        fit_cfg, host_mr, logger().clone("FittingAlg"));
+        fit_cfg, host_mr, copy, logger().clone("FittingAlg"));
 
     traccc::greedy_ambiguity_resolution_algorithm::config_t
         host_ambiguity_config{};

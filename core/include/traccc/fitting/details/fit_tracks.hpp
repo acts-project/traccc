@@ -14,6 +14,7 @@
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
+#include <vecmem/utils/copy.hpp>
 
 namespace traccc::host::details {
 
@@ -39,7 +40,7 @@ template <typename fitter_t>
 track_state_container_types::host fit_tracks(
     fitter_t& fitter,
     const track_candidate_container_types::const_view& track_candidates_view,
-    vecmem::memory_resource& mr) {
+    vecmem::memory_resource& mr, vecmem::copy& copy) {
 
     // Create the output container.
     track_state_container_types::host result{&mr};
@@ -58,8 +59,18 @@ track_state_container_types::host fit_tracks(
             input_states.emplace_back(measurement);
         }
 
+        vecmem::data::vector_buffer<detray::geometry::barcode> seqs_buffer{
+            static_cast<vecmem::data::vector_buffer<
+                detray::geometry::barcode>::size_type>(
+                std::max(input_states.size() *
+                             fitter.config().barcode_sequence_size_factor,
+                         fitter.config().min_barcode_sequence_capacity)),
+            mr, vecmem::data::buffer_type::resizable};
+        copy.setup(seqs_buffer)->wait();
+
         // Make a fitter state
-        typename fitter_t::state fitter_state(vecmem::get_data(input_states));
+        typename fitter_t::state fitter_state(vecmem::get_data(input_states),
+                                              seqs_buffer);
 
         // Run the fitter.
         kalman_fitter_status fit_status = fitter.fit(

@@ -33,7 +33,7 @@ kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
         fitter{det, field, m_config};
 
     // Perform the track fitting using a common, templated function.
-    return details::fit_tracks(fitter, track_candidates, m_mr.get());
+    return details::fit_tracks(fitter, track_candidates, m_mr.get(), m_copy);
 }
 
 }  // namespace traccc::host

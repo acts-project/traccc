@@ -30,6 +30,7 @@
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
+#include <vecmem/utils/copy.hpp>
 
 // System include(s).
 #include <functional>
@@ -91,6 +92,8 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
         const edm::silicon_cell_collection::host& cells) const override;
 
     private:
+    /// Vecmem copy object
+    vecmem::copy m_copy;
     /// Constant B field for the (seed) track parameter estimation
     traccc::vector3 m_field_vec;
     /// Constant B field for the track finding and fitting

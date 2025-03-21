@@ -19,7 +19,8 @@ TRACCC_HOST_DEVICE inline void fit(
     const typename fitter_t::config_type cfg,
     track_candidate_container_types::const_view track_candidates_view,
     const vecmem::data::vector_view<const unsigned int>& param_ids_view,
-    track_state_container_types::view track_states_view) {
+    track_state_container_types::view track_states_view,
+    vecmem::data::jagged_vector_view<detray::geometry::barcode> seqs_view) {
 
     typename fitter_t::detector_type det(det_data);
 
@@ -52,7 +53,8 @@ TRACCC_HOST_DEVICE inline void fit(
         track_states_per_track.emplace_back(cand);
     }
 
-    typename fitter_t::state fitter_state(track_states_per_track);
+    typename fitter_t::state fitter_state(track_states_per_track,
+                                          *(seqs_view.ptr() + param_id));
 
     // Run fitting
     kalman_fitter_status fit_status = fitter.fit(seed_param, fitter_state);
