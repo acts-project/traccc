@@ -17,7 +17,6 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/candidate_link.hpp"
-#include "traccc/finding/candidate_tip.hpp"
 #include "traccc/finding/finding_config.hpp"
 
 // VecMem include(s).
@@ -71,19 +70,24 @@ struct find_tracks_payload {
     vecmem::data::vector_view<const unsigned int> upper_bounds_view;
 
     /**
-     * @brief View object to the link vector of the previous step
+     * @brief View object to the link vector
      */
-    vecmem::data::vector_view<const candidate_link> prev_links_view;
+    vecmem::data::vector_view<candidate_link> links_view;
+
+    /**
+     * @brief Index in the link vector at which the previous step starts
+     */
+    const unsigned int prev_links_idx;
+
+    /**
+     * @brief Index in the link vector at which the current step starts
+     */
+    const unsigned int curr_links_idx;
 
     /**
      * @brief The current step identifier
      */
     unsigned int step;
-
-    /**
-     * @brief The maximum number of new tracks to find
-     */
-    unsigned int n_max_candidates;
 
     /**
      * @brief View object to the output track parameter vector
@@ -94,17 +98,6 @@ struct find_tracks_payload {
      * @brief View object to the output track parameter liveness vector
      */
     vecmem::data::vector_view<unsigned int> out_params_liveness_view;
-
-    /**
-     * @brief View object to the output candidate links
-     */
-    vecmem::data::vector_view<candidate_link> links_view;
-
-    /**
-     * @brief Pointer to the total of number of candidates; to be set to zero
-     * before launching the kernel
-     */
-    unsigned int* n_total_candidates;
 };
 
 /// (Shared Event Data) Payload for the @c traccc::device::find_tracks function

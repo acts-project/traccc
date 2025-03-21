@@ -13,7 +13,6 @@
 #include "traccc/finding/actors/ckf_aborter.hpp"
 #include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/finding/candidate_link.hpp"
-#include "traccc/finding/candidate_tip.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 #include "traccc/fitting/status_codes.hpp"
@@ -132,7 +131,7 @@ track_candidate_container_types::host find_tracks(
     std::vector<std::vector<std::size_t>> param_to_link;
     param_to_link.resize(config.max_track_candidates_per_track);
 
-    std::vector<candidate_tip> tips;
+    std::vector<std::pair<unsigned int, unsigned int>> tips;
 
     // Create propagator
     propagator_type propagator(config.propagation);
@@ -162,10 +161,6 @@ track_candidate_container_types::host find_tracks(
         out_params.reserve(n_in_params);
 
         // Previous step ID
-        const candidate_tip::index_t previous_step =
-            (step == 0u) ? std::numeric_limits<candidate_tip::index_t>::max()
-                         : step - 1u;
-
         std::fill(n_trks_per_seed.begin(), n_trks_per_seed.end(), 0u);
 
         // Parameters updated by Kalman fitter
@@ -258,7 +253,7 @@ track_candidate_container_types::host find_tracks(
                     n_branches++;
 
                     links[step].push_back(
-                        {.previous_step_idx = previous_step,
+                        {.step = step,
                          .previous_candidate_idx = in_param_id,
                          .meas_idx = item_id,
                          .seed_idx = orig_param_id,
@@ -276,7 +271,7 @@ track_candidate_container_types::host find_tracks(
 
                 // Put an invalid link with max item id
                 links[step].push_back(
-                    {.previous_step_idx = previous_step,
+                    {.step = step,
                      .previous_candidate_idx = in_param_id,
                      .meas_idx = std::numeric_limits<unsigned int>::max(),
                      .seed_idx = orig_param_id,
@@ -367,9 +362,9 @@ track_candidate_container_types::host find_tracks(
 
     for (const auto& tip : tips) {
         // Get the link corresponding to tip
-        auto L = links.at(tip.step_idx).at(tip.candidate_idx);
+        auto L = links.at(tip.first).at(tip.second);
 
-        const unsigned int n_cands = tip.step_idx + 1 - L.n_skipped;
+        const unsigned int n_cands = tip.first + 1 - L.n_skipped;
 
         // Skip if the number of tracks candidates is too small
         if (n_cands < config.min_track_candidates_per_track ||
@@ -378,7 +373,7 @@ track_candidate_container_types::host find_tracks(
         }
 
         // Retrieve tip
-        L = links.at(tip.step_idx).at(tip.candidate_idx);
+        L = links.at(tip.first).at(tip.second);
 
         vecmem::vector<track_candidate> cands_per_track;
         cands_per_track.resize(n_cands);
@@ -391,13 +386,11 @@ track_candidate_container_types::host find_tracks(
         for (auto it = cands_per_track.rbegin(); it != cands_per_track.rend();
              it++) {
 
-            while (L.meas_idx >= n_meas &&
-                   L.previous_step_idx !=
-                       std::numeric_limits<candidate_tip::index_t>::max()) {
-                const auto link_pos = param_to_link.at(L.previous_step_idx)
-                                          .at(L.previous_candidate_idx);
+            while (L.meas_idx >= n_meas && L.step != 0u) {
+                const auto link_pos =
+                    param_to_link.at(L.step - 1u).at(L.previous_candidate_idx);
 
-                L = links.at(L.previous_step_idx).at(link_pos);
+                L = links.at(L.step - 1u).at(link_pos);
             }
 
             // Break if the measurement is still invalid
@@ -427,10 +420,10 @@ track_candidate_container_types::host find_tracks(
                         track_quality{ndf_sum - 5.f, chi2_sum, L.n_skipped}},
                     cands_per_track);
             } else {
-                const auto l_pos = param_to_link.at(L.previous_step_idx)
-                                       .at(L.previous_candidate_idx);
+                const auto l_pos =
+                    param_to_link.at(L.step - 1u).at(L.previous_candidate_idx);
 
-                L = links.at(L.previous_step_idx).at(l_pos);
+                L = links.at(L.step - 1u).at(l_pos);
             }
         }
     }
