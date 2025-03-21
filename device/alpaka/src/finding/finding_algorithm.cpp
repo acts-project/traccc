@@ -33,7 +33,6 @@
 #include <detray/propagator/rk_stepper.hpp>
 
 // VecMem include(s).
-#include <ratio>
 #include <vecmem/containers/data/vector_buffer.hpp>
 #include <vecmem/containers/data/vector_view.hpp>
 #include <vecmem/containers/device_vector.hpp>
@@ -68,6 +67,11 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     const bfield_type& field_view,
     const typename measurement_collection_types::view& measurements,
     const bound_track_parameters_collection_types::buffer& seeds_buffer) const {
+
+    assert(m_cfg.min_step_length_for_next_surface >
+               math::fabs(m_cfg.propagation.navigation.overstep_tolerance) &&
+           "Min step length for the next surface should be higher than the "
+           "overstep tolerance");
 
     // Setup alpaka
     auto devHost = ::alpaka::getDevByIdx(::alpaka::Platform<Host>{}, 0u);
@@ -511,8 +515,9 @@ struct BlockSharedMemDynSizeBytes<traccc::alpaka::FindTracksKernel<detector_t>,
         TArgs const&... /* args */
         ) -> std::size_t {
         return static_cast<std::size_t>(blockThreadExtent.prod()) *
-               sizeof(unsigned int) * 2 *
-               sizeof(std::pair<unsigned int, unsigned int>);
+                   sizeof(unsigned int) +
+               2 * static_cast<std::size_t>(blockThreadExtent.prod()) *
+                   sizeof(std::pair<unsigned int, unsigned int>);
     }
 };
 
