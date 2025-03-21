@@ -41,38 +41,59 @@ track_state_container_types::host
 greedy_ambiguity_resolution_algorithm::operator()(
     const typename track_state_container_types::host& track_states) const {
 
-    /*
-    state_t state;
-    compute_initial_state(track_states, state);
-    resolve(state);
+    // Boolean for acceptance
+    vecmem::vector<bool> acceptance{n_tracks, true, &m_mr.get()};
 
-    assert(check_obvious_errors(track_states, state));
-    */
+    // Measurement id vector
+    vecmem::jagged_vector<std::size_t> meas_ids{n_tracks, &m_mr.get()};
 
-    const std::size_t n_tracks = track_states.size();
-
-    for (std::size_t i_trk = 0; i_trk < n_track_states; ++i_trk) {
-        auto const& [fit_res, states] = track_states.at(i_trk);
-
-        // Kick out tracks that do not fulfill our initial requirements
-        if (states.size() < m_config.min_measurements_per_track) {
-            continue;
+    // Fill the measurement id vector
+    for (std::size_t i = 0; i < n_tracks; i++) {
+        const auto& states = track_states.at(i_trk).items;
+        meas_ids.at(i).reserve(states.size());
+        for (const auto& st : states) {
+            meas_ids.at(i).push_back(st.get_measurement().measurement_id);
         }
+        // Need to sort to use set_intersection later
+        std::sort(meas_ids.begin(), meas_ids.end());
     }
-
-    // Vector of pairs of < measurement ID, number of occurences in patterns >
-    //vecmem::vector<traccc::pair<std::size_t, unsigned int>> meas_id_occurence;
 
     // Number of shared measurements per track
     vecmem::vector<std::size_t> n_shared_meas_per_track;
     n_shared_meas_per_track.reserve(n_tracks);
 
+    // Count the number of shared measurements
+    for (std::size_t i = 0; i < n_tracks; i++) {
+        const auto& ref_ids = meas_ids.at(i);
+        std::vector<std::size_t> shared_ids;
+
+        for (std::size_t j = 0; j < n_tracks; j++) {
+            const auto& comp_ids = meas_ids.at(j);
+            std::set_intersection(ref_ids.begin(), ref_ids.end(),
+                                  comp_ids.begin(), comp_ids.end(),
+                                  std::back_inserter(common));
+        }
+    }
+
+    for (std::size_t i_trk = 0; i_trk < n_tracks; i_trk++) {
+        auto const& [fit_res, states] = track_states.at(i_trk);
+
+        // Kick out tracks that do not fulfill our initial requirements
+        if (states.size() < m_config.min_measurements_per_track) {
+            acceptance[i_trk] = false;
+        }
+    }
+
+    const std::size_t n_tracks = track_states.size();
+
+    // Vector of pairs of < measurement ID, number of occurences in patterns >
+    // vecmem::vector<traccc::pair<std::size_t, unsigned int>>
+    // meas_id_occurence;
+
     // Vector of unique measurement ids
     vecmem::vector<std::size_t> meas_ids;
     // Vector of vector of track ids associated with each measurement id
     vecmem::jagged_vector<std::size_t> track_ids;
-
-
 
     // Copy the tracks to be retained in the return value
     track_state_container_types::host output;
