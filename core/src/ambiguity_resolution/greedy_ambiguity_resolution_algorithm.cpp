@@ -96,10 +96,13 @@ greedy_ambiguity_resolution_algorithm::operator()(
                             acceptance.at(i) = resolution_status::REJECT;
                             break;
                         } else {
+                            // Get pvalues
+                            /*
                             if (pval.at(i) < pval.at(j)) {
                                 acceptance.at(i) = resolution_status::REJECT;
                                 break;
                             }
+                            */
                         }
                     }
                 }
