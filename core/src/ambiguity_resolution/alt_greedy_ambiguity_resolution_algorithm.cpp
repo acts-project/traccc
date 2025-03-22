@@ -1,12 +1,12 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024-2025 CERN for the benefit of the ACTS project
+ * (c) 2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Local include(s).
-#include "traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
+#include "traccc/ambiguity_resolution/alt_greedy_ambiguity_resolution_algorithm.hpp"
 
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
@@ -23,7 +23,7 @@ namespace traccc {
 /// @param track_states the container of the fitted track parameters
 /// @return the container without ambiguous tracks
 track_state_container_types::host
-greedy_ambiguity_resolution_algorithm::operator()(
+alt_greedy_ambiguity_resolution_algorithm::operator()(
     const typename track_state_container_types::host& track_states) const {
 
     const std::size_t n_tracks = track_states.size();
@@ -31,11 +31,13 @@ greedy_ambiguity_resolution_algorithm::operator()(
     // Boolean for acceptance
     std::vector<resolution_status> status(n_tracks, resolution_status::UNKNOWN);
 
-    // Measurement id vector
+    // Measurement ID and chi2 vector
     std::vector<std::vector<std::size_t>> meas_ids(n_track);
+    std::vector<traccc::scalar> chi_squares(n_tracks);
 
     // Fill the measurement id vector
     for (std::size_t i = 0; i < n_tracks; i++) {
+        chi_squares.at(i) = track_states.at(i_trk).header.trk_quality.chi2;
         const auto& states = track_states.at(i_trk).items;
         meas_ids.at(i).reserve(states.size());
         for (const auto& st : states) {
@@ -96,13 +98,10 @@ greedy_ambiguity_resolution_algorithm::operator()(
                             acceptance.at(i) = resolution_status::REJECT;
                             break;
                         } else {
-                            // Get pvalues
-                            /*
-                            if (pval.at(i) < pval.at(j)) {
+                            if (chi_squares.at(i) > chi_squares.at(j)) {
                                 acceptance.at(i) = resolution_status::REJECT;
                                 break;
                             }
-                            */
                         }
                     }
                 }
