@@ -19,7 +19,7 @@ namespace traccc {
 /// Evicts tracks that seem to be duplicates or fakes. This algorithm takes a
 /// greedy approach in the sense that it will remove the track which looks "most
 /// duplicate/fake"
-class greedy_ambiguity_resolution_algorithm
+class alt_greedy_ambiguity_resolution_algorithm
     : public algorithm<track_state_container_types::host(
           const typename track_state_container_types::host&)>,
       public messaging {
