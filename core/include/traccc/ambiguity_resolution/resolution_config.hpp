@@ -7,10 +7,6 @@
 
 #pragma once
 
-// Local include(s).
-#include "traccc/definitions/common.hpp"
-#include "traccc/definitions/primitives.hpp"
-
 // System include(s).
 #include <cstdint>
 
@@ -25,8 +21,7 @@ struct resolution_config {
     unsigned int min_meas_per_track = 3;
 
     /// Minimum number of shared measurement to be sent for competition with
-    /// other tracks. If the number of shared measurement is smaller, the track
-    /// is accepted right away
+    /// other tracks.
     unsigned int min_shared_meas_for_competition = 1;
 };
 
