@@ -140,7 +140,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
     finding_algorithm finding_alg(finding_cfg, logger().clone("FindingAlg"));
     fitting_algorithm fitting_alg(fitting_cfg, host_mr,
                                   logger().clone("FittingAlg"));
-    traccc::greedy_ambiguity_resolution_algorithm::config_t resolution_config;
+    traccc::greedy_ambiguity_resolution_algorithm::config_type
+        resolution_config;
     traccc::greedy_ambiguity_resolution_algorithm resolution_alg(
         resolution_config, logger().clone("AmbiguityResolutionAlg"));
 

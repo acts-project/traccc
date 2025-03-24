@@ -12,8 +12,6 @@
 
 namespace traccc {
 
-enum class resolution_status : uint32_t { UNKNOWN, REJECT, ACCEPT, MAX_STATUS };
-
 /// Configuration struct for ambiguity resolution
 struct resolution_config {
 
