@@ -9,6 +9,7 @@
 
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
+#include "traccc/finding/candidate_tip.hpp"
 #include "traccc/utils/pair.hpp"
 
 namespace traccc {
@@ -16,12 +17,9 @@ namespace traccc {
 // A link that contains the index of corresponding measurement and the index of
 // a link from a previous step of track finding
 struct candidate_link {
+    candidate_tip::index_t previous_step_idx;
 
-    // Type of index
-    using link_index_type = traccc::pair<unsigned int, unsigned int>;
-
-    // Index of link from the previous step
-    link_index_type previous;
+    candidate_tip::index_t previous_candidate_idx;
 
     // Measurement index
     unsigned int meas_idx;
