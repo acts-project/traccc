@@ -15,6 +15,7 @@
 // compiler. This can be removed when intel/llvm#15443 makes it into a OneAPI
 // release.
 #include <limits>
+#include <vecmem/memory/device_atomic_ref.hpp>
 #if defined(__INTEL_LLVM_COMPILER) && defined(SYCL_LANGUAGE_VERSION)
 #undef __CUDA_ARCH__
 #endif
@@ -32,6 +33,35 @@
 
 namespace traccc::device {
 
+namespace details {
+/**
+ * @brief Encode the state of our parameter insertion mutex.
+ */
+TRACCC_HOST_DEVICE inline uint64_t encode_insertion_mutex(const bool locked,
+                                                          const uint32_t size,
+                                                          const float max) {
+    // Assert that the MSB of the size is zero
+    assert(size <= 0x7FFFFFFF);
+
+    const uint32_t hi = size | (locked ? 0x80000000 : 0x0);
+    const uint32_t lo = std::bit_cast<uint32_t>(max);
+
+    return (static_cast<uint64_t>(hi) << 32) | lo;
+}
+
+/**
+ * @brief Decode the state of our parameter insertion mutex.
+ */
+TRACCC_HOST_DEVICE inline std::tuple<bool, uint32_t, float>
+decode_insertion_mutex(const uint64_t val) {
+    const uint32_t hi = static_cast<uint32_t>(val >> 32);
+    const uint32_t lo = val & 0xFFFFFFFF;
+
+    return {static_cast<bool>(hi & 0x80000000), (hi & 0x7FFFFFFF),
+            std::bit_cast<float>(lo)};
+}
+}  // namespace details
+
 template <typename detector_t, concepts::thread_id1 thread_id_t,
           concepts::barrier barrier_t>
 TRACCC_HOST_DEVICE inline void find_tracks(
@@ -39,18 +69,9 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     const finding_config& cfg, const find_tracks_payload<detector_t>& payload,
     const find_tracks_shared_payload& shared_payload) {
 
-    /*
-     * Initialize the block-shared data; in particular, set the total size of
-     * the candidate buffer to zero, and then set the number of candidates for
-     * each parameter to zero.
-     */
-    if (thread_id.getLocalThreadIdX() == 0) {
-        shared_payload.shared_candidates_size = 0;
-    }
-
-    shared_payload.shared_num_candidates[thread_id.getLocalThreadIdX()] = 0;
-
-    barrier.blockBarrier();
+    const unsigned int in_param_id = thread_id.getGlobalThreadIdX();
+    const bool last_step =
+        payload.step == cfg.max_track_candidates_per_track - 1;
 
     /*
      * Initialize all of the device vectors from their vecmem views.
@@ -63,10 +84,9 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     vecmem::device_vector<const unsigned int> in_params_liveness(
         payload.in_params_liveness_view);
     vecmem::device_vector<candidate_link> links(payload.links_view);
-    bound_track_parameters_collection_types::device out_params(
-        payload.out_params_view);
-    vecmem::device_vector<unsigned int> out_params_liveness(
-        payload.out_params_liveness_view);
+    vecmem::device_vector<candidate_link> tmp_links(payload.tmp_links_view);
+    bound_track_parameters_collection_types::device tmp_params(
+        payload.tmp_params_view);
     vecmem::device_vector<const detray::geometry::barcode> barcodes(
         payload.barcodes_view);
     vecmem::device_vector<const unsigned int> upper_bounds(
@@ -76,10 +96,20 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     vecmem::device_vector<unsigned int> n_tracks_per_seed(
         payload.n_tracks_per_seed_view);
 
-    const unsigned int in_param_id = thread_id.getGlobalThreadIdX();
+    /*
+     * Initialize the block-shared data; in particular, set the total size of
+     * the candidate buffer to zero, and then set the number of candidates for
+     * each parameter to zero.
+     */
+    if (thread_id.getLocalThreadIdX() == 0) {
+        shared_payload.shared_candidates_size = 0;
+        shared_payload.shared_num_out_params = 0;
+    }
 
-    const bool last_step =
-        payload.step == cfg.max_track_candidates_per_track - 1;
+    shared_payload.shared_insertion_mutex[thread_id.getLocalThreadIdX()] =
+        details::encode_insertion_mutex(false, 0, 0.f);
+
+    barrier.blockBarrier();
 
     /*
      * Step 1 of this kernel is to determine which indices belong to which
@@ -94,7 +124,6 @@ TRACCC_HOST_DEVICE inline void find_tracks(
 
     if (in_param_id < payload.n_in_params &&
         in_params_liveness.at(in_param_id) > 0u) {
-
         /*
          * Get the barcode of this thread's parameters, then find the first
          * measurement that matches it.
@@ -159,17 +188,6 @@ TRACCC_HOST_DEVICE inline void find_tracks(
         for (; curr_meas < num_meas &&
                shared_payload.shared_candidates_size < thread_id.getBlockDimX();
              curr_meas++) {
-            const unsigned int prev_link_idx =
-                payload.prev_links_idx + thread_id.getGlobalThreadIdX();
-            const unsigned int seed_idx = payload.step > 0
-                                              ? links.at(prev_link_idx).seed_idx
-                                              : in_param_id;
-            if (n_tracks_per_seed.at(seed_idx) >=
-                cfg.max_num_branches_per_seed) {
-                // We will not use this parameter anymore
-                curr_meas = num_meas;
-                break;
-            }
             unsigned int idx =
                 vecmem::device_atomic_ref<unsigned int,
                                           vecmem::device_address_space::local>(
@@ -187,6 +205,10 @@ TRACCC_HOST_DEVICE inline void find_tracks(
 
         barrier.blockBarrier();
 
+        std::optional<std::tuple<track_state<typename detector_t::algebra_type>,
+                                 unsigned int, unsigned int>>
+            result = std::nullopt;
+
         /*
          * The shared buffer is now full; each thread picks out zero or one of
          * the measurements and processes it.
@@ -200,85 +222,272 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                 owner_local_thread_id +
                 thread_id.getBlockDimX() * thread_id.getBlockIdX();
             assert(in_params_liveness.at(owner_global_thread_id) != 0u);
-            const unsigned int prev_link_idx =
-                payload.prev_links_idx + owner_global_thread_id;
-            const unsigned int seed_idx =
-                payload.step == 0 ? owner_global_thread_id
-                                  : links.at(prev_link_idx).seed_idx;
             const bound_track_parameters<>& in_par =
                 in_params.at(owner_global_thread_id);
             const unsigned int meas_idx =
                 shared_payload.shared_candidates[thread_id.getLocalThreadIdX()]
                     .first;
+            const unsigned int prev_link_idx =
+                payload.prev_links_idx + owner_global_thread_id;
+            const unsigned int seed_idx = payload.step > 0
+                                              ? links.at(prev_link_idx).seed_idx
+                                              : owner_global_thread_id;
 
-            const auto& meas = measurements.at(meas_idx);
+            bool use_measurement = true;
 
-            track_state<typename detector_t::algebra_type> trk_state(meas);
-            const detray::tracking_surface sf{det, in_par.surface_link()};
+            if (use_measurement) {
+                if (n_tracks_per_seed.at(seed_idx) >=
+                    cfg.max_num_branches_per_seed) {
+                    use_measurement = false;
+                }
+            }
 
-            // Count the number of tracks per seed
-            vecmem::device_atomic_ref<unsigned int> num_tracks_per_seed(
-                n_tracks_per_seed.at(seed_idx));
+            if (use_measurement) {
+                const auto& meas = measurements.at(meas_idx);
 
-            // Count the number of branches per input parameter
-            vecmem::device_atomic_ref<unsigned int,
-                                      vecmem::device_address_space::local>
-                shared_num_candidates(
-                    shared_payload
-                        .shared_num_candidates[owner_local_thread_id]);
+                track_state<typename detector_t::algebra_type> trk_state(meas);
+                const detray::tracking_surface sf{det, in_par.surface_link()};
 
-            bool add_link =
-                num_tracks_per_seed.load() < cfg.max_num_branches_per_seed;
-            if (add_link) {
                 // Run the Kalman update
                 const kalman_fitter_status res = sf.template visit_mask<
                     gain_matrix_updater<typename detector_t::algebra_type>>(
                     trk_state, in_par);
-                // The chi2 from Kalman update should be less than chi2_max
-                add_link = res == kalman_fitter_status::SUCCESS &&
-                           trk_state.filtered_chi2() < cfg.chi2_max;
-            } else {
-                // The seed is already exhausted, avoid adding hole
-                shared_num_candidates.fetch_add(1u);
+
+                /*
+                 * The $\chi^2$ value from the Kalman update should be less than
+                 * `chi2_max`, and the fit should have succeeded. If both
+                 * conditions are true, we emplace the state, the measurement
+                 * index, and the thread ID into an optional value.
+                 *
+                 * NOTE: Using the optional value here allows us to remove the
+                 * depth of if-statements which is important for code quality
+                 * but, more importantly, allows us to more easily use
+                 * block-wide synchronization primitives.
+                 */
+                if (const traccc::scalar chi2 = trk_state.filtered_chi2();
+                    res != kalman_fitter_status::SUCCESS ||
+                    chi2 >= cfg.chi2_max) {
+                    use_measurement = false;
+                }
+
+                if (use_measurement) {
+                    result.emplace(std::move(trk_state), meas_idx,
+                                   owner_local_thread_id);
+                }
             }
-            if (add_link) {
-                // Increase the number of candidates (or branches) per input
-                // parameter. Avoid adding hole when seed is saturated
-                shared_num_candidates.fetch_add(1u);
+        }
 
-                const unsigned int s_pos = num_tracks_per_seed.fetch_add(1);
-                add_link = s_pos < cfg.max_num_branches_per_seed;
-            }
-
-            if (add_link) {
-                // Add measurement candidates to link
-                const unsigned int l_pos = links.bulk_append_implicit(1);
-
-                const traccc::scalar chi2 = trk_state.filtered_chi2();
+        /*
+         * Now comes the stage in which we add the parameters to the temporary
+         * array, in such a way that we keep the best ones. This loop has a
+         * barrier to ensure both thread safety and forward progress.
+         *
+         * NOTE: This has to be a loop because the software is set up such
+         * that only one thread can write to the array of one input
+         * parameter per loop cycle. Thus, the loop is here to resolve any
+         * contention.
+         */
+        while (barrier.blockOr(result.has_value())) {
+            /*
+             * Threads which have no parameter stored (either because they
+             * never had one or because they already deposited) do not have to
+             * do anything.
+             */
+            if (result.has_value()) {
+                /*
+                 * First, we reconstruct some necessary information from the
+                 * data that we stored previously.
+                 */
+                const unsigned int meas_idx = std::get<1>(*result);
+                const unsigned int owner_local_thread_id = std::get<2>(*result);
+                const unsigned int owner_global_thread_id =
+                    owner_local_thread_id +
+                    thread_id.getBlockDimX() * thread_id.getBlockIdX();
+                const float chi2 = std::get<0>(*result).filtered_chi2();
                 assert(chi2 >= 0.f);
+                unsigned long long int* mutex_ptr =
+                    &shared_payload
+                         .shared_insertion_mutex[owner_local_thread_id];
+                const unsigned int prev_link_idx =
+                    payload.prev_links_idx + owner_global_thread_id;
 
-                const unsigned int n_skipped =
-                    payload.step == 0 ? 0 : links.at(prev_link_idx).n_skipped;
+                /*
+                 * The current thread will attempt to get a lock on the
+                 * output array for the input parameter ID which it is now
+                 * holding. If it manages to do so, the `index` variable will
+                 * be set to a value smaller than or equal to the maximum
+                 * number of elements; otherwise, it will be set to
+                 * `UINT_MAX`.
+                 */
+                unsigned int index = std::numeric_limits<unsigned int>::max();
+                unsigned long long int desired = 0;
 
-                links.at(l_pos) = {.step = payload.step,
-                                   .previous_candidate_idx = prev_link_idx,
-                                   .meas_idx = meas_idx,
-                                   .seed_idx = seed_idx,
-                                   .n_skipped = n_skipped,
-                                   .chi2 = chi2};
-                out_params.at(l_pos - payload.curr_links_idx) =
-                    trk_state.filtered();
-                out_params_liveness.at(l_pos - payload.curr_links_idx) =
-                    static_cast<unsigned int>(!last_step);
+                /*
+                 * We fetch and decode whatever the mutex state is at the
+                 * current time. The mutex is a 64-bit integer containing the
+                 * following:
+                 *
+                 * [00:31] A 32-bit IEEE 754 floating point number that equals
+                 *         the highest $\chi^2$ value among parameters
+                 *         currently stored.
+                 * [32:62] A 31-bit unsigned integer representing the number
+                 *         of parameters currently stored.
+                 * [63:63] A boolean that, if true, indicates that a thread is
+                 *         currently operating on the array guarded.
+                 */
+                unsigned long long int assumed = *mutex_ptr;
+                auto [locked, size, max] =
+                    details::decode_insertion_mutex(assumed);
 
-                const unsigned int n_cands = payload.step + 1 - n_skipped;
+                /*
+                 * If the array is already full _and_ our parameter has a
+                 * higher $\chi^2$ value than any of the elements in the
+                 * array, we can discard the current track state.
+                 */
+                if (size >= cfg.max_num_branches_per_surface && chi2 >= max) {
+                    result.reset();
+                }
 
-                // If no more CKF step is expected, current candidate is kept as
-                // a tip
-                if (last_step &&
-                    n_cands >= cfg.min_track_candidates_per_track) {
-                    auto tip_pos = tips.push_back(l_pos);
-                    tip_lengths.at(tip_pos) = n_cands;
+                /*
+                 * If we still have a track after the previous check, we will
+                 * try to add this. We can only do this if the mutex is not
+                 * locked.
+                 */
+                if (result.has_value() && !locked) {
+                    desired = details::encode_insertion_mutex(true, size, max);
+
+                    /*
+                     * Attempt to CAS the mutex with the same value as before
+                     * but with the lock bit switched. If this succeeds (e.g.
+                     * the return value is as we assumed) then we have succes
+                     * fully locked and we set the `index` variable, which
+                     * indicates that we have the lock.
+                     */
+                    if (vecmem::device_atomic_ref<
+                            unsigned long long,
+                            vecmem::device_address_space::local>(*mutex_ptr)
+                            .compare_exchange_strong(assumed, desired)) {
+                        index = size;
+                    }
+                }
+
+                /*
+                 * If `index` is not `UINT32_MAX`, we are in the green to
+                 * write to the parameter array!
+                 */
+                if (index != std::numeric_limits<unsigned int>::max()) {
+                    assert(result.has_value());
+                    assert(index <= cfg.max_num_branches_per_surface);
+
+                    /*
+                     * We will now proceed to find the index in the temporary
+                     * array that we will write to. There are two distinct
+                     * cases:
+                     *
+                     * 1. If `index` is the maximum branching value, then the
+                     *    array is already full, and we need to replace the
+                     *    worst existing parameter.
+                     * 2. If `index` is less than the maximum branching value,
+                     *    we can trivially insert the value at index.
+                     */
+                    unsigned int l_pos =
+                        std::numeric_limits<unsigned int>::max();
+                    const unsigned int p_offset =
+                        owner_global_thread_id *
+                        cfg.max_num_branches_per_surface;
+                    float new_max;
+
+                    if (index == cfg.max_num_branches_per_surface) {
+                        /*
+                         * Handle the case in which we need to replace a
+                         * value; find the worst existing parameter and then
+                         * replace it. Also keep track of what the new maximum
+                         * $\chi^2$ value will be.
+                         */
+                        float highest = 0.f;
+
+                        for (unsigned int i = 0;
+                             i < cfg.max_num_branches_per_surface; ++i) {
+                            float old_chi2 = tmp_links.at(p_offset + i).chi2;
+
+                            if (old_chi2 > highest) {
+                                highest = old_chi2;
+                                l_pos = i;
+                            }
+                        }
+
+                        assert(l_pos !=
+                               std::numeric_limits<unsigned int>::max());
+
+                        new_max = chi2;
+
+                        for (unsigned int i = 0;
+                             i < cfg.max_num_branches_per_surface; ++i) {
+                            float old_chi2 = tmp_links.at(p_offset + i).chi2;
+
+                            if (i != l_pos && old_chi2 > new_max) {
+                                new_max = old_chi2;
+                            }
+
+                            assert(old_chi2 <=
+                                   tmp_links.at(p_offset + l_pos).chi2);
+                        }
+
+                        assert(chi2 <= new_max);
+                    } else {
+                        l_pos = index;
+                        new_max = std::max(chi2, max);
+                    }
+
+                    assert(l_pos < cfg.max_num_branches_per_surface);
+
+                    /*
+                     * Now, simply insert the temporary link at the found
+                     * position. Different cases for step 0 and other steps.
+                     */
+                    const unsigned int n_skipped =
+                        payload.step == 0 ? 0
+                                          : links.at(prev_link_idx).n_skipped;
+                    const unsigned int seed_idx =
+                        payload.step > 0 ? links.at(prev_link_idx).seed_idx
+                                         : owner_global_thread_id;
+
+                    tmp_links.at(p_offset + l_pos) = {
+                        .step = payload.step,
+                        .previous_candidate_idx = prev_link_idx,
+                        .meas_idx = meas_idx,
+                        .seed_idx = seed_idx,
+                        .n_skipped = n_skipped,
+                        .chi2 = chi2};
+
+                    tmp_params.at(p_offset + l_pos) =
+                        std::get<0>(*result).filtered();
+
+                    /*
+                     * Reset the temporary state storage, as this is no longer
+                     * necessary; this implies that this thread will not try
+                     * to insert anything in the next loop iteration.
+                     */
+                    result.reset();
+
+                    unsigned int new_size =
+                        size < cfg.max_num_branches_per_surface ? size + 1
+                                                                : size;
+
+                    /*
+                     * Release the lock using another atomic CAS operation.
+                     * Because nobody should be writing to this value, it
+                     * should always succeed!
+                     */
+                    [[maybe_unused]] bool cas_result =
+                        vecmem::device_atomic_ref<
+                            unsigned long long,
+                            vecmem::device_address_space::local>(*mutex_ptr)
+                            .compare_exchange_strong(
+                                desired, details::encode_insertion_mutex(
+                                             false, new_size, new_max));
+
+                    assert(cas_result);
                 }
             }
         }
@@ -306,41 +515,78 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     }
 
     /*
-     * Part three of the kernel inserts holes for parameters which did not
-     * match any measurements.
+     * NOTE: A synchronization point here is unnecessary, as it is implicit in
+     * the condition of the while-loop above.
      */
-    if (in_param_id < payload.n_in_params &&
-        in_params_liveness.at(in_param_id) != 0u &&
-        shared_payload.shared_num_candidates[thread_id.getLocalThreadIdX()] ==
-            0u) {
 
-        const unsigned int prev_link_idx = payload.prev_links_idx + in_param_id;
-        const unsigned int seed_idx =
-            payload.step == 0 ? in_param_id : links.at(prev_link_idx).seed_idx;
+    const unsigned int prev_link_idx = payload.prev_links_idx + in_param_id;
+    const unsigned int seed_idx =
+        payload.step > 0 ? links.at(prev_link_idx).seed_idx : in_param_id;
+    const unsigned int n_skipped =
+        payload.step == 0 ? 0 : links.at(prev_link_idx).n_skipped;
 
-        vecmem::device_atomic_ref<unsigned int> num_tracks_per_seed(
-            n_tracks_per_seed.at(seed_idx));
-        const unsigned int s_pos = num_tracks_per_seed.fetch_add(1);
+    vecmem::device_atomic_ref<unsigned int> num_tracks_per_seed(
+        n_tracks_per_seed.at(seed_idx));
 
-        if (s_pos < cfg.max_num_branches_per_seed) {
-            const unsigned int n_skipped =
-                payload.step == 0 ? 0 : links.at(prev_link_idx).n_skipped;
+    bool in_param_is_live =
+        in_param_id < payload.n_in_params &&
+        in_params_liveness.at(in_param_id) > 0u &&
+        num_tracks_per_seed.load() < cfg.max_num_branches_per_seed;
 
-            if (n_skipped >= cfg.max_num_skipping_per_cand || last_step) {
-                const unsigned int n_cands = payload.step - n_skipped;
-                if (n_cands >= cfg.min_track_candidates_per_track) {
-                    // In case of max skipping and min length being 0, and first
-                    // step being skipped, the links are empty, and the tip has
-                    // nowhere to point
-                    assert(payload.step > 0);
-                    auto tip_pos = tips.push_back(prev_link_idx);
-                    tip_lengths.at(tip_pos) = n_cands;
-                }
-            } else {
-                // Add measurement candidates to link
-                const unsigned int l_pos = links.bulk_append_implicit(1);
+    unsigned int local_out_offset = 0;
+    unsigned int local_num_params = 0;
 
-                links.at(l_pos) = {
+    bool in_param_can_create_hole =
+        (n_skipped <= cfg.max_num_skipping_per_cand) && (!last_step);
+
+    /*
+     * Compute the offset at which this block will write, as well as the index
+     * at which this block will write.
+     */
+    if (in_param_is_live) {
+        local_num_params = std::get<1>(details::decode_insertion_mutex(
+            shared_payload
+                .shared_insertion_mutex[thread_id.getLocalThreadIdX()]));
+        /*
+         * NOTE: We always create at least one state, because we also create
+         * hole states for nodes which don't find any good compatible
+         * measurements.
+         */
+        if (local_num_params > 0 || in_param_can_create_hole) {
+            local_out_offset =
+                vecmem::device_atomic_ref<unsigned int,
+                                          vecmem::device_address_space::local>(
+                    shared_payload.shared_num_out_params)
+                    .fetch_add(std::max(1u, local_num_params));
+        }
+    }
+
+    barrier.blockBarrier();
+
+    if (thread_id.getLocalThreadIdX() == 0) {
+        shared_payload.shared_out_offset =
+            links.bulk_append_implicit(shared_payload.shared_num_out_params);
+    }
+
+    barrier.blockBarrier();
+
+    /*
+     * Finally, transfer the links and parameters from temporary storage
+     * to the permanent storage in global memory, remembering to create hole
+     * states even for threads which have zero states.
+     */
+    bound_track_parameters_collection_types::device out_params(
+        payload.out_params_view);
+    vecmem::device_vector<unsigned int> out_params_liveness(
+        payload.out_params_liveness_view);
+
+    if (in_param_is_live) {
+        if (local_num_params == 0) {
+            if (in_param_can_create_hole) {
+                const unsigned int out_offset =
+                    shared_payload.shared_out_offset + local_out_offset;
+
+                links.at(out_offset) = {
                     .step = payload.step,
                     .previous_candidate_idx = prev_link_idx,
                     .meas_idx = std::numeric_limits<unsigned int>::max(),
@@ -348,11 +594,45 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                     .n_skipped = n_skipped + 1,
                     .chi2 = std::numeric_limits<traccc::scalar>::max()};
 
-                out_params.at(l_pos - payload.curr_links_idx) =
-                    in_params.at(in_param_id);
-                out_params_liveness.at(l_pos - payload.curr_links_idx) = 1u;
+                unsigned int param_pos = out_offset - payload.curr_links_idx;
+
+                out_params.at(param_pos) = in_params.at(in_param_id);
+                out_params_liveness.at(param_pos) =
+                    static_cast<unsigned int>(!last_step);
+            } else {
+                const unsigned int n_cands = payload.step - n_skipped;
+
+                if (n_cands >= cfg.min_track_candidates_per_track) {
+                    auto tip_pos = tips.push_back(prev_link_idx);
+                    tip_lengths.at(tip_pos) = n_cands;
+                }
+            }
+        } else {
+            for (unsigned int i = 0; i < local_num_params; ++i) {
+                const unsigned int in_offset =
+                    thread_id.getGlobalThreadIdX() *
+                        cfg.max_num_branches_per_surface +
+                    i;
+                const unsigned int out_offset =
+                    shared_payload.shared_out_offset + local_out_offset + i;
+
+                unsigned int param_pos = out_offset - payload.curr_links_idx;
+
+                out_params.at(param_pos) = tmp_params.at(in_offset);
+                out_params_liveness.at(param_pos) =
+                    static_cast<unsigned int>(!last_step);
+                links.at(out_offset) = tmp_links.at(in_offset);
+
+                const unsigned int n_cands = payload.step + 1 - n_skipped;
+
+                if (last_step &&
+                    n_cands >= cfg.min_track_candidates_per_track) {
+                    auto tip_pos = tips.push_back(param_pos);
+                    tip_lengths.at(tip_pos) = n_cands;
+                }
             }
         }
     }
 }
+
 }  // namespace traccc::device
