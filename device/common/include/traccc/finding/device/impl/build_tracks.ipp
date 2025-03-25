@@ -22,8 +22,7 @@ TRACCC_DEVICE inline void build_tracks(const global_index_t globalIndex,
     const vecmem::jagged_device_vector<const candidate_link> links(
         payload.links_view);
 
-    const vecmem::device_vector<const typename candidate_link::link_index_type>
-        tips(payload.tips_view);
+    const vecmem::device_vector<const candidate_tip> tips(payload.tips_view);
 
     track_candidate_container_types::device track_candidates(
         payload.track_candidates_view);
@@ -41,10 +40,10 @@ TRACCC_DEVICE inline void build_tracks(const global_index_t globalIndex,
     auto cands_per_track = track_candidates[globalIndex].items;
 
     // Get the link corresponding to tip
-    auto L = links[tip.first][tip.second];
+    auto L = links[tip.step_idx][tip.candidate_idx];
     const unsigned int n_meas = measurements.size();
 
-    const unsigned int n_cands = tip.first + 1 - L.n_skipped;
+    const unsigned int n_cands = tip.step_idx + 1 - L.n_skipped;
 
     // Resize the candidates with the exact size
     cands_per_track.resize(n_cands);
@@ -62,11 +61,10 @@ TRACCC_DEVICE inline void build_tracks(const global_index_t globalIndex,
          it++) {
 
         while (L.meas_idx >= n_meas &&
-               L.previous.first !=
-                   std::numeric_limits<
-                       candidate_link::link_index_type::first_type>::max()) {
+               L.previous_step_idx !=
+                   std::numeric_limits<candidate_tip::index_t>::max()) {
 
-            L = links[L.previous.first][L.previous.second];
+            L = links[L.previous_step_idx][L.previous_candidate_idx];
         }
 
         // Break if the measurement is still invalid
@@ -93,7 +91,7 @@ TRACCC_DEVICE inline void build_tracks(const global_index_t globalIndex,
             trk_quality.chi2 = chi2_sum;
             trk_quality.n_holes = L.n_skipped;
         } else {
-            L = links[L.previous.first][L.previous.second];
+            L = links[L.previous_step_idx][L.previous_candidate_idx];
         }
     }
 
