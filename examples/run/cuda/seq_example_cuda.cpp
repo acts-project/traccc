@@ -80,6 +80,9 @@ int seq_run(const traccc::opts::detector& detector_opts,
     vecmem::cuda::device_memory_resource device_mr;
     traccc::memory_resource mr{device_mr, &cuda_host_mr};
 
+    // Host copy object
+    vecmem::copy host_copy;
+
     // CUDA types used.
     traccc::cuda::stream stream;
     vecmem::cuda::async_copy copy{stream.cudaStream()};
@@ -175,7 +178,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
         host_mr, logger().clone("HostTrackParEstAlg"));
     host_finding_algorithm finding_alg(finding_cfg,
                                        logger().clone("HostFindingAlg"));
-    host_fitting_algorithm fitting_alg(fitting_cfg, host_mr,
+    host_fitting_algorithm fitting_alg(fitting_cfg, host_mr, host_copy,
                                        logger().clone("HostFittingAlg"));
 
     traccc::cuda::clusterization_algorithm ca_cuda(

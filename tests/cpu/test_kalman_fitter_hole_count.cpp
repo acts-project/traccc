@@ -23,6 +23,7 @@
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/utils/copy.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>
@@ -60,6 +61,8 @@ TEST_P(KalmanFittingHoleCountTests, Run) {
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
+    // Copy obejct
+    vecmem::copy copy;
 
     // Read back detector file
     const std::string path = name + "/";
@@ -119,7 +122,7 @@ TEST_P(KalmanFittingHoleCountTests, Run) {
     // Fitting algorithm object
     traccc::fitting_config fit_cfg;
     fit_cfg.ptc_hypothesis = ptc;
-    traccc::host::kalman_fitting_algorithm fitting(fit_cfg, host_mr);
+    traccc::host::kalman_fitting_algorithm fitting(fit_cfg, host_mr, copy);
 
     // Event map
     traccc::event_data evt_data(path, 0u, host_mr);

@@ -36,6 +36,7 @@
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/utils/copy.hpp>
 
 // System include(s).
 #include <cassert>
@@ -57,6 +58,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
+    // Copy obejct
+    vecmem::copy copy;
 
     // Performance writer
     traccc::finding_performance_writer find_performance_writer(
@@ -109,7 +112,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     fit_cfg.propagation = propagation_config;
 
     traccc::host::kalman_fitting_algorithm host_fitting(
-        fit_cfg, host_mr, logger().clone("FittingAlg"));
+        fit_cfg, host_mr, copy, logger().clone("FittingAlg"));
 
     // Seed generator
     traccc::seed_generator<traccc::default_detector::host> sg(detector,
@@ -155,9 +158,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
         auto track_states =
             host_fitting(detector, field, traccc::get_data(track_candidates));
 
-        std::cout << "Number of fitted tracks: ( "
-                  << count_fitted_tracks(track_states) << " / "
-                  << track_states.size() << " ) " << std::endl;
+        print_fitted_tracks_statistics(track_states);
 
         const std::size_t n_fitted_tracks = track_states.size();
 
