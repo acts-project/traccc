@@ -32,9 +32,10 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    "src/resolution/stat_plot_tool.cpp"
    # Utils
    "include/traccc/utils/event_data.hpp"
-   "src/utils/event_data.cpp"
-   "include/traccc/utils/ranges.hpp"
    "include/traccc/utils/helpers.hpp"
+   "include/traccc/utils/navigation_validation.hpp"
+   "include/traccc/utils/ranges.hpp"
+   "src/utils/event_data.cpp"
    "src/utils/helpers.hpp"
    "src/utils/helpers.cpp"
    # Value/object comparison code.

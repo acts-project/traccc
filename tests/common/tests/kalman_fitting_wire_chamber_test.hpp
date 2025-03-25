@@ -35,7 +35,7 @@ namespace traccc {
 /// (10) random charge
 class KalmanFittingWireChamberTests
     : public KalmanFittingTests,
-      public testing::WithParamInterface<std::tuple<
+      public testing::TestWithParam<std::tuple<
           std::string, std::array<scalar, 3u>, std::array<scalar, 3u>,
           std::array<scalar, 2u>, std::array<scalar, 2u>,
           std::array<scalar, 2u>, detray::pdg_particle<scalar>, unsigned int,

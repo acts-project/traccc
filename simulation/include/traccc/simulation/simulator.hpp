@@ -40,6 +40,10 @@ struct simulator {
         /// Particle hypothesis
         detray::pdg_particle<traccc::scalar> ptc_type =
             detray::muon<traccc::scalar>();
+
+        // Simulation setup
+        bool do_energy_loss = true;
+        bool do_multiple_scattering = true;
     };
 
     using algebra_type = typename detector_t::algebra_type;
@@ -85,10 +89,11 @@ struct simulator {
 
             // Set random seed
             m_scatterer.set_seed(event_id);
+            m_scatterer.do_energy_loss = m_cfg.do_energy_loss;
+            m_scatterer.do_multiple_scattering = m_cfg.do_multiple_scattering;
             writer_state.set_seed(event_id);
 
-            auto actor_states = detray::tie(m_transporter, m_scatterer,
-                                            m_resetter, writer_state);
+            auto actor_states = detray::tie(m_scatterer, writer_state);
 
             for (auto track : *m_track_generator.get()) {
 
@@ -126,9 +131,7 @@ struct simulator {
     typename writer_t::config m_writer_cfg;
 
     /// Actor states
-    typename detray::parameter_transporter<algebra_type>::state m_transporter{};
     typename detray::random_scatterer<algebra_type>::state m_scatterer{};
-    typename detray::parameter_resetter<algebra_type>::state m_resetter{};
 };
 
 }  // namespace traccc
