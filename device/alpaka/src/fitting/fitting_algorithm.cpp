@@ -53,14 +53,15 @@ struct FitTrackKernel {
         const typename fitter_t::config_type cfg,
         track_candidate_container_types::const_view track_candidates_view,
         vecmem::data::vector_view<const unsigned int> param_ids_view,
-        track_state_container_types::view track_states_view) const {
+        track_state_container_types::view track_states_view,
+        vecmem::data::jagged_vector_view<detray::geometry::barcode> seqs_view) const {
 
         device::global_index_t globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
 
         device::fit<fitter_t>(globalThreadIdx, det_data, field_data, cfg,
                               track_candidates_view, param_ids_view,
-                              track_states_view);
+                              track_states_view, seqs_view);
     }
 };
 
@@ -94,9 +95,10 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
         size_type n_tracks = m_copy.get_size(track_candidates_view.headers);
 
     // Get the sizes of the track candidates in each track
-    const std::vector<track_candidate_container_types::const_device::
-                          item_vector::value_type::size_type>
-        candidate_sizes = m_copy.get_sizes(track_candidates_view.items);
+    using jagged_buffer_size_type = track_candidate_container_types::
+        const_device::item_vector::value_type::size_type;
+    const std::vector<jagged_buffer_size_type> candidate_sizes =
+        m_copy.get_sizes(track_candidates_view.items);
 
     track_state_container_types::buffer track_states_buffer{
         {n_tracks, m_mr.main},
@@ -104,8 +106,19 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
          vecmem::data::buffer_type::resizable}};
     track_state_container_types::view track_states_view(track_states_buffer);
 
+    std::vector<jagged_buffer_size_type> seqs_sizes(candidate_sizes.size());
+    std::transform(candidate_sizes.begin(), candidate_sizes.end(),
+                   seqs_sizes.begin(),
+                   [this](const jagged_buffer_size_type sz) {
+                       return std::max(sz * m_cfg.barcode_sequence_size_factor,
+                                       m_cfg.min_barcode_sequence_capacity);
+                   });
+    vecmem::data::jagged_vector_buffer<detray::geometry::barcode> seqs_buffer{
+        seqs_sizes, m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable};
+
     m_copy.setup(track_states_buffer.headers)->ignore();
     m_copy.setup(track_states_buffer.items)->ignore();
+    m_copy.setup(seqs_buffer)->ignore();
 
     // Calculate the number of threads and thread blocks to run the track
     // fitting
@@ -138,7 +151,7 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
             FitTrackKernel<fitter_t,
                            typename fitter_t::detector_type::view_type>{},
             det_view, field_view, m_cfg, track_candidates_view,
-            vecmem::get_data(param_ids_buffer), track_states_view);
+            vecmem::get_data(param_ids_buffer), track_states_view, vecmem::get_data(seqs_buffer));
         ::alpaka::wait(queue);
     }
 

@@ -166,9 +166,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         link_map;
 
     // Create a buffer of tip links
-    vecmem::data::vector_buffer<typename candidate_link::link_index_type>
-        tips_buffer{m_cfg.max_num_branches_per_seed * n_seeds, m_mr.main,
-                    vecmem::data::buffer_type::resizable};
+    vecmem::data::vector_buffer<candidate_tip> tips_buffer{
+        m_cfg.max_num_branches_per_seed * n_seeds, m_mr.main,
+        vecmem::data::buffer_type::resizable};
     m_copy.setup(tips_buffer)->wait();
 
     // Link size
