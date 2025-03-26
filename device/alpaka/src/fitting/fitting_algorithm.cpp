@@ -81,24 +81,22 @@ struct fit_payload {
      * @brief View object to the output barcode sequence
      */
     vecmem::data::jagged_vector_view<detray::geometry::barcode> barcodes_view;
-
 };
 
 template <typename fitter_t, typename detector_view_t>
 struct FitTrackKernel {
     template <typename TAcc>
-    ALPAKA_FN_ACC void operator()(
-        TAcc const& acc, const fit_payload<fitter_t> *payload)
-        const {
+    ALPAKA_FN_ACC void operator()(TAcc const& acc,
+                                  const fit_payload<fitter_t>* payload) const {
 
         device::global_index_t globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
 
-        device::fit<fitter_t>(globalThreadIdx, payload->det_data,
-                              payload->field_data, payload->cfg,
-                              payload->track_candidates_view,
-                              payload->param_ids_view, payload->track_states_view,
-                              payload->barcodes_view);
+        device::fit<fitter_t>(
+            globalThreadIdx, payload->det_data, payload->field_data,
+            payload->cfg, payload->track_candidates_view,
+            payload->param_ids_view, payload->track_states_view,
+            payload->barcodes_view);
     }
 };
 
@@ -183,18 +181,21 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
                             keys_device.end(), param_ids_device.begin());
 
         // Prepare the payload for the track fitting
-        fit_payload<fitter_t> payload{
-            det_view, field_view, m_cfg, track_candidates_view,
-            vecmem::get_data(param_ids_buffer), track_states_view,
-            vecmem::get_data(seqs_buffer)};
-        auto bufHost_fitPayload = ::alpaka::allocBuf<fit_payload<fitter_t>, Idx>(
-            devHost, 1u);
+        fit_payload<fitter_t> payload{det_view,
+                                      field_view,
+                                      m_cfg,
+                                      track_candidates_view,
+                                      vecmem::get_data(param_ids_buffer),
+                                      track_states_view,
+                                      vecmem::get_data(seqs_buffer)};
+        auto bufHost_fitPayload =
+            ::alpaka::allocBuf<fit_payload<fitter_t>, Idx>(devHost, 1u);
         fit_payload<fitter_t>* fitPayload =
             ::alpaka::getPtrNative(bufHost_fitPayload);
         *fitPayload = payload;
 
-        auto bufAcc_fitPayload = ::alpaka::allocBuf<fit_payload<fitter_t>, Idx>(
-            devAcc, 1u);
+        auto bufAcc_fitPayload =
+            ::alpaka::allocBuf<fit_payload<fitter_t>, Idx>(devAcc, 1u);
         ::alpaka::memcpy(queue, bufAcc_fitPayload, bufHost_fitPayload);
         ::alpaka::wait(queue);
 
