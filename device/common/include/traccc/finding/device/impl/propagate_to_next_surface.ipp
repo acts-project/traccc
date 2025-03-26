@@ -55,8 +55,7 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     }
 
     // tips
-    vecmem::device_vector<typename candidate_link::link_index_type> tips(
-        payload.tips_view);
+    vecmem::device_vector<candidate_tip> tips(payload.tips_view);
 
     if (links.at(param_id).n_skipped > cfg.max_num_skipping_per_cand) {
         params_liveness[param_id] = 0u;

@@ -63,9 +63,10 @@ track_state_container_types::buffer fit_tracks(
         size_type n_tracks = copy.get_size(track_candidates_view.headers);
 
     // Get the number of the track candidates (measurements) in each track.
-    const std::vector<track_candidate_container_types::const_device::
-                          item_vector::value_type::size_type>
-        candidate_sizes = copy.get_sizes(track_candidates_view.items);
+    using jagged_buffer_size_type = track_candidate_container_types::
+        const_device::item_vector::value_type::size_type;
+    const std::vector<jagged_buffer_size_type> candidate_sizes =
+        copy.get_sizes(track_candidates_view.items);
 
     // Create the result buffer.
     track_state_container_types::buffer track_states_buffer{
@@ -83,6 +84,17 @@ track_state_container_types::buffer fit_tracks(
         track_states_items_setup_event->wait();
         return track_states_buffer;
     }
+
+    std::vector<jagged_buffer_size_type> seqs_sizes(candidate_sizes.size());
+    std::transform(candidate_sizes.begin(), candidate_sizes.end(),
+                   seqs_sizes.begin(),
+                   [&config](const jagged_buffer_size_type sz) {
+                       return std::max(sz * config.barcode_sequence_size_factor,
+                                       config.min_barcode_sequence_capacity);
+                   });
+    vecmem::data::jagged_vector_buffer<detray::geometry::barcode> seqs_buffer{
+        seqs_sizes, mr.main, mr.host, vecmem::data::buffer_type::resizable};
+    copy.setup(seqs_buffer)->wait();
 
     // Create the buffers for sorting the parameter IDs.
     vecmem::data::vector_buffer<device::sort_key> keys_buffer(n_tracks,
@@ -127,13 +139,15 @@ track_state_container_types::buffer fit_tracks(
     queue
         .submit([&](::sycl::handler& h) {
             h.parallel_for<fit_kernel_t>(
-                range, [det_view, field_view, config, track_candidates_view,
-                        param_ids_view = vecmem::get_data(param_ids_buffer),
-                        track_states_view](::sycl::nd_item<1> item) {
+                range,
+                [det_view, field_view, config, track_candidates_view,
+                 param_ids_view = vecmem::get_data(param_ids_buffer),
+                 track_states_view, seqs_view = vecmem::get_data(seqs_buffer)](
+                    ::sycl::nd_item<1> item) {
                     device::fit<fitter_t>(details::global_index(item), det_view,
                                           field_view, config,
                                           track_candidates_view, param_ids_view,
-                                          track_states_view);
+                                          track_states_view, seqs_view);
                 });
         })
         .wait_and_throw();

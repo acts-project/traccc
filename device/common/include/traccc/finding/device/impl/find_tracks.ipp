@@ -80,11 +80,9 @@ TRACCC_HOST_DEVICE inline void find_tracks(
      * Compute the last step ID, using a sentinel value if the current step is
      * step 0.
      */
-    const candidate_link::link_index_type::first_type previous_step =
-        (payload.step == 0)
-            ? std::numeric_limits<
-                  candidate_link::link_index_type::first_type>::max()
-            : payload.step - 1;
+    const candidate_tip::index_t previous_step =
+        (payload.step == 0) ? std::numeric_limits<candidate_tip::index_t>::max()
+                            : payload.step - 1;
 
     const unsigned int in_param_id = thread_id.getGlobalThreadIdX();
 
@@ -226,21 +224,23 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                 } else {
                     if (payload.step == 0) {
                         links.at(l_pos) = {
-                            {previous_step, owner_global_thread_id},
-                            meas_idx,
-                            owner_global_thread_id,
-                            0,
-                            chi2};
+                            .previous_step_idx = previous_step,
+                            .previous_candidate_idx = owner_global_thread_id,
+                            .meas_idx = meas_idx,
+                            .seed_idx = owner_global_thread_id,
+                            .n_skipped = 0,
+                            .chi2 = chi2};
                     } else {
                         const candidate_link& prev_link =
                             prev_links[owner_global_thread_id];
 
                         links.at(l_pos) = {
-                            {previous_step, owner_global_thread_id},
-                            meas_idx,
-                            prev_link.seed_idx,
-                            prev_link.n_skipped,
-                            chi2};
+                            .previous_step_idx = previous_step,
+                            .previous_candidate_idx = owner_global_thread_id,
+                            .meas_idx = meas_idx,
+                            .seed_idx = prev_link.seed_idx,
+                            .n_skipped = prev_link.n_skipped,
+                            .chi2 = chi2};
                     }
 
                     // Increase the number of candidates (or branches) per input
@@ -294,19 +294,23 @@ TRACCC_HOST_DEVICE inline void find_tracks(
             *payload.n_total_candidates = payload.n_max_candidates;
         } else {
             if (payload.step == 0) {
-                links.at(l_pos) = {{previous_step, in_param_id},
-                                   std::numeric_limits<unsigned int>::max(),
-                                   in_param_id,
-                                   1,
-                                   std::numeric_limits<traccc::scalar>::max()};
+                links.at(l_pos) = {
+                    .previous_step_idx = previous_step,
+                    .previous_candidate_idx = in_param_id,
+                    .meas_idx = std::numeric_limits<unsigned int>::max(),
+                    .seed_idx = in_param_id,
+                    .n_skipped = 1,
+                    .chi2 = std::numeric_limits<traccc::scalar>::max()};
             } else {
                 const candidate_link& prev_link = prev_links[in_param_id];
 
-                links.at(l_pos) = {{previous_step, in_param_id},
-                                   std::numeric_limits<unsigned int>::max(),
-                                   prev_link.seed_idx,
-                                   prev_link.n_skipped + 1,
-                                   std::numeric_limits<traccc::scalar>::max()};
+                links.at(l_pos) = {
+                    .previous_step_idx = previous_step,
+                    .previous_candidate_idx = in_param_id,
+                    .meas_idx = std::numeric_limits<unsigned int>::max(),
+                    .seed_idx = prev_link.seed_idx,
+                    .n_skipped = prev_link.n_skipped + 1,
+                    .chi2 = std::numeric_limits<traccc::scalar>::max()};
             }
 
             out_params.at(l_pos) = in_params.at(in_param_id);

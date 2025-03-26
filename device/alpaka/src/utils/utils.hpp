@@ -38,7 +38,7 @@ using Host = ::alpaka::DevCpu;
 using Queue = ::alpaka::Queue<Acc, ::alpaka::Blocking>;
 
 template <typename TAcc>
-consteval std::size_t getWarpSize() {
+consteval Idx getWarpSize() {
     if constexpr (::alpaka::accMatchesTags<TAcc, ::alpaka::TagGpuCudaRt,
                                            ::alpaka::TagGpuSyclIntel>) {
         return 32;

@@ -14,6 +14,7 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/candidate_link.hpp"
+#include "traccc/finding/candidate_tip.hpp"
 #include "traccc/finding/finding_config.hpp"
 
 // VecMem include(s).
@@ -68,8 +69,7 @@ struct propagate_to_next_surface_payload {
     /**
      * @brief View object to the vector of tips
      */
-    vecmem::data::vector_view<typename candidate_link::link_index_type>
-        tips_view;
+    vecmem::data::vector_view<candidate_tip> tips_view;
 
     /**
      * @brief View object to the vector of the number of tracks per initial
