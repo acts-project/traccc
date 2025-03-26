@@ -511,7 +511,7 @@ struct BlockSharedMemDynSizeBytes<traccc::alpaka::FindTracksKernel<detector_t>,
         TArgs const&... /* args */
         ) -> std::size_t {
         return static_cast<std::size_t>(blockThreadExtent.prod()) *
-               sizeof(unsigned int) * 2 *
+               sizeof(unsigned int) + 2 *
                sizeof(std::pair<unsigned int, unsigned int>);
     }
 };
