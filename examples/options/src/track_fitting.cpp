@@ -29,10 +29,6 @@ track_fitting::track_fitting() : interface("Track Fitting Options") {
         "fit-particle-hypothesis",
         po::value(&m_pdg)->value_name("PDG")->default_value(m_pdg),
         "Particle hypothesis for the track fit");
-    m_desc.add_options()("fit-use-backward-filter",
-                         po::value(&m_config.use_backward_filter)
-                             ->default_value(m_config.use_backward_filter),
-                         "Use backward filter for smoothing");
     m_desc.add_options()(
         "fit-covariance-inflation-factor",
         po::value(&m_config.covariance_inflation_factor)
@@ -72,9 +68,6 @@ std::unique_ptr<configuration_printable> track_fitting::as_printable() const {
         "Number of iterations", std::to_string(m_config.n_iterations)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Particle hypothesis PDG", std::to_string(m_pdg)));
-    cat->add_child(std::make_unique<configuration_kv_pair>(
-        "Use backward filter",
-        std::format("{}", m_config.use_backward_filter)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Covariance inflation factor",
         std::to_string(m_config.covariance_inflation_factor)));
