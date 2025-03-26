@@ -54,7 +54,8 @@ struct FitTrackKernel {
         track_candidate_container_types::const_view track_candidates_view,
         vecmem::data::vector_view<const unsigned int> param_ids_view,
         track_state_container_types::view track_states_view,
-        vecmem::data::jagged_vector_view<detray::geometry::barcode> seqs_view) const {
+        vecmem::data::jagged_vector_view<detray::geometry::barcode> seqs_view)
+        const {
 
         device::global_index_t globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
@@ -151,7 +152,8 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
             FitTrackKernel<fitter_t,
                            typename fitter_t::detector_type::view_type>{},
             det_view, field_view, m_cfg, track_candidates_view,
-            vecmem::get_data(param_ids_buffer), track_states_view, vecmem::get_data(seqs_buffer));
+            vecmem::get_data(param_ids_buffer), track_states_view,
+            vecmem::get_data(seqs_buffer));
         ::alpaka::wait(queue);
     }
 
