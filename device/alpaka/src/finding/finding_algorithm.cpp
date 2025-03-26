@@ -33,7 +33,6 @@
 #include <detray/propagator/rk_stepper.hpp>
 
 // VecMem include(s).
-#include <ratio>
 #include <vecmem/containers/data/vector_buffer.hpp>
 #include <vecmem/containers/data/vector_view.hpp>
 #include <vecmem/containers/device_vector.hpp>
