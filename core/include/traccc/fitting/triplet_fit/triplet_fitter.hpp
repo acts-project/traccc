@@ -17,13 +17,6 @@
 #include "traccc/fitting/fitting_config.hpp"
 
 // detray include(s).
-#include "detray/propagator/actor_chain.hpp"
-#include "detray/propagator/actors/aborters.hpp"
-#include "detray/propagator/actors/parameter_resetter.hpp"
-#include "detray/propagator/actors/parameter_transporter.hpp"
-#include "detray/propagator/actors/pointwise_material_interactor.hpp"
-#include "detray/propagator/propagator.hpp"
-
 #include "detray/tracks/bound_track_parameters.hpp"
 
 // System include(s).
@@ -35,18 +28,10 @@ namespace traccc {
 
     /// Triplet fitting algorithm to fit a single track
 
-    // we dont need the stepper/navigator now but
-    // the detector and bfield types are obtained from these,
-    // as in the original Kalman filter code
-
-    // Try with explicitly passing the actually required types
     template <typename detector_t, typename bfield_t>
     class triplet_fitter {
 
         public:
-        // Detector type
-        // using detector_t = typename navigator_t::detector_t;
-
         // Algebra type
         using algebra_type = typename detector_t::algebra_type;
 
@@ -56,9 +41,6 @@ namespace traccc {
 
         // Configuration type
         using config_type = fitting_config;
-
-        // Field type
-        // using bfield_t = typename stepper_t::magnetic_field_type;
 
         // Matrix types
         using matrix_operator = detray::dmatrix_operator<algebra_type>;
@@ -132,6 +114,8 @@ namespace traccc {
         ///
         TRACCC_HOST_DEVICE 
         void make_triplets() {
+
+            // std::cout << "Making triplets\n";
             
             std::size_t n_triplets = m_track_states.size() - 2;
 
@@ -163,11 +147,12 @@ namespace traccc {
                 point3 glob_3d_1 = meas_1_sf.bound_to_global({}, loc_2d_1, {});
                 point3 glob_3d_2 = meas_2_sf.bound_to_global({}, loc_2d_2, {});
 
+                /*
                 std::cout << glob_3d_0[0] << " " << glob_3d_0[1] << " " << glob_3d_0[2] << std::endl;
                 if (i == n_triplets - 1) {
                     std::cout << glob_3d_1[0] << " " << glob_3d_1[1] << " " << glob_3d_1[2] << std::endl;
                     std::cout << glob_3d_2[0] << " " << glob_3d_2[1] << " " << glob_3d_2[2] << std::endl;
-                }
+                }*/
 
                 // Make triplet
                 triplet t(glob_3d_0, glob_3d_1, glob_3d_2);
@@ -194,7 +179,7 @@ namespace traccc {
         /// @param t Triplet to linearize
         TRACCC_HOST_DEVICE void linearize_triplet(triplet& t) {
 
-            std::cout << "Linearization:\n";
+            // std::cout << "Linearization:\n";
 
             vector3 x_01 {t.m_hit_1 - t.m_hit_0};
             vector3 x_12 {t.m_hit_2 - t.m_hit_1};
@@ -203,11 +188,11 @@ namespace traccc {
             scalar d_01 = getter::perp(x_01);
             scalar d_12 = getter::perp(x_12);
             scalar d_02 = getter::perp(x_02);
-            std::cout << "d01 " << d_01 << " d12 " << d_12 << " d02 " << d_02 << std::endl;
+            // std::cout << "d01 " << d_01 << " d12 " << d_12 << " d02 " << d_02 << std::endl;
 
             scalar z_01 = x_01[2];
             scalar z_12 = x_12[2];
-            std::cout << "z01 " << z_01 << " z12 " << z_12 << std::endl;
+            // std::cout << "z01 " << z_01 << " z12 " << z_12 << std::endl;
 
             // Calculation of circle curvature and hence the entire 
             // linearization will fail for very low (or 0) transverse 
@@ -225,7 +210,7 @@ namespace traccc {
                 return;
             } 
 
-            std::cout << "\tc_perp " << c_perp << std::endl;
+            // std::cout << "\tc_perp " << c_perp << std::endl;
 
 
             // Parameters of the arc segments
@@ -233,7 +218,7 @@ namespace traccc {
             // Azimuthal (bending) angles
             scalar phi_1C = 2.f * math::asin(0.5f * d_01 * c_perp);
             scalar phi_2C = 2.f * math::asin(0.5f * d_12 * c_perp);
-            std::cout << "phi1 " << phi_1C << " phi2 " << phi_2C << std::endl;
+            // std::cout << "phi1 " << phi_1C << " phi2 " << phi_2C << std::endl;
             
             scalar phi2_1C = phi_1C * phi_1C;
             scalar phi2_2C = phi_2C * phi_2C;
@@ -248,7 +233,7 @@ namespace traccc {
             scalar c_3D_1C = phi_1C / math::sqrt(z_01*z_01 + 0.25f * d_01*d_01 * phi2_1C / sin2_0p5_phi1C);
             scalar c_3D_2C = phi_2C / math::sqrt(z_12*z_12 + 0.25f * d_12*d_12 * phi2_2C / sin2_0p5_phi2C);
 
-            std::cout << "\tc_3D_1C " << c_3D_1C << " c_3D_2C " << c_3D_2C << std::endl;
+            // std::cout << "\tc_3D_1C " << c_3D_1C << " c_3D_2C " << c_3D_2C << std::endl;
 
             // Polar angles
             scalar theta_1C = std::acos(z_01 * c_3D_1C / phi_1C);
@@ -285,14 +270,14 @@ namespace traccc {
                 }
             }
 
-            std::cout << "c_correct " << c_correct[0] << ", " << c_correct[1] << std::endl;
+            // std::cout << "c_correct " << c_correct[0] << ", " << c_correct[1] << std::endl;
 
             if (getter::norm(c_correct) == 0.f or getter::norm(x1 - m) == 0.f) {
                 // Use straight line connecting hits
                 // 0 and 2 if center calculation fails
                 // or three hits lie on a straight line
                 tangent3D = vector::normalize(x_02);
-                std::cout << "using straight line calculation" << std::endl;
+                // std::cout << "using straight line calculation" << std::endl;
             }
 
             else {
@@ -314,7 +299,7 @@ namespace traccc {
                 tangent3D[2] = math::cos(t.m_theta);
             }
 
-            std::cout << "tangent: " << tangent3D[0] << ", " << tangent3D[1] << ", " << tangent3D[2] << std::endl;
+            // std::cout << "tangent: " << tangent3D[0] << ", " << tangent3D[1] << ", " << tangent3D[2] << std::endl;
 
 
             // Estimate MS-uncertainty
@@ -323,7 +308,7 @@ namespace traccc {
 
             // effective thickness
             scalar t_eff = mat_scatter / scat_sf.cos_angle({}, tangent3D, t.m_meas[1].local);
-            std::cout << "t_eff " << t_eff << std::endl;
+            // std::cout << "t_eff " << t_eff << std::endl;
 
             auto scattering_unc = [](scalar curvature_3D, scalar eff_thickness, vector3 field_strength_vector) {
                 return math::fabs(curvature_3D) * 45.f * math::sqrt(eff_thickness) * unit<scalar>::T / field_strength_vector[2] * (1.f + 0.038f * math::log(eff_thickness));
@@ -334,9 +319,9 @@ namespace traccc {
             B_vec[0u] = B_field[0u];
             B_vec[1u] = B_field[1u];
             B_vec[2u] = B_field[2u];
-            std::cout << "\tB-field " << B_vec[0u] << ", " << B_vec[1u] << ", " << B_vec[2u] << std::endl;
+            // std::cout << "\tB-field " << B_vec[0u] << ", " << B_vec[1u] << ", " << B_vec[2u] << std::endl;
             t.m_sigma_MS = scattering_unc((0.5f *(c_3D_1C + c_3D_2C)), t_eff, B_vec);
-            std::cout << "\tsigma_MS " << t.m_sigma_MS << std::endl;
+            // std::cout << "\tsigma_MS " << t.m_sigma_MS << std::endl;
 
             
             // Index parameters
@@ -350,8 +335,8 @@ namespace traccc {
             t.m_rho_phi = -0.5f * (phi_1C * n_1C/c_3D_1C + phi_2C * n_2C/c_3D_2C);
             t.m_rho_theta = (1.f - n_1C) * cot(theta_1C) / c_3D_1C - (1.f - n_2C) * cot(theta_2C) / c_3D_2C;
 
-            std::cout << "\tphi0 " << t.m_phi_0 << "  theta0 " << t.m_theta_0 << std::endl;
-            std::cout << "\trho_phi " << t.m_rho_phi << "  rho_theta " << t.m_rho_theta << std::endl;
+            // std::cout << "\tphi0 " << t.m_phi_0 << "  theta0 " << t.m_theta_0 << std::endl;
+            // std::cout << "\trho_phi " << t.m_rho_phi << "  rho_theta " << t.m_rho_theta << std::endl;
         }
 
         /// Helper function - Quick Linearize
@@ -383,7 +368,7 @@ namespace traccc {
             std::cout << "d_01 " << d_01 << " d_12 " << d_12 << std::endl;*/ 
 
             phi_0 = math::asin(std::clamp(arg, -1.f, 1.f));
-            std::cout << "arg " << arg << " phi_0 " << phi_0 << std::endl;
+            // std::cout << "arg " << arg << " phi_0 " << phi_0 << std::endl;
 
             vector2 x_0_L{pos0[2], 0.f};
             vector2 x_1_L{pos1[2], d_01};
@@ -404,27 +389,7 @@ namespace traccc {
         /// @param t Triplet
         TRACCC_HOST_DEVICE void calculate_pos_derivs(triplet& t) {
 
-            // hits shifted by multiplier * sigma
-            // in every hit uncertainty direction
-            // scalar multiplier = 1.f;
-
-            // need the position uncertainty directions for hits
-
             // std::cout << "Hit position derivatives:\n";
-
-            /*auto print_vec = [](vector3& v){ std::cout << v[0] << ", " << v[1] << ", " << v[2]; };
-
-            auto R = [](scalar x, scalar y) { return math::sqrt(x*x + y*y); };
-
-            detray::tracking_surface scat_sf(m_detector, t.m_meas[1].surface_link);
-            context ctx;
-
-            auto c_mass = scat_sf.centroid();
-
-            auto c_geom = scat_sf.center(ctx);
-
-            auto meas_loc = t.m_meas[1].local;
-            auto meas_var = t.m_meas[1].variance;*/
 
             scalar phi_0_before = t.m_phi_0;
             scalar theta_0_before = t.m_theta_0;
@@ -481,6 +446,7 @@ namespace traccc {
             }
 
 
+            /*
             std::cout << "\tH_theta: ";
             for (unsigned j = 0; j < t.m_h_thet.size(); ++j) {
                 std::cout << " " << t.m_h_thet[j];
@@ -489,26 +455,7 @@ namespace traccc {
             for (unsigned j = 0; j < t.m_h_phi.size(); ++j) {
                 std::cout << " " << t.m_h_phi[j];
             }
-
-
-            // vector3 vtx = scat_sf.local_vertices(0u);
-            /*auto min_max_vtx = scat_sf.local_min_bounds();
-
-            std::cout << "\nMiddle hit of triplet:\n";
-
-            std::cout << "\tmeas: " << meas_loc[0] << ", " << meas_loc[1] << " +- " << meas_var[0] << ", " << meas_var[1] << "\n";
-
-            std::cout << "\tmeas dimension: " << t.m_meas[1].meas_dim << "\n";
-
-            std::cout << "\tsurface centroid: "; print_vec(c_mass); std::cout << "\n";
-
-            std::cout << "\tsurface center: "; print_vec(c_geom); std::cout << " R: " << R(c_geom[0], c_geom[1]) << "\n";
-            
-            // std::cout << "vertex 0: "; print_vec(vtx); std ::cout << "\n";
-            std::cout << "\tloc min bounds: " << min_max_vtx << std::endl;
-
-            std::cout << "\tsurface details: " << scat_sf << std::endl;*/
-
+            */
 
         }
 
@@ -518,6 +465,7 @@ namespace traccc {
         ///
         /// @param fitting_res result of the fit for this track
         /// @param track_states fitted track states at the measurement surfaces
+        ///
         /// (fitted state only at the first measurement surface is calculated)
         TRACCC_HOST_DEVICE
         void do_global_fit(fitting_result<algebra_type>& fitting_res, 
@@ -639,6 +587,11 @@ namespace traccc {
 
             matrix_type<2u*max_ntrips, 2u*max_ntrips> K_inv = D_MS_inv + H * D_hit_inv * matrix_operator().transpose(H);
 
+            // Matrix inversion
+            matrix_type<2u*max_ntrips, 2u*max_ntrips> K = matrix_operator().inverse(K_inv);    
+
+            /*
+            std::cout << " ************************************ MATRICES ************************************ " << std::endl;
             std::cout << "D_MS_inv:\n";
             for (size_t r = 0u; r < 2u*max_ntrips; ++r) {
                 for (size_t c = 0u; c < 2u*max_ntrips; ++c) {
@@ -647,7 +600,15 @@ namespace traccc {
                 }
                 std::cout << std::endl;
             }
-            // Visualize K_inv matrix
+            std::cout << "D_hit_inv:\n";
+            for (size_t r = 0u; r < max_ndirs; ++r) {
+                for (size_t c = 0u; c < max_ndirs; ++c) {
+                    std::cout << std::setw(12);
+                    std::cout << getter::element(D_hit_inv, r, c) << " ";
+                }
+                std::cout << std::endl;
+            }
+
             std::cout << "K_inv:\n";
             for (size_t r = 0u; r < 2u*max_ntrips; ++r) {
                 for (size_t c = 0u; c < 2u*max_ntrips; ++c) {
@@ -656,9 +617,14 @@ namespace traccc {
                 }
                 std::cout << std::endl;
             }
-
-            // Matrix inversion
-            matrix_type<2u*max_ntrips, 2u*max_ntrips> K = matrix_operator().inverse(K_inv);    
+            std::cout << "K:\n";
+            for (size_t r = 0u; r < 2u*max_ntrips; ++r) {
+                for (size_t c = 0u; c < 2u*max_ntrips; ++c) {
+                    std::cout << std::setw(12);
+                    std::cout << getter::element(K, r, c) << " ";
+                }
+                std::cout << std::endl;
+            }*/
 
             matrix_type<1u, 1u> num = -1.f * matrix_operator().transpose(rho) * K * psi;
             matrix_type<1u, 1u> den = matrix_operator().transpose(rho) * K * rho;
@@ -672,7 +638,7 @@ namespace traccc {
 
             scalar chi2 = getter::element(psiT_K_psi, 0u, 0u) - (c_3D * c_3D) / (sigma_c_3D * sigma_c_3D); 
 
-            std::cout << "\nGlobal fit: c_3D " << c_3D << "  sigma_c_3D " << sigma_c_3D << "  chi2 " << chi2 << std::endl;
+            // std::cout << "\nGlobal fit: c_3D " << c_3D << "  sigma_c_3D " << sigma_c_3D << "  chi2 " << chi2 << std::endl;
 
             // Calculation of hit position shifts, covariance matrix
 
@@ -748,8 +714,8 @@ namespace traccc {
                 detray::bound_parameters_vector<algebra_type> params_vec{};
                 params_vec.set_bound_local(loc0);
 
-                std::cout << "phi r01 " << getter::phi(r01) << " bending angle " << bending_angle << std::endl;
-                std::cout << "phi " << getter::phi(r01) + 0.5f * bending_angle << " wrapped phi " << wrap_pi_mpi(getter::phi(r01) + 0.5f * bending_angle) << std::endl;
+                // std::cout << "phi r01 " << getter::phi(r01) << " bending angle " << bending_angle << std::endl;
+                // std::cout << "phi " << getter::phi(r01) + 0.5f * bending_angle << " wrapped phi " << wrap_pi_mpi(getter::phi(r01) + 0.5f * bending_angle) << std::endl;
 
                 params_vec.set_phi(wrap_pi_mpi(getter::phi(r01) + 0.5f * bending_angle));
                 params_vec.set_theta(getter::theta(r01));
@@ -800,11 +766,13 @@ namespace traccc {
         TRACCC_HOST_DEVICE void fit(fitting_result<algebra_type>& fitting_res, 
             vector_type<track_state<algebra_type>>& track_states) {
 
+            // std::cout << "Fitting track with " << m_triplets.size() << " triplets\n";
+
             unsigned triplet_idx = 0;
 
             for (triplet& t : m_triplets) {
                 
-                std::cout << "Triplet " << triplet_idx << "\n";
+                // std::cout << "Triplet " << triplet_idx << "\n";
                 
                 linearize_triplet(t);
                 calculate_pos_derivs(t);
