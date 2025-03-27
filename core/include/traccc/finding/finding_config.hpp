@@ -48,6 +48,22 @@ struct finding_config {
     /// Particle hypothesis
     detray::pdg_particle<traccc::scalar> ptc_hypothesis =
         detray::muon<traccc::scalar>();
+
+    /// @name Performance parameters
+    /// These parameters impact only compute performance; any case in which a
+    /// change in these parameters effects a change in _physics_ performance
+    /// should be considered a bug.
+    /// @{
+    /// @brief The number of links to reserve space for, per seed.
+    ///
+    /// This parameter describes the number of links which we reserve per seed.
+    /// If this number turns out to be too low, the track finding algorithm
+    /// will automatically resize it, but this comes at the cost of
+    /// performance.
+    ///
+    /// @note This parameter affects GPU-based track finding only.
+    unsigned int initial_links_per_seed = 100;
+    /// @}
 };
 
 }  // namespace traccc
