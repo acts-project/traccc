@@ -62,7 +62,6 @@ struct track_state {
     TRACCC_HOST_DEVICE
     track_state(const track_candidate& trk_cand)
         : m_surface_link(trk_cand.surface_link), m_measurement(trk_cand) {
-        m_predicted.set_surface_link(m_surface_link);
         m_filtered.set_surface_link(m_surface_link);
         m_smoothed.set_surface_link(m_surface_link);
     }
@@ -138,24 +137,6 @@ struct track_state {
         return ret;
     }
 
-    /// @return the non-const reference of predicted track state
-    TRACCC_HOST_DEVICE
-    inline bound_track_parameters_type& predicted() { return m_predicted; }
-
-    /// @return the const reference of predicted track state
-    TRACCC_HOST_DEVICE
-    inline const bound_track_parameters_type& predicted() const {
-        return m_predicted;
-    }
-
-    /// @return the non-const transport jacobian
-    TRACCC_HOST_DEVICE
-    inline bound_matrix_type& jacobian() { return m_jacobian; }
-
-    /// @return the const transport jacobian
-    TRACCC_HOST_DEVICE
-    inline const bound_matrix_type& jacobian() const { return m_jacobian; }
-
     /// @return the non-const chi square of filtered parameter
     TRACCC_HOST_DEVICE
     inline scalar_type& filtered_chi2() { return m_filtered_chi2; }
@@ -207,8 +188,6 @@ struct track_state {
     private:
     detray::geometry::barcode m_surface_link;
     measurement m_measurement;
-    bound_matrix_type m_jacobian = matrix::zero<bound_matrix_type>();
-    bound_track_parameters_type m_predicted;
     scalar_type m_filtered_chi2 = 0.f;
     bound_track_parameters_type m_filtered;
     scalar_type m_smoothed_chi2 = 0.f;

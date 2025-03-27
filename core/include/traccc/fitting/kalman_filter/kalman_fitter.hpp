@@ -13,7 +13,6 @@
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/fitting_config.hpp"
-#include "traccc/fitting/kalman_filter/gain_matrix_smoother.hpp"
 #include "traccc/fitting/kalman_filter/kalman_actor.hpp"
 #include "traccc/fitting/kalman_filter/kalman_step_aborter.hpp"
 #include "traccc/fitting/kalman_filter/statistics_updater.hpp"
@@ -280,74 +279,51 @@ class kalman_fitter {
         last.smoothed().set_covariance(last.filtered().covariance());
         last.smoothed_chi2() = last.filtered_chi2();
 
-        if (m_cfg.use_backward_filter) {
-            if (fitter_state.m_sequencer_state._sequence.empty()) {
-                return kalman_fitter_status::SUCCESS;
-            }
-
-            // Backward propagator for the two-filters method
-            detray::propagation::config backward_cfg = m_cfg.propagation;
-            backward_cfg.navigation.min_mask_tolerance =
-                static_cast<float>(m_cfg.backward_filter_mask_tolerance);
-            backward_cfg.navigation.max_mask_tolerance =
-                static_cast<float>(m_cfg.backward_filter_mask_tolerance);
-
-            backward_propagator_type propagator(backward_cfg);
-
-            // Set path limit
-            fitter_state.m_aborter_state.set_path_limit(
-                m_cfg.propagation.stepping.path_limit);
-
-            typename backward_propagator_type::state propagation(
-                last.smoothed(), m_field, m_detector,
-                fitter_state.m_sequence_buffer);
-            propagation.set_particle(detail::correct_particle_hypothesis(
-                m_cfg.ptc_hypothesis, last.smoothed()));
-
-            assert(std::signbit(
-                       propagation._stepping.particle_hypothesis().charge()) ==
-                   std::signbit(propagation._stepping.bound_params().qop()));
-
-            inflate_covariance(propagation._stepping.bound_params(),
-                               m_cfg.covariance_inflation_factor);
-
-            propagation._navigation.set_direction(
-                detray::navigation::direction::e_backward);
-            fitter_state.m_fit_actor_state.backward_mode = true;
-
-            // Synchronize the current barcode with the input track parameter
-            while (propagation._navigation.get_target_barcode() !=
-                   last.smoothed().surface_link()) {
-                assert(!propagation._navigation.is_complete());
-                propagation._navigation.next();
-            }
-
-            propagator.propagate(propagation,
-                                 fitter_state.backward_actor_state());
-
-            // Reset the backward mode to false
-            fitter_state.m_fit_actor_state.backward_mode = false;
-
-        } else {
-            // The last track state is already smoothed
-            last.is_smoothed = true;
-
-            // Run the Rauch–Tung–Striebel (RTS) smoother
-            for (typename vecmem::device_vector<
-                     track_state<algebra_type>>::reverse_iterator it =
-                     track_states.rbegin() + 1;
-                 it != track_states.rend(); ++it) {
-
-                const detray::tracking_surface sf{m_detector,
-                                                  it->surface_link()};
-                if (kalman_fitter_status res =
-                        sf.template visit_mask<
-                            gain_matrix_smoother<algebra_type>>(*it, *(it - 1));
-                    res != kalman_fitter_status::SUCCESS) {
-                    return res;
-                }
-            }
+        if (fitter_state.m_sequencer_state._sequence.empty()) {
+            return kalman_fitter_status::SUCCESS;
         }
+
+        // Backward propagator for the two-filters method
+        detray::propagation::config backward_cfg = m_cfg.propagation;
+        backward_cfg.navigation.min_mask_tolerance =
+            static_cast<float>(m_cfg.backward_filter_mask_tolerance);
+        backward_cfg.navigation.max_mask_tolerance =
+            static_cast<float>(m_cfg.backward_filter_mask_tolerance);
+
+        backward_propagator_type propagator(backward_cfg);
+
+        // Set path limit
+        fitter_state.m_aborter_state.set_path_limit(
+            m_cfg.propagation.stepping.path_limit);
+
+        typename backward_propagator_type::state propagation(
+            last.smoothed(), m_field, m_detector,
+            fitter_state.m_sequence_buffer);
+        propagation.set_particle(detail::correct_particle_hypothesis(
+            m_cfg.ptc_hypothesis, last.smoothed()));
+
+        assert(std::signbit(
+                   propagation._stepping.particle_hypothesis().charge()) ==
+               std::signbit(propagation._stepping.bound_params().qop()));
+
+        inflate_covariance(propagation._stepping.bound_params(),
+                           m_cfg.covariance_inflation_factor);
+
+        propagation._navigation.set_direction(
+            detray::navigation::direction::e_backward);
+        fitter_state.m_fit_actor_state.backward_mode = true;
+
+        // Synchronize the current barcode with the input track parameter
+        while (propagation._navigation.get_target_barcode() !=
+               last.smoothed().surface_link()) {
+            assert(!propagation._navigation.is_complete());
+            propagation._navigation.next();
+        }
+
+        propagator.propagate(propagation, fitter_state.backward_actor_state());
+
+        // Reset the backward mode to false
+        fitter_state.m_fit_actor_state.backward_mode = false;
 
         return kalman_fitter_status::SUCCESS;
     }
@@ -369,8 +345,8 @@ class kalman_fitter {
 
             const detray::tracking_surface sf{m_detector,
                                               trk_state.surface_link()};
-            sf.template visit_mask<statistics_updater<algebra_type>>(
-                fit_res, trk_state, m_cfg.use_backward_filter);
+            sf.template visit_mask<statistics_updater<algebra_type>>(fit_res,
+                                                                     trk_state);
         }
 
         // Track quality

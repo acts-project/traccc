@@ -71,7 +71,6 @@ traccc_add_library( traccc_core core TYPE SHARED
   "src/finding/combinatorial_kalman_filter_algorithm_constant_field_default_detector.cpp"
   "src/finding/combinatorial_kalman_filter_algorithm_constant_field_telescope_detector.cpp"
   # Fitting algorithmic code
-  "include/traccc/fitting/kalman_filter/gain_matrix_smoother.hpp"
   "include/traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
   "include/traccc/fitting/kalman_filter/kalman_actor.hpp"
   "include/traccc/fitting/kalman_filter/kalman_fitter.hpp"
