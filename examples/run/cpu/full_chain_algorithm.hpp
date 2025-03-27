@@ -15,6 +15,7 @@
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
+#include "traccc/fitting/triplet_fitting_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/host_detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
@@ -57,8 +58,8 @@ class full_chain_algorithm
     using finding_algorithm =
         traccc::host::combinatorial_kalman_filter_algorithm;
     /// Track fitting algorithm type
-    using fitting_algorithm = traccc::host::kalman_fitting_algorithm;
-    // using fitting_algorithm = traccc::host::triplet_fitting_algorithm;
+    // using fitting_algorithm = traccc::host::kalman_fitting_algorithm;
+    using fitting_algorithm = traccc::host::triplet_fitting_algorithm;
 
     /// @}
 

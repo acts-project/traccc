@@ -109,8 +109,8 @@ track_state_container_types::host fit_tracks(
 /// studied.
 
 template<> 
-inline track_state_container_types::host fit_tracks(
-        traccc::template triplet_fitter< typename traccc::default_detector::host,
+inline track_state_container_types::host fit_tracks<>(
+        traccc::triplet_fitter< const typename traccc::default_detector::host,
             typename detray::bfield::const_field_t::view_t >& fitter,
         const track_candidate_container_types::const_view& track_candidates_view,
         vecmem::memory_resource& mr) {
@@ -143,6 +143,9 @@ inline track_state_container_types::host fit_tracks(
         // Initialize fitter
         fitter.init_fitter(input_states);
 
+        // Make triplets of measurements
+        fitter.make_triplets();
+
         // Run fitter
         fitter.fit(fit_res, fitted_states);
 
@@ -156,53 +159,5 @@ inline track_state_container_types::host fit_tracks(
     return result;
 
 }
-
-/*
-template <typename stepper_type, typename navigator_type>
-track_state_container_types::host fit_tracks<traccc::triplet_fitter<stepper_type, navigator_type>>(
-    traccc::triplet_fitter<stepper_type, navigator_type>& fitter,
-    const track_candidate_container_types::const_view& track_candidates_view,
-    vecmem::memory_resource& mr) {
-
-        using algebra_type = typename traccc::triplet_fitter<stepper_type, navigator_type>::algebra_type;
-
-        // Create the output container
-        track_state_container_types::host result{&mr};
-
-        // Iterate over the tracks,
-        const track_candidate_container_types::const_device track_candidates{
-        track_candidates_view};
-        for (track_candidate_container_types::const_device::size_type i = 0;
-        i < track_candidates.size(); ++i) {
-
-            // Make a vector of track states for this track.
-            vecmem::vector<track_state<algebra_type>> input_states{&mr};
-
-            input_states.reserve(track_candidates.get_items()[i].size());
-            for (auto& measurement : track_candidates.get_items()[i]) {
-                input_states.emplace_back(measurement);
-            }
-
-            // Fitting result & vector of
-            // fitted track states
-            fitting_result<algebra_type> fit_res;
-            vecmem::vector<track_state<algebra_type>> fitted_states;
-
-            // Initialize fitter
-            fitter.init_fitter(input_states);
-
-            // Run fitter
-            fitter.fit(fit_res, fitted_states);
-
-            // Save the results into the output container.
-            result.push_back(
-                std::move(fit_res),
-                std::move(fitted_states));
-        }
-
-        // Return the fitted track states.
-        return result;
-
-    }*/
 
 }  // namespace traccc::host::details
