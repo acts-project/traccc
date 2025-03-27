@@ -75,9 +75,9 @@ struct build_tracks_payload {
 /// @param[in] cfg                    Track finding config object
 /// @param[inout] payload      The function call payload
 ///
-TRACCC_DEVICE inline void build_tracks(global_index_t globalIndex,
-                                       const finding_config& cfg,
-                                       const build_tracks_payload& payload);
+TRACCC_HOST_DEVICE inline void build_tracks(
+    global_index_t globalIndex, const finding_config& cfg,
+    const build_tracks_payload& payload);
 
 }  // namespace traccc::device
 
