@@ -50,20 +50,9 @@ struct build_tracks_payload {
     vecmem::data::vector_view<const candidate_tip> tips_view;
 
     /**
-     * @brief View object to the vector of track candidates
+     * @brief View object to the vector of pruned track candidates
      */
-    track_candidate_container_types::view track_candidates_view;
-
-    /**
-     * @brief View object to the vector of indices meeting the selection
-     * criteria
-     */
-    vecmem::data::vector_view<unsigned int> valid_indices_view;
-
-    /**
-     * @brief The number of valid tracks meeting criteria
-     */
-    unsigned int* n_valid_tracks;
+    track_candidate_container_types::view final_candidates_view;
 };
 
 /// Function for building full tracks from the link container:
