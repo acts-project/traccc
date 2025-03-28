@@ -136,7 +136,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::host::kalman_fitting_algorithm host_fitting(
         fit_cfg, host_mr, copy, logger().clone("FittingAlg"));
 
-    traccc::greedy_ambiguity_resolution_algorithm::config_t
+    traccc::greedy_ambiguity_resolution_algorithm::config_type
         host_ambiguity_config{};
     traccc::greedy_ambiguity_resolution_algorithm host_ambiguity_resolution(
         host_ambiguity_config, logger().clone("AmbiguityResolution"));
