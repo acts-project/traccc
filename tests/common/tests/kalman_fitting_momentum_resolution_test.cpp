@@ -133,7 +133,7 @@ void KalmanFittingMomentumResolutionTests::SetUp() {
 
     const auto p = std::get<3>(GetParam());
     const detray::detail::helix<traccc::default_algebra> hlx(
-        {0, 0, 0}, 0, {1, 0, 0}, -1.f / p, &bfield);
+        {0, 0, 0}, 0, {1, 0, 0}, -1.f / p, bfield);
 
     constexpr scalar rect_half_length = 500.f;
     constexpr detray::mask<detray::rectangle2D, traccc::default_algebra>

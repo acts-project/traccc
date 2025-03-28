@@ -44,7 +44,7 @@ TEST(track_params_estimation, helix_negative_charge) {
 
     // Make a helix
     detray::detail::helix<traccc::default_algebra> hlx(
-        pos, time, vector::normalize(mom), q / vector::norm(mom), &B);
+        pos, time, vector::normalize(mom), q / vector::norm(mom), B);
 
     // Make three spacepoints with the helix
     measurement_collection_types::host measurements(&host_mr);
@@ -86,7 +86,7 @@ TEST(track_params_estimation, helix_positive_charge) {
 
     // Make a helix
     detray::detail::helix<traccc::default_algebra> hlx(
-        pos, time, vector::normalize(mom), q / vector::norm(mom), &B);
+        pos, time, vector::normalize(mom), q / vector::norm(mom), B);
 
     // Make three spacepoints with the helix
     measurement_collection_types::host measurements(&host_mr);
