@@ -10,8 +10,8 @@
 
 namespace traccc::host {
 
-triplet_fitting_algorithm::triplet_fitting_algorithm(const config_type& config,
-                                                   vecmem::memory_resource& mr)
+triplet_fitting_algorithm::triplet_fitting_algorithm(
+    const config_type& config, vecmem::memory_resource& mr)
     : m_config{config}, m_mr{mr} {}
 
 }  // namespace traccc::host
