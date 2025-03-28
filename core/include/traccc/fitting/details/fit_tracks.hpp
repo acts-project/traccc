@@ -8,16 +8,13 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/track_candidate.hpp"
-#include "traccc/edm/track_state.hpp"
-#include "traccc/fitting/status_codes.hpp"
-
-#include "traccc/fitting/triplet_fit/triplet_fitter.hpp"
-#include <traccc/geometry/detector.hpp>
-
 #include <detray/core/detector.hpp>
 #include <detray/detectors/bfield.hpp>
+#include <traccc/geometry/detector.hpp>
 
+#include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/track_state.hpp"
+#include "traccc/fitting/triplet_fit/triplet_fitter.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
@@ -59,7 +56,7 @@ track_state_container_types::host fit_tracks(
          i < track_candidates.size(); ++i) {
 
         // Make a vector of track states for this track.
-        vecmem::vector<track_state<typename fitter_t::algebra_type> >
+        vecmem::vector<track_state<typename fitter_t::algebra_type>>
             input_states{&mr};
         input_states.reserve(track_candidates.get_items()[i].size());
         for (auto& measurement : track_candidates.get_items()[i]) {
@@ -108,24 +105,26 @@ track_state_container_types::host fit_tracks(
 /// in the .cpp file. Effects on performance have to be
 /// studied.
 
-template<> 
+template <>
 inline track_state_container_types::host fit_tracks<>(
-        traccc::triplet_fitter< const typename traccc::default_detector::host,
-            typename detray::bfield::const_field_t::view_t >& fitter,
-        const track_candidate_container_types::const_view& track_candidates_view,
-        vecmem::memory_resource& mr) {
+    traccc::triplet_fitter<const typename traccc::default_detector::host,
+                           typename detray::bfield::const_field_t::view_t>&
+        fitter,
+    const track_candidate_container_types::const_view& track_candidates_view,
+    vecmem::memory_resource& mr) {
 
-    using algebra_type = traccc::triplet_fitter<const traccc::default_detector::host,
-    typename detray::bfield::const_field_t::view_t>::algebra_type;
+    using algebra_type = traccc::triplet_fitter<
+        const traccc::default_detector::host,
+        typename detray::bfield::const_field_t::view_t>::algebra_type;
 
     // Create the output container
     track_state_container_types::host result{&mr};
 
     // Iterate over the tracks,
     const track_candidate_container_types::const_device track_candidates{
-    track_candidates_view};
+        track_candidates_view};
     for (track_candidate_container_types::const_device::size_type i = 0;
-    i < track_candidates.size(); ++i) {
+         i < track_candidates.size(); ++i) {
 
         // Make a vector of track states for this track.
         vecmem::vector<track_state<algebra_type>> input_states{&mr};
@@ -150,14 +149,11 @@ inline track_state_container_types::host fit_tracks<>(
         fitter.fit(fit_res, fitted_states);
 
         // Save the results into the output container.
-        result.push_back(
-            std::move(fit_res),
-            std::move(fitted_states));
+        result.push_back(std::move(fit_res), std::move(fitted_states));
     }
 
     // Return the fitted track states.
     return result;
-
 }
 
 }  // namespace traccc::host::details

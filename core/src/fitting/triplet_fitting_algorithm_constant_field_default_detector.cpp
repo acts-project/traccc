@@ -14,10 +14,9 @@
 // #include <detray/navigation/navigator.hpp>
 // #include <detray/propagator/rk_stepper.hpp>
 
-#include <traccc/geometry/detector.hpp>
-
 #include <detray/core/detector.hpp>
 #include <detray/detectors/bfield.hpp>
+#include <traccc/geometry/detector.hpp>
 
 namespace traccc::host {
 
@@ -27,8 +26,9 @@ triplet_fitting_algorithm::output_type triplet_fitting_algorithm::operator()(
     const track_candidate_container_types::const_view& track_candidates) const {
 
     // Create the fitter object.
-    triplet_fitter<const traccc::default_detector::host, detray::bfield::const_field_t::view_t> 
-    fitter{det, field, m_config};
+    triplet_fitter<const traccc::default_detector::host,
+                   detray::bfield::const_field_t::view_t>
+        fitter{det, field, m_config};
 
     // Perform the track fitting using a common, templated function.
     return details::fit_tracks(fitter, track_candidates, m_mr.get());

@@ -43,7 +43,7 @@ class triplet_fitting_algorithm
     /// @param config The configuration object
     ///
     explicit triplet_fitting_algorithm(const config_type& config,
-                                      vecmem::memory_resource& mr);
+                                       vecmem::memory_resource& mr);
 
     /// Execute the algorithm
     ///
@@ -58,7 +58,6 @@ class triplet_fitting_algorithm
                            const track_candidate_container_types::const_view&
                                track_candidates) const override;
 
-    
     private:
     /// Algorithm configuration
     config_type m_config;
