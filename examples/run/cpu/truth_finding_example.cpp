@@ -23,6 +23,7 @@
 #include "traccc/options/track_finding.hpp"
 #include "traccc/options/track_fitting.hpp"
 #include "traccc/options/track_propagation.hpp"
+#include "traccc/options/truth_finding.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
 #include "traccc/utils/seed_generator.hpp"
 
@@ -53,6 +54,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
             const traccc::opts::input_data& input_opts,
             const traccc::opts::detector& detector_opts,
             const traccc::opts::performance& performance_opts,
+            const traccc::opts::truth_finding& truth_finding_opts,
             std::unique_ptr<const traccc::Logger> ilogger) {
     TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
@@ -128,7 +130,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                                     input_opts.format, false);
 
         traccc::track_candidate_container_types::host truth_track_candidates =
-            evt_data.generate_truth_candidates(sg, host_mr);
+            evt_data.generate_truth_candidates(sg, host_mr,
+                                               truth_finding_opts.m_min_pt);
 
         // Prepare truth seeds
         traccc::bound_track_parameters_collection_types::host seeds(&host_mr);
@@ -198,15 +201,17 @@ int main(int argc, char* argv[]) {
     traccc::opts::track_propagation propagation_opts;
     traccc::opts::track_fitting fitting_opts;
     traccc::opts::performance performance_opts;
+    traccc::opts::truth_finding truth_finding_config;
     traccc::opts::program_options program_opts{
         "Truth Track Finding on the Host",
         {detector_opts, input_opts, finding_opts, propagation_opts,
-         fitting_opts, performance_opts},
+         fitting_opts, performance_opts, truth_finding_config},
         argc,
         argv,
         logger->cloneWithSuffix("Options")};
 
     // Run the application.
     return seq_run(finding_opts, propagation_opts, fitting_opts, input_opts,
-                   detector_opts, performance_opts, logger->clone());
+                   detector_opts, performance_opts, truth_finding_config,
+                   logger->clone());
 }
