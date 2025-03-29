@@ -11,7 +11,8 @@
 namespace traccc::host {
 
 triplet_fitting_algorithm::triplet_fitting_algorithm(
-    const config_type& config, vecmem::memory_resource& mr)
-    : m_config{config}, m_mr{mr} {}
+    const config_type& config, vecmem::memory_resource& mr, vecmem::copy& copy,
+    std::unique_ptr<const Logger> logger)
+    : messaging(std::move(logger)), m_config{config}, m_mr{mr}, m_copy(copy) {}
 
 }  // namespace traccc::host

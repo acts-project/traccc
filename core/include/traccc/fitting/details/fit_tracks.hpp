@@ -14,6 +14,7 @@
 
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_state.hpp"
+#include "traccc/fitting/status_codes.hpp"
 #include "traccc/fitting/triplet_fit/triplet_fitter.hpp"
 
 // VecMem include(s).
@@ -107,15 +108,14 @@ track_state_container_types::host fit_tracks(
 
 template <>
 inline track_state_container_types::host fit_tracks<>(
-    traccc::triplet_fitter<const typename traccc::default_detector::host,
-                           typename detray::bfield::const_field_t::view_t>&
-        fitter,
+    traccc::triplet_fitter<const typename traccc::default_detector::host, typename detray::bfield::const_field_t<traccc::default_detector::host::scalar_type>::view_t>& fitter,
     const track_candidate_container_types::const_view& track_candidates_view,
-    vecmem::memory_resource& mr) {
+    vecmem::memory_resource& mr, vecmem::copy& copy) {
 
     using algebra_type = traccc::triplet_fitter<
         const traccc::default_detector::host,
-        typename detray::bfield::const_field_t::view_t>::algebra_type;
+        typename detray::bfield::const_field_t<
+        traccc::default_detector::host::scalar_type>::view_t>::algebra_type;
 
     // Create the output container
     track_state_container_types::host result{&mr};
@@ -133,6 +133,9 @@ inline track_state_container_types::host fit_tracks<>(
         for (auto& measurement : track_candidates.get_items()[i]) {
             input_states.emplace_back(measurement);
         }
+
+        vecmem::data::vector_buffer<detray::geometry::barcode> seqs_buffer{};
+        copy.setup(seqs_buffer)->wait();
 
         // Fitting result & vector of
         // fitted track states
