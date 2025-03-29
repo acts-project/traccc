@@ -296,7 +296,8 @@ class triplet_fitter {
         // std::endl;
 
         // Check if centre calculation was successful
-        if (algebra::cmath::norm(c_correct) == 0.f or algebra::cmath::norm(x1 - m) == 0.f) {
+        if (algebra::cmath::norm(c_correct) == 0.f or
+            algebra::cmath::norm(x1 - m) == 0.f) {
             // Use vector joining hits
             // 0 and 2 as track direction if
             // center calculation fails or three
@@ -315,8 +316,9 @@ class triplet_fitter {
             if (vector::dot(tangent2D, vector2{x_12[0], x_12[1]}) < 0.f)
                 tangent2D = -1.f * tangent2D;
 
-            vector2 tangent2D_norm =
-                math::sin(t.m_theta) / algebra::cmath::norm(tangent2D) * tangent2D;
+            vector2 tangent2D_norm = math::sin(t.m_theta) /
+                                     algebra::cmath::norm(tangent2D) *
+                                     tangent2D;
 
             // track tangent normalized to 1
             tangent3D[0] = tangent2D_norm[0];
@@ -446,8 +448,9 @@ class triplet_fitter {
         vector2 x_01_L = x_1_L - x_0_L;
         vector2 x_12_L = x_2_L - x_1_L;
 
-        theta_0 = math::asin(cross_2d_z(x_01_L, x_12_L) /
-                             (algebra::cmath::norm(x_01_L) * algebra::cmath::norm(x_12_L)));
+        theta_0 = math::asin(
+            cross_2d_z(x_01_L, x_12_L) /
+            (algebra::cmath::norm(x_01_L) * algebra::cmath::norm(x_12_L)));
         // std::cout << "\ttheta_0 " << theta_0 << std::endl;
     }
 
@@ -541,7 +544,8 @@ class triplet_fitter {
     ///
     /// (fitted state only at the first measurement surface is calculated)
     TRACCC_HOST_DEVICE
-    void do_global_fit(fitting_result<algebra_type>& fitting_res,
+    void do_global_fit(
+        fitting_result<algebra_type>& fitting_res,
         vecmem::vector<track_state<algebra_type>>& track_states) {
 
         // Allocate matrices with max possible sizes
@@ -701,11 +705,9 @@ class triplet_fitter {
             std::cout << std::endl;
         }*/
 
-        matrix_type<1u, 1u> num =
-            -1.f * matrix::transpose(rho) * K * psi;
+        matrix_type<1u, 1u> num = -1.f * matrix::transpose(rho) * K * psi;
         matrix_type<1u, 1u> den = matrix::transpose(rho) * K * rho;
-        matrix_type<1u, 1u> psiT_K_psi =
-            matrix::transpose(psi) * K * psi;
+        matrix_type<1u, 1u> psiT_K_psi = matrix::transpose(psi) * K * psi;
 
         // Calculation of curvature, uncertainty, fit quality
 
@@ -740,7 +742,7 @@ class triplet_fitter {
         auto fitted_params =
             [&delta_fit, &c_3D](
                 const vecmem::vector<track_state<algebra_type>>& input_states,
-                const vecmem::vector<triplet>& triplets, 
+                const vecmem::vector<triplet>& triplets,
                 const detector_t& detector, const bfield_t& field)
             -> detray::bound_parameters_vector<algebra_type> {
             // Get the (post-fit) global positions of
@@ -789,8 +791,8 @@ class triplet_fitter {
 
             // Momentum - TODO: handling of magnetic field
             // Units: B [T], p [MeV]
-            scalar p = 0.3f * algebra::cmath::norm(B_vec) / (c_3D * unit<scalar>::T) *
-                       unit<scalar>::MeV;
+            scalar p = 0.3f * algebra::cmath::norm(B_vec) /
+                       (c_3D * unit<scalar>::T) * unit<scalar>::MeV;
 
             // Wrap angle between -Pi and Pi
             auto wrap_pi_mpi = [](scalar angle) -> scalar {
@@ -809,10 +811,11 @@ class triplet_fitter {
             detray::bound_parameters_vector<algebra_type> params_vec{};
             params_vec.set_bound_local(loc0_post_fit);
 
-            /*std::cout << "phi r01 " << algebra::cmath::phi(r01) << " bending angle "
+            /*std::cout << "phi r01 " << algebra::cmath::phi(r01) << " bending
+            angle "
             << bending_angle << std::endl; std::cout << "phi " <<
-            algebra::cmath::phi(r01) + 0.5f * bending_angle << " wrapped phi " <<
-            wrap_pi_mpi(algebra::cmath::phi(r01) + 0.5f * bending_angle) <<
+            algebra::cmath::phi(r01) + 0.5f * bending_angle << " wrapped phi "
+            << wrap_pi_mpi(algebra::cmath::phi(r01) + 0.5f * bending_angle) <<
             std::endl;*/
 
             params_vec.set_phi(
@@ -833,7 +836,8 @@ class triplet_fitter {
         fitting_res.trk_quality.chi2 = chi2;
         fitting_res.fit_params.set_vector(fitted_params.vector());
         fitting_res.trk_quality.ndf =
-            [](const vecmem::vector<track_state<algebra_type>>& states) -> scalar {
+            [](const vecmem::vector<track_state<algebra_type>>& states)
+            -> scalar {
             // Number of degrees of freedom
             // = sum of number of dimensions
             // of measurements - number of
@@ -867,7 +871,8 @@ class triplet_fitter {
         fitting_result<algebra_type>& fitting_res,
         vecmem::vector<track_state<algebra_type>>& track_states) {
 
-        // std::cout << "Fitting track with " << m_triplets.size() << " triplets\n";
+        // std::cout << "Fitting track with " << m_triplets.size() << "
+        // triplets\n";
 
         unsigned triplet_idx = 0;
 
@@ -916,7 +921,8 @@ class triplet_fitter {
     vecmem::vector<track_state<algebra_type>> m_track_states;
 
     // Size type for device vectors
-    // using size_t = vecmem::device_vector<track_state<algebra_type>>::size_type;
+    // using size_t =
+    // vecmem::device_vector<track_state<algebra_type>>::size_type;
 
     // Configuration object
     config_type m_cfg;

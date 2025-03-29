@@ -30,11 +30,12 @@ triplet_fitting_algorithm::output_type triplet_fitting_algorithm::operator()(
 
     // Create the fitter object.
     triplet_fitter<const traccc::default_detector::host,
-        detray::bfield::const_field_t<scalar_type>::view_t>
+                   detray::bfield::const_field_t<scalar_type>::view_t>
         fitter{det, field, m_config};
 
     // Perform the track fitting using a common, templated function.
-    return details::fit_tracks(fitter, track_candidates, m_mr.get(), m_copy.get());
+    return details::fit_tracks(fitter, track_candidates, m_mr.get(),
+                               m_copy.get());
 }
 
 }  // namespace traccc::host

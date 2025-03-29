@@ -108,14 +108,17 @@ track_state_container_types::host fit_tracks(
 
 template <>
 inline track_state_container_types::host fit_tracks<>(
-    traccc::triplet_fitter<const typename traccc::default_detector::host, typename detray::bfield::const_field_t<traccc::default_detector::host::scalar_type>::view_t>& fitter,
+    traccc::triplet_fitter<
+        const typename traccc::default_detector::host,
+        typename detray::bfield::const_field_t<
+            traccc::default_detector::host::scalar_type>::view_t>& fitter,
     const track_candidate_container_types::const_view& track_candidates_view,
     vecmem::memory_resource& mr, vecmem::copy& copy) {
 
     using algebra_type = traccc::triplet_fitter<
         const traccc::default_detector::host,
         typename detray::bfield::const_field_t<
-        traccc::default_detector::host::scalar_type>::view_t>::algebra_type;
+            traccc::default_detector::host::scalar_type>::view_t>::algebra_type;
 
     // Create the output container
     track_state_container_types::host result{&mr};
