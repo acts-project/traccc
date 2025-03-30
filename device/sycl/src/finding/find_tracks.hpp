@@ -290,6 +290,7 @@ track_candidate_container_types::buffer find_tracks(
                      updated_params = vecmem::get_data(updated_params_buffer),
                      updated_liveness =
                          vecmem::get_data(updated_liveness_buffer),
+                     tips = vecmem::get_data(tips_buffer),
                      n_tracks_per_seed =
                          vecmem::get_data(n_tracks_per_seed_buffer),
                      shared_candidates_size, shared_num_candidates,
@@ -305,7 +306,7 @@ track_candidate_container_types::buffer find_tracks(
                             {det, measurements, in_params, param_liveness,
                              n_in_params, barcodes, upper_bounds, links_view,
                              prev_links_idx, curr_links_idx, step,
-                             updated_params, updated_liveness,
+                             updated_params, updated_liveness, tips,
                              n_tracks_per_seed},
                             {&(shared_num_candidates[0]),
                              &(shared_candidates[0]),
@@ -392,7 +393,6 @@ track_candidate_container_types::buffer find_tracks(
                          param_liveness =
                              vecmem::get_data(param_liveness_buffer),
                          param_ids = vecmem::get_data(param_ids_buffer),
-                         links_view = vecmem::get_data(links_buffer),
                          prev_links_idx = step_to_link_idx_map[step], step,
                          n_candidates, tips = vecmem::get_data(tips_buffer)](
                             ::sycl::nd_item<1> item) {
@@ -401,8 +401,8 @@ track_candidate_container_types::buffer find_tracks(
                                 typename stepper_t::magnetic_field_type>(
                                 details::global_index(item), config,
                                 {det, field, in_params, param_liveness,
-                                 param_ids, links_view, prev_links_idx, step,
-                                 n_candidates, tips});
+                                 param_ids, prev_links_idx, step, n_candidates,
+                                 tips});
                         });
                 })
                 .wait_and_throw();

@@ -32,22 +32,12 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
 
     const unsigned int param_id = param_ids.at(globalIndex);
 
-    // Links
-    vecmem::device_vector<const candidate_link> links(payload.links_view);
-
     // Parameter liveness
     vecmem::device_vector<unsigned int> params_liveness(
         payload.params_liveness_view);
 
     // tips
     vecmem::device_vector<unsigned int> tips(payload.tips_view);
-
-    if (links.at(payload.prev_links_idx + param_id).n_skipped >
-        cfg.max_num_skipping_per_cand) {
-        params_liveness[param_id] = 0u;
-        tips.push_back(payload.prev_links_idx + param_id);
-        return;
-    }
 
     // Detector
     typename propagator_t::detector_type det(payload.det_data);
