@@ -285,6 +285,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 .out_params_view = vecmem::get_data(updated_params_buffer),
                 .out_params_liveness_view =
                     vecmem::get_data(updated_liveness_buffer),
+                .tips_view = vecmem::get_data(tips_buffer),
                 .n_tracks_per_seed_view =
                     vecmem::get_data(n_tracks_per_seed_buffer)};
 
