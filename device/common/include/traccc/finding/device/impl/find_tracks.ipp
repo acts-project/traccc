@@ -71,6 +71,7 @@ TRACCC_DEVICE inline void find_tracks(
         payload.barcodes_view);
     vecmem::device_vector<const unsigned int> upper_bounds(
         payload.upper_bounds_view);
+    vecmem::device_vector<unsigned int> tips(payload.tips_view);
     vecmem::device_vector<unsigned int> n_tracks_per_seed(
         payload.n_tracks_per_seed_view);
 
@@ -303,16 +304,15 @@ TRACCC_DEVICE inline void find_tracks(
         shared_payload.shared_num_candidates[thread_id.getLocalThreadIdX()] ==
             0u) {
         // Add measurement candidates to link
-        const unsigned int l_pos = links.bulk_append_implicit(1);
+        candidate_link link;
 
         if (payload.step == 0) {
-            links.at(l_pos) = {
-                .step = payload.step,
-                .previous_candidate_idx = in_param_id,
-                .meas_idx = std::numeric_limits<unsigned int>::max(),
-                .seed_idx = in_param_id,
-                .n_skipped = 1,
-                .chi2 = std::numeric_limits<traccc::scalar>::max()};
+            link = {.step = payload.step,
+                    .previous_candidate_idx = in_param_id,
+                    .meas_idx = std::numeric_limits<unsigned int>::max(),
+                    .seed_idx = in_param_id,
+                    .n_skipped = 1,
+                    .chi2 = std::numeric_limits<traccc::scalar>::max()};
         } else {
             const unsigned int prev_link_idx =
                 payload.prev_links_idx + in_param_id;
@@ -321,18 +321,24 @@ TRACCC_DEVICE inline void find_tracks(
 
             assert(payload.step == prev_link.step + 1);
 
-            links.at(l_pos) = {
-                .step = payload.step,
-                .previous_candidate_idx = prev_link_idx,
-                .meas_idx = std::numeric_limits<unsigned int>::max(),
-                .seed_idx = prev_link.seed_idx,
-                .n_skipped = prev_link.n_skipped + 1,
-                .chi2 = std::numeric_limits<traccc::scalar>::max()};
+            link = {.step = payload.step,
+                    .previous_candidate_idx = prev_link_idx,
+                    .meas_idx = std::numeric_limits<unsigned int>::max(),
+                    .seed_idx = prev_link.seed_idx,
+                    .n_skipped = prev_link.n_skipped + 1,
+                    .chi2 = std::numeric_limits<traccc::scalar>::max()};
         }
 
-        out_params.at(l_pos - payload.curr_links_idx) =
-            in_params.at(in_param_id);
-        out_params_liveness.at(l_pos - payload.curr_links_idx) = 1u;
+        if (link.n_skipped > cfg.max_num_skipping_per_cand) {
+            tips.push_back(link.previous_candidate_idx);
+        } else {
+            const unsigned int l_pos = links.bulk_append_implicit(1);
+
+            links.at(l_pos) = link;
+            out_params.at(l_pos - payload.curr_links_idx) =
+                in_params.at(in_param_id);
+            out_params_liveness.at(l_pos - payload.curr_links_idx) = 1u;
+        }
     }
 }
 
