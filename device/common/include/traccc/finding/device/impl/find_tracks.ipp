@@ -71,6 +71,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
         payload.barcodes_view);
     vecmem::device_vector<const unsigned int> upper_bounds(
         payload.upper_bounds_view);
+    vecmem::device_vector<unsigned int> tips(payload.tips_view);
     vecmem::device_vector<unsigned int> n_tracks_per_seed(
         payload.n_tracks_per_seed_view);
 
@@ -308,25 +309,31 @@ TRACCC_HOST_DEVICE inline void find_tracks(
         const unsigned int s_pos = num_tracks_per_seed.fetch_add(1);
 
         if (s_pos < cfg.max_num_branches_per_seed) {
-            // Add measurement candidates to link
-            const unsigned int l_pos = links.bulk_append_implicit(1);
-
             const unsigned int n_skipped =
                 payload.step == 0 ? 0 : links.at(prev_link_idx).n_skipped;
 
-            links.at(l_pos) = {
-                .step = payload.step,
-                .previous_candidate_idx = prev_link_idx,
-                .meas_idx = std::numeric_limits<unsigned int>::max(),
-                .seed_idx = seed_idx,
-                .n_skipped = n_skipped + 1,
-                .chi2 = std::numeric_limits<traccc::scalar>::max()};
+            if (n_skipped >= cfg.max_num_skipping_per_cand) {
+                // In case of max skipping being 0 and first step being skipped,
+                // the links are empty, and the tip has nowhere to point
+                assert(payload.step > 0);
+                tips.push_back(prev_link_idx);
+            } else {
+                // Add measurement candidates to link
+                const unsigned int l_pos = links.bulk_append_implicit(1);
 
-            out_params.at(l_pos - payload.curr_links_idx) =
-                in_params.at(in_param_id);
-            out_params_liveness.at(l_pos - payload.curr_links_idx) = 1u;
+                links.at(l_pos) = {
+                    .step = payload.step,
+                    .previous_candidate_idx = prev_link_idx,
+                    .meas_idx = std::numeric_limits<unsigned int>::max(),
+                    .seed_idx = seed_idx,
+                    .n_skipped = n_skipped + 1,
+                    .chi2 = std::numeric_limits<traccc::scalar>::max()};
+
+                out_params.at(l_pos - payload.curr_links_idx) =
+                    in_params.at(in_param_id);
+                out_params_liveness.at(l_pos - payload.curr_links_idx) = 1u;
+            }
         }
     }
 }
-
 }  // namespace traccc::device

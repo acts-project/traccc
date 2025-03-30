@@ -282,6 +282,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     .step = step,
                     .out_params_view = updated_params_buffer,
                     .out_params_liveness_view = updated_liveness_buffer,
+                    .tips_view = tips_buffer,
                     .n_tracks_per_seed_view = n_tracks_per_seed_buffer});
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
@@ -352,7 +353,6 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                         .params_view = in_params_buffer,
                         .params_liveness_view = param_liveness_buffer,
                         .param_ids_view = param_ids_buffer,
-                        .links_view = links_buffer,
                         .prev_links_idx = step_to_link_idx_map[step],
                         .step = step,
                         .n_in_params = n_candidates,
