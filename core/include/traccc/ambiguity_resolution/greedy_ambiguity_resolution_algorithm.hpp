@@ -19,8 +19,8 @@ namespace traccc {
 /// greedy approach in the sense that it will remove the track which looks "most
 /// duplicate/fake"
 class greedy_ambiguity_resolution_algorithm
-    : public algorithm<track_state_container_types::host(
-          const typename track_state_container_types::host&)>,
+    : public algorithm<track_candidate_container_types::host(
+          const typename track_candidate_container_types::host&)>,
       public messaging {
 
     public:
@@ -36,10 +36,10 @@ class greedy_ambiguity_resolution_algorithm
 
     /// Run the algorithm
     ///
-    /// @param track_states the container of the fitted track parameters
+    /// @param track_candidates the container of found patterns
     /// @return the container without ambiguous tracks
-    track_state_container_types::host operator()(
-        const typename track_state_container_types::host& track_states)
+    track_candidate_container_types::host operator()(
+        const typename track_candidate_container_types::host& track_candidates)
         const override;
 
     /// Algorithm configuration

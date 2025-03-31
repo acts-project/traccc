@@ -45,8 +45,8 @@ namespace traccc::legacy {
 ///     shared hits / hits).
 ///  4) Back to square 1.
 class greedy_ambiguity_resolution_algorithm
-    : public algorithm<track_state_container_types::host(
-          const typename track_state_container_types::host&)>,
+    : public algorithm<track_candidate_container_types::host(
+          const typename track_candidate_container_types::host&)>,
       public messaging {
 
     public:
@@ -121,8 +121,8 @@ class greedy_ambiguity_resolution_algorithm
     ///
     /// @param track_states the container of the fitted track parameters
     /// @return the container without ambiguous tracks
-    track_state_container_types::host operator()(
-        const typename track_state_container_types::host& track_states)
+    track_candidate_container_types::host operator()(
+        const typename track_candidate_container_types::host& track_states)
         const override;
 
     private:
@@ -135,7 +135,7 @@ class greedy_ambiguity_resolution_algorithm
     /// @param state An empty state object which is expected to be default
     /// constructed.
     void compute_initial_state(
-        const typename track_state_container_types::host& track_states,
+        const typename track_candidate_container_types::host& track_states,
         state_t& state) const;
 
     /// Updates the state iteratively by evicting one track after the other
@@ -156,10 +156,11 @@ class greedy_ambiguity_resolution_algorithm
     /// @param final_state The state object after the resolve method has been
     /// called.
     bool check_obvious_errors(
-        const typename track_state_container_types::host& initial_track_states,
+        const typename track_candidate_container_types::host&
+            initial_track_states,
         state_t& final_state) const;
 
     config_t _config;
 };
 
-}  // namespace traccc
+}  // namespace traccc::legacy

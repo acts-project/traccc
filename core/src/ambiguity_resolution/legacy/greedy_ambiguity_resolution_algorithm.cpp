@@ -37,9 +37,9 @@ namespace traccc::legacy {
 ///
 /// @param track_states the container of the fitted track parameters
 /// @return the container without ambiguous tracks
-track_state_container_types::host
+track_candidate_container_types::host
 greedy_ambiguity_resolution_algorithm::operator()(
-    const typename track_state_container_types::host& track_states) const {
+    const typename track_candidate_container_types::host& track_states) const {
 
     state_t state;
     compute_initial_state(track_states, state);
@@ -79,7 +79,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
 }
 
 void greedy_ambiguity_resolution_algorithm::compute_initial_state(
-    const typename track_state_container_types::host& track_states,
+    const typename track_candidate_container_types::host& track_states,
     state_t& state) const {
 
     // Number of measurements, to display a warning if too many measurements
@@ -493,4 +493,4 @@ void greedy_ambiguity_resolution_algorithm::resolve(state_t& state) const {
     TRACCC_DEBUG("Iteration_count: " << iteration_count);
 }
 
-}  // namespace traccc
+}  // namespace traccc::legacy

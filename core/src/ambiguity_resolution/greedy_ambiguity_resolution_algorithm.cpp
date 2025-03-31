@@ -10,7 +10,7 @@
 
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
-#include "traccc/edm/track_state.hpp"
+#include "traccc/edm/track_candidate.hpp"
 
 // System include
 #include <algorithm>
@@ -20,15 +20,12 @@ namespace traccc {
 
 enum class resolution_status : uint32_t { UNKNOWN, REJECT, ACCEPT, MAX_STATUS };
 
-/// Run the algorithm
-///
-/// @param track_states the container of the fitted track parameters
-/// @return the container without ambiguous tracks
-track_state_container_types::host
+track_candidate_container_types::host
 greedy_ambiguity_resolution_algorithm::operator()(
-    const typename track_state_container_types::host& track_states) const {
+    const typename track_candidate_container_types::host& track_candidates)
+    const {
 
-    const std::size_t n_tracks = track_states.size();
+    const std::size_t n_tracks = track_candidates.size();
 
     // Boolean for acceptance
     std::vector<resolution_status> status(n_tracks, resolution_status::UNKNOWN);
@@ -41,13 +38,13 @@ greedy_ambiguity_resolution_algorithm::operator()(
     for (std::size_t i = 0; i < n_tracks; i++) {
 
         // Fill chi square
-        chi_squares.at(i) = track_states.at(i).header.trk_quality.chi2;
+        chi_squares.at(i) = track_candidates.at(i).header.trk_quality.chi2;
 
         // Fill measurement Ids
-        const auto& states = track_states.at(i).items;
-        meas_ids.at(i).reserve(states.size());
-        for (const auto& st : states) {
-            meas_ids.at(i).push_back(st.get_measurement().measurement_id);
+        const auto& candidates = track_candidates.at(i).items;
+        meas_ids.at(i).reserve(candidates.size());
+        for (const auto& cand : candidates) {
+            meas_ids.at(i).push_back(cand.measurement_id);
         }
 
         // Need to sort the Ids to use set_intersection later
@@ -122,14 +119,14 @@ greedy_ambiguity_resolution_algorithm::operator()(
     }
 
     // Copy the tracks to be retained in the return value
-    track_state_container_types::host output;
+    track_candidate_container_types::host output;
     output.reserve(
         std::count(status.begin(), status.end(), resolution_status::ACCEPT));
 
     for (std::size_t i = 0; i < n_tracks; i++) {
         if (status.at(i) == resolution_status::ACCEPT) {
-            output.push_back(std::move(track_states.at(i).header),
-                             std::move(track_states.at(i).items));
+            output.push_back(std::move(track_candidates.at(i).header),
+                             std::move(track_candidates.at(i).items));
         }
     }
 

@@ -21,9 +21,19 @@ namespace po = boost::program_options;
 track_resolution::track_resolution()
     : interface("Track Ambiguity Resolution Options") {
 
-    m_desc.add_options()("perform-ambiguity-resolution",
-                         po::value(&run)->default_value(run),
-                         "Perform track ambiguity resolution");
+    m_desc.add_options()("min-meas-per-track",
+                         po::value(&m_config.min_meas_per_track)
+                             ->default_value(m_config.min_meas_per_track),
+                         "Min number of measurements per track");
+    m_desc.add_options()(
+        "min-shared-meas-for-competition",
+        po::value(&m_config.min_shared_meas_for_competition)
+            ->default_value(m_config.min_shared_meas_for_competition),
+        "Min number of shared measurements for competition");
+}
+
+track_resolution::operator resolution_config() const {
+    return m_config;
 }
 
 std::unique_ptr<configuration_printable> track_resolution::as_printable()
@@ -31,8 +41,11 @@ std::unique_ptr<configuration_printable> track_resolution::as_printable()
     auto cat = std::make_unique<configuration_category>(m_description);
 
     cat->add_child(std::make_unique<configuration_kv_pair>(
-        "Run ambiguity resolution", std::format("{}", run)));
-
+        "Min number of measurements per track",
+        std::to_string(m_config.min_meas_per_track)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Max shared meas for competition",
+        std::to_string(m_config.min_shared_meas_for_competition)));
     return cat;
 }
 }  // namespace traccc::opts
