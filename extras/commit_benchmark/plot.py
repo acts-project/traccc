@@ -55,7 +55,7 @@ def main():
 
     sorted_valid_kernels = sorted(list(valid_kernels))
 
-    f, a = matplotlib.pyplot.subplots(1, 1, figsize=(8, 8))
+    f, a = matplotlib.pyplot.subplots(1, 1, figsize=(max(6, 4 + 0.1 * len(commits)), 8))
 
     xrange = list(range(len(commits)))
 

@@ -145,8 +145,6 @@ struct kalman_actor : detray::actor {
                 // Update the propagation flow
                 stepping.bound_params() = trk_state.filtered();
 
-                // Set full jacobian
-                trk_state.jacobian() = stepping.full_jacobian();
             } else {
                 // Backward filter for smoothing
                 res = sf.template visit_mask<two_filters_smoother<algebra_t>>(

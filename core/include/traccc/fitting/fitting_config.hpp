@@ -30,7 +30,6 @@ struct fitting_config {
         detray::muon<traccc::scalar>();
 
     /// Smoothing with backward filter
-    bool use_backward_filter = true;
     traccc::scalar covariance_inflation_factor = 1e3f;
     std::size_t barcode_sequence_size_factor = 5;
     std::size_t min_barcode_sequence_capacity = 100;

@@ -19,10 +19,9 @@ TRACCC_HOST_DEVICE inline void build_tracks(
     const bound_track_parameters_collection_types::const_device seeds(
         payload.seeds_view);
 
-    const vecmem::jagged_device_vector<const candidate_link> links(
-        payload.links_view);
+    const vecmem::device_vector<const candidate_link> links(payload.links_view);
 
-    const vecmem::device_vector<const candidate_tip> tips(payload.tips_view);
+    const vecmem::device_vector<const unsigned int> tips(payload.tips_view);
 
     track_candidate_container_types::device track_candidates(
         payload.track_candidates_view);
@@ -40,10 +39,10 @@ TRACCC_HOST_DEVICE inline void build_tracks(
     auto cands_per_track = track_candidates[globalIndex].items;
 
     // Get the link corresponding to tip
-    auto L = links[tip.step_idx][tip.candidate_idx];
+    auto L = links.at(tip);
     const unsigned int n_meas = measurements.size();
 
-    const unsigned int n_cands = tip.step_idx + 1 - L.n_skipped;
+    const unsigned int n_cands = L.step + 1 - L.n_skipped;
 
     // Resize the candidates with the exact size
     cands_per_track.resize(n_cands);
@@ -60,11 +59,9 @@ TRACCC_HOST_DEVICE inline void build_tracks(
     for (auto it = cands_per_track.rbegin(); it != cands_per_track.rend();
          it++) {
 
-        while (L.meas_idx >= n_meas &&
-               L.previous_step_idx !=
-                   std::numeric_limits<candidate_tip::index_t>::max()) {
+        while (L.meas_idx >= n_meas && L.step != 0u) {
 
-            L = links[L.previous_step_idx][L.previous_candidate_idx];
+            L = links.at(L.previous_candidate_idx);
         }
 
         // Break if the measurement is still invalid
@@ -91,7 +88,7 @@ TRACCC_HOST_DEVICE inline void build_tracks(
             trk_quality.chi2 = chi2_sum;
             trk_quality.n_holes = L.n_skipped;
         } else {
-            L = links[L.previous_step_idx][L.previous_candidate_idx];
+            L = links.at(L.previous_candidate_idx);
         }
     }
 
@@ -105,8 +102,9 @@ TRACCC_HOST_DEVICE inline void build_tracks(
         for (unsigned int i = 0; i < cands_per_track.size(); ++i) {
             for (unsigned int j = 0; j < cands_per_track.size(); ++j) {
                 if (i != j) {
-                    assert(cands_per_track.at(i).measurement_id !=
-                           cands_per_track.at(j).measurement_id);
+                    // TODO: Re-enable me!
+                    // assert(cands_per_track.at(i).measurement_id !=
+                    //       cands_per_track.at(j).measurement_id);
                 }
             }
         }

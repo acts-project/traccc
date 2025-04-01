@@ -30,8 +30,7 @@ struct statistics_updater {
     TRACCC_HOST_DEVICE inline void operator()(
         const mask_group_t& /*mask_group*/, const index_t& /*index*/,
         fitting_result<algebra_t>& fit_res,
-        const track_state<algebra_t>& trk_state,
-        const bool use_backward_filter) {
+        const track_state<algebra_t>& trk_state) {
 
         if (!trk_state.is_hole) {
 
@@ -41,16 +40,10 @@ struct statistics_updater {
             // Track quality
             auto& trk_quality = fit_res.trk_quality;
 
-            if (use_backward_filter) {
-                if (trk_state.is_smoothed) {
-                    // NDoF = NDoF + number of coordinates per measurement
-                    trk_quality.ndf += static_cast<scalar_type>(D);
-                    trk_quality.chi2 += trk_state.backward_chi2();
-                }
-            } else {
+            if (trk_state.is_smoothed) {
                 // NDoF = NDoF + number of coordinates per measurement
                 trk_quality.ndf += static_cast<scalar_type>(D);
-                trk_quality.chi2 += trk_state.filtered_chi2();
+                trk_quality.chi2 += trk_state.backward_chi2();
             }
         }
     }

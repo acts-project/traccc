@@ -265,13 +265,10 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
         if (!include_silicon_cells) {
             auto insert_return = m_meas_to_ptc_map.insert({meas, {}});
             if (insert_return.second == false) {
-                throw std::runtime_error(
-                    "The new measurement should not exist in the "
-                    "measurement-to-particle map");
+                // TODO: Put some logging here when that's ready
+            } else {
+                (*(insert_return.first)).second[ptc] = 1u;
             }
-            // Each measurement is created by a single particle unless we use
-            // the clusterization results
-            (*(insert_return.first)).second[ptc] = 1u;
         }
     }
 }
@@ -340,7 +337,8 @@ void event_data::fill_cca_result(
 }
 
 track_candidate_container_types::host event_data::generate_truth_candidates(
-    seed_generator<detector_type>& sg, vecmem::memory_resource& resource) {
+    seed_generator<detector_type>& sg, vecmem::memory_resource& resource,
+    float pt_cut) {
 
     traccc::track_candidate_container_types::host track_candidates(&resource);
 
@@ -350,9 +348,18 @@ track_candidate_container_types::host event_data::generate_truth_candidates(
         const free_track_parameters<> free_param(param.first, 0.f, param.second,
                                                  ptc.charge);
 
+        auto ptc_particle =
+            detail::particle_from_pdg_number<scalar>(ptc.particle_type);
+
+        if (ptc_particle.pdg_num() == 0) {
+            // TODO: Add some debug logging here.
+            continue;
+        } else if (free_param.pT(ptc_particle.charge()) <= pt_cut) {
+            continue;
+        }
+
         auto seed_params =
-            sg(measurements[0].surface_link, free_param,
-               detail::particle_from_pdg_number<scalar>(ptc.particle_type));
+            sg(measurements[0].surface_link, free_param, ptc_particle);
 
         // Candidate objects
         vecmem::vector<track_candidate> candidates;

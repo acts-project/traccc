@@ -133,7 +133,6 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     // Fitting algorithm object
     traccc::fitting_config fit_cfg;
     fit_cfg.ptc_hypothesis = ptc;
-    fit_cfg.use_backward_filter = true;
     traccc::host::kalman_fitting_algorithm host_fitting(fit_cfg, host_mr, copy);
 
     // Iterate over events

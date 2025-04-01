@@ -14,6 +14,7 @@
 // definition when we are are compiling SYCL code using the Intel LLVM
 // compiler. This can be removed when intel/llvm#15443 makes it into a OneAPI
 // release.
+#include <limits>
 #if defined(__INTEL_LLVM_COMPILER) && defined(SYCL_LANGUAGE_VERSION)
 #undef __CUDA_ARCH__
 #endif
@@ -61,28 +62,15 @@ TRACCC_HOST_DEVICE inline void find_tracks(
         payload.in_params_view);
     vecmem::device_vector<const unsigned int> in_params_liveness(
         payload.in_params_liveness_view);
-    vecmem::device_vector<const candidate_link> prev_links(
-        payload.prev_links_view);
+    vecmem::device_vector<candidate_link> links(payload.links_view);
     bound_track_parameters_collection_types::device out_params(
         payload.out_params_view);
     vecmem::device_vector<unsigned int> out_params_liveness(
         payload.out_params_liveness_view);
-    vecmem::device_vector<candidate_link> links(payload.links_view);
-    vecmem::device_atomic_ref<unsigned int,
-                              vecmem::device_address_space::global>
-        num_total_candidates(*payload.n_total_candidates);
     vecmem::device_vector<const detray::geometry::barcode> barcodes(
         payload.barcodes_view);
     vecmem::device_vector<const unsigned int> upper_bounds(
         payload.upper_bounds_view);
-
-    /*
-     * Compute the last step ID, using a sentinel value if the current step is
-     * step 0.
-     */
-    const candidate_tip::index_t previous_step =
-        (payload.step == 0) ? std::numeric_limits<candidate_tip::index_t>::max()
-                            : payload.step - 1;
 
     const unsigned int in_param_id = thread_id.getGlobalThreadIdX();
 
@@ -215,45 +203,44 @@ TRACCC_HOST_DEVICE inline void find_tracks(
             if (res == kalman_fitter_status::SUCCESS &&
                 trk_state.filtered_chi2() < cfg.chi2_max) {
                 // Add measurement candidates to link
-                const unsigned int l_pos = num_total_candidates.fetch_add(1);
+                const unsigned int l_pos = links.bulk_append_implicit(1);
 
                 assert(trk_state.filtered_chi2() >= 0.f);
 
-                if (l_pos >= payload.n_max_candidates) {
-                    *payload.n_total_candidates = payload.n_max_candidates;
+                if (payload.step == 0) {
+                    links.at(l_pos) = {
+                        .step = payload.step,
+                        .previous_candidate_idx = owner_global_thread_id,
+                        .meas_idx = meas_idx,
+                        .seed_idx = owner_global_thread_id,
+                        .n_skipped = 0,
+                        .chi2 = chi2};
                 } else {
-                    if (payload.step == 0) {
-                        links.at(l_pos) = {
-                            .previous_step_idx = previous_step,
-                            .previous_candidate_idx = owner_global_thread_id,
-                            .meas_idx = meas_idx,
-                            .seed_idx = owner_global_thread_id,
-                            .n_skipped = 0,
-                            .chi2 = chi2};
-                    } else {
-                        const candidate_link& prev_link =
-                            prev_links[owner_global_thread_id];
+                    const unsigned int prev_link_idx =
+                        payload.prev_links_idx + owner_global_thread_id;
 
-                        links.at(l_pos) = {
-                            .previous_step_idx = previous_step,
-                            .previous_candidate_idx = owner_global_thread_id,
-                            .meas_idx = meas_idx,
-                            .seed_idx = prev_link.seed_idx,
-                            .n_skipped = prev_link.n_skipped,
-                            .chi2 = chi2};
-                    }
+                    const candidate_link& prev_link = links.at(prev_link_idx);
 
-                    // Increase the number of candidates (or branches) per input
-                    // parameter
-                    vecmem::device_atomic_ref<
-                        unsigned int, vecmem::device_address_space::local>(
-                        shared_payload
-                            .shared_num_candidates[owner_local_thread_id])
-                        .fetch_add(1u);
+                    assert(payload.step == prev_link.step + 1);
 
-                    out_params.at(l_pos) = trk_state.filtered();
-                    out_params_liveness.at(l_pos) = 1u;
+                    links.at(l_pos) = {.step = payload.step,
+                                       .previous_candidate_idx = prev_link_idx,
+                                       .meas_idx = meas_idx,
+                                       .seed_idx = prev_link.seed_idx,
+                                       .n_skipped = prev_link.n_skipped,
+                                       .chi2 = chi2};
                 }
+
+                // Increase the number of candidates (or branches) per input
+                // parameter
+                vecmem::device_atomic_ref<unsigned int,
+                                          vecmem::device_address_space::local>(
+                    shared_payload.shared_num_candidates[owner_local_thread_id])
+                    .fetch_add(1u);
+
+                out_params.at(l_pos - payload.curr_links_idx) =
+                    trk_state.filtered();
+                out_params_liveness.at(l_pos - payload.curr_links_idx) = 1u;
             }
         }
 
@@ -288,34 +275,36 @@ TRACCC_HOST_DEVICE inline void find_tracks(
         shared_payload.shared_num_candidates[thread_id.getLocalThreadIdX()] ==
             0u) {
         // Add measurement candidates to link
-        const unsigned int l_pos = num_total_candidates.fetch_add(1);
+        const unsigned int l_pos = links.bulk_append_implicit(1);
 
-        if (l_pos >= payload.n_max_candidates) {
-            *payload.n_total_candidates = payload.n_max_candidates;
+        if (payload.step == 0) {
+            links.at(l_pos) = {
+                .step = payload.step,
+                .previous_candidate_idx = in_param_id,
+                .meas_idx = std::numeric_limits<unsigned int>::max(),
+                .seed_idx = in_param_id,
+                .n_skipped = 1,
+                .chi2 = std::numeric_limits<traccc::scalar>::max()};
         } else {
-            if (payload.step == 0) {
-                links.at(l_pos) = {
-                    .previous_step_idx = previous_step,
-                    .previous_candidate_idx = in_param_id,
-                    .meas_idx = std::numeric_limits<unsigned int>::max(),
-                    .seed_idx = in_param_id,
-                    .n_skipped = 1,
-                    .chi2 = std::numeric_limits<traccc::scalar>::max()};
-            } else {
-                const candidate_link& prev_link = prev_links[in_param_id];
+            const unsigned int prev_link_idx =
+                payload.prev_links_idx + in_param_id;
 
-                links.at(l_pos) = {
-                    .previous_step_idx = previous_step,
-                    .previous_candidate_idx = in_param_id,
-                    .meas_idx = std::numeric_limits<unsigned int>::max(),
-                    .seed_idx = prev_link.seed_idx,
-                    .n_skipped = prev_link.n_skipped + 1,
-                    .chi2 = std::numeric_limits<traccc::scalar>::max()};
-            }
+            const candidate_link& prev_link = links.at(prev_link_idx);
 
-            out_params.at(l_pos) = in_params.at(in_param_id);
-            out_params_liveness.at(l_pos) = 1u;
+            assert(payload.step == prev_link.step + 1);
+
+            links.at(l_pos) = {
+                .step = payload.step,
+                .previous_candidate_idx = prev_link_idx,
+                .meas_idx = std::numeric_limits<unsigned int>::max(),
+                .seed_idx = prev_link.seed_idx,
+                .n_skipped = prev_link.n_skipped + 1,
+                .chi2 = std::numeric_limits<traccc::scalar>::max()};
         }
+
+        out_params.at(l_pos - payload.curr_links_idx) =
+            in_params.at(in_param_id);
+        out_params_liveness.at(l_pos - payload.curr_links_idx) = 1u;
     }
 }
 
