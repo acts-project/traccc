@@ -160,19 +160,20 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         n_seeds, m_mr.main);
     m_copy.setup(n_tracks_per_seed_buffer)->ignore();
 
-    // Create a map for links
-    std::map<unsigned int, vecmem::data::vector_buffer<candidate_link>>
-        link_map;
+    // Create a buffer for links
+    unsigned int link_buffer_capacity = m_cfg.initial_links_per_seed * n_seeds;
+    vecmem::data::vector_buffer<candidate_link> links_buffer(
+        link_buffer_capacity, m_mr.main, vecmem::data::buffer_type::resizable);
+    m_copy.setup(links_buffer)->wait();
 
     // Create a buffer of tip links
-    vecmem::data::vector_buffer<candidate_tip> tips_buffer{
+    vecmem::data::vector_buffer<unsigned int> tips_buffer{
         m_cfg.max_num_branches_per_seed * n_seeds, m_mr.main,
         vecmem::data::buffer_type::resizable};
     m_copy.setup(tips_buffer)->wait();
 
-    // Link size
-    std::vector<std::size_t> n_candidates_per_step;
-    n_candidates_per_step.reserve(m_cfg.max_track_candidates_per_track);
+    std::map<unsigned int, unsigned int> step_to_link_idx_map;
+    step_to_link_idx_map[0] = 0;
 
     unsigned int n_in_params = n_seeds;
 
@@ -202,17 +203,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
          * Kernel3: Count the number of measurements per parameter
          ****************************************************************/
 
-        auto bufHost_n_candidates =
-            ::alpaka::allocBuf<unsigned int, Idx>(devHost, 1u);
-        unsigned int* n_candidates =
-            ::alpaka::getPtrNative(bufHost_n_candidates);
-        ::alpaka::memset(queue, bufHost_n_candidates, 0);
-        ::alpaka::wait(queue);
+        unsigned int n_candidates = 0;
 
         {
-            // Previous step
-            const unsigned int prev_step = (step == 0 ? 0 : step - 1);
-
             // Buffer for kalman-updated parameters spawned by the measurement
             // candidates
             const unsigned int n_max_candidates =
@@ -228,42 +221,62 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 n_in_params * m_cfg.max_num_branches_per_surface, m_mr.main);
             m_copy.setup(updated_liveness_buffer)->ignore();
 
-            // Create the link map
-            link_map[step] = {n_in_params * m_cfg.max_num_branches_per_surface,
-                              m_mr.main};
-            m_copy.setup(link_map[step])->ignore();
+            const unsigned int links_size = m_copy.get_size(links_buffer);
+
+            if (links_size + n_max_candidates > link_buffer_capacity) {
+                const unsigned int new_link_buffer_capacity = std::max(
+                    2 * link_buffer_capacity, links_size + n_max_candidates);
+
+                TRACCC_INFO("Link buffer (capacity "
+                            << link_buffer_capacity << ") is too small to hold "
+                            << links_size << " current and " << n_max_candidates
+                            << " new links; increasing capacity to "
+                            << new_link_buffer_capacity);
+
+                link_buffer_capacity = new_link_buffer_capacity;
+
+                vecmem::data::vector_buffer<candidate_link> new_links_buffer(
+                    link_buffer_capacity, m_mr.main,
+                    vecmem::data::buffer_type::resizable);
+
+                m_copy.setup(new_links_buffer)->wait();
+                m_copy(links_buffer, new_links_buffer)->wait();
+
+                links_buffer = std::move(new_links_buffer);
+            }
 
             Idx blocksPerGrid =
                 (n_in_params + threadsPerBlock - 1) / threadsPerBlock;
             auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
-            auto bufAcc_n_candidates =
-                ::alpaka::allocBuf<unsigned int, Idx>(devAcc, 1u);
-            ::alpaka::memset(queue, bufAcc_n_candidates, 0);
-            ::alpaka::wait(queue);
+            const unsigned int prev_link_idx =
+                step == 0 ? 0 : step_to_link_idx_map[step - 1];
+
+            assert(links_size == step_to_link_idx_map[step]);
 
             typedef device::find_tracks_payload<std::decay_t<detector_type>>
                 PayloadType;
 
-            PayloadType host_payload{
-                det_view,
-                measurements,
-                vecmem::get_data(in_params_buffer),
-                vecmem::get_data(param_liveness_buffer),
-                n_in_params,
-                vecmem::get_data(barcodes_buffer),
-                vecmem::get_data(upper_bounds_buffer),
-                vecmem::get_data(link_map[prev_step]),
-                step,
-                n_max_candidates,
-                vecmem::get_data(updated_params_buffer),
-                vecmem::get_data(updated_liveness_buffer),
-                vecmem::get_data(link_map[step]),
-                ::alpaka::getPtrNative(bufAcc_n_candidates)};
             auto bufHost_payload =
                 ::alpaka::allocBuf<PayloadType, Idx>(devHost, 1u);
             PayloadType* payload = ::alpaka::getPtrNative(bufHost_payload);
-            *payload = host_payload;
+
+            new (payload) PayloadType{
+                .det_data = det_view,
+                .measurements_view = measurements,
+                .in_params_view = vecmem::get_data(in_params_buffer),
+                .in_params_liveness_view =
+                    vecmem::get_data(param_liveness_buffer),
+                .n_in_params = n_in_params,
+                .barcodes_view = vecmem::get_data(barcodes_buffer),
+                .upper_bounds_view = vecmem::get_data(upper_bounds_buffer),
+                .links_view = vecmem::get_data(links_buffer),
+                .prev_links_idx = prev_link_idx,
+                .curr_links_idx = step_to_link_idx_map[step],
+                .step = step,
+                .out_params_view = vecmem::get_data(updated_params_buffer),
+                .out_params_liveness_view =
+                    vecmem::get_data(updated_liveness_buffer)};
 
             auto bufAcc_payload =
                 ::alpaka::allocBuf<PayloadType, Idx>(devAcc, 1u);
@@ -278,26 +291,29 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             std::swap(in_params_buffer, updated_params_buffer);
             std::swap(param_liveness_buffer, updated_liveness_buffer);
 
-            ::alpaka::memcpy(queue, bufHost_n_candidates, bufAcc_n_candidates);
+            // Create a buffer for links
+            step_to_link_idx_map[step + 1] = m_copy.get_size(links_buffer);
+            n_candidates =
+                step_to_link_idx_map[step + 1] - step_to_link_idx_map[step];
             ::alpaka::wait(queue);
         }
 
-        if (*n_candidates > 0) {
+        if (n_candidates > 0) {
             /*****************************************************************
              * Kernel4: Get key and value for parameter sorting
              *****************************************************************/
 
             vecmem::data::vector_buffer<unsigned int> param_ids_buffer(
-                *n_candidates, m_mr.main);
+                n_candidates, m_mr.main);
             m_copy.setup(param_ids_buffer)->ignore();
 
             {
                 vecmem::data::vector_buffer<device::sort_key> keys_buffer(
-                    *n_candidates, m_mr.main);
+                    n_candidates, m_mr.main);
                 m_copy.setup(keys_buffer)->ignore();
 
                 Idx blocksPerGrid =
-                    (*n_candidates + threadsPerBlock - 1) / threadsPerBlock;
+                    (n_candidates + threadsPerBlock - 1) / threadsPerBlock;
                 auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
                 ::alpaka::exec<Acc>(queue, workDiv, FillSortKeysKernel{},
@@ -326,28 +342,31 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 m_copy.memset(n_tracks_per_seed_buffer, 0)->ignore();
 
                 Idx blocksPerGrid =
-                    (*n_candidates + threadsPerBlock - 1) / threadsPerBlock;
+                    (n_candidates + threadsPerBlock - 1) / threadsPerBlock;
                 auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
                 typedef device::propagate_to_next_surface_payload<
                     std::decay_t<propagator_type>, std::decay_t<bfield_type>>
                     PayloadType;
 
-                PayloadType host_payload{
-                    det_view,
-                    field_view,
-                    vecmem::get_data(in_params_buffer),
-                    vecmem::get_data(param_liveness_buffer),
-                    vecmem::get_data(param_ids_buffer),
-                    vecmem::get_data(link_map[step]),
-                    step,
-                    *n_candidates,
-                    vecmem::get_data(tips_buffer),
-                    vecmem::get_data(n_tracks_per_seed_buffer)};
                 auto bufHost_payload =
                     ::alpaka::allocBuf<PayloadType, Idx>(devHost, 1u);
                 PayloadType* payload = ::alpaka::getPtrNative(bufHost_payload);
-                *payload = host_payload;
+
+                new (payload) PayloadType{
+                    .det_data = det_view,
+                    .field_data = field_view,
+                    .params_view = vecmem::get_data(in_params_buffer),
+                    .params_liveness_view =
+                        vecmem::get_data(param_liveness_buffer),
+                    .param_ids_view = vecmem::get_data(param_ids_buffer),
+                    .links_view = vecmem::get_data(links_buffer),
+                    .prev_links_idx = step_to_link_idx_map[step],
+                    .step = step,
+                    .n_in_params = n_candidates,
+                    .tips_view = vecmem::get_data(tips_buffer),
+                    .n_tracks_per_seed_view =
+                        vecmem::get_data(n_tracks_per_seed_buffer)};
 
                 auto bufAcc_payload =
                     ::alpaka::allocBuf<PayloadType, Idx>(devAcc, 1u);
@@ -363,28 +382,15 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             }
         }
 
-        // Fill the candidate size vector
-        n_candidates_per_step.push_back(*n_candidates);
-
-        n_in_params = *n_candidates;
+        n_in_params = n_candidates;
     }
 
-    // Create link buffer
-    vecmem::data::jagged_vector_buffer<candidate_link> links_buffer(
-        n_candidates_per_step, m_mr.main, m_mr.host);
-    m_copy.setup(links_buffer)->ignore();
-
-    // Copy link map to link buffer
-    const auto n_steps = n_candidates_per_step.size();
-    for (unsigned int it = 0; it < n_steps; it++) {
-
-        vecmem::device_vector<candidate_link> in(link_map[it]);
-        vecmem::device_vector<candidate_link> out(
-            *(links_buffer.host_ptr() + it));
-
-        thrust::copy(thrustExecPolicy, in.begin(),
-                     in.begin() + n_candidates_per_step[it], out.begin());
-    }
+    TRACCC_DEBUG(
+        "Final link buffer usage was "
+        << m_copy.get_size(links_buffer) << " out of " << link_buffer_capacity
+        << " ("
+        << ((100.f * m_copy.get_size(links_buffer)) / link_buffer_capacity)
+        << "%)");
 
     /*****************************************************************
      * Kernel6: Build tracks
