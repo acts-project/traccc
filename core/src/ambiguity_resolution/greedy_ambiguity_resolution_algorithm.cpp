@@ -25,6 +25,9 @@ greedy_ambiguity_resolution_algorithm::operator()(
     const typename track_candidate_container_types::host& track_candidates)
     const {
 
+    // Make sure that min_shared_meas_for_competition is largen than zero
+    assert(m_config.min_shared_meas_for_competition > 0u);
+
     const std::size_t n_tracks = track_candidates.size();
 
     // Boolean for acceptance
@@ -60,25 +63,29 @@ greedy_ambiguity_resolution_algorithm::operator()(
     std::vector<std::size_t> n_shared(n_tracks);
 
     for (std::size_t i = 0; i < n_tracks; i++) {
-        std::vector<std::size_t> shared;
+        if (status[i] == resolution_status::UNKNOWN) {
 
-        for (std::size_t j = 0; j < n_tracks; j++) {
-            if (i != j) {
-                std::set_intersection(
-                    meas_ids.at(i).begin(), meas_ids.at(i).end(),
-                    meas_ids.at(j).begin(), meas_ids.at(j).end(),
-                    std::back_inserter(shared));
+            std::vector<std::size_t> shared;
 
-                // Remove common ids so that 'shared' vector has only unique ids
-                std::sort(shared.begin(), shared.end());
-                shared.erase(std::unique(shared.begin(), shared.end()),
-                             shared.end());
+            for (std::size_t j = 0; j < n_tracks; j++) {
+                if (i != j) {
+                    std::set_intersection(
+                        meas_ids.at(i).begin(), meas_ids.at(i).end(),
+                        meas_ids.at(j).begin(), meas_ids.at(j).end(),
+                        std::back_inserter(shared));
+
+                    // Remove common ids so that 'shared' vector has only unique
+                    // ids
+                    std::sort(shared.begin(), shared.end());
+                    shared.erase(std::unique(shared.begin(), shared.end()),
+                                 shared.end());
+                }
             }
-        }
 
-        n_shared.at(i) = shared.size();
-        if (n_shared.at(i) < m_config.min_shared_meas_for_competition) {
-            status[i] = resolution_status::ACCEPT;
+            n_shared.at(i) = shared.size();
+            if (n_shared.at(i) < m_config.min_shared_meas_for_competition) {
+                status[i] = resolution_status::ACCEPT;
+            }
         }
     }
 
@@ -97,11 +104,17 @@ greedy_ambiguity_resolution_algorithm::operator()(
                     // If two track have any shared hit and the reference track
                     // is worse, tag it as REJECT
                     if (!shared.empty()) {
-                        if (n_shared.at(i) / meas_ids.at(i).size() >
-                            n_shared.at(j) / meas_ids.at(j).size()) {
+                        auto rel_shared_i =
+                            static_cast<traccc::scalar>(n_shared.at(i)) /
+                            static_cast<traccc::scalar>(meas_ids.at(i).size());
+                        auto rel_shared_j =
+                            static_cast<traccc::scalar>(n_shared.at(j)) /
+                            static_cast<traccc::scalar>(meas_ids.at(j).size());
+
+                        if (rel_shared_i > rel_shared_j) {
                             status.at(i) = resolution_status::REJECT;
                             break;
-                        } else {
+                        } else if (rel_shared_i == rel_shared_j) {
                             if (chi_squares.at(i) > chi_squares.at(j)) {
                                 status.at(i) = resolution_status::REJECT;
                                 break;

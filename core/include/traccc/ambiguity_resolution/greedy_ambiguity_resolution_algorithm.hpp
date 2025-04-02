@@ -42,6 +42,9 @@ class greedy_ambiguity_resolution_algorithm
         const typename track_candidate_container_types::host& track_candidates)
         const override;
 
+    /// Get configuration
+    config_type& get_config() { return m_config; }
+
     /// Algorithm configuration
     config_type m_config;
 };
