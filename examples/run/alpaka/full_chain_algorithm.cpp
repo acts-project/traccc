@@ -71,7 +71,7 @@ full_chain_algorithm::full_chain_algorithm(
       m_finding_config(finding_config),
       m_fitting_config(fitting_config) {
 
-    traccc::alpaka::get_device_info();
+    std::cout << traccc::alpaka::get_device_info() << std::endl;
 
     // Copy the detector (description) to the device.
     m_copy(::vecmem::get_data(m_det_descr.get()), m_device_det_descr)->ignore();
