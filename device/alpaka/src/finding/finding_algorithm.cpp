@@ -389,7 +389,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         "Final link buffer usage was "
         << m_copy.get_size(links_buffer) << " out of " << link_buffer_capacity
         << " ("
-        << ((100.f * m_copy.get_size(links_buffer)) / link_buffer_capacity)
+        << ((100.f * static_cast<float>(m_copy.get_size(links_buffer))) /
+            static_cast<float>(link_buffer_capacity))
         << "%)");
 
     /*****************************************************************
