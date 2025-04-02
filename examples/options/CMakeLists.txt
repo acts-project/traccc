@@ -44,6 +44,7 @@ traccc_add_library( traccc_options options TYPE SHARED
   "src/track_propagation.cpp"
   "src/track_resolution.cpp"
   "src/track_seeding.cpp"
+  "src/truth_finding.cpp"
   )
 target_link_libraries( traccc_options
    PUBLIC

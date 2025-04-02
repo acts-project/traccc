@@ -41,13 +41,12 @@ struct build_tracks_payload {
     /**
      * @brief View object to the vector of candidate links
      */
-    vecmem::data::jagged_vector_view<const candidate_link> links_view;
+    vecmem::data::vector_view<const candidate_link> links_view;
 
     /**
      * @brief View object to the vector of tips
      */
-    vecmem::data::vector_view<const typename candidate_link::link_index_type>
-        tips_view;
+    vecmem::data::vector_view<const unsigned int> tips_view;
 
     /**
      * @brief View object to the vector of track candidates

@@ -56,6 +56,11 @@ struct propagate_to_next_surface_payload {
     vecmem::data::vector_view<const candidate_link> links_view;
 
     /**
+     * @brief Index in the link vector at which the current step starts
+     */
+    const unsigned int prev_links_idx;
+
+    /**
      * @brief Current CKF step number
      */
     unsigned int step;
@@ -68,8 +73,7 @@ struct propagate_to_next_surface_payload {
     /**
      * @brief View object to the vector of tips
      */
-    vecmem::data::vector_view<typename candidate_link::link_index_type>
-        tips_view;
+    vecmem::data::vector_view<unsigned int> tips_view;
 
     /**
      * @brief View object to the vector of the number of tracks per initial

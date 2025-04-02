@@ -30,6 +30,7 @@
 #include "traccc/options/track_finding.hpp"
 #include "traccc/options/track_fitting.hpp"
 #include "traccc/options/track_propagation.hpp"
+#include "traccc/options/truth_finding.hpp"
 #include "traccc/performance/collection_comparator.hpp"
 #include "traccc/performance/container_comparator.hpp"
 #include "traccc/performance/timer.hpp"
@@ -64,6 +65,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
             const traccc::opts::detector& detector_opts,
             const traccc::opts::performance& performance_opts,
             const traccc::opts::accelerator& accelerator_opts,
+            const traccc::opts::truth_finding& truth_finding_opts,
             std::unique_ptr<const traccc::Logger> ilogger) {
     TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
@@ -124,6 +126,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     traccc::cuda::stream stream;
 
     // Copy object
+    vecmem::copy host_copy;
     vecmem::cuda::async_copy async_copy{stream.cudaStream()};
 
     traccc::device::container_d2h_copy_alg<
@@ -162,7 +165,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     fit_cfg.propagation = propagation_config;
 
     traccc::host::kalman_fitting_algorithm host_fitting(
-        fit_cfg, host_mr, logger().clone("HostFittingAlg"));
+        fit_cfg, host_mr, host_copy, logger().clone("HostFittingAlg"));
     traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
         fit_cfg, mr, async_copy, stream, logger().clone("CudaFittingAlg"));
 
@@ -182,7 +185,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                                     input_opts.format, false);
 
         traccc::track_candidate_container_types::host truth_track_candidates =
-            evt_data.generate_truth_candidates(sg, host_mr);
+            evt_data.generate_truth_candidates(sg, host_mr,
+                                               truth_finding_opts.m_min_pt);
 
         // Prepare truth seeds
         traccc::bound_track_parameters_collection_types::host seeds(mr.host);
@@ -355,10 +359,12 @@ int main(int argc, char* argv[]) {
     traccc::opts::track_fitting fitting_opts;
     traccc::opts::performance performance_opts;
     traccc::opts::accelerator accelerator_opts;
+    traccc::opts::truth_finding truth_finding_config;
     traccc::opts::program_options program_opts{
         "Truth Track Finding Using CUDA",
         {detector_opts, input_opts, finding_opts, propagation_opts,
-         fitting_opts, performance_opts, accelerator_opts},
+         fitting_opts, performance_opts, accelerator_opts,
+         truth_finding_config},
         argc,
         argv,
         logger->cloneWithSuffix("Options")};
@@ -366,5 +372,5 @@ int main(int argc, char* argv[]) {
     // Run the application.
     return seq_run(finding_opts, propagation_opts, fitting_opts, input_opts,
                    detector_opts, performance_opts, accelerator_opts,
-                   logger->clone());
+                   truth_finding_config, logger->clone());
 }

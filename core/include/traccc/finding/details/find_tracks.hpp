@@ -27,6 +27,7 @@
 // System include(s).
 #include <algorithm>
 #include <cassert>
+#include <utility>
 #include <vector>
 
 namespace traccc::host::details {
@@ -130,7 +131,7 @@ track_candidate_container_types::host find_tracks(
     std::vector<std::vector<std::size_t>> param_to_link;
     param_to_link.resize(config.max_track_candidates_per_track);
 
-    std::vector<typename candidate_link::link_index_type> tips;
+    std::vector<std::pair<unsigned int, unsigned int>> tips;
 
     // Create propagator
     propagator_type propagator(config.propagation);
@@ -160,12 +161,6 @@ track_candidate_container_types::host find_tracks(
         out_params.reserve(n_in_params);
 
         // Previous step ID
-        const candidate_link::link_index_type::first_type previous_step =
-            (step == 0u)
-                ? std::numeric_limits<
-                      candidate_link::link_index_type::first_type>::max()
-                : step - 1u;
-
         std::fill(n_trks_per_seed.begin(), n_trks_per_seed.end(), 0u);
 
         // Parameters updated by Kalman fitter
@@ -257,11 +252,13 @@ track_candidate_container_types::host find_tracks(
                     chi2 < config.chi2_max) {
                     n_branches++;
 
-                    links[step].push_back({{previous_step, in_param_id},
-                                           item_id,
-                                           orig_param_id,
-                                           skip_counter,
-                                           chi2});
+                    links[step].push_back(
+                        {.step = step,
+                         .previous_candidate_idx = in_param_id,
+                         .meas_idx = item_id,
+                         .seed_idx = orig_param_id,
+                         .n_skipped = skip_counter,
+                         .chi2 = chi2});
                     updated_params.push_back(trk_state.filtered());
                 }
             }
@@ -274,11 +271,12 @@ track_candidate_container_types::host find_tracks(
 
                 // Put an invalid link with max item id
                 links[step].push_back(
-                    {{previous_step, in_param_id},
-                     std::numeric_limits<unsigned int>::max(),
-                     orig_param_id,
-                     skip_counter + 1,
-                     std::numeric_limits<traccc::scalar>::max()});
+                    {.step = step,
+                     .previous_candidate_idx = in_param_id,
+                     .meas_idx = std::numeric_limits<unsigned int>::max(),
+                     .seed_idx = orig_param_id,
+                     .n_skipped = skip_counter + 1,
+                     .chi2 = std::numeric_limits<traccc::scalar>::max()});
 
                 updated_params.push_back(in_param);
                 n_branches++;
@@ -388,15 +386,11 @@ track_candidate_container_types::host find_tracks(
         for (auto it = cands_per_track.rbegin(); it != cands_per_track.rend();
              it++) {
 
-            while (
-                L.meas_idx >= n_meas &&
-                L.previous.first !=
-                    std::numeric_limits<
-                        candidate_link::link_index_type::first_type>::max()) {
+            while (L.meas_idx >= n_meas && L.step != 0u) {
                 const auto link_pos =
-                    param_to_link.at(L.previous.first).at(L.previous.second);
+                    param_to_link.at(L.step - 1u).at(L.previous_candidate_idx);
 
-                L = links.at(L.previous.first).at(link_pos);
+                L = links.at(L.step - 1u).at(link_pos);
             }
 
             // Break if the measurement is still invalid
@@ -427,9 +421,9 @@ track_candidate_container_types::host find_tracks(
                     cands_per_track);
             } else {
                 const auto l_pos =
-                    param_to_link.at(L.previous.first).at(L.previous.second);
+                    param_to_link.at(L.step - 1u).at(L.previous_candidate_idx);
 
-                L = links.at(L.previous.first).at(l_pos);
+                L = links.at(L.step - 1u).at(l_pos);
             }
         }
     }

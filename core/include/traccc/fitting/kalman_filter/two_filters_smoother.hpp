@@ -129,6 +129,16 @@ struct two_filters_smoother {
          *  Set backward filtered parameter
          *************************************/
 
+        // Flip the sign of projector matrix element in case the first element
+        // of line measurement is negative
+        if constexpr (std::is_same_v<shape_t, detray::line<true>> ||
+                      std::is_same_v<shape_t, detray::line<false>>) {
+
+            if (getter::element(predicted_vec, e_bound_loc0, 0u) < 0) {
+                getter::element(H, 0u, e_bound_loc0) = -1;
+            }
+        }
+
         const auto I66 =
             matrix::identity<matrix_type<e_bound_size, e_bound_size>>();
         const auto I_m = matrix::identity<matrix_type<D, D>>();

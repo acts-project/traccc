@@ -16,12 +16,11 @@ namespace traccc {
 // A link that contains the index of corresponding measurement and the index of
 // a link from a previous step of track finding
 struct candidate_link {
+    // Step on which this link was found
+    unsigned int step;
 
-    // Type of index
-    using link_index_type = traccc::pair<unsigned int, unsigned int>;
-
-    // Index of link from the previous step
-    link_index_type previous;
+    // Index of the previous candidate
+    unsigned int previous_candidate_idx;
 
     // Measurement index
     unsigned int meas_idx;

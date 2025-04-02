@@ -183,19 +183,20 @@ track_candidate_container_types::buffer find_tracks(
                                                                        mr.main);
     copy.setup(n_tracks_per_seed_buffer)->wait();
 
-    // Create a map for links
-    std::map<unsigned int, vecmem::data::vector_buffer<candidate_link>>
-        link_map;
+    // Create a buffer for links
+    unsigned int link_buffer_capacity = config.initial_links_per_seed * n_seeds;
+    vecmem::data::vector_buffer<candidate_link> links_buffer(
+        link_buffer_capacity, mr.main, vecmem::data::buffer_type::resizable);
+    copy.setup(links_buffer)->wait();
 
     // Create a buffer of tip links
-    vecmem::data::vector_buffer<typename candidate_link::link_index_type>
-        tips_buffer{config.max_num_branches_per_seed * n_seeds, mr.main,
-                    vecmem::data::buffer_type::resizable};
+    vecmem::data::vector_buffer<unsigned int> tips_buffer{
+        config.max_num_branches_per_seed * n_seeds, mr.main,
+        vecmem::data::buffer_type::resizable};
     copy.setup(tips_buffer)->wait();
 
-    // Link size
-    std::vector<std::size_t> n_candidates_per_step;
-    n_candidates_per_step.reserve(config.max_track_candidates_per_track);
+    std::map<unsigned int, unsigned int> step_to_link_idx_map;
+    step_to_link_idx_map[0] = 0;
 
     unsigned int n_in_params = n_seeds;
     for (unsigned int step = 0;
@@ -226,8 +227,7 @@ track_candidate_container_types::buffer find_tracks(
          * Kernel3: Find valid tracks
          *****************************************************************/
 
-        // Previous step
-        const unsigned int prev_step = (step == 0 ? 0 : step - 1);
+        unsigned int n_candidates = 0;
 
         // Buffer for kalman-updated parameters spawned by the
         // measurement candidates
@@ -235,22 +235,30 @@ track_candidate_container_types::buffer find_tracks(
             n_in_params * config.max_num_branches_per_surface;
 
         bound_track_parameters_collection_types::buffer updated_params_buffer(
-            n_in_params * config.max_num_branches_per_surface, mr.main);
+            n_max_candidates, mr.main);
         copy.setup(updated_params_buffer)->wait();
 
         vecmem::data::vector_buffer<unsigned int> updated_liveness_buffer(
-            n_in_params * config.max_num_branches_per_surface, mr.main);
+            n_max_candidates, mr.main);
         copy.setup(updated_liveness_buffer)->wait();
 
-        // Create the link map
-        link_map[step] = {n_in_params * config.max_num_branches_per_surface,
-                          mr.main};
-        copy.setup(link_map[step])->wait();
+        const unsigned int links_size = copy.get_size(links_buffer);
 
-        vecmem::unique_alloc_ptr<unsigned int> n_candidates_device =
-            vecmem::make_unique_alloc<unsigned int>(mr.main);
-        queue.memset(n_candidates_device.get(), 0, sizeof(unsigned int))
-            .wait_and_throw();
+        if (links_size + n_max_candidates > link_buffer_capacity) {
+            const unsigned int new_link_buffer_capacity = std::max(
+                2 * link_buffer_capacity, links_size + n_max_candidates);
+
+            link_buffer_capacity = new_link_buffer_capacity;
+
+            vecmem::data::vector_buffer<candidate_link> new_links_buffer(
+                link_buffer_capacity, mr.main,
+                vecmem::data::buffer_type::resizable);
+
+            copy.setup(new_links_buffer)->wait();
+            copy(links_buffer, new_links_buffer)->wait();
+
+            links_buffer = std::move(new_links_buffer);
+        }
 
         // The number of threads to use per block in the track finding.
         static const unsigned int nFindTracksThreads = 64;
@@ -275,15 +283,13 @@ track_candidate_container_types::buffer find_tracks(
                      param_liveness = vecmem::get_data(param_liveness_buffer),
                      n_in_params, barcodes = vecmem::get_data(barcodes_buffer),
                      upper_bounds = vecmem::get_data(upper_bounds_buffer),
-                     previous_candidate_links =
-                         vecmem::get_data(link_map.at(prev_step)),
-                     step, n_max_candidates,
+                     links_view = vecmem::get_data(links_buffer),
+                     prev_links_idx =
+                         step == 0 ? 0 : step_to_link_idx_map[step - 1],
+                     curr_links_idx = step_to_link_idx_map[step], step,
                      updated_params = vecmem::get_data(updated_params_buffer),
                      updated_liveness =
                          vecmem::get_data(updated_liveness_buffer),
-                     current_candidate_links =
-                         vecmem::get_data(link_map.at(step)),
-                     n_candidates = n_candidates_device.get(),
                      shared_candidates_size, shared_num_candidates,
                      shared_candidates](::sycl::nd_item<1> item) {
                         // SYCL wrappers used in the algorithm.
@@ -295,10 +301,9 @@ track_candidate_container_types::buffer find_tracks(
                             std::decay_t<typename navigator_t::detector_type>>(
                             thread_id, barrier, config,
                             {det, measurements, in_params, param_liveness,
-                             n_in_params, barcodes, upper_bounds,
-                             previous_candidate_links, step, n_max_candidates,
-                             updated_params, updated_liveness,
-                             current_candidate_links, n_candidates},
+                             n_in_params, barcodes, upper_bounds, links_view,
+                             prev_links_idx, curr_links_idx, step,
+                             updated_params, updated_liveness},
                             {&(shared_num_candidates[0]),
                              &(shared_candidates[0]),
                              shared_candidates_size[0]});
@@ -309,12 +314,9 @@ track_candidate_container_types::buffer find_tracks(
         std::swap(in_params_buffer, updated_params_buffer);
         std::swap(param_liveness_buffer, updated_liveness_buffer);
 
-        // Get the number of candidates back to the host.
-        unsigned int n_candidates = 0;
-        queue
-            .memcpy(&n_candidates, n_candidates_device.get(),
-                    sizeof(unsigned int))
-            .wait_and_throw();
+        step_to_link_idx_map[step + 1] = copy.get_size(links_buffer);
+        n_candidates =
+            step_to_link_idx_map[step + 1] - step_to_link_idx_map[step];
 
         if (n_candidates > 0) {
             /*****************************************************************
@@ -390,10 +392,9 @@ track_candidate_container_types::buffer find_tracks(
                          param_liveness =
                              vecmem::get_data(param_liveness_buffer),
                          param_ids = vecmem::get_data(param_ids_buffer),
-                         current_candidate_links =
-                             vecmem::get_data(link_map.at(step)),
-                         step, n_candidates,
-                         tips = vecmem::get_data(tips_buffer),
+                         links_view = vecmem::get_data(links_buffer),
+                         prev_links_idx = step_to_link_idx_map[step], step,
+                         n_candidates, tips = vecmem::get_data(tips_buffer),
                          n_tracks_per_seed =
                              vecmem::get_data(n_tracks_per_seed_buffer)](
                             ::sycl::nd_item<1> item) {
@@ -402,36 +403,15 @@ track_candidate_container_types::buffer find_tracks(
                                 typename stepper_t::magnetic_field_type>(
                                 details::global_index(item), config,
                                 {det, field, in_params, param_liveness,
-                                 param_ids, current_candidate_links, step,
+                                 param_ids, links_view, prev_links_idx, step,
                                  n_candidates, tips, n_tracks_per_seed});
                         });
                 })
                 .wait_and_throw();
         }
 
-        // Fill the candidate size vector
-        n_candidates_per_step.push_back(n_candidates);
-
         n_in_params = n_candidates;
     }
-
-    // Create link buffer
-    vecmem::data::jagged_vector_buffer<candidate_link> links_buffer(
-        n_candidates_per_step, mr.main, mr.host);
-    copy.setup(links_buffer)->wait();
-
-    // Copy link map to link buffer
-    for (unsigned int it = 0;
-         it < static_cast<unsigned int>(n_candidates_per_step.size()); it++) {
-
-        vecmem::device_vector<candidate_link> in(link_map.at(it));
-        vecmem::device_vector<candidate_link> out(
-            *(links_buffer.host_ptr() + it));
-
-        oneapi::dpl::copy(policy, in.begin(),
-                          in.begin() + n_candidates_per_step[it], out.begin());
-    }
-    queue.wait_and_throw();
 
     /*****************************************************************
      * Kernel6: Build tracks

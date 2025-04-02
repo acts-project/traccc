@@ -52,6 +52,7 @@
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
+#include <vecmem/utils/copy.hpp>
 
 // System include(s).
 #include <cstdint>
@@ -76,6 +77,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
 
     // Memory resource used by the application.
     vecmem::host_memory_resource host_mr;
+    // Copy obejct
+    vecmem::copy copy;
 
     // Construct the detector description object.
     traccc::silicon_detector_description::host det_descr{host_mr};
@@ -138,7 +141,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
     traccc::host::track_params_estimation tp(host_mr,
                                              logger().clone("TrackParEstAlg"));
     finding_algorithm finding_alg(finding_cfg, logger().clone("FindingAlg"));
-    fitting_algorithm fitting_alg(fitting_cfg, host_mr,
+    fitting_algorithm fitting_alg(fitting_cfg, host_mr, copy,
                                   logger().clone("FittingAlg"));
     traccc::greedy_ambiguity_resolution_algorithm::config_t resolution_config;
     traccc::greedy_ambiguity_resolution_algorithm resolution_alg(
@@ -374,8 +377,8 @@ int main(int argc, char* argv[]) {
     traccc::opts::program_options program_opts{
         "Full Tracking Chain on the Host",
         {detector_opts, input_opts, output_opts, clusterization_opts,
-         seeding_opts, finding_opts, propagation_opts, resolution_opts,
-         performance_opts},
+         seeding_opts, finding_opts, fitting_opts, propagation_opts,
+         resolution_opts, performance_opts},
         argc,
         argv,
         logger->cloneWithSuffix("Options")};

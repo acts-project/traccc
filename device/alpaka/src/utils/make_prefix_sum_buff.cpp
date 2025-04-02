@@ -49,7 +49,7 @@ vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
     // Fixed number of threads per block.
     const Idx threadsPerBlock = getWarpSize<Acc>();
     const Idx blocksPerGrid =
-        (totalSize + threadsPerBlock - 1) / threadsPerBlock;
+        (sizes_sum_view.size() + threadsPerBlock - 1) / threadsPerBlock;
     auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
     ::alpaka::exec<Acc>(queue, workDiv, PrefixSumBuffKernel{}, sizes_sum_view,
