@@ -44,6 +44,7 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // Detray include(s).
+#include <cmath>
 #include <detray/detectors/bfield.hpp>
 #include <detray/io/frontend/detector_reader.hpp>
 #include <detray/navigation/navigator.hpp>
@@ -100,6 +101,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::alpaka::vecmem_resources::managed_memory_resource mng_mr;
     traccc::memory_resource mr{device_mr, &host_mr};
 #endif
+    vecmem::copy host_copy;
 
     // Performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -181,17 +183,19 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     cfg.propagation = propagation_config;
 
     // Finding algorithm object
-    traccc::host::combinatorial_kalman_filter_algorithm host_finding(cfg);
+    traccc::host::combinatorial_kalman_filter_algorithm host_finding(
+        cfg, logger().clone("HostFindingAlg"));
     traccc::alpaka::finding_algorithm<rk_stepper_type, device_navigator_type>
-        device_finding(cfg, mr, copy);
+        device_finding(cfg, mr, copy, logger().clone("AlpakaFindingAlg"));
 
     // Fitting algorithm object
     traccc::fitting_config fit_cfg(fitting_opts);
     fit_cfg.propagation = propagation_config;
 
-    traccc::host::kalman_fitting_algorithm host_fitting(fit_cfg, host_mr);
+    traccc::host::kalman_fitting_algorithm host_fitting(
+        fit_cfg, host_mr, host_copy, logger().clone("HostFittingAlg"));
     traccc::alpaka::fitting_algorithm<device_fitter_type> device_fitting(
-        fit_cfg, mr, copy);
+        fit_cfg, mr, copy, logger().clone("AlpakaFittingAlg"));
 
     traccc::performance::timing_info elapsedTimes;
 

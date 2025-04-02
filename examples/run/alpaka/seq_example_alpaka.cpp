@@ -81,6 +81,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     traccc::alpaka::vecmem_resources::device_memory_resource device_mr;
 #endif
     traccc::memory_resource mr{device_mr, &host_mr};
+    vecmem::copy host_copy;
 
     // Construct the detector description object.
     traccc::silicon_detector_description::host host_det_descr{host_mr};
@@ -172,7 +173,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
         host_mr, logger().clone("HostTrackParEstAlg"));
     host_finding_algorithm finding_alg(finding_cfg,
                                        logger().clone("HostFindingAlg"));
-    host_fitting_algorithm fitting_alg(fitting_cfg, host_mr,
+    host_fitting_algorithm fitting_alg(fitting_cfg, host_mr, host_copy,
                                        logger().clone("HostFittingAlg"));
 
     traccc::alpaka::clusterization_algorithm ca_alpaka(
