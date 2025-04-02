@@ -94,7 +94,7 @@ struct propagate_to_next_surface_payload {
 /// @param[inout] payload      The function call payload
 ///
 template <typename propagator_t, typename bfield_t>
-TRACCC_DEVICE inline void propagate_to_next_surface(
+TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     global_index_t globalIndex, const finding_config& cfg,
     const propagate_to_next_surface_payload<propagator_t, bfield_t>& payload);
 

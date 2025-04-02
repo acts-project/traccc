@@ -9,9 +9,9 @@
 
 namespace traccc::device {
 
-TRACCC_DEVICE inline void build_tracks(const global_index_t globalIndex,
-                                       const finding_config& cfg,
-                                       const build_tracks_payload& payload) {
+TRACCC_HOST_DEVICE inline void build_tracks(
+    const global_index_t globalIndex, const finding_config& cfg,
+    const build_tracks_payload& payload) {
 
     const measurement_collection_types::const_device measurements(
         payload.measurements_view);

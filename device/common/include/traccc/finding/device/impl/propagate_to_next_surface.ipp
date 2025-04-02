@@ -17,7 +17,7 @@
 namespace traccc::device {
 
 template <typename propagator_t, typename bfield_t>
-TRACCC_DEVICE inline void propagate_to_next_surface(
+TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     const global_index_t globalIndex, const finding_config& cfg,
     const propagate_to_next_surface_payload<propagator_t, bfield_t>& payload) {
 

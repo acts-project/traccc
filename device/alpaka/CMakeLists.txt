@@ -46,18 +46,34 @@ traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   "src/seeding/seeding_algorithm.cpp"
   "include/traccc/alpaka/seeding/track_params_estimation.hpp"
   "src/seeding/track_params_estimation.cpp"
+  # Finding
+  "include/traccc/alpaka/finding/finding_algorithm.hpp"
+  "src/finding/finding_algorithm.cpp"
+  "src/finding/kernels/make_barcode_sequence.hpp"
+  "src/finding/kernels/apply_interaction.hpp"
+  "src/finding/kernels/fill_sort_keys.hpp"
+  "src/finding/kernels/prune_tracks.hpp"
+  "src/finding/kernels/build_tracks.hpp"
+  "src/finding/kernels/find_tracks.hpp"
+  "src/finding/kernels/propagate_to_next_surface.hpp"
+  # Fitting
+  "include/traccc/alpaka/fitting/fitting_algorithm.hpp"
+  "src/fitting/fitting_algorithm.cpp"
 )
+
 # Set up Thrust specifically for the traccc::alpaka library.
 if(alpaka_ACC_GPU_CUDA_ENABLE)
-thrust_create_target( traccc::cuda_thrust
-  HOST CPP
-  DEVICE CUDA )
+  thrust_create_target( traccc::cuda_thrust
+    HOST CPP
+    DEVICE CUDA )
   target_link_libraries(traccc::cuda_thrust INTERFACE CUDA::cudart)
   list(APPEND PRIVATE_LIBRARIES traccc::cuda_thrust)
+elseif(alpaka_ACC_GPU_HIP_ENABLE)
+  list(APPEND PRIVATE_LIBRARIES rocthrust)
 else()
-thrust_create_target (traccc::alpaka_thrust
-  HOST CPP
-  DEVICE CPP )
+  thrust_create_target (traccc::alpaka_thrust
+    HOST CPP
+    DEVICE CPP )
   list(APPEND PRIVATE_LIBRARIES traccc::alpaka_thrust)
 endif()
 

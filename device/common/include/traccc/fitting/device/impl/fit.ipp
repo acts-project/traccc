@@ -57,7 +57,8 @@ TRACCC_HOST_DEVICE inline void fit(
                                           *(seqs_view.ptr() + param_id));
 
     // Run fitting
-    kalman_fitter_status fit_status = fitter.fit(seed_param, fitter_state);
+    [[maybe_unused]] kalman_fitter_status fit_status =
+        fitter.fit(seed_param, fitter_state);
 
     if (fitter_state.m_fit_res.fit_outcome == fitter_outcome::SUCCESS) {
         assert(fit_status == kalman_fitter_status::SUCCESS);
