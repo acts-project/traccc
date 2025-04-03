@@ -19,6 +19,7 @@
 #include "traccc/utils/particle.hpp"
 
 // detray include(s).
+#include <detray/navigation/navigator.hpp>
 #include <detray/propagator/base_actor.hpp>
 
 // vecmem include(s)
@@ -141,6 +142,11 @@ struct kalman_actor : detray::actor {
 
             typename edm::track_state_collection<algebra_t>::device::proxy_type
                 trk_state = actor_state();
+
+            // Did the navigation switch direction?
+            actor_state.backward_mode =
+                navigation.direction() ==
+                detray::navigation::direction::e_backward;
 
             // Increase the hole counts if the propagator fails to find the next
             // measurement
