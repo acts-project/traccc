@@ -16,6 +16,7 @@
 #include "traccc/utils/particle.hpp"
 
 // detray include(s).
+#include <detray/navigation/navigator.hpp>
 #include <detray/propagator/base_actor.hpp>
 
 // vecmem include(s)
@@ -109,7 +110,7 @@ struct kalman_actor : detray::actor {
 
         // If the iterator reaches the end, terminate the propagation
         if (actor_state.is_complete()) {
-            propagation._heartbeat &= navigation.abort();
+            propagation._heartbeat &= navigation.stop();
             return;
         }
 
@@ -117,6 +118,11 @@ struct kalman_actor : detray::actor {
         if (navigation.is_on_sensitive()) {
 
             auto& trk_state = actor_state();
+
+            // Did the navigation switch direction?
+            actor_state.backward_mode =
+                navigation.direction() ==
+                detray::navigation::direction::e_backward;
 
             // Increase the hole counts if the propagator fails to find the next
             // measurement
@@ -138,7 +144,6 @@ struct kalman_actor : detray::actor {
             kalman_fitter_status res = kalman_fitter_status::SUCCESS;
 
             if (!actor_state.backward_mode) {
-                // Forward filter
                 res = sf.template visit_mask<gain_matrix_updater<algebra_t>>(
                     trk_state, propagation._stepping.bound_params());
 
