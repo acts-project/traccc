@@ -32,7 +32,7 @@ using namespace traccc;
 
 constexpr double rel_mat_error{0.01};
 constexpr std::size_t n_events{5u};
-constexpr detray::pdg_particle ptcl_type{detray::muon<scalar>()};
+constexpr detray::pdg_particle ptc_type{detray::muon<scalar>()};
 
 /// Test suite for navigation tests for the CKF
 class CKF_navigation_test
@@ -55,7 +55,7 @@ TEST_P(CKF_navigation_test, toy_detector) {
     using simulator_t = simulator<detector_t, b_field_t, generator_t, writer_t>;
 
     using stepper_t = detray::rk_stepper<
-        b_field_t::view_t, algebra_t, detray::unconstrained_step<scalar>,
+        b_field_t::view_t, algebra_t, detray::constrained_step<scalar>,
         detray::stepper_rk_policy<scalar>, detray::stepping::print_inspector>;
 
     vecmem::host_memory_resource host_mr;
@@ -86,8 +86,8 @@ TEST_P(CKF_navigation_test, toy_detector) {
 
     // Create measurement smearer
     measurement_smearer<algebra_t> smearer(smearing[0], smearing[1]);
-    auto sim = simulator_t(ptcl_type, n_events, det, field,
-                           generator_t{gen_cfg}, writer_t::config{smearer},
+    auto sim = simulator_t(ptc_type, n_events, det, field, generator_t{gen_cfg},
+                           writer_t::config{smearer},
                            "../data/detray_simulation/toy_detector");
 
     // Propagation config for the simulation
@@ -106,7 +106,8 @@ TEST_P(CKF_navigation_test, toy_detector) {
 
     // Specific config for the navigation test
     prop_cfg.navigation.min_mask_tolerance = std::get<1>(GetParam());
-    prop_cfg.navigation.mask_tolerance_scalor = 1.f;
+    prop_cfg.navigation.mask_tolerance_scalor = 5.f;
+    prop_cfg.navigation.overstep_tolerance = -300.f * traccc::unit<float>::um;
     prop_cfg.navigation.max_mask_tolerance =
         std::get<1>(GetParam()) + 7.f * traccc::unit<float>::mm;
 
@@ -132,11 +133,11 @@ TEST_P(CKF_navigation_test, toy_detector) {
         ASSERT_FALSE(evt_data.m_ptc_to_meas_map.empty());
         ASSERT_EQ(evt_data.m_particle_map.size(), gen_cfg.n_tracks());
 
-        for (const auto& [ptcl_id, ptcl] : evt_data.m_particle_map) {
+        for (const auto& [ptc_id, ptc] : evt_data.m_particle_map) {
             // Make a trace of detray-understandable intersections
             auto truth_trace_fw =
                 traccc::navigation_validator::transcribe_to_trace(
-                    ctx, det, ptcl, evt_data.m_ptc_to_meas_map);
+                    ctx, det, ptc, evt_data.m_ptc_to_meas_map);
 
             // Revert the forward trace fro the backward propagation
             vecmem::vector<sf_candidate_t> truth_trace_bw(
@@ -146,21 +147,36 @@ TEST_P(CKF_navigation_test, toy_detector) {
             if (!truth_trace_fw.empty()) {
                 // Construct initial track parameters
                 // @TODO: Need volume grid in case of large vertex smearing
-                tracks.emplace_back(ptcl.vertex, 0.f, ptcl.momentum,
-                                    ptcl.charge);
+                tracks.emplace_back(ptc.vertex, 0.f, ptc.momentum, ptc.charge);
 
                 truth_traces_fw.push_back(std::move(truth_trace_fw));
                 truth_traces_bw.push_back(std::move(truth_trace_bw));
             }
 
             // Transcribe measurements to track states for the KF
-            // track_state_coll
+            if (!evt_data.m_ptc_to_meas_map.contains(ptc) ||
+                vector::norm(ptc.momentum) < 50.f * traccc::unit<scalar>::MeV) {
+                continue;
+            }
+            const auto& measurements = evt_data.m_ptc_to_meas_map.at(ptc);
+            vecmem::vector<track_state<algebra_t>> track_states{};
+            track_states.reserve(measurements.size());
+
+            for (const auto& meas : measurements) {
+                track_states.emplace_back(meas);
+            }
+
+            track_state_coll.push_back(std::move(track_states));
         }
     }
 
+    ASSERT_EQ(truth_traces_fw.size(), tracks.size());
+    ASSERT_EQ(truth_traces_bw.size(), tracks.size());
+    ASSERT_EQ(track_state_coll.size(), tracks.size());
+
+    using perigee_stopper = detray::perigee_stopper<algebra_t>;
     using transporter = detray::parameter_transporter<algebra_t>;
     using interactor = detray::pointwise_material_interactor<algebra_t>;
-    // using fit_actor = traccc::kalman_actor<algebra_t>;
     using resetter = detray::parameter_resetter<algebra_t>;
 
     // Run the navigation and compare
@@ -168,10 +184,18 @@ TEST_P(CKF_navigation_test, toy_detector) {
     test_cfg.n_tracks(tracks.size()).ptc_hypothesis(ptcl_type);
     test_cfg.collect_sensitives_only(true).fail_on_diff(false).verbose(false);
 
+    auto truth_traces_fw_KF = truth_traces_fw;
+    auto truth_traces_bw_KF = truth_traces_bw;
     {
         std::cout << "-----------------------------------"
                   << "\nFORWARD - No KF" << std::endl
                   << "-----------------------------------\n";
+
+        // Prepare actor states
+        interactor::state interactor_state{};
+        interactor_state.do_multiple_scattering = std::get<6>(GetParam());
+        interactor_state.do_energy_loss = std::get<7>(GetParam());
+        auto state_tuple = vecmem::vector{detray::make_tuple(interactor_state)};
 
         // Forward navigation
         test_cfg.name(std::to_string(pT) + "_GeV_fw");
@@ -181,7 +205,7 @@ TEST_P(CKF_navigation_test, toy_detector) {
             detray::navigation_validator::compare_to_navigation<
                 stepper_t, transporter, interactor, resetter>(
                 test_cfg, host_mr, det, names, ctx, field_view, prop_cfg,
-                truth_traces_fw, tracks);
+                truth_traces_fw, tracks, state_tuple);
 
         std::cout << "BACKWARD - No KF" << std::endl
                   << "-----------------------------------\n";
@@ -193,9 +217,9 @@ TEST_P(CKF_navigation_test, toy_detector) {
         const auto [trk_stats_bw, n_surfaces_bw, n_miss_nav_bw, n_miss_truth_bw,
                     step_traces_bw, mat_traces_bw, mat_records_bw] =
             detray::navigation_validator::compare_to_navigation<
-                stepper_t, transporter, interactor, resetter>(
+                stepper_t, transporter, interactor, resetter, perigee_stopper>(
                 test_cfg, host_mr, det, names, ctx, field_view, prop_cfg,
-                truth_traces_bw, tracks);
+                truth_traces_bw, tracks, state_tuple);
 
         // Make sure some data was collected
         ASSERT_TRUE(trk_stats_fw.n_tracks > 0u);
@@ -293,24 +317,77 @@ TEST_P(CKF_navigation_test, toy_detector) {
                   << "\nFORWARD - With KF" << std::endl
                   << "-----------------------------------\n";
 
-        /*vecmem::vector<track_state<algebra_t>> track_states{};
+        using fit_actor = traccc::kalman_actor<algebra_t>;
+        using actor_chain_t =
+            detray::actor_chain<transporter, interactor, fit_actor, resetter>;
 
-        // Prepare actor states
-        interactor::state interactor_state{};
-        fit_actor::state fit_actor_state{vecmem::get_data(track_states)};
+        auto track_states_coll_bw = track_state_coll;
+        vecmem::vector<std::array<scalar, e_bound_size>> stddevs_per_track{};
+        vecmem::vector<typename actor_chain_t::state_tuple> state_tuple{};
+        state_tuple.reserve(tracks.size());
 
-        auto state_tuple = detray::make_tuple(interactor_state,
-        fit_actor_state);
+        // Prepare the fitter state for every track
+        for (std::size_t i = 0u; i < tracks.size(); ++i) {
+            auto& track_states = track_state_coll[i];
+            // Prepare actor states
+            interactor::state interactor_state{};
+            interactor_state.do_multiple_scattering = std::get<6>(GetParam());
+            interactor_state.do_energy_loss = std::get<7>(GetParam());
+
+            auto trk_states_view = vecmem::get_data(track_states);
+            fit_actor::state fit_actor_state{
+                vecmem::device_vector<track_state<algebra_t>>(trk_states_view)};
+
+            state_tuple.push_back(
+                detray::make_tuple(interactor_state, fit_actor_state));
+            stddevs_per_track.push_back(stddevs);
+        }
 
         // Forward navigation
-        test_cfg.name(std::to_string(pT) + "_GeV_fw");
+        test_cfg.name(std::to_string(pT) + "_GeV_fw_KF");
         test_cfg.navigation_direction(detray::navigation::direction::e_forward);
         const auto [trk_stats_fw, n_surfaces_fw, n_miss_nav_fw, n_miss_truth_fw,
                     step_traces_fw, mat_traces_fw, mat_records_fw] =
             detray::navigation_validator::compare_to_navigation<
-                stepper_t, transporter, interactor, resetter>(
+                stepper_t, transporter, interactor, fit_actor, resetter>(
                 test_cfg, host_mr, det, names, ctx, field_view, prop_cfg,
-                truth_traces_fw, tracks, state_tuple);*/
+                truth_traces_fw_KF, tracks, state_tuple, stddevs_per_track);
+
+        // ASSERT_EQ(actor_state.n_holes, n_miss_nav_fw.n_sensitives());
+
+        std::cout << "BACKWARD - With KF" << std::endl
+                  << "-----------------------------------\n";
+        using actor_chain_bw_t =
+            detray::actor_chain<transporter, fit_actor, interactor, resetter>;
+
+        vecmem::vector<typename actor_chain_bw_t::state_tuple> state_tuple_bw{};
+
+        // Prepare the fitter state for every track
+        for (std::size_t i = 0u; i < tracks.size(); ++i) {
+            auto& track_states = track_states_coll_bw[i];
+            // Prepare actor states
+            interactor::state interactor_state{};
+            interactor_state.do_multiple_scattering = std::get<6>(GetParam());
+            interactor_state.do_energy_loss = std::get<7>(GetParam());
+
+            auto trk_states_view = vecmem::get_data(track_states);
+            fit_actor::state fit_actor_state{
+                vecmem::device_vector<track_state<algebra_t>>(trk_states_view)};
+
+            state_tuple_bw.push_back(
+                detray::make_tuple(fit_actor_state, interactor_state));
+        }
+
+        // Forward navigation
+        test_cfg.name(std::to_string(pT) + "_GeV_bw_KF");
+        test_cfg.navigation_direction(
+            detray::navigation::direction::e_backward);
+        const auto [trk_stats_bw, n_surfaces_bw, n_miss_nav_bw, n_miss_truth_bw,
+                    step_traces_bw, mat_traces_bw, mat_records_bw] =
+            detray::navigation_validator::compare_to_navigation<
+                stepper_t, transporter, fit_actor, interactor, resetter>(
+                test_cfg, host_mr, det, names, ctx, field_view, prop_cfg,
+                truth_traces_bw_KF, tracks, state_tuple_bw, stddevs_per_track);
     }
 }
 
@@ -321,10 +398,27 @@ TEST_P(CKF_navigation_test, toy_detector) {
 // 4: max allowed % of track with extra surfaces
 // 5: max allowed number of holes per track
 // 6: Build detector with material
-// 7: Do multiple scattering during simulation
-// 8: Do landau energy loss during simulation
+// 7: Do multiple scattering
+// 8: Do energy loss
 
 // No material - navigation should work
+INSTANTIATE_TEST_SUITE_P(
+    pT_100GeV_no_mat, CKF_navigation_test,
+    ::testing::Values(std::make_tuple(100.f * traccc::unit<scalar>::GeV,
+                                      1e-5f * traccc::unit<float>::mm, 0.001f,
+                                      0.001f, 1u, false, false, false)));
+
+INSTANTIATE_TEST_SUITE_P(
+    pT_50GeV_no_mat, CKF_navigation_test,
+    ::testing::Values(std::make_tuple(50.f * traccc::unit<scalar>::GeV,
+                                      1e-5f * traccc::unit<float>::mm, 0.001f,
+                                      0.001f, 1u, false, false, false)));
+
+INSTANTIATE_TEST_SUITE_P(
+    pT_10GeV_no_mat, CKF_navigation_test,
+    ::testing::Values(std::make_tuple(10.f * traccc::unit<scalar>::GeV,
+                                      1e-5f * traccc::unit<float>::mm, 0.001f,
+                                      0.001f, 1u, false, false, false)));
 INSTANTIATE_TEST_SUITE_P(
     pT_5GeV_no_mat, CKF_navigation_test,
     ::testing::Values(std::make_tuple(5.f * traccc::unit<scalar>::GeV,
@@ -351,114 +445,124 @@ INSTANTIATE_TEST_SUITE_P(
 
 // No scattering - navigation should work (material interactor models e-loss)
 INSTANTIATE_TEST_SUITE_P(
-    pT_5GeV_no_scat, CKF_navigation_test,
+    pT_100GeV_only_eloss, CKF_navigation_test,
+    ::testing::Values(std::make_tuple(100.f * traccc::unit<scalar>::GeV,
+                                      1e-3f * traccc::unit<float>::mm, 0.001f,
+                                      0.005f, 4u, true, false, true)));
+INSTANTIATE_TEST_SUITE_P(
+    pT_50GeV_only_eloss, CKF_navigation_test,
+    ::testing::Values(std::make_tuple(50.f * traccc::unit<scalar>::GeV,
+                                      1e-3f * traccc::unit<float>::mm, 0.001f,
+                                      0.005f, 4u, true, false, true)));
+INSTANTIATE_TEST_SUITE_P(
+    pT_10GeV_only_eloss, CKF_navigation_test,
+    ::testing::Values(std::make_tuple(10.f * traccc::unit<scalar>::GeV,
+                                      1e-3f * traccc::unit<float>::mm, 0.001f,
+                                      0.005f, 4u, true, false, true)));
+INSTANTIATE_TEST_SUITE_P(
+    pT_5GeV_only_eloss, CKF_navigation_test,
     ::testing::Values(std::make_tuple(5.f * traccc::unit<scalar>::GeV,
-                                      1e-5f * traccc::unit<float>::mm, 0.001f,
-                                      0.001f, 1u, true, false, true)));
+                                      1e-3f * traccc::unit<float>::mm, 0.001f,
+                                      0.005f, 4u, true, false, true)));
 
 INSTANTIATE_TEST_SUITE_P(
-    pT_1GeV_no_scat, CKF_navigation_test,
+    pT_1GeV_only_eloss, CKF_navigation_test,
     ::testing::Values(std::make_tuple(1.f * traccc::unit<scalar>::GeV,
-                                      1e-5f * traccc::unit<float>::mm, 0.001f,
-                                      0.001f, 1u, true, false, true)));
+                                      1e-3f * traccc::unit<float>::mm, 0.001f,
+                                      0.005f, 4u, true, false, true)));
 
 INSTANTIATE_TEST_SUITE_P(
-    pT_05GeV_no_scat, CKF_navigation_test,
+    pT_05GeV_only_eloss, CKF_navigation_test,
     ::testing::Values(std::make_tuple(0.5f * traccc::unit<scalar>::GeV,
-                                      1e-5f * traccc::unit<float>::mm, 0.001f,
-                                      0.001f, 1u, true, false, true)));
+                                      1e-3f * traccc::unit<float>::mm, 0.005f,
+                                      0.005f, 4u, true, false, true)));
 
 INSTANTIATE_TEST_SUITE_P(
-    pT_01GeV_no_scat, CKF_navigation_test,
+    pT_01GeV_only_eloss, CKF_navigation_test,
     ::testing::Values(std::make_tuple(0.1f * traccc::unit<scalar>::GeV,
-                                      1e-5f * traccc::unit<float>::mm, 0.001f,
-                                      0.001f, 1u, true, false, true)));
+                                      1e-3f * traccc::unit<float>::mm, 0.005f,
+                                      0.005f, 4u, true, false, true)));
 
 // No energy loss - navigation has to compensate the scattering angle
 // (turn off the material in the detector to prevent bethe-bloch corrections)
 INSTANTIATE_TEST_SUITE_P(
-    pT_5GeV_no_eloss, CKF_navigation_test,
+    pT_100GeV_only_scatt, CKF_navigation_test,
+    ::testing::Values(std::make_tuple(100.f * traccc::unit<scalar>::GeV,
+                                      1e-2f * traccc::unit<float>::mm, 0.001f,
+                                      0.005f, 4u, true, true, false)));
+
+INSTANTIATE_TEST_SUITE_P(
+    pT_50GeV_only_scatt, CKF_navigation_test,
+    ::testing::Values(std::make_tuple(50.f * traccc::unit<scalar>::GeV,
+                                      1e-2f * traccc::unit<float>::mm, 0.001f,
+                                      0.005f, 4u, true, true, false)));
+
+INSTANTIATE_TEST_SUITE_P(
+    pT_10GeV_only_scatt, CKF_navigation_test,
+    ::testing::Values(std::make_tuple(10.f * traccc::unit<scalar>::GeV,
+                                      1e-2f * traccc::unit<float>::mm, 0.001f,
+                                      0.005f, 4u, true, true, false)));
+
+INSTANTIATE_TEST_SUITE_P(
+    pT_5GeV_only_scatt, CKF_navigation_test,
     ::testing::Values(std::make_tuple(5.f * traccc::unit<scalar>::GeV,
-                                      1e-5f * traccc::unit<float>::mm, 0.001f,
-                                      0.001f, 1u, false, true, false)));
+                                      1e-2f * traccc::unit<float>::mm, 0.001f,
+                                      0.005f, 4u, true, true, false)));
 
 INSTANTIATE_TEST_SUITE_P(
-    pT_1GeV_no_eloss, CKF_navigation_test,
+    pT_1GeV_only_scatt, CKF_navigation_test,
     ::testing::Values(std::make_tuple(1.f * traccc::unit<scalar>::GeV,
-                                      1e-5f * traccc::unit<float>::mm, 0.001f,
-                                      0.001f, 1u, false, true, false)));
+                                      1e-2f * traccc::unit<float>::mm, 0.001f,
+                                      0.005f, 4u, true, true, false)));
 
 INSTANTIATE_TEST_SUITE_P(
-    pT_05GeV_no_eloss, CKF_navigation_test,
+    pT_05GeV_only_scatt, CKF_navigation_test,
     ::testing::Values(std::make_tuple(0.5f * traccc::unit<scalar>::GeV,
-                                      1e-5f * traccc::unit<float>::mm, 0.001f,
-                                      0.001f, 1u, false, true, false)));
+                                      1e-2f * traccc::unit<float>::mm, 0.005f,
+                                      0.005f, 4u, true, true, false)));
 
 INSTANTIATE_TEST_SUITE_P(
-    pT_01GeV_no_eloss, CKF_navigation_test,
+    pT_01GeV_only_scatt, CKF_navigation_test,
     ::testing::Values(std::make_tuple(0.1f * traccc::unit<scalar>::GeV,
-                                      1e-5f * traccc::unit<float>::mm, 0.001f,
-                                      0.001f, 1u, false, true, false)));
+                                      1e-2f * traccc::unit<float>::mm, 0.005f,
+                                      0.005f, 4u, true, true, false)));
 
 // Nominal (e-loss + scattering)
 INSTANTIATE_TEST_SUITE_P(
-    pT_100GeV, CKF_navigation_test,
+    pT_100GeV_nominal, CKF_navigation_test,
     ::testing::Values(std::make_tuple(100.f * traccc::unit<scalar>::GeV,
-                                      1e-4f * traccc::unit<float>::mm, 0.01f,
-                                      0.01f, 1u, true, true, true)));
-
+                                      1e-2f * traccc::unit<float>::mm, 0.01f,
+                                      0.15f, 1u, true, true, true)));
 INSTANTIATE_TEST_SUITE_P(
-    pT_50GeV, CKF_navigation_test,
+    pT_50GeV_nominal, CKF_navigation_test,
     ::testing::Values(std::make_tuple(50.f * traccc::unit<scalar>::GeV,
-                                      5e-4f * traccc::unit<float>::mm, 0.01f,
-                                      0.01f, 1u, true, true, true)));
-
+                                      1e-2f * traccc::unit<float>::mm, 0.01f,
+                                      0.15f, 1u, true, true, true)));
 INSTANTIATE_TEST_SUITE_P(
-    pT_10GeV, CKF_navigation_test,
+    pT_10GeV_nominal, CKF_navigation_test,
     ::testing::Values(std::make_tuple(10.f * traccc::unit<scalar>::GeV,
-                                      5e-2f * traccc::unit<float>::mm, 0.01f,
-                                      0.05f, 1u, true, true, true)));
-
+                                      1e-2f * traccc::unit<float>::mm, 0.01f,
+                                      0.15f, 1u, true, true, true)));
 INSTANTIATE_TEST_SUITE_P(
-    pT_5GeV, CKF_navigation_test,
+    pT_5GeV_nominal, CKF_navigation_test,
     ::testing::Values(std::make_tuple(5.f * traccc::unit<scalar>::GeV,
-                                      0.2f * traccc::unit<float>::mm, 0.01f,
+                                      1e-2f * traccc::unit<float>::mm, 0.01f,
                                       0.15f, 1u, true, true, true)));
 
 INSTANTIATE_TEST_SUITE_P(
-    pT_1GeV, CKF_navigation_test,
+    pT_1GeV_nominal, CKF_navigation_test,
     ::testing::Values(std::make_tuple(1.f * traccc::unit<scalar>::GeV,
-                                      0.8f * traccc::unit<float>::mm, 0.01f,
+                                      1e-2f * traccc::unit<float>::mm, 0.01f,
                                       0.5f, 3u, true, true, true)));
 
-// Roadbuilding: No holes allowed -> check how many extra surfaces are present
-/*INSTANTIATE_TEST_SUITE_P(
-    pT_100GeV_nomiss, CKF_navigation_test,
-    ::testing::Values(std::make_tuple(100.f * traccc::unit<scalar>::GeV,
-                                      0.1f * traccc::unit<float>::mm, 0.f, 1.f,
-                                      2u, true, true, true)));
+INSTANTIATE_TEST_SUITE_P(
+    pT_05GeV_nominal, CKF_navigation_test,
+    ::testing::Values(std::make_tuple(0.5f * traccc::unit<scalar>::GeV,
+                                      1e-2f * traccc::unit<float>::mm, 0.01f,
+                                      0.5f, 3u, true, true, true)));
 
 INSTANTIATE_TEST_SUITE_P(
-    pT_50GeV_nomiss, CKF_navigation_test,
-    ::testing::Values(std::make_tuple(50.f * traccc::unit<scalar>::GeV,
-                                      0.1f * traccc::unit<float>::mm, 0.f, 1.f,
-                                      2u, true, true, true)));
-
-INSTANTIATE_TEST_SUITE_P(
-    pT_10GeV_nomiss, CKF_navigation_test,
-    ::testing::Values(std::make_tuple(10.f * traccc::unit<scalar>::GeV,
-                                      0.2f * traccc::unit<float>::mm, 0.f, 1.f,
-                                      2u, true, true, true)));
-
-INSTANTIATE_TEST_SUITE_P(
-    pT_5GeV_nomiss, CKF_navigation_test,
-    ::testing::Values(std::make_tuple(5.f * traccc::unit<scalar>::GeV,
-                                      0.5f * traccc::unit<float>::mm, 0.f, 1.f,
-                                      2u, true, true, true)));
-
-// Tracks that see strong scattering [early], cannot be retrieved without a KF
-INSTANTIATE_TEST_SUITE_P(
-    pT_1GeV_nomiss, CKF_navigation_test,
-    ::testing::Values(std::make_tuple(1.f * traccc::unit<scalar>::GeV,
-                                      5.f * traccc::unit<float>::mm, 0.0005f,
-                                      1.f, 3u, true, true, true)));*/
+    pT_01GeV_nominal, CKF_navigation_test,
+    ::testing::Values(std::make_tuple(0.1f * traccc::unit<scalar>::GeV,
+                                      1e-2f * traccc::unit<float>::mm, 0.01f,
+                                      0.5f, 3u, true, true, true)));
