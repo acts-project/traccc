@@ -332,20 +332,6 @@ if( TRACCC_SETUP_COVFIE )
    endif()
 endif()
 
-# Set up dfelibs.
-option( TRACCC_SETUP_DFELIBS
-   "Set up the dfelibs target(s) explicitly" TRUE )
-option( TRACCC_USE_SYSTEM_DFELIBS
-   "Pick up an existing installation of dfelibs from the build environment"
-   ${TRACCC_USE_SYSTEM_LIBS} )
-if( TRACCC_SETUP_DFELIBS )
-   if( TRACCC_USE_SYSTEM_DFELIBS )
-      find_package( dfelibs REQUIRED )
-   else()
-      add_subdirectory( extern/dfelibs )
-   endif()
-endif()
-
 # Set up Detray.
 option( TRACCC_SETUP_DETRAY
    "Set up the Detray target(s) explicitly" TRUE )
