@@ -18,6 +18,7 @@
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/sanity/contiguous_on.hpp"
 #include "traccc/utils/particle.hpp"
+#include "traccc/utils/prob.hpp"
 #include "traccc/utils/projections.hpp"
 
 // Detray include(s).
@@ -412,12 +413,13 @@ track_candidate_container_types::host find_tracks(
             if (it == cands_per_track.rend() - 1) {
 
                 auto cand_seed = seeds.at(L.seed_idx);
+                ndf_sum = ndf_sum - 5.f;
+                const auto pval = prob(chi2_sum, ndf_sum);
 
                 // Add seed and track candidates to the output container
                 output_candidates.push_back(
-                    finding_result{
-                        cand_seed,
-                        track_quality{ndf_sum - 5.f, chi2_sum, L.n_skipped}},
+                    finding_result{cand_seed, track_quality{ndf_sum, chi2_sum,
+                                                            pval, L.n_skipped}},
                     cands_per_track);
             } else {
                 const auto l_pos =

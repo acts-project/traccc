@@ -22,6 +22,9 @@ struct track_quality {
     /// Chi square of fitted track
     traccc::scalar chi2{0};
 
+    /// p-value
+    traccc::scalar pval{0};
+
     // The number of holes (The number of sensitive surfaces which do not have a
     // measurement for the track pattern)
     unsigned int n_holes{0u};

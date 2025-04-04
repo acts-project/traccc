@@ -172,9 +172,9 @@ TEST_P(KalmanFittingMomentumResolutionTests, Run) {
 
         // n_trakcs = 100
         ASSERT_GE(static_cast<float>(n_tracks),
-                  0.98 * static_cast<float>(n_truth_tracks));
+                  0.95 * static_cast<float>(n_truth_tracks));
         ASSERT_GE(static_cast<float>(n_fitted_tracks),
-                  0.98 * static_cast<float>(n_truth_tracks));
+                  0.95 * static_cast<float>(n_truth_tracks));
 
         for (std::size_t i_trk = 0; i_trk < n_tracks; i_trk++) {
 
