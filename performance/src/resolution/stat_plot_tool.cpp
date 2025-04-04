@@ -5,13 +5,11 @@
  * Mozilla Public License Version 2.0
  */
 
+// Project include(s).
+#include "traccc/utils/prob.hpp"
+
 // Library include(s).
 #include "stat_plot_tool.hpp"
-
-// ROOT include(s).
-#ifdef TRACCC_HAVE_ROOT
-#include <Math/ProbFuncMathCore.h>
-#endif  // TRACCC_HAVE_ROOT
 
 namespace traccc {
 
@@ -63,7 +61,7 @@ void stat_plot_tool::fill(stat_plot_cache& cache,
     cache.ndf_hist->Fill(ndf);
     cache.chi2_hist->Fill(chi2);
     cache.reduced_chi2_hist->Fill(chi2 / ndf);
-    cache.pval_hist->Fill(ROOT::Math::chisquared_cdf_c(chi2, ndf));
+    cache.pval_hist->Fill(find_res.trk_quality.pval);
 #endif  // TRACCC_HAVE_ROOT
 }
 
@@ -81,7 +79,7 @@ void stat_plot_tool::fill(
     cache.ndf_hist->Fill(ndf);
     cache.chi2_hist->Fill(chi2);
     cache.reduced_chi2_hist->Fill(chi2 / ndf);
-    cache.pval_hist->Fill(ROOT::Math::chisquared_cdf_c(chi2, ndf));
+    cache.pval_hist->Fill(fit_res.trk_quality.pval);
 #endif  // TRACCC_HAVE_ROOT
 }
 
@@ -100,9 +98,9 @@ void stat_plot_tool::fill(
     cache.chi2_filtered_hist[D]->Fill(filtered_chi2);
     cache.chi2_smoothed_hist[D]->Fill(smoothed_chi2);
     cache.pval_filtered_hist[D]->Fill(
-        ROOT::Math::chisquared_cdf_c(filtered_chi2, D));
+        prob(filtered_chi2, static_cast<traccc::scalar>(D)));
     cache.pval_smoothed_hist[D]->Fill(
-        ROOT::Math::chisquared_cdf_c(smoothed_chi2, D));
+        prob(smoothed_chi2, static_cast<traccc::scalar>(D)));
 #endif  // TRACCC_HAVE_ROOT
 }
 

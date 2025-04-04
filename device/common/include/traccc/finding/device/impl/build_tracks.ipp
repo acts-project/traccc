@@ -7,6 +7,9 @@
 
 #pragma once
 
+// Project include(s).
+#include "traccc/utils/prob.hpp"
+
 namespace traccc::device {
 
 TRACCC_HOST_DEVICE inline void build_tracks(
@@ -86,6 +89,7 @@ TRACCC_HOST_DEVICE inline void build_tracks(
             seed = seeds.at(L.seed_idx);
             trk_quality.ndf = ndf_sum - 5.f;
             trk_quality.chi2 = chi2_sum;
+            trk_quality.pval = prob(trk_quality.chi2, trk_quality.ndf);
             trk_quality.n_holes = L.n_skipped;
         } else {
             L = links.at(L.previous_candidate_idx);

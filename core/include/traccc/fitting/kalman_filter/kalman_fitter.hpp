@@ -19,6 +19,7 @@
 #include "traccc/fitting/kalman_filter/two_filters_smoother.hpp"
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/utils/particle.hpp"
+#include "traccc/utils/prob.hpp"
 
 // detray include(s).
 #include <detray/navigation/direct_navigator.hpp>
@@ -354,6 +355,7 @@ class kalman_fitter {
 
         // Subtract the NDoF with the degree of freedom of the bound track (=5)
         trk_quality.ndf = trk_quality.ndf - 5.f;
+        trk_quality.pval = prob(trk_quality.chi2, trk_quality.ndf);
 
         // The number of holes
         trk_quality.n_holes = fitter_state.m_fit_actor_state.n_holes;

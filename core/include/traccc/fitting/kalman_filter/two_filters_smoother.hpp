@@ -123,6 +123,10 @@ struct two_filters_smoother {
             return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NEGATIVE;
         }
 
+        if (!std::isfinite(getter::element(chi2_smt, 0, 0))) {
+            return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NOT_FINITE;
+        }
+
         trk_state.smoothed_chi2() = getter::element(chi2_smt, 0, 0);
 
         /*************************************
@@ -183,6 +187,10 @@ struct two_filters_smoother {
 
         if (getter::element(chi2, 0, 0) < 0.f) {
             return kalman_fitter_status::ERROR_UPDATER_CHI2_NEGATIVE;
+        }
+
+        if (!std::isfinite(getter::element(chi2, 0, 0))) {
+            return kalman_fitter_status::ERROR_UPDATER_CHI2_NOT_FINITE;
         }
 
         // Set backward chi2
