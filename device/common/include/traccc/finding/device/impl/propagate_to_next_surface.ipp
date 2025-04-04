@@ -27,8 +27,14 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
 
     // Theta id
     vecmem::device_vector<const unsigned int> param_ids(payload.param_ids_view);
+    vecmem::device_vector<unsigned int> params_liveness(
+        payload.params_liveness_view);
 
     const unsigned int param_id = param_ids.at(globalIndex);
+
+    if (params_liveness.at(param_id) == 0u) {
+        return;
+    }
 
     // Number of tracks per seed
     vecmem::device_vector<unsigned int> n_tracks_per_seed(
@@ -46,8 +52,6 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
         n_tracks_per_seed.at(orig_param_id));
 
     const unsigned int s_pos = num_tracks_per_seed.fetch_add(1);
-    vecmem::device_vector<unsigned int> params_liveness(
-        payload.params_liveness_view);
 
     if (s_pos >= cfg.max_num_branches_per_seed) {
         params_liveness[param_id] = 0u;
@@ -69,10 +73,6 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
 
     // Parameters
     bound_track_parameters_collection_types::device params(payload.params_view);
-
-    if (params_liveness.at(param_id) == 0u) {
-        return;
-    }
 
     // Input bound track parameter
     const bound_track_parameters<> in_par = params.at(param_id);
