@@ -127,6 +127,26 @@ TEST(AmbiguitySolverTests, GreedyResolverTest1) {
         ASSERT_EQ(get_pattern(res_trk_cands, 0),
                   std::vector<std::size_t>({1, 3, 5, 11, 14, 16, 18}));
     }
+
+    /*******************
+     * Legacy algorithm
+     * *****************/
+
+    {
+        traccc::legacy::greedy_ambiguity_resolution_algorithm::config_t
+            legacy_cfg;
+        traccc::legacy::greedy_ambiguity_resolution_algorithm
+            legacy_resolution_alg(legacy_cfg);
+
+        auto res_trk_cands = legacy_resolution_alg(trk_cands);
+        ASSERT_EQ(res_trk_cands.size(), 1u);
+
+        // The first track is selected over the second one as its relative
+        // shared measurement (2/7) is lower than the one of the second track
+        // (2/4)
+        ASSERT_EQ(get_pattern(res_trk_cands, 0),
+                  std::vector<std::size_t>({1, 3, 5, 11, 14, 16, 18}));
+    }
 }
 
 TEST(AmbiguitySolverTests, GreedyResolverTest2) {
@@ -186,11 +206,10 @@ TEST(AmbiguitySolverTests, GreedyResolverTest3) {
                   std::vector<std::size_t>({2, 7, 11, 13, 16}));
     }
 
-    /*
     // Legacy algorithm
     traccc::legacy::greedy_ambiguity_resolution_algorithm::config_t legacy_cfg;
-    traccc::legacy::greedy_ambiguity_resolution_algorithm
-    legacy_resolution_alg(legacy_cfg);
+    traccc::legacy::greedy_ambiguity_resolution_algorithm legacy_resolution_alg(
+        legacy_cfg);
 
     {
         auto res_trk_cands = legacy_resolution_alg(trk_cands);
@@ -201,5 +220,4 @@ TEST(AmbiguitySolverTests, GreedyResolverTest3) {
         ASSERT_EQ(get_pattern(res_trk_cands, 1),
                   std::vector<std::size_t>({2, 7, 11, 13, 16}));
     }
-    */
 }

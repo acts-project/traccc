@@ -63,20 +63,6 @@ class greedy_ambiguity_resolution_algorithm
 
         /// Minimum number of measurement to form a track.
         std::size_t n_measurements_min = 3;
-
-        // True if obvious errors should be checked after the completion
-        // of the algorithm.
-        bool check_obvious_errs = true;
-
-        // Displays a warning if:
-        // (number of measurements of ID 0 / total number of measurements)
-        // is greater than measurement_id_0_warning_threshold.
-        float measurement_id_0_warning_threshold = 0.1f;
-
-        bool verbose_error = true;
-        bool verbose_warning = true;
-        bool verbose_info = false;
-        bool verbose_debug = false;
     };
 
     struct state_t {
@@ -104,7 +90,7 @@ class greedy_ambiguity_resolution_algorithm
 
         /// Keeps the selected tracks indexes that have not (yet) been removed
         /// by the algorithm
-        std::set<std::size_t> selected_tracks;
+        std::set<std::pair<std::size_t, std::size_t>> selected_tracks;
     };
 
     /// Constructor for the greedy ambiguity resolution algorithm
@@ -147,21 +133,6 @@ class greedy_ambiguity_resolution_algorithm
     /// @param state A state object that was previously filled by the
     /// initialization.
     void resolve(state_t& state) const;
-
-    /// Check for obvious errors returned by the algorithm:
-    /// - Returned tracks should be independent of each other: they should share
-    ///   a maximum of (_config.maximum_shared_hits - 1) hits per track.
-    /// - Each removed track should share at least (_config.maximum_shared_hits)
-    ///   with another initial track.
-    ///
-    /// @param initial_track_states The input track container, as given to
-    /// compute_initial_state.
-    /// @param final_state The state object after the resolve method has been
-    /// called.
-    bool check_obvious_errors(
-        const typename track_candidate_container_types::host&
-            initial_track_states,
-        state_t& final_state) const;
 
     config_t _config;
 };
