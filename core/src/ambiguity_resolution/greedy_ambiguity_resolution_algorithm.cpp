@@ -63,34 +63,34 @@ greedy_ambiguity_resolution_algorithm::operator()(
     std::vector<std::size_t> n_shared(n_tracks);
 
     for (std::size_t i = 0; i < n_tracks; i++) {
-        if (status[i] == resolution_status::UNKNOWN) {
 
-            std::vector<std::size_t> shared;
+        std::vector<std::size_t> shared;
 
-            for (std::size_t j = 0; j < n_tracks; j++) {
-                if (i != j) {
-                    std::set_intersection(
-                        meas_ids.at(i).begin(), meas_ids.at(i).end(),
-                        meas_ids.at(j).begin(), meas_ids.at(j).end(),
-                        std::back_inserter(shared));
+        for (std::size_t j = 0; j < n_tracks; j++) {
+            if (i != j) {
+                std::set_intersection(
+                    meas_ids.at(i).begin(), meas_ids.at(i).end(),
+                    meas_ids.at(j).begin(), meas_ids.at(j).end(),
+                    std::back_inserter(shared));
 
-                    // Remove common ids so that 'shared' vector has only unique
-                    // ids
-                    std::sort(shared.begin(), shared.end());
-                    shared.erase(std::unique(shared.begin(), shared.end()),
-                                 shared.end());
-                }
+                // Remove common ids so that 'shared' vector has only unique
+                // ids
+                std::sort(shared.begin(), shared.end());
+                shared.erase(std::unique(shared.begin(), shared.end()),
+                             shared.end());
             }
+        }
 
-            n_shared.at(i) = shared.size();
-            if (n_shared.at(i) < m_config.min_shared_meas_for_competition) {
-                status[i] = resolution_status::ACCEPT;
-            }
+        n_shared.at(i) = shared.size();
+        if ((n_shared.at(i) < m_config.min_shared_meas_for_competition) &&
+            (status[i] == resolution_status::UNKNOWN)) {
+            status[i] = resolution_status::ACCEPT;
         }
     }
 
     // Iterate over tracks with unknown status
     for (std::size_t i = 0; i < n_tracks; i++) {
+
         if (status.at(i) == resolution_status::UNKNOWN) {
             for (std::size_t j = 0; j < n_tracks; j++) {
                 if (i != j) {

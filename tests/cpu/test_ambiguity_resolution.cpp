@@ -125,18 +125,35 @@ TEST(AmbiguitySolverTests, GreedyResolverTest2) {
 
 TEST(AmbiguitySolverTests, GreedyResolverTest3) {
 
-    /*
     track_candidate_container_types::host trk_cands;
-    trk_cands.resize(10u);
-    fill_pattern(trk_cands, 0, 1.3f, {1, 3, 5, 11});
-    fill_pattern(trk_cands, 1, 2.5f, {3, 5, 6, 13});
-    fill_pattern(trk_cands, 2, 13.3f, {1, 3, 5, 11});
-    fill_pattern(trk_cands, 3, 4.1f, {3, 5, 6, 13});
-    fill_pattern(trk_cands, 4, 2.4f, {1, 3, 5, 11});
-    fill_pattern(trk_cands, 5, 7.3f, {3, 5, 6, 13});
-    fill_pattern(trk_cands, 6, 1.2f, {1, 3, 5, 11});
-    fill_pattern(trk_cands, 7, 1.2f, {3, 5, 6, 13});
-    fill_pattern(trk_cands, 8, 4.3f, {1, 3, 5, 11});
-    fill_pattern(trk_cands, 9, 1.2f, {3, 5, 6, 13});
-    */
+    trk_cands.resize(6u);
+    fill_pattern(trk_cands, 0, 5.3f, {1, 3, 5, 11});
+    fill_pattern(trk_cands, 1, 2.4f, {2, 6});
+    fill_pattern(trk_cands, 2, 2.5f, {3, 6, 12, 14, 19, 21});
+    fill_pattern(trk_cands, 3, 13.3f, {2, 7, 11, 13, 16});
+    fill_pattern(trk_cands, 4, 4.1f, {1, 7, 8});
+    fill_pattern(trk_cands, 5, 1.1f, {1, 3, 11, 22});
+
+    // Relative shared measurement number
+    // 0-th track: 3/4 (sharing with 2, 3, 5) => Reject with high shared meas
+    // 1-th track: 2/2 (sharing with 2, 3) => Reject with only two measurements
+    // 2-th track: 2/6 (sharing with 0, 1, 5) => Pass
+    // 3-th track: 3/5 (sharing with 0, 1, 4, 5) => Pass
+    // 4-th track: 2/3 (sharing with 0, 3) => Reject with high shared meas
+    // 5-th track: 3/4 (sharing with 0, 2) => Reject with high shared meas
+
+    traccc::greedy_ambiguity_resolution_algorithm::config_type
+        resolution_config;
+    traccc::greedy_ambiguity_resolution_algorithm resolution_alg(
+        resolution_config);
+
+    {
+        auto res_trk_cands = resolution_alg(trk_cands);
+        ASSERT_EQ(res_trk_cands.size(), 2u);
+
+        ASSERT_EQ(get_pattern(res_trk_cands, 0),
+                  std::vector<std::size_t>({3, 6, 12, 14, 19, 21}));
+        ASSERT_EQ(get_pattern(res_trk_cands, 1),
+                  std::vector<std::size_t>({2, 7, 11, 13, 16}));
+    }
 }
