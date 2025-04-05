@@ -125,6 +125,9 @@ class greedy_ambiguity_resolution_algorithm
         const typename track_candidate_container_types::host& track_states)
         const override;
 
+    /// Get configuration
+    config_t& get_config() { return _config; }
+
     private:
     /// Computes the initial state for the input data. This function accumulates
     /// information that will later be used to accelerate the ambiguity

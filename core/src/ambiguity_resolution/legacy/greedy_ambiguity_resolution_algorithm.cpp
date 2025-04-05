@@ -5,7 +5,7 @@
  * Mozilla Public License Version 2.0
  */
 
-#include "traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
+#include "traccc/ambiguity_resolution/legacy/greedy_ambiguity_resolution_algorithm.hpp"
 
 // System include
 #include <algorithm>
@@ -52,7 +52,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     // Copy the tracks to be retained in the return value
 
-    track_state_container_types::host res;
+    track_candidate_container_types::host res;
     res.reserve(state.selected_tracks.size());
 
     TRACCC_DEBUG(
@@ -64,10 +64,10 @@ greedy_ambiguity_resolution_algorithm::operator()(
         auto const [sm_headers, sm_items] = track_states.at(index);
 
         // Copy header
-        fitting_result<default_algebra> header = sm_headers;
+        finding_result header = sm_headers;
 
         // Copy states
-        vecmem::vector<track_state<default_algebra>> states;
+        vecmem::vector<track_candidate> states;
         states.reserve(sm_items.size());
         for (auto const& item : sm_items) {
             states.push_back(item);
@@ -110,7 +110,7 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
         bool duplicated_measurements = false;
 
         for (auto const& st : states) {
-            std::size_t mid = st.get_measurement().measurement_id;
+            std::size_t mid = st.measurement_id;
             ++mcount_all;
             if (mid == 0) {
                 ++mcount_idzero;
@@ -148,7 +148,7 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
 
             ss << ". Measurement list:";
             for (auto const& st : states) {
-                ss << " " << st.get_measurement().measurement_id;
+                ss << " " << st.measurement_id;
             }
 
             TRACCC_WARNING(ss.str());
@@ -221,7 +221,7 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
 /// @param final_state The state object after the resolve method has
 /// been called.
 bool greedy_ambiguity_resolution_algorithm::check_obvious_errors(
-    const typename track_state_container_types::host& initial_track_states,
+    const typename track_candidate_container_types::host& initial_track_states,
     state_t& final_state) const {
 
     // Associates every measurement_id to the number of tracks that shares it
@@ -238,7 +238,7 @@ bool greedy_ambiguity_resolution_algorithm::check_obvious_errors(
         std::set<std::size_t> already_added_mes;
 
         for (auto const& st : states) {
-            std::size_t meas_id = st.get_measurement().measurement_id;
+            std::size_t meas_id = st.measurement_id;
 
             // If the same measurement is found multiple times in a single
             // track: remove duplicates.
@@ -284,7 +284,7 @@ bool greedy_ambiguity_resolution_algorithm::check_obvious_errors(
 
         std::size_t shared_hits = 0;
         for (auto const& st : states) {
-            auto meas_id = st.get_measurement().measurement_id;
+            auto meas_id = st.measurement_id;
 
             std::unordered_map<std::size_t, std::size_t>::iterator meas_it =
                 initial_measurement_count.find(meas_id);
@@ -345,7 +345,7 @@ bool greedy_ambiguity_resolution_algorithm::check_obvious_errors(
         std::set<std::size_t> already_added_mes;
 
         for (auto const& mes : states) {
-            std::size_t meas_id = mes.get_measurement().measurement_id;
+            std::size_t meas_id = mes.measurement_id;
 
             // If the same measurement is found multiple times in a single
             // track: remove duplicates.
@@ -385,7 +385,7 @@ bool greedy_ambiguity_resolution_algorithm::check_obvious_errors(
                     initial_track_states.at(track_index);
 
                 for (auto const& st : states) {
-                    auto meas_id = st.get_measurement().measurement_id;
+                    auto meas_id = st.measurement_id;
                     ssm << " " << meas_id;
                 }
                 TRACCC_ERROR(ssm.str());

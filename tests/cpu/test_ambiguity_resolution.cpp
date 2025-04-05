@@ -7,6 +7,7 @@
 
 // Project include(s).
 #include "traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
+#include "traccc/ambiguity_resolution/legacy/greedy_ambiguity_resolution_algorithm.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -70,6 +71,34 @@ TEST(AmbiguitySolverTests, GreedyResolverTest0) {
         resolution_alg.get_config().min_meas_per_track = 5;
         auto res_trk_cands = resolution_alg(trk_cands);
         // Only the second track with six measurements is accepted
+        ASSERT_EQ(res_trk_cands.size(), 1u);
+        ASSERT_EQ(get_pattern(res_trk_cands, 0),
+                  std::vector<std::size_t>({6, 7, 8, 9, 10, 12}));
+    }
+
+    /*******************
+     * Legacy algorithm
+     * *****************/
+
+    {
+        traccc::legacy::greedy_ambiguity_resolution_algorithm::config_t
+            legacy_cfg;
+        traccc::legacy::greedy_ambiguity_resolution_algorithm
+            legacy_resolution_alg(legacy_cfg);
+
+        legacy_resolution_alg.get_config().n_measurements_min = 3;
+        auto res_trk_cands = legacy_resolution_alg(trk_cands);
+        ASSERT_EQ(res_trk_cands.size(), 3u);
+    }
+
+    {
+        traccc::legacy::greedy_ambiguity_resolution_algorithm::config_t
+            legacy_cfg;
+        traccc::legacy::greedy_ambiguity_resolution_algorithm
+            legacy_resolution_alg(legacy_cfg);
+
+        legacy_resolution_alg.get_config().n_measurements_min = 5;
+        auto res_trk_cands = legacy_resolution_alg(trk_cands);
         ASSERT_EQ(res_trk_cands.size(), 1u);
         ASSERT_EQ(get_pattern(res_trk_cands, 0),
                   std::vector<std::size_t>({6, 7, 8, 9, 10, 12}));
@@ -156,4 +185,21 @@ TEST(AmbiguitySolverTests, GreedyResolverTest3) {
         ASSERT_EQ(get_pattern(res_trk_cands, 1),
                   std::vector<std::size_t>({2, 7, 11, 13, 16}));
     }
+
+    /*
+    // Legacy algorithm
+    traccc::legacy::greedy_ambiguity_resolution_algorithm::config_t legacy_cfg;
+    traccc::legacy::greedy_ambiguity_resolution_algorithm
+    legacy_resolution_alg(legacy_cfg);
+
+    {
+        auto res_trk_cands = legacy_resolution_alg(trk_cands);
+        ASSERT_EQ(res_trk_cands.size(), 2u);
+
+        ASSERT_EQ(get_pattern(res_trk_cands, 0),
+                  std::vector<std::size_t>({3, 6, 12, 14, 19, 21}));
+        ASSERT_EQ(get_pattern(res_trk_cands, 1),
+                  std::vector<std::size_t>({2, 7, 11, 13, 16}));
+    }
+    */
 }
