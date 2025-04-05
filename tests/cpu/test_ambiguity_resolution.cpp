@@ -15,6 +15,8 @@
 // GTest include(s).
 #include <gtest/gtest.h>
 
+#include <random>
+
 using namespace traccc;
 
 namespace {
@@ -219,5 +221,116 @@ TEST(AmbiguitySolverTests, GreedyResolverTest3) {
                   std::vector<std::size_t>({3, 6, 12, 14, 19, 21}));
         ASSERT_EQ(get_pattern(res_trk_cands, 1),
                   std::vector<std::size_t>({2, 7, 11, 13, 16}));
+    }
+}
+
+// Comparison to the legacy algorithm.
+TEST(AmbiguitySolverTests, GreedyResolverTest4) {
+
+    std::random_device rd;
+    std::mt19937 seed_gen(rd());
+    std::uniform_int_distribution<> seed_dist(0, 1000);
+
+    // int seed = seed_dist(seed_gen);
+    // std::cout << "Seed: " << seed << std::endl;
+
+    std::size_t n_tracks = 5u;
+
+    track_candidate_container_types::host trk_cands;
+    trk_cands.resize(n_tracks);
+    // std::mt19937 gen(seed);
+    std::mt19937 gen(953);
+
+    for (std::size_t i = 0; i < n_tracks; i++) {
+
+        std::uniform_int_distribution<std::size_t> track_length_dist(3, 5);
+        std::uniform_int_distribution<std::size_t> meas_id_dist(0, 10);
+        std::uniform_real_distribution<traccc::scalar> chi2_dist(0.0f, 10.0f);
+
+        const std::size_t track_length = track_length_dist(gen);
+        const traccc::scalar chi2 = chi2_dist(gen);
+        std::vector<std::size_t> pattern;
+        while (pattern.size() < track_length) {
+
+            const std::size_t meas_id = meas_id_dist(gen);
+            if (std::find(pattern.begin(), pattern.end(), meas_id) ==
+                pattern.end()) {
+                pattern.push_back(meas_id);
+            }
+        }
+
+        std::sort(pattern.begin(), pattern.end());
+        auto last = std::unique(pattern.begin(), pattern.end());
+
+        // There should not be duplicate
+        ASSERT_EQ(last, pattern.end());
+        pattern.erase(last, pattern.end());
+
+        // Make sure that partern size is eqaul to the track length
+        ASSERT_EQ(pattern.size(), track_length);
+
+        // Fill the pattern
+        fill_pattern(trk_cands, i, chi2, pattern);
+    }
+
+    traccc::greedy_ambiguity_resolution_algorithm::config_type
+        resolution_config;
+    traccc::greedy_ambiguity_resolution_algorithm resolution_alg(
+        resolution_config);
+    auto res_trk_cands = resolution_alg(trk_cands);
+
+    // Legacy algorithm
+    traccc::legacy::greedy_ambiguity_resolution_algorithm::config_t legacy_cfg;
+    traccc::legacy::greedy_ambiguity_resolution_algorithm legacy_resolution_alg(
+        legacy_cfg);
+    auto legacy_res_trk_cands = legacy_resolution_alg(trk_cands);
+
+    /*
+    ASSERT_EQ(res_trk_cands.size(), legacy_res_trk_cands.size());
+    for (std::size_t i = 0; i < res_trk_cands.size(); i++) {
+        ASSERT_EQ(res_trk_cands.at(i).items, legacy_res_trk_cands.at(i).items);
+    }
+    */
+
+    std::cout << res_trk_cands.size() << " " << legacy_res_trk_cands.size()
+              << std::endl;
+    EXPECT_EQ(res_trk_cands.size(), legacy_res_trk_cands.size());
+
+    std::cout << "Event " << std::endl;
+    for (std::size_t i = 0; i < trk_cands.size(); i++) {
+        auto chi2 = trk_cands.at(i).header.trk_quality.chi2;
+        auto pattern = get_pattern(trk_cands, i);
+
+        std::cout << "Chi2: " << chi2 << " | ";
+        for (std::size_t j = 0; j < pattern.size(); j++) {
+            std::cout << pattern.at(j) << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout << std::endl << "New algorithm " << std::endl << std::endl;
+
+    for (std::size_t i = 0; i < res_trk_cands.size(); i++) {
+        auto chi2 = res_trk_cands.at(i).header.trk_quality.chi2;
+        auto pattern = get_pattern(res_trk_cands, i);
+
+        std::cout << "Chi2: " << chi2 << " | ";
+        for (std::size_t j = 0; j < pattern.size(); j++) {
+            std::cout << pattern.at(j) << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout << std::endl << "legacy algorithm " << std::endl << std::endl;
+
+    for (std::size_t i = 0; i < legacy_res_trk_cands.size(); i++) {
+        auto chi2 = legacy_res_trk_cands.at(i).header.trk_quality.chi2;
+        auto pattern = get_pattern(legacy_res_trk_cands, i);
+
+        std::cout << "Chi2: " << chi2 << " | ";
+        for (std::size_t j = 0; j < pattern.size(); j++) {
+            std::cout << pattern.at(j) << " ";
+        }
+        std::cout << std::endl;
     }
 }
