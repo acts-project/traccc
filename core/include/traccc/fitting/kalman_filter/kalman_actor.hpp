@@ -150,7 +150,8 @@ struct kalman_actor : detray::actor {
 
             // Increase the hole counts if the propagator fails to find the next
             // measurement
-            if (navigation.barcode() !=
+
+           /* if (navigation.barcode() !=
                 actor_state.m_measurements.at(trk_state.measurement_index())
                     .surface_link) {
                 if (!actor_state.backward_mode) {
@@ -161,8 +162,122 @@ struct kalman_actor : detray::actor {
 
             // This track state is not a hole
             if (!actor_state.backward_mode) {
+
                 trk_state.set_hole(false);
+            }*/
+
+            // Increase the hole counts if the propagator fails to find the next
+            // measurement
+            if (navigation.barcode() != actor_state.m_measurements.at(trk_state.measurement_index())) {
+                int i = 1;
+                bool found{false};
+
+                // std::cout << "expected " << trk_state.surface_link() << ",
+                // found " << navigation.barcode() << std::endl;
+
+                // std::cout << "Track states" << std::endl;
+                // The last state could not be found: Abort
+                // for (const auto& trk : actor_state.m_track_states) {
+                //    std::cout << trk.surface_link() << std::endl;
+                //}
+
+                // If the current navigation position can be found at a later
+                // track state, then the current track state was skipped:
+                // Advance the iterator to keep up with the navigation
+                if (actor_state.backward_mode) {
+                    // The last state could not be found: Abort
+                    if (actor_state.m_it_rev + 1 ==
+                        actor_state.m_track_states.rend()) {
+                        // Did the navigator find an additional surface?
+                        if (trk_state.surface_link() !=
+                            std::as_const(navigation)
+                                .target()
+                                .sf_desc.barcode()) {
+                            if (!std::as_const(navigation)
+                                     .target()
+                                     .sf_desc.is_sensitive()) {
+                                return;
+                            }
+                            trk_state.is_hole = true;
+                            actor_state.n_holes++;
+                            actor_state.m_it_rev++;  // < prevent double
+                                                     // counting of last hole
+                            propagation._heartbeat &= navigation.stop();
+                            // std::cout << "HOLE last" << std::endl;
+                            return;
+                        }
+                    }
+                    // Check how many track states were skipped
+                    for (auto itr = actor_state.m_it_rev + 1;
+                         itr != actor_state.m_track_states.rend(); ++itr) {
+                        if (itr->surface_link() == navigation.barcode()) {
+                            // std::cout << "FOUND IT" << std::endl;
+                            actor_state.m_it_rev += i;
+                            // Only count holes on the most precise fit
+                            actor_state.n_holes += i;
+                            found = true;
+                            for (int j = 0; j < i; ++j) {
+                                (itr + j)->is_hole = true;
+                                // std::cout << "HOLE skipped" << std::endl;
+                            }
+                            break;
+                        }
+                        ++i;
+                    }
+                } else {
+                    // Did the navigator find an additional surface?
+                    if (actor_state.m_it + 1 ==
+                        actor_state.m_track_states.end()) {
+                        if (trk_state.surface_link() !=
+                            std::as_const(navigation)
+                                .target()
+                                .sf_desc.barcode()) {
+                            if (!std::as_const(navigation)
+                                     .target()
+                                     .sf_desc.is_sensitive()) {
+                                return;
+                            }
+                            trk_state.is_hole = true;
+                            actor_state.n_holes++;
+                            propagation._heartbeat &= navigation.stop();
+                            // std::cout << "HOLE last forward" << std::endl;
+                            return;
+                        }
+                    }
+                    for (auto itr = actor_state.m_it + 1;
+                         itr != actor_state.m_track_states.end(); ++itr) {
+                        if (itr->surface_link() == navigation.barcode()) {
+                            // std::cout << "FOUND IT" << std::endl;
+                            actor_state.m_it += i;
+                            found = true;
+                            for (int j = 0; j < i; ++j) {
+                                // std::cout << "HOLE " << std::endl;
+                                (itr + j)->is_hole = true;
+                            }
+                            break;
+                        }
+                        ++i;
+                    }
+                }
+                // Navigator found an additional surface: skip
+                if (!found) {
+                    // std::cout << "test next ";
+                    if (actor_state.backward_mode) {
+                        // std::cout << actor_state.m_it_rev->surface_link() <<
+                        // std::endl;
+                    } else {
+                        // std::cout << actor_state.m_it->surface_link() <<
+                        // std::endl;
+                    }
+                    return;
+                }
+
             }
+
+            trk_state = actor_state();
+
+            // This track state is not a hole
+            trk_state.is_hole = false;
 
             // Run Kalman Gain Updater
             const auto sf = navigation.get_surface();
