@@ -7,7 +7,8 @@
 
 #pragma once
 
-#include "tests/test_detectors.hpp"
+// Project include(s)
+#include "test_detectors.hpp"
 
 // Detray include(s).
 #include <detray/io/frontend/detector_writer.hpp>
@@ -45,11 +46,11 @@ class ToyDetectorFixture : public testing::Test {
 
     /// Standard deviations for seed track parameters
     static constexpr std::array<scalar, e_bound_size> stddevs = {
-        1.f * traccc::unit<scalar>::mm,
-        1.f * traccc::unit<scalar>::mm,
-        1.f,
-        1.f,
-        1.f / traccc::unit<scalar>::GeV,
+        0.001f * traccc::unit<scalar>::mm,
+        0.001f * traccc::unit<scalar>::mm,
+        0.001f,
+        0.001f,
+        0.001f / traccc::unit<scalar>::GeV,
         0.01f * traccc::unit<scalar>::ns};
 
     protected:

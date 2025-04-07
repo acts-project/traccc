@@ -168,9 +168,6 @@ combinatorial_kalman_filter(
 
             bound_track_parameters<algebra_type>& in_param =
                 in_params[in_param_id];
-
-            assert(!in_param.is_invalid());
-
             const unsigned int orig_param_id =
                 (step == 0
                      ? in_param_id
