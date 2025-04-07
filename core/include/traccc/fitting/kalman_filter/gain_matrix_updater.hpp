@@ -72,6 +72,9 @@ struct gain_matrix_updater {
         static_assert(((D == 1u) || (D == 2u)),
                       "The measurement dimension should be 1 or 2");
 
+        assert(!bound_params.is_invalid());
+        assert(!bound_params.surface_link().is_invalid());
+
         const auto meas = trk_state.get_measurement();
 
         // Some identity matrices
@@ -102,13 +105,14 @@ struct gain_matrix_updater {
         }
 
         // Spatial resolution (Measurement covariance)
-        const matrix_type<D, D> V =
+        const matrix_type<D, D>& V =
             trk_state.template measurement_covariance<D>();
 
         const matrix_type<D, D> M =
             H * predicted_cov * matrix::transpose(H) + V;
 
         // Kalman gain matrix
+        assert(matrix::determinant(M) != 0.f);
         const matrix_type<6, D> K =
             predicted_cov * matrix::transpose(H) * matrix::inverse(M);
 
@@ -122,6 +126,7 @@ struct gain_matrix_updater {
 
         // Calculate the chi square
         const matrix_type<D, D> R = (I_m - H * K) * V;
+        assert(matrix::determinant(R) != 0.f);
         const matrix_type<1, 1> chi2 =
             matrix::transpose(residual) * matrix::inverse(R) * residual;
 

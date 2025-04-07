@@ -58,6 +58,8 @@ struct two_filters_smoother {
         track_state<algebra_t>& trk_state,
         bound_track_parameters<algebra_t>& bound_params) const {
 
+        assert(!bound_params.is_invalid());
+        assert(!bound_params.surface_link().is_invalid());
         assert(trk_state.filtered().surface_link() ==
                bound_params.surface_link());
 
@@ -72,62 +74,77 @@ struct two_filters_smoother {
         const matrix_type<D, 1>& meas_local =
             trk_state.template measurement_local<D>();
 
-        // Predicted vector of bound track parameters
-        const matrix_type<e_bound_size, 1> predicted_vec =
-            bound_params.vector();
-
-        // Predicted covaraince of bound track parameters
-        const matrix_type<e_bound_size, e_bound_size> predicted_cov =
-            bound_params.covariance();
-
-        const matrix_type<e_bound_size, e_bound_size> predicted_cov_inv =
-            matrix::inverse(predicted_cov);
-        const matrix_type<e_bound_size, e_bound_size> filtered_cov_inv =
-            matrix::inverse(trk_state.filtered().covariance());
-
-        // Eq (3.38) of "Pattern Recognition, Tracking and Vertex
-        // Reconstruction in Particle Detectors"
-        const matrix_type<e_bound_size, e_bound_size> smoothed_cov_inv =
-            predicted_cov_inv + filtered_cov_inv;
-
-        const matrix_type<e_bound_size, e_bound_size> smoothed_cov =
-            matrix::inverse(smoothed_cov_inv);
-
-        // Eq (3.38) of "Pattern Recognition, Tracking and Vertex
-        // Reconstruction in Particle Detectors"
-        const matrix_type<e_bound_size, 1u> smoothed_vec =
-            smoothed_cov * (filtered_cov_inv * trk_state.filtered().vector() +
-                            predicted_cov_inv * predicted_vec);
-
-        trk_state.smoothed().set_vector(smoothed_vec);
-        trk_state.smoothed().set_covariance(smoothed_cov);
-
-        const matrix_type<D, 1> residual_smt = meas_local - H * smoothed_vec;
-
         // Spatial resolution (Measurement covariance)
         const matrix_type<D, D> V =
             trk_state.template measurement_covariance<D>();
 
-        // Eq (3.39) of "Pattern Recognition, Tracking and Vertex
-        // Reconstruction in Particle Detectors"
-        const matrix_type<D, D> R_smt =
-            V - H * smoothed_cov * matrix::transpose(H);
+        // Predicted vector of bound track parameters
+        const matrix_type<e_bound_size, 1>& predicted_vec =
+            bound_params.vector();
 
-        // Eq (3.40) of "Pattern Recognition, Tracking and Vertex
-        // Reconstruction in Particle Detectors"
-        const matrix_type<1, 1> chi2_smt = matrix::transpose(residual_smt) *
-                                           matrix::inverse(R_smt) *
-                                           residual_smt;
+        // Predicted covaraince of bound track parameters
+        const matrix_type<e_bound_size, e_bound_size>& predicted_cov =
+            bound_params.covariance();
 
-        if (getter::element(chi2_smt, 0, 0) < 0.f) {
-            return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NEGATIVE;
-        }
+        /*************************************
+         *  Smoothe
+         *************************************/
 
-        if (!std::isfinite(getter::element(chi2_smt, 0, 0))) {
-            return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NOT_FINITE;
-        }
+        // Check if the forward pass updated the track state correctly
+        if (!trk_state.filtered().is_invalid())
+            [[likely]] {
+                if (matrix::determinant(predicted_cov) == 0.f) {
+                    std::cout << bound_params << std::endl;
+                }
+                assert(matrix::determinant(predicted_cov) != 0.f);
+                assert(matrix::determinant(trk_state.filtered().covariance()) !=
+                       0.f);
+                const matrix_type<e_bound_size, e_bound_size>
+                    predicted_cov_inv = matrix::inverse(predicted_cov);
+                const matrix_type<e_bound_size, e_bound_size> filtered_cov_inv =
+                    matrix::inverse(trk_state.filtered().covariance());
 
-        trk_state.smoothed_chi2() = getter::element(chi2_smt, 0, 0);
+                // Eq (3.38) of "Pattern Recognition, Tracking and Vertex
+                // Reconstruction in Particle Detectors"
+                const matrix_type<e_bound_size, e_bound_size> smoothed_cov_inv =
+                    predicted_cov_inv + filtered_cov_inv;
+
+                assert(matrix::determinant(smoothed_cov_inv) != 0.f);
+                const matrix_type<e_bound_size, e_bound_size> smoothed_cov =
+                    matrix::inverse(smoothed_cov_inv);
+
+                // Eq (3.38) of "Pattern Recognition, Tracking and Vertex
+                // Reconstruction in Particle Detectors"
+                const matrix_type<e_bound_size, 1u> smoothed_vec =
+                    smoothed_cov *
+                    (filtered_cov_inv * trk_state.filtered().vector() +
+                     predicted_cov_inv * predicted_vec);
+
+                trk_state.smoothed().set_vector(smoothed_vec);
+                trk_state.smoothed().set_covariance(smoothed_cov);
+
+                const matrix_type<D, 1> residual_smt =
+                    meas_local - H * smoothed_vec;
+
+                // Eq (3.39) of "Pattern Recognition, Tracking and Vertex
+                // Reconstruction in Particle Detectors"
+                const matrix_type<D, D> R_smt =
+                    V - H * smoothed_cov * matrix::transpose(H);
+
+                // Eq (3.40) of "Pattern Recognition, Tracking and Vertex
+                // Reconstruction in Particle Detectors"
+                assert(matrix::determinant(R_smt) != 0.f);
+                const matrix_type<1, 1> chi2_smt =
+                    matrix::transpose(residual_smt) * matrix::inverse(R_smt) *
+                    residual_smt;
+
+                if (!std::isfinite(getter::element(chi2_smt, 0, 0))) {
+                    return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NEGATIVE;
+                }
+
+                trk_state.smoothed_chi2() = getter::element(chi2_smt, 0, 0);
+                trk_state.is_smoothed = true;
+            }
 
         /*************************************
          *  Set backward filtered parameter
@@ -151,6 +168,7 @@ struct two_filters_smoother {
             H * predicted_cov * matrix::transpose(H) + V;
 
         // Kalman gain matrix
+        assert(matrix::determinant(M) != 0.f);
         const matrix_type<6, D> K =
             predicted_cov * matrix::transpose(H) * matrix::inverse(M);
 
@@ -164,6 +182,7 @@ struct two_filters_smoother {
 
         // Calculate backward chi2
         const matrix_type<D, D> R = (I_m - H * K) * V;
+        assert(matrix::determinant(R) != 0.f);
         const matrix_type<1, 1> chi2 =
             matrix::transpose(residual) * matrix::inverse(R) * residual;
 
@@ -199,7 +218,6 @@ struct two_filters_smoother {
         // Wrap the phi in the range of [-pi, pi]
         wrap_phi(bound_params);
 
-        trk_state.is_smoothed = true;
         return kalman_fitter_status::SUCCESS;
     }
 };

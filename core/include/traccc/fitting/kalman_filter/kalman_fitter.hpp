@@ -22,6 +22,9 @@
 #include "traccc/utils/prob.hpp"
 #include "traccc/utils/propagation.hpp"
 
+// detray include(s).
+#include <detray/utils/ranges.hpp>
+
 // vecmem include(s)
 #include <vecmem/containers/device_vector.hpp>
 
@@ -318,6 +321,19 @@ class kalman_fitter {
         }
 
         propagator.propagate(propagation, fitter_state.backward_actor_state());
+
+        // If the navigation exits the detector before the fitting actor is
+        // finished, count the missing states as holes
+        if (!fitter_state.m_fit_actor_state.is_complete() &&
+            propagation._navigation.is_complete()) {
+            auto n_holes = detray::ranges::distance(
+                fitter_state.m_fit_actor_state.m_track_states.rend(),
+                fitter_state.m_fit_actor_state.m_it_rev);
+            assert(n_holes >= 0);
+
+            fitter_state.m_fit_actor_state.n_holes +=
+                static_cast<unsigned int>(n_holes);
+        }
 
         // Reset the backward mode to false
         fitter_state.m_fit_actor_state.backward_mode = false;
