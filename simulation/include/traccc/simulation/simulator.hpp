@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/definitions/qualifiers.hpp"
 #include "traccc/simulation/smearing_writer.hpp"
 #include "traccc/utils/particle.hpp"
 #include "traccc/utils/propagation.hpp"
@@ -106,8 +107,6 @@ struct simulator {
 
             // Set random seed
             m_scatterer.set_seed(event_id);
-            m_scatterer.do_energy_loss = m_cfg.do_energy_loss;
-            m_scatterer.do_multiple_scattering = m_cfg.do_multiple_scattering;
             writer_state.set_seed(event_id);
 
             auto actor_states =

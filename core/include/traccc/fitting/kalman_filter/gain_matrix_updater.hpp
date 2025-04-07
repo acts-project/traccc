@@ -63,7 +63,6 @@ struct gain_matrix_updater {
         static constexpr unsigned int D = 2;
 
         assert(dim == 1u || dim == 2u);
-
         assert(!bound_params.is_invalid());
         assert(!bound_params.surface_link().is_invalid());
 
