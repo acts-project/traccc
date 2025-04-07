@@ -38,8 +38,8 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
     // VecMem memory resource(s)
     vecmem::host_memory_resource host_mr;
 
-    static const int n_events = 100u;
-    static const int n_tracks = 5000u;
+    static const int n_events = 2u;
+    static const int n_tracks = 1000u;
 
     std::vector<traccc::edm::spacepoint_collection::host> spacepoints;
     std::vector<traccc::measurement_collection_types::host> measurements;
@@ -149,7 +149,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
         toy_cfg.n_brl_layers(4u).n_edc_layers(7u).do_check(false);
 
         // @TODO: Increase the material budget again
-        toy_cfg.module_mat_thickness(0.11f * traccc::unit<scalar_type>::mm);
+        toy_cfg.module_mat_thickness(0.001f * traccc::unit<scalar_type>::mm);
 
         return toy_cfg;
     }
@@ -157,11 +157,11 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
     void apply_propagation_config(detray::propagation::config& cfg) const {
         // Configure the propagation for the toy detector
         // @NOTE: currently Non-{0,0} search windows cause an error during CKF
-        // cfg.navigation.search_window = {3, 3};
+        cfg.navigation.search_window = {3, 3};
         cfg.navigation.overstep_tolerance = -1000.f * traccc::unit<float>::um;
-        cfg.navigation.min_mask_tolerance = 1e-5f * traccc::unit<float>::mm;
+        cfg.navigation.min_mask_tolerance = 1e-2f * traccc::unit<float>::mm;
         cfg.navigation.max_mask_tolerance = 3.f * traccc::unit<float>::mm;
-        cfg.navigation.mask_tolerance_scalor = 0.05f;
+        cfg.navigation.mask_tolerance_scalor = 0.5f;
     }
 
     void SetUp(::benchmark::State& /*state*/) {

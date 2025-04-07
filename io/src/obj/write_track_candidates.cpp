@@ -8,6 +8,9 @@
 // Local include(s).
 #include "write_track_candidates.hpp"
 
+// Detray include(s)
+#include <detray/geometry/tracking_surface.hpp>
+
 // System include(s).
 #include <cassert>
 #include <fstream>
@@ -49,7 +52,7 @@ void write_track_candidates(
             const detray::tracking_surface surface{detector, m.surface_link};
 
             // Calculate a position for this measurement in global 3D space.
-            const auto global = surface.bound_to_global({}, m.local, {});
+            const auto global = surface.local_to_global({}, m.local, {});
 
             // Write the 3D coordinates of the measurement / spacepoint.
             assert(global.size() == 3);

@@ -172,6 +172,8 @@ track_candidate_container_types::host find_tracks(
 
             bound_track_parameters<algebra_type>& in_param =
                 in_params[in_param_id];
+            assert(!in_param.is_invalid());
+
             const unsigned int orig_param_id =
                 (step == 0
                      ? in_param_id
@@ -203,6 +205,7 @@ track_candidate_container_types::host find_tracks(
 
             // Get barcode and measurements range on surface
             const auto bcd = in_param.surface_link();
+            assert(!bcd.is_invalid());
             std::pair<unsigned int, unsigned int> range;
 
             // Find the corresponding index of bcd in barcode vector
@@ -260,6 +263,7 @@ track_candidate_container_types::host find_tracks(
                          .seed_idx = orig_param_id,
                          .n_skipped = skip_counter,
                          .chi2 = chi2});
+                    assert(!trk_state.filtered().is_invalid());
                     updated_params.push_back(trk_state.filtered());
                 }
             }
@@ -317,33 +321,31 @@ track_candidate_container_types::host find_tracks(
                     config.propagation.stepping.step_constraint);
 
             typename detray::pathlimit_aborter<scalar_type>::state s0;
-            typename detray::parameter_transporter<algebra_type>::state s1;
-            typename interactor_type::state s3;
-            typename interaction_register<interactor_type>::state s2{s3};
-            typename ckf_aborter::state s4;
-            s4.min_step_length = config.min_step_length_for_next_surface;
-            s4.max_count = config.max_step_counts_for_next_surface;
+            typename interactor_type::state s2;
+            typename interaction_register<interactor_type>::state s1{s2};
+            typename ckf_aborter::state s3;
+            s3.min_step_length = config.min_step_length_for_next_surface;
+            s3.max_count = config.max_step_counts_for_next_surface;
 
             // Propagate to the next surface
-            propagator.propagate_sync(propagation,
-                                      detray::tie(s0, s1, s2, s3, s4));
+            propagator.propagate(propagation, detray::tie(s0, s1, s2, s3));
 
             // If a surface found, add the parameter for the next
             // step
-            if (s4.success) {
+            if (s3.success) {
                 out_params.push_back(propagation._stepping.bound_params());
                 param_to_link[step].push_back(link_id);
             }
             // Unless the track found a surface, it is considered a
             // tip
-            else if (!s4.success &&
+            else if (!s3.success &&
                      (step >= (config.min_track_candidates_per_track - 1u))) {
                 tips.push_back({step, link_id});
             }
 
             // If no more CKF step is expected, current candidate is
             // kept as a tip
-            if (s4.success &&
+            if (s3.success &&
                 (step == (config.max_track_candidates_per_track - 1u))) {
                 tips.push_back({step, link_id});
             }
