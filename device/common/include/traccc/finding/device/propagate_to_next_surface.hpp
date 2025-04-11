@@ -51,6 +51,11 @@ struct propagate_to_next_surface_payload {
     vecmem::data::vector_view<const unsigned int> param_ids_view;
 
     /**
+     * @brief View object to the vector of candidate links
+     */
+    vecmem::data::vector_view<const candidate_link> links_view;
+
+    /**
      * @brief Index in the link vector at which the current step starts
      */
     const unsigned int prev_links_idx;

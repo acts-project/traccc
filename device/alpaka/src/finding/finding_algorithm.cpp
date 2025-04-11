@@ -309,6 +309,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             ::alpaka::wait(queue);
         }
 
+        if (step == m_cfg.max_track_candidates_per_track - 1) {
+            break;
+        }
+
         if (n_candidates > 0) {
             /*****************************************************************
              * Kernel4: Get key and value for parameter sorting

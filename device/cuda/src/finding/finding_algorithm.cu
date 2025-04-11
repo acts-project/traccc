@@ -189,9 +189,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
     unsigned int n_in_params = n_seeds;
 
-    for (unsigned int step = 0;
-         step < m_cfg.max_track_candidates_per_track && n_in_params > 0;
-         step++) {
+    for (unsigned int step = 0; n_in_params > 0; step++) {
 
         /*****************************************************************
          * Kernel2: Apply material interaction
@@ -268,13 +266,12 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             const unsigned int nThreads = m_warp_size * 2;
             const unsigned int nBlocks =
                 (n_in_params + nThreads - 1) / nThreads;
+            const std::size_t shared_size =
+                nThreads * sizeof(unsigned int) +
+                2 * nThreads * sizeof(std::pair<unsigned int, unsigned int>);
 
             kernels::find_tracks<std::decay_t<detector_type>>
-                <<<nBlocks, nThreads,
-                   nThreads * sizeof(unsigned int) +
-                       2 * nThreads *
-                           sizeof(std::pair<unsigned int, unsigned int>),
-                   stream>>>(
+                <<<nBlocks, nThreads, shared_size, stream>>>(
                     m_cfg,
                     device::find_tracks_payload<std::decay_t<detector_type>>{
                         .det_data = det_view,
@@ -304,6 +301,12 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 step_to_link_idx_map[step + 1] - step_to_link_idx_map[step];
 
             m_stream.synchronize();
+        }
+
+        // If no more CKF step is expected, the tips and links are populated,
+        // and any further time-consuming action is avoided
+        if (step == m_cfg.max_track_candidates_per_track - 1) {
+            break;
         }
 
         if (n_candidates > 0) {
@@ -362,6 +365,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                             .params_view = in_params_buffer,
                             .params_liveness_view = param_liveness_buffer,
                             .param_ids_view = param_ids_buffer,
+                            .links_view = links_buffer,
                             .prev_links_idx = step_to_link_idx_map[step],
                             .step = step,
                             .n_in_params = n_candidates,

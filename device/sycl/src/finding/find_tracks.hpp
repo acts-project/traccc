@@ -325,6 +325,10 @@ track_candidate_container_types::buffer find_tracks(
         n_candidates =
             step_to_link_idx_map[step + 1] - step_to_link_idx_map[step];
 
+        if (step == config.max_track_candidates_per_track - 1) {
+            break;
+        }
+
         if (n_candidates > 0) {
             /*****************************************************************
              * Kernel4: Get key and value for parameter sorting
@@ -396,6 +400,7 @@ track_candidate_container_types::buffer find_tracks(
                          param_liveness =
                              vecmem::get_data(param_liveness_buffer),
                          param_ids = vecmem::get_data(param_ids_buffer),
+                         links_view = vecmem::get_data(links_buffer),
                          prev_links_idx = step_to_link_idx_map[step], step,
                          n_candidates, tips = vecmem::get_data(tips_buffer)](
                             ::sycl::nd_item<1> item) {
@@ -404,8 +409,8 @@ track_candidate_container_types::buffer find_tracks(
                                 typename stepper_t::magnetic_field_type>(
                                 details::global_index(item), config,
                                 {det, field, in_params, param_liveness,
-                                 param_ids, prev_links_idx, step, n_candidates,
-                                 tips});
+                                 param_ids, links_view, prev_links_idx, step,
+                                 n_candidates, tips});
                         });
                 })
                 .wait_and_throw();
