@@ -140,14 +140,17 @@ track_state_container_types::buffer fit_tracks(
         .submit([&](::sycl::handler& h) {
             h.parallel_for<fit_kernel_t>(
                 range,
-                [det_view, field_view, config, track_candidates_view,
-                 param_ids_view = vecmem::get_data(param_ids_buffer),
-                 track_states_view, seqs_view = vecmem::get_data(seqs_buffer)](
-                    ::sycl::nd_item<1> item) {
-                    device::fit<fitter_t>(details::global_index(item), det_view,
-                                          field_view, config,
-                                          track_candidates_view, param_ids_view,
-                                          track_states_view, seqs_view);
+                [config,
+                 payload = device::fit_payload<fitter_t>{
+                     .det_data = det_view,
+                     .field_data = field_view,
+                     .track_candidates_view = track_candidates_view,
+                     .param_ids_view = vecmem::get_data(param_ids_buffer),
+                     .track_states_view = track_states_view,
+                     .barcodes_view = vecmem::get_data(
+                         seqs_buffer)}](::sycl::nd_item<1> item) {
+                    device::fit<fitter_t>(details::global_index(item), config,
+                                          payload);
                 });
         })
         .wait_and_throw();
