@@ -19,9 +19,8 @@
 
 namespace traccc::cuda::kernels {
 
-__global__ void build_tracks(const finding_config cfg,
-                             device::build_tracks_payload payload) {
+__global__ void build_tracks(device::build_tracks_payload payload) {
 
-    device::build_tracks(details::global_index1(), cfg, payload);
+    device::build_tracks(details::global_index1(), payload);
 }
 }  // namespace traccc::cuda::kernels

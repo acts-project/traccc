@@ -59,8 +59,6 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/finding/kernels/apply_interaction.hpp"
   "src/finding/kernels/fill_sort_keys.cu"
   "src/finding/kernels/fill_sort_keys.cuh"
-  "src/finding/kernels/prune_tracks.cu"
-  "src/finding/kernels/prune_tracks.cuh"
   "src/finding/kernels/build_tracks.cu"
   "src/finding/kernels/build_tracks.cuh"
   "src/finding/kernels/find_tracks.cuh"
