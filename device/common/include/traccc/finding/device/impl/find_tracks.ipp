@@ -77,6 +77,9 @@ TRACCC_HOST_DEVICE inline void find_tracks(
 
     const unsigned int in_param_id = thread_id.getGlobalThreadIdX();
 
+    const bool last_step =
+        payload.step == cfg.max_track_candidates_per_track - 1;
+
     /*
      * Step 1 of this kernel is to determine which indices belong to which
      * parameter. Because the measurements are guaranteed to be grouped, we can
@@ -262,10 +265,19 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                                    .seed_idx = seed_idx,
                                    .n_skipped = n_skipped,
                                    .chi2 = chi2};
-
                 out_params.at(l_pos - payload.curr_links_idx) =
                     trk_state.filtered();
-                out_params_liveness.at(l_pos - payload.curr_links_idx) = 1u;
+                out_params_liveness.at(l_pos - payload.curr_links_idx) =
+                    static_cast<unsigned int>(!last_step);
+
+                const unsigned int n_cands = payload.step + 1 - n_skipped;
+
+                // If no more CKF step is expected, current candidate is kept as
+                // a tip
+                if (last_step &&
+                    n_cands >= cfg.min_track_candidates_per_track) {
+                    tips.push_back(l_pos);
+                }
             }
         }
 
@@ -312,11 +324,15 @@ TRACCC_HOST_DEVICE inline void find_tracks(
             const unsigned int n_skipped =
                 payload.step == 0 ? 0 : links.at(prev_link_idx).n_skipped;
 
-            if (n_skipped >= cfg.max_num_skipping_per_cand) {
-                // In case of max skipping being 0 and first step being skipped,
-                // the links are empty, and the tip has nowhere to point
-                assert(payload.step > 0);
-                tips.push_back(prev_link_idx);
+            if (n_skipped >= cfg.max_num_skipping_per_cand || last_step) {
+                const unsigned int n_cands = payload.step - n_skipped;
+                if (n_cands >= cfg.min_track_candidates_per_track) {
+                    // In case of max skipping and min length being 0, and first
+                    // step being skipped, the links are empty, and the tip has
+                    // nowhere to point
+                    assert(payload.step > 0);
+                    tips.push_back(prev_link_idx);
+                }
             } else {
                 // Add measurement candidates to link
                 const unsigned int l_pos = links.bulk_append_implicit(1);

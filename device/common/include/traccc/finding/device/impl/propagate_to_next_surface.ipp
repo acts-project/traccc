@@ -32,6 +32,14 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
 
     const unsigned int param_id = param_ids.at(globalIndex);
 
+    // Links
+    vecmem::device_vector<const candidate_link> links(payload.links_view);
+
+    const unsigned int link_idx = payload.prev_links_idx + param_id;
+    const auto& link = links.at(link_idx);
+    assert(link.step == payload.step);
+    const unsigned int n_cands = link.step + 1 - link.n_skipped;
+
     // Parameter liveness
     vecmem::device_vector<unsigned int> params_liveness(
         payload.params_liveness_view);
@@ -93,18 +101,12 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
         assert(propagation._navigation.is_on_sensitive());
 
         params[param_id] = propagation._stepping.bound_params();
-
-        if (payload.step == cfg.max_track_candidates_per_track - 1) {
-            tips.push_back(payload.prev_links_idx + param_id);
-            params_liveness[param_id] = 0u;
-        } else {
-            params_liveness[param_id] = 1u;
-        }
+        params_liveness[param_id] = 1u;
     } else {
         params_liveness[param_id] = 0u;
 
-        if (payload.step >= cfg.min_track_candidates_per_track - 1) {
-            tips.push_back(payload.prev_links_idx + param_id);
+        if (n_cands >= cfg.min_track_candidates_per_track) {
+            tips.push_back(link_idx);
         }
     }
 }
