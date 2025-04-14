@@ -9,7 +9,7 @@
 
 // Project include(s).
 #include "traccc/ambiguity_resolution/ambiguity_resolution_config.hpp"
-#include "traccc/edm/track_state.hpp"
+#include "traccc/edm/track_candidate.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
