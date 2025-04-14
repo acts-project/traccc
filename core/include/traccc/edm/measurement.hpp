@@ -46,12 +46,6 @@ struct measurement {
     // Unique measurement ID
     std::size_t measurement_id = 0;
 
-    /// Link to Module vector index
-    using link_type = unsigned int;
-
-    /// Cluster link
-    std::size_t cluster_link = std::numeric_limits<std::size_t>::max();
-
     /// Measurement dimension
     unsigned int meas_dim = 2u;
 
