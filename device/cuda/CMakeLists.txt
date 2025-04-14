@@ -68,6 +68,9 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/finding/kernels/specializations/find_tracks_default_detector.cu"
   "src/finding/kernels/specializations/apply_interaction_default_detector.cu"
   "src/finding/kernels/specializations/propagate_to_next_surface_default_detector.cu"
+  # Ambiguity resolution
+  "include/traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
+  "src/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.cu"
   # Fitting
   "include/traccc/cuda/fitting/fitting_algorithm.hpp"
   "src/fitting/fitting_algorithm.cu")
