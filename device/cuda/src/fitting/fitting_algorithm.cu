@@ -39,18 +39,11 @@ __global__ void fill_sort_keys(
                            keys_view, ids_view);
 }
 
-template <typename fitter_t, typename detector_view_t>
-__global__ void fit(
-    detector_view_t det_data, const typename fitter_t::bfield_type field_data,
-    const typename fitter_t::config_type cfg,
-    track_candidate_container_types::const_view track_candidates_view,
-    vecmem::data::vector_view<const unsigned int> param_ids_view,
-    track_state_container_types::view track_states_view,
-    vecmem::data::jagged_vector_view<detray::geometry::barcode> seqs_view) {
+template <typename fitter_t>
+__global__ void fit(const typename fitter_t::config_type cfg,
+                    const device::fit_payload<fitter_t> payload) {
 
-    device::fit<fitter_t>(details::global_index1(), det_data, field_data, cfg,
-                          track_candidates_view, param_ids_view,
-                          track_states_view, seqs_view);
+    device::fit<fitter_t>(details::global_index1(), cfg, payload);
 }
 
 }  // namespace kernels
@@ -133,8 +126,13 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
 
         // Run the track fitting
         kernels::fit<fitter_t><<<nBlocks, nThreads, 0, stream>>>(
-            det_view, field_view, m_cfg, track_candidates_view,
-            param_ids_buffer, track_states_buffer, seqs_buffer);
+            m_cfg, device::fit_payload<fitter_t>{
+                       .det_data = det_view,
+                       .field_data = field_view,
+                       .track_candidates_view = track_candidates_view,
+                       .param_ids_view = param_ids_buffer,
+                       .track_states_view = track_states_buffer,
+                       .barcodes_view = seqs_buffer});
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
     }
 
