@@ -5,21 +5,19 @@
  * Mozilla Public License Version 2.0
  */
 
+// Project include(s).
+#include "traccc/ambiguity_resolution/ambiguity_resolution_config.hpp"
+#include "traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
+#include "traccc/utils/memory_resource.hpp"
+
+// VecMem include(s).
+#include <vecmem/memory/cuda/managed_memory_resource.hpp>
+#include <vecmem/utils/cuda/async_copy.hpp>
+
+// GTest include(s).
 #include <gtest/gtest.h>
 
-#include <vecmem/memory/cuda/managed_memory_resource.hpp>
-#include <vecmem/memory/unique_ptr.hpp>
-
 using namespace traccc;
-
-namespace {
-
-// Memory resource used by the EDM.
-vecmem::cuda::managed_memory_resource mng_mr;
-traccc::memory_resource mr{mng_mr};
-
-}  // namespace
-
 
 void fill_pattern(track_candidate_container_types::host& track_candidates,
                   const std::size_t idx, const traccc::scalar chi2,
@@ -34,11 +32,12 @@ void fill_pattern(track_candidate_container_types::host& track_candidates,
     }
 }
 
+template <typename track_candidate_container_t>
 std::vector<std::size_t> get_pattern(
-    track_candidate_container_types::host& track_candidates,
-    const std::size_t idx) {
+    const track_candidate_container_t& track_candidates,
+    const typename track_candidate_container_t::size_type idx) {
     std::vector<std::size_t> ret;
-    auto& cands = track_candidates.at(idx).items;
+    const auto& cands = track_candidates.at(idx).items;
     for (const auto& cand : cands) {
         ret.push_back(cand.measurement_id);
     }
@@ -48,28 +47,44 @@ std::vector<std::size_t> get_pattern(
 
 TEST(CudaAmbiguitySolverTests, GreedyResolverTest0) {
 
-    track_candidate_container_types::host trk_cands;
+    // Memory resource used by the EDM.
+    vecmem::cuda::managed_memory_resource mng_mr;
+    traccc::memory_resource mr{mng_mr};
+
+    // Cuda stream
+    traccc::cuda::stream stream;
+
+    // Cuda copy objects
+    vecmem::cuda::async_copy copy{stream.cudaStream()};
+
+    track_candidate_container_types::host trk_cands{&mr.main};
 
     trk_cands.resize(3u);
     fill_pattern(trk_cands, 0, 8.3f, {1, 3, 5, 11});
     fill_pattern(trk_cands, 1, 2.2f, {6, 7, 8, 9, 10, 12});
     fill_pattern(trk_cands, 2, 3.7f, {2, 4, 13});
 
-    traccc::host::greedy_ambiguity_resolution_algorithm::config_type
+    traccc::cuda::greedy_ambiguity_resolution_algorithm::config_type
         resolution_config;
 
-    traccc::host::greedy_ambiguity_resolution_algorithm resolution_alg(
-        resolution_config, mr);
+    traccc::cuda::greedy_ambiguity_resolution_algorithm resolution_alg_cuda(
+        resolution_config, mr, copy, stream);
     {
-        resolution_alg.get_config().min_meas_per_track = 3;
-        auto res_trk_cands = resolution_alg(traccc::get_data(trk_cands));
+        resolution_alg_cuda.get_config().min_meas_per_track = 3;
+        auto res_trk_cands_buffer =
+            resolution_alg_cuda(traccc::get_data(trk_cands));
+        track_candidate_container_types::device res_trk_cands(
+            res_trk_cands_buffer);
         // All tracks are accepted as they have more than three measurements
         ASSERT_EQ(res_trk_cands.size(), 3u);
     }
 
     {
-        resolution_alg.get_config().min_meas_per_track = 5;
-        auto res_trk_cands = resolution_alg(traccc::get_data(trk_cands));
+        resolution_alg_cuda.get_config().min_meas_per_track = 5;
+        auto res_trk_cands_buffer =
+            resolution_alg_cuda(traccc::get_data(trk_cands));
+        track_candidate_container_types::device res_trk_cands(
+            res_trk_cands_buffer);
         // Only the second track with six measurements is accepted
         ASSERT_EQ(res_trk_cands.size(), 1u);
         ASSERT_EQ(get_pattern(res_trk_cands, 0),
@@ -77,7 +92,4 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest0) {
     }
 }
 
-TEST(CudaAmbiguitySolverTests, CompareWithCPU) {
-
-
-}
+TEST(CudaAmbiguitySolverTests, CompareWithCPU) {}

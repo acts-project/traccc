@@ -7,12 +7,18 @@
 
 #pragma once
 
+// Local include(s).
+#include "traccc/cuda/utils/stream.hpp"
+
 // Project include(s).
 #include "traccc/ambiguity_resolution/ambiguity_resolution_config.hpp"
-#include "traccc/edm/track_state.hpp"
+#include "traccc/edm/track_candidate.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
+
+// VecMem include(s).
+#include <vecmem/utils/copy.hpp>
 
 namespace traccc::cuda {
 
@@ -38,8 +44,7 @@ class greedy_ambiguity_resolution_algorithm
     greedy_ambiguity_resolution_algorithm(
         const config_type& cfg, traccc::memory_resource& mr, vecmem::copy& copy,
         stream& str,
-        std::unique_ptr<const Logger> logger = getDummyLogger().clone())
-        : messaging(std::move(logger)), m_config{cfg}, m_mr{mr} {}
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Run the algorithm
     ///
