@@ -20,6 +20,7 @@
 #include "traccc/performance/container_comparator.hpp"
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
+#include "traccc/utils/bfield.hpp"
 #include "traccc/utils/event_data.hpp"
 #include "traccc/utils/ranges.hpp"
 
@@ -80,7 +81,7 @@ TEST_P(CkfToyDetectorTests, Run) {
         (path / "toy_detector_surface_grids.json").native());
 
     auto field =
-        detray::bfield::create_const_field<host_detector_type::scalar_type>(B);
+        traccc::construct_const_bfield<host_detector_type::scalar_type>(B);
 
     // Detector view object
     auto det_view = detray::get_data(host_det);

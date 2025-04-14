@@ -83,7 +83,7 @@ TEST_P(KalmanFittingMomentumResolutionTests, Run) {
     const auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
     auto field =
-        detray::bfield::create_const_field<scalar>(std::get<13>(GetParam()));
+        traccc::construct_const_bfield<scalar>(std::get<13>(GetParam()));
 
     const auto vol0 = detray::tracking_volume{host_det, 0u};
 

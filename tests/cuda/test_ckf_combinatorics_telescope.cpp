@@ -12,6 +12,7 @@
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/simulation/simulator.hpp"
+#include "traccc/utils/bfield.hpp"
 #include "traccc/utils/event_data.hpp"
 #include "traccc/utils/ranges.hpp"
 
@@ -74,7 +75,7 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
         detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);
 
     auto field =
-        detray::bfield::create_const_field<host_detector_type::scalar_type>(
+        traccc::construct_const_bfield<host_detector_type::scalar_type>(
             std::get<13>(GetParam()));
 
     // Detector view object

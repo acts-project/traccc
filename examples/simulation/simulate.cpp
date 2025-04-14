@@ -18,9 +18,9 @@
 #include "traccc/simulation/measurement_smearer.hpp"
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/simulation/smearing_writer.hpp"
+#include "traccc/utils/bfield.hpp"
 
 // Detray include(s).
-#include <detray/detectors/bfield.hpp>
 #include <detray/io/frontend/detector_reader.hpp>
 #include <detray/navigation/navigator.hpp>
 #include <detray/propagator/propagator.hpp>
@@ -65,9 +65,9 @@ int main(int argc, char* argv[]) {
     // B field value and its type
     // @TODO: Set B field as argument
     using b_field_t =
-        covfie::field<detray::bfield::const_bknd_t<traccc::scalar>>;
+        covfie::field<traccc::const_bfield_backend_t<traccc::scalar>>;
     const traccc::vector3 B{0, 0, 2 * traccc::unit<traccc::scalar>::T};
-    auto field = detray::bfield::create_const_field<traccc::scalar>(B);
+    const b_field_t field = traccc::construct_const_bfield<traccc::scalar>(B);
 
     // Read the detector
     detray::io::detector_reader_config reader_cfg{};
