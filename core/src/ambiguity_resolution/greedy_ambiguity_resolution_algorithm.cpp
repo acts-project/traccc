@@ -14,6 +14,7 @@
 
 // System include
 #include <algorithm>
+#include <unordered_set>
 #include <vector>
 
 namespace traccc::host {
@@ -71,16 +72,31 @@ greedy_ambiguity_resolution_algorithm::operator()(
         }
     }
 
+    // Get the sorted unique measurement vector
+    std::unordered_set<std::size_t> unique_meas_set;
+    for (const auto& i : accepted_ids) {
+        const auto& candidates = track_candidates.at(i).items;
+        for (const auto& cand : candidates) {
+            unique_meas_set.insert(cand.measurement_id);
+        }
+    }
+
+    std::vector<std::size_t> unique_meas(unique_meas_set.begin(),
+                                         unique_meas_set.end());
+    std::sort(unique_meas.begin(), unique_meas.end());
+
     // Record the tracks per measurement
     std::vector<std::vector<unsigned int>> tracks_per_measurement;
+    tracks_per_measurement.resize(unique_meas.size());
 
     for (const auto& i : accepted_ids) {
         const auto& candidates = track_candidates.at(i).items;
         for (const auto& cand : candidates) {
-            if (tracks_per_measurement.size() < cand.measurement_id + 1) {
-                tracks_per_measurement.resize(cand.measurement_id + 1);
-            }
-            tracks_per_measurement[cand.measurement_id].push_back(i);
+            const auto it = std::lower_bound(
+                unique_meas.begin(), unique_meas.end(), cand.measurement_id);
+            assert(it ! = unique_meas.end());
+            const auto unique_meas_idx = std::distance(unique_meas.begin(), it);
+            tracks_per_measurement[unique_meas_idx].push_back(i);
         }
     }
 
@@ -88,7 +104,11 @@ greedy_ambiguity_resolution_algorithm::operator()(
     std::vector<unsigned int> n_shared(n_tracks);
     for (const auto& i : accepted_ids) {
         for (const auto& meas_id : meas_ids[i]) {
-            if (tracks_per_measurement[meas_id].size() > 1) {
+            const auto it = std::lower_bound(unique_meas.begin(),
+                                             unique_meas.end(), meas_id);
+            assert(it ! = unique_meas.end());
+            const auto unique_meas_idx = std::distance(unique_meas.begin(), it);
+            if (tracks_per_measurement[unique_meas_idx].size() > 1) {
                 n_shared[i]++;
             }
         }
@@ -158,7 +178,12 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
         const auto& meas_ids_to_remove = meas_ids[worst_track];
         for (const auto& id : meas_ids_to_remove) {
-            auto& tracks = tracks_per_measurement[id];
+            const auto it =
+                std::lower_bound(unique_meas.begin(), unique_meas.end(), id);
+            assert(it ! = unique_meas.end());
+            const auto unique_meas_idx = std::distance(unique_meas.begin(), it);
+
+            auto& tracks = tracks_per_measurement[unique_meas_idx];
 
             // Remove the worst (rejected) id from the tracks associated with
             // measurement
