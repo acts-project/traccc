@@ -1,15 +1,14 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Project include(s).
-#include "../utils/cuda_error_handling.hpp"
-#include "../utils/global_index.hpp"
+#include "traccc/alpaka/fitting/fitting_algorithm.hpp"
+
 #include "../utils/utils.hpp"
-#include "traccc/cuda/fitting/fitting_algorithm.hpp"
 #include "traccc/fitting/device/fill_sort_keys.hpp"
 #include "traccc/fitting/device/fit.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
@@ -20,44 +19,50 @@
 #include <detray/propagator/rk_stepper.hpp>
 
 // Thrust include(s).
+#include <thrust/execution_policy.h>
 #include <thrust/sort.h>
 
 // System include(s).
 #include <memory_resource>
 #include <vector>
 
-namespace traccc::cuda {
+namespace traccc::alpaka {
 
-namespace kernels {
+struct FillSortKeysKernel {
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(
+        TAcc const& acc,
+        track_candidate_container_types::const_view track_candidates_view,
+        vecmem::data::vector_view<device::sort_key> keys_view,
+        vecmem::data::vector_view<unsigned int> ids_view) const {
 
-__global__ void fill_sort_keys(
-    track_candidate_container_types::const_view track_candidates_view,
-    vecmem::data::vector_view<device::sort_key> keys_view,
-    vecmem::data::vector_view<unsigned int> ids_view) {
+        device::global_index_t globalThreadIdx =
+            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
 
-    device::fill_sort_keys(details::global_index1(), track_candidates_view,
-                           keys_view, ids_view);
-}
+        device::fill_sort_keys(globalThreadIdx, track_candidates_view,
+                               keys_view, ids_view);
+    }
+};
 
 template <typename fitter_t>
-__global__ void fit(const typename fitter_t::config_type cfg,
-                    const device::fit_payload<fitter_t> payload) {
+struct FitTrackKernel {
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(
+        TAcc const& acc, const typename fitter_t::config_type cfg,
+        const device::fit_payload<fitter_t>* payload) const {
 
-    device::fit<fitter_t>(details::global_index1(), cfg, payload);
-}
+        device::global_index_t globalThreadIdx =
+            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
 
-}  // namespace kernels
+        device::fit<fitter_t>(globalThreadIdx, cfg, *payload);
+    }
+};
 
 template <typename fitter_t>
 fitting_algorithm<fitter_t>::fitting_algorithm(
     const config_type& cfg, const traccc::memory_resource& mr,
-    vecmem::copy& copy, stream& str, std::unique_ptr<const Logger> logger)
-    : messaging(std::move(logger)),
-      m_cfg(cfg),
-      m_mr(mr),
-      m_copy(copy),
-      m_stream(str),
-      m_warp_size(details::get_warp_size(str.device())) {}
+    vecmem::copy& copy, std::unique_ptr<const Logger> logger)
+    : messaging(std::move(logger)), m_cfg(cfg), m_mr(mr), m_copy(copy) {}
 
 template <typename fitter_t>
 track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
@@ -66,8 +71,17 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
     const typename track_candidate_container_types::const_view&
         track_candidates_view) const {
 
-    // Get a convenience variable for the stream that we'll be using.
-    cudaStream_t stream = details::get_stream(m_stream);
+    // Setup alpaka
+    auto devHost = ::alpaka::getDevByIdx(::alpaka::Platform<Host>{}, 0u);
+    auto devAcc = ::alpaka::getDevByIdx(::alpaka::Platform<Acc>{}, 0u);
+    auto queue = Queue{devAcc};
+    Idx threadsPerBlock = getWarpSize<Acc>() * 2;
+
+#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_GPU_HIP_ENABLED)
+    auto thrustExecPolicy = thrust::device;
+#else
+    auto thrustExecPolicy = thrust::host;
+#endif
 
     // Number of tracks
     const track_candidate_container_types::const_device::header_vector::
@@ -83,6 +97,7 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
         {n_tracks, m_mr.main},
         {candidate_sizes, m_mr.main, m_mr.host,
          vecmem::data::buffer_type::resizable}};
+    track_state_container_types::view track_states_view(track_states_buffer);
 
     std::vector<jagged_buffer_size_type> seqs_sizes(candidate_sizes.size());
     std::transform(candidate_sizes.begin(), candidate_sizes.end(),
@@ -101,8 +116,9 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
     // Calculate the number of threads and thread blocks to run the track
     // fitting
     if (n_tracks > 0) {
-        const unsigned int nThreads = m_warp_size * 2;
-        const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
+        const Idx blocksPerGrid =
+            (n_tracks + threadsPerBlock - 1) / threadsPerBlock;
+        auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
         vecmem::data::vector_buffer<device::sort_key> keys_buffer(n_tracks,
                                                                   m_mr.main);
@@ -110,33 +126,42 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
                                                                    m_mr.main);
 
         // Get key and value for sorting
-        kernels::fill_sort_keys<<<nBlocks, nThreads, 0, stream>>>(
-            track_candidates_view, keys_buffer, param_ids_buffer);
-        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+        ::alpaka::exec<Acc>(
+            queue, workDiv, FillSortKeysKernel{}, track_candidates_view,
+            vecmem::get_data(keys_buffer), vecmem::get_data(param_ids_buffer));
+        ::alpaka::wait(queue);
 
         // Sort the key to get the sorted parameter ids
         vecmem::device_vector<device::sort_key> keys_device(keys_buffer);
         vecmem::device_vector<unsigned int> param_ids_device(param_ids_buffer);
 
-        thrust::sort_by_key(thrust::cuda::par_nosync(
-                                std::pmr::polymorphic_allocator(&m_mr.main))
-                                .on(stream),
-                            keys_device.begin(), keys_device.end(),
-                            param_ids_device.begin());
+        thrust::sort_by_key(thrustExecPolicy, keys_device.begin(),
+                            keys_device.end(), param_ids_device.begin());
+
+        // Prepare the payload for the track fitting
+        device::fit_payload<fitter_t> payload{
+            .det_data = det_view,
+            .field_data = field_view,
+            .track_candidates_view = track_candidates_view,
+            .param_ids_view = vecmem::get_data(param_ids_buffer),
+            .track_states_view = track_states_view,
+            .barcodes_view = vecmem::get_data(seqs_buffer)};
+        auto bufHost_fitPayload =
+            ::alpaka::allocBuf<device::fit_payload<fitter_t>, Idx>(devHost, 1u);
+        device::fit_payload<fitter_t>* fitPayload =
+            ::alpaka::getPtrNative(bufHost_fitPayload);
+        *fitPayload = payload;
+
+        auto bufAcc_fitPayload =
+            ::alpaka::allocBuf<device::fit_payload<fitter_t>, Idx>(devAcc, 1u);
+        ::alpaka::memcpy(queue, bufAcc_fitPayload, bufHost_fitPayload);
+        ::alpaka::wait(queue);
 
         // Run the track fitting
-        kernels::fit<fitter_t><<<nBlocks, nThreads, 0, stream>>>(
-            m_cfg, device::fit_payload<fitter_t>{
-                       .det_data = det_view,
-                       .field_data = field_view,
-                       .track_candidates_view = track_candidates_view,
-                       .param_ids_view = param_ids_buffer,
-                       .track_states_view = track_states_buffer,
-                       .barcodes_view = seqs_buffer});
-        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+        ::alpaka::exec<Acc>(queue, workDiv, FitTrackKernel<fitter_t>{}, m_cfg,
+                            ::alpaka::getPtrNative(bufAcc_fitPayload));
+        ::alpaka::wait(queue);
     }
-
-    m_stream.synchronize();
 
     return track_states_buffer;
 }
@@ -153,4 +178,4 @@ using default_fitter_type =
     kalman_fitter<default_stepper_type, default_navigator_type>;
 template class fitting_algorithm<default_fitter_type>;
 
-}  // namespace traccc::cuda
+}  // namespace traccc::alpaka

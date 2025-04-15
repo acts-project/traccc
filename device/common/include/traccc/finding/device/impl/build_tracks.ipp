@@ -7,11 +7,14 @@
 
 #pragma once
 
+// Project include(s).
+#include "traccc/utils/prob.hpp"
+
 namespace traccc::device {
 
-TRACCC_DEVICE inline void build_tracks(const global_index_t globalIndex,
-                                       const finding_config& cfg,
-                                       const build_tracks_payload& payload) {
+TRACCC_HOST_DEVICE inline void build_tracks(
+    const global_index_t globalIndex, const finding_config& cfg,
+    const build_tracks_payload& payload) {
 
     const measurement_collection_types::const_device measurements(
         payload.measurements_view);
@@ -86,6 +89,7 @@ TRACCC_DEVICE inline void build_tracks(const global_index_t globalIndex,
             seed = seeds.at(L.seed_idx);
             trk_quality.ndf = ndf_sum - 5.f;
             trk_quality.chi2 = chi2_sum;
+            trk_quality.pval = prob(trk_quality.chi2, trk_quality.ndf);
             trk_quality.n_holes = L.n_skipped;
         } else {
             L = links.at(L.previous_candidate_idx);

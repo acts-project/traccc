@@ -53,7 +53,7 @@ struct apply_interaction_payload {
 /// @param[inout] payload      The function call payload
 ///
 template <typename detector_t>
-TRACCC_DEVICE inline void apply_interaction(
+TRACCC_HOST_DEVICE inline void apply_interaction(
     global_index_t globalIndex, const finding_config& cfg,
     const apply_interaction_payload<detector_t>& payload);
 
