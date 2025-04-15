@@ -59,6 +59,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     thrust::sequence(thrust_policy, status_device.begin(),
                      status_device.end(), 0, 1);
     */
+   
     // Get the sizes of the track candidates in each track
     using jagged_buffer_size_type = track_candidate_container_types::
         const_device::item_vector::value_type::size_type;
@@ -74,6 +75,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     // Make measurement ID, pval and n_measurement vector
     vecmem::data::jagged_vector_buffer<detray::geometry::barcode> meas_ids{
         meas_sizes, m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable};
+    vecmem::data::vector_buffer<std::size_t> flat_meas_ids{n_total_meas};
 
     vecmem::data::vector_buffer<traccc::scalar> pvals_buffer(n_tracks,
                                                              m_mr.main);

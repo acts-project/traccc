@@ -39,9 +39,9 @@ struct fill_vectors_payload {
     vecmem::data::vector_view<std::size_t> n_meas_view;
 
     /**
-     * @brief View object to the number of tracks per measurement
+     * @brief View object to the measurement ids in flat vector
      */        
-    vecmem::data::vector_view<std::size_t> n_tracks_per_meas_view;
+    vecmem::data::vector_view<std::size_t> flat_meas_ids
 
     /**
      * @brief View object to the status of track acceptance
