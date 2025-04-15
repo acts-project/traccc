@@ -50,13 +50,15 @@ greedy_ambiguity_resolution_algorithm::operator()(
     // Make sure that max_shared_meas is largen than zero
     assert(m_config.max_shared_meas > 0u);
 
-    vecmem::data::vector_buffer<unsigned int> accepted_ids_buffer{n_tracks,
-                                                                  m_mr.main};
-    vecmem::device_vector<unsigned int> accepted_ids_device(
-        accepted_ids_buffer);
-    thrust::sequence(thrust_policy, accepted_ids_device.begin(),
-                     accepted_ids_device.end(), 0, 1);
-
+    // Status (True = Accept, False = Reject)
+    vecmem::data::vector_buffer<bool> status_buffer{n_tracks, m_mr.main};
+    vecmem::device_vector<bool> status_device(status_buffer);
+    thrust::fill(thrust_policy, status_device.begin(), status_device.end(),
+                 true);
+    /*
+    thrust::sequence(thrust_policy, status_device.begin(),
+                     status_device.end(), 0, 1);
+    */
     // Get the sizes of the track candidates in each track
     using jagged_buffer_size_type = track_candidate_container_types::
         const_device::item_vector::value_type::size_type;
@@ -75,7 +77,11 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     vecmem::data::vector_buffer<traccc::scalar> chi_squares_buffer(n_tracks,
                                                                    m_mr.main);
-    vecmem::data::vector_buffer<std::size_t> n_meas(n_tracks, m_mr.main);
+    vecmem::data::vector_buffer<std::size_t> n_meas_buffer(n_tracks, m_mr.main);
+
+    // Fill the vectors
+    vecmem::device_vector<traccc::scalar> chi_squares_device(chi_squares_buffer);
+    vecmem::device_vector<std::size_t> n_meas_device(n_meas_buffer);
 
     // Create resolved candidate buffer
     track_candidate_container_types::buffer res_candidates_buffer{
