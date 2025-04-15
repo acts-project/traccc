@@ -13,7 +13,8 @@
 namespace traccc::device {
 
 TRACCC_HOST_DEVICE inline void build_tracks(
-    const global_index_t globalIndex, const finding_config& cfg,
+    const global_index_t globalIndex,
+    [[maybe_unused]] const finding_config& cfg,
     const build_tracks_payload& payload) {
 
     const measurement_collection_types::const_device measurements(
@@ -47,10 +48,12 @@ TRACCC_HOST_DEVICE inline void build_tracks(
 
     const unsigned int n_cands = L.step + 1 - L.n_skipped;
 
+    // Criteria for valid tracks
+    assert(n_cands >= cfg.min_track_candidates_per_track &&
+           n_cands <= cfg.max_track_candidates_per_track);
+
     // Resize the candidates with the exact size
     cands_per_track.resize(n_cands);
-
-    bool success = true;
 
     // Track summary variables
     scalar ndf_sum = 0.f;
@@ -67,11 +70,7 @@ TRACCC_HOST_DEVICE inline void build_tracks(
             L = links.at(L.previous_candidate_idx);
         }
 
-        // Break if the measurement is still invalid
-        if (L.meas_idx >= measurements.size()) {
-            success = false;
-            break;
-        }
+        assert(L.meas_idx < n_meas);
 
         *it = {measurements.at(L.meas_idx)};
         num_inserted++;
@@ -97,36 +96,27 @@ TRACCC_HOST_DEVICE inline void build_tracks(
     }
 
 #ifndef NDEBUG
-    if (success) {
-        // Assert that we inserted exactly as many elements as we reserved
-        // space for.
-        assert(num_inserted == cands_per_track.size());
+    // Assert that we inserted exactly as many elements as we reserved
+    // space for.
+    assert(num_inserted == cands_per_track.size());
 
-        // Assert that we did not make any duplicate track states.
-        for (unsigned int i = 0; i < cands_per_track.size(); ++i) {
-            for (unsigned int j = 0; j < cands_per_track.size(); ++j) {
-                if (i != j) {
-                    // TODO: Re-enable me!
-                    // assert(cands_per_track.at(i).measurement_id !=
-                    //       cands_per_track.at(j).measurement_id);
-                }
+    // Assert that we did not make any duplicate track states.
+    for (unsigned int i = 0; i < cands_per_track.size(); ++i) {
+        for (unsigned int j = 0; j < cands_per_track.size(); ++j) {
+            if (i != j) {
+                // TODO: Re-enable me!
+                // assert(cands_per_track.at(i).measurement_id !=
+                //       cands_per_track.at(j).measurement_id);
             }
         }
     }
 #endif
 
-    // NOTE: We may at some point want to assert that `success` is true
+    vecmem::device_atomic_ref<unsigned int> num_valid_tracks(
+        *payload.n_valid_tracks);
 
-    // Criteria for valid tracks
-    if (n_cands >= cfg.min_track_candidates_per_track &&
-        n_cands <= cfg.max_track_candidates_per_track && success) {
-
-        vecmem::device_atomic_ref<unsigned int> num_valid_tracks(
-            *payload.n_valid_tracks);
-
-        const unsigned int pos = num_valid_tracks.fetch_add(1);
-        valid_indices[pos] = globalIndex;
-    }
+    const unsigned int pos = num_valid_tracks.fetch_add(1);
+    valid_indices[pos] = globalIndex;
 }
 
 }  // namespace traccc::device

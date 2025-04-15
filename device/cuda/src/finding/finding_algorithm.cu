@@ -189,9 +189,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
     unsigned int n_in_params = n_seeds;
 
-    for (unsigned int step = 0;
-         step < m_cfg.max_track_candidates_per_track && n_in_params > 0;
-         step++) {
+    for (unsigned int step = 0; n_in_params > 0; step++) {
 
         /*****************************************************************
          * Kernel2: Apply material interaction
@@ -233,6 +231,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 n_max_candidates, m_mr.main);
             m_copy.setup(updated_liveness_buffer)->ignore();
 
+            // Reset the number of tracks per seed
+            m_copy.memset(n_tracks_per_seed_buffer, 0)->ignore();
+
             const unsigned int links_size = m_copy.get_size(links_buffer);
 
             if (links_size + n_max_candidates > link_buffer_capacity) {
@@ -257,21 +258,20 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 links_buffer = std::move(new_links_buffer);
             }
 
-            const unsigned int nThreads = m_warp_size * 2;
-            const unsigned int nBlocks =
-                (n_in_params + nThreads - 1) / nThreads;
-
             const unsigned int prev_link_idx =
                 step == 0 ? 0 : step_to_link_idx_map[step - 1];
 
             assert(links_size == step_to_link_idx_map[step]);
 
+            const unsigned int nThreads = m_warp_size * 2;
+            const unsigned int nBlocks =
+                (n_in_params + nThreads - 1) / nThreads;
+            const std::size_t shared_size =
+                nThreads * sizeof(unsigned int) +
+                2 * nThreads * sizeof(std::pair<unsigned int, unsigned int>);
+
             kernels::find_tracks<std::decay_t<detector_type>>
-                <<<nBlocks, nThreads,
-                   nThreads * sizeof(unsigned int) +
-                       2 * nThreads *
-                           sizeof(std::pair<unsigned int, unsigned int>),
-                   stream>>>(
+                <<<nBlocks, nThreads, shared_size, stream>>>(
                     m_cfg,
                     device::find_tracks_payload<std::decay_t<detector_type>>{
                         .det_data = det_view,
@@ -286,7 +286,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                         .curr_links_idx = step_to_link_idx_map[step],
                         .step = step,
                         .out_params_view = updated_params_buffer,
-                        .out_params_liveness_view = updated_liveness_buffer});
+                        .out_params_liveness_view = updated_liveness_buffer,
+                        .tips_view = tips_buffer,
+                        .n_tracks_per_seed_view = n_tracks_per_seed_buffer});
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
             std::swap(in_params_buffer, updated_params_buffer);
@@ -299,6 +301,12 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 step_to_link_idx_map[step + 1] - step_to_link_idx_map[step];
 
             m_stream.synchronize();
+        }
+
+        // If no more CKF step is expected, the tips and links are populated,
+        // and any further time-consuming action is avoided
+        if (step == m_cfg.max_track_candidates_per_track - 1) {
+            break;
         }
 
         if (n_candidates > 0) {
@@ -342,9 +350,6 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
              *****************************************************************/
 
             {
-                // Reset the number of tracks per seed
-                m_copy.memset(n_tracks_per_seed_buffer, 0)->ignore();
-
                 const unsigned int nThreads = m_warp_size * 2;
                 const unsigned int nBlocks =
                     (n_candidates + nThreads - 1) / nThreads;
@@ -364,9 +369,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                             .prev_links_idx = step_to_link_idx_map[step],
                             .step = step,
                             .n_in_params = n_candidates,
-                            .tips_view = tips_buffer,
-                            .n_tracks_per_seed_view =
-                                n_tracks_per_seed_buffer});
+                            .tips_view = tips_buffer});
                 TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
                 m_stream.synchronize();

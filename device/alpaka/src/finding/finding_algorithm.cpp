@@ -226,6 +226,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 n_in_params * m_cfg.max_num_branches_per_surface, m_mr.main);
             m_copy.setup(updated_liveness_buffer)->ignore();
 
+            // Reset the number of tracks per seed
+            m_copy.memset(n_tracks_per_seed_buffer, 0)->ignore();
+
             const unsigned int links_size = m_copy.get_size(links_buffer);
 
             if (links_size + n_max_candidates > link_buffer_capacity) {
@@ -281,7 +284,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 .step = step,
                 .out_params_view = vecmem::get_data(updated_params_buffer),
                 .out_params_liveness_view =
-                    vecmem::get_data(updated_liveness_buffer)};
+                    vecmem::get_data(updated_liveness_buffer),
+                .tips_view = vecmem::get_data(tips_buffer),
+                .n_tracks_per_seed_view =
+                    vecmem::get_data(n_tracks_per_seed_buffer)};
 
             auto bufAcc_payload =
                 ::alpaka::allocBuf<PayloadType, Idx>(devAcc, 1u);
@@ -301,6 +307,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             n_candidates =
                 step_to_link_idx_map[step + 1] - step_to_link_idx_map[step];
             ::alpaka::wait(queue);
+        }
+
+        if (step == m_cfg.max_track_candidates_per_track - 1) {
+            break;
         }
 
         if (n_candidates > 0) {
@@ -343,9 +353,6 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
              *****************************************************************/
 
             {
-                // Reset the number of tracks per seed
-                m_copy.memset(n_tracks_per_seed_buffer, 0)->ignore();
-
                 Idx blocksPerGrid =
                     (n_candidates + threadsPerBlock - 1) / threadsPerBlock;
                 auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
@@ -369,9 +376,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     .prev_links_idx = step_to_link_idx_map[step],
                     .step = step,
                     .n_in_params = n_candidates,
-                    .tips_view = vecmem::get_data(tips_buffer),
-                    .n_tracks_per_seed_view =
-                        vecmem::get_data(n_tracks_per_seed_buffer)};
+                    .tips_view = vecmem::get_data(tips_buffer)};
 
                 auto bufAcc_payload =
                     ::alpaka::allocBuf<PayloadType, Idx>(devAcc, 1u);

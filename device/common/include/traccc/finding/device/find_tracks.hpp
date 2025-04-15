@@ -98,6 +98,17 @@ struct find_tracks_payload {
      * @brief View object to the output track parameter liveness vector
      */
     vecmem::data::vector_view<unsigned int> out_params_liveness_view;
+
+    /**
+     * @brief View object to the vector of tips
+     */
+    vecmem::data::vector_view<unsigned int> tips_view;
+
+    /**
+     * @brief View object to the vector of the number of tracks per initial
+     * input seed
+     */
+    vecmem::data::vector_view<unsigned int> n_tracks_per_seed_view;
 };
 
 /// (Shared Event Data) Payload for the @c traccc::device::find_tracks function
