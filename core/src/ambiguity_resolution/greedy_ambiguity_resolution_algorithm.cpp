@@ -95,7 +95,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
             const auto it = std::lower_bound(
                 unique_meas.begin(), unique_meas.end(), cand.measurement_id);
             assert(it != unique_meas.end());
-            const auto unique_meas_idx = std::distance(unique_meas.begin(), it);
+            const std::size_t unique_meas_idx = static_cast<std::size_t>(
+                std::distance(unique_meas.begin(), it));
             tracks_per_measurement[unique_meas_idx].push_back(i);
         }
     }
@@ -107,7 +108,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
             const auto it = std::lower_bound(unique_meas.begin(),
                                              unique_meas.end(), meas_id);
             assert(it != unique_meas.end());
-            const auto unique_meas_idx = std::distance(unique_meas.begin(), it);
+            const std::size_t unique_meas_idx = static_cast<std::size_t>(
+                std::distance(unique_meas.begin(), it));
             if (tracks_per_measurement[unique_meas_idx].size() > 1) {
                 n_shared[i]++;
             }
@@ -168,7 +170,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
             const auto it =
                 std::lower_bound(unique_meas.begin(), unique_meas.end(), id);
             assert(it != unique_meas.end());
-            const auto unique_meas_idx = std::distance(unique_meas.begin(), it);
+            const std::size_t unique_meas_idx = static_cast<std::size_t>(
+                std::distance(unique_meas.begin(), it));
 
             auto& tracks = tracks_per_measurement[unique_meas_idx];
 
