@@ -94,7 +94,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
         for (const auto& cand : candidates) {
             const auto it = std::lower_bound(
                 unique_meas.begin(), unique_meas.end(), cand.measurement_id);
-            assert(it ! = unique_meas.end());
+            assert(it != unique_meas.end());
             const auto unique_meas_idx = std::distance(unique_meas.begin(), it);
             tracks_per_measurement[unique_meas_idx].push_back(i);
         }
@@ -106,7 +106,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
         for (const auto& meas_id : meas_ids[i]) {
             const auto it = std::lower_bound(unique_meas.begin(),
                                              unique_meas.end(), meas_id);
-            assert(it ! = unique_meas.end());
+            assert(it != unique_meas.end());
             const auto unique_meas_idx = std::distance(unique_meas.begin(), it);
             if (tracks_per_measurement[unique_meas_idx].size() > 1) {
                 n_shared[i]++;
@@ -167,7 +167,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
         for (const auto& id : meas_ids_to_remove) {
             const auto it =
                 std::lower_bound(unique_meas.begin(), unique_meas.end(), id);
-            assert(it ! = unique_meas.end());
+            assert(it != unique_meas.end());
             const auto unique_meas_idx = std::distance(unique_meas.begin(), it);
 
             auto& tracks = tracks_per_measurement[unique_meas_idx];
