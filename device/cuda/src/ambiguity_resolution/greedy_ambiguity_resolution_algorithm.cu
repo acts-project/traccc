@@ -50,9 +50,9 @@ greedy_ambiguity_resolution_algorithm::operator()(
     // Make sure that max_shared_meas is largen than zero
     assert(m_config.max_shared_meas > 0u);
 
-    // Status (True = Accept, False = Reject)
-    vecmem::data::vector_buffer<bool> status_buffer{n_tracks, m_mr.main};
-    vecmem::device_vector<bool> status_device(status_buffer);
+    // Status (1 = Accept, 0 = Reject)
+    vecmem::data::vector_buffer<int> status_buffer{n_tracks, m_mr.main};
+    vecmem::device_vector<int> status_device(status_buffer);
     thrust::fill(thrust_policy, status_device.begin(), status_device.end(),
                  true);
     /*
@@ -71,17 +71,24 @@ greedy_ambiguity_resolution_algorithm::operator()(
                    meas_sizes.begin(),
                    [this](const jagged_buffer_size_type sz) { return sz; });
 
-    // Make measurement ID, chi2 and n_measurement vector
+    // Make measurement ID, pval and n_measurement vector
     vecmem::data::jagged_vector_buffer<detray::geometry::barcode> meas_ids{
         meas_sizes, m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable};
 
-    vecmem::data::vector_buffer<traccc::scalar> chi_squares_buffer(n_tracks,
-                                                                   m_mr.main);
+    vecmem::data::vector_buffer<traccc::scalar> pvals_buffer(n_tracks,
+                                                             m_mr.main);
     vecmem::data::vector_buffer<std::size_t> n_meas_buffer(n_tracks, m_mr.main);
+    vecmem::data::vector_buffer<std::size_t> n_tracks_per_meas_buffer(
+        n_measurements, m_mr.main);
 
     // Fill the vectors
-    vecmem::device_vector<traccc::scalar> chi_squares_device(chi_squares_buffer);
+    kernels::fill_vectors<<<nBlocks, nThreads, 0, stream>>>();
+
+    /*
+    vecmem::device_vector<traccc::scalar> pvals_device(
+        pvals_buffer);
     vecmem::device_vector<std::size_t> n_meas_device(n_meas_buffer);
+    */
 
     // Create resolved candidate buffer
     track_candidate_container_types::buffer res_candidates_buffer{
