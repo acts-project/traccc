@@ -114,24 +114,11 @@ greedy_ambiguity_resolution_algorithm::operator()(
         }
     }
 
-    // Precompute max sizes for 2D cache table
-    const auto max_n_meas = *std::max_element(n_meas.begin(), n_meas.end());
-    const auto max_n_shared =
-        *std::max_element(n_shared.begin(), n_shared.end());
-
-    // Initialize 2D cache table for relative shared measurements
-    std::vector<std::vector<traccc::scalar>> cache(
-        max_n_meas + 1, std::vector<traccc::scalar>(max_n_shared + 1));
+    // Make relative number of shared measurement vector
     std::vector<traccc::scalar> rel_shared(n_tracks);
     for (const auto& i : accepted_ids) {
-        const auto n_s = n_shared[i];
-        const auto n_m = n_meas[i];
-        assert(n_m <= max_n_meas && n_s <= max_n_shared);
-        if (cache[n_m][n_s] == 0.f && n_s > 0) {
-            cache[n_m][n_s] = static_cast<traccc::scalar>(n_s) /
-                              static_cast<traccc::scalar>(n_m);
-        }
-        rel_shared[i] = cache[n_m][n_s];
+        rel_shared[i] = static_cast<traccc::scalar>(n_shared[i]) /
+                        static_cast<traccc::scalar>(n_meas[i]);
     }
 
     // Sort the track id with rel_shared and chi2 to find the worst track fast
@@ -197,16 +184,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
             if (tracks.size() == 1) {
                 const auto tid = tracks[0];
                 n_shared[tid]--;
-
-                const auto n_s = n_shared[tid];
-                const auto n_m = n_meas[tid];
-                assert(n_m <= max_n_meas && n_s <= max_n_shared);
-                if (cache[n_m][n_s] == 0.f && n_s > 0) {
-                    cache[n_m][n_s] = static_cast<traccc::scalar>(n_s) /
-                                      static_cast<traccc::scalar>(n_m);
-                }
-                rel_shared[tid] = cache[n_m][n_s];
-
+                rel_shared[tid] = static_cast<traccc::scalar>(n_shared[tid]) /
+                                  static_cast<traccc::scalar>(n_meas[tid]);
                 // Reposition the track to the next of the worse track which is
                 // firstly found during the reverse iteration
                 const auto it3 =
