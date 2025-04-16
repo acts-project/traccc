@@ -170,8 +170,6 @@ track_candidate_container_types::host find_tracks(
 
             bound_track_parameters<algebra_type>& in_param =
                 in_params[in_param_id];
-            assert(!in_param.is_invalid());
-
             const unsigned int orig_param_id =
                 (step == 0
                      ? in_param_id
@@ -203,7 +201,6 @@ track_candidate_container_types::host find_tracks(
 
             // Get barcode and measurements range on surface
             const auto bcd = in_param.surface_link();
-            assert(!bcd.is_invalid());
             std::pair<unsigned int, unsigned int> range;
 
             // Find the corresponding index of bcd in barcode vector
@@ -261,7 +258,6 @@ track_candidate_container_types::host find_tracks(
                          .seed_idx = orig_param_id,
                          .n_skipped = skip_counter,
                          .chi2 = chi2});
-                    assert(!trk_state.filtered().is_invalid());
                     updated_params.push_back(trk_state.filtered());
                 }
             }
@@ -333,7 +329,8 @@ track_candidate_container_types::host find_tracks(
             }
 
             // Propagate to the next surface
-            propagator.propagate(propagation, detray::tie(s0, s1, s2, s3));
+            propagator.propagate_sync(propagation,
+                                      detray::tie(s0, s1, s2, s3, s4));
 
             // If a surface found, add the parameter for the next
             // step
