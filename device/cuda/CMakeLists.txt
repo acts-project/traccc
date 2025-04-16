@@ -71,6 +71,8 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   # Ambiguity resolution
   "include/traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
   "src/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.cu"
+  "src/ambiguity_resolution/kernels/fill_vectors.cu"
+  "src/ambiguity_resolution/kernels/fill_vectors.cuh"
   # Fitting
   "include/traccc/cuda/fitting/fitting_algorithm.hpp"
   "src/fitting/fitting_algorithm.cu")

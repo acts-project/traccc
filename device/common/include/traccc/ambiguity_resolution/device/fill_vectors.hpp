@@ -10,6 +10,9 @@
 // Local include(s).
 #include "traccc/device/global_index.hpp"
 
+// Project include(s).
+#include "traccc/edm/track_candidate.hpp"
+
 // VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
 
@@ -26,7 +29,12 @@ struct fill_vectors_payload {
     /**
      * @brief View object to the vector of measured ids per track
      */
-    vecmem::data::jagged_vector_view<detray::geometry::barcode> meas_ids_view;
+    vecmem::data::jagged_vector_view<std::size_t> meas_ids_view;
+
+    /**
+     * @brief View object to the measurement ids in flat vector
+     */
+    vecmem::data::vector_view<std::size_t> flat_meas_ids_view;
 
     /**
      * @brief View object to the vector of pvalues
@@ -35,17 +43,12 @@ struct fill_vectors_payload {
 
     /**
      * @brief View object to the number of measurements per track
-     */    
+     */
     vecmem::data::vector_view<std::size_t> n_meas_view;
 
     /**
-     * @brief View object to the measurement ids in flat vector
-     */        
-    vecmem::data::vector_view<std::size_t> flat_meas_ids
-
-    /**
      * @brief View object to the status of track acceptance
-     */            
+     */
     vecmem::data::vector_view<int> status_view;
 };
 
@@ -55,7 +58,8 @@ struct fill_vectors_payload {
 /// @param[inout] payload      The function call payload
 ///
 TRACCC_HOST_DEVICE inline void fill_vectors(
-    global_index_t globalIndex, const fill_vectors_payload& payload);
+    global_index_t globalIndex, const ambiguity_resolution_config& cfg,
+    const fill_vectors_payload& payload);
 
 }  // namespace traccc::device
 
