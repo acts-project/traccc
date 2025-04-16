@@ -263,6 +263,7 @@ track_candidate_container_types::host find_tracks(
                          .seed_idx = orig_param_id,
                          .n_skipped = skip_counter,
                          .chi2 = chi2});
+
                     assert(!trk_state.filtered().is_invalid());
                     updated_params.push_back(trk_state.filtered());
                 }

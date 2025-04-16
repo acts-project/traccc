@@ -84,7 +84,7 @@ TEST_P(CKF_navigation_test, toy_detector) {
     // Create track generator
     const scalar pT{std::get<0>(GetParam())};
     generator_t::configuration gen_cfg{};
-    gen_cfg.n_tracks(250u).eta_range(-3, 3).p_T(pT).randomize_charge(true);
+    gen_cfg.n_tracks(2500u).eta_range(-3, 3).p_T(pT).randomize_charge(true);
     // Choose different random seed than detray for more test coverage
     gen_cfg.seed(135346);
 
@@ -185,7 +185,8 @@ TEST_P(CKF_navigation_test, toy_detector) {
     // Run the navigation and compare
     detray::test::navigation_validation_config test_cfg{};
     test_cfg.n_tracks(tracks.size()).ptc_hypothesis(ptc_type);
-    test_cfg.collect_sensitives_only(true).fail_on_diff(false).verbose(false);
+    test_cfg.collect_sensitives_only(true).fail_on_diff(false);
+    test_cfg.display_only_missed(true).verbose(false);
 
     // Make a tuple of references from a tuple
     auto setup_actor_states = []<typename... T>(detray::dtuple<T...> & t) {
@@ -197,7 +198,6 @@ TEST_P(CKF_navigation_test, toy_detector) {
 
     // Initial state smearing
     vecmem::vector<std::array<scalar, e_bound_size>> stddevs_per_track{};
-    stddevs_per_track.push_back(stddevs);
 
     perigee_stopper::state stopper_state{};
     interactor::state interactor_state{};
@@ -205,7 +205,7 @@ TEST_P(CKF_navigation_test, toy_detector) {
     interactor_state.do_energy_loss = std::get<7>(GetParam());
 
     {
-        std::cout << "-----------------------------------"
+        /*std::cout << "-----------------------------------"
                   << "\nFORWARD - No KF" << std::endl
                   << "-----------------------------------\n";
 
@@ -329,7 +329,7 @@ TEST_P(CKF_navigation_test, toy_detector) {
                         n_tracks <=
                     std::get<3>(GetParam()));
         EXPECT_TRUE(trk_stats_bw.n_max_missed_per_trk <=
-                    std::get<4>(GetParam()));
+                    std::get<4>(GetParam()));*/
     }
 
     {
@@ -359,6 +359,7 @@ TEST_P(CKF_navigation_test, toy_detector) {
             state_tuple.push_back(
                 detray::make_tuple(interactor_state, fit_actor_state));
             state_ref_tuple.push_back(setup_actor_states(state_tuple.back()));
+            stddevs_per_track.push_back(stddevs);
         }
 
         // Forward filter

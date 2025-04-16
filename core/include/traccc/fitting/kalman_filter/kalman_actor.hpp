@@ -22,6 +22,9 @@
 // vecmem include(s)
 #include <vecmem/containers/device_vector.hpp>
 
+// System include(s)
+#include <cstdlib>
+
 namespace traccc {
 
 /// Detray actor for Kalman filtering
@@ -218,7 +221,8 @@ struct kalman_actor : detray::actor {
 
             // Abort if the Kalman update fails
             if (res != kalman_fitter_status::SUCCESS) {
-                propagation._heartbeat &= navigation.abort();
+                propagation._heartbeat &=
+                    navigation.abort(fitter_debug_msg{res});
                 return;
             }
 

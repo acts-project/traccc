@@ -38,18 +38,18 @@ class ToyDetectorFixture : public testing::Test {
 
     /// Measurement smearing parameters
     static constexpr std::array<scalar, 2u> smearing{
-        10.f * traccc::unit<scalar>::um, 10.f * traccc::unit<scalar>::um};
+        50.f * traccc::unit<scalar>::um, 50.f * traccc::unit<scalar>::um};
 
     // Grid search window
     static const inline std::array<detray::dindex, 2> search_window{3u, 3u};
 
     /// Standard deviations for seed track parameters
     static constexpr std::array<scalar, e_bound_size> stddevs = {
-        0.00001f * traccc::unit<scalar>::mm,
-        0.00001f * traccc::unit<scalar>::mm,
-        0.00001f,
-        0.00001f,
-        0.00001f / traccc::unit<scalar>::GeV,
+        0.001f * traccc::unit<scalar>::mm,
+        0.001f * traccc::unit<scalar>::mm,
+        0.001f,
+        0.001f,
+        0.001f / traccc::unit<scalar>::GeV,
         0.01f * traccc::unit<scalar>::ns};
 
     protected:

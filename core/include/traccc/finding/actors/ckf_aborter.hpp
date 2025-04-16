@@ -57,7 +57,19 @@ struct ckf_aborter : detray::actor {
         }
 
         if (abrt_state.count > abrt_state.max_count) {
-            prop_state._heartbeat &= navigation.abort();
+            prop_state._heartbeat &=
+                navigation.abort("CKF: Max number of steps");
+            abrt_state.success = false;
+        }
+
+        const auto &track = stepping();
+        const scalar q{stepping.particle_hypothesis().charge()};
+        const scalar mag{track.pT(q)};
+
+        if (mag <= 10.f * traccc::unit<scalar>::MeV) {
+            // Stop navigation
+            prop_state._heartbeat &=
+                navigation.abort("CKF: Below minimum momentum");
             abrt_state.success = false;
         }
     }
