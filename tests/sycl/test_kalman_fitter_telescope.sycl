@@ -106,7 +106,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     // Detector view object
     auto det_view = detray::get_data(host_det);
     auto field =
-        detray::bfield::create_const_field<host_detector_type::scalar_type>(B);
+        traccc::construct_const_bfield<host_detector_type::scalar_type>(B);
 
     /***************************
      * Generate simulation data

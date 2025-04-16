@@ -44,7 +44,6 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 
 // Detray include(s).
-#include <detray/detectors/bfield.hpp>
 #include <detray/io/frontend/detector_reader.hpp>
 #include <detray/navigation/navigator.hpp>
 #include <detray/propagator/propagator.hpp>
@@ -136,8 +135,10 @@ int seq_run(const traccc::opts::detector& detector_opts,
     using device_spacepoint_formation_algorithm =
         traccc::cuda::spacepoint_formation_algorithm<
             traccc::default_detector::device>;
+    using bfield_type =
+        covfie::field<traccc::const_bfield_backend_t<scalar_type>>;
     using stepper_type =
-        detray::rk_stepper<detray::bfield::const_field_t<scalar_type>::view_t,
+        detray::rk_stepper<bfield_type::view_t,
                            traccc::default_detector::host::algebra_type,
                            detray::constrained_step<scalar_type>>;
     using device_navigator_type =
@@ -164,8 +165,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
     // Constant B field for the track finding and fitting
     const traccc::vector3 field_vec = {0.f, 0.f,
                                        seeding_opts.seedfinder.bFieldInZ};
-    const detray::bfield::const_field_t<traccc::scalar> field =
-        detray::bfield::create_const_field<traccc::scalar>(field_vec);
+    const covfie::field<traccc::const_bfield_backend_t<traccc::scalar>> field =
+        traccc::construct_const_bfield<traccc::scalar>(field_vec);
 
     traccc::host::clusterization_algorithm ca(
         host_mr, logger().clone("HostClusteringAlg"));

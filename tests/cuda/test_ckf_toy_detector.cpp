@@ -14,6 +14,7 @@
 #include "traccc/io/utils.hpp"
 #include "traccc/performance/container_comparator.hpp"
 #include "traccc/simulation/simulator.hpp"
+#include "traccc/utils/bfield.hpp"
 #include "traccc/utils/event_data.hpp"
 #include "traccc/utils/ranges.hpp"
 #include "traccc/utils/seed_generator.hpp"
@@ -71,7 +72,7 @@ TEST_P(CkfToyDetectorTests, Run) {
         detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);
 
     auto field =
-        detray::bfield::create_const_field<host_detector_type::scalar_type>(B);
+        traccc::construct_const_bfield<host_detector_type::scalar_type>(B);
 
     // Detector view object
     auto det_view = detray::get_data(host_det);

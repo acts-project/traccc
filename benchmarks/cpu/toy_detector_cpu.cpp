@@ -24,7 +24,6 @@
 #include "benchmarks/toy_detector_benchmark.hpp"
 
 // Detray include(s).
-#include <detray/detectors/bfield.hpp>
 #include <detray/io/frontend/detector_reader.hpp>
 
 // VecMem include(s).
@@ -50,7 +49,7 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
         sim_dir + "toy_detector_surface_grids.json");
 
     // B field
-    auto field = detray::bfield::create_const_field<scalar_type>(B);
+    auto field = traccc::construct_const_bfield<scalar_type>(B);
 
     // Algorithms
     traccc::host::seeding_algorithm sa(seeding_cfg, grid_cfg, filter_cfg,

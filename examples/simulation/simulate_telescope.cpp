@@ -17,9 +17,9 @@
 #include "traccc/simulation/measurement_smearer.hpp"
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/simulation/smearing_writer.hpp"
+#include "traccc/utils/bfield.hpp"
 
 // detray include(s).
-#include <detray/detectors/bfield.hpp>
 #include <detray/geometry/mask.hpp>
 #include <detray/geometry/shapes/rectangle2D.hpp>
 #include <detray/io/frontend/detector_writer.hpp>
@@ -69,9 +69,9 @@ int simulate(const traccc::opts::generation& generation_opts,
     }
 
     // B field value and its type
-    using b_field_t = covfie::field<detray::bfield::const_bknd_t<scalar>>;
+    using b_field_t = covfie::field<traccc::const_bfield_backend_t<scalar>>;
     const vector3 B{0, 0, 2 * traccc::unit<scalar>::T};
-    auto field = detray::bfield::create_const_field<scalar>(B);
+    b_field_t field = traccc::construct_const_bfield<scalar>(B);
 
     // Set material and thickness
     detray::material<scalar> mat;

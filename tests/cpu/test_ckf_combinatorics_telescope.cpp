@@ -11,6 +11,7 @@
 #include "traccc/io/utils.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
 #include "traccc/simulation/simulator.hpp"
+#include "traccc/utils/bfield.hpp"
 #include "traccc/utils/ranges.hpp"
 
 // Test include(s).
@@ -64,8 +65,8 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
     const auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
 
-    auto field =
-        detray::bfield::create_const_field<host_detector_type::scalar_type>(
+    const covfie::field<traccc::const_bfield_backend_t<traccc::scalar>> field =
+        traccc::construct_const_bfield<traccc::scalar>(
             std::get<13>(GetParam()));
 
     /***************************

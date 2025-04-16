@@ -35,10 +35,10 @@
 #include "traccc/performance/container_comparator.hpp"
 #include "traccc/performance/timer.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
+#include "traccc/utils/bfield.hpp"
 #include "traccc/utils/seed_generator.hpp"
 
 // detray include(s).
-#include <detray/detectors/bfield.hpp>
 #include <detray/io/frontend/detector_reader.hpp>
 #include <detray/navigation/navigator.hpp>
 #include <detray/propagator/propagator.hpp>
@@ -71,7 +71,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
     /// Type declarations
     using scalar_type = traccc::default_detector::device::scalar_type;
-    using b_field_t = covfie::field<detray::bfield::const_bknd_t<scalar_type>>;
+    using b_field_t =
+        covfie::field<traccc::const_bfield_backend_t<scalar_type>>;
     using rk_stepper_type =
         detray::rk_stepper<b_field_t::view_t, traccc::default_algebra,
                            detray::constrained_step<scalar_type>>;
@@ -106,7 +107,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     // B field value and its type
     // @TODO: Set B field as argument
     const traccc::vector3 B{0, 0, 2 * traccc::unit<traccc::scalar>::T};
-    auto field = detray::bfield::create_const_field<traccc::scalar>(B);
+    const covfie::field<traccc::const_bfield_backend_t<traccc::scalar>> field =
+        traccc::construct_const_bfield<traccc::scalar>(B);
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host detector{mng_mr};
