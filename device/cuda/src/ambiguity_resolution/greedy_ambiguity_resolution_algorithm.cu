@@ -28,7 +28,8 @@ greedy_ambiguity_resolution_algorithm::greedy_ambiguity_resolution_algorithm(
       m_config(cfg),
       m_mr(mr),
       m_copy(copy),
-      m_stream(str) {}
+      m_stream(str),
+      m_warp_size(details::get_warp_size(str.device())) {}
 
 greedy_ambiguity_resolution_algorithm::output_type
 greedy_ambiguity_resolution_algorithm::operator()(
@@ -49,6 +50,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
     const track_candidate_container_types::const_view::header_vector::size_type
         n_tracks = m_copy.get().get_size(track_candidates_view.headers);
 
+    printf("n tracks: %d \n", n_tracks);
+
     if (n_tracks == 0) {
         return track_candidate_container_types::buffer{
             {0, m_mr.main},
@@ -61,8 +64,12 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     // Status (1 = Accept, 0 = Reject)
     vecmem::data::vector_buffer<int> status_buffer{n_tracks, m_mr.main};
+
+    printf("status size %d \n", m_copy.get().get_size(status_buffer));
     vecmem::device_vector<int> status_device(status_buffer);
     thrust::fill(thrust_policy, status_device.begin(), status_device.end(), 1);
+
+    m_stream.get().synchronize();
 
     // Get the sizes of the track candidates in each track
     using jagged_buffer_size_type = track_candidate_container_types::
@@ -76,16 +83,23 @@ greedy_ambiguity_resolution_algorithm::operator()(
                    meas_sizes.begin(),
                    [this](const jagged_buffer_size_type sz) { return sz; });
 
+    for (const auto& e : meas_sizes) {
+        printf("meas size %d \n", e);
+    }
+
     // Make measurement ID, pval and n_measurement vector
     vecmem::data::jagged_vector_buffer<std::size_t> meas_ids_buffer{
         meas_sizes, m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable};
 
     const auto n_cands_total = track_candidates.total_size();
+
+    printf("n cands total: %d \n", n_cands_total);
+
     vecmem::data::vector_buffer<std::size_t> flat_meas_ids_buffer{
         n_cands_total, m_mr.main, vecmem::data::buffer_type::resizable};
-    vecmem::data::vector_buffer<traccc::scalar> pvals_buffer(n_tracks,
-                                                             m_mr.main);
-    vecmem::data::vector_buffer<std::size_t> n_meas_buffer(n_tracks, m_mr.main);
+    vecmem::data::vector_buffer<traccc::scalar> pvals_buffer{n_tracks,
+                                                             m_mr.main};
+    vecmem::data::vector_buffer<std::size_t> n_meas_buffer{n_tracks, m_mr.main};
 
     {
         const unsigned int nThreads = m_warp_size * 2;
@@ -114,10 +128,13 @@ greedy_ambiguity_resolution_algorithm::operator()(
         thrust::unique_count(thrust_policy, flat_meas_ids_buffer.ptr(),
                              flat_meas_ids_buffer.ptr() + n_cands_total,
                              thrust::equal_to<int>()));
-    vecmem::data::vector_buffer<std::size_t> unique_meas_buffer(meas_count,
-                                                                m_mr.main);
-    vecmem::data::vector_buffer<std::size_t> unique_meas_counts_buffer(
-        meas_count, m_mr.main);
+
+    printf("meas count %d \n", meas_count);
+
+    vecmem::data::vector_buffer<std::size_t> unique_meas_buffer{meas_count,
+                                                                m_mr.main};
+    vecmem::data::vector_buffer<std::size_t> unique_meas_counts_buffer{
+        meas_count, m_mr.main};
 
     thrust::reduce_by_key(thrust_policy, flat_meas_ids_buffer.ptr(),
                           flat_meas_ids_buffer.ptr() + n_cands_total,
@@ -125,29 +142,37 @@ greedy_ambiguity_resolution_algorithm::operator()(
                           unique_meas_buffer.ptr(),
                           unique_meas_counts_buffer.ptr());
 
+    m_stream.get().synchronize();
+
     m_copy.get().setup(unique_meas_counts_buffer)->wait();
 
     // Copy the unique measurement count to host buffer
-    vecmem::data::vector_buffer<std::size_t> unique_meas_counts_host_buffer(
-        meas_count, *m_mr.host);
-    vecmem::device_vector<std::size_t> unique_meas_counts_device(
-        unique_meas_counts_host_buffer);
+    vecmem::data::vector_buffer<std::size_t> unique_meas_counts_host_buffer{
+        meas_count, *m_mr.host};
 
+    m_copy.get().setup(unique_meas_counts_host_buffer)->ignore();
+    
     m_copy
         .get()(unique_meas_counts_buffer, unique_meas_counts_host_buffer,
                vecmem::copy::type::device_to_host)
         ->wait();
 
+    vecmem::device_vector<std::size_t> test(unique_meas_counts_host_buffer);
+    for (const auto& e: test){
+        printf("unique %lu \n", e);
+    }
+
     // Make a host vector
     std::vector<std::size_t> unique_meas_counts;
     unique_meas_counts.reserve(meas_count);
-    std::copy(unique_meas_counts_device.begin(),
-              unique_meas_counts_device.end(), unique_meas_counts.begin());
+    std::copy(unique_meas_counts_host_buffer.ptr(),
+              unique_meas_counts_host_buffer.ptr() + meas_count,
+              unique_meas_counts.begin());
 
     // Fill the tracks per measurement
     vecmem::data::jagged_vector_buffer<std::size_t>
         tracks_per_measurement_buffer(unique_meas_counts, m_mr.main, m_mr.host);
-
+    
     // Create resolved candidate buffer
     track_candidate_container_types::buffer res_candidates_buffer{
         {10, m_mr.main},
