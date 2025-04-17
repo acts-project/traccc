@@ -94,4 +94,45 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest0) {
     }
 }
 
+TEST(CudaAmbiguitySolverTests, GreedyResolverTest1) {
+
+    // Memory resource used by the EDM.
+    vecmem::cuda::managed_memory_resource mng_mr;
+    vecmem::host_memory_resource host_mr;
+    traccc::memory_resource mr{mng_mr, &host_mr};
+
+    // Cuda stream
+    traccc::cuda::stream stream;
+
+    // Cuda copy objects
+    vecmem::cuda::async_copy copy{stream.cudaStream()};
+
+    track_candidate_container_types::host trk_cands{&mr.main};
+
+    trk_cands.resize(2u);
+    fill_pattern(trk_cands, 0, 0.12f, {1, 3, 5, 11, 14, 16, 18});
+    fill_pattern(trk_cands, 1, 0.53f, {3, 5, 6, 13});
+
+    traccc::cuda::greedy_ambiguity_resolution_algorithm::config_type
+        resolution_config;
+
+    traccc::cuda::greedy_ambiguity_resolution_algorithm resolution_alg_cuda(
+        resolution_config, mr, copy, stream);
+    {
+        resolution_alg_cuda.get_config().min_meas_per_track = 3;
+        auto res_trk_cands_buffer =
+            resolution_alg_cuda(traccc::get_data(trk_cands));
+        track_candidate_container_types::device res_trk_cands(
+            res_trk_cands_buffer);
+        // All tracks are accepted as they have more than three measurements
+        ASSERT_EQ(res_trk_cands.size(), 1u);
+
+        // The first track is selected over the second one as its relative
+        // shared measurement (2/7) is lower than the one of the second track
+        // (2/4)
+        ASSERT_EQ(get_pattern(res_trk_cands, 0),
+                  std::vector<std::size_t>({1, 3, 5, 11, 14, 16, 18}));
+    }
+}
+
 TEST(CudaAmbiguitySolverTests, CompareWithCPU) {}

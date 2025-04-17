@@ -20,8 +20,7 @@ TRACCC_HOST_DEVICE inline void fill_vectors(
         return;
     }
 
-    vecmem::jagged_device_vector<std::size_t> meas_ids(
-        payload.meas_ids_view);
+    vecmem::jagged_device_vector<std::size_t> meas_ids(payload.meas_ids_view);
     vecmem::device_vector<std::size_t> flat_meas_ids(
         payload.flat_meas_ids_view);
     vecmem::device_vector<traccc::scalar> pvals(payload.pvals_view);
