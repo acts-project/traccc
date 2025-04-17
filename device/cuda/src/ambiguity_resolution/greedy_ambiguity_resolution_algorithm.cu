@@ -120,6 +120,26 @@ greedy_ambiguity_resolution_algorithm::operator()(
         m_stream.get().synchronize();
     }
 
+    // Make accepted ids vector
+    vecmem::data::vector_buffer<unsigned int> accepted_ids_buffer{
+        n_tracks, m_mr.main, vecmem::data::buffer_type::resizable};
+
+    // counting_iterator: 0, 1, 2, ...
+    auto cit_begin = thrust::counting_iterator<int>(0);
+    auto cit_end = cit_begin + n_tracks;
+
+    // Copy the accepted ids from status vector
+    auto it =
+        thrust::copy_if(thrust_policy, cit_begin, cit_end, status_buffer.ptr(),
+                        accepted_ids_buffer.ptr(), thrust::identity<int>());
+    vecmem::device_vector<unsigned int> accepted_ids(accepted_ids_buffer);
+
+    unsigned int n_accepted =
+        static_cast<unsigned int>(it - accepted_ids.begin());
+    accepted_ids.resize(n_accepted);
+
+    printf("number of accepted %d \n", n_accepted);
+
     // Sort the flat measurement id vector
     thrust::sort(thrust_policy, flat_meas_ids_buffer.ptr(),
                  flat_meas_ids_buffer.ptr() + n_cands_total);
@@ -129,7 +149,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
         thrust::unique_count(thrust_policy, flat_meas_ids_buffer.ptr(),
                              flat_meas_ids_buffer.ptr() + n_cands_total,
                              thrust::equal_to<int>()));
-
     printf("meas count %d \n", meas_count);
 
     // Unique measurement ids
@@ -147,13 +166,11 @@ greedy_ambiguity_resolution_algorithm::operator()(
                           thrust::make_constant_iterator(1),
                           unique_meas_buffer.ptr(),
                           unique_meas_counts_buffer.ptr());
-    m_stream.get().synchronize();
 
     // Sort unique meas ids
     thrust::sort_by_key(thrust_policy, unique_meas_buffer.ptr(),
                         unique_meas_buffer.ptr() + meas_count,
                         unique_meas_counts_buffer.ptr());
-    m_stream.get().synchronize();
 
     // Retreive the counting vector to host
     std::vector<std::size_t> unique_meas_counts;
@@ -170,20 +187,40 @@ greedy_ambiguity_resolution_algorithm::operator()(
     vecmem::data::jagged_vector_buffer<std::size_t>
         tracks_per_measurement_buffer(unique_meas_counts, m_mr.main, m_mr.host);
 
+    // Fill tracks per measurement vector
+    {
+        const unsigned int nThreads = m_warp_size * 2;
+        const unsigned int nBlocks = (n_accepted + nThreads - 1) / nThreads;
+
+        kernels::fill_tracks_per_measurement<<<nBlocks, nThreads, 0, stream>>>(
+            device::fill_tracks_per_measurement{
+                .track_candidates_view = track_candidates_view,
+                .accepted_view = accepted_buffer,
+                .unique_meas_view = unique_meas_buffer,
+                .tracks_per_measurement_view = track_per_measurement_buffer});
+    }
+
     // Make shared number of measurements vector
     vecmem::data::vector_buffer<unsigned int> shared_buffer{n_tracks,
                                                             m_mr.main};
-    vecmem::data::vector_buffer<traccc::scalar> rel_shared_buffer{n_tracks,
-                                                                  m_mr.main};
-    /*
-    // Fill the tracks per measurement
+
+    // Count shared number of measurements
     {
         const unsigned int nThreads = m_warp_size * 2;
-        const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
+        const unsigned int nBlocks = (n_accepted + nThreads - 1) / nThreads;
 
-        kernels::count_shared_measurements<<<nBlocks, nThreads, 0, stream>>>();
+        kernels::count_shared_measurements<<<nBlocks, nThreads, 0, stream>>>(
+            device::count_shared_measurements{
+                .accepted_view = accepted_buffer,
+                .unique_meas_view = unique_meas_buffer,
+                .tracks_per_measurement_view = track_per_measurement_buffer,
+                .shared_view = shared_buffer});
     }
-    */
+
+    // Make relative shared number of measurements vector
+    vecmem::data::vector_buffer<traccc::scalar> rel_shared_buffer{n_tracks,
+                                                                  m_mr.main};
+
     // Create resolved candidate buffer
     track_candidate_container_types::buffer res_candidates_buffer{
         {10, m_mr.main},

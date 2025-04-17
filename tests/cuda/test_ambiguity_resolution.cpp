@@ -78,7 +78,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest0) {
         track_candidate_container_types::device res_trk_cands(
             res_trk_cands_buffer);
         // All tracks are accepted as they have more than three measurements
-        ASSERT_EQ(res_trk_cands.size(), 3u);
+        EXPECT_EQ(res_trk_cands.size(), 3u);
     }
 
     {
@@ -88,8 +88,8 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest0) {
         track_candidate_container_types::device res_trk_cands(
             res_trk_cands_buffer);
         // Only the second track with six measurements is accepted
-        ASSERT_EQ(res_trk_cands.size(), 1u);
-        ASSERT_EQ(get_pattern(res_trk_cands, 0),
+        EXPECT_EQ(res_trk_cands.size(), 1u);
+        EXPECT_EQ(get_pattern(res_trk_cands, 0),
                   std::vector<std::size_t>({6, 7, 8, 9, 10, 12}));
     }
 }
