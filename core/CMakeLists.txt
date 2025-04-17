@@ -115,8 +115,11 @@ traccc_add_library( traccc_core core TYPE SHARED
   "src/seeding/silicon_pixel_spacepoint_formation_algorithm_defdet.cpp"
   "src/seeding/silicon_pixel_spacepoint_formation_algorithm_teldet.cpp"
   # Ambiguity resolution
+  "include/traccc/ambiguity_resolution/ambiguity_resolution_config.hpp"
   "include/traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
-  "src/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.cpp" )
+  "src/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.cpp"
+  "include/traccc/ambiguity_resolution/legacy/greedy_ambiguity_resolution_algorithm.hpp"
+  "src/ambiguity_resolution/legacy/greedy_ambiguity_resolution_algorithm.cpp")
 target_link_libraries( traccc_core
   PUBLIC Eigen3::Eigen vecmem::core detray::core detray::detectors
          traccc::algebra ActsCore )
