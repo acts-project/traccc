@@ -33,6 +33,23 @@ struct devide_op {
     }
 };
 
+// Track comparator to sort the track ids
+struct track_comparator {
+    const traccc::scalar* rel_shared;
+    const traccc::scalar* pvals;
+
+    TRACCC_HOST_DEVICE track_comparator(const traccc::scalar* rel_shared_,
+                                        const traccc::scalar* pvals_)
+        : rel_shared(rel_shared_), pvals(pvals_) {}
+
+    TRACCC_HOST_DEVICE bool operator()(unsigned int a, unsigned int b) const {
+        if (rel_shared[a] != rel_shared[b]) {
+            return rel_shared[a] < rel_shared[b];
+        }
+        return pvals[a] > pvals[b];
+    }
+};
+
 greedy_ambiguity_resolution_algorithm::greedy_ambiguity_resolution_algorithm(
     const config_type& cfg, traccc::memory_resource& mr, vecmem::copy& copy,
     stream& str, std::unique_ptr<const Logger> logger)
@@ -244,19 +261,43 @@ greedy_ambiguity_resolution_algorithm::operator()(
     thrust::transform(thrust_policy, n_shared_buffer.ptr(),
                       n_shared_buffer.ptr() + n_tracks, n_meas_buffer.ptr(),
                       rel_shared_buffer.ptr(), devide_op{});
-    /*
-    // Sort the track id with rel_shared and pval to find the worst track fast
-    std::vector<unsigned int> sorted_ids = accepted_ids;
 
-    auto track_comparator = [&rel_shared, &pvals](unsigned int a,
-                                                  unsigned int b) {
-        if (rel_shared[a] != rel_shared[b]) {
-            return rel_shared[a] < rel_shared[b];
+    // Make sorted ids vector
+    vecmem::data::vector_buffer<unsigned int> sorted_ids_buffer{
+        n_accepted, m_mr.main, vecmem::data::buffer_type::resizable};
+    m_copy.get().setup(sorted_ids_buffer)->ignore();
+    vecmem::device_vector<unsigned int> sorted_ids(sorted_ids_buffer);
+    sorted_ids.resize(n_accepted);
+
+    // Fill and sort the sorted ids vector
+    thrust::copy(thrust_policy, accepted_ids_buffer.ptr(),
+                 accepted_ids_buffer.ptr() + n_accepted,
+                 sorted_ids_buffer.ptr());
+
+    track_comparator trk_comp(rel_shared_buffer.ptr(), pvals_buffer.ptr());
+    thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
+                 sorted_ids_buffer.ptr() + n_accepted, trk_comp);
+
+    // Iterate over tracks
+    for (unsigned int iter = 0; iter < m_config.max_iterations; iter++) {
+        // Terminate if there are no tracks to iterate
+        if (n_accepted == 0) {
+            break;
         }
-        return pvals[a] > pvals[b];
-    };
-    std::sort(sorted_ids.begin(), sorted_ids.end(), track_comparator);
-    */
+
+        auto max_it = thrust::max_element(thrust_policy, n_shared_buffer.ptr(),
+                                          n_shared_buffer.ptr() + n_tracks);
+
+        const unsigned int max_shared = *max_it;
+
+        printf("Max shared: %d \n", max_shared);
+
+        // Terminate if the max shared measurements is less than the cut value
+        if (max_shared < m_config.max_shared_meas) {
+            break;
+        }
+    }
+
     // Create resolved candidate buffer
     track_candidate_container_types::buffer res_candidates_buffer{
         {10, m_mr.main},
