@@ -122,6 +122,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
         m_stream.get().synchronize();
     }
 
+    /*
     // Make accepted ids vector
     vecmem::data::vector_buffer<unsigned int> accepted_ids_buffer{
         n_tracks, m_mr.main, vecmem::data::buffer_type::resizable};
@@ -142,6 +143,22 @@ greedy_ambiguity_resolution_algorithm::operator()(
     accepted_ids.resize(n_accepted);
 
     printf("number of accepted %d \n", n_accepted);
+    */
+
+    const unsigned int n_pre_accepted = static_cast<unsigned int>(thrust::count(
+        thrust_policy, status_buffer.ptr(), status_buffer.ptr() + n_tracks, 1));
+
+    printf("number of pre_accepted %d \n", n_pre_accepted);
+
+    // Make accepted ids vector
+    vecmem::data::vector_buffer<unsigned int> pre_accepted_ids_buffer{
+        n_pre_accepted, m_mr.main};
+
+    // counting_iterator: 0, 1, 2, ...
+    auto cit_begin = thrust::counting_iterator<int>(0);
+    auto cit_end = cit_begin + n_tracks;
+    thrust::copy_if(thrust_policy, cit_begin, cit_end, status_buffer.ptr(),
+                    pre_accepted_ids_buffer.ptr(), thrust::identity<int>());
 
     // Sort the flat measurement id vector
     thrust::sort(thrust_policy, flat_meas_ids_buffer.ptr(),
@@ -194,14 +211,17 @@ greedy_ambiguity_resolution_algorithm::operator()(
     // Fill tracks per measurement vector
     {
         const unsigned int nThreads = m_warp_size * 2;
-        const unsigned int nBlocks = (n_accepted + nThreads - 1) / nThreads;
+        const unsigned int nBlocks = (n_pre_accepted + nThreads - 1) / nThreads;
 
         kernels::fill_tracks_per_measurement<<<nBlocks, nThreads, 0, stream>>>(
             device::fill_tracks_per_measurement_payload{
-                .accepted_ids_view = accepted_ids_buffer,
+                .accepted_ids_view = pre_accepted_ids_buffer,
                 .meas_ids_view = meas_ids_buffer,
                 .unique_meas_view = unique_meas_buffer,
                 .tracks_per_measurement_view = tracks_per_measurement_buffer});
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+        m_stream.get().synchronize();
     }
     /*
     // Make shared number of measurements vector
@@ -211,15 +231,18 @@ greedy_ambiguity_resolution_algorithm::operator()(
     // Count shared number of measurements
     {
         const unsigned int nThreads = m_warp_size * 2;
-        const unsigned int nBlocks = (n_accepted + nThreads - 1) / nThreads;
+        const unsigned int nBlocks = (n_pre_accepted + nThreads - 1) / nThreads;
 
         kernels::count_shared_measurements<<<nBlocks, nThreads, 0, stream>>>(
             device::count_shared_measurements_payload{
-                .accepted_ids_view = accepted_ids_buffer,
+                .accepted_ids_view = pre_accepted_ids_buffer,
                 .meas_ids_view = meas_ids_buffer,
                 .unique_meas_view = unique_meas_buffer,
                 .tracks_per_measurement_view = tracks_per_measurement_buffer,
                 .n_shared_view = n_shared_buffer});
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+        m_stream.get().synchronize();                
     }
 
     // Make relative shared number of measurements vector
