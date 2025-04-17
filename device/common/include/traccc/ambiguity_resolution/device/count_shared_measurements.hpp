@@ -26,6 +26,11 @@ struct count_shared_measurements_payload {
     vecmem::data::vector_view<const unsigned int> accepted_view;
 
     /**
+     * @brief View object to the vector of measured ids per track
+     */
+    vecmem::data::jagged_vector_view<const std::size_t> meas_ids_view;
+
+    /**
      * @brief View object to the unique measurement ids
      */
     vecmem::data::vector_view<const std::size_t> unique_meas_view;

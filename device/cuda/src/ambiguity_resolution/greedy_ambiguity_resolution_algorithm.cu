@@ -212,6 +212,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
         kernels::count_shared_measurements<<<nBlocks, nThreads, 0, stream>>>(
             device::count_shared_measurements{
                 .accepted_view = accepted_buffer,
+                .meas_ids_view = meas_ids_buffer,
                 .unique_meas_view = unique_meas_buffer,
                 .tracks_per_measurement_view = track_per_measurement_buffer,
                 .shared_view = shared_buffer});
