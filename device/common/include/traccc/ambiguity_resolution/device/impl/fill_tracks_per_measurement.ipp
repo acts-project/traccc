@@ -41,8 +41,7 @@ TRACCC_HOST_DEVICE inline void fill_tracks_per_measurement(
 
         printf("%lu %d %d  %d \n", unique_meas_idx, id, accepted_ids.size(),
                globalIndex);
-
-        //tracks_per_measurement.at(unique_meas_idx).push_back(id);
+        tracks_per_measurement.at(unique_meas_idx).push_back(id);
     }
 }
 

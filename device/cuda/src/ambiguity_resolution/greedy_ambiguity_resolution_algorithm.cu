@@ -16,12 +16,22 @@
 // Thrust include(s).
 #include <thrust/execution_policy.h>
 #include <thrust/fill.h>
+#include <thrust/functional.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/reduce.h>
 #include <thrust/sort.h>
+#include <thrust/transform.h>
 #include <thrust/unique.h>
 
 namespace traccc::cuda {
+
+// Device operator to calculate relative number of shared measurements
+struct devide_op {
+    TRACCC_HOST_DEVICE
+    traccc::scalar operator()(int a, int b) const {
+        return static_cast<traccc::scalar>(a) / static_cast<traccc::scalar>(b);
+    }
+};
 
 greedy_ambiguity_resolution_algorithm::greedy_ambiguity_resolution_algorithm(
     const config_type& cfg, traccc::memory_resource& mr, vecmem::copy& copy,
@@ -122,20 +132,23 @@ greedy_ambiguity_resolution_algorithm::operator()(
         m_stream.get().synchronize();
     }
 
-    const unsigned int n_pre_accepted = static_cast<unsigned int>(thrust::count(
+    unsigned int n_accepted = static_cast<unsigned int>(thrust::count(
         thrust_policy, status_buffer.ptr(), status_buffer.ptr() + n_tracks, 1));
 
-    printf("number of pre_accepted %d \n", n_pre_accepted);
+    printf("number of accepted %d \n", n_accepted);
 
     // Make accepted ids vector
-    vecmem::data::vector_buffer<unsigned int> pre_accepted_ids_buffer{
-        n_pre_accepted, m_mr.main};
+    vecmem::data::vector_buffer<unsigned int> accepted_ids_buffer{
+        n_accepted, m_mr.main, vecmem::data::buffer_type::resizable};
+    m_copy.get().setup(accepted_ids_buffer)->ignore();
+    vecmem::device_vector<unsigned int> accepted_ids(accepted_ids_buffer);
+    accepted_ids.resize(n_accepted);
 
-    // counting_iterator: 0, 1, 2, ...
+    // Fill the accepted ids vector using counting iterator
     auto cit_begin = thrust::counting_iterator<int>(0);
     auto cit_end = cit_begin + n_tracks;
     thrust::copy_if(thrust_policy, cit_begin, cit_end, status_buffer.ptr(),
-                    pre_accepted_ids_buffer.ptr(), thrust::identity<int>());
+                    accepted_ids_buffer.ptr(), thrust::identity<int>());
 
     // Sort the flat measurement id vector
     thrust::sort(thrust_policy, flat_meas_ids_buffer.ptr(),
@@ -184,15 +197,16 @@ greedy_ambiguity_resolution_algorithm::operator()(
     vecmem::data::jagged_vector_buffer<std::size_t>
         tracks_per_measurement_buffer(unique_meas_counts, m_mr.main, m_mr.host,
                                       vecmem::data::buffer_type::resizable);
+    m_copy.get().setup(tracks_per_measurement_buffer)->ignore();
 
     // Fill tracks per measurement vector
     {
         const unsigned int nThreads = m_warp_size * 2;
-        const unsigned int nBlocks = (n_pre_accepted + nThreads - 1) / nThreads;
+        const unsigned int nBlocks = (n_accepted + nThreads - 1) / nThreads;
 
         kernels::fill_tracks_per_measurement<<<nBlocks, nThreads, 0, stream>>>(
             device::fill_tracks_per_measurement_payload{
-                .accepted_ids_view = pre_accepted_ids_buffer,
+                .accepted_ids_view = accepted_ids_buffer,
                 .meas_ids_view = meas_ids_buffer,
                 .unique_meas_view = unique_meas_buffer,
                 .tracks_per_measurement_view = tracks_per_measurement_buffer});
@@ -200,7 +214,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
         m_stream.get().synchronize();
     }
-    
+
     // Make shared number of measurements vector
     vecmem::data::vector_buffer<unsigned int> n_shared_buffer{n_tracks,
                                                               m_mr.main};
@@ -208,24 +222,41 @@ greedy_ambiguity_resolution_algorithm::operator()(
     // Count shared number of measurements
     {
         const unsigned int nThreads = m_warp_size * 2;
-        const unsigned int nBlocks = (n_pre_accepted + nThreads - 1) / nThreads;
+        const unsigned int nBlocks = (n_accepted + nThreads - 1) / nThreads;
 
         kernels::count_shared_measurements<<<nBlocks, nThreads, 0, stream>>>(
             device::count_shared_measurements_payload{
-                .accepted_ids_view = pre_accepted_ids_buffer,
+                .accepted_ids_view = accepted_ids_buffer,
                 .meas_ids_view = meas_ids_buffer,
                 .unique_meas_view = unique_meas_buffer,
                 .tracks_per_measurement_view = tracks_per_measurement_buffer,
                 .n_shared_view = n_shared_buffer});
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-        m_stream.get().synchronize();                
+        m_stream.get().synchronize();
     }
 
     // Make relative shared number of measurements vector
     vecmem::data::vector_buffer<traccc::scalar> rel_shared_buffer{n_tracks,
                                                                   m_mr.main};
-    
+
+    // Fill the relative shared number of measurements vector
+    thrust::transform(thrust_policy, n_shared_buffer.ptr(),
+                      n_shared_buffer.ptr() + n_tracks, n_meas_buffer.ptr(),
+                      rel_shared_buffer.ptr(), devide_op{});
+    /*
+    // Sort the track id with rel_shared and pval to find the worst track fast
+    std::vector<unsigned int> sorted_ids = accepted_ids;
+
+    auto track_comparator = [&rel_shared, &pvals](unsigned int a,
+                                                  unsigned int b) {
+        if (rel_shared[a] != rel_shared[b]) {
+            return rel_shared[a] < rel_shared[b];
+        }
+        return pvals[a] > pvals[b];
+    };
+    std::sort(sorted_ids.begin(), sorted_ids.end(), track_comparator);
+    */
     // Create resolved candidate buffer
     track_candidate_container_types::buffer res_candidates_buffer{
         {10, m_mr.main},
