@@ -8,6 +8,8 @@
 // Project include(s).
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/utils.hpp"
+#include "./kernels/count_shared_measurements.cuh"
+#include "./kernels/fill_tracks_per_measurement.cuh"
 #include "./kernels/fill_vectors.cuh"
 #include "traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 
@@ -123,6 +125,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
     // Make accepted ids vector
     vecmem::data::vector_buffer<unsigned int> accepted_ids_buffer{
         n_tracks, m_mr.main, vecmem::data::buffer_type::resizable};
+    vecmem::device_vector<unsigned int> accepted_ids(accepted_ids_buffer);
+
 
     // counting_iterator: 0, 1, 2, ...
     auto cit_begin = thrust::counting_iterator<int>(0);
@@ -131,8 +135,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     // Copy the accepted ids from status vector
     auto it =
         thrust::copy_if(thrust_policy, cit_begin, cit_end, status_buffer.ptr(),
-                        accepted_ids_buffer.ptr(), thrust::identity<int>());
-    vecmem::device_vector<unsigned int> accepted_ids(accepted_ids_buffer);
+                        accepted_ids.begin(), thrust::identity<int>());
 
     unsigned int n_accepted =
         static_cast<unsigned int>(it - accepted_ids.begin());
@@ -185,7 +188,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     // Make the tracks per measurement vector
     vecmem::data::jagged_vector_buffer<std::size_t>
-        tracks_per_measurement_buffer(unique_meas_counts, m_mr.main, m_mr.host);
+        tracks_per_measurement_buffer(unique_meas_counts, m_mr.main, m_mr.host,
+                                      vecmem::data::buffer_type::resizable);
 
     // Fill tracks per measurement vector
     {
@@ -193,16 +197,16 @@ greedy_ambiguity_resolution_algorithm::operator()(
         const unsigned int nBlocks = (n_accepted + nThreads - 1) / nThreads;
 
         kernels::fill_tracks_per_measurement<<<nBlocks, nThreads, 0, stream>>>(
-            device::fill_tracks_per_measurement{
-                .accepted_view = accepted_buffer,
+            device::fill_tracks_per_measurement_payload{
+                .accepted_ids_view = accepted_ids_buffer,
                 .meas_ids_view = meas_ids_buffer,
                 .unique_meas_view = unique_meas_buffer,
-                .tracks_per_measurement_view = track_per_measurement_buffer});
+                .tracks_per_measurement_view = tracks_per_measurement_buffer});
     }
-
+    /*
     // Make shared number of measurements vector
-    vecmem::data::vector_buffer<unsigned int> shared_buffer{n_tracks,
-                                                            m_mr.main};
+    vecmem::data::vector_buffer<unsigned int> n_shared_buffer{n_tracks,
+                                                              m_mr.main};
 
     // Count shared number of measurements
     {
@@ -210,18 +214,18 @@ greedy_ambiguity_resolution_algorithm::operator()(
         const unsigned int nBlocks = (n_accepted + nThreads - 1) / nThreads;
 
         kernels::count_shared_measurements<<<nBlocks, nThreads, 0, stream>>>(
-            device::count_shared_measurements{
-                .accepted_view = accepted_buffer,
+            device::count_shared_measurements_payload{
+                .accepted_ids_view = accepted_ids_buffer,
                 .meas_ids_view = meas_ids_buffer,
                 .unique_meas_view = unique_meas_buffer,
-                .tracks_per_measurement_view = track_per_measurement_buffer,
-                .shared_view = shared_buffer});
+                .tracks_per_measurement_view = tracks_per_measurement_buffer,
+                .n_shared_view = n_shared_buffer});
     }
 
     // Make relative shared number of measurements vector
     vecmem::data::vector_buffer<traccc::scalar> rel_shared_buffer{n_tracks,
                                                                   m_mr.main};
-
+    */
     // Create resolved candidate buffer
     track_candidate_container_types::buffer res_candidates_buffer{
         {10, m_mr.main},

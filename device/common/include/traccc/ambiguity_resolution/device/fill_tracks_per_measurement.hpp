@@ -10,12 +10,14 @@
 // Local include(s).
 #include "traccc/device/global_index.hpp"
 
-// Project include(s).
-#include "traccc/edm/track_candidate.hpp"
+// Project include(s)
+#include "traccc/definitions/qualifiers.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/jagged_vector_view.hpp>
 #include <vecmem/containers/data/vector_view.hpp>
+#include <vecmem/containers/device_vector.hpp>
+#include <vecmem/containers/jagged_device_vector.hpp>
 
 namespace traccc::device {
 
@@ -26,7 +28,7 @@ struct fill_tracks_per_measurement_payload {
     /**
      * @brief View object to the accepted ids
      */
-    vecmem::data::vector_view<const unsigned int> accepted_view;
+    vecmem::data::vector_view<const unsigned int> accepted_ids_view;
 
     /**
      * @brief View object to the vector of measured ids per track
@@ -50,7 +52,8 @@ struct fill_tracks_per_measurement_payload {
 /// @param[inout] payload      The function call payload
 ///
 TRACCC_HOST_DEVICE inline void fill_tracks_per_measurement(
-    global_index_t globalIndex, const fill_tracks_per_measurement_payload& payload);
+    global_index_t globalIndex,
+    const fill_tracks_per_measurement_payload& payload);
 
 }  // namespace traccc::device
 

@@ -10,9 +10,14 @@
 // Local include(s).
 #include "traccc/device/global_index.hpp"
 
+// Project include(s)
+#include "traccc/definitions/qualifiers.hpp"
+
 // VecMem include(s).
 #include <vecmem/containers/data/jagged_vector_view.hpp>
 #include <vecmem/containers/data/vector_view.hpp>
+#include <vecmem/containers/device_vector.hpp>
+#include <vecmem/containers/jagged_device_vector.hpp>
 
 namespace traccc::device {
 
@@ -23,7 +28,7 @@ struct count_shared_measurements_payload {
     /**
      * @brief View object to the accepted ids
      */
-    vecmem::data::vector_view<const unsigned int> accepted_view;
+    vecmem::data::vector_view<const unsigned int> accepted_ids_view;
 
     /**
      * @brief View object to the vector of measured ids per track
@@ -38,12 +43,13 @@ struct count_shared_measurements_payload {
     /**
      * @brief View object to the tracks per measurement
      */
-    vecmem::data::jagged_vector_view<const std::size_t> tracks_per_measurement_view;
+    vecmem::data::jagged_vector_view<const std::size_t>
+        tracks_per_measurement_view;
 
     /**
      * @brief View object to the number of shared measurements
      */
-    vecmem::data::vector_view<unsigned int> shared_view;
+    vecmem::data::vector_view<unsigned int> n_shared_view;
 };
 
 /// Function used for fill_vectors

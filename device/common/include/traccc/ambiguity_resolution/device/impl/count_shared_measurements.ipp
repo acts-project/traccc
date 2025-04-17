@@ -7,15 +7,20 @@
 
 #pragma once
 
+// Thrust include(s).
+#include <thrust/binary_search.h>
+#include <thrust/execution_policy.h>
+
 namespace traccc::device {
 
-TRACCC_HOST_DEVICE inline void count(
+TRACCC_HOST_DEVICE inline void count_shared_measurements(
     const global_index_t globalIndex,
     const count_shared_measurements_payload& payload) {
 
-    vecmem::device_vector<const unsigned int> accepted(payload.accepted_view);
+    vecmem::device_vector<const unsigned int> accepted_ids(
+        payload.accepted_ids_view);
 
-    if (globalIndex >= accepted.size()) {
+    if (globalIndex >= accepted_ids.size()) {
         return;
     }
 
@@ -25,9 +30,19 @@ TRACCC_HOST_DEVICE inline void count(
         payload.unique_meas_view);
     vecmem::jagged_device_vector<const std::size_t> tracks_per_measurement(
         payload.tracks_per_measurement_view);
-    vecmem::device_vector<unsigned int> shared(shared_view);
+    vecmem::device_vector<unsigned int> n_shared(payload.n_shared_view);
 
-    const unsigned int id = accepted.at(globalIndex);
+    const unsigned int id = accepted_ids.at(globalIndex);
+
+    for (const auto& meas_id : meas_ids[id]) {
+        const auto it = thrust::lower_bound(thrust::seq, unique_meas.begin(),
+                                            unique_meas.end(), meas_id);
+        const std::size_t unique_meas_idx =
+            static_cast<std::size_t>(thrust::distance(unique_meas.begin(), it));
+        if (tracks_per_measurement.at(unique_meas_idx).size() > 1) {
+            n_shared.at(id)++;
+        }
+    }
 }
 
 }  // namespace traccc::device
