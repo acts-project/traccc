@@ -24,14 +24,14 @@ namespace traccc::device {
 struct fill_tracks_per_measurement_payload {
 
     /**
-     * @brief View object to the input track candidates
-     */
-    track_candidate_container_types::const_view track_candidates_view;
-
-    /**
      * @brief View object to the accepted ids
      */
     vecmem::data::vector_view<const unsigned int> accepted_view;
+
+    /**
+     * @brief View object to the vector of measured ids per track
+     */
+    vecmem::data::jagged_vector_view<const std::size_t> meas_ids_view;
 
     /**
      * @brief View object to the unique measurement ids

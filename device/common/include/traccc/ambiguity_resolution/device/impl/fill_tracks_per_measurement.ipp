@@ -19,8 +19,8 @@ TRACCC_HOST_DEVICE inline void fill_tracks_per_measurement(
         return;
     }
 
-    track_candidate_container_types::const_device track_candidates(
-        payload.track_candidates_view);
+    vecmem::jagged_device_vector<const std::size_t> meas_ids(
+        payload.meas_ids_view);
     vecmem::device_vector<const std::size_t> unique_meas(
         payload.unique_meas_view);
     vecmem::jagged_device_vector<std::size_t> tracks_per_measurement(
@@ -34,8 +34,8 @@ TRACCC_HOST_DEVICE inline void fill_tracks_per_measurement(
             thrust::lower_bound(thrust::seq, unique_meas.begin(),
                                 unique_meas.end(), cand.measurement_id);
         assert(it != unique_meas.end());
-        const std::size_t unique_meas_idx = static_cast<std::size_t>(
-            thrust::distance(unique_meas.begin(), it));
+        const std::size_t unique_meas_idx =
+            static_cast<std::size_t>(thrust::distance(unique_meas.begin(), it));
         tracks_per_measurement.at(unique_meas_idx).push_back(id);
     }
 }

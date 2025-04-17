@@ -194,8 +194,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
         kernels::fill_tracks_per_measurement<<<nBlocks, nThreads, 0, stream>>>(
             device::fill_tracks_per_measurement{
-                .track_candidates_view = track_candidates_view,
                 .accepted_view = accepted_buffer,
+                .meas_ids_view = meas_ids_buffer,
                 .unique_meas_view = unique_meas_buffer,
                 .tracks_per_measurement_view = track_per_measurement_buffer});
     }

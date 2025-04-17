@@ -19,7 +19,8 @@ TRACCC_HOST_DEVICE inline void count(
         return;
     }
 
-    vecmem::jagged_device_vector<std::size_t> meas_ids(payload.meas_ids_view);
+    vecmem::jagged_device_vector<const std::size_t> meas_ids(
+        payload.meas_ids_view);
     vecmem::device_vector<const std::size_t> unique_meas(
         payload.unique_meas_view);
     vecmem::jagged_device_vector<const std::size_t> tracks_per_measurement(
