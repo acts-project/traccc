@@ -90,10 +90,9 @@ greedy_ambiguity_resolution_algorithm::operator()(
     tracks_per_measurement.resize(unique_meas.size());
 
     for (const auto& i : accepted_ids) {
-        const auto& candidates = track_candidates.at(i).items;
-        for (const auto& cand : candidates) {
-            const auto it = std::lower_bound(
-                unique_meas.begin(), unique_meas.end(), cand.measurement_id);
+        for (const auto& meas_id : meas_ids[i]) {
+            const auto it = std::lower_bound(unique_meas.begin(),
+                                             unique_meas.end(), meas_id);
             assert(it != unique_meas.end());
             const std::size_t unique_meas_idx = static_cast<std::size_t>(
                 std::distance(unique_meas.begin(), it));
