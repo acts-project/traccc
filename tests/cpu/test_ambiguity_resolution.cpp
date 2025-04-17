@@ -71,6 +71,12 @@ TEST(AmbiguitySolverTests, GreedyResolverTest0) {
         auto res_trk_cands = resolution_alg(traccc::get_data(trk_cands));
         // All tracks are accepted as they have more than three measurements
         ASSERT_EQ(res_trk_cands.size(), 3u);
+        ASSERT_EQ(get_pattern(res_trk_cands, 0),
+                  std::vector<std::size_t>({1, 3, 5, 11}));
+        ASSERT_EQ(get_pattern(res_trk_cands, 1),
+                  std::vector<std::size_t>({6, 7, 8, 9, 10, 12}));
+        ASSERT_EQ(get_pattern(res_trk_cands, 2),
+                  std::vector<std::size_t>({2, 4, 13}));
     }
 
     {
