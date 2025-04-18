@@ -216,6 +216,10 @@ greedy_ambiguity_resolution_algorithm::operator()(
                                       vecmem::data::buffer_type::resizable);
     m_copy.get().setup(tracks_per_measurement_buffer)->ignore();
 
+    // Make the number of accetped tracks per measurement vector
+    vecmem::data::vector_buffer<unsigned int>
+        n_accepted_tracks_per_measurement_buffer(meas_count, m_mr.main);
+
     // Fill tracks per measurement vector
     {
         const unsigned int nThreads = m_warp_size * 2;
@@ -226,7 +230,9 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .accepted_ids_view = accepted_ids_buffer,
                 .meas_ids_view = meas_ids_buffer,
                 .unique_meas_view = unique_meas_buffer,
-                .tracks_per_measurement_view = tracks_per_measurement_buffer});
+                .tracks_per_measurement_view = tracks_per_measurement_buffer,
+                .n_accepted_tracks_per_measurement_view =
+                    n_accepted_tracks_per_measurement_buffer});
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
         m_stream.get().synchronize();
