@@ -11,7 +11,7 @@
 #include "./kernels/count_shared_measurements.cuh"
 #include "./kernels/fill_tracks_per_measurement.cuh"
 #include "./kernels/fill_vectors.cuh"
-#include "./kernels/update_tracks_per_measurement.cuh"
+#include "./kernels/update_vectors.cuh"
 #include "traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 
 // Thrust include(s).
@@ -332,25 +332,33 @@ greedy_ambiguity_resolution_algorithm::operator()(
             const unsigned int nBlocks =
                 (meas_sizes[worst_track] + nThreads - 1) / nThreads;
 
-            kernels::
-                update_tracks_per_measurement<<<nBlocks, nThreads, 0, stream>>>(
-                    device::update_tracks_per_measurement_payload{
-                        .worst_track = worst_track,
-                        .meas_ids_view = meas_ids_buffer,
-                        .unique_meas_view = unique_meas_buffer,
-                        .n_accepted_tracks_per_measurement_view =
-                            n_accepted_tracks_per_measurement_buffer});
+            kernels::update_vectors<<<nBlocks, nThreads, 0, stream>>>(
+                device::update_vectors_payload{
+                    .worst_track = worst_track,
+                    .meas_ids_view = meas_ids_buffer,
+                    .n_meas_view = n_meas_buffer,
+                    .unique_meas_view = unique_meas_buffer,
+                    .tracks_per_measurement_view =
+                        tracks_per_measurement_buffer,
+                    .n_accepted_tracks_per_measurement_view =
+                        n_accepted_tracks_per_measurement_buffer,
+                    .n_shared_view = n_shared_buffer,
+                    .rel_shared_view = rel_shared_buffer});
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
             m_stream.get().synchronize();
         }
 
-        // Update the number of shared measurement
+        // Keep the sorted ids vector sorted
+        thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
+                     sorted_ids_buffer.ptr() + n_accepted, trk_comp);
     }
+
+    //std::vector<std::size_t> res_cands_size;
 
     // Create resolved candidate buffer
     track_candidate_container_types::buffer res_candidates_buffer{
-        {10, m_mr.main},
+        {n_accepted, m_mr.main},
         {std::vector<std::size_t>(10, 10), m_mr.main, m_mr.host,
          vecmem::data::buffer_type::resizable}};
 

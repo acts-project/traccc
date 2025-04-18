@@ -13,16 +13,25 @@
 
 namespace traccc::device {
 
-TRACCC_HOST_DEVICE inline void update_tracks_per_measurement(
-    const global_index_t globalIndex,
-    const update_tracks_per_measurement_payload& payload) {
+TRACCC_HOST_DEVICE inline void update_vectors(
+    const global_index_t globalIndex, const update_vectors_payload& payload) {
 
     vecmem::jagged_device_vector<const std::size_t> meas_ids(
         payload.meas_ids_view);
+
+    if (globalIndex >= meas_ids[payload.worst_track].size()) {
+        return;
+    }
+
+    vecmem::device_vector<const std::size_t> n_meas(payload.n_meas_view);
     vecmem::device_vector<const std::size_t> unique_meas(
         payload.unique_meas_view);
+    vecmem::jagged_device_vector<const std::size_t> tracks_per_measurement(
+        payload.tracks_per_measurement_view);
     vecmem::device_vector<unsigned int> n_accepted_tracks_per_measurement(
         payload.n_accepted_tracks_per_measurement_view);
+    vecmem::device_vector<unsigned int> n_shared(payload.n_shared_view);
+    vecmem::device_vector<traccc::scalar> rel_shared(payload.rel_shared_view);
 
     const auto id = meas_ids[payload.worst_track][globalIndex];
 
@@ -34,7 +43,17 @@ TRACCC_HOST_DEVICE inline void update_tracks_per_measurement(
     vecmem::device_atomic_ref<unsigned int> n_accepted(
         n_accepted_tracks_per_measurement.at(
             static_cast<unsigned int>(unique_meas_idx)));
-    n_accepted.fetch_add(-1u);
+    const unsigned int N = n_accepted.fetch_add(-1u);
+
+    // If there is only one track associated with measurement, the
+    // number of shared measurement can be reduced by one
+    const auto tracks = tracks_per_measurement[id];
+    if (N == 0) {
+        const auto tid = static_cast<unsigned int>(tracks[0]);
+        n_shared[tid]--;
+        rel_shared[tid] = static_cast<traccc::scalar>(n_shared[tid]) /
+                          static_cast<traccc::scalar>(n_meas[tid]);
+    }
 }
 
 }  // namespace traccc::device
