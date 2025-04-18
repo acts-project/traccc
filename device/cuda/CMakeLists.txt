@@ -77,6 +77,8 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/ambiguity_resolution/kernels/fill_tracks_per_measurement.cuh"
   "src/ambiguity_resolution/kernels/fill_vectors.cu"
   "src/ambiguity_resolution/kernels/fill_vectors.cuh"
+  "src/ambiguity_resolution/kernels/update_tracks_per_measurement.cu"
+  "src/ambiguity_resolution/kernels/update_tracks_per_measurement.cuh"  
   # Fitting
   "include/traccc/cuda/fitting/fitting_algorithm.hpp"
   "src/fitting/fitting_algorithm.cu")

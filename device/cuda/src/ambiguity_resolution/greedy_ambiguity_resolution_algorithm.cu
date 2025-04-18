@@ -11,6 +11,7 @@
 #include "./kernels/count_shared_measurements.cuh"
 #include "./kernels/fill_tracks_per_measurement.cuh"
 #include "./kernels/fill_vectors.cuh"
+#include "./kernels/update_tracks_per_measurement.cuh"
 #include "traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 
 // Thrust include(s).
@@ -324,6 +325,27 @@ greedy_ambiguity_resolution_algorithm::operator()(
         // Remove the worst (rejected) id from the sorted ids
         n_accepted--;
         sorted_ids.resize(n_accepted);
+
+        // Update tracks per measurement
+        {
+            const unsigned int nThreads = m_warp_size * 2;
+            const unsigned int nBlocks =
+                (meas_sizes[worst_track] + nThreads - 1) / nThreads;
+
+            kernels::
+                update_tracks_per_measurement<<<nBlocks, nThreads, 0, stream>>>(
+                    device::update_tracks_per_measurement_payload{
+                        .worst_track = worst_track,
+                        .meas_ids_view = meas_ids_buffer,
+                        .unique_meas_view = unique_meas_buffer,
+                        .n_accepted_tracks_per_measurement_view =
+                            n_accepted_tracks_per_measurement_buffer});
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+            m_stream.get().synchronize();
+        }
+
+        // Update the number of shared measurement
     }
 
     // Create resolved candidate buffer
