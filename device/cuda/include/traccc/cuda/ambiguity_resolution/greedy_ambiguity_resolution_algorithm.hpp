@@ -7,6 +7,9 @@
 
 #pragma once
 
+// Local include(s).
+#include "traccc/cuda/utils/stream.hpp"
+
 // Project include(s).
 #include "traccc/ambiguity_resolution/ambiguity_resolution_config.hpp"
 #include "traccc/edm/track_candidate.hpp"
@@ -14,13 +17,16 @@
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
 
-namespace traccc::host {
+// VecMem include(s).
+#include <vecmem/utils/copy.hpp>
+
+namespace traccc::cuda {
 
 /// Evicts tracks that seem to be duplicates or fakes. This algorithm takes a
 /// greedy approach in the sense that it will remove the track which looks "most
 /// duplicate/fake"
 class greedy_ambiguity_resolution_algorithm
-    : public algorithm<track_candidate_container_types::host(
+    : public algorithm<track_candidate_container_types::buffer(
           const typename track_candidate_container_types::const_view&)>,
       public messaging {
 
@@ -29,19 +35,23 @@ class greedy_ambiguity_resolution_algorithm
 
     /// Constructor for the greedy ambiguity resolution algorithm
     ///
-    /// @param cfg  Configuration object
+    /// @param cfg The configuration
+    /// @param mr The memory resource(s) to use in the algorithm
+    /// @param copy The copy object to use for copying data between device
+    ///             and host memory blocks
+    /// @param str The CUDA stream to perform the operations in
+    ///
     greedy_ambiguity_resolution_algorithm(
-        const config_type& cfg, traccc::memory_resource& mr,
-        std::unique_ptr<const Logger> logger = getDummyLogger().clone())
-        : messaging(std::move(logger)), m_config{cfg}, m_mr{mr} {}
+        const config_type& cfg, traccc::memory_resource& mr, vecmem::copy& copy,
+        stream& str,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Run the algorithm
     ///
-    /// @param track_candidates the container of found patterns
+    /// @param track_candidates_view the container view of found patterns
     /// @return the container without ambiguous tracks
-    track_candidate_container_types::host operator()(
-        const track_candidate_container_types::const_view&
-            track_candidates_view) const override;
+    output_type operator()(const track_candidate_container_types::const_view&
+                               track_candidates_view) const override;
 
     /// Get configuration
     config_type& get_config() { return m_config; }
@@ -51,6 +61,12 @@ class greedy_ambiguity_resolution_algorithm
     config_type m_config;
     /// The memory resource to use
     traccc::memory_resource m_mr;
+    /// The copy object to use
+    std::reference_wrapper<vecmem::copy> m_copy;
+    /// The CUDA stream to use
+    std::reference_wrapper<stream> m_stream;
+    /// Warp size of the GPU being used
+    unsigned int m_warp_size;
 };
 
-}  // namespace traccc::host
+}  // namespace traccc::cuda
