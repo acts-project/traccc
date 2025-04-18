@@ -46,6 +46,11 @@ struct fill_tracks_per_measurement_payload {
     vecmem::data::jagged_vector_view<std::size_t> tracks_per_measurement_view;
 
     /**
+     * @brief View object to the track status per measurement
+     */
+    vecmem::data::jagged_vector_view<int> track_status_per_measurement_view;
+
+    /**
      * @brief View object to the number of accepted tracks per measurement
      */
     vecmem::data::vector_view<unsigned int>

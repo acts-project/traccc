@@ -30,6 +30,8 @@ TRACCC_HOST_DEVICE inline void fill_tracks_per_measurement(
         payload.unique_meas_view);
     vecmem::jagged_device_vector<std::size_t> tracks_per_measurement(
         payload.tracks_per_measurement_view);
+    vecmem::jagged_device_vector<int> track_status_per_measurement(
+        payload.track_status_per_measurement_view);
     vecmem::device_vector<unsigned int> n_accepted_tracks_per_measurement(
         payload.n_accepted_tracks_per_measurement_view);
 
@@ -44,6 +46,7 @@ TRACCC_HOST_DEVICE inline void fill_tracks_per_measurement(
         printf("%lu %d %d  %d \n", unique_meas_idx, id, accepted_ids.size(),
                globalIndex);
         tracks_per_measurement.at(unique_meas_idx).push_back(id);
+        track_status_per_measurement.at(unique_meas_idx).push_back(1);
 
         vecmem::device_atomic_ref<unsigned int> n_accepted(
             n_accepted_tracks_per_measurement.at(

@@ -51,6 +51,21 @@ struct track_comparator {
     }
 };
 
+struct shared_count_comparator {
+    const unsigned int* n_shared;
+
+    TRACCC_HOST_DEVICE
+    shared_count_comparator(const unsigned int* n_shared_)
+        : n_shared(n_shared_) {}
+
+    TRACCC_HOST_DEVICE
+    bool operator()(unsigned int a, unsigned int b) const {
+        printf("(%d, %d) \n", n_shared[a], n_shared[b]);
+
+        return n_shared[a] < n_shared[b];
+    }
+};
+
 greedy_ambiguity_resolution_algorithm::greedy_ambiguity_resolution_algorithm(
     const config_type& cfg, traccc::memory_resource& mr, vecmem::copy& copy,
     stream& str, std::unique_ptr<const Logger> logger)
@@ -218,6 +233,12 @@ greedy_ambiguity_resolution_algorithm::operator()(
                                       vecmem::data::buffer_type::resizable);
     m_copy.get().setup(tracks_per_measurement_buffer)->ignore();
 
+    // Make the track status per measurement vector
+    vecmem::data::jagged_vector_buffer<int> track_status_per_measurement_buffer(
+        unique_meas_counts, m_mr.main, m_mr.host,
+        vecmem::data::buffer_type::resizable);
+    m_copy.get().setup(track_status_per_measurement_buffer)->ignore();
+
     // Make the number of accetped tracks per measurement vector
     vecmem::data::vector_buffer<unsigned int>
         n_accepted_tracks_per_measurement_buffer(meas_count, m_mr.main);
@@ -233,6 +254,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .meas_ids_view = meas_ids_buffer,
                 .unique_meas_view = unique_meas_buffer,
                 .tracks_per_measurement_view = tracks_per_measurement_buffer,
+                .track_status_per_measurement_view =
+                    track_status_per_measurement_buffer,
                 .n_accepted_tracks_per_measurement_view =
                     n_accepted_tracks_per_measurement_buffer});
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
@@ -243,6 +266,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     // Make shared number of measurements vector
     vecmem::data::vector_buffer<unsigned int> n_shared_buffer{n_tracks,
                                                               m_mr.main};
+    m_copy.get().setup(n_shared_buffer)->ignore();
 
     // Count shared number of measurements
     {
@@ -293,14 +317,51 @@ greedy_ambiguity_resolution_algorithm::operator()(
             break;
         }
 
+        /*
         auto max_it = thrust::max_element(thrust_policy, n_shared_buffer.ptr(),
                                           n_shared_buffer.ptr() + n_tracks);
 
         const unsigned int max_shared = *max_it;
+        */
 
-        printf("Iteration: %d \n", iter);
-        printf("Max shared: %d \n", max_shared);
-        printf("N accepted: %d \n", n_accepted);
+        shared_count_comparator sh_comp(n_shared_buffer.ptr());
+
+        // TODO: Write kernel instead
+        auto max_it =
+            thrust::max_element(thrust_policy, sorted_ids_buffer.ptr(),
+                                sorted_ids_buffer.ptr() + n_accepted, sh_comp);
+
+        // Make a host vector for number of shared measurement
+        std::vector<unsigned int> n_shared_host;
+        m_copy
+            .get()(n_shared_buffer, n_shared_host,
+                   vecmem::copy::type::device_to_host)
+            ->wait();
+
+        // print sorted ids
+        std::vector<unsigned int> sorted_ids_host;
+        m_copy
+            .get()(sorted_ids_buffer, sorted_ids_host,
+                   vecmem::copy::type::device_to_host)
+            ->wait();
+
+        printf("sorted ");
+        for (unsigned int i = 0; i < n_accepted; i++) {
+            printf("%d ", sorted_ids_host[i]);
+        }
+        printf("\n");
+
+        // Print n shared host
+        printf("shared ");
+        for (unsigned int i = 0; i < n_tracks; i++) {
+            printf("%d ", n_shared_host[i]);
+        }
+        printf("\n");
+
+        unsigned int max_shared = n_shared_host[sorted_ids[*max_it]];
+
+        printf("Iteration: %d Max it: %d,  Max shared: %d N accepted: %d \n",
+               iter, *max_it, max_shared, n_accepted);
 
         // Terminate if the max shared measurements is less than the cut value
         if (max_shared < m_config.max_shared_meas) {
@@ -327,7 +388,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
         n_accepted--;
         sorted_ids.resize(n_accepted);
 
-        // Update tracks per measurement
+        // Update vectors after the removal
         {
             const unsigned int nThreads = m_warp_size * 2;
             const unsigned int nBlocks =
@@ -341,6 +402,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
                     .unique_meas_view = unique_meas_buffer,
                     .tracks_per_measurement_view =
                         tracks_per_measurement_buffer,
+                    .track_status_per_measurement_view =
+                        track_status_per_measurement_buffer,
                     .n_accepted_tracks_per_measurement_view =
                         n_accepted_tracks_per_measurement_buffer,
                     .n_shared_view = n_shared_buffer,
@@ -349,6 +412,11 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
             m_stream.get().synchronize();
         }
+
+        // Update the relative shared number of measurements vector
+        thrust::transform(thrust_policy, n_shared_buffer.ptr(),
+                          n_shared_buffer.ptr() + n_tracks, n_meas_buffer.ptr(),
+                          rel_shared_buffer.ptr(), devide_op{});
 
         // Keep the sorted ids vector sorted
         thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
