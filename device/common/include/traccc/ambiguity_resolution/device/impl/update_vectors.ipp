@@ -52,8 +52,6 @@ TRACCC_HOST_DEVICE inline void update_vectors(
     // number of shared measurement can be reduced by one
     const auto& tracks = tracks_per_measurement[unique_meas_idx];
     auto track_status = track_status_per_measurement[unique_meas_idx];
-    printf("n accepted: %d meas id: %lu tid: %d \n", N_A, id,
-           static_cast<unsigned int>(tracks[0]));
 
     const auto it2 = thrust::find(thrust::seq, tracks.begin(), tracks.end(),
                                   payload.worst_track);
@@ -71,8 +69,6 @@ TRACCC_HOST_DEVICE inline void update_vectors(
         const unsigned int N_S =
             vecmem::device_atomic_ref<unsigned int>(n_shared.at(tid))
                 .fetch_add(-1u);
-        printf("n s: %d meas id: %lu tid: %d \n", N_S, id,
-               static_cast<unsigned int>(tracks[0]));
 
         rel_shared[tid] = static_cast<traccc::scalar>(n_shared[tid]) /
                           static_cast<traccc::scalar>(n_meas[tid]);

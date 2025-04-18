@@ -61,8 +61,6 @@ struct shared_count_comparator {
 
     TRACCC_HOST_DEVICE
     bool operator()(unsigned int a, unsigned int b) const {
-        printf("(%d, %d) \n", n_shared[a], n_shared[b]);
-
         return n_shared[a] < n_shared[b];
     }
 };
@@ -96,8 +94,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
     const track_candidate_container_types::const_view::header_vector::size_type
         n_tracks = m_copy.get().get_size(track_candidates_view.headers);
 
-    printf("n tracks: %d \n", n_tracks);
-
     if (n_tracks == 0) {
         return track_candidate_container_types::buffer{
             {0, m_mr.main},
@@ -111,7 +107,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
     // Status (1 = Accept, 0 = Reject)
     vecmem::data::vector_buffer<int> status_buffer{n_tracks, m_mr.main};
 
-    printf("status size %d \n", m_copy.get().get_size(status_buffer));
     vecmem::device_vector<int> status_device(status_buffer);
     thrust::fill(thrust_policy, status_device.begin(), status_device.end(), 1);
 
@@ -129,18 +124,12 @@ greedy_ambiguity_resolution_algorithm::operator()(
                    meas_sizes.begin(),
                    [this](const jagged_buffer_size_type sz) { return sz; });
 
-    for (const auto& e : meas_sizes) {
-        printf("meas size %d \n", e);
-    }
-
     // Make measurement ID, pval and n_measurement vector
     vecmem::data::jagged_vector_buffer<std::size_t> meas_ids_buffer{
         meas_sizes, m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable};
     m_copy.get().setup(meas_ids_buffer)->ignore();
 
     const auto n_cands_total = track_candidates.total_size();
-
-    printf("n cands total: %d \n", n_cands_total);
 
     vecmem::data::vector_buffer<std::size_t> flat_meas_ids_buffer{
         n_cands_total, m_mr.main, vecmem::data::buffer_type::resizable};
@@ -169,8 +158,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
     unsigned int n_accepted = static_cast<unsigned int>(thrust::count(
         thrust_policy, status_buffer.ptr(), status_buffer.ptr() + n_tracks, 1));
 
-    printf("number of accepted %d \n", n_accepted);
-
     // Make accepted ids vector
     vecmem::data::vector_buffer<unsigned int> pre_accepted_ids_buffer{
         n_accepted, m_mr.main, vecmem::data::buffer_type::resizable};
@@ -194,7 +181,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
         thrust::unique_count(thrust_policy, flat_meas_ids_buffer.ptr(),
                              flat_meas_ids_buffer.ptr() + n_cands_total,
                              thrust::equal_to<int>()));
-    printf("meas count %d \n", meas_count);
 
     // Unique measurement ids
     vecmem::data::vector_buffer<std::size_t> unique_meas_buffer{meas_count,
@@ -223,10 +209,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
         .get()(unique_meas_counts_buffer, unique_meas_counts,
                vecmem::copy::type::device_to_host)
         ->wait();
-
-    for (const auto& e : unique_meas_counts) {
-        printf("unique count %lu \n", e);
-    }
 
     // Make the tracks per measurement vector
     vecmem::data::jagged_vector_buffer<std::size_t>
@@ -295,34 +277,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
                       n_shared_buffer.ptr() + n_tracks, n_meas_buffer.ptr(),
                       rel_shared_buffer.ptr(), devide_op{});
 
-    //// Delete me
-
-    // print sorted ids
-    std::vector<traccc::scalar> pvals_host;
-    m_copy.get()(pvals_buffer, pvals_host, vecmem::copy::type::device_to_host)
-        ->wait();
-
-    printf("pvals ");
-    for (unsigned int i = 0; i < n_tracks; i++) {
-        printf("%f ", pvals_host[i]);
-    }
-    printf("\n");
-
-    // print sorted ids
-    std::vector<traccc::scalar> rel_shared_host;
-    m_copy
-        .get()(rel_shared_buffer, rel_shared_host,
-               vecmem::copy::type::device_to_host)
-        ->wait();
-
-    printf("rel shared ");
-    for (unsigned int i = 0; i < n_tracks; i++) {
-        printf("%f ", rel_shared_host[i]);
-    }
-    printf("\n");
-
-    //// Delete me
-
     // Make sorted ids vector
     vecmem::data::vector_buffer<unsigned int> sorted_ids_buffer{
         n_accepted, m_mr.main, vecmem::data::buffer_type::resizable};
@@ -346,13 +300,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
             break;
         }
 
-        /*
-        auto max_it = thrust::max_element(thrust_policy, n_shared_buffer.ptr(),
-                                          n_shared_buffer.ptr() + n_tracks);
-
-        const unsigned int max_shared = *max_it;
-        */
-
         shared_count_comparator sh_comp(n_shared_buffer.ptr());
 
         // TODO: Write kernel instead
@@ -367,30 +314,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                    vecmem::copy::type::device_to_host)
             ->wait();
 
-        // print sorted ids
-        std::vector<unsigned int> sorted_ids_host;
-        m_copy
-            .get()(sorted_ids_buffer, sorted_ids_host,
-                   vecmem::copy::type::device_to_host)
-            ->wait();
-
-        printf("sorted ");
-        for (unsigned int i = 0; i < n_accepted; i++) {
-            printf("%d ", sorted_ids_host[i]);
-        }
-        printf("\n");
-
-        // Print n shared host
-        printf("shared ");
-        for (unsigned int i = 0; i < n_tracks; i++) {
-            printf("%d ", n_shared_host[i]);
-        }
-        printf("\n");
-
         unsigned int max_shared = n_shared_host[*max_it];
-
-        printf("Iteration: %d Max it: %d,  Max shared: %d N accepted: %d \n",
-               iter, *max_it, max_shared, n_accepted);
 
         // Terminate if the max shared measurements is less than the cut value
         if (max_shared < m_config.max_shared_meas) {
@@ -401,8 +325,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
         TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
             &worst_track, sorted_ids_buffer.ptr() + n_accepted - 1,
             sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
-
-        printf("worst track: %d \n", worst_track);
 
         int reject = 0;
         TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
@@ -442,12 +364,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
             m_stream.get().synchronize();
         }
 
-        /*
-        // Update the relative shared number of measurements vector
-        thrust::transform(thrust_policy, n_shared_buffer.ptr(),
-                          n_shared_buffer.ptr() + n_tracks, n_meas_buffer.ptr(),
-                          rel_shared_buffer.ptr(), devide_op{});
-        */
         // Keep the sorted ids vector sorted
         thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
                      sorted_ids_buffer.ptr() + n_accepted, trk_comp);
@@ -461,14 +377,11 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     std::vector<std::size_t> res_cands_size;
 
-    printf("Final n accepted: %d \n", n_accepted);
-
     res_cands_size.reserve(n_accepted);
     for (unsigned int i = 0; i < n_accepted; i++) {
         const auto tid = sorted_ids[i];
         const auto n_meas = (meas_ids_buffer.ptr() + tid)->size();
         res_cands_size.push_back(n_meas);
-        printf("meas size: %d \n", n_meas);
     }
 
     // Create resolved candidate buffer

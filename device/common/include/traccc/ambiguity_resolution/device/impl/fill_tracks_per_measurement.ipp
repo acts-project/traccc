@@ -43,8 +43,6 @@ TRACCC_HOST_DEVICE inline void fill_tracks_per_measurement(
         const std::size_t unique_meas_idx =
             static_cast<std::size_t>(thrust::distance(unique_meas.begin(), it));
 
-        printf("%lu %d %d  %d \n", unique_meas_idx, id, accepted_ids.size(),
-               globalIndex);
         tracks_per_measurement.at(unique_meas_idx).push_back(id);
         track_status_per_measurement.at(unique_meas_idx).push_back(1);
 

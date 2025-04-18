@@ -42,8 +42,6 @@ TRACCC_HOST_DEVICE inline void fill_vectors(
         }
         n_meas.at(globalIndex) = n_cands;
     }
-
-    printf("globalIndex %d status %d \n", globalIndex, status.at(globalIndex));
 }
 
 }  // namespace traccc::device
