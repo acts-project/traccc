@@ -108,10 +108,10 @@ TEST_P(CKF_navigation_test, toy_detector) {
 
     // Specific config for the navigation test
     prop_cfg.navigation.min_mask_tolerance = std::get<1>(GetParam());
-    prop_cfg.navigation.mask_tolerance_scalor = 5.f;
+    prop_cfg.navigation.mask_tolerance_scalor = 1.f;
     prop_cfg.navigation.overstep_tolerance = -1000.f * traccc::unit<float>::um;
     prop_cfg.navigation.max_mask_tolerance =
-        std::get<1>(GetParam()) + 7.f * traccc::unit<float>::mm;
+        std::get<1>(GetParam()) + 3.f * traccc::unit<float>::mm;
 
     // Collect data for comparison
 
@@ -205,7 +205,7 @@ TEST_P(CKF_navigation_test, toy_detector) {
     interactor_state.do_energy_loss = std::get<7>(GetParam());
 
     {
-        /*std::cout << "-----------------------------------"
+        std::cout << "-----------------------------------"
                   << "\nFORWARD - No KF" << std::endl
                   << "-----------------------------------\n";
 
@@ -329,7 +329,7 @@ TEST_P(CKF_navigation_test, toy_detector) {
                         n_tracks <=
                     std::get<3>(GetParam()));
         EXPECT_TRUE(trk_stats_bw.n_max_missed_per_trk <=
-                    std::get<4>(GetParam()));*/
+                    std::get<4>(GetParam()));
     }
 
     {

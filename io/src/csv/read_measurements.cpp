@@ -18,7 +18,7 @@ namespace traccc::io::csv {
 void read_measurements(measurement_collection_types::host& measurements,
                        std::string_view filename,
                        const traccc::default_detector::host* detector,
-                       const bool do_sort) {
+                       const bool do_sort, const bool use_acts_id) {
 
     // Construct the measurement reader object.
     auto reader = make_measurement_reader(filename);
@@ -26,7 +26,7 @@ void read_measurements(measurement_collection_types::host& measurements,
     // For Acts data, build a map of acts->detray geometry IDs
     std::map<geometry_id, geometry_id> acts_to_detray_id;
 
-    if (detector) {
+    if (detector && use_acts_id) {
         for (const auto& surface_desc : detector->surfaces()) {
             acts_to_detray_id[surface_desc.source] =
                 surface_desc.barcode().value();
@@ -38,7 +38,7 @@ void read_measurements(measurement_collection_types::host& measurements,
     while (reader.read(iomeas)) {
 
         traccc::geometry_id geom_id = iomeas.geometry_id;
-        if (detector) {
+        if (detector && use_acts_id) {
             geom_id = acts_to_detray_id.at(iomeas.geometry_id);
         }
 

@@ -26,6 +26,7 @@ namespace traccc::io::csv {
 void read_measurements(measurement_collection_types::host& measurements,
                        std::string_view filename,
                        const traccc::default_detector::host* detector = nullptr,
-                       const bool do_sort = true);
+                       const bool do_sort = true,
+                       const bool use_acts_id = false);
 
 }  // namespace traccc::io::csv

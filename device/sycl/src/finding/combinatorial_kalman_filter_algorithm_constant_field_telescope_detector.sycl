@@ -36,7 +36,7 @@ combinatorial_kalman_filter_algorithm::operator()(
         detray::rk_stepper<detray::bfield::const_field_t<scalar_type>::view_t,
                            telescope_detector::device::algebra_type,
                            detray::constrained_step<scalar_type>>,
-        detray::navigator<const telescope_detector::device>,
+        detray::navigator<const telescope_detector::device, 2u>,
         kernels::ckf_constant_field_telescope_detector>(
         det, field, measurements, seeds, m_config, m_mr, m_copy,
         details::get_queue(m_queue));

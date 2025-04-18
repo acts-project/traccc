@@ -6,6 +6,7 @@
  */
 
 // Traccc core include(s).
+#include "traccc/definitions/primitives.hpp"
 #include "traccc/geometry/detector.hpp"
 
 // Traccc algorithm include(s).
@@ -35,6 +36,7 @@
 #include <benchmark/benchmark.h>
 
 BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
+    using namespace traccc;
 
     // VecMem copy object
     vecmem::copy copy;
@@ -46,7 +48,7 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
     host_detector_type det{host_mr};
     traccc::io::read_detector(
         det, host_mr, sim_dir + "toy_detector_geometry.json",
-        sim_dir + "toy_detector_homogeneous_material.json",
+        // sim_dir + "toy_detector_homogeneous_material.json",
         sim_dir + "toy_detector_surface_grids.json");
 
     // B field
@@ -63,8 +65,8 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
 
     for (auto _ : state) {
 
-// Iterate over events
-#pragma omp parallel for schedule(dynamic)
+        // Iterate over events
+        //#pragma omp parallel for schedule(dynamic)
         for (unsigned int i_evt = 0; i_evt < n_events; i_evt++) {
 
             auto& spacepoints_per_event = spacepoints[i_evt];
@@ -78,6 +80,9 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
                              vecmem::get_data(spacepoints_per_event),
                              vecmem::get_data(seeds), B);
 
+            std::sort(measurements_per_event.begin(),
+                      measurements_per_event.end(), measurement_sort_comp());
+
             // Track finding with CKF
             auto track_candidates = host_finding(
                 det, field, vecmem::get_data(measurements_per_event),
@@ -86,6 +91,12 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
             // Track fitting with KF
             auto track_states =
                 host_fitting(det, field, traccc::get_data(track_candidates));
+
+            std::cout << "EVENT " << i_evt << ":\nSeeds :" << params.size()
+                      << "\nFound tracks: " << track_candidates.size()
+                      << "/5000"
+                      << "\nFitted tracks: " << track_candidates.size()
+                      << "/5000" << std::endl;
         }
     }
 

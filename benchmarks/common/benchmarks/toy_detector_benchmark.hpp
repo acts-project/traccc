@@ -38,8 +38,8 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
     // VecMem memory resource(s)
     vecmem::host_memory_resource host_mr;
 
-    static const int n_events = 2u;
-    static const int n_tracks = 5000u;
+    static const int n_events = 1u;
+    static const int n_tracks = 1000u;
 
     std::vector<traccc::edm::spacepoint_collection::host> spacepoints;
     std::vector<traccc::measurement_collection_types::host> measurements;
@@ -79,7 +79,10 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
         // Apply correct propagation config
         apply_propagation_config(finding_cfg.propagation);
         apply_propagation_config(fitting_cfg.propagation);
-        fitting_cfg.covariance_inflation_factor = 1.f;
+        // fitting_cfg.covariance_inflation_factor = 1.f;
+
+        finding_cfg.max_num_branches_per_seed = 0;
+        finding_cfg.max_num_branches_per_surface = 0;
 
         // Use deterministic random number generator for testing
         using uniform_gen_t = detray::detail::random_numbers<
@@ -99,7 +102,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
         gen_cfg.n_tracks(n_tracks);
         gen_cfg.phi_range(phi_range);
         gen_cfg.eta_range(eta_range);
-        gen_cfg.mom_range(mom_range);
+        gen_cfg.pT_range(mom_range);
         generator_type generator(gen_cfg);
 
         // Smearing value for measurements
@@ -125,7 +128,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
             std::move(generator), std::move(smearer_writer_cfg), full_path);
 
         // Same propagation configuration for sim and reco
-        apply_propagation_config(sim.get_config().propagation);
+        // apply_propagation_config(sim.get_config().propagation);
         sim.get_config().propagation.navigation.search_window = {3, 3};
         // Set constrained step size to 1 mm
         sim.get_config().propagation.stepping.step_constraint =
@@ -149,12 +152,14 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
         detray::toy_det_config<scalar_type> toy_cfg{};
         toy_cfg.n_brl_layers(4u).n_edc_layers(7u).do_check(false);
 
+        // @TODO: Increase the material budget again
+        toy_cfg.module_mat_thickness(0.0001f * traccc::unit<scalar_type>::mm);
+
         return toy_cfg;
     }
 
     void apply_propagation_config(detray::propagation::config& cfg) const {
         // Configure the propagation for the toy detector
-        // @NOTE: currently Non-{0,0} search windows cause an error during CKF
         cfg.navigation.search_window = {3, 3};
         cfg.navigation.overstep_tolerance = -1000.f * traccc::unit<float>::um;
         cfg.navigation.min_mask_tolerance = 1e-2f * traccc::unit<float>::mm;

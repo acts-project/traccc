@@ -15,6 +15,8 @@
 #include <detray/propagator/propagator.hpp>
 #include <detray/propagator/rk_stepper.hpp>
 
+#include "detray/test/utils/inspectors.hpp"
+
 namespace traccc::host {
 
 combinatorial_kalman_filter_algorithm::output_type
@@ -31,8 +33,15 @@ combinatorial_kalman_filter_algorithm::operator()(
     return details::find_tracks<
         detray::rk_stepper<detray::bfield::const_field_t<scalar_type>::view_t,
                            telescope_detector::host::algebra_type,
-                           detray::constrained_step<scalar_type>>,
-        detray::navigator<const telescope_detector::host>>(
+                           detray::constrained_step<scalar_type>,
+                           detray::stepper_rk_policy<scalar_type>,
+                           detray::stepping::print_inspector>,
+        detray::navigator<const telescope_detector::host,
+                          detray::navigation::default_cache_size,
+                          detray::navigation::print_inspector,
+                          detray::intersection2D<
+                              typename telescope_detector::host::surface_type,
+                              telescope_detector::host::algebra_type, true>>>(
         det, field, measurements, seeds, m_config);
 }
 

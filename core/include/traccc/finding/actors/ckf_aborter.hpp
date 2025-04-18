@@ -66,7 +66,7 @@ struct ckf_aborter : detray::actor {
         const scalar q{stepping.particle_hypothesis().charge()};
         const scalar mag{track.pT(q)};
 
-        if (mag <= 10.f * traccc::unit<scalar>::MeV) {
+        if (mag <= 500.f * traccc::unit<scalar>::MeV) {
             // Stop navigation
             prop_state._heartbeat &=
                 navigation.abort("CKF: Below minimum momentum");

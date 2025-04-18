@@ -190,27 +190,22 @@ struct two_filters_smoother {
         // Return false if track is parallel to z-axis or phi is not finite
         const scalar theta = bound_params.theta();
         if (theta <= 0.f || theta >= constant<traccc::scalar>::pi) {
-            std::cout << "Theta zero" << std::endl;
             return kalman_fitter_status::ERROR_THETA_ZERO;
         }
 
         if (!std::isfinite(bound_params.phi())) {
-            std::cout << "Inversion" << std::endl;
             return kalman_fitter_status::ERROR_INVERSION;
         }
 
         if (std::abs(bound_params.qop()) == 0.f) {
-            std::cout << "qop zero" << std::endl;
             return kalman_fitter_status::ERROR_QOP_ZERO;
         }
 
         if (getter::element(chi2, 0, 0) < 0.f) {
-            std::cout << "Negative updater chi2" << std::endl;
             return kalman_fitter_status::ERROR_UPDATER_CHI2_NEGATIVE;
         }
 
         if (!std::isfinite(getter::element(chi2, 0, 0))) {
-            std::cout << "Negative updater chi2 not finite" << std::endl;
             return kalman_fitter_status::ERROR_UPDATER_CHI2_NOT_FINITE;
         }
 
