@@ -10,6 +10,7 @@
 // Thrust include(s).
 #include <thrust/binary_search.h>
 #include <thrust/execution_policy.h>
+#include <thrust/find.h>
 
 namespace traccc::device {
 
@@ -50,25 +51,31 @@ TRACCC_HOST_DEVICE inline void update_vectors(
     // If there is only one track associated with measurement, the
     // number of shared measurement can be reduced by one
     const auto& tracks = tracks_per_measurement[unique_meas_idx];
+    auto track_status = track_status_per_measurement[unique_meas_idx];
     printf("n accepted: %d meas id: %lu tid: %d \n", N_A, id,
            static_cast<unsigned int>(tracks[0]));
 
-    const auto it2 = thurst::find(tracks.begin(), tracks.end(), worst_track);
-    const std::size_t worst_idx =
-        static_cast<std::size_t>(thrust::distance(tracks.begin(), it));
+    const auto it2 = thrust::find(thrust::seq, tracks.begin(), tracks.end(),
+                                  payload.worst_track);
+    const unsigned int worst_idx =
+        static_cast<unsigned int>(thrust::distance(tracks.begin(), it2));
+    track_status[worst_idx] = 0;
 
     if (N_A == 2) {
-        const auto tid = static_cast<unsigned int>(tracks[worst_idx]);
+        const auto it3 = thrust::find(thrust::seq, track_status.begin(),
+                                      track_status.end(), 1);
+        const unsigned int alive_idx = static_cast<unsigned int>(
+            thrust::distance(track_status.begin(), it3));
+        const auto tid = static_cast<unsigned int>(tracks[alive_idx]);
+
         const unsigned int N_S =
             vecmem::device_atomic_ref<unsigned int>(n_shared.at(tid))
                 .fetch_add(-1u);
         printf("n s: %d meas id: %lu tid: %d \n", N_S, id,
                static_cast<unsigned int>(tracks[0]));
 
-        /*
         rel_shared[tid] = static_cast<traccc::scalar>(n_shared[tid]) /
                           static_cast<traccc::scalar>(n_meas[tid]);
-        */
     }
 }
 

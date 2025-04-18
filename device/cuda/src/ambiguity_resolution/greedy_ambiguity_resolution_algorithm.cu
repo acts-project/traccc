@@ -413,11 +413,12 @@ greedy_ambiguity_resolution_algorithm::operator()(
             m_stream.get().synchronize();
         }
 
+        /*
         // Update the relative shared number of measurements vector
         thrust::transform(thrust_policy, n_shared_buffer.ptr(),
                           n_shared_buffer.ptr() + n_tracks, n_meas_buffer.ptr(),
                           rel_shared_buffer.ptr(), devide_op{});
-
+        */
         // Keep the sorted ids vector sorted
         thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
                      sorted_ids_buffer.ptr() + n_accepted, trk_comp);
