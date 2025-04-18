@@ -9,6 +9,7 @@
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/utils.hpp"
 #include "./kernels/count_shared_measurements.cuh"
+#include "./kernels/fill_track_candidates.cuh"
 #include "./kernels/fill_tracks_per_measurement.cuh"
 #include "./kernels/fill_vectors.cuh"
 #include "./kernels/update_vectors.cuh"
@@ -436,17 +437,35 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     res_cands_size.reserve(n_accepted);
     for (unsigned int i = 0; i < n_accepted; i++) {
-        const auto tid = accepted_ids[i];
+        const auto tid = sorted_ids[i];
         const auto n_meas = (meas_ids_buffer.ptr() + tid)->size();
         res_cands_size.push_back(n_meas);
         printf("meas size: %d \n", n_meas);
     }
 
     // Create resolved candidate buffer
-    track_candidate_container_types::buffer res_candidates_buffer{
+    track_candidate_container_types::buffer res_track_candidates_buffer{
         {n_accepted, m_mr.main}, {res_cands_size, m_mr.main, m_mr.host}};
+    m_copy.get().setup(res_track_candidates_buffer.headers)->ignore();
+    m_copy.get().setup(res_track_candidates_buffer.items)->ignore();
 
-    return res_candidates_buffer;
+    // Fill the output track candidates
+    {
+        const unsigned int nThreads = m_warp_size * 2;
+        const unsigned int nBlocks = (n_accepted + nThreads - 1) / nThreads;
+
+        kernels::fill_track_candidates<<<nBlocks, nThreads, 0, stream>>>(
+            device::fill_track_candidates_payload{
+                .track_candidates_view = track_candidates_view,
+                .n_accepted = n_accepted,
+                .sorted_ids_view = sorted_ids_buffer,
+                .res_track_candidates_view = res_track_candidates_buffer});
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+        m_stream.get().synchronize();
+    }
+
+    return res_track_candidates_buffer;
 }
 
 }  // namespace traccc::cuda

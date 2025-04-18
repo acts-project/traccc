@@ -75,6 +75,8 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/ambiguity_resolution/kernels/count_shared_measurements.cuh"
   "src/ambiguity_resolution/kernels/fill_tracks_per_measurement.cu"
   "src/ambiguity_resolution/kernels/fill_tracks_per_measurement.cuh"
+  "src/ambiguity_resolution/kernels/fill_track_candidates.cu"
+  "src/ambiguity_resolution/kernels/fill_track_candidates.cuh"    
   "src/ambiguity_resolution/kernels/fill_vectors.cu"
   "src/ambiguity_resolution/kernels/fill_vectors.cuh"
   "src/ambiguity_resolution/kernels/update_vectors.cu"
