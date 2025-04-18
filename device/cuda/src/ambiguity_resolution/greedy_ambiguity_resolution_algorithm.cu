@@ -295,6 +295,34 @@ greedy_ambiguity_resolution_algorithm::operator()(
                       n_shared_buffer.ptr() + n_tracks, n_meas_buffer.ptr(),
                       rel_shared_buffer.ptr(), devide_op{});
 
+    //// Delete me
+
+    // print sorted ids
+    std::vector<traccc::scalar> pvals_host;
+    m_copy.get()(pvals_buffer, pvals_host, vecmem::copy::type::device_to_host)
+        ->wait();
+
+    printf("pvals ");
+    for (unsigned int i = 0; i < n_tracks; i++) {
+        printf("%f ", pvals_host[i]);
+    }
+    printf("\n");
+
+    // print sorted ids
+    std::vector<traccc::scalar> rel_shared_host;
+    m_copy
+        .get()(rel_shared_buffer, rel_shared_host,
+               vecmem::copy::type::device_to_host)
+        ->wait();
+
+    printf("rel shared ");
+    for (unsigned int i = 0; i < n_tracks; i++) {
+        printf("%f ", rel_shared_host[i]);
+    }
+    printf("\n");
+
+    //// Delete me
+
     // Make sorted ids vector
     vecmem::data::vector_buffer<unsigned int> sorted_ids_buffer{
         n_accepted, m_mr.main, vecmem::data::buffer_type::resizable};
@@ -359,7 +387,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
         }
         printf("\n");
 
-        unsigned int max_shared = n_shared_host[sorted_ids[*max_it]];
+        unsigned int max_shared = n_shared_host[*max_it];
 
         printf("Iteration: %d Max it: %d,  Max shared: %d N accepted: %d \n",
                iter, *max_it, max_shared, n_accepted);
@@ -451,18 +479,20 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     // Fill the output track candidates
     {
-        const unsigned int nThreads = m_warp_size * 2;
-        const unsigned int nBlocks = (n_accepted + nThreads - 1) / nThreads;
+        if (n_accepted > 0) {
+            const unsigned int nThreads = m_warp_size * 2;
+            const unsigned int nBlocks = (n_accepted + nThreads - 1) / nThreads;
 
-        kernels::fill_track_candidates<<<nBlocks, nThreads, 0, stream>>>(
-            device::fill_track_candidates_payload{
-                .track_candidates_view = track_candidates_view,
-                .n_accepted = n_accepted,
-                .sorted_ids_view = sorted_ids_buffer,
-                .res_track_candidates_view = res_track_candidates_buffer});
-        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+            kernels::fill_track_candidates<<<nBlocks, nThreads, 0, stream>>>(
+                device::fill_track_candidates_payload{
+                    .track_candidates_view = track_candidates_view,
+                    .n_accepted = n_accepted,
+                    .sorted_ids_view = sorted_ids_buffer,
+                    .res_track_candidates_view = res_track_candidates_buffer});
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-        m_stream.get().synchronize();
+            m_stream.get().synchronize();
+        }
     }
 
     return res_track_candidates_buffer;
