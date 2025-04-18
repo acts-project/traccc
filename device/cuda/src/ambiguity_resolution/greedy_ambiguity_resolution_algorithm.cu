@@ -290,12 +290,34 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
         const unsigned int max_shared = *max_it;
 
+        printf("Iteration: %d \n", iter);
         printf("Max shared: %d \n", max_shared);
+        printf("N accepted: %d \n", n_accepted);
 
         // Terminate if the max shared measurements is less than the cut value
         if (max_shared < m_config.max_shared_meas) {
             break;
         }
+
+        unsigned int worst_track;
+        TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
+            &worst_track, sorted_ids_buffer.ptr() + n_accepted - 1,
+            sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
+
+        printf("worst track: %d \n", worst_track);
+
+        int reject = 0;
+        TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
+            status_buffer.ptr() + worst_track, &reject, sizeof(unsigned int),
+            cudaMemcpyHostToDevice, stream));
+
+        // Fill the accepted ids vector using counting iterator
+        thrust::copy_if(thrust_policy, cit_begin, cit_end, status_buffer.ptr(),
+                        accepted_ids_buffer.ptr(), thrust::identity<int>());
+
+        // Remove the worst (rejected) id from the sorted ids
+        n_accepted--;
+        sorted_ids.resize(n_accepted);
     }
 
     // Create resolved candidate buffer
