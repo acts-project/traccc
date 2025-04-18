@@ -156,17 +156,18 @@ greedy_ambiguity_resolution_algorithm::operator()(
     printf("number of accepted %d \n", n_accepted);
 
     // Make accepted ids vector
-    vecmem::data::vector_buffer<unsigned int> accepted_ids_buffer{
+    vecmem::data::vector_buffer<unsigned int> pre_accepted_ids_buffer{
         n_accepted, m_mr.main, vecmem::data::buffer_type::resizable};
-    m_copy.get().setup(accepted_ids_buffer)->ignore();
-    vecmem::device_vector<unsigned int> accepted_ids(accepted_ids_buffer);
-    accepted_ids.resize(n_accepted);
+    m_copy.get().setup(pre_accepted_ids_buffer)->ignore();
+    vecmem::device_vector<unsigned int> pre_accepted_ids(
+        pre_accepted_ids_buffer);
+    pre_accepted_ids.resize(n_accepted);
 
     // Fill the accepted ids vector using counting iterator
     auto cit_begin = thrust::counting_iterator<int>(0);
     auto cit_end = cit_begin + n_tracks;
     thrust::copy_if(thrust_policy, cit_begin, cit_end, status_buffer.ptr(),
-                    accepted_ids_buffer.ptr(), thrust::identity<int>());
+                    pre_accepted_ids_buffer.ptr(), thrust::identity<int>());
 
     // Sort the flat measurement id vector
     thrust::sort(thrust_policy, flat_meas_ids_buffer.ptr(),
@@ -228,7 +229,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
         kernels::fill_tracks_per_measurement<<<nBlocks, nThreads, 0, stream>>>(
             device::fill_tracks_per_measurement_payload{
-                .accepted_ids_view = accepted_ids_buffer,
+                .accepted_ids_view = pre_accepted_ids_buffer,
                 .meas_ids_view = meas_ids_buffer,
                 .unique_meas_view = unique_meas_buffer,
                 .tracks_per_measurement_view = tracks_per_measurement_buffer,
@@ -250,7 +251,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
         kernels::count_shared_measurements<<<nBlocks, nThreads, 0, stream>>>(
             device::count_shared_measurements_payload{
-                .accepted_ids_view = accepted_ids_buffer,
+                .accepted_ids_view = pre_accepted_ids_buffer,
                 .meas_ids_view = meas_ids_buffer,
                 .unique_meas_view = unique_meas_buffer,
                 .tracks_per_measurement_view = tracks_per_measurement_buffer,
@@ -277,8 +278,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
     sorted_ids.resize(n_accepted);
 
     // Fill and sort the sorted ids vector
-    thrust::copy(thrust_policy, accepted_ids_buffer.ptr(),
-                 accepted_ids_buffer.ptr() + n_accepted,
+    thrust::copy(thrust_policy, pre_accepted_ids_buffer.ptr(),
+                 pre_accepted_ids_buffer.ptr() + n_accepted,
                  sorted_ids_buffer.ptr());
 
     track_comparator trk_comp(rel_shared_buffer.ptr(), pvals_buffer.ptr());
@@ -320,7 +321,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
         // Fill the accepted ids vector using counting iterator
         thrust::copy_if(thrust_policy, cit_begin, cit_end, status_buffer.ptr(),
-                        accepted_ids_buffer.ptr(), thrust::identity<int>());
+                        pre_accepted_ids_buffer.ptr(), thrust::identity<int>());
 
         // Remove the worst (rejected) id from the sorted ids
         n_accepted--;
@@ -354,13 +355,27 @@ greedy_ambiguity_resolution_algorithm::operator()(
                      sorted_ids_buffer.ptr() + n_accepted, trk_comp);
     }
 
-    //std::vector<std::size_t> res_cands_size;
+    std::vector<unsigned int> accepted_ids;
+    m_copy
+        .get()(sorted_ids_buffer, accepted_ids,
+               vecmem::copy::type::device_to_host)
+        ->wait();
+
+    std::vector<std::size_t> res_cands_size;
+
+    printf("Final n accepted: %d \n", n_accepted);
+
+    res_cands_size.reserve(n_accepted);
+    for (unsigned int i = 0; i < n_accepted; i++) {
+        const auto tid = accepted_ids[i];
+        const auto n_meas = (meas_ids_buffer.ptr() + tid)->size();
+        res_cands_size.push_back(n_meas);
+        printf("meas size: %d \n", n_meas);
+    }
 
     // Create resolved candidate buffer
     track_candidate_container_types::buffer res_candidates_buffer{
-        {n_accepted, m_mr.main},
-        {std::vector<std::size_t>(10, 10), m_mr.main, m_mr.host,
-         vecmem::data::buffer_type::resizable}};
+        {n_accepted, m_mr.main}, {res_cands_size, m_mr.main, m_mr.host}};
 
     return res_candidates_buffer;
 }
