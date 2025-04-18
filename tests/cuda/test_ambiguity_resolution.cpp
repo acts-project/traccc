@@ -239,7 +239,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest3) {
 // Comparison to the CPU algorithm
 TEST(CudaAmbiguitySolverTests, GreedyResolverTest4) {
 
-    std::size_t n_tracks = 100u;
+    std::size_t n_tracks = 10000u;
 
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;
