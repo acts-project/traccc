@@ -307,14 +307,10 @@ greedy_ambiguity_resolution_algorithm::operator()(
             thrust::max_element(thrust_policy, sorted_ids_buffer.ptr(),
                                 sorted_ids_buffer.ptr() + n_accepted, sh_comp);
 
-        // Make a host vector for number of shared measurement
-        std::vector<unsigned int> n_shared_host;
-        m_copy
-            .get()(n_shared_buffer, n_shared_host,
-                   vecmem::copy::type::device_to_host)
-            ->wait();
-
-        unsigned int max_shared = n_shared_host[*max_it];
+        unsigned int max_shared;
+        TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
+            &max_shared, n_shared_buffer.ptr() + (*max_it),
+            sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
 
         // Terminate if the max shared measurements is less than the cut value
         if (max_shared < m_config.max_shared_meas) {
