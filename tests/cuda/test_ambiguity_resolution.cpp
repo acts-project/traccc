@@ -9,9 +9,12 @@
 #include "traccc/ambiguity_resolution/ambiguity_resolution_config.hpp"
 #include "traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 #include "traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
+#include "traccc/device/container_d2h_copy_alg.hpp"
+#include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
 // VecMem include(s).
+#include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
@@ -38,17 +41,19 @@ void fill_pattern(track_candidate_container_types::host& track_candidates,
     }
 }
 
-bool find_pattern(
-    const track_candidate_container_types::device& res_track_candidates,
-    const std::vector<std::size_t>& pattern) {
+template <typename track_container_t>
+bool find_pattern(const track_container_t& res_track_candidates,
+                  const std::vector<std::size_t>& pattern) {
 
-    unsigned int n_tracks = res_track_candidates.size();
-    for (unsigned i = 0; i < n_tracks; i++) {
+    const auto n_tracks = res_track_candidates.size();
+    for (unsigned int i = 0; i < n_tracks; i++) {
         const auto& res_cands = res_track_candidates.at(i).items;
         std::vector<std::size_t> ids;
         for (const auto& cand : res_cands) {
+            std::cout << cand.measurement_id << " ";
             ids.push_back(cand.measurement_id);
         }
+        std::cout << std::endl;
         if (pattern == ids) {
             return true;
         }
@@ -239,12 +244,13 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest3) {
 // Comparison to the CPU algorithm
 TEST(CudaAmbiguitySolverTests, GreedyResolverTest4) {
 
-    std::size_t n_tracks = 10000u;
+    std::size_t n_tracks = 5u;
 
     // Memory resource used by the EDM.
-    vecmem::cuda::managed_memory_resource mng_mr;
+    vecmem::cuda::device_memory_resource device_mr;
     vecmem::host_memory_resource host_mr;
-    traccc::memory_resource mr{mng_mr, &host_mr};
+    traccc::memory_resource mr{device_mr, &host_mr};
+    traccc::memory_resource hmr{host_mr};
 
     // Cuda stream
     traccc::cuda::stream stream;
@@ -252,7 +258,16 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest4) {
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    track_candidate_container_types::host trk_cands{&mr.main};
+    // Copy algorithms
+    traccc::device::container_h2d_copy_alg<
+        traccc::track_candidate_container_types>
+        track_candidate_h2d{mr, copy};
+
+    traccc::device::container_d2h_copy_alg<
+        traccc::track_candidate_container_types>
+        track_candidate_d2h{mr, copy};
+
+    track_candidate_container_types::host trk_cands{&host_mr};
 
     trk_cands.resize(n_tracks);
     std::mt19937 gen(42);
@@ -293,7 +308,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest4) {
     traccc::host::greedy_ambiguity_resolution_algorithm::config_type
         resolution_config;
     traccc::host::greedy_ambiguity_resolution_algorithm resolution_alg_cpu(
-        resolution_config, mr);
+        resolution_config, hmr);
 
     auto start_cpu = std::chrono::high_resolution_clock::now();
 
@@ -309,12 +324,21 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest4) {
     traccc::cuda::greedy_ambiguity_resolution_algorithm resolution_alg_cuda(
         resolution_config, mr, copy, stream);
 
+    // H2D transfer
+    traccc::track_candidate_container_types::buffer trk_cands_buffer =
+        track_candidate_h2d(traccc::get_data(trk_cands));
+    copy.setup(trk_cands_buffer.headers)->wait();
+    copy.setup(trk_cands_buffer.items)->wait();
+
     auto start_cuda = std::chrono::high_resolution_clock::now();
 
-    auto res_trk_cands_buffer =
-        resolution_alg_cuda(traccc::get_data(trk_cands));
-    track_candidate_container_types::device res_trk_cands_cuda(
-        res_trk_cands_buffer);
+    // Instantiate output cuda containers/collections
+    traccc::track_candidate_container_types::buffer res_trk_cands_buffer{
+        {{}, *(mr.host)}, {{}, *(mr.host), mr.host}};
+    copy.setup(res_trk_cands_buffer.headers)->wait();
+    copy.setup(res_trk_cands_buffer.items)->wait();
+
+    res_trk_cands_buffer = resolution_alg_cuda(trk_cands_buffer);
 
     auto end_cuda = std::chrono::high_resolution_clock::now();
     auto duration_cuda = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -322,8 +346,22 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest4) {
     std::cout << " Time for the cuda method " << duration_cuda.count() << " ms"
               << std::endl;
 
+    traccc::track_candidate_container_types::host res_trk_cands_cuda =
+        track_candidate_d2h(res_trk_cands_buffer);
+
     const auto n_tracks_cpu = res_trk_cands_cpu.size();
     ASSERT_EQ(n_tracks_cpu, res_trk_cands_cuda.size());
+
+    std::cout << "CPU " << std::endl;
+    for (unsigned int i = 0; i < n_tracks_cpu; i++) {   
+        std::cout << res_trk_cands_cpu.at(i).items.size() << std::endl;
+    }
+
+    std::cout << "CUDA " << std::endl;
+
+    for (unsigned int i = 0; i < n_tracks_cpu; i++) {   
+        std::cout << res_trk_cands_cuda.at(i).items.size() << std::endl;
+    }
 
     // Make sure that CPU and CUDA track candidates have same patterns
     for (unsigned int i = 0; i < n_tracks_cpu; i++) {

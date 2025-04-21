@@ -129,7 +129,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
         meas_sizes, m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable};
     m_copy.get().setup(meas_ids_buffer)->ignore();
 
-    const auto n_cands_total = track_candidates.total_size();
+    const unsigned int n_cands_total =
+        std::accumulate(candidate_sizes.begin(), candidate_sizes.end(), 0);
 
     vecmem::data::vector_buffer<std::size_t> flat_meas_ids_buffer{
         n_cands_total, m_mr.main, vecmem::data::buffer_type::resizable};
@@ -160,11 +161,9 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     // Make accepted ids vector
     vecmem::data::vector_buffer<unsigned int> pre_accepted_ids_buffer{
-        n_accepted, m_mr.main, vecmem::data::buffer_type::resizable};
+        n_accepted, m_mr.main};
+
     m_copy.get().setup(pre_accepted_ids_buffer)->ignore();
-    vecmem::device_vector<unsigned int> pre_accepted_ids(
-        pre_accepted_ids_buffer);
-    pre_accepted_ids.resize(n_accepted);
 
     // Fill the accepted ids vector using counting iterator
     auto cit_begin = thrust::counting_iterator<int>(0);
@@ -278,11 +277,9 @@ greedy_ambiguity_resolution_algorithm::operator()(
                       rel_shared_buffer.ptr(), devide_op{});
 
     // Make sorted ids vector
-    vecmem::data::vector_buffer<unsigned int> sorted_ids_buffer{
-        n_accepted, m_mr.main, vecmem::data::buffer_type::resizable};
+    vecmem::data::vector_buffer<unsigned int> sorted_ids_buffer{n_accepted,
+                                                                m_mr.main};
     m_copy.get().setup(sorted_ids_buffer)->ignore();
-    vecmem::device_vector<unsigned int> sorted_ids(sorted_ids_buffer);
-    sorted_ids.resize(n_accepted);
 
     // Fill and sort the sorted ids vector
     thrust::copy(thrust_policy, pre_accepted_ids_buffer.ptr(),
@@ -302,15 +299,27 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
         shared_count_comparator sh_comp(n_shared_buffer.ptr());
 
+        /*
+                printf("hi \n");
+                printf("%d %lu \n", *max_it, max_index);
+        */
         // TODO: Write kernel instead
         auto max_it =
             thrust::max_element(thrust_policy, sorted_ids_buffer.ptr(),
                                 sorted_ids_buffer.ptr() + n_accepted, sh_comp);
+        unsigned int max_track_id;
+        TRACCC_CUDA_ERROR_CHECK(
+            cudaMemcpyAsync(&max_track_id, max_it, sizeof(unsigned int),
+                            cudaMemcpyDeviceToHost, stream));
+
+        m_stream.get().synchronize();
 
         unsigned int max_shared;
         TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
-            &max_shared, n_shared_buffer.ptr() + (*max_it),
+            &max_shared, n_shared_buffer.ptr() + max_track_id,
             sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
+
+        m_stream.get().synchronize();
 
         // Terminate if the max shared measurements is less than the cut value
         if (max_shared < m_config.max_shared_meas) {
@@ -322,10 +331,14 @@ greedy_ambiguity_resolution_algorithm::operator()(
             &worst_track, sorted_ids_buffer.ptr() + n_accepted - 1,
             sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
 
+        m_stream.get().synchronize();
+
         int reject = 0;
         TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
             status_buffer.ptr() + worst_track, &reject, sizeof(unsigned int),
             cudaMemcpyHostToDevice, stream));
+
+        m_stream.get().synchronize();
 
         // Fill the accepted ids vector using counting iterator
         thrust::copy_if(thrust_policy, cit_begin, cit_end, status_buffer.ptr(),
@@ -333,7 +346,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
         // Remove the worst (rejected) id from the sorted ids
         n_accepted--;
-        sorted_ids.resize(n_accepted);
+
+        printf("n accepted %d \n", n_accepted);
 
         // Update vectors after the removal
         {
@@ -371,18 +385,15 @@ greedy_ambiguity_resolution_algorithm::operator()(
                vecmem::copy::type::device_to_host)
         ->wait();
 
-    std::vector<std::size_t> res_cands_size;
-
-    res_cands_size.reserve(n_accepted);
-    for (unsigned int i = 0; i < n_accepted; i++) {
-        const auto tid = sorted_ids[i];
-        const auto n_meas = (meas_ids_buffer.ptr() + tid)->size();
-        res_cands_size.push_back(n_meas);
-    }
+    auto max_it =
+        std::max_element(candidate_sizes.begin(), candidate_sizes.end());
+    const unsigned int max_cands_size = *max_it;
 
     // Create resolved candidate buffer
     track_candidate_container_types::buffer res_track_candidates_buffer{
-        {n_accepted, m_mr.main}, {res_cands_size, m_mr.main, m_mr.host}};
+        {n_accepted, m_mr.main},
+        {std::vector<std::size_t>(n_accepted, max_cands_size), m_mr.main,
+         m_mr.host, vecmem::data::buffer_type::resizable}};
     m_copy.get().setup(res_track_candidates_buffer.headers)->ignore();
     m_copy.get().setup(res_track_candidates_buffer.items)->ignore();
 

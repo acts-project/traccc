@@ -35,8 +35,10 @@ TRACCC_HOST_DEVICE inline void fill_track_candidates(
     const auto& cands = track_candidates.at(tid).items;
     const auto n_cands = cands.size();
 
+    printf("n cands %d \n", n_cands);
+
     for (unsigned int i = 0; i < n_cands; i++){
-       res_cands.at(i) = cands.at(i);
+       res_cands.push_back(cands.at(i));
     }
 }
 
