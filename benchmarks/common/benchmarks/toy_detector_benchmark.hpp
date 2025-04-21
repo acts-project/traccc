@@ -83,6 +83,8 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
         apply_propagation_config(finding_cfg.propagation);
         apply_propagation_config(fitting_cfg.propagation);
 
+        finding_cfg.chi2_max = 30.f;
+
         // Use deterministic random number generator for testing
         using uniform_gen_t = detray::detail::random_numbers<
             scalar_type, std::uniform_real_distribution<scalar_type>>;
@@ -101,13 +103,14 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
         gen_cfg.n_tracks(n_tracks);
         gen_cfg.phi_range(phi_range);
         gen_cfg.eta_range(eta_range);
-        gen_cfg.mom_range(mom_range);
+        gen_cfg.pT_range(mom_range);
+        gen_cfg.randomize_charge(true);
         generator_type generator(gen_cfg);
 
         // Smearing value for measurements
         traccc::measurement_smearer<traccc::default_algebra> meas_smearer(
-            50 * traccc::unit<scalar_type>::um,
-            50 * traccc::unit<scalar_type>::um);
+            25 * traccc::unit<scalar_type>::um,
+            25 * traccc::unit<scalar_type>::um);
 
         // Type declarations
         using writer_type =
@@ -151,18 +154,14 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
         detray::toy_det_config<scalar_type> toy_cfg{};
         toy_cfg.n_brl_layers(4u).n_edc_layers(7u).do_check(false);
 
-        // @TODO: Increase the material budget again
-        toy_cfg.module_mat_thickness(0.11f * traccc::unit<scalar_type>::mm);
-
         return toy_cfg;
     }
 
     void apply_propagation_config(detray::propagation::config& cfg) const {
         // Configure the propagation for the toy detector
-        // @NOTE: currently Non-{0,0} search windows cause an error during CKF
-        // cfg.navigation.search_window = {3, 3};
+        cfg.navigation.search_window = {3, 3};
         cfg.navigation.overstep_tolerance = -1000.f * traccc::unit<float>::um;
-        cfg.navigation.min_mask_tolerance = 1e-5f * traccc::unit<float>::mm;
+        cfg.navigation.min_mask_tolerance = 1e-2f * traccc::unit<float>::mm;
         cfg.navigation.max_mask_tolerance = 3.f * traccc::unit<float>::mm;
         cfg.navigation.mask_tolerance_scalor = 0.05f;
     }

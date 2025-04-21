@@ -85,6 +85,15 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
             // Track fitting with KF
             auto track_states =
                 host_fitting(det, field, traccc::get_data(track_candidates));
+
+#ifndef NDEBUG
+            std::cout << "EVENT " << i_evt << ":\n  Seeds:" << params.size()
+                      << "/" << n_tracks
+                      << "\n  Found tracks: " << track_candidates.size() << "/"
+                      << n_tracks
+                      << "\n  Fitted tracks: " << track_states.size() << "/"
+                      << n_tracks << std::endl;
+#endif
         }
     }
 

@@ -143,8 +143,9 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
                 track_states_cuda_buffer = device_fitting(
                     det_view, field, track_candidates_cuda_buffer);
 
+#ifndef NDEBUG
             // Create a temporary buffer that will receive the device memory.
-            /*auto size = track_states_cuda_buffer.headers.size();
+            auto size = track_states_cuda_buffer.headers.size();
             std::vector<std::size_t> capacities(size, 0);
             std::transform(track_states_cuda_buffer.items.host_ptr(),
                            track_states_cuda_buffer.items.host_ptr() + size,
@@ -153,7 +154,12 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
 
             // Copy the track states back to the host.
             traccc::track_state_container_types::host track_states_host =
-                track_state_d2h(track_states_cuda_buffer);*/
+                track_state_d2h(track_states_cuda_buffer);
+
+            std::cout << "EVENT " << i_evt
+                      << ":\n  Fitted tracks: " << track_states_host.size()
+                      << "/" << n_tracks << std::endl;
+#endif
         }
     }
 
