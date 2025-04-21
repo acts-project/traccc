@@ -24,6 +24,7 @@
 #include <detray/propagator/rk_stepper.hpp>
 
 // Detray test include(s)
+#include <detray/test/utils/perigee_stopper.hpp>
 #include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 #include <detray/test/validation/navigation_validation_utils.hpp>
 

@@ -119,12 +119,12 @@ struct kalman_actor : detray::actor {
                 for (auto itr = m_it_rev + 1; itr != m_track_states.rend();
                      ++itr) {
                     if (itr->surface_link() == navigation.barcode()) {
+                        for (int j = 0; j < i; ++j) {
+                            (m_it_rev + j)->is_hole = true;
+                        }
                         m_it_rev += i;
                         // Only count holes in backward mode: most precise fit
                         n_holes += i;
-                        for (int j = 0; j < i; ++j) {
-                            (itr + j)->is_hole = true;
-                        }
                         return true;
                     }
                     ++i;
@@ -138,10 +138,10 @@ struct kalman_actor : detray::actor {
                 }
                 for (auto itr = m_it + 1; itr != m_track_states.end(); ++itr) {
                     if (itr->surface_link() == navigation.barcode()) {
-                        m_it += i;
                         for (int j = 0; j < i; ++j) {
-                            (itr + j)->is_hole = true;
+                            (m_it + j)->is_hole = true;
                         }
+                        m_it += i;
                         return true;
                     }
                     ++i;

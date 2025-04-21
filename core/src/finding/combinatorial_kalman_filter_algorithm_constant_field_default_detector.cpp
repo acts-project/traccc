@@ -14,8 +14,7 @@
 #include <detray/navigation/navigator.hpp>
 #include <detray/propagator/propagator.hpp>
 #include <detray/propagator/rk_stepper.hpp>
-
-#include "detray/test/utils/inspectors.hpp"
+#include <detray/test/utils/inspectors.hpp>
 
 namespace traccc::host {
 

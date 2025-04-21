@@ -69,6 +69,8 @@ inline TRACCC_HOST_DEVICE void seed_to_bound_param_vector(
 
     // The center of the new frame is at the bottom space point
     const vector3& translation = sp_global_positions[0];
+    assert(vector::dot(relVec, translation) > 0.f);
+
     transform3 trans(translation, newXAxis, newYAxis, newZAxis);
 
     // The coordinate of the middle and top space point in the new frame
@@ -101,6 +103,8 @@ inline TRACCC_HOST_DEVICE void seed_to_bound_param_vector(
     // The estimated phi and theta
     params.set_phi(vector::phi(direction));
     params.set_theta(vector::theta(direction));
+
+    assert(vector::dot(params.dir(), translation) > 0.f);
 
     // The measured loc0 and loc1
     const measurement& meas_for_spB = measurements.at(spB.measurement_index());

@@ -44,6 +44,7 @@ track_state_container_types::host fit_tracks(
 
     // Create the output container.
     track_state_container_types::host result{&mr};
+    std::cout << "Begin fitting" << std::endl;
 
     // Iterate over the tracks,
     const track_candidate_container_types::const_device track_candidates{
@@ -84,6 +85,7 @@ track_state_container_types::host fit_tracks(
             // TODO: Print a warning here.
         }
     }
+    std::cout << "End fitting" << std::endl;
 
     // Return the fitted track states.
     return result;

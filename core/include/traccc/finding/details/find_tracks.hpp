@@ -22,7 +22,6 @@
 #include "traccc/utils/projections.hpp"
 
 // Detray include(s).
-#include <detray/navigation/detail/print_state.hpp>
 #include <detray/propagator/actors.hpp>
 #include <detray/propagator/propagator.hpp>
 
@@ -98,6 +97,8 @@ track_candidate_container_types::host find_tracks(
             return (chi2 > rhs.chi2);
         }
     };
+
+    std::cout << "Begin find" << std::endl;
 
     assert(config.min_track_candidates_per_track >= 1);
 
@@ -197,12 +198,7 @@ track_candidate_container_types::host find_tracks(
             bound_track_parameters<algebra_type>& in_param =
                 in_params[in_param_id];
 
-            // std::cout << "Step " << step << ", Seed " << in_param <<
-            // std::endl;
             assert(!in_param.is_invalid());
-            detray::tracking_surface initial_sf{det, in_param.surface_link()};
-            // std::cout << "Translation " << initial_sf.center({}) <<
-            // std::endl;
 
             const unsigned int orig_param_id =
                 (step == 0
@@ -295,11 +291,6 @@ track_candidate_container_types::host find_tracks(
                                    n_max_branches_per_surface);
 
             if (candidates.empty()) {
-
-                /*std::cout << "No measurement!"
-                          << " Step " << step << ", Seed " << in_param
-                          << std::endl;*/
-
                 // Put an invalid link with max item id
                 links[step].push_back(
                     {.step = step,
@@ -364,9 +355,6 @@ track_candidate_container_types::host find_tracks(
                     config.max_num_skipping_per_cand &&
                 (step >= (config.min_track_candidates_per_track - 1u))) {
                 tips.push_back({step, link_id});
-                // std::cout << "Too many skipped: Make tip "
-                //          << links.at(step).at(link_id).n_skipped <<
-                //          std::endl;
                 continue;
             }
 
@@ -392,16 +380,15 @@ track_candidate_container_types::host find_tracks(
 
             if (!(propagator.is_complete(propagation) ||
                   propagation._navigation.is_on_sensitive())) {
-                std::cout << "Navigation error in CKF: "
-                          << propagation._navigation.inspector().to_string()
-                          << std::endl
-                          << propagation._stepping.inspector().to_string()
+                std::cout << propagation._navigation.inspector().to_string()
                           << std::endl;
             }
 
             // If a surface found, add the parameter for the next
             // step
             if (s3.success) {
+                assert(propagation._navigation.is_on_sensitive());
+
                 out_params.push_back(propagation._stepping.bound_params());
                 param_to_link[step].push_back(link_id);
             }
@@ -441,7 +428,6 @@ track_candidate_container_types::host find_tracks(
         // Skip if the number of tracks candidates is too small
         if (n_cands < config.min_track_candidates_per_track ||
             n_cands > config.max_track_candidates_per_track) {
-            // std::cout << "Not enough measurements: " << n_cands << std::endl;
             continue;
         }
 
@@ -501,6 +487,7 @@ track_candidate_container_types::host find_tracks(
             }
         }
     }
+    std::cout << "End find" << std::endl;
 
     return output_candidates;
 }

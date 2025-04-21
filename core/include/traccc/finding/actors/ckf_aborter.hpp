@@ -9,36 +9,33 @@
 
 // Project include(s)
 #include "traccc/definitions/primitives.hpp"
+#include "traccc/definitions/qualifiers.hpp"
 
 // detray include(s)
-#include <detray/definitions/detail/qualifiers.hpp>
 #include <detray/propagator/base_actor.hpp>
-
-// System include(s)
-#include <limits>
 
 namespace traccc {
 
 /// Aborter triggered when the next surface is reached
 struct ckf_aborter : detray::actor {
     struct state {
-        // minimal step length to prevent from staying on the same surface
-        scalar min_step_length = 0.5f;
-        /// Maximum step counts that track can make to reach the next surface
-        unsigned int max_count = 100;
-
         bool success = false;
-        unsigned int count = 0;
 
+        /// Maximum step counts that track can make to reach the next surface
+        unsigned int max_count = 100u;
+        unsigned int count = 0u;
+
+        // minimal step length to prevent from staying on the same surface
+        scalar min_step_length = 1.2f;
         scalar path_from_surface{0.f};
     };
 
     template <typename propagator_state_t>
-    DETRAY_HOST_DEVICE void operator()(state &abrt_state,
+    TRACCC_HOST_DEVICE void operator()(state &abrt_state,
                                        propagator_state_t &prop_state) const {
 
         auto &navigation = prop_state._navigation;
-        auto &stepping = prop_state._stepping;
+        const auto &stepping = prop_state._stepping;
 
         abrt_state.count++;
         abrt_state.path_from_surface += stepping.step_size();

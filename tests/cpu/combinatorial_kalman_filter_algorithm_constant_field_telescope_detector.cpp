@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -14,9 +14,38 @@
 #include <detray/navigation/navigator.hpp>
 #include <detray/propagator/propagator.hpp>
 #include <detray/propagator/rk_stepper.hpp>
+
+// Detray test includes
 #include <detray/test/utils/inspectors.hpp>
 
 namespace traccc::host {
+
+combinatorial_kalman_filter_algorithm::output_type
+combinatorial_kalman_filter_algorithm::operator()(
+    const default_detector::host& det,
+    const detray::bfield::const_field_t<
+        default_detector::host::scalar_type>::view_t& field,
+    const measurement_collection_types::const_view& measurements,
+    const bound_track_parameters_collection_types::const_view& seeds) const {
+
+    using scalar_type = default_detector::host::scalar_type;
+
+    // Perform the track finding using the templated implementation.
+    return details::find_tracks<
+        detray::rk_stepper<detray::bfield::const_field_t<scalar_type>::view_t,
+                            default_detector::host::algebra_type,
+                            detray::constrained_step<scalar_type>,
+                            detray::stepper_rk_policy<scalar_type>,
+                            detray::stepping::print_inspector>,
+        detray::navigator<const default_detector::host,
+                            detray::navigation::default_cache_size,
+                            detray::navigation::print_inspector,
+                            detray::intersection2D<
+                                typename default_detector::host::surface_type,
+                                default_detector::host::algebra_type, true>>>(
+        det, field, measurements, seeds, m_config);
+}
+
 combinatorial_kalman_filter_algorithm::output_type
 combinatorial_kalman_filter_algorithm::operator()(
     const telescope_detector::host& det,

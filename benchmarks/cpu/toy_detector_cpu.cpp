@@ -48,7 +48,7 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
     host_detector_type det{host_mr};
     traccc::io::read_detector(
         det, host_mr, sim_dir + "toy_detector_geometry.json",
-        // sim_dir + "toy_detector_homogeneous_material.json",
+        sim_dir + "toy_detector_homogeneous_material.json",
         sim_dir + "toy_detector_surface_grids.json");
 
     // B field
@@ -65,8 +65,8 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
 
     for (auto _ : state) {
 
-        // Iterate over events
-        //#pragma omp parallel for schedule(dynamic)
+// Iterate over events
+#pragma omp parallel for schedule(dynamic)
         for (unsigned int i_evt = 0; i_evt < n_events; i_evt++) {
 
             auto& spacepoints_per_event = spacepoints[i_evt];
@@ -92,11 +92,14 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
             auto track_states =
                 host_fitting(det, field, traccc::get_data(track_candidates));
 
-            std::cout << "EVENT " << i_evt << ":\nSeeds :" << params.size()
-                      << "\nFound tracks: " << track_candidates.size()
-                      << "/5000"
-                      << "\nFitted tracks: " << track_candidates.size()
-                      << "/5000" << std::endl;
+            if (track_candidates.size() < n_tracks) {
+                std::cout << "EVENT " << i_evt << ":\n  Seeds:" << params.size()
+                          << "/" << n_tracks
+                          << "\n  Found tracks: " << track_candidates.size()
+                          << "/" << n_tracks
+                          << "\n  Fitted tracks: " << track_states.size() << "/"
+                          << n_tracks << std::endl;
+            }
         }
     }
 

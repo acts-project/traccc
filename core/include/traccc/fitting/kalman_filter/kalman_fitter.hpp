@@ -203,6 +203,7 @@ class kalman_fitter {
     template <typename seed_parameters_t>
     [[nodiscard]] TRACCC_HOST_DEVICE kalman_fitter_status
     filter(const seed_parameters_t& seed_params, state& fitter_state) {
+        std::cout << "Begin filtering" << std::endl;
 
         // Create propagator
         forward_propagator_type propagator(m_cfg.propagation);
@@ -237,6 +238,8 @@ class kalman_fitter {
         // Update track fitting qualities
         update_statistics(fitter_state);
 
+        std::cout << "End filtering" << std::endl;
+
         return kalman_fitter_status::SUCCESS;
     }
 
@@ -248,6 +251,7 @@ class kalman_fitter {
     /// @param fitter_state the state of kalman fitter
     [[nodiscard]] TRACCC_HOST_DEVICE kalman_fitter_status
     smooth(state& fitter_state) {
+        std::cout << "Begin smoothing" << std::endl;
 
         if (fitter_state.m_sequencer_state.overflow) {
             return kalman_fitter_status::ERROR_BARCODE_SEQUENCE_OVERFLOW;
@@ -326,7 +330,7 @@ class kalman_fitter {
 
         // If the navigation exits the detector before the fitting actor is
         // finished, count the missing states as holes
-        if (!fitter_state.m_fit_actor_state.is_complete() &&
+        /*if (!fitter_state.m_fit_actor_state.is_complete() &&
             propagation._navigation.is_complete()) {
             auto n_holes = detray::ranges::distance(
                 fitter_state.m_fit_actor_state.m_track_states.rend(),
@@ -335,10 +339,11 @@ class kalman_fitter {
 
             fitter_state.m_fit_actor_state.n_holes +=
                 static_cast<unsigned int>(n_holes);
-        }
+        }*/
 
         // Reset the backward mode to false
         fitter_state.m_fit_actor_state.backward_mode = false;
+        std::cout << "End smoothing" << std::endl;
 
         return kalman_fitter_status::SUCCESS;
     }

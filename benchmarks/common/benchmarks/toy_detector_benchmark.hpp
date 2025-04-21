@@ -38,8 +38,8 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
     // VecMem memory resource(s)
     vecmem::host_memory_resource host_mr;
 
-    static const int n_events = 1u;
-    static const int n_tracks = 1000u;
+    static const int n_events = 100u;
+    static const int n_tracks = 5000u;
 
     std::vector<traccc::edm::spacepoint_collection::host> spacepoints;
     std::vector<traccc::measurement_collection_types::host> measurements;
@@ -55,7 +55,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
         -traccc::constant<float>::pi, traccc::constant<float>::pi};
     static constexpr std::array<float, 2> eta_range{-3, 3};
     static constexpr std::array<float, 2> mom_range{
-        10.f * traccc::unit<float>::GeV, 100.f * traccc::unit<float>::GeV};
+        1.f * traccc::unit<float>::GeV, 100.f * traccc::unit<float>::GeV};
 
     static inline const std::string sim_dir = "toy_detector_benchmark/";
 
@@ -83,6 +83,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
 
         finding_cfg.max_num_branches_per_seed = 0;
         finding_cfg.max_num_branches_per_surface = 0;
+        finding_cfg.chi2_max = 30.f;
 
         // Use deterministic random number generator for testing
         using uniform_gen_t = detray::detail::random_numbers<
@@ -100,6 +101,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
             traccc::free_track_parameters<algebra_type>, uniform_gen_t>;
         generator_type::configuration gen_cfg{};
         gen_cfg.n_tracks(n_tracks);
+        gen_cfg.randomize_charge(true);
         gen_cfg.phi_range(phi_range);
         gen_cfg.eta_range(eta_range);
         gen_cfg.pT_range(mom_range);
@@ -127,8 +129,9 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
             detray::muon<scalar_type>(), n_events, det, field,
             std::move(generator), std::move(smearer_writer_cfg), full_path);
 
-        // Same propagation configuration for sim and reco
-        // apply_propagation_config(sim.get_config().propagation);
+        // Stop particles, if they drop below 50 MeV
+        sim.get_config().min_pT(50 * traccc<float>::MeV);
+        // Toy detector surface finding config
         sim.get_config().propagation.navigation.search_window = {3, 3};
         // Set constrained step size to 1 mm
         sim.get_config().propagation.stepping.step_constraint =
@@ -152,9 +155,6 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
         detray::toy_det_config<scalar_type> toy_cfg{};
         toy_cfg.n_brl_layers(4u).n_edc_layers(7u).do_check(false);
 
-        // @TODO: Increase the material budget again
-        toy_cfg.module_mat_thickness(0.0001f * traccc::unit<scalar_type>::mm);
-
         return toy_cfg;
     }
 
@@ -163,8 +163,8 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
         cfg.navigation.search_window = {3, 3};
         cfg.navigation.overstep_tolerance = -1000.f * traccc::unit<float>::um;
         cfg.navigation.min_mask_tolerance = 1e-2f * traccc::unit<float>::mm;
-        cfg.navigation.max_mask_tolerance = 7.f * traccc::unit<float>::mm;
-        cfg.navigation.mask_tolerance_scalor = 1.f;
+        cfg.navigation.max_mask_tolerance = 3.f * traccc::unit<float>::mm;
+        cfg.navigation.mask_tolerance_scalor = 0.5f;
     }
 
     void SetUp(::benchmark::State& /*state*/) {

@@ -8,16 +8,14 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/definitions/qualifiers.hpp"
 #include "traccc/simulation/smearing_writer.hpp"
 #include "traccc/utils/particle.hpp"
 
 // Detray include(s).
 #include <detray/definitions/pdg_particle.hpp>
 #include <detray/navigation/navigator.hpp>
-#include <detray/propagator/actor_chain.hpp>
-#include <detray/propagator/actors/aborters.hpp>
-#include <detray/propagator/actors/parameter_resetter.hpp>
-#include <detray/propagator/actors/parameter_transporter.hpp>
+#include <detray/propagator/actors.hpp>
 #include <detray/propagator/propagator.hpp>
 #include <detray/propagator/rk_stepper.hpp>
 #include <detray/test/utils/simulation/random_scatterer.hpp>
@@ -49,14 +47,14 @@ struct simulator {
         scalar_type m_min_p = 10.f * traccc::unit<scalar_type>::MeV;
 
         /// Set the momentum limit to @param p
-        DETRAY_HOST_DEVICE
+        TRACCC_HOST_DEVICE
         inline void min_p(const scalar_type p) {
             m_is_pT = false;
             m_min_p = p;
         }
 
         /// Set the transverse momentum limit to @param p
-        DETRAY_HOST_DEVICE
+        TRACCC_HOST_DEVICE
         inline void min_pT(const scalar_type p) {
             m_is_pT = true;
             m_min_p = p;
