@@ -45,9 +45,8 @@ full_chain_algorithm::full_chain_algorithm(
           std::make_unique<vecmem::binary_page_memory_resource>(m_device_mr)),
       m_copy(m_stream.cudaStream()),
       m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
-      m_field(
-          detray::bfield::create_const_field<host_detector_type::scalar_type>(
-              m_field_vec)),
+      m_field(traccc::construct_const_bfield<host_detector_type::scalar_type>(
+          m_field_vec)),
       m_det_descr(det_descr),
       m_device_det_descr(
           static_cast<silicon_detector_description::buffer::size_type>(

@@ -14,6 +14,7 @@
 #include "traccc/performance/details/is_same_object.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
 #include "traccc/simulation/simulator.hpp"
+#include "traccc/utils/bfield.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/ranges.hpp"
 #include "traccc/utils/seed_generator.hpp"
@@ -84,7 +85,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     auto det_view = detray::get_data(host_det);
 
     auto field =
-        detray::bfield::create_const_field<host_detector_type::scalar_type>(
+        traccc::construct_const_bfield<host_detector_type::scalar_type>(
             std::get<13>(GetParam()));
 
     /***************************

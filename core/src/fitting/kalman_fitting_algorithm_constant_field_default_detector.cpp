@@ -9,27 +9,29 @@
 #include "traccc/fitting/details/fit_tracks.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
+#include "traccc/utils/bfield.hpp"
 
 // Detray include(s).
 #include <detray/navigation/navigator.hpp>
 #include <detray/propagator/rk_stepper.hpp>
 
+namespace {
+using detector_type = traccc::default_detector;
+using scalar_type = detector_type::host::scalar_type;
+using bfield_type = covfie::field<traccc::const_bfield_backend_t<scalar_type>>;
+}  // namespace
+
 namespace traccc::host {
 
 kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
-    const default_detector::host& det,
-    const detray::bfield::const_field_t<
-        traccc::default_detector::host::scalar_type>::view_t& field,
+    const detector_type::host& det, const bfield_type::view_t& field,
     const track_candidate_container_types::const_view& track_candidates) const {
 
-    using scalar_type = traccc::default_detector::host::scalar_type;
-
     // Create the fitter object.
-    kalman_fitter<
-        detray::rk_stepper<detray::bfield::const_field_t<scalar_type>::view_t,
-                           traccc::default_detector::host::algebra_type,
-                           detray::constrained_step<scalar_type>>,
-        detray::navigator<const traccc::default_detector::host>>
+    kalman_fitter<detray::rk_stepper<bfield_type::view_t,
+                                     detector_type::host::algebra_type,
+                                     detray::constrained_step<scalar_type>>,
+                  detray::navigator<const detector_type::host>>
         fitter{det, field, m_config};
 
     // Perform the track fitting using a common, templated function.

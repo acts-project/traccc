@@ -11,10 +11,10 @@
 #include "traccc/definitions/common.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/utils/bfield.hpp"
 
 // detray include(s).
 #include <detray/definitions/pdg_particle.hpp>
-#include <detray/detectors/bfield.hpp>
 #include <detray/navigation/navigator.hpp>
 #include <detray/propagator/propagator.hpp>
 #include <detray/propagator/rk_stepper.hpp>
@@ -37,7 +37,8 @@ class KalmanFittingTests : public testing::Test {
     using device_detector_type = traccc::default_detector::device;
 
     using scalar_type = device_detector_type::scalar_type;
-    using b_field_t = covfie::field<detray::bfield::const_bknd_t<scalar_type>>;
+    using b_field_t =
+        covfie::field<traccc::const_bfield_backend_t<scalar_type>>;
     using rk_stepper_type =
         detray::rk_stepper<b_field_t::view_t, traccc::default_algebra,
                            detray::constrained_step<scalar_type>>;

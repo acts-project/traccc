@@ -68,8 +68,8 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
 
     const auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
-    auto field =
-        detray::bfield::create_const_field<host_detector_type::scalar_type>(B);
+    const covfie::field<traccc::const_bfield_backend_t<traccc::scalar>> field =
+        traccc::construct_const_bfield<traccc::scalar>(B);
 
     /***************************
      * Generate simulation data
