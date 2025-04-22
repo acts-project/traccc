@@ -30,7 +30,7 @@ namespace traccc::cuda {
 // Device operator to calculate relative number of shared measurements
 struct devide_op {
     TRACCC_HOST_DEVICE
-    traccc::scalar operator()(int a, int b) const {
+    traccc::scalar operator()(unsigned int a, unsigned int b) const {
         return static_cast<traccc::scalar>(a) / static_cast<traccc::scalar>(b);
     }
 };
@@ -110,8 +110,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
     vecmem::device_vector<int> status_device(status_buffer);
     thrust::fill(thrust_policy, status_device.begin(), status_device.end(), 1);
 
-    m_stream.get().synchronize();
-
     // Get the sizes of the track candidates in each track
     using jagged_buffer_size_type = track_candidate_container_types::
         const_device::item_vector::value_type::size_type;
@@ -133,6 +131,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
     vecmem::data::vector_buffer<traccc::scalar> pvals_buffer{n_tracks,
                                                              m_mr.main};
     vecmem::data::vector_buffer<std::size_t> n_meas_buffer{n_tracks, m_mr.main};
+    thrust::fill(thrust_policy, n_meas_buffer.ptr(),
+                 n_meas_buffer.ptr() + n_tracks, 0);
 
     {
         const unsigned int nThreads = m_warp_size * 2;
@@ -197,7 +197,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
     thrust::sort_by_key(thrust_policy, unique_meas_buffer.ptr(),
                         unique_meas_buffer.ptr() + meas_count,
                         unique_meas_counts_buffer.ptr());
-    m_stream.get().synchronize();
 
     // Retreive the counting vector to host
     std::vector<std::size_t> unique_meas_counts;
@@ -216,11 +215,15 @@ greedy_ambiguity_resolution_algorithm::operator()(
     vecmem::data::jagged_vector_buffer<int> track_status_per_measurement_buffer(
         unique_meas_counts, m_mr.main, m_mr.host,
         vecmem::data::buffer_type::resizable);
+
     m_copy.get().setup(track_status_per_measurement_buffer)->ignore();
 
     // Make the number of accetped tracks per measurement vector
     vecmem::data::vector_buffer<unsigned int>
         n_accepted_tracks_per_measurement_buffer(meas_count, m_mr.main);
+    thrust::fill(thrust_policy, n_accepted_tracks_per_measurement_buffer.ptr(),
+                 n_accepted_tracks_per_measurement_buffer.ptr() + meas_count,
+                 0);
 
     // Fill tracks per measurement vector
     {
@@ -245,6 +248,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
     // Make shared number of measurements vector
     vecmem::data::vector_buffer<unsigned int> n_shared_buffer{n_tracks,
                                                               m_mr.main};
+    thrust::fill(thrust_policy, n_shared_buffer.ptr(),
+                 n_shared_buffer.ptr() + n_tracks, 0);
     m_copy.get().setup(n_shared_buffer)->ignore();
 
     // Count shared number of measurements
@@ -290,6 +295,9 @@ greedy_ambiguity_resolution_algorithm::operator()(
                  sorted_ids_buffer.ptr() + n_accepted, trk_comp);
     m_stream.get().synchronize();
 
+    // Shared count comparator
+    shared_count_comparator sh_comp(n_shared_buffer.ptr());
+
     // Iterate over tracks
     for (unsigned int iter = 0; iter < m_config.max_iterations; iter++) {
         // Terminate if there are no tracks to iterate
@@ -297,20 +305,16 @@ greedy_ambiguity_resolution_algorithm::operator()(
             break;
         }
 
-        shared_count_comparator sh_comp(n_shared_buffer.ptr());
-
         // TODO: Write kernel instead
         auto max_it =
             thrust::max_element(thrust_policy, sorted_ids_buffer.ptr(),
                                 sorted_ids_buffer.ptr() + n_accepted, sh_comp);
-        m_stream.get().synchronize();                                
+        m_stream.get().synchronize();
 
         unsigned int max_track_id;
         TRACCC_CUDA_ERROR_CHECK(
             cudaMemcpyAsync(&max_track_id, max_it, sizeof(unsigned int),
                             cudaMemcpyDeviceToHost, stream));
-
-        printf("Max track ID %d \n", max_track_id);
 
         m_stream.get().synchronize();
 
@@ -373,10 +377,13 @@ greedy_ambiguity_resolution_algorithm::operator()(
             m_stream.get().synchronize();
         }
 
+        thrust::transform(thrust_policy, n_shared_buffer.ptr(),
+                          n_shared_buffer.ptr() + n_tracks, n_meas_buffer.ptr(),
+                          rel_shared_buffer.ptr(), devide_op{});
+
         // Keep the sorted ids vector sorted
         thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
                      sorted_ids_buffer.ptr() + n_accepted, trk_comp);
-        m_stream.get().synchronize();
     }
 
     std::vector<unsigned int> accepted_ids;
@@ -384,7 +391,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
         .get()(sorted_ids_buffer, accepted_ids,
                vecmem::copy::type::device_to_host)
         ->wait();
-    m_stream.get().synchronize();
 
     auto max_it =
         std::max_element(candidate_sizes.begin(), candidate_sizes.end());

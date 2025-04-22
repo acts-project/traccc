@@ -69,9 +69,6 @@ TRACCC_HOST_DEVICE inline void update_vectors(
         const unsigned int N_S =
             vecmem::device_atomic_ref<unsigned int>(n_shared.at(tid))
                 .fetch_add(-1u);
-
-        rel_shared[tid] = static_cast<traccc::scalar>(n_shared[tid]) /
-                          static_cast<traccc::scalar>(n_meas[tid]);
     }
 }
 

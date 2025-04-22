@@ -151,8 +151,9 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
         unsigned int max_shared{0u};
         for (const auto& i : accepted_ids) {
-            if (n_shared[i] > max_shared)
+            if (n_shared[i] > max_shared) {
                 max_shared = n_shared[i];
+            }
         }
 
         // Terminate if the max shared measurements is less than the cut value
@@ -193,6 +194,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
             // number of shared measurement can be reduced by one
             if (tracks.size() == 1) {
                 const auto tid = tracks[0];
+
                 n_shared[tid]--;
                 rel_shared[tid] = static_cast<traccc::scalar>(n_shared[tid]) /
                                   static_cast<traccc::scalar>(n_meas[tid]);
