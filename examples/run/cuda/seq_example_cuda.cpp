@@ -376,8 +376,6 @@ int seq_run(const traccc::opts::detector& detector_opts,
                                     vecmem::get_data(params));
                 }
 
-                std::cout << "Hello0" << std::endl;
-
                 // CUDA
                 {
                     traccc::performance::timer timer{
@@ -386,8 +384,6 @@ int seq_run(const traccc::opts::detector& detector_opts,
                         resolution_alg_cuda(track_candidates_buffer);
                 }
 
-                std::cout << "Hello1" << std::endl;
-
                 // CPU
                 if (accelerator_opts.compare_with_cpu) {
                     traccc::performance::timer timer{
@@ -395,8 +391,6 @@ int seq_run(const traccc::opts::detector& detector_opts,
                     res_track_candidates =
                         resolution_alg_cpu(traccc::get_data(track_candidates));
                 }
-
-                std::cout << "Hello2" << std::endl;
 
                 // CUDA
                 {

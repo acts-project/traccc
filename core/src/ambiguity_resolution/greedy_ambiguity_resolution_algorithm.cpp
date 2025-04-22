@@ -29,6 +29,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     const std::size_t n_tracks = track_candidates.size();
 
+    // Make sure there is no duplicate measurement
+
     // Make the output container
     track_candidate_container_types::host output{&m_mr.main};
 
@@ -90,6 +92,12 @@ greedy_ambiguity_resolution_algorithm::operator()(
     tracks_per_measurement.resize(unique_meas.size());
 
     for (const auto& i : accepted_ids) {
+
+        // Make sure there is no duplicate
+        assert(meas_ids[i].size() != std::unordered_set<std::size_t>(
+                                         meas_ids[i].begin(), meas_ids[i].end())
+                                         .size());
+
         for (const auto& meas_id : meas_ids[i]) {
             const auto it = std::lower_bound(unique_meas.begin(),
                                              unique_meas.end(), meas_id);

@@ -289,12 +289,13 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest4) {
         }
 
         std::sort(pattern.begin(), pattern.end());
+        
         auto last = std::unique(pattern.begin(), pattern.end());
 
         // There should not be duplicate
         ASSERT_EQ(last, pattern.end());
         pattern.erase(last, pattern.end());
-
+        
         // Make sure that partern size is eqaul to the track length
         ASSERT_EQ(pattern.size(), track_length);
 

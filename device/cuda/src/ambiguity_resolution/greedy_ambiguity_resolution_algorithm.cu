@@ -310,6 +310,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
             cudaMemcpyAsync(&max_track_id, max_it, sizeof(unsigned int),
                             cudaMemcpyDeviceToHost, stream));
 
+        printf("Max track ID %d \n", max_track_id);
+
         m_stream.get().synchronize();
 
         unsigned int max_shared;
