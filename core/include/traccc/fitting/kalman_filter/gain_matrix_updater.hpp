@@ -72,6 +72,9 @@ struct gain_matrix_updater {
         static_assert(((D == 1u) || (D == 2u)),
                       "The measurement dimension should be 1 or 2");
 
+        assert(!bound_params.is_invalid());
+        assert(!bound_params.surface_link().is_invalid());
+
         const auto meas = trk_state.get_measurement();
 
         // Some identity matrices
@@ -82,7 +85,7 @@ struct gain_matrix_updater {
         matrix_type<D, e_bound_size> H = meas.subs.template projector<D>();
 
         // Measurement data on surface
-        const matrix_type<D, 1>& meas_local =
+        const matrix_type<D, 1> meas_local =
             trk_state.template measurement_local<D>();
 
         // Predicted vector of bound track parameters
@@ -109,6 +112,7 @@ struct gain_matrix_updater {
             H * predicted_cov * matrix::transpose(H) + V;
 
         // Kalman gain matrix
+        assert(matrix::determinant(M) != 0.f);
         const matrix_type<6, D> K =
             predicted_cov * matrix::transpose(H) * matrix::inverse(M);
 
@@ -155,6 +159,8 @@ struct gain_matrix_updater {
 
         // Wrap the phi in the range of [-pi, pi]
         wrap_phi(trk_state.filtered());
+
+        assert(!trk_state.filtered().is_invalid());
 
         return kalman_fitter_status::SUCCESS;
     }

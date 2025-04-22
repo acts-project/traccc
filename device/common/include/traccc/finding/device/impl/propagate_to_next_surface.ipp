@@ -100,6 +100,7 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     // If a surface found, add the parameter for the next step
     if (s5.success) {
         assert(propagation._navigation.is_on_sensitive());
+        assert(!propagation._stepping.bound_params().is_invalid());
 
         params[param_id] = propagation._stepping.bound_params();
         params_liveness[param_id] = 1u;
