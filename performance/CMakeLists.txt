@@ -70,7 +70,7 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    "src/performance/throughput.cpp" )
 target_link_libraries( traccc_performance
    PUBLIC traccc::core traccc::io covfie::core detray::test_utils
-   PRIVATE indicators::indicators )
+)
 
 # Use ROOT in traccc::performance, if requested.
 if( TRACCC_USE_ROOT )

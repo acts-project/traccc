@@ -31,12 +31,10 @@
 #include "traccc/performance/throughput.hpp"
 #include "traccc/performance/timer.hpp"
 #include "traccc/performance/timing_info.hpp"
+#include "traccc/utils/logging.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/binary_page_memory_resource.hpp>
-
-// Indicators include(s).
-#include <indicators/progress_bar.hpp>
 
 // System include(s).
 #include <cstdlib>
@@ -49,8 +47,9 @@ namespace traccc {
 template <typename FULL_CHAIN_ALG, typename HOST_MR>
 int throughput_st(std::string_view description, int argc, char* argv[],
                   bool use_host_caching) {
-    std::unique_ptr<const traccc::Logger> logger = traccc::getDefaultLogger(
+    std::unique_ptr<const traccc::Logger> ilogger = traccc::getDefaultLogger(
         "ThroughputExample", traccc::Logging::Level::INFO);
+    TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
     // Program options.
     opts::detector detector_opts;
@@ -67,7 +66,7 @@ int throughput_st(std::string_view description, int argc, char* argv[],
          finding_opts, propagation_opts, fitting_opts, throughput_opts},
         argc,
         argv,
-        logger->cloneWithSuffix("Options")};
+        logger().cloneWithSuffix("Options")};
 
     // Set up the timing info holder.
     performance::timing_info times;
@@ -108,7 +107,7 @@ int throughput_st(std::string_view description, int argc, char* argv[],
             input.push_back({uncached_host_mr});
             static constexpr bool DEDUPLICATE = true;
             io::read_cells(input.back(), i, input_opts.directory,
-                           logger->clone(), &det_descr, input_opts.format,
+                           logger().clone(), &det_descr, input_opts.format,
                            DEDUPLICATE, input_opts.use_acts_geom_source);
         }
     }
@@ -133,7 +132,7 @@ int throughput_st(std::string_view description, int argc, char* argv[],
         spacepoint_grid_config{seeding_opts.seedfinder},
         seeding_opts.seedfilter, finding_cfg, fitting_cfg, det_descr,
         (detector_opts.use_detray_detector ? &detector : nullptr),
-        logger->clone("FullChainAlg"));
+        logger().clone("FullChainAlg"));
 
     // Seed the random number generator.
     if (throughput_opts.random_seed == 0) {
@@ -149,19 +148,13 @@ int throughput_st(std::string_view description, int argc, char* argv[],
     // Cold Run events. To discard any "initialisation issues" in the
     // measurements.
     {
-        // Set up a progress bar for the warm-up processing.
-        indicators::ProgressBar progress_bar{
-            indicators::option::BarWidth{50},
-            indicators::option::PrefixText{"Warm-up processing "},
-            indicators::option::ShowPercentage{true},
-            indicators::option::ShowRemainingTime{true},
-            indicators::option::MaxProgress{throughput_opts.cold_run_events}};
 
         // Measure the time of execution.
         performance::timer t{"Warm-up processing", times};
 
         // Process the requested number of events.
         for (std::size_t i = 0; i < throughput_opts.cold_run_events; ++i) {
+            TRACCC_INFO("Processing warm-up event #" << i);
 
             // Choose which event to process.
             const std::size_t event =
@@ -172,7 +165,6 @@ int throughput_st(std::string_view description, int argc, char* argv[],
 
             // Process one event.
             rec_track_params += (*alg)(input[event]).size();
-            progress_bar.tick();
         }
     }
 
@@ -180,19 +172,12 @@ int throughput_st(std::string_view description, int argc, char* argv[],
     rec_track_params = 0;
 
     {
-        // Set up a progress bar for the event processing.
-        indicators::ProgressBar progress_bar{
-            indicators::option::BarWidth{50},
-            indicators::option::PrefixText{"Event processing   "},
-            indicators::option::ShowPercentage{true},
-            indicators::option::ShowRemainingTime{true},
-            indicators::option::MaxProgress{throughput_opts.processed_events}};
-
         // Measure the total time of execution.
         performance::timer t{"Event processing", times};
 
         // Process the requested number of events.
         for (std::size_t i = 0; i < throughput_opts.processed_events; ++i) {
+            TRACCC_INFO("Processing event #" << i);
 
             // Choose which event to process.
             const std::size_t event =
@@ -203,7 +188,6 @@ int throughput_st(std::string_view description, int argc, char* argv[],
 
             // Process one event.
             rec_track_params += (*alg)(input[event]).size();
-            progress_bar.tick();
         }
     }
 
