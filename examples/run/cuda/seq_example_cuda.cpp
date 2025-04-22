@@ -83,6 +83,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     vecmem::cuda::host_memory_resource cuda_host_mr;
     vecmem::cuda::device_memory_resource device_mr;
     traccc::memory_resource mr{device_mr, &cuda_host_mr};
+    traccc::memory_resource hmr{host_mr};
 
     // Host copy object
     vecmem::copy host_copy;
@@ -192,7 +193,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     host_finding_algorithm finding_alg(finding_cfg,
                                        logger().clone("HostFindingAlg"));
     host_ambiguity_resolution_algorithm resolution_alg_cpu(
-        resolution_config, mr, logger().clone("AmbiguityResolutionAlg"));
+        resolution_config, hmr, logger().clone("AmbiguityResolutionAlg"));
     host_fitting_algorithm fitting_alg(fitting_cfg, host_mr, host_copy,
                                        logger().clone("HostFittingAlg"));
 
@@ -375,6 +376,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
                                     vecmem::get_data(params));
                 }
 
+                std::cout << "Hello0" << std::endl;
+
                 // CUDA
                 {
                     traccc::performance::timer timer{
@@ -383,6 +386,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
                         resolution_alg_cuda(track_candidates_buffer);
                 }
 
+                std::cout << "Hello1" << std::endl;
+
                 // CPU
                 if (accelerator_opts.compare_with_cpu) {
                     traccc::performance::timer timer{
@@ -390,6 +395,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
                     res_track_candidates =
                         resolution_alg_cpu(traccc::get_data(track_candidates));
                 }
+
+                std::cout << "Hello2" << std::endl;
 
                 // CUDA
                 {

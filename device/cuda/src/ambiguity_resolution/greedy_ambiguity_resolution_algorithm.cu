@@ -118,15 +118,10 @@ greedy_ambiguity_resolution_algorithm::operator()(
     const std::vector<jagged_buffer_size_type> candidate_sizes =
         m_copy.get().get_sizes(track_candidates_view.items);
 
-    // Make measurement size vector
-    std::vector<jagged_buffer_size_type> meas_sizes(n_tracks);
-    std::transform(candidate_sizes.begin(), candidate_sizes.end(),
-                   meas_sizes.begin(),
-                   [this](const jagged_buffer_size_type sz) { return sz; });
-
     // Make measurement ID, pval and n_measurement vector
     vecmem::data::jagged_vector_buffer<std::size_t> meas_ids_buffer{
-        meas_sizes, m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable};
+        candidate_sizes, m_mr.main, m_mr.host,
+        vecmem::data::buffer_type::resizable};
     m_copy.get().setup(meas_ids_buffer)->ignore();
 
     const unsigned int n_cands_total =
@@ -134,6 +129,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     vecmem::data::vector_buffer<std::size_t> flat_meas_ids_buffer{
         n_cands_total, m_mr.main, vecmem::data::buffer_type::resizable};
+    m_copy.get().setup(flat_meas_ids_buffer)->ignore();
     vecmem::data::vector_buffer<traccc::scalar> pvals_buffer{n_tracks,
                                                              m_mr.main};
     vecmem::data::vector_buffer<std::size_t> n_meas_buffer{n_tracks, m_mr.main};
@@ -201,6 +197,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     thrust::sort_by_key(thrust_policy, unique_meas_buffer.ptr(),
                         unique_meas_buffer.ptr() + meas_count,
                         unique_meas_counts_buffer.ptr());
+    m_stream.get().synchronize();
 
     // Retreive the counting vector to host
     std::vector<std::size_t> unique_meas_counts;
@@ -275,6 +272,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     thrust::transform(thrust_policy, n_shared_buffer.ptr(),
                       n_shared_buffer.ptr() + n_tracks, n_meas_buffer.ptr(),
                       rel_shared_buffer.ptr(), devide_op{});
+    m_stream.get().synchronize();
 
     // Make sorted ids vector
     vecmem::data::vector_buffer<unsigned int> sorted_ids_buffer{n_accepted,
@@ -285,10 +283,12 @@ greedy_ambiguity_resolution_algorithm::operator()(
     thrust::copy(thrust_policy, pre_accepted_ids_buffer.ptr(),
                  pre_accepted_ids_buffer.ptr() + n_accepted,
                  sorted_ids_buffer.ptr());
+    m_stream.get().synchronize();
 
     track_comparator trk_comp(rel_shared_buffer.ptr(), pvals_buffer.ptr());
     thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
                  sorted_ids_buffer.ptr() + n_accepted, trk_comp);
+    m_stream.get().synchronize();
 
     // Iterate over tracks
     for (unsigned int iter = 0; iter < m_config.max_iterations; iter++) {
@@ -303,6 +303,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
         auto max_it =
             thrust::max_element(thrust_policy, sorted_ids_buffer.ptr(),
                                 sorted_ids_buffer.ptr() + n_accepted, sh_comp);
+        m_stream.get().synchronize();                                
+
         unsigned int max_track_id;
         TRACCC_CUDA_ERROR_CHECK(
             cudaMemcpyAsync(&max_track_id, max_it, sizeof(unsigned int),
@@ -339,6 +341,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
         // Fill the accepted ids vector using counting iterator
         thrust::copy_if(thrust_policy, cit_begin, cit_end, status_buffer.ptr(),
                         pre_accepted_ids_buffer.ptr(), thrust::identity<int>());
+        m_stream.get().synchronize();
 
         // Remove the worst (rejected) id from the sorted ids
         n_accepted--;
@@ -347,7 +350,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
         {
             const unsigned int nThreads = m_warp_size * 2;
             const unsigned int nBlocks =
-                (meas_sizes[worst_track] + nThreads - 1) / nThreads;
+                (candidate_sizes[worst_track] + nThreads - 1) / nThreads;
 
             kernels::update_vectors<<<nBlocks, nThreads, 0, stream>>>(
                 device::update_vectors_payload{
@@ -371,6 +374,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
         // Keep the sorted ids vector sorted
         thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
                      sorted_ids_buffer.ptr() + n_accepted, trk_comp);
+        m_stream.get().synchronize();
     }
 
     std::vector<unsigned int> accepted_ids;
@@ -378,6 +382,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
         .get()(sorted_ids_buffer, accepted_ids,
                vecmem::copy::type::device_to_host)
         ->wait();
+    m_stream.get().synchronize();
 
     auto max_it =
         std::max_element(candidate_sizes.begin(), candidate_sizes.end());
