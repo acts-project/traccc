@@ -299,10 +299,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
         shared_count_comparator sh_comp(n_shared_buffer.ptr());
 
-        /*
-                printf("hi \n");
-                printf("%d %lu \n", *max_it, max_index);
-        */
         // TODO: Write kernel instead
         auto max_it =
             thrust::max_element(thrust_policy, sorted_ids_buffer.ptr(),
@@ -346,8 +342,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
         // Remove the worst (rejected) id from the sorted ids
         n_accepted--;
-
-        printf("n accepted %d \n", n_accepted);
 
         // Update vectors after the removal
         {

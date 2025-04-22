@@ -40,7 +40,7 @@ TRACCC_HOST_DEVICE inline void count_shared_measurements(
         const std::size_t unique_meas_idx =
             static_cast<std::size_t>(thrust::distance(unique_meas.begin(), it));
         if (tracks_per_measurement.at(unique_meas_idx).size() > 1) {
-            //n_shared.at(id)++;
+            // n_shared.at(id)++;
             vecmem::device_atomic_ref<unsigned int>(n_shared.at(id))
                 .fetch_add(1u);
         }

@@ -50,10 +50,8 @@ bool find_pattern(const track_container_t& res_track_candidates,
         const auto& res_cands = res_track_candidates.at(i).items;
         std::vector<std::size_t> ids;
         for (const auto& cand : res_cands) {
-            std::cout << cand.measurement_id << " ";
             ids.push_back(cand.measurement_id);
         }
-        std::cout << std::endl;
         if (pattern == ids) {
             return true;
         }
@@ -244,7 +242,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest3) {
 // Comparison to the CPU algorithm
 TEST(CudaAmbiguitySolverTests, GreedyResolverTest4) {
 
-    std::size_t n_tracks = 5u;
+    std::size_t n_tracks = 10000u;
 
     // Memory resource used by the EDM.
     vecmem::cuda::device_memory_resource device_mr;
@@ -351,17 +349,6 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest4) {
 
     const auto n_tracks_cpu = res_trk_cands_cpu.size();
     ASSERT_EQ(n_tracks_cpu, res_trk_cands_cuda.size());
-
-    std::cout << "CPU " << std::endl;
-    for (unsigned int i = 0; i < n_tracks_cpu; i++) {   
-        std::cout << res_trk_cands_cpu.at(i).items.size() << std::endl;
-    }
-
-    std::cout << "CUDA " << std::endl;
-
-    for (unsigned int i = 0; i < n_tracks_cpu; i++) {   
-        std::cout << res_trk_cands_cuda.at(i).items.size() << std::endl;
-    }
 
     // Make sure that CPU and CUDA track candidates have same patterns
     for (unsigned int i = 0; i < n_tracks_cpu; i++) {

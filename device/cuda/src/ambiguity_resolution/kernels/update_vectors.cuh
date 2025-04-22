@@ -12,6 +12,5 @@
 
 namespace traccc::cuda::kernels {
 
-__global__ void update_vectors(
-    device::update_vectors_payload payload);
+__global__ void update_vectors(device::update_vectors_payload payload);
 }
