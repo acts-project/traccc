@@ -44,7 +44,8 @@ void read_particles(particle_container_types::host& particles,
                     std::string_view particles_file, std::string_view hits_file,
                     std::string_view measurements_file,
                     std::string_view hit_map_file,
-                    const traccc::default_detector::host* detector) {
+                    const traccc::default_detector::host* detector,
+                    const bool sort_measurements) {
 
     // Memory resource used by the temporary collections.
     vecmem::host_memory_resource mr;
@@ -59,15 +60,17 @@ void read_particles(particle_container_types::host& particles,
     read_particles(temp_particles, particles_file);
 
     // Read in all measurements, into a temporary collection.
-    static constexpr bool sort_measurements = false;
     measurement_collection_types::host temp_measurements{&mr};
-    read_measurements(temp_measurements, measurements_file, detector,
-                      sort_measurements);
+    const std::vector<std::size_t> new_idx_map = read_measurements(
+        temp_measurements, measurements_file, detector, sort_measurements);
 
     // Make a hit to measurement map.
     std::unordered_map<std::size_t, std::size_t> hit_to_measurement;
     measurement_hit_id mhid;
     while (measurement_hit_id_reader.read(mhid)) {
+        if (sort_measurements) {
+            mhid.measurement_id = new_idx_map[mhid.measurement_id];
+        }
         if (hit_to_measurement.insert({mhid.hit_id, mhid.measurement_id})
                 .second == false) {
             throw std::runtime_error(
