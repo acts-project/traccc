@@ -22,7 +22,6 @@
 #include "traccc/utils/seed_generator.hpp"
 
 // Detray include(s).
-#include <detray/core/detector.hpp>
 #include <detray/io/frontend/detector_reader.hpp>
 #include <detray/navigation/navigator.hpp>
 #include <detray/propagator/propagator.hpp>

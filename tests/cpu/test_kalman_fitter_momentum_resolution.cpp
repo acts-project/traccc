@@ -44,7 +44,7 @@ TEST_P(KalmanFittingMomentumResolutionTests, Run) {
     const scalar eta = std::get<4>(GetParam());
     const scalar theta = eta_to_theta(eta);
     const scalar phi = std::get<5>(GetParam());
-    const detray::pdg_particle<scalar> ptc = std::get<6>(GetParam());
+    const traccc::pdg_particle<scalar> ptc = std::get<6>(GetParam());
     const unsigned int n_truth_tracks = std::get<7>(GetParam());
     const unsigned int n_events = std::get<8>(GetParam());
     const bool random_charge = std::get<9>(GetParam());

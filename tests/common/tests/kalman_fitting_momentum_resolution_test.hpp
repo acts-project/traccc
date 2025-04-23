@@ -42,7 +42,7 @@ class KalmanFittingMomentumResolutionTests
     : public KalmanFittingTests,
       public testing::WithParamInterface<std::tuple<
           std::string, std::array<scalar, 3u>, std::array<scalar, 3u>, scalar,
-          scalar, scalar, detray::pdg_particle<scalar>, unsigned int,
+          scalar, scalar, traccc::pdg_particle<scalar>, unsigned int,
           unsigned int, bool, scalar, unsigned int, scalar, vector3,
           detray::material<scalar>, std::array<scalar, 2u>>> {
 

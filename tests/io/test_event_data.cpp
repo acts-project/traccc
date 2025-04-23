@@ -15,6 +15,9 @@
 #include "traccc/io/utils.hpp"
 #include "traccc/utils/event_data.hpp"
 
+// Detray include(s)
+#include <detray/io/frontend/detector_reader.hpp>
+
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 

@@ -19,11 +19,12 @@
 #include "traccc/utils/bfield.hpp"
 
 // Detray include(s).
-#include <covfie/core/field.hpp>
 #include <detray/io/frontend/detector_writer.hpp>
 #include <detray/test/utils/detectors/build_toy_detector.hpp>
 #include <detray/test/utils/simulation/event_generator/track_generators.hpp>
-#include <detray/tracks/ray.hpp>
+
+// Covfie include(s)
+#include <covfie/core/field.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>

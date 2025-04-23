@@ -37,7 +37,7 @@ class KalmanFittingWireChamberTests
       public testing::WithParamInterface<std::tuple<
           std::string, std::array<scalar, 3u>, std::array<scalar, 3u>,
           std::array<scalar, 2u>, std::array<scalar, 2u>,
-          std::array<scalar, 2u>, detray::pdg_particle<scalar>, unsigned int,
+          std::array<scalar, 2u>, traccc::pdg_particle<scalar>, unsigned int,
           unsigned int, bool>> {
 
     public:

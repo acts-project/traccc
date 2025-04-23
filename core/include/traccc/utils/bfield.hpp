@@ -10,9 +10,6 @@
 #include <covfie/core/backend/primitive/constant.hpp>
 #include <covfie/core/field.hpp>
 #include <covfie/core/vector.hpp>
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
-#include <traccc/fitting/kalman_filter/kalman_fitter.hpp>
 
 namespace traccc {
 template <typename scalar_t>

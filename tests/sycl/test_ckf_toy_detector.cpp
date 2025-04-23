@@ -47,7 +47,7 @@ TEST_P(CkfToyDetectorTests, Run) {
 
     // Get the parameters
     const std::string name = std::get<0>(GetParam());
-    const detray::pdg_particle<traccc::scalar> ptc = std::get<6>(GetParam());
+    const traccc::pdg_particle<traccc::scalar> ptc = std::get<6>(GetParam());
     const unsigned int n_truth_tracks = std::get<7>(GetParam());
     const unsigned int n_events = std::get<8>(GetParam());
     const bool random_charge = std::get<9>(GetParam());

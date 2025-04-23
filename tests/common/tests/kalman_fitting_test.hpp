@@ -14,7 +14,6 @@
 #include "traccc/utils/bfield.hpp"
 
 // detray include(s).
-#include <detray/definitions/pdg_particle.hpp>
 #include <detray/navigation/navigator.hpp>
 #include <detray/propagator/propagator.hpp>
 #include <detray/propagator/rk_stepper.hpp>

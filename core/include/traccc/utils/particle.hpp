@@ -20,10 +20,13 @@
 
 namespace traccc {
 
+template <typename scalar_t>
+using pdg_particle = detray::pdg_particle<scalar_t>;
+
 namespace detail {
 
 template <typename scalar_t>
-TRACCC_HOST_DEVICE inline detray::pdg_particle<scalar_t>
+TRACCC_HOST_DEVICE inline traccc::pdg_particle<scalar_t>
 particle_from_pdg_number(const int pdg_num) {
 
     switch (pdg_num) {
@@ -42,13 +45,13 @@ particle_from_pdg_number(const int pdg_num) {
     }
 
     // TODO: Replace with `detray::invalid` in the future
-    return detray::pdg_particle<scalar_t>(0, 0.f, 0.f);
+    return traccc::pdg_particle<scalar_t>(0, 0.f, 0.f);
 }
 
 // Apply the charge operator to return the antimatter
 template <typename scalar_t>
-TRACCC_HOST_DEVICE inline detray::pdg_particle<scalar_t> charge_conjugation(
-    const detray::pdg_particle<scalar_t>& ptc) {
+TRACCC_HOST_DEVICE inline traccc::pdg_particle<scalar_t> charge_conjugation(
+    const traccc::pdg_particle<scalar_t>& ptc) {
 
     const auto pdg_num = ptc.pdg_num();
 
@@ -68,15 +71,15 @@ TRACCC_HOST_DEVICE inline detray::pdg_particle<scalar_t> charge_conjugation(
     }
 
     // TODO: Replace with `detray::invalid` in the future
-    return detray::pdg_particle<scalar_t>(0, 0.f, 0.f);
+    return traccc::pdg_particle<scalar_t>(0, 0.f, 0.f);
 }
 
 // Return the consistent particle type based on the particle hypothesis and the
 // charge of the track parameters
 template <typename scalar_t>
-TRACCC_HOST_DEVICE inline detray::pdg_particle<scalar_t>
+TRACCC_HOST_DEVICE inline traccc::pdg_particle<scalar_t>
 correct_particle_hypothesis(
-    const detray::pdg_particle<scalar_t>& ptc_hypothesis,
+    const traccc::pdg_particle<scalar_t>& ptc_hypothesis,
     const bound_track_parameters<>& params) {
 
     if (ptc_hypothesis.charge() * params.qop() > 0.f) {
@@ -87,9 +90,9 @@ correct_particle_hypothesis(
 }
 
 template <typename scalar_t>
-TRACCC_HOST_DEVICE inline detray::pdg_particle<scalar_t>
+TRACCC_HOST_DEVICE inline traccc::pdg_particle<scalar_t>
 correct_particle_hypothesis(
-    const detray::pdg_particle<scalar_t>& ptc_hypothesis,
+    const traccc::pdg_particle<scalar_t>& ptc_hypothesis,
     const free_track_parameters<>& params) {
 
     if (ptc_hypothesis.charge() * params.qop() > 0.f) {
