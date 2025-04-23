@@ -13,6 +13,7 @@
 #include "traccc/io/utils.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
+#include "traccc/simulation/event_generators.hpp"
 #include "traccc/simulation/measurement_smearer.hpp"
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/simulation/smearing_writer.hpp"
@@ -21,7 +22,6 @@
 // Detray include(s).
 #include <detray/io/frontend/detector_writer.hpp>
 #include <detray/test/utils/detectors/build_toy_detector.hpp>
-#include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
 // Covfie include(s)
 #include <covfie/core/field.hpp>

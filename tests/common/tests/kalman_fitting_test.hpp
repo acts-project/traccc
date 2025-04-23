@@ -11,11 +11,9 @@
 #include "traccc/definitions/common.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/simulation/event_generators.hpp"
 #include "traccc/utils/bfield.hpp"
 #include "traccc/utils/propagation.hpp"
-
-// detray include(s).
-#include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>

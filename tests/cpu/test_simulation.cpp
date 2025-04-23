@@ -11,6 +11,7 @@
 #include "traccc/io/csv/make_measurement_hit_id_reader.hpp"
 #include "traccc/io/csv/make_measurement_reader.hpp"
 #include "traccc/io/csv/make_particle_reader.hpp"
+#include "traccc/simulation/event_generators.hpp"
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/utils/bfield.hpp"
 
@@ -21,7 +22,6 @@
 #include <detray/geometry/tracking_surface.hpp>
 #include <detray/test/utils/detectors/build_telescope_detector.hpp>
 #include <detray/test/utils/detectors/build_toy_detector.hpp>
-#include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 #include <detray/test/utils/statistics.hpp>
 
 // GTest include(s).
