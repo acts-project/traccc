@@ -281,18 +281,22 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest4) {
         std::vector<std::size_t> pattern;
         while (pattern.size() < track_length) {
 
+            pattern.push_back(meas_id_dist(gen));
+            /* Uncomment to disallow duplicate measurement ids
             const std::size_t meas_id = meas_id_dist(gen);
             if (std::find(pattern.begin(), pattern.end(), meas_id) ==
                 pattern.end()) {
                 pattern.push_back(meas_id);
             }
+            */
         }
 
+        /* Uncomment to assert htat there are no duplicate measurement ids
         std::sort(pattern.begin(), pattern.end());
-
         auto last = std::unique(pattern.begin(), pattern.end());
         ASSERT_EQ(last, pattern.end());
         pattern.erase(last, pattern.end());
+        */
 
         // Make sure that partern size is eqaul to the track length
         ASSERT_EQ(pattern.size(), track_length);
