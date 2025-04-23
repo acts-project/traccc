@@ -43,8 +43,8 @@ struct count_shared_measurements_payload {
     /**
      * @brief View object to the tracks per measurement
      */
-    vecmem::data::jagged_vector_view<const std::size_t>
-        tracks_per_measurement_view;
+    vecmem::data::vector_view<const unsigned int>
+        n_accepted_tracks_per_measurement_view;
 
     /**
      * @brief View object to the number of shared measurements

@@ -10,6 +10,7 @@
 // Thrust include(s).
 #include <thrust/binary_search.h>
 #include <thrust/execution_policy.h>
+#include <thrust/find.h>
 
 namespace traccc::device {
 
@@ -37,11 +38,23 @@ TRACCC_HOST_DEVICE inline void fill_tracks_per_measurement(
 
     const unsigned int id = accepted_ids.at(globalIndex);
 
-    for (const auto& meas_id : meas_ids[id]) {
+    // for (const auto& meas_id : meas_ids[id]) {
+
+    for (unsigned int i = 0; i < meas_ids[id].size(); i++) {
+        auto meas_id = meas_ids[id][i];
+        
+        if (thrust::find(thrust::seq, meas_ids[id].begin(),
+                         meas_ids[id].begin() + i,
+                         meas_id) != (meas_ids[id].begin() + i)) {
+            continue;
+        }
+        
         const auto it = thrust::lower_bound(thrust::seq, unique_meas.begin(),
                                             unique_meas.end(), meas_id);
         const std::size_t unique_meas_idx =
             static_cast<std::size_t>(thrust::distance(unique_meas.begin(), it));
+
+        auto tracks = tracks_per_measurement.at(unique_meas_idx);
 
         tracks_per_measurement.at(unique_meas_idx).push_back(id);
         track_status_per_measurement.at(unique_meas_idx).push_back(1);

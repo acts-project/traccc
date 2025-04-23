@@ -36,8 +36,17 @@ TRACCC_HOST_DEVICE inline void update_vectors(
     vecmem::device_vector<unsigned int> n_shared(payload.n_shared_view);
     vecmem::device_vector<traccc::scalar> rel_shared(payload.rel_shared_view);
 
-    const auto id = meas_ids[payload.worst_track][globalIndex];
+    const auto& meas_ids_of_track = meas_ids[payload.worst_track];
+    const auto id = meas_ids_of_track[globalIndex];
 
+    /*
+    if (thrust::find(thrust::seq, meas_ids_of_track.begin(),
+                     meas_ids_of_track.begin() + globalIndex,
+                     id) != (meas_ids_of_track.begin() + globalIndex)) {
+        return;
+    }
+    */
+   
     const auto it = thrust::lower_bound(thrust::seq, unique_meas.begin(),
                                         unique_meas.end(), id);
     const std::size_t unique_meas_idx =
