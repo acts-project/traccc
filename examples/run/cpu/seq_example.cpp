@@ -7,6 +7,7 @@
 
 // core
 #include "traccc/geometry/detector.hpp"
+#include "traccc/utils/propagation.hpp"
 
 // io
 #include "traccc/io/read_cells.hpp"
@@ -43,11 +44,6 @@
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/options/track_resolution.hpp"
 #include "traccc/options/track_seeding.hpp"
-
-// Detray include(s).
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>

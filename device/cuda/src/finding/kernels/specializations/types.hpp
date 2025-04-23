@@ -13,11 +13,7 @@
 #include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/detector_type_utils.hpp"
-
-// Detray include(s)
-#include <detray/propagator/actors.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
+#include "traccc/utils/propagation.hpp"
 
 namespace traccc::cuda::kernels {
 using default_finding_algorithm =

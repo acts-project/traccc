@@ -21,11 +21,7 @@
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/bfield.hpp"
 #include "traccc/utils/messaging.hpp"
-
-// Detray include(s).
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
+#include "traccc/utils/propagation.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>

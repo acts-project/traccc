@@ -10,12 +10,9 @@
 // Project include(s).
 #include "traccc/simulation/smearing_writer.hpp"
 #include "traccc/utils/particle.hpp"
+#include "traccc/utils/propagation.hpp"
 
 // Detray include(s).
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/actors.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
 #include <detray/test/utils/simulation/random_scatterer.hpp>
 
 // System include(s).

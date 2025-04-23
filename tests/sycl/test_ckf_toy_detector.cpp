@@ -25,7 +25,6 @@
 #include "traccc/utils/ranges.hpp"
 
 // Detray include(s).
-#include <detray/propagator/propagator.hpp>
 #include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
 // VecMem include(s).

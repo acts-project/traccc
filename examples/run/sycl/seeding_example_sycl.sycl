@@ -10,6 +10,7 @@
 
 // core
 #include "traccc/geometry/detector.hpp"
+#include "traccc/utils/propagation.hpp"
 
 // algorithms
 #include "traccc/seeding/seeding_algorithm.hpp"
@@ -35,11 +36,6 @@
 #include "traccc/options/performance.hpp"
 #include "traccc/options/program_options.hpp"
 #include "traccc/options/track_seeding.hpp"
-
-// Detray include(s).
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
 
 // Vecmem include(s)
 #include <vecmem/memory/host_memory_resource.hpp>

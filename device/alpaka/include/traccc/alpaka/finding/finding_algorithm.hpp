@@ -17,10 +17,7 @@
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
-
-// detray include(s).
-#include <detray/propagator/actors.hpp>
-#include <detray/propagator/propagator.hpp>
+#include "traccc/utils/propagation.hpp"
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
