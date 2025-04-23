@@ -88,9 +88,9 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest0) {
     track_candidate_container_types::host trk_cands{&mr.main};
 
     trk_cands.resize(3u);
-    fill_pattern(trk_cands, 0, 8.3f, {1, 3, 5, 11});
-    fill_pattern(trk_cands, 1, 2.2f, {6, 7, 8, 9, 10, 12});
-    fill_pattern(trk_cands, 2, 3.7f, {2, 4, 13});
+    fill_pattern(trk_cands, 0, 0.23f, {5, 1, 11, 3});
+    fill_pattern(trk_cands, 1, 0.85f, {12, 10, 9, 8, 7, 6});
+    fill_pattern(trk_cands, 2, 0.42f, {4, 2, 13});
 
     traccc::cuda::greedy_ambiguity_resolution_algorithm::config_type
         resolution_config;
@@ -106,11 +106,11 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest0) {
         // All tracks are accepted as they have more than three measurements
         EXPECT_EQ(res_trk_cands.size(), 3u);
         ASSERT_TRUE(find_pattern(res_trk_cands,
-                                 std::vector<std::size_t>({1, 3, 5, 11})));
+                                 std::vector<std::size_t>({5, 1, 11, 3})));
         ASSERT_TRUE(find_pattern(
-            res_trk_cands, std::vector<std::size_t>({6, 7, 8, 9, 10, 12})));
+            res_trk_cands, std::vector<std::size_t>({12, 10, 9, 8, 7, 6})));
         ASSERT_TRUE(
-            find_pattern(res_trk_cands, std::vector<std::size_t>({2, 4, 13})));
+            find_pattern(res_trk_cands, std::vector<std::size_t>({4, 2, 13})));
     }
 
     {
@@ -122,7 +122,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest0) {
         // Only the second track with six measurements is accepted
         EXPECT_EQ(res_trk_cands.size(), 1u);
         EXPECT_EQ(get_pattern(res_trk_cands, 0),
-                  std::vector<std::size_t>({6, 7, 8, 9, 10, 12}));
+                  std::vector<std::size_t>({12, 10, 9, 8, 7, 6}));
     }
 }
 
@@ -142,8 +142,8 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest1) {
     track_candidate_container_types::host trk_cands{&mr.main};
 
     trk_cands.resize(2u);
-    fill_pattern(trk_cands, 0, 0.12f, {1, 3, 5, 11, 14, 16, 18});
-    fill_pattern(trk_cands, 1, 0.53f, {3, 5, 6, 13});
+    fill_pattern(trk_cands, 0, 0.12f, {5, 14, 1, 11, 18, 16, 3});
+    fill_pattern(trk_cands, 1, 0.53f, {3, 6, 5, 13});
 
     traccc::cuda::greedy_ambiguity_resolution_algorithm::config_type
         resolution_config;
@@ -162,7 +162,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest1) {
     // shared measurement (2/7) is lower than the one of the second track
     // (2/4)
     ASSERT_TRUE(find_pattern(
-        res_trk_cands, std::vector<std::size_t>({1, 3, 5, 11, 14, 16, 18})));
+        res_trk_cands, std::vector<std::size_t>({5, 14, 1, 11, 18, 16, 3})));
 }
 
 TEST(CudaAmbiguitySolverTests, GreedyResolverTest2) {
@@ -216,10 +216,11 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest3) {
     track_candidate_container_types::host trk_cands{&mr.main};
 
     trk_cands.resize(6u);
-    fill_pattern(trk_cands, 0, 0.2f, {1, 3, 5, 11});
-    fill_pattern(trk_cands, 1, 0.5f, {2, 6});
-    fill_pattern(trk_cands, 2, 0.4f, {3, 6, 12, 14, 19, 21});
-    fill_pattern(trk_cands, 3, 0.1f, {2, 7, 11, 13, 16});
+
+    fill_pattern(trk_cands, 0, 0.2f, {5, 1, 11, 3});
+    fill_pattern(trk_cands, 1, 0.5f, {6, 2});
+    fill_pattern(trk_cands, 2, 0.4f, {3, 21, 12, 6, 19, 14});
+    fill_pattern(trk_cands, 3, 0.1f, {13, 16, 2, 7, 11});
     fill_pattern(trk_cands, 4, 0.3f, {1, 7, 8});
     fill_pattern(trk_cands, 5, 0.6f, {1, 3, 11, 22});
 
@@ -234,9 +235,9 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest3) {
     ASSERT_EQ(res_trk_cands.size(), 2u);
 
     ASSERT_TRUE(find_pattern(res_trk_cands,
-                             std::vector<std::size_t>({3, 6, 12, 14, 19, 21})));
+                             std::vector<std::size_t>({3, 21, 12, 6, 19, 14})));
     ASSERT_TRUE(find_pattern(res_trk_cands,
-                             std::vector<std::size_t>({2, 7, 11, 13, 16})));
+                             std::vector<std::size_t>({13, 16, 2, 7, 11})));
 }
 
 // Comparison to the CPU algorithm
@@ -413,11 +414,11 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest6) {
     track_candidate_container_types::host trk_cands{&mr.main};
 
     trk_cands.resize(5u);
-    fill_pattern(trk_cands, 0, 0.2f, {2, 3, 5, 7, 7, 7, 7});
+    fill_pattern(trk_cands, 0, 0.2f, {7, 3, 5, 7, 7, 7, 2});
     fill_pattern(trk_cands, 1, 0.5f, {2});
-    fill_pattern(trk_cands, 2, 0.4f, {2, 3, 3, 4, 7, 7, 8, 9});
-    fill_pattern(trk_cands, 3, 0.1f, {0, 1, 4, 6, 8, 8, 9});
-    fill_pattern(trk_cands, 4, 0.9f, {2, 3, 10});
+    fill_pattern(trk_cands, 2, 0.4f, {8, 9, 7, 2, 3, 4, 3, 7});
+    fill_pattern(trk_cands, 3, 0.1f, {8, 9, 0, 8, 1, 4, 6});
+    fill_pattern(trk_cands, 4, 0.9f, {10, 3, 2});
 
     traccc::cuda::greedy_ambiguity_resolution_algorithm::config_type
         resolution_config;
@@ -430,7 +431,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest6) {
     ASSERT_EQ(res_trk_cands.size(), 2u);
 
     ASSERT_TRUE(find_pattern(res_trk_cands,
-                             std::vector<std::size_t>({2, 3, 5, 7, 7, 7, 7})));
+                             std::vector<std::size_t>({7, 3, 5, 7, 7, 7, 2})));
     ASSERT_TRUE(find_pattern(res_trk_cands,
-                             std::vector<std::size_t>({0, 1, 4, 6, 8, 8, 9})));
+                             std::vector<std::size_t>({8, 9, 0, 8, 1, 4, 6})));
 }
