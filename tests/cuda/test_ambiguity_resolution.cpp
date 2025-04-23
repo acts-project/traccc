@@ -242,7 +242,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest3) {
 // Comparison to the CPU algorithm
 TEST(CudaAmbiguitySolverTests, GreedyResolverTest4) {
 
-    std::size_t n_tracks = 5u;
+    std::size_t n_tracks = 10000u;
 
     // Memory resource used by the EDM.
     vecmem::cuda::device_memory_resource device_mr;
@@ -268,15 +268,12 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest4) {
     track_candidate_container_types::host trk_cands{&host_mr};
 
     trk_cands.resize(n_tracks);
-    std::random_device rd;
-    std::mt19937 gen(3321040329); 
-    //std::mt19937 gen(42);
+    std::mt19937 gen(42);
 
     for (std::size_t i = 0; i < n_tracks; i++) {
 
         std::uniform_int_distribution<std::size_t> track_length_dist(1, 10);
-        //std::uniform_int_distribution<std::size_t> meas_id_dist(0, 10000);
-        std::uniform_int_distribution<std::size_t> meas_id_dist(0, 10);
+        std::uniform_int_distribution<std::size_t> meas_id_dist(0, 10000);
         std::uniform_real_distribution<traccc::scalar> pval_dist(0.0f, 1.0f);
 
         const std::size_t track_length = track_length_dist(gen);
@@ -284,36 +281,25 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest4) {
         std::vector<std::size_t> pattern;
         while (pattern.size() < track_length) {
 
-            pattern.push_back(meas_id_dist(gen));
-            /*
             const std::size_t meas_id = meas_id_dist(gen);
             if (std::find(pattern.begin(), pattern.end(), meas_id) ==
                 pattern.end()) {
                 pattern.push_back(meas_id);
             }
-            */
         }
 
         std::sort(pattern.begin(), pattern.end());
 
-        // auto last = std::unique(pattern.begin(), pattern.end());
-
-        // There should not be duplicate
-        // ASSERT_EQ(last, pattern.end());
-        // pattern.erase(last, pattern.end());
+        auto last = std::unique(pattern.begin(), pattern.end());
+        ASSERT_EQ(last, pattern.end());
+        pattern.erase(last, pattern.end());
 
         // Make sure that partern size is eqaul to the track length
         ASSERT_EQ(pattern.size(), track_length);
 
         // Fill the pattern
         fill_pattern(trk_cands, i, pval, pattern);
-
-        for (auto p: pattern){
-            std::cout << p << " ";
-        }
-        std::cout << std::endl;
     }
-    std::cout << std::endl;
 
     // CPU algorithm
     traccc::host::greedy_ambiguity_resolution_algorithm::config_type
@@ -405,4 +391,42 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest5) {
         find_pattern(res_trk_cands, std::vector<std::size_t>({3, 2, 1})));
     ASSERT_TRUE(
         find_pattern(res_trk_cands, std::vector<std::size_t>({6, 6, 6, 6})));
+}
+
+TEST(CudaAmbiguitySolverTests, GreedyResolverTest6) {
+
+    // Memory resource used by the EDM.
+    vecmem::cuda::managed_memory_resource mng_mr;
+    vecmem::host_memory_resource host_mr;
+    traccc::memory_resource mr{mng_mr, &host_mr};
+
+    // Cuda stream
+    traccc::cuda::stream stream;
+
+    // Cuda copy objects
+    vecmem::cuda::async_copy copy{stream.cudaStream()};
+
+    track_candidate_container_types::host trk_cands{&mr.main};
+
+    trk_cands.resize(5u);
+    fill_pattern(trk_cands, 0, 0.2f, {2, 3, 5, 7, 7, 7, 7});
+    fill_pattern(trk_cands, 1, 0.5f, {2});
+    fill_pattern(trk_cands, 2, 0.4f, {2, 3, 3, 4, 7, 7, 8, 9});
+    fill_pattern(trk_cands, 3, 0.1f, {0, 1, 4, 6, 8, 8, 9});
+    fill_pattern(trk_cands, 4, 0.9f, {2, 3, 10});
+
+    traccc::cuda::greedy_ambiguity_resolution_algorithm::config_type
+        resolution_config;
+    traccc::cuda::greedy_ambiguity_resolution_algorithm resolution_alg_cuda(
+        resolution_config, mr, copy, stream);
+
+    auto res_trk_cands_buffer =
+        resolution_alg_cuda(traccc::get_data(trk_cands));
+    track_candidate_container_types::device res_trk_cands(res_trk_cands_buffer);
+    ASSERT_EQ(res_trk_cands.size(), 2u);
+
+    ASSERT_TRUE(find_pattern(res_trk_cands,
+                             std::vector<std::size_t>({2, 3, 5, 7, 7, 7, 7})));
+    ASSERT_TRUE(find_pattern(res_trk_cands,
+                             std::vector<std::size_t>({0, 1, 4, 6, 8, 8, 9})));
 }

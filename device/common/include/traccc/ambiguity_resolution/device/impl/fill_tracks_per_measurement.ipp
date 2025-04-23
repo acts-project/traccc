@@ -42,13 +42,13 @@ TRACCC_HOST_DEVICE inline void fill_tracks_per_measurement(
 
     for (unsigned int i = 0; i < meas_ids[id].size(); i++) {
         auto meas_id = meas_ids[id][i];
-        
+
         if (thrust::find(thrust::seq, meas_ids[id].begin(),
                          meas_ids[id].begin() + i,
                          meas_id) != (meas_ids[id].begin() + i)) {
             continue;
         }
-        
+
         const auto it = thrust::lower_bound(thrust::seq, unique_meas.begin(),
                                             unique_meas.end(), meas_id);
         const std::size_t unique_meas_idx =

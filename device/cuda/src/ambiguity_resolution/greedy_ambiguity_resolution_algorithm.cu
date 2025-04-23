@@ -253,17 +253,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
     m_stream.get().synchronize();
     m_copy.get().setup(n_shared_buffer)->ignore();
 
-    std::vector<unsigned int> n_shared_host(n_tracks);
-    TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
-        n_shared_host.data(), n_shared_buffer.ptr(),
-        sizeof(unsigned int) * n_tracks, cudaMemcpyDeviceToHost, stream));
-    m_stream.get().synchronize();
-
-    for (const auto& n : n_shared_host) {
-        printf("%d ", n);
-    }
-    printf("\n");
-
     // Count shared number of measurements
     {
         const unsigned int nThreads = m_warp_size * 2;
@@ -311,43 +300,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
     // Shared count comparator
     shared_count_comparator sh_comp(n_shared_buffer.ptr());
 
-    std::vector<unsigned int> sorted_ids_host(n_accepted);
-    std::vector<float> rel_shared_host(n_accepted);
-
-    TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
-        sorted_ids_host.data(), sorted_ids_buffer.ptr(),
-        sizeof(unsigned int) * n_tracks, cudaMemcpyDeviceToHost, stream));
-    TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
-        n_shared_host.data(), n_shared_buffer.ptr(),
-        sizeof(unsigned int) * n_tracks, cudaMemcpyDeviceToHost, stream));
-    TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
-        rel_shared_host.data(), rel_shared_buffer.ptr(),
-        sizeof(float) * n_tracks, cudaMemcpyDeviceToHost, stream));
-    m_stream.get().synchronize();
-
-    for (std::size_t i = 0; i < n_tracks; ++i) {
-        printf("n shared %d  \n", n_shared_host[i]);
-    }
-
-
     // Iterate over tracks
     for (unsigned int iter = 0; iter < m_config.max_iterations; iter++) {
-
-        TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
-            sorted_ids_host.data(), sorted_ids_buffer.ptr(),
-            sizeof(unsigned int) * n_tracks, cudaMemcpyDeviceToHost, stream));
-        TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
-            n_shared_host.data(), n_shared_buffer.ptr(),
-            sizeof(unsigned int) * n_tracks, cudaMemcpyDeviceToHost, stream));
-        TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
-            rel_shared_host.data(), rel_shared_buffer.ptr(),
-            sizeof(float) * n_tracks, cudaMemcpyDeviceToHost, stream));
-
-        for (std::size_t i = 0; i < n_accepted; ++i) {
-            printf("%d %d %f \n", sorted_ids_host[i],
-                   n_shared_host[sorted_ids_host[i]],
-                   rel_shared_host[sorted_ids_host[i]]);
-        }
 
         // Terminate if there are no tracks to iterate
         if (n_accepted == 0) {
@@ -385,7 +339,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
             sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
 
         m_stream.get().synchronize();
-        printf("\n %d %d \n", iter, worst_track);
+
         int reject = 0;
         TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
             status_buffer.ptr() + worst_track, &reject, sizeof(unsigned int),

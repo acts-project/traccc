@@ -9,6 +9,7 @@
 
 // Thrust include(s).
 #include <thrust/binary_search.h>
+#include <thrust/count.h>
 #include <thrust/execution_policy.h>
 #include <thrust/find.h>
 
@@ -39,14 +40,12 @@ TRACCC_HOST_DEVICE inline void update_vectors(
     const auto& meas_ids_of_track = meas_ids[payload.worst_track];
     const auto id = meas_ids_of_track[globalIndex];
 
-    /*
     if (thrust::find(thrust::seq, meas_ids_of_track.begin(),
                      meas_ids_of_track.begin() + globalIndex,
                      id) != (meas_ids_of_track.begin() + globalIndex)) {
         return;
     }
-    */
-   
+
     const auto it = thrust::lower_bound(thrust::seq, unique_meas.begin(),
                                         unique_meas.end(), id);
     const std::size_t unique_meas_idx =
@@ -77,7 +76,9 @@ TRACCC_HOST_DEVICE inline void update_vectors(
 
         const unsigned int N_S =
             vecmem::device_atomic_ref<unsigned int>(n_shared.at(tid))
-                .fetch_add(-1u);
+                .fetch_add(-static_cast<unsigned int>(
+                    thrust::count(thrust::seq, meas_ids.at(tid).begin(),
+                                  meas_ids.at(tid).end(), id)));
     }
 }
 

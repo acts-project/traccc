@@ -331,3 +331,29 @@ TEST(AmbiguitySolverTests, GreedyResolverTest5) {
                   std::vector<std::size_t>({6, 6, 6, 6}));
     }
 }
+
+TEST(AmbiguitySolverTests, GreedyResolverTest6) {
+
+    track_candidate_container_types::host trk_cands;
+    trk_cands.resize(5u);
+    fill_pattern(trk_cands, 0, 0.2f, {2, 3, 5, 7, 7, 7, 7});
+    fill_pattern(trk_cands, 1, 0.5f, {2});
+    fill_pattern(trk_cands, 2, 0.4f, {2, 3, 3, 4, 7, 7, 8, 9});
+    fill_pattern(trk_cands, 3, 0.1f, {0, 1, 4, 6, 8, 8, 9});
+    fill_pattern(trk_cands, 4, 0.9f, {2, 3, 10});
+
+    traccc::host::greedy_ambiguity_resolution_algorithm::config_type
+        resolution_config;
+    traccc::host::greedy_ambiguity_resolution_algorithm resolution_alg(
+        resolution_config, mr);
+
+    {
+        auto res_trk_cands = resolution_alg(traccc::get_data(trk_cands));
+        ASSERT_EQ(res_trk_cands.size(), 2u);
+
+        ASSERT_EQ(get_pattern(res_trk_cands, 0),
+                  std::vector<std::size_t>({2, 3, 5, 7, 7, 7, 7}));
+        ASSERT_EQ(get_pattern(res_trk_cands, 1),
+                  std::vector<std::size_t>({0, 1, 4, 6, 8, 8, 9}));
+    }
+}

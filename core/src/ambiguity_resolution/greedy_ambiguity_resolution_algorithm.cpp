@@ -152,13 +152,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     // Iterate over tracks
     for (unsigned int iter = 0; iter < m_config.max_iterations; iter++) {
-        
-        for (const auto& i : accepted_ids) {
-            std::cout << i << " " << n_shared[i] << "  " << rel_shared[i]
-                      << std::endl;
-        }
-        std::cout << std::endl;
-        
+
         // Terminate if there are no tracks to iterate
         if (accepted_ids.empty()) {
             break;
@@ -171,8 +165,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
             }
         }
 
-        // std::cout << iter << " " << max_shared << std::endl;
-
         // Terminate if the max shared measurements is less than the cut
         // value
         if (max_shared < m_config.max_shared_meas) {
@@ -181,9 +173,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
         // The last element of sorted vector is the worst track
         const unsigned int worst_track = sorted_ids.back();
-        
-        std::cout << "Iter: " << iter << " Worst: " << worst_track <<
-        std::endl;
 
         // Remove the worst track from the accepted ids
         const auto it1 = std::lower_bound(accepted_ids.begin(),
@@ -194,7 +183,14 @@ greedy_ambiguity_resolution_algorithm::operator()(
         // Pop the worst (rejected) id from the sorted ids
         sorted_ids.pop_back();
 
-        const auto& meas_ids_to_remove = meas_ids[worst_track];
+        std::unordered_set<std::size_t> seen;
+        std::vector<std::size_t> meas_ids_to_remove;
+        for (const auto& id : meas_ids[worst_track]) {
+            if (seen.insert(id).second) {
+                meas_ids_to_remove.push_back(id);
+            }
+        }
+
         for (const auto& id : meas_ids_to_remove) {
             const auto it =
                 std::lower_bound(unique_meas.begin(), unique_meas.end(), id);
@@ -221,7 +217,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
             if (tracks.size() == 1) {
                 const auto tid = tracks[0];
 
-                n_shared[tid]--;
+                n_shared[tid] -= static_cast<unsigned int>(
+                    std::count(meas_ids[tid].begin(), meas_ids[tid].end(), id));
                 rel_shared[tid] = static_cast<traccc::scalar>(n_shared[tid]) /
                                   static_cast<traccc::scalar>(n_meas[tid]);
                 // Reposition the track to the next of the worse track which
