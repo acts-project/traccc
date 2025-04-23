@@ -10,10 +10,7 @@
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/utils/bfield.hpp"
-
-// Detray include(s).
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
+#include "traccc/utils/propagation.hpp"
 
 namespace {
 using detector_type = traccc::default_detector;

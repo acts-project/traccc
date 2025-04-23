@@ -16,9 +16,6 @@
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/detector_type_utils.hpp"
 
-// detray include(s).
-#include <detray/propagator/rk_stepper.hpp>
-
 // Thrust include(s).
 #include <thrust/sort.h>
 

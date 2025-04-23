@@ -8,10 +8,10 @@
 #pragma once
 
 #include <covfie/core/field.hpp>
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
 #include <traccc/fitting/kalman_filter/kalman_fitter.hpp>
 #include <traccc/utils/bfield.hpp>
+
+#include "traccc/utils/propagation.hpp"
 
 namespace traccc {
 /// Helper type constructors to facilitate the consistent instantiation of

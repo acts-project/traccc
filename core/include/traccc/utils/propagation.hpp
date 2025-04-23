@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -14,5 +14,6 @@
 #include <detray/navigation/direct_navigator.hpp>
 #include <detray/navigation/navigator.hpp>
 #include <detray/propagator/actors.hpp>
+#include <detray/propagator/line_stepper.hpp>
 #include <detray/propagator/propagator.hpp>
 #include <detray/propagator/rk_stepper.hpp>
