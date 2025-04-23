@@ -6,6 +6,7 @@
  */
 
 // Project include(s).
+#include "tests/test_detectors.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/io/csv/make_hit_reader.hpp"
 #include "traccc/io/csv/make_measurement_hit_id_reader.hpp"
@@ -20,8 +21,6 @@
 #include <detray/geometry/shapes/line.hpp>
 #include <detray/geometry/shapes/rectangle2D.hpp>
 #include <detray/geometry/tracking_surface.hpp>
-#include <detray/test/utils/detectors/build_telescope_detector.hpp>
-#include <detray/test/utils/detectors/build_toy_detector.hpp>
 #include <detray/test/utils/statistics.hpp>
 
 // GTest include(s).
