@@ -196,7 +196,7 @@ INSTANTIATE_TEST_SUITE_P(
         "telescope_1_GeV_0_phi_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
         std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
-        detray::muon<scalar>(), 100, 100, false, 20.f, 20u, 20.f,
+        traccc::muon<scalar>(), 100, 100, false, 20.f, 20u, 20.f,
         vector3{0, 0, 2 * traccc::unit<scalar>::T})));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -205,7 +205,7 @@ INSTANTIATE_TEST_SUITE_P(
         "telescope_10_GeV_0_phi_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 100, 100,
+        std::array<scalar, 2u>{0.f, 0.f}, traccc::muon<scalar>(), 100, 100,
         false, 20.f, 9u, 20.f, vector3{0, 0, 2 * traccc::unit<scalar>::T})));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -214,7 +214,7 @@ INSTANTIATE_TEST_SUITE_P(
         "telescope_100_GeV_0_phi_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 100, 100,
+        std::array<scalar, 2u>{0.f, 0.f}, traccc::muon<scalar>(), 100, 100,
         false, 20.f, 9u, 20.f, vector3{0, 0, 2 * traccc::unit<scalar>::T})));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -224,7 +224,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
         std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
-        detray::antimuon<scalar>(), 100, 100, false, 20.f, 9u, 20.f,
+        traccc::antimuon<scalar>(), 100, 100, false, 20.f, 9u, 20.f,
         vector3{0, 0, 2 * traccc::unit<scalar>::T})));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -234,5 +234,5 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
         std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
-        detray::antimuon<scalar>(), 100, 100, true, 20.f, 9u, 20.f,
+        traccc::antimuon<scalar>(), 100, 100, true, 20.f, 9u, 20.f,
         vector3{0, 0, 2 * traccc::unit<scalar>::T})));

@@ -6,7 +6,7 @@
  */
 
 // Project include(s).
-#include "test_detectors.hpp"
+#include "tests/test_detectors.hpp"
 #include "traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"

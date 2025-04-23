@@ -47,7 +47,7 @@ struct finding_config {
 
     /// Particle hypothesis
     traccc::pdg_particle<traccc::scalar> ptc_hypothesis =
-        detray::muon<traccc::scalar>();
+        traccc::muon<traccc::scalar>();
 
     /// @name Performance parameters
     /// These parameters impact only compute performance; any case in which a

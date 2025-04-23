@@ -109,7 +109,7 @@ GTEST_TEST(traccc_simulation, toy_detector_simulation) {
     typename writer_type::config writer_cfg{smearer};
 
     auto sim = simulator<detector_type, b_field_t, generator_type, writer_type>(
-        detray::muon<scalar>(), n_events, detector, field, std::move(generator),
+        traccc::muon<scalar>(), n_events, detector, field, std::move(generator),
         std::move(writer_cfg));
 
     // Lift step size constraints
@@ -263,7 +263,7 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
     typename writer_type::config writer_cfg{smearer};
 
     auto sim = simulator<detector_type, b_field_t, generator_type, writer_type>(
-        detray::muon<scalar>(), n_events, detector, field, std::move(generator),
+        traccc::muon<scalar>(), n_events, detector, field, std::move(generator),
         std::move(writer_cfg), directory);
 
     // Lift step size constraints

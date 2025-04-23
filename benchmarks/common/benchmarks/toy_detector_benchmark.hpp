@@ -123,7 +123,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
 
         auto sim = traccc::simulator<detector_type, b_field_t, generator_type,
                                      writer_type>(
-            detray::muon<scalar_type>(), n_events, det, field,
+            traccc::muon<scalar_type>(), n_events, det, field,
             std::move(generator), std::move(smearer_writer_cfg), full_path);
 
         // Same propagation configuration for sim and reco

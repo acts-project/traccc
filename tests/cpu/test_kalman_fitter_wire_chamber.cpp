@@ -205,7 +205,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 2u>{-1.f, 1.f},
         std::array<scalar, 2u>{-traccc::constant<scalar>::pi,
                                traccc::constant<scalar>::pi},
-        detray::muon<scalar>(), 100, 100, false)));
+        traccc::muon<scalar>(), 100, 100, false)));
 
 // @TODO: Make full eta range work
 INSTANTIATE_TEST_SUITE_P(
@@ -216,7 +216,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{-0.3f, 0.3f},
         std::array<scalar, 2u>{-traccc::constant<scalar>::pi,
                                traccc::constant<scalar>::pi},
-        detray::muon<scalar>(), 100, 100, false)));
+        traccc::muon<scalar>(), 100, 100, false)));
 
 // @TODO: Make full eta range work
 INSTANTIATE_TEST_SUITE_P(
@@ -228,7 +228,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 2u>{-0.4f, 0.4f},
         std::array<scalar, 2u>{-traccc::constant<scalar>::pi,
                                traccc::constant<scalar>::pi},
-        detray::muon<scalar>(), 100, 100, false)));
+        traccc::muon<scalar>(), 100, 100, false)));
 
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitWireChamberValidation3, KalmanFittingWireChamberTests,
@@ -238,7 +238,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 2u>{-1.f, 1.f},
         std::array<scalar, 2u>{-traccc::constant<scalar>::pi,
                                traccc::constant<scalar>::pi},
-        detray::antimuon<scalar>(), 100, 100, false)));
+        traccc::antimuon<scalar>(), 100, 100, false)));
 
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitWireChamberValidation4, KalmanFittingWireChamberTests,
@@ -248,4 +248,4 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 2u>{-1.f, 1.f},
         std::array<scalar, 2u>{-traccc::constant<scalar>::pi,
                                traccc::constant<scalar>::pi},
-        detray::antimuon<scalar>(), 100, 100, true)));
+        traccc::antimuon<scalar>(), 100, 100, true)));

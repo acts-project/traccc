@@ -246,7 +246,7 @@ INSTANTIATE_TEST_SUITE_P(
                         std::array<scalar, 2u>{-4.f, 4.f},
                         std::array<scalar, 2u>{-traccc::constant<scalar>::pi,
                                                traccc::constant<scalar>::pi},
-                        detray::muon<scalar>(), 1, 1, false),
+                        traccc::muon<scalar>(), 1, 1, false),
         std::make_tuple("toy_n_particles_10000",
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
@@ -254,7 +254,7 @@ INSTANTIATE_TEST_SUITE_P(
                         std::array<scalar, 2u>{-4.f, 4.f},
                         std::array<scalar, 2u>{-traccc::constant<scalar>::pi,
                                                traccc::constant<scalar>::pi},
-                        detray::muon<scalar>(), 10000, 1, false),
+                        traccc::muon<scalar>(), 10000, 1, false),
         std::make_tuple("toy_n_particles_10000_random_charge",
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
@@ -262,4 +262,4 @@ INSTANTIATE_TEST_SUITE_P(
                         std::array<scalar, 2u>{-4.f, 4.f},
                         std::array<scalar, 2u>{-traccc::constant<scalar>::pi,
                                                traccc::constant<scalar>::pi},
-                        detray::muon<scalar>(), 10000, 1, true)));
+                        traccc::muon<scalar>(), 10000, 1, true)));

@@ -23,6 +23,19 @@ namespace traccc {
 template <typename scalar_t>
 using pdg_particle = detray::pdg_particle<scalar_t>;
 
+template <typename scalar_t>
+using electron = detray::electron<scalar_t>;
+template <typename scalar_t>
+using positron = detray::positron<scalar_t>;
+template <typename scalar_t>
+using muon = detray::muon<scalar_t>;
+template <typename scalar_t>
+using antimuon = detray::antimuon<scalar_t>;
+template <typename scalar_t>
+using pion_plus = detray::pion_plus<scalar_t>;
+template <typename scalar_t>
+using pion_minus = detray::pion_minus<scalar_t>;
+
 namespace detail {
 
 template <typename scalar_t>

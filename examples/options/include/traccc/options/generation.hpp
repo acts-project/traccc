@@ -54,7 +54,7 @@ class generation : public interface {
 
     /// Particle type
     traccc::pdg_particle<traccc::scalar> ptc_type =
-        detray::muon<traccc::scalar>();
+        traccc::muon<traccc::scalar>();
 
     /// @}
 

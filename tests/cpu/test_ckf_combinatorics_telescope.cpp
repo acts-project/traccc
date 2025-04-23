@@ -177,7 +177,7 @@ INSTANTIATE_TEST_SUITE_P(
         "telescope_combinatorics_twin", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 2, 1, false,
+        std::array<scalar, 2u>{0.f, 0.f}, traccc::muon<scalar>(), 2, 1, false,
         20.f, 9u, 20.f, vector3{2 * traccc::unit<scalar>::T, 0, 0})));
 
 // Testing three identical tracks
@@ -187,5 +187,5 @@ INSTANTIATE_TEST_SUITE_P(
         "telescope_combinatorics_trio", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 3, 1, false,
+        std::array<scalar, 2u>{0.f, 0.f}, traccc::muon<scalar>(), 3, 1, false,
         20.f, 9u, 20.f, vector3{2 * traccc::unit<scalar>::T, 0, 0})));

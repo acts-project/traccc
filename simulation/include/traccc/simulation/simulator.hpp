@@ -32,7 +32,7 @@ struct simulator {
 
         /// Particle hypothesis
         traccc::pdg_particle<traccc::scalar> ptc_type =
-            detray::muon<traccc::scalar>();
+            traccc::muon<traccc::scalar>();
     };
 
     using algebra_type = typename detector_t::algebra_type;

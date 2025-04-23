@@ -27,7 +27,7 @@ struct fitting_config {
 
     /// Particle hypothesis
     traccc::pdg_particle<traccc::scalar> ptc_hypothesis =
-        detray::muon<traccc::scalar>();
+        traccc::muon<traccc::scalar>();
 
     /// Smoothing with backward filter
     traccc::scalar covariance_inflation_factor = 1e3f;

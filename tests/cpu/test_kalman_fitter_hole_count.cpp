@@ -179,5 +179,5 @@ INSTANTIATE_TEST_SUITE_P(
         "telescope_1_GeV_0_phi_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
         std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
-        detray::muon<scalar>(), 1, 1, false, 20.f, 20u, 20.f,
+        traccc::muon<scalar>(), 1, 1, false, 20.f, 20u, 20.f,
         vector3{2 * traccc::unit<scalar>::T, 0, 0})));

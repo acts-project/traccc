@@ -229,7 +229,7 @@ INSTANTIATE_TEST_SUITE_P(
         "telescope_single_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 400.f, 400.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 1, 5000,
+        std::array<scalar, 2u>{0.f, 0.f}, traccc::muon<scalar>(), 1, 5000,
         false, 20.f, 9u, 20.f, vector3{0, 0, 2 * traccc::unit<scalar>::T})));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -238,7 +238,7 @@ INSTANTIATE_TEST_SUITE_P(
         "telescope_double_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 400.f, 400.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 2, 2500,
+        std::array<scalar, 2u>{0.f, 0.f}, traccc::muon<scalar>(), 2, 2500,
         false, 20.f, 9u, 20.f, vector3{0, 0, 2 * traccc::unit<scalar>::T})));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -247,7 +247,7 @@ INSTANTIATE_TEST_SUITE_P(
         "telescope_quadra_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 400.f, 400.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 4, 1250,
+        std::array<scalar, 2u>{0.f, 0.f}, traccc::muon<scalar>(), 4, 1250,
         false, 20.f, 9u, 20.f, vector3{0, 0, 2 * traccc::unit<scalar>::T})));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -256,7 +256,7 @@ INSTANTIATE_TEST_SUITE_P(
         "telescope_decade_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 400.f, 400.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 10, 500,
+        std::array<scalar, 2u>{0.f, 0.f}, traccc::muon<scalar>(), 10, 500,
         false, 20.f, 9u, 20.f, vector3{0, 0, 2 * traccc::unit<scalar>::T})));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -266,5 +266,5 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 400.f, 400.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 10, 500, true,
+        std::array<scalar, 2u>{0.f, 0.f}, traccc::muon<scalar>(), 10, 500, true,
         20.f, 9u, 20.f, vector3{0, 0, 2 * traccc::unit<scalar>::T})));
