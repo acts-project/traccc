@@ -25,7 +25,7 @@
 #include <detray/geometry/shapes/rectangle2D.hpp>
 #include <detray/io/frontend/detector_writer.hpp>
 #include <detray/materials/material.hpp>
-#include <detray/test/utils/detectors/build_telescope_detector.hpp>
+#include <detray/test/common/build_telescope_detector.hpp>
 #include <detray/tracks/ray.hpp>
 
 // VecMem include(s).

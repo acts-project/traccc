@@ -59,7 +59,7 @@ traccc_add_test(
     vecmem::cuda
     detray::core
     detray::io
-    detray::test_utils
+    detray::test_common
     traccc::core
     traccc::device_common
     traccc::cuda
