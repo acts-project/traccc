@@ -6,11 +6,13 @@
  */
 
 // Project include(s).
+#include "tests/test_detectors.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/io/csv/make_hit_reader.hpp"
 #include "traccc/io/csv/make_measurement_hit_id_reader.hpp"
 #include "traccc/io/csv/make_measurement_reader.hpp"
 #include "traccc/io/csv/make_particle_reader.hpp"
+#include "traccc/simulation/event_generators.hpp"
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/utils/bfield.hpp"
 
@@ -19,11 +21,7 @@
 #include <detray/geometry/shapes/line.hpp>
 #include <detray/geometry/shapes/rectangle2D.hpp>
 #include <detray/geometry/tracking_surface.hpp>
-#include <detray/test/utils/detectors/build_telescope_detector.hpp>
-#include <detray/test/utils/detectors/build_toy_detector.hpp>
-#include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 #include <detray/test/utils/statistics.hpp>
-#include <detray/tracks/bound_track_parameters.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>
@@ -111,7 +109,7 @@ GTEST_TEST(traccc_simulation, toy_detector_simulation) {
     typename writer_type::config writer_cfg{smearer};
 
     auto sim = simulator<detector_type, b_field_t, generator_type, writer_type>(
-        detray::muon<scalar>(), n_events, detector, field, std::move(generator),
+        traccc::muon<scalar>(), n_events, detector, field, std::move(generator),
         std::move(writer_cfg));
 
     // Lift step size constraints
@@ -265,7 +263,7 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
     typename writer_type::config writer_cfg{smearer};
 
     auto sim = simulator<detector_type, b_field_t, generator_type, writer_type>(
-        detray::muon<scalar>(), n_events, detector, field, std::move(generator),
+        traccc::muon<scalar>(), n_events, detector, field, std::move(generator),
         std::move(writer_cfg), directory);
 
     // Lift step size constraints

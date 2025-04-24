@@ -30,7 +30,7 @@ TEST(particle, particle_with_pdg_num) {
 TEST(particle, charge_conjugation) {
 
     const auto positron =
-        traccc::detail::charge_conjugation(detray::electron<float>());
+        traccc::detail::charge_conjugation(traccc::electron<float>());
     EXPECT_FLOAT_EQ(positron.mass(), traccc::constant<float>::m_e);
     EXPECT_FLOAT_EQ(positron.charge(), 1.f);
 }
@@ -41,7 +41,7 @@ TEST(particle, correct_particle_hypothesis) {
                                              {2.f, 3.f, 4.f}, 1.f);
 
     const auto positron = traccc::detail::correct_particle_hypothesis(
-        detray::electron<float>(), free_trk);
+        traccc::electron<float>(), free_trk);
 
     EXPECT_FLOAT_EQ(positron.mass(), traccc::constant<float>::m_e);
     EXPECT_FLOAT_EQ(positron.charge(), 1.f);

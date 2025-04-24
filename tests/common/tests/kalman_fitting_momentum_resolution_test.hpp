@@ -9,13 +9,10 @@
 
 // Project include(s).
 #include "kalman_fitting_test.hpp"
+#include "test_detectors.hpp"
 
 // Detray include(s).
-#include <detray/geometry/mask.hpp>
-#include <detray/geometry/shapes/rectangle2D.hpp>
 #include <detray/io/frontend/detector_writer.hpp>
-#include <detray/test/utils/detectors/build_telescope_detector.hpp>
-#include <detray/tracks/ray.hpp>
 
 namespace traccc {
 
@@ -42,7 +39,7 @@ class KalmanFittingMomentumResolutionTests
     : public KalmanFittingTests,
       public testing::WithParamInterface<std::tuple<
           std::string, std::array<scalar, 3u>, std::array<scalar, 3u>, scalar,
-          scalar, scalar, detray::pdg_particle<scalar>, unsigned int,
+          scalar, scalar, traccc::pdg_particle<scalar>, unsigned int,
           unsigned int, bool, scalar, unsigned int, scalar, vector3,
           detray::material<scalar>, std::array<scalar, 2u>>> {
 

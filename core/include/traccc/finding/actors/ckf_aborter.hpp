@@ -9,9 +9,9 @@
 
 // Project include(s)
 #include "traccc/definitions/primitives.hpp"
+#include "traccc/definitions/qualifiers.hpp"
 
 // detray include(s)
-#include <detray/definitions/detail/qualifiers.hpp>
 #include <detray/propagator/base_actor.hpp>
 
 // System include(s)
@@ -34,7 +34,7 @@ struct ckf_aborter : detray::actor {
     };
 
     template <typename propagator_state_t>
-    DETRAY_HOST_DEVICE void operator()(state &abrt_state,
+    TRACCC_HOST_DEVICE void operator()(state &abrt_state,
                                        propagator_state_t &prop_state) const {
 
         auto &navigation = prop_state._navigation;

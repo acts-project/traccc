@@ -13,10 +13,8 @@
 #include "traccc/edm/container.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_quality.hpp"
-
-// detray include(s).
-#include <detray/tracks/bound_track_parameters.hpp>
 
 namespace traccc {
 

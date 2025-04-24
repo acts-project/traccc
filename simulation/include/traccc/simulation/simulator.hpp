@@ -10,16 +10,9 @@
 // Project include(s).
 #include "traccc/simulation/smearing_writer.hpp"
 #include "traccc/utils/particle.hpp"
+#include "traccc/utils/propagation.hpp"
 
 // Detray include(s).
-#include <detray/definitions/pdg_particle.hpp>
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/actor_chain.hpp>
-#include <detray/propagator/actors/aborters.hpp>
-#include <detray/propagator/actors/parameter_resetter.hpp>
-#include <detray/propagator/actors/parameter_transporter.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
 #include <detray/test/utils/simulation/random_scatterer.hpp>
 
 // System include(s).
@@ -38,8 +31,8 @@ struct simulator {
         detray::propagation::config propagation;
 
         /// Particle hypothesis
-        detray::pdg_particle<traccc::scalar> ptc_type =
-            detray::muon<traccc::scalar>();
+        traccc::pdg_particle<traccc::scalar> ptc_type =
+            traccc::muon<traccc::scalar>();
     };
 
     using algebra_type = typename detector_t::algebra_type;
@@ -57,7 +50,7 @@ struct simulator {
     using propagator_type =
         detray::propagator<stepper_type, navigator_type, actor_chain_type>;
 
-    simulator(const detray::pdg_particle<scalar>& ptc_type, std::size_t events,
+    simulator(const traccc::pdg_particle<scalar>& ptc_type, std::size_t events,
               const detector_t& det, const bfield_type& field,
               track_generator_t&& track_gen,
               typename writer_t::config&& writer_cfg,

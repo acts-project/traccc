@@ -30,10 +30,7 @@
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/projections.hpp"
-
-// Detray include(s).
-#include <detray/propagator/actors.hpp>
-#include <detray/propagator/propagator.hpp>
+#include "traccc/utils/propagation.hpp"
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>

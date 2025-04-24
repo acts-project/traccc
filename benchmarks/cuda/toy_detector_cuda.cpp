@@ -17,14 +17,13 @@
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/read_spacepoints.hpp"
+#include "traccc/utils/propagation.hpp"
 
 // Local include(s).
 #include "benchmarks/toy_detector_benchmark.hpp"
 
 // Detray include(s).
 #include <detray/io/frontend/detector_reader.hpp>
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>

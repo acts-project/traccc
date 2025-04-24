@@ -20,10 +20,7 @@
 #include "traccc/utils/particle.hpp"
 #include "traccc/utils/prob.hpp"
 #include "traccc/utils/projections.hpp"
-
-// Detray include(s).
-#include <detray/propagator/actors.hpp>
-#include <detray/propagator/propagator.hpp>
+#include "traccc/utils/propagation.hpp"
 
 // System include(s).
 #include <algorithm>

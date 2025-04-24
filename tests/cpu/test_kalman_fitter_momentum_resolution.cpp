@@ -10,6 +10,7 @@
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
+#include "traccc/simulation/event_generators.hpp"
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/utils/ranges.hpp"
 #include "traccc/utils/seed_generator.hpp"
@@ -19,7 +20,6 @@
 
 // detray include(s).
 #include <detray/io/frontend/detector_reader.hpp>
-#include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -44,7 +44,7 @@ TEST_P(KalmanFittingMomentumResolutionTests, Run) {
     const scalar eta = std::get<4>(GetParam());
     const scalar theta = eta_to_theta(eta);
     const scalar phi = std::get<5>(GetParam());
-    const detray::pdg_particle<scalar> ptc = std::get<6>(GetParam());
+    const traccc::pdg_particle<scalar> ptc = std::get<6>(GetParam());
     const unsigned int n_truth_tracks = std::get<7>(GetParam());
     const unsigned int n_events = std::get<8>(GetParam());
     const bool random_charge = std::get<9>(GetParam());
@@ -232,7 +232,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::make_tuple(
             "mom_resolution_1_GeV_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
             std::array<scalar, 3u>{0.f, 0.f, 0.f}, 1.f, 0.f, 0.f,
-            detray::muon<scalar>(), 100, 100, false, 20.f, 20u, 50.f,
+            traccc::muon<scalar>(), 100, 100, false, 20.f, 20u, 50.f,
             vector3{0, 0, 2 * traccc::unit<scalar>::T},
             detray::vacuum<scalar>(),
             std::array<scalar, 2u>{50.f * traccc::unit<scalar>::um,
@@ -240,7 +240,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::make_tuple(
             "mom_resolution_10_GeV_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
             std::array<scalar, 3u>{0.f, 0.f, 0.f}, 10.f, 0.f, 0.f,
-            detray::muon<scalar>(), 100, 100, false, 20.f, 20u, 50.f,
+            traccc::muon<scalar>(), 100, 100, false, 20.f, 20u, 50.f,
             vector3{0, 0, 2 * traccc::unit<scalar>::T},
             detray::vacuum<scalar>(),
             std::array<scalar, 2u>{50.f * traccc::unit<scalar>::um,
@@ -248,7 +248,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::make_tuple("mom_resolution_100_GeV_muon",
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 3u>{0.f, 0.f, 0.f}, 100.f, 0.f, 0.f,
-                        detray::muon<scalar>(), 100, 100, false, 20.f, 20u,
+                        traccc::muon<scalar>(), 100, 100, false, 20.f, 20u,
                         50.f, vector3{0, 0, 2 * traccc::unit<scalar>::T},
                         detray::vacuum<scalar>(),
                         std::array<scalar, 2u>{
@@ -263,7 +263,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::make_tuple("mom_resolution_1_GeV_muon_50_100_smearing",
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 3u>{0.f, 0.f, 0.f}, 1.f, 0.f, 0.f,
-                        detray::muon<scalar>(), 100, 100, false, 20.f, 20u,
+                        traccc::muon<scalar>(), 100, 100, false, 20.f, 20u,
                         50.f, vector3{0, 0, 2 * traccc::unit<scalar>::T},
                         detray::vacuum<scalar>(),
                         std::array<scalar, 2u>{
@@ -272,7 +272,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::make_tuple("mom_resolution_1_GeV_muon_100_50_smearing",
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 3u>{0.f, 0.f, 0.f}, 1.f, 0.f, 0.f,
-                        detray::muon<scalar>(), 100, 100, false, 20.f, 20u,
+                        traccc::muon<scalar>(), 100, 100, false, 20.f, 20u,
                         50.f, vector3{0, 0, 2 * traccc::unit<scalar>::T},
                         detray::vacuum<scalar>(),
                         std::array<scalar, 2u>{
@@ -281,7 +281,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::make_tuple("mom_resolution_1_GeV_muon_100_100_smearing",
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 3u>{0.f, 0.f, 0.f}, 1.f, 0.f, 0.f,
-                        detray::muon<scalar>(), 100, 100, false, 20.f, 20u,
+                        traccc::muon<scalar>(), 100, 100, false, 20.f, 20u,
                         50.f, vector3{0, 0, 2 * traccc::unit<scalar>::T},
                         detray::vacuum<scalar>(),
                         std::array<scalar, 2u>{

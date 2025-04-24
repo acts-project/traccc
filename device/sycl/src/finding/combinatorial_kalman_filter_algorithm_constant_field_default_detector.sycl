@@ -10,11 +10,7 @@
 #include "find_tracks.hpp"
 #include "traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/utils/bfield.hpp"
-
-// Detray include(s).
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
+#include "traccc/utils/propagation.hpp"
 
 namespace traccc::sycl {
 namespace kernels {

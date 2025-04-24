@@ -9,10 +9,10 @@
 
 // Project include(s).
 #include "kalman_fitting_test.hpp"
+#include "test_detectors.hpp"
 
 // Detray include(s).
 #include <detray/io/frontend/detector_writer.hpp>
-#include <detray/test/utils/detectors/build_toy_detector.hpp>
 
 // System include(s)
 #include <array>
@@ -37,7 +37,7 @@ class KalmanFittingToyDetectorTests
       public testing::WithParamInterface<std::tuple<
           std::string, std::array<scalar, 3u>, std::array<scalar, 3u>,
           std::array<scalar, 2u>, std::array<scalar, 2u>,
-          std::array<scalar, 2u>, detray::pdg_particle<scalar>, unsigned int,
+          std::array<scalar, 2u>, traccc::pdg_particle<scalar>, unsigned int,
           unsigned int, bool>> {
 
     public:

@@ -11,6 +11,7 @@
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
+#include "traccc/simulation/event_generators.hpp"
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/utils/ranges.hpp"
 
@@ -20,8 +21,6 @@
 
 // detray include(s).
 #include <detray/io/frontend/detector_reader.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -46,7 +45,7 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     const std::array<scalar, 2u> eta_range = std::get<4>(GetParam());
     const std::array<scalar, 2u> theta_range = eta_to_theta_range(eta_range);
     const std::array<scalar, 2u> phi_range = std::get<5>(GetParam());
-    const detray::pdg_particle<scalar> ptc = std::get<6>(GetParam());
+    const traccc::pdg_particle<scalar> ptc = std::get<6>(GetParam());
     const unsigned int n_truth_tracks = std::get<7>(GetParam());
     const unsigned int n_events = std::get<8>(GetParam());
     const bool random_charge = std::get<9>(GetParam());
@@ -230,7 +229,7 @@ INSTANTIATE_TEST_SUITE_P(
         "telescope_single_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 400.f, 400.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 1, 5000,
+        std::array<scalar, 2u>{0.f, 0.f}, traccc::muon<scalar>(), 1, 5000,
         false, 20.f, 9u, 20.f, vector3{0, 0, 2 * traccc::unit<scalar>::T})));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -239,7 +238,7 @@ INSTANTIATE_TEST_SUITE_P(
         "telescope_double_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 400.f, 400.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 2, 2500,
+        std::array<scalar, 2u>{0.f, 0.f}, traccc::muon<scalar>(), 2, 2500,
         false, 20.f, 9u, 20.f, vector3{0, 0, 2 * traccc::unit<scalar>::T})));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -248,7 +247,7 @@ INSTANTIATE_TEST_SUITE_P(
         "telescope_quadra_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 400.f, 400.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 4, 1250,
+        std::array<scalar, 2u>{0.f, 0.f}, traccc::muon<scalar>(), 4, 1250,
         false, 20.f, 9u, 20.f, vector3{0, 0, 2 * traccc::unit<scalar>::T})));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -257,7 +256,7 @@ INSTANTIATE_TEST_SUITE_P(
         "telescope_decade_tracks", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 400.f, 400.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 10, 500,
+        std::array<scalar, 2u>{0.f, 0.f}, traccc::muon<scalar>(), 10, 500,
         false, 20.f, 9u, 20.f, vector3{0, 0, 2 * traccc::unit<scalar>::T})));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -267,5 +266,5 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 400.f, 400.f},
         std::array<scalar, 2u>{1.f, 1.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 10, 500, true,
+        std::array<scalar, 2u>{0.f, 0.f}, traccc::muon<scalar>(), 10, 500, true,
         20.f, 9u, 20.f, vector3{0, 0, 2 * traccc::unit<scalar>::T})));

@@ -42,12 +42,7 @@
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
-
-// Detray include(s).
-#include <detray/io/frontend/detector_reader.hpp>
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
+#include "traccc/utils/propagation.hpp"
 
 // System include(s).
 #include <exception>

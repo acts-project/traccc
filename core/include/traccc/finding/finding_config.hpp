@@ -10,9 +10,9 @@
 // traccc include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
+#include "traccc/utils/particle.hpp"
 
 // detray include(s).
-#include <detray/definitions/pdg_particle.hpp>
 #include <detray/propagator/propagation_config.hpp>
 
 namespace traccc {
@@ -46,8 +46,8 @@ struct finding_config {
     detray::propagation::config propagation{};
 
     /// Particle hypothesis
-    detray::pdg_particle<traccc::scalar> ptc_hypothesis =
-        detray::muon<traccc::scalar>();
+    traccc::pdg_particle<traccc::scalar> ptc_hypothesis =
+        traccc::muon<traccc::scalar>();
 
     /// @name Performance parameters
     /// These parameters impact only compute performance; any case in which a

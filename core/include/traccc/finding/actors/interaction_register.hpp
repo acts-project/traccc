@@ -22,7 +22,7 @@ struct interaction_register : detray::actor {
     };
 
     template <typename propagator_state_t>
-    DETRAY_HOST_DEVICE void operator()(state &s,
+    TRACCC_HOST_DEVICE void operator()(state &s,
                                        propagator_state_t &prop_state) const {
 
         auto &navigation = prop_state._navigation;

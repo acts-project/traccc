@@ -10,6 +10,7 @@
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
+#include "traccc/simulation/event_generators.hpp"
 #include "traccc/simulation/measurement_smearer.hpp"
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/simulation/smearing_writer.hpp"
@@ -21,7 +22,6 @@
 
 // detray include(s).
 #include <detray/io/frontend/detector_reader.hpp>
-#include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -40,7 +40,7 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
 
     // Get the parameters
     const std::string name = std::get<0>(GetParam());
-    const detray::pdg_particle<scalar> ptc = std::get<6>(GetParam());
+    const traccc::pdg_particle<scalar> ptc = std::get<6>(GetParam());
     const unsigned int n_truth_tracks = std::get<7>(GetParam());
     const unsigned int n_events = std::get<8>(GetParam());
     const bool random_charge = std::get<9>(GetParam());
@@ -205,7 +205,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 2u>{-1.f, 1.f},
         std::array<scalar, 2u>{-traccc::constant<scalar>::pi,
                                traccc::constant<scalar>::pi},
-        detray::muon<scalar>(), 100, 100, false)));
+        traccc::muon<scalar>(), 100, 100, false)));
 
 // @TODO: Make full eta range work
 INSTANTIATE_TEST_SUITE_P(
@@ -216,7 +216,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{-0.3f, 0.3f},
         std::array<scalar, 2u>{-traccc::constant<scalar>::pi,
                                traccc::constant<scalar>::pi},
-        detray::muon<scalar>(), 100, 100, false)));
+        traccc::muon<scalar>(), 100, 100, false)));
 
 // @TODO: Make full eta range work
 INSTANTIATE_TEST_SUITE_P(
@@ -228,7 +228,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 2u>{-0.4f, 0.4f},
         std::array<scalar, 2u>{-traccc::constant<scalar>::pi,
                                traccc::constant<scalar>::pi},
-        detray::muon<scalar>(), 100, 100, false)));
+        traccc::muon<scalar>(), 100, 100, false)));
 
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitWireChamberValidation3, KalmanFittingWireChamberTests,
@@ -238,7 +238,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 2u>{-1.f, 1.f},
         std::array<scalar, 2u>{-traccc::constant<scalar>::pi,
                                traccc::constant<scalar>::pi},
-        detray::antimuon<scalar>(), 100, 100, false)));
+        traccc::antimuon<scalar>(), 100, 100, false)));
 
 INSTANTIATE_TEST_SUITE_P(
     KalmanFitWireChamberValidation4, KalmanFittingWireChamberTests,
@@ -248,4 +248,4 @@ INSTANTIATE_TEST_SUITE_P(
         std::array<scalar, 2u>{-1.f, 1.f},
         std::array<scalar, 2u>{-traccc::constant<scalar>::pi,
                                traccc::constant<scalar>::pi},
-        detray::antimuon<scalar>(), 100, 100, true)));
+        traccc::antimuon<scalar>(), 100, 100, true)));

@@ -15,17 +15,15 @@
 #include "traccc/options/output_data.hpp"
 #include "traccc/options/program_options.hpp"
 #include "traccc/options/track_propagation.hpp"
+#include "traccc/simulation/event_generators.hpp"
 #include "traccc/simulation/measurement_smearer.hpp"
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/simulation/smearing_writer.hpp"
 #include "traccc/utils/bfield.hpp"
+#include "traccc/utils/propagation.hpp"
 
 // Detray include(s).
 #include <detray/io/frontend/detector_reader.hpp>
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
-#include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>

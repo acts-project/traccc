@@ -13,6 +13,7 @@
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/performance/container_comparator.hpp"
+#include "traccc/simulation/event_generators.hpp"
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/utils/bfield.hpp"
 #include "traccc/utils/event_data.hpp"
@@ -24,8 +25,6 @@
 
 // detray include(s).
 #include <detray/io/frontend/detector_reader.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
@@ -46,7 +45,7 @@ TEST_P(CkfToyDetectorTests, Run) {
 
     // Get the parameters
     const std::string name = std::get<0>(GetParam());
-    const detray::pdg_particle<scalar> ptc = std::get<6>(GetParam());
+    const traccc::pdg_particle<scalar> ptc = std::get<6>(GetParam());
     const unsigned int n_truth_tracks = std::get<7>(GetParam());
     const unsigned int n_events = std::get<8>(GetParam());
     const bool random_charge = std::get<9>(GetParam());
@@ -247,7 +246,7 @@ INSTANTIATE_TEST_SUITE_P(
                         std::array<scalar, 2u>{-4.f, 4.f},
                         std::array<scalar, 2u>{-traccc::constant<scalar>::pi,
                                                traccc::constant<scalar>::pi},
-                        detray::muon<scalar>(), 1, 1, false),
+                        traccc::muon<scalar>(), 1, 1, false),
         std::make_tuple("toy_n_particles_10000",
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
@@ -255,7 +254,7 @@ INSTANTIATE_TEST_SUITE_P(
                         std::array<scalar, 2u>{-4.f, 4.f},
                         std::array<scalar, 2u>{-traccc::constant<scalar>::pi,
                                                traccc::constant<scalar>::pi},
-                        detray::muon<scalar>(), 10000, 1, false),
+                        traccc::muon<scalar>(), 10000, 1, false),
         std::make_tuple("toy_n_particles_10000_random_charge",
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
@@ -263,4 +262,4 @@ INSTANTIATE_TEST_SUITE_P(
                         std::array<scalar, 2u>{-4.f, 4.f},
                         std::array<scalar, 2u>{-traccc::constant<scalar>::pi,
                                                traccc::constant<scalar>::pi},
-                        detray::muon<scalar>(), 10000, 1, true)));
+                        traccc::muon<scalar>(), 10000, 1, true)));

@@ -12,10 +12,7 @@
 
 // Project include(s).
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
-
-// Detray include(s).
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
+#include "traccc/utils/propagation.hpp"
 
 namespace traccc::sycl {
 namespace kernels {
