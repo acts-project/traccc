@@ -79,6 +79,9 @@ TRACCC_HOST_DEVICE inline void update_vectors(
                 .fetch_add(-static_cast<unsigned int>(
                     thrust::count(thrust::seq, meas_ids.at(tid).begin(),
                                   meas_ids.at(tid).end(), id)));
+
+        rel_shared.at(tid) = static_cast<traccc::scalar>(n_shared.at(tid)) /
+                             static_cast<traccc::scalar>(n_meas.at(tid));
     }
 }
 
