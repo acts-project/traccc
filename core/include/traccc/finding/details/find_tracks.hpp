@@ -73,7 +73,8 @@ track_candidate_container_types::host find_tracks(
 
     using actor_type = detray::actor_chain<
         detray::pathlimit_aborter<scalar_type>, transporter_type,
-        interaction_register<interactor_type>, interactor_type, ckf_aborter>;
+        interaction_register<interactor_type>, interactor_type,
+        detray::momentum_aborter<scalar_type>, ckf_aborter>;
 
     using propagator_type =
         detray::propagator<stepper_t, navigator_t, actor_type>;
@@ -314,12 +315,18 @@ track_candidate_container_types::host find_tracks(
                     config.propagation.stepping.step_constraint);
 
             typename detray::pathlimit_aborter<scalar_type>::state s0;
-            typename detray::parameter_transporter<algebra_type>::state s1;
-            typename interactor_type::state s3;
-            typename interaction_register<interactor_type>::state s2{s3};
+            typename interactor_type::state s2;
+            typename interaction_register<interactor_type>::state s1{s2};
+            typename detray::momentum_aborter<scalar_type>::state s3{};
             typename ckf_aborter::state s4;
+            // Update the actor config
             s4.min_step_length = config.min_step_length_for_next_surface;
             s4.max_count = config.max_step_counts_for_next_surface;
+            if (config.is_min_pT) {
+                s3.min_pT(static_cast<scalar_type>(config.min_p_mag));
+            } else {
+                s3.min_p(static_cast<scalar_type>(config.min_p_mag));
+            }
 
             // Propagate to the next surface
             propagator.propagate_sync(propagation,
@@ -328,6 +335,7 @@ track_candidate_container_types::host find_tracks(
             // If a surface found, add the parameter for the next
             // step
             if (s4.success) {
+                assert(propagation._navigation.is_on_sensitive());
                 out_params.push_back(propagation._stepping.bound_params());
                 param_to_link[step].push_back(link_id);
             }

@@ -54,7 +54,7 @@ class finding_algorithm
         detray::actor_chain<detray::pathlimit_aborter<scalar_type>,
                             detray::parameter_transporter<algebra_type>,
                             interaction_register<interactor>, interactor,
-                            ckf_aborter>;
+                            detray::momentum_aborter<scalar_type>, ckf_aborter>;
 
     using propagator_type =
         detray::propagator<stepper_t, navigator_t, actor_type>;
