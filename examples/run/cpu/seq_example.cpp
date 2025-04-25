@@ -113,8 +113,6 @@ int seq_run(const traccc::opts::input_data& input_opts,
     using finding_algorithm =
         traccc::host::combinatorial_kalman_filter_algorithm;
     using fitting_algorithm = traccc::host::kalman_fitting_algorithm;
-    // Uncomment (and comment the line above) to use Triplet Fitting Algorithm
-    // using fitting_algorithm = traccc::host::triplet_fitting_algorithm;
 
     // Constant B field for the track finding and fitting
     const traccc::vector3 field_vec = {0.f, 0.f,
