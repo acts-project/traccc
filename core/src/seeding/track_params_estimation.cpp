@@ -56,23 +56,14 @@ track_params_estimation::output_type track_params_estimation::operator()(
 
         // Calculate the track parameter vector.
         bound_track_parameters<>& track_params = result[i];
-        track_params.set_vector(
-            seed_to_bound_vector(measurements, spacepoints, seeds[i], bfield));
+        seed_to_bound_param_vector(track_params, measurements, spacepoints,
+                                   seeds[i], bfield);
 
         // Set Covariance
         for (std::size_t j = 0; j < e_bound_size; ++j) {
             getter::element(track_params.covariance(), j, j) =
                 stddev[j] * stddev[j];
         }
-
-        // Get geometry ID for bottom spacepoint
-        const edm::spacepoint_collection::const_device::const_proxy_type spB =
-            spacepoints.at(seeds[i].bottom_index());
-        assert(spB.measurement_index_2() ==
-               edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX);
-        track_params.set_surface_link(
-            measurements.at(spB.measurement_index_1()).surface_link);
-        TRACCC_VERBOSE("  - bound track parameters: " << track_params);
     }
 
     // Return the result.

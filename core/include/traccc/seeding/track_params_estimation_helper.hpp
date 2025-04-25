@@ -36,18 +36,18 @@ inline TRACCC_HOST_DEVICE vector2 uv_transform(const scalar& x,
 /// helper functions (for both cpu and gpu) to calculate bound track parameter
 /// at the bottom spacepoint
 ///
-/// @param measurements is the measurement collection
-/// @param spacepoints is the spacepoint collection
-/// @param seed is the input seed
-/// @param bfield is the magnetic field
+/// @param [out] params the bound track parameter vector to be filled
+/// @param [in] measurements is the measurement collection
+/// @param [in] spacepoints is the spacepoint collection
+/// @param [in] seed is the input seed
+/// @param [in] bfield is the magnetic field
 ///
 template <typename T>
-inline TRACCC_HOST_DEVICE bound_vector<> seed_to_bound_vector(
+inline TRACCC_HOST_DEVICE void seed_to_bound_param_vector(
+    bound_track_parameters<>& params,
     const measurement_collection_types::const_device& measurements,
     const edm::spacepoint_collection::const_device& spacepoints,
     const edm::seed<T>& seed, const vector3& bfield) {
-
-    bound_vector<> params = matrix::zero<bound_vector<>>();
 
     const edm::spacepoint_collection::const_device::const_proxy_type spB =
         spacepoints.at(seed.bottom_index());
@@ -70,9 +70,9 @@ inline TRACCC_HOST_DEVICE bound_vector<> seed_to_bound_vector(
     vector3 newXAxis = vector::cross(newYAxis, newZAxis);
 
     // The center of the new frame is at the bottom space point
-    vector3 translation = sp_global_positions[0];
+    const vector3& translation = sp_global_positions[0];
 
-    transform3 trans(translation, newZAxis, newXAxis);
+    transform3 trans(translation, newXAxis, newYAxis, newZAxis);
 
     // The coordinate of the middle and top space point in the new frame
     const point3 local1 = trans.point_to_local(sp_global_positions[1]);
@@ -102,28 +102,25 @@ inline TRACCC_HOST_DEVICE bound_vector<> seed_to_bound_vector(
         transform3::rotate(trans._data, vector::normalize(transDirection));
 
     // The estimated phi and theta
-    getter::element(params, e_bound_phi, 0) = vector::phi(direction);
-    getter::element(params, e_bound_theta, 0) = vector::theta(direction);
+    params.set_phi(vector::phi(direction));
+    params.set_theta(vector::theta(direction));
 
     // The measured loc0 and loc1
     assert(spB.measurement_index_2() ==
            edm::spacepoint_collection::device::INVALID_MEASUREMENT_INDEX);
     const measurement& meas_for_spB =
         measurements.at(spB.measurement_index_1());
-    getter::element(params, e_bound_loc0, 0) = meas_for_spB.local[0];
-    getter::element(params, e_bound_loc1, 0) = meas_for_spB.local[1];
+    params.set_surface_link(meas_for_spB.surface_link);
+    params.set_bound_local(meas_for_spB.local);
 
     // The estimated q/pt in [GeV/c]^-1 (note that the pt is the
     // projection of momentum on the transverse plane of the new frame)
     scalar qOverPt = 1.f / (R * vector::norm(bfield));
     // The estimated q/p in [GeV/c]^-1
-    getter::element(params, e_bound_qoverp, 0) =
-        qOverPt / vector::perp(vector2{1.f, invTanTheta});
+    params.set_qop(qOverPt / vector::perp(vector2{1.f, invTanTheta}));
 
     // Make sure the time is a finite value
-    assert(std::isfinite(getter::element(params, e_bound_time, 0)));
-
-    return params;
+    assert(std::isfinite(params.time()));
 }
 
 }  // namespace traccc
