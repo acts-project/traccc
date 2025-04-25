@@ -59,8 +59,6 @@ class full_chain_algorithm
         traccc::host::combinatorial_kalman_filter_algorithm;
     /// Track fitting algorithm type
     using fitting_algorithm = traccc::host::kalman_fitting_algorithm;
-    // Uncomment (and comment line above) to use Triplet Fitting Algorithm
-    // using fitting_algorithm = traccc::host::triplet_fitting_algorithm;
 
     /// @}
 

@@ -94,17 +94,21 @@ track_state_container_types::host fit_tracks(
     return result;
 }
 
-/// Specialization for triplet fitter
-///
-/// (can modify the triplet fitting code to make it work
-/// with the original function but that would require re-work
-/// for the triplet fitter code. avoiding that for now.)
+/// Specialization for Triplet-based track fitting
 ///
 /// Inlining to avoid linker error pertaining to
 /// multiple definitions of the full specialization.
 /// Another way out is to have the full specialization
 /// in the .cpp file. Effects on performance have to be
 /// studied.
+///
+/// @param[in] fitter           The triplet fitter object to use on the track
+/// candidates
+/// @param[in] track_candidates All track candidates to fit
+/// @param[in] mr               Memory resource to use for the output container
+///
+/// @return A container of the fitted track states
+///
 
 template <>
 inline track_state_container_types::host fit_tracks<>(
@@ -115,6 +119,7 @@ inline track_state_container_types::host fit_tracks<>(
     const track_candidate_container_types::const_view& track_candidates_view,
     vecmem::memory_resource& mr, vecmem::copy& copy) {
 
+    // Algebra type
     using algebra_type = traccc::triplet_fitter<
         const traccc::default_detector::host,
         typename detray::bfield::const_field_t<

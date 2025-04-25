@@ -17,6 +17,7 @@
 #include "traccc/fitting/fitting_config.hpp"
 
 // detray include(s).
+#include "detray/geometry/tracking_surface.hpp"
 #include "detray/tracks/bound_track_parameters.hpp"
 
 // vecmem include(s)
@@ -38,15 +39,10 @@ class triplet_fitter {
     // Algebra type
     using algebra_type = typename detector_t::algebra_type;
 
-    // Vector type
-    // template <typename T>
-    // using vector_type = typename detector_t::template vector_type<T>;
-
     // Configuration type
     using config_type = fitting_config;
 
     // Matrix types
-    // using matrix_operator = detray::dmatrix_operator<algebra_type>;
     using size_type = detray::dsize_type<algebra_type>;
     template <size_type ROWS, size_type COLS>
     using matrix_type = detray::dmatrix<algebra_type, ROWS, COLS>;
@@ -107,8 +103,6 @@ class triplet_fitter {
     void init_fitter(
         const vecmem::vector<track_state<algebra_type>>& in_track_states) {
 
-        // m_track_states(vecmem::device_vector<track_state<algebra_type>>(in_track_states));
-
         m_track_states = in_track_states;
 
         // Clear triplets from the last track
@@ -121,8 +115,6 @@ class triplet_fitter {
     ///
     TRACCC_HOST_DEVICE
     void make_triplets() {
-
-        // std::cout << "Making triplets\n";
 
         size_t n_triplets = m_track_states.size() - 2;
 
@@ -145,23 +137,26 @@ class triplet_fitter {
             detray::tracking_surface meas_1_sf(m_detector, meas_1.surface_link);
             detray::tracking_surface meas_2_sf(m_detector, meas_2.surface_link);
 
-            point2 loc_2d_0{meas_0.local[0], meas_0.local[1]};
-            point2 loc_2d_1{meas_1.local[0], meas_1.local[1]};
-            point2 loc_2d_2{meas_2.local[0], meas_2.local[1]};
+            // Get measurement local positions
+            point2 loc_2d_0{};
+            for (std::size_t dim : meas_0.subs.get_indices()) {
+                loc_2d_0[dim] = meas_0.local[dim];
+            }
+
+            point2 loc_2d_1{};
+            for (std::size_t dim : meas_1.subs.get_indices()) {
+                loc_2d_1[dim] = meas_1.local[dim];
+            }
+
+            point2 loc_2d_2{};
+            for (std::size_t dim : meas_2.subs.get_indices()) {
+                loc_2d_2[dim] = meas_2.local[dim];
+            }
 
             // Convert to global
             point3 glob_3d_0 = meas_0_sf.bound_to_global({}, loc_2d_0, {});
             point3 glob_3d_1 = meas_1_sf.bound_to_global({}, loc_2d_1, {});
             point3 glob_3d_2 = meas_2_sf.bound_to_global({}, loc_2d_2, {});
-
-            /*
-            // Print global positions of measurements
-            std::cout << glob_3d_0[0] << " " << glob_3d_0[1] << " " <<
-            glob_3d_0[2] << std::endl; if (i == n_triplets - 1) { std::cout <<
-            glob_3d_1[0] << " " << glob_3d_1[1] << " " << glob_3d_1[2] <<
-            std::endl; std::cout << glob_3d_2[0] << " " << glob_3d_2[1] << " "
-            << glob_3d_2[2] << std::endl;
-            }*/
 
             // Make triplet
             triplet t(glob_3d_0, glob_3d_1, glob_3d_2);
@@ -174,8 +169,6 @@ class triplet_fitter {
             // copy again
             m_triplets.push_back(t);
         }
-
-        // std::cout << m_triplets.size() << " triplets made\n";
     }
 
     /// Helper function - Linearize triplet
@@ -197,13 +190,10 @@ class triplet_fitter {
         scalar d_01 = algebra::cmath::perp(x_01);
         scalar d_12 = algebra::cmath::perp(x_12);
         scalar d_02 = algebra::cmath::perp(x_02);
-        // std::cout << "d01 " << d_01 << " d12 " << d_12 << " d02 " << d_02 <<
-        // std::endl;
 
         // Longitudinal distances
         scalar z_01 = x_01[2];
         scalar z_12 = x_12[2];
-        // std::cout << "z01 " << z_01 << " z12 " << z_12 << std::endl;
 
         // Calculation of circle curvature and hence the entire
         // linearization will fail for very low (or 0) transverse
@@ -222,14 +212,11 @@ class triplet_fitter {
             return;
         }
 
-        // std::cout << "\tc_perp " << c_perp << std::endl;
-
         // Parameters of the arc segments
 
         // Bending angles
         scalar phi_1C = 2.f * math::asin(0.5f * d_01 * c_perp);
         scalar phi_2C = 2.f * math::asin(0.5f * d_12 * c_perp);
-        // std::cout << "phi1 " << phi_1C << " phi2 " << phi_2C << std::endl;
 
         // Polar angles
         scalar theta_1C =
@@ -292,9 +279,6 @@ class triplet_fitter {
             }
         }
 
-        // std::cout << "c_correct " << c_correct[0] << ", " << c_correct[1] <<
-        // std::endl;
-
         // Check if centre calculation was successful
         if (algebra::cmath::norm(c_correct) == 0.f or
             algebra::cmath::norm(x1 - m) == 0.f) {
@@ -303,7 +287,6 @@ class triplet_fitter {
             // center calculation fails or three
             // hits lie on a straight line
             tangent3D = vector::normalize(x_02);
-            // std::cout << "using straight line calculation" << std::endl;
         }
 
         else {
@@ -326,9 +309,6 @@ class triplet_fitter {
             tangent3D[2] = math::cos(t.m_theta);
         }
 
-        // std::cout << "tangent: " << tangent3D[0] << ", " << tangent3D[1] <<
-        // ", " << tangent3D[2] << std::endl;
-
         // Estimate MS-uncertainty
         // (track direction used here
         // to get precise thickness of material)
@@ -338,7 +318,6 @@ class triplet_fitter {
         // effective thickness
         scalar t_eff =
             mat_scatter / scat_sf.cos_angle({}, tangent3D, t.m_meas[1].local);
-        // std::cout << "t_eff " << t_eff << std::endl;
 
         auto scattering_unc = [](scalar curvature_3D, scalar eff_thickness,
                                  vector3 field_strength_vector) {
@@ -353,12 +332,9 @@ class triplet_fitter {
         B_vec[0u] = B_field[0u];
         B_vec[1u] = B_field[1u];
         B_vec[2u] = B_field[2u];
-        // std::cout << "\tB-field " << B_vec[0u] << ", " << B_vec[1u] << ", "
-        // << B_vec[2u] << std::endl;
 
         scalar c3D_lin = 0.5f * c_perp * (sin_theta1C + sin_theta2C);
         t.m_sigma_MS = scattering_unc(c3D_lin, t_eff, B_vec);
-        // std::cout << "\tsigma_MS " << t.m_sigma_MS << std::endl;
 
         // Index parameters
 
@@ -434,12 +410,8 @@ class triplet_fitter {
 
         // Using cross product
         scalar arg = cross_2d_z(x_01, x_12) / (d_01 * d_12);
-        /*std::cout << "x_01 " << x_01[0] << ", " << x_01[1] << std::endl;
-        std::cout << "x_12 " << x_12[0] << ", " << x_12[1] << std::endl;
-        std::cout << "d_01 " << d_01 << " d_12 " << d_12 << std::endl;*/
 
         phi_0 = math::asin(std::clamp(arg, -1.f, 1.f));
-        // std::cout << "arg " << arg << " phi_0 " << phi_0 << std::endl;
 
         vector2 x_0_L{pos0[2], 0.f};
         vector2 x_1_L{pos1[2], d_01};
@@ -451,7 +423,6 @@ class triplet_fitter {
         theta_0 = math::asin(
             cross_2d_z(x_01_L, x_12_L) /
             (algebra::cmath::norm(x_01_L) * algebra::cmath::norm(x_12_L)));
-        // std::cout << "\ttheta_0 " << theta_0 << std::endl;
     }
 
     /// Helper function - Hit Position Derivatives
@@ -462,8 +433,6 @@ class triplet_fitter {
     /// @param t Triplet
     ///
     TRACCC_HOST_DEVICE void calculate_pos_derivs(triplet& t) {
-
-        // std::cout << "Hit position derivatives:\n";
 
         scalar phi_0_before = t.m_phi_0;
         scalar theta_0_before = t.m_theta_0;
@@ -521,18 +490,6 @@ class triplet_fitter {
                                      sigma_i);
             }
         }
-
-        /*
-        // Print derivatives
-        std::cout << "\tH_theta: ";
-        for (unsigned j = 0; j < t.m_h_thet.size(); ++j) {
-            std::cout << " " << t.m_h_thet[j];
-        }
-        std::cout << "\n\tH_phi: ";
-        for (unsigned j = 0; j < t.m_h_phi.size(); ++j) {
-            std::cout << " " << t.m_h_phi[j];
-        }
-        */
     }
 
     /// Helper function - Global Fit
@@ -551,7 +508,7 @@ class triplet_fitter {
         // Allocate matrices with max possible sizes
         constexpr size_t max_dims = 2u;
         constexpr size_t max_nhits =
-            20u;  // Assumption about max number of hits
+            20u;  // Assumption about max number of hits in track candidate
         constexpr size_t max_ntrips = max_nhits - 2u;
         constexpr size_t max_ndirs = max_dims * max_nhits;
 
@@ -670,41 +627,6 @@ class triplet_fitter {
         matrix_type<2u * max_ntrips, 2u * max_ntrips> K =
             matrix::inverse(K_inv);
 
-        /*
-        std::cout << " ************************************ MATRICES
-        ************************************ " << std::endl; std::cout <<
-        "D_MS_inv:\n"; for (size_t r = 0u; r < 2u*max_ntrips; ++r) { for (size_t
-        c = 0u; c < 2u*max_ntrips; ++c) { std::cout << std::setw(12); std::cout
-        << getter::element(D_MS_inv, r, c) << " ";
-            }
-            std::cout << std::endl;
-        }
-        std::cout << "D_hit_inv:\n";
-        for (size_t r = 0u; r < max_ndirs; ++r) {
-            for (size_t c = 0u; c < max_ndirs; ++c) {
-                std::cout << std::setw(12);
-                std::cout << getter::element(D_hit_inv, r, c) << " ";
-            }
-            std::cout << std::endl;
-        }
-
-        std::cout << "K_inv:\n";
-        for (size_t r = 0u; r < 2u*max_ntrips; ++r) {
-            for (size_t c = 0u; c < 2u*max_ntrips; ++c) {
-                std::cout << std::setw(12);
-                std::cout << getter::element(K_inv, r, c) << " ";
-            }
-            std::cout << std::endl;
-        }
-        std::cout << "K:\n";
-        for (size_t r = 0u; r < 2u*max_ntrips; ++r) {
-            for (size_t c = 0u; c < 2u*max_ntrips; ++c) {
-                std::cout << std::setw(12);
-                std::cout << getter::element(K, r, c) << " ";
-            }
-            std::cout << std::endl;
-        }*/
-
         matrix_type<1u, 1u> num = -1.f * matrix::transpose(rho) * K * psi;
         matrix_type<1u, 1u> den = matrix::transpose(rho) * K * rho;
         matrix_type<1u, 1u> psiT_K_psi = matrix::transpose(psi) * K * psi;
@@ -722,9 +644,6 @@ class triplet_fitter {
             (getter::element(num, 0u, 0u) * getter::element(num, 0u, 0u)) /
                 getter::element(den, 0u, 0u);
 
-        // std::cout << "\nGlobal fit: c_3D " << c_3D << "  sigma_c_3D " <<
-        // sigma_c_3D << "  chi2 " << chi2 << std::endl;
-
         // Calculation of hit residuals
 
         matrix_type<2u * max_ntrips, 2u * max_ntrips> K_rho =
@@ -733,10 +652,6 @@ class triplet_fitter {
 
         matrix_type<max_ndirs, 1u> delta_fit =
             D_hit_inv * matrix::transpose(H) * K_rho * psi;
-
-        // std::cout << "posn. shift hit 0: " << getter::element(delta_fit, 0u,
-        // 0u) << " " << getter::element(delta_fit, 1u, 0u) << " " <<
-        // getter::element(delta_fit, 2u, 0u) << std::endl;
 
         // Track parameters at the first measurement surface
         auto fitted_params =
@@ -811,24 +726,14 @@ class triplet_fitter {
             detray::bound_parameters_vector<algebra_type> params_vec{};
             params_vec.set_bound_local(loc0_post_fit);
 
-            /*std::cout << "phi r01 " << algebra::cmath::phi(r01) << " bending
-            angle "
-            << bending_angle << std::endl; std::cout << "phi " <<
-            algebra::cmath::phi(r01) + 0.5f * bending_angle << " wrapped phi "
-            << wrap_pi_mpi(algebra::cmath::phi(r01) + 0.5f * bending_angle) <<
-            std::endl;*/
-
             params_vec.set_phi(
                 wrap_pi_mpi(algebra::cmath::phi(r01) + 0.5f * bending_angle));
             scalar theta =
                 math::atan2(algebra::cmath::perp(r01) * 0.5f * bending_angle,
                             r01[2u] * math::sin(0.5f * bending_angle));
-            // std::cout << getter::theta(r01) << " " << theta << std::endl;
             params_vec.set_theta(math::fabs(theta));
             params_vec.set_qop(q / p);
             params_vec.set_time(0.f);
-
-            // std::cout << "p " << p << std::endl;
 
             return params_vec;
         }(m_track_states, m_triplets, m_detector, m_field);
@@ -851,6 +756,10 @@ class triplet_fitter {
             return (sum_dims - 5.f);
         }(m_track_states);
 
+        if (chi2 > 0.f) {
+            fitting_res.fit_outcome = fitter_outcome::SUCCESS;
+        }
+
         // Only the smoothed parameters
         // at the first measurement are
         // used for performance plots
@@ -871,24 +780,16 @@ class triplet_fitter {
         fitting_result<algebra_type>& fitting_res,
         vecmem::vector<track_state<algebra_type>>& track_states) {
 
-        // std::cout << "Fitting track with " << m_triplets.size() << "
-        // triplets\n";
-
-        unsigned triplet_idx = 0;
-
         for (triplet& t : m_triplets) {
-
-            // std::cout << "Triplet " << triplet_idx << "\n";
 
             linearize_triplet(t);
             calculate_pos_derivs(t);
-
-            ++triplet_idx;
         }
 
         // Passing through the input track
         // states (measurements) to the output
-        for (const auto& state : m_track_states) {
+        for (auto& state : m_track_states) {
+            state.is_hole = false;
             track_states.push_back(state);
         }
 
@@ -912,17 +813,10 @@ class triplet_fitter {
     const bfield_t m_field;
 
     // Vector of triplets
-    // vector_type<triplet> m_triplets;
-    // vecmem::device_vector<triplet> m_triplets;
     vecmem::vector<triplet> m_triplets;
-    // Track states
-    // vector_type<track_state<algebra_type>> m_track_states;
-    // vecmem::device_vector<track_state<algebra_type>> m_track_states;
-    vecmem::vector<track_state<algebra_type>> m_track_states;
 
-    // Size type for device vectors
-    // using size_t =
-    // vecmem::device_vector<track_state<algebra_type>>::size_type;
+    // Track states
+    vecmem::vector<track_state<algebra_type>> m_track_states;
 
     // Configuration object
     config_type m_cfg;
