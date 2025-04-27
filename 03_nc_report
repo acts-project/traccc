@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+ncu --metrics "launch__registers_per_thread,sm__warps_active.avg.per_cycle_active,sm__cycles_elapsed,sm__sass_data_bytes_mem_local_op_ld,sm__sass_data_bytes_mem_local_op_st" --section ComputeWorkloadAnalysis --section MemoryWorkloadAnalysis \
+  -f \
+  -o ./nc_report/nc_report \
+  --launch-skip 54807 \
+  --launch-count 400 \
+  ../build/bin/traccc_throughput_mt_cuda \
+  --detector-file=geometries/odd/odd-detray_geometry_detray.json \
+  --material-file=geometries/odd/odd-detray_material_detray.json \
+  --grid-file=geometries/odd/odd-detray_surface_grids_detray.json \
+  --use-detray-detector=on \
+  --digitization-file=geometries/odd/odd-digi-geometric-config.json \
+  --use-acts-geom-source=on \
+  --input-directory=odd/geant4_10muon_10GeV/ \
+  --input-events=10 \
+  --processed-events=1000 \
+  --threads=1 
