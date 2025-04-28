@@ -198,6 +198,29 @@ class kalman_fitter {
     template <typename seed_parameters_t>
     [[nodiscard]] TRACCC_HOST_DEVICE kalman_fitter_status
     filter(const seed_parameters_t& seed_params, state& fitter_state) {
+        kalman_fitter_status res;
+
+        // ---------- Stage 1 : predict ----------
+        if ((res = predict_stage(seed_params, fitter_state)) !=
+            kalman_fitter_status::SUCCESS)
+            return res;
+
+        // ---------- Stage 2 : update  ----------
+        if ((res = update_stage(fitter_state)) !=
+            kalman_fitter_status::SUCCESS)
+            return res;
+
+        // ---------- Stage 3 : finalize ----------
+        return finalize_stage(fitter_state);
+    }
+
+    //============================================================
+    //  Stage 1 — predict
+    //============================================================
+    template <typename seed_parameters_t>
+    [[nodiscard]] TRACCC_HOST_DEVICE kalman_fitter_status
+    predict_stage(const seed_parameters_t& seed_params,
+                  state&                     fitter_state) {
 
         // Create propagator
         forward_propagator_type propagator(m_cfg.propagation);
@@ -217,17 +240,39 @@ class kalman_fitter {
             .template set_constraint<detray::step::constraint::e_accuracy>(
                 m_cfg.propagation.stepping.step_constraint);
 
-        // Reset fitter statistics
-        fitter_state.m_fit_res.trk_quality.reset_quality();
-
-        // Run forward filtering
+        //  Run forward prediction
         propagator.propagate(propagation, fitter_state());
+
+        //  Block-level同步以提早釋放暫存器
+        #ifdef __CUDA_ARCH__
+            __syncthreads();
+        #endif
+        return kalman_fitter_status::SUCCESS;
+    }
+
+    //============================================================
+    //  Stage 2 — update (smoothing)
+    //============================================================
+    [[nodiscard]] TRACCC_HOST_DEVICE kalman_fitter_status
+    update_stage(state& fitter_state) {
 
         // Run smoothing
         if (kalman_fitter_status res = smooth(fitter_state);
             res != kalman_fitter_status::SUCCESS) {
             return res;
         }
+
+        #ifdef __CUDA_ARCH__
+            __syncthreads();
+        #endif
+        return kalman_fitter_status::SUCCESS;
+    }
+
+    //============================================================
+    //  Stage 3 — finalize (statistics)
+    //============================================================
+    [[nodiscard]] TRACCC_HOST_DEVICE kalman_fitter_status
+    finalize_stage(state& fitter_state) {
 
         // Update track fitting qualities
         update_statistics(fitter_state);

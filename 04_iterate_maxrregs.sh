@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # List of register limits to test
-REGS=(96 128 160 192 224 255)
+REGS=(64 96 128 144 160 176 192 208 224 240 255)
 
 # Paths
 CMAKE_FILE="cmake/traccc-compiler-options-cuda.cmake"

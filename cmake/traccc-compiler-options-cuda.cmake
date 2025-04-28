@@ -32,7 +32,7 @@ set( CMAKE_CUDA_ARCHITECTURES "52" CACHE STRING
 traccc_add_flag( CMAKE_CUDA_FLAGS "--expt-relaxed-constexpr" )
 
 traccc_add_flag( CMAKE_CUDA_FLAGS "-Xptxas=-v" )
-traccc_add_flag( CMAKE_CUDA_FLAGS "--maxrregcount=128" )
+traccc_add_flag( CMAKE_CUDA_FLAGS "--maxrregcount=96" )
 # Make CUDA generate debug symbols for the device code as well in a debug
 # build.
 traccc_add_flag( CMAKE_CUDA_FLAGS_DEBUG "-G --keep -src-in-ptx" )
