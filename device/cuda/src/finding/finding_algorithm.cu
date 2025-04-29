@@ -11,12 +11,12 @@
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/thread_id.hpp"
 #include "../utils/utils.hpp"
-#include "./kernels/apply_interaction.cuh"
+#include "./kernels/apply_interaction.hpp"
 #include "./kernels/build_tracks.cuh"
 #include "./kernels/fill_sort_keys.cuh"
 #include "./kernels/find_tracks.cuh"
 #include "./kernels/make_barcode_sequence.cuh"
-#include "./kernels/propagate_to_next_surface.cuh"
+#include "./kernels/propagate_to_next_surface.hpp"
 #include "./kernels/prune_tracks.cuh"
 #include "traccc/cuda/finding/finding_algorithm.hpp"
 #include "traccc/definitions/primitives.hpp"
@@ -199,9 +199,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             const unsigned int nBlocks =
                 (n_in_params + nThreads - 1) / nThreads;
 
-            kernels::apply_interaction<
-                std::decay_t<detector_type>><<<nBlocks, nThreads, 0, stream>>>(
-                m_cfg,
+            apply_interaction<std::decay_t<detector_type>>(
+                nBlocks, nThreads, 0, stream, m_cfg,
                 device::apply_interaction_payload<std::decay_t<detector_type>>{
                     .det_data = det_view,
                     .n_params = n_in_params,
@@ -263,27 +262,26 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
             assert(links_size == step_to_link_idx_map[step]);
 
-            kernels::find_tracks<std::decay_t<detector_type>>
-                <<<nBlocks, nThreads,
-                   nThreads * sizeof(unsigned int) +
-                       2 * nThreads *
-                           sizeof(std::pair<unsigned int, unsigned int>),
-                   stream>>>(
-                    m_cfg,
-                    device::find_tracks_payload<std::decay_t<detector_type>>{
-                        .det_data = det_view,
-                        .measurements_view = measurements,
-                        .in_params_view = in_params_buffer,
-                        .in_params_liveness_view = param_liveness_buffer,
-                        .n_in_params = n_in_params,
-                        .barcodes_view = barcodes_buffer,
-                        .upper_bounds_view = upper_bounds_buffer,
-                        .links_view = links_buffer,
-                        .prev_links_idx = prev_link_idx,
-                        .curr_links_idx = step_to_link_idx_map[step],
-                        .step = step,
-                        .out_params_view = updated_params_buffer,
-                        .out_params_liveness_view = updated_liveness_buffer});
+            find_tracks<std::decay_t<detector_type>>(
+                nBlocks, nThreads,
+                nThreads * sizeof(unsigned int) +
+                    2 * nThreads *
+                        sizeof(std::pair<unsigned int, unsigned int>),
+                stream, m_cfg,
+                device::find_tracks_payload<std::decay_t<detector_type>>{
+                    .det_data = det_view,
+                    .measurements_view = measurements,
+                    .in_params_view = in_params_buffer,
+                    .in_params_liveness_view = param_liveness_buffer,
+                    .n_in_params = n_in_params,
+                    .barcodes_view = barcodes_buffer,
+                    .upper_bounds_view = upper_bounds_buffer,
+                    .links_view = links_buffer,
+                    .prev_links_idx = prev_link_idx,
+                    .curr_links_idx = step_to_link_idx_map[step],
+                    .step = step,
+                    .out_params_view = updated_params_buffer,
+                    .out_params_liveness_view = updated_liveness_buffer});
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
             std::swap(in_params_buffer, updated_params_buffer);
@@ -345,25 +343,23 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 const unsigned int nThreads = m_warp_size * 2;
                 const unsigned int nBlocks =
                     (n_candidates + nThreads - 1) / nThreads;
-                kernels::propagate_to_next_surface<
-                    std::decay_t<propagator_type>, std::decay_t<bfield_type>>
-                    <<<nBlocks, nThreads, 0, stream>>>(
-                        m_cfg,
-                        device::propagate_to_next_surface_payload<
-                            std::decay_t<propagator_type>,
-                            std::decay_t<bfield_type>>{
-                            .det_data = det_view,
-                            .field_data = field_view,
-                            .params_view = in_params_buffer,
-                            .params_liveness_view = param_liveness_buffer,
-                            .param_ids_view = param_ids_buffer,
-                            .links_view = links_buffer,
-                            .prev_links_idx = step_to_link_idx_map[step],
-                            .step = step,
-                            .n_in_params = n_candidates,
-                            .tips_view = tips_buffer,
-                            .n_tracks_per_seed_view =
-                                n_tracks_per_seed_buffer});
+                propagate_to_next_surface<std::decay_t<propagator_type>,
+                                          std::decay_t<bfield_type>>(
+                    nBlocks, nThreads, 0, stream, m_cfg,
+                    device::propagate_to_next_surface_payload<
+                        std::decay_t<propagator_type>,
+                        std::decay_t<bfield_type>>{
+                        .det_data = det_view,
+                        .field_data = field_view,
+                        .params_view = in_params_buffer,
+                        .params_liveness_view = param_liveness_buffer,
+                        .param_ids_view = param_ids_buffer,
+                        .links_view = links_buffer,
+                        .prev_links_idx = step_to_link_idx_map[step],
+                        .step = step,
+                        .n_in_params = n_candidates,
+                        .tips_view = tips_buffer,
+                        .n_tracks_per_seed_view = n_tracks_per_seed_buffer});
                 TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
                 m_stream.synchronize();

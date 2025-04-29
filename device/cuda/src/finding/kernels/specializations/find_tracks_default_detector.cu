@@ -11,8 +11,9 @@
 // Project include(s).
 #include "traccc/geometry/detector.hpp"
 
-namespace traccc::cuda::kernels {
-template __global__ void find_tracks<traccc::default_detector::device>(
-    const finding_config cfg,
+namespace traccc::cuda {
+template void find_tracks<traccc::default_detector::device>(
+    const dim3& grid_size, const dim3& block_size, std::size_t shared_mem_size,
+    const cudaStream_t& stream, const finding_config cfg,
     device::find_tracks_payload<traccc::default_detector::device> payload);
-}
+}  // namespace traccc::cuda
