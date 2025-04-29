@@ -22,10 +22,15 @@ struct FindTracksKernel {
         TAcc const& acc, const finding_config& cfg,
         device::find_tracks_payload<detector_t>* payload) const {
 
+        auto& shared_num_out_params =
+            ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
+        auto& shared_out_offset =
+            ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
         auto& shared_candidates_size =
             ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
-        unsigned int* const s = ::alpaka::getDynSharedMem<unsigned int>(acc);
-        unsigned int* shared_num_candidates = s;
+        unsigned long long int* const s =
+            ::alpaka::getDynSharedMem<unsigned long long int>(acc);
+        unsigned long long int* shared_insertion_mutex = s;
 
         alpaka::barrier<TAcc> barrier(&acc);
         details::thread_id1 thread_id(acc);
@@ -33,11 +38,12 @@ struct FindTracksKernel {
         unsigned int blockDimX = thread_id.getBlockDimX();
         std::pair<unsigned int, unsigned int>* shared_candidates =
             reinterpret_cast<std::pair<unsigned int, unsigned int>*>(
-                &shared_num_candidates[blockDimX]);
+                &shared_insertion_mutex[blockDimX]);
 
         device::find_tracks<detector_t>(
             thread_id, barrier, cfg, *payload,
-            {shared_num_candidates, shared_candidates, shared_candidates_size});
+            {shared_num_out_params, shared_out_offset, shared_insertion_mutex,
+             shared_candidates, shared_candidates_size});
     }
 };
 
