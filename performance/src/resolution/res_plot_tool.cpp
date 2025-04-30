@@ -130,11 +130,11 @@ void res_plot_tool::fill(res_plot_cache& cache,
 
 #ifdef TRACCC_HAVE_ROOT
         const auto eta_idx =
-            std::min(cache.resolutions_eta[par_name]->FindBin(eta) - 1,
-                     cache.resolutions_eta[par_name]->GetNbinsX() - 1);
+            std::clamp(cache.resolutions_eta[par_name]->FindBin(eta) - 1, 0,
+                       cache.resolutions_eta[par_name]->GetNbinsX() - 1);
         const auto pT_idx =
-            std::min(cache.resolutions_pT[par_name]->FindBin(pT) - 1,
-                     cache.resolutions_pT[par_name]->GetNbinsX() - 1);
+            std::clamp(cache.resolutions_pT[par_name]->FindBin(pT) - 1, 0,
+                       cache.resolutions_pT[par_name]->GetNbinsX() - 1);
 
         cache.residuals.at(par_name)->Fill(residual);
         if (idx < e_bound_size) {
