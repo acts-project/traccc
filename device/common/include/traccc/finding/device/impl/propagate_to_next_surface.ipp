@@ -126,3 +126,34 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
 }
 
 }  // namespace traccc::device
+
+//======================================================================
+//  新增：兩段式外推實作
+//======================================================================
+
+namespace traccc::device {
+
+/// Stage-1 ── 只做粗步進，放寬 step_constraint 以降低暫存器佔用
+template <typename propagator_t, typename bfield_t>
+TRACCC_HOST_DEVICE inline void propagate_stage1(
+    global_index_t globalIndex,
+    const finding_config&           cfg_in,
+    const propagate_to_next_surface_payload<propagator_t, bfield_t>& payload) {
+
+    finding_config cfg = cfg_in;
+    cfg.propagation.stepping.step_constraint *= 5.0f;  // 粗精度
+
+    propagate_to_next_surface(globalIndex, cfg, payload);
+}
+
+/// Stage-2 ── 以原本高精度設定進行 covariance / gain 更新
+template <typename propagator_t, typename bfield_t>
+TRACCC_HOST_DEVICE inline void propagate_stage2(
+    global_index_t globalIndex,
+    const finding_config&           cfg,
+    const propagate_to_next_surface_payload<propagator_t, bfield_t>& payload) {
+
+    propagate_to_next_surface(globalIndex, cfg, payload);
+}
+
+}  // namespace traccc::device

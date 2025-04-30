@@ -65,9 +65,13 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/finding/kernels/build_tracks.cuh"
   "src/finding/kernels/find_tracks.cuh"
   "src/finding/kernels/propagate_to_next_surface.cuh"
+  "src/finding/kernels/propagate_stage1.cuh"
+  "src/finding/kernels/propagate_stage2.cuh"
   "src/finding/kernels/specializations/find_tracks_default_detector.cu"
   "src/finding/kernels/specializations/apply_interaction_default_detector.cu"
   "src/finding/kernels/specializations/propagate_to_next_surface_default_detector.cu"
+  "src/finding/kernels/specializations/propagate_stage1_default_detector.cu"
+  "src/finding/kernels/specializations/propagate_stage2_default_detector.cu"
   # Fitting
   "include/traccc/cuda/fitting/fitting_algorithm.hpp"
   "src/fitting/fitting_algorithm.cu")

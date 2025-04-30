@@ -17,6 +17,8 @@
 #include "./kernels/find_tracks.cuh"
 #include "./kernels/make_barcode_sequence.cuh"
 #include "./kernels/propagate_to_next_surface.cuh"
+#include "./kernels/propagate_stage1.cuh"
+#include "./kernels/propagate_stage2.cuh"
 #include "./kernels/prune_tracks.cuh"
 #include "traccc/cuda/finding/finding_algorithm.hpp"
 #include "traccc/definitions/primitives.hpp"
@@ -345,7 +347,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 const unsigned int nThreads = m_warp_size * 2;
                 const unsigned int nBlocks =
                     (n_candidates + nThreads - 1) / nThreads;
-                kernels::propagate_to_next_surface<
+                /* ---------- Stage-1：粗步進 ---------- */
+                kernels::propagate_stage1<
                     std::decay_t<propagator_type>, std::decay_t<bfield_type>>
                     <<<nBlocks, nThreads, 0, stream>>>(
                         m_cfg,
@@ -367,6 +370,28 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
                 m_stream.synchronize();
+
+                /* ---------- Stage-2：Covariance 更新 ---------- */
+                kernels::propagate_stage2<
+                    default_finding_algorithm::propagator_type,
+                    default_finding_algorithm::bfield_type>
+                    <<<nBlocks, nThreads, 0, m_stream>>>(
+                        m_cfg,
+                        typename device::propagate_to_next_surface_payload<
+                            default_finding_algorithm::propagator_type,
+                            default_finding_algorithm::bfield_type>{
+                            .det_data               = det_view,
+                            .field_data             = field_view,
+                            .params_view            = in_params_buffer,
+                            .params_liveness_view   = param_liveness_buffer,
+                            .param_ids_view         = param_ids_buffer,
+                            .links_view             = links_buffer,
+                            .prev_links_idx         = step_to_link_idx_map[step],
+                            .step                   = step,
+                            .n_in_params            = n_candidates,
+                            .tips_view              = tips_buffer,
+                            .n_tracks_per_seed_view = n_tracks_per_seed_buffer});
+                TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
             }
         }
 

@@ -98,6 +98,20 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     global_index_t globalIndex, const finding_config& cfg,
     const propagate_to_next_surface_payload<propagator_t, bfield_t>& payload);
 
+    /// Stage-1：粗步進磁場外推（Reg/thread ≈ 64–80，記憶體瓶頸）
+    template <typename propagator_t, typename bfield_t>
+    TRACCC_HOST_DEVICE inline void propagate_stage1(
+        global_index_t globalIndex,
+        const finding_config&           cfg,
+        const propagate_to_next_surface_payload<propagator_t, bfield_t>& payload);
+
+    /// Stage-2：高精度誤差增益／covariance 更新（Reg/thread ≈ 96–112，計算瓶頸）
+    template <typename propagator_t, typename bfield_t>
+    TRACCC_HOST_DEVICE inline void propagate_stage2(
+        global_index_t globalIndex,
+        const finding_config&           cfg,
+        const propagate_to_next_surface_payload<propagator_t, bfield_t>& payload);
+
 }  // namespace traccc::device
 
 // Include the implementation.
