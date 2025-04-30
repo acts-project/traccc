@@ -11,7 +11,7 @@ spack:
     - "cuda@12.5"
     - "gcc@13"
     # HEP dependencies
-    - "acts@38.2.0 +json"
+    - "acts@39.0.0 +json"
     - "root cxxstd=20"
     # General dependencies
     - "intel-oneapi-tbb@2021.12.0"
