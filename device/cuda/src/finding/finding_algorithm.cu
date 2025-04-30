@@ -373,13 +373,11 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
                 /* ---------- Stage-2：Covariance 更新 ---------- */
                 kernels::propagate_stage2<
-                    default_finding_algorithm::propagator_type,
-                    default_finding_algorithm::bfield_type>
+                    std::decay_t<propagator_type>, std::decay_t<bfield_type>>
                     <<<nBlocks, nThreads, 0, m_stream>>>(
                         m_cfg,
                         typename device::propagate_to_next_surface_payload<
-                            default_finding_algorithm::propagator_type,
-                            default_finding_algorithm::bfield_type>{
+                            std::decay_t<propagator_type>, std::decay_t<bfield_type>>{
                             .det_data               = det_view,
                             .field_data             = field_view,
                             .params_view            = in_params_buffer,
