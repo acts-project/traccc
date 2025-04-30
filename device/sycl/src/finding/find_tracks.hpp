@@ -369,11 +369,11 @@ track_candidate_container_types::buffer find_tracks(
                 typename navigator_t::detector_type::scalar_type;
             using interactor_type =
                 detray::pointwise_material_interactor<algebra_type>;
-            using actor_type =
-                detray::actor_chain<detray::pathlimit_aborter<scalar_type>,
-                                    detray::parameter_transporter<algebra_type>,
-                                    interaction_register<interactor_type>,
-                                    interactor_type, ckf_aborter>;
+            using actor_type = detray::actor_chain<
+                detray::pathlimit_aborter<scalar_type>,
+                detray::parameter_transporter<algebra_type>,
+                interaction_register<interactor_type>, interactor_type,
+                detray::momentum_aborter<scalar_type>, ckf_aborter>;
             using propagator_type =
                 detray::propagator<stepper_t, navigator_t, actor_type>;
 

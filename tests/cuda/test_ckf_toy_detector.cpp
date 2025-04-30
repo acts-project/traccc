@@ -205,10 +205,16 @@ TEST_P(CkfToyDetectorTests, Run) {
             track_candidate_d2h(track_candidates_cuda_buffer);
 
         // Simple check
+        ASSERT_GE(track_candidates.size(), n_truth_tracks)
+            << "No. tracks (host): " << track_candidates.size() << "/"
+            << n_truth_tracks;
         ASSERT_TRUE(
             std::llabs(static_cast<long>(track_candidates.size()) -
-                       static_cast<long>(track_candidates_cuda.size())) <= 1u);
-        ASSERT_GE(track_candidates.size(), n_truth_tracks);
+                       static_cast<long>(track_candidates_cuda.size())) <= 1u)
+            << "No. tracks (host): " << track_candidates.size() << "/"
+            << n_truth_tracks
+            << "\nNo. tracks (device): " << track_candidates_cuda.size() << "/"
+            << n_truth_tracks;
 
         // Make sure that the outputs from cpu and cuda CKF are equivalent
         unsigned int n_matches = 0u;
