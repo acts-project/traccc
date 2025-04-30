@@ -37,7 +37,7 @@ full_chain_algorithm::full_chain_algorithm(
     const fitting_algorithm::config_type& fitting_config,
     const silicon_detector_description::host& det_descr,
     host_detector_type* detector, std::unique_ptr<const traccc::Logger> logger)
-    : messaging(std::move(logger->clone())),
+    : messaging(logger->clone()),
       m_host_mr(host_mr),
       m_stream(),
       m_device_mr(),
