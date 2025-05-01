@@ -31,6 +31,7 @@ traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   "include/traccc/alpaka/utils/queue.hpp"
   "src/utils/make_prefix_sum_buff.cpp"
   "src/utils/get_device_info.cpp"
+  "src/utils/get_vecmem_resource.cpp"
   "src/utils/queue.cpp"
   "src/utils/opaque_queue.hpp"
   "src/utils/opaque_queue.cpp"
