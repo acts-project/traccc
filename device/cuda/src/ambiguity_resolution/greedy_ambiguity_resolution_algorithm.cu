@@ -306,6 +306,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     unsigned int n_updated_tracks;
     bool has_max_changed = true;
     unsigned int worst_track;
+    bool do_sort = true;
 
     // Device object for the The number of updated tracks
     vecmem::unique_alloc_ptr<unsigned int> n_updated_tracks_device =
@@ -395,17 +396,19 @@ greedy_ambiguity_resolution_algorithm::operator()(
         }
 
         if (n_updated_tracks > 0) {
-            // Keep the sorted ids vector sorted
-            thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
-                         sorted_ids_buffer.ptr() + n_accepted, trk_comp);
+
+            /*
+            // Max threads num per block (How to query?)
+            if (n_updated_tracks < 1024) {
+            }
+            */
+            if (do_sort) {
+                // Keep the sorted ids vector sorted
+                thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
+                             sorted_ids_buffer.ptr() + n_accepted, trk_comp);
+            }
         }
     }
-
-    std::vector<unsigned int> accepted_ids;
-    m_copy
-        .get()(sorted_ids_buffer, accepted_ids,
-               vecmem::copy::type::device_to_host)
-        ->wait();
 
     auto max_it =
         std::max_element(candidate_sizes.begin(), candidate_sizes.end());
