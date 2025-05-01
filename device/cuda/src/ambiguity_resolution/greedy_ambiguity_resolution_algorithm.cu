@@ -300,13 +300,22 @@ greedy_ambiguity_resolution_algorithm::operator()(
     vecmem::data::vector_buffer<unsigned int> updated_tracks_buffer{n_accepted,
                                                                     m_mr.main};
 
-    // Iterate over tracks
+    // Useful host objects
     unsigned int max_track_id;
     unsigned int max_shared;
     unsigned int n_updated_tracks;
     bool has_max_changed = true;
     unsigned int worst_track;
-    static constexpr int reject = 0;
+
+    // Device object for the The number of updated tracks
+    vecmem::unique_alloc_ptr<unsigned int> n_updated_tracks_device =
+        vecmem::make_unique_alloc<unsigned int>(m_mr.main);
+
+    // Device object for has_max_changed
+    vecmem::unique_alloc_ptr<bool> has_max_changed_device =
+        vecmem::make_unique_alloc<bool>(m_mr.main);
+
+    // Iterate over tracks
     for (unsigned int iter = 0; iter < m_config.max_iterations; iter++) {
 
         // Terminate if there are no tracks to iterate
@@ -323,47 +332,31 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 cudaMemcpyAsync(&max_track_id, max_it, sizeof(unsigned int),
                                 cudaMemcpyDeviceToHost, stream));
 
-            m_stream.get().synchronize();
-
             TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
                 &max_shared, n_shared_buffer.ptr() + max_track_id,
                 sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
-
-            m_stream.get().synchronize();
 
             // Terminate if the max shared measurements is less than the cut
             // value
             if (max_shared < m_config.max_shared_meas) {
                 break;
             }
+
+            // Reset the has_max_changed
+            TRACCC_CUDA_ERROR_CHECK(cudaMemsetAsync(
+                has_max_changed_device.get(), false, sizeof(bool), stream));
         }
 
         TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
             &worst_track, sorted_ids_buffer.ptr() + n_accepted - 1,
             sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
 
-        m_stream.get().synchronize();
-
-        TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
-            status_buffer.ptr() + worst_track, &reject, sizeof(unsigned int),
-            cudaMemcpyHostToDevice, stream));
-
-        m_stream.get().synchronize();
-
         // Remove the worst (rejected) id from the sorted ids
         n_accepted--;
 
-        // Device object for the The number of updated tracks
-        vecmem::unique_alloc_ptr<unsigned int> n_updated_tracks_device =
-            vecmem::make_unique_alloc<unsigned int>(m_mr.main);
+        // Reset the number of updated tracks
         TRACCC_CUDA_ERROR_CHECK(cudaMemsetAsync(
             n_updated_tracks_device.get(), 0, sizeof(unsigned int), stream));
-
-        // Device object for has_max_changed
-        vecmem::unique_alloc_ptr<bool> has_max_changed_device =
-            vecmem::make_unique_alloc<bool>(m_mr.main);
-        TRACCC_CUDA_ERROR_CHECK(cudaMemsetAsync(has_max_changed_device.get(),
-                                                false, sizeof(bool), stream));
 
         // Update vectors after the removal
         {
@@ -399,8 +392,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
             TRACCC_CUDA_ERROR_CHECK(
                 cudaMemcpyAsync(&has_max_changed, has_max_changed_device.get(),
                                 sizeof(bool), cudaMemcpyDeviceToHost, stream));
-
-            m_stream.get().synchronize();
         }
 
         if (n_updated_tracks > 0) {
