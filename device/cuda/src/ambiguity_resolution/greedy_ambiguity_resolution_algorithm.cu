@@ -306,7 +306,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
     unsigned int n_updated_tracks;
     bool has_max_changed = true;
     unsigned int worst_track;
-    bool do_sort = true;
 
     // Device object for the The number of updated tracks
     vecmem::unique_alloc_ptr<unsigned int> n_updated_tracks_device =
@@ -314,10 +313,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     // Device object for has_max_changed
     vecmem::unique_alloc_ptr<bool> has_max_changed_device =
-        vecmem::make_unique_alloc<bool>(m_mr.main);
-
-    // Device object for do_sort
-    vecmem::unique_alloc_ptr<bool> do_sort_device =
         vecmem::make_unique_alloc<bool>(m_mr.main);
 
     // Iterate over tracks
@@ -363,10 +358,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
         TRACCC_CUDA_ERROR_CHECK(cudaMemsetAsync(
             n_updated_tracks_device.get(), 0, sizeof(unsigned int), stream));
 
-        // Reset the do_sort
-        TRACCC_CUDA_ERROR_CHECK(
-            cudaMemsetAsync(do_sort_device.get(), false, sizeof(bool), stream));
-
         // Update vectors after the removal
         {
             // NOTE: candidate_sizes always should be less than max thread size
@@ -386,12 +377,10 @@ greedy_ambiguity_resolution_algorithm::operator()(
                             n_accepted_tracks_per_measurement_buffer,
                         .n_shared_view = n_shared_buffer,
                         .rel_shared_view = rel_shared_buffer,
-                        .pvals_view = pvals_buffer,
                         .n_updated_tracks = n_updated_tracks_device.get(),
                         .updated_tracks_view = updated_tracks_buffer,
                         .max_track_id = max_track_id,
-                        .has_max_changed = has_max_changed_device.get(),
-                        .do_sort = do_sort_device.get()});
+                        .has_max_changed = has_max_changed_device.get()});
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
             // Device to Host copies
@@ -402,10 +391,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
             TRACCC_CUDA_ERROR_CHECK(
                 cudaMemcpyAsync(&has_max_changed, has_max_changed_device.get(),
                                 sizeof(bool), cudaMemcpyDeviceToHost, stream));
-
-            TRACCC_CUDA_ERROR_CHECK(
-                cudaMemcpyAsync(&do_sort, do_sort_device.get(), sizeof(bool),
-                                cudaMemcpyDeviceToHost, stream));
         }
 
         if (n_updated_tracks > 0) {

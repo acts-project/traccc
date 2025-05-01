@@ -41,7 +41,6 @@ TRACCC_HOST_DEVICE inline void update_vectors(
         payload.n_accepted_tracks_per_measurement_view);
     vecmem::device_vector<unsigned int> n_shared(payload.n_shared_view);
     vecmem::device_vector<traccc::scalar> rel_shared(payload.rel_shared_view);
-    //vecmem::device_vector<traccc::scalar> pvals(payload.pvals_view);
     vecmem::device_vector<unsigned int> updated_tracks(
         payload.updated_tracks_view);
 
@@ -102,8 +101,6 @@ TRACCC_HOST_DEVICE inline void update_vectors(
             *payload.has_max_changed = true;
         }
     }
-
-    barrier.blockBarrier();
 }
 
 }  // namespace traccc::device

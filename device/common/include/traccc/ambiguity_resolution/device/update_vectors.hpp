@@ -75,11 +75,6 @@ struct update_vectors_payload {
     vecmem::data::vector_view<traccc::scalar> rel_shared_view;
 
     /**
-     * @brief View object to the vector of pvalues
-     */
-    vecmem::data::vector_view<traccc::scalar> pvals_view;
-
-    /**
      * @brief The number of updated tracks
      */
     unsigned int* n_updated_tracks;
@@ -98,11 +93,6 @@ struct update_vectors_payload {
      * @brief if max track id has changed in the kernel
      */
     bool* has_max_changed;
-
-    /**
-     * @brief whether to do sort after the kernel
-     */
-    bool* do_sort;
 };
 
 /// Function used for updating vectors
