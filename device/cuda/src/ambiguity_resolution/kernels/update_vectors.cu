@@ -6,6 +6,7 @@
  */
 
 // Local include(s).
+#include "../../utils/barrier.hpp"
 #include "../../utils/global_index.hpp"
 #include "update_vectors.cuh"
 
@@ -13,7 +14,9 @@ namespace traccc::cuda::kernels {
 
 __global__ void update_vectors(device::update_vectors_payload payload) {
 
-    device::update_vectors(details::global_index1(), payload);
+    cuda::barrier barrier;
+
+    device::update_vectors(details::global_index1(), barrier, payload);
 }
 
 }  // namespace traccc::cuda::kernels

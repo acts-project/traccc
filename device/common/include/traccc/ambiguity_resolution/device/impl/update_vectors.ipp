@@ -7,6 +7,9 @@
 
 #pragma once
 
+// Traccc include(s).
+#include "traccc/device/concepts/barrier.hpp"
+
 // Thrust include(s).
 #include <thrust/binary_search.h>
 #include <thrust/count.h>
@@ -15,8 +18,10 @@
 
 namespace traccc::device {
 
+template <concepts::barrier barrier_t>
 TRACCC_HOST_DEVICE inline void update_vectors(
-    const global_index_t globalIndex, const update_vectors_payload& payload) {
+    const global_index_t globalIndex, const barrier_t& barrier,
+    const update_vectors_payload& payload) {
 
     vecmem::jagged_device_vector<const std::size_t> meas_ids(
         payload.meas_ids_view);
@@ -36,6 +41,7 @@ TRACCC_HOST_DEVICE inline void update_vectors(
         payload.n_accepted_tracks_per_measurement_view);
     vecmem::device_vector<unsigned int> n_shared(payload.n_shared_view);
     vecmem::device_vector<traccc::scalar> rel_shared(payload.rel_shared_view);
+    //vecmem::device_vector<traccc::scalar> pvals(payload.pvals_view);
     vecmem::device_vector<unsigned int> updated_tracks(
         payload.updated_tracks_view);
 
@@ -96,6 +102,8 @@ TRACCC_HOST_DEVICE inline void update_vectors(
             *payload.has_max_changed = true;
         }
     }
+
+    barrier.blockBarrier();
 }
 
 }  // namespace traccc::device

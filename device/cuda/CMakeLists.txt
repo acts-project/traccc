@@ -71,8 +71,6 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   # Ambiguity resolution
   "include/traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
   "src/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.cu"
-  "src/ambiguity_resolution/kernels/check_sortedness.cu"
-  "src/ambiguity_resolution/kernels/check_sortedness.cuh"
   "src/ambiguity_resolution/kernels/count_shared_measurements.cu"
   "src/ambiguity_resolution/kernels/count_shared_measurements.cuh"
   "src/ambiguity_resolution/kernels/fill_tracks_per_measurement.cu"

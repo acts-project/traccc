@@ -8,6 +8,7 @@
 #pragma once
 
 // Local include(s).
+#include "traccc/device/concepts/barrier.hpp"
 #include "traccc/device/global_index.hpp"
 
 // Project include(s)
@@ -74,6 +75,11 @@ struct update_vectors_payload {
     vecmem::data::vector_view<traccc::scalar> rel_shared_view;
 
     /**
+     * @brief View object to the vector of pvalues
+     */
+    vecmem::data::vector_view<traccc::scalar> pvals_view;
+
+    /**
      * @brief The number of updated tracks
      */
     unsigned int* n_updated_tracks;
@@ -90,17 +96,25 @@ struct update_vectors_payload {
 
     /**
      * @brief if max track id has changed in the kernel
-     */    
+     */
     bool* has_max_changed;
+
+    /**
+     * @brief whether to do sort after the kernel
+     */
+    bool* do_sort;
 };
 
 /// Function used for updating vectors
 ///
 /// @param[in] globalIndex   The index of the current thread
+/// @param[in] barrier            A block-wide barrier
 /// @param[inout] payload      The function call payload
 ///
+template <concepts::barrier barrier_t>
 TRACCC_HOST_DEVICE inline void update_vectors(
-    global_index_t globalIndex, const update_vectors_payload& payload);
+    global_index_t globalIndex, const barrier_t& barrier,
+    const update_vectors_payload& payload);
 
 }  // namespace traccc::device
 
