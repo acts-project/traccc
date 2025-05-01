@@ -30,6 +30,12 @@ traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   "include/traccc/alpaka/utils/make_prefix_sum_buff.hpp"
   "src/utils/make_prefix_sum_buff.cpp"
   "src/utils/get_device_info.cpp"
+  "include/traccc/alpaka/utils/queue.hpp"
+  "src/utils/queue.cpp"
+  "src/utils/get_queue.hpp"
+  "src/utils/get_queue.cpp"
+  "include/traccc/alpaka/utils/vecmem_objects.hpp"
+  "src/utils/vecmem_objects.cpp"
   # Clusterization
   "include/traccc/alpaka/clusterization/clusterization_algorithm.hpp"
   "src/clusterization/clusterization_algorithm.cpp"
