@@ -1,12 +1,16 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
+// Local include(s).
+#include "traccc/alpaka/utils/queue.hpp"
+
+// Alpaka include.
 #include <alpaka/alpaka.hpp>
 
 namespace traccc::alpaka {
@@ -63,5 +67,12 @@ inline WorkDiv makeWorkDiv(Idx blocks, Idx threadsOrElements) {
         return WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
     }
 }
+
+namespace details {
+
+/// Get concrete @c ::alpaka::Queue object out of our wrapper
+Queue get_queue(const traccc::alpaka::queue& q);
+
+}  // namespace details
 
 }  // namespace traccc::alpaka

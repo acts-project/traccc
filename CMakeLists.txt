@@ -85,6 +85,17 @@ if(${TRACCC_BUILD_HIP} AND ${CMAKE_HIP_STANDARD} LESS 20)
    message(SEND_ERROR "CMAKE_HIP_STANDARD=${CMAKE_HIP_STANDARD}, but traccc requires C++>=20")
 endif()
 
+# Copy over the TRACCC_BUILD_* flags, so they can be used in the code.
+if ( TRACCC_BUILD_CUDA )
+   add_definitions( -DTRACCC_BUILD_CUDA )
+endif()
+if ( TRACCC_BUILD_HIP )
+   add_definitions( -DTRACCC_BUILD_HIP )
+endif()
+if ( TRACCC_BUILD_SYCL )
+   add_definitions( -DTRACCC_BUILD_SYCL )
+endif()
+
 # Set up build profiling for the project.
 if( CTEST_USE_LAUNCHERS )
 
