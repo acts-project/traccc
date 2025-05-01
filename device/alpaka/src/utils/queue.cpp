@@ -60,17 +60,13 @@ void* queue::alpakaQueue() const {
 
 void* queue::deviceNativeQueue() const {
 
-#if defined(TRACCC_BUILD_CUDA) || defined(TRACCC_BUILD_HIP)
+#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_GPU_HIP_ENABLED)
     return static_cast<void*>(::alpaka::getNativeHandle(*(m_queue->m_queue)));
-#elif defined(TRACCC_BUILD_SYCL)
+#elif defined(ALPAKA_ACC_SYCL_ENABLED)
     auto nativeQueue = ::alpaka::getNativeHandle(*(m_queue->m_queue));
     return static_cast<void*>(&nativeQueue);
-#else
-    // TODO: What is the best way to handle this?
-    //       Not having the method is a pain for other parts of the code,
-    //       but having it and throwing an error is not great either.
-    throw std::runtime_error("Native queue not available for this device");
 #endif
+    throw std::runtime_error("Native queue not available for this device");
 }
 
 }  // namespace traccc::alpaka
