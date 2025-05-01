@@ -177,11 +177,7 @@ void greedy_ambiguity_resolution_algorithm::resolve(state_t& state) const {
 
     /// Compares two tracks in order to find the one which should be evicted.
     /// First we compare the relative amount of shared measurements. If that is
-<<<<<<< HEAD
     /// indecisive we use the pval.
-=======
-    /// indecisive we use the chi2.
->>>>>>> renew-ambiguity-solver
     auto track_comperator = [&state](std::pair<std::size_t, std::size_t> a,
                                      std::pair<std::size_t, std::size_t> b) {
         /// Helper to calculate the relative amount of shared measurements.
@@ -195,11 +191,7 @@ void greedy_ambiguity_resolution_algorithm::resolve(state_t& state) const {
             return relative_shared_measurements(a.second) <
                    relative_shared_measurements(b.second);
         }
-<<<<<<< HEAD
         return state.track_pval[a.second] > state.track_pval[b.second];
-=======
-        return state.track_chi2[a.second] < state.track_chi2[b.second];
->>>>>>> renew-ambiguity-solver
     };
 
     std::size_t iteration_count = 0;
