@@ -72,6 +72,16 @@ struct update_vectors_payload {
      * @brief View object to the vector of relative number of sharedmeasurements
      */
     vecmem::data::vector_view<traccc::scalar> rel_shared_view;
+
+    /**
+     * @brief The number of updated tracks
+     */
+    unsigned int* n_updated_tracks;
+
+    /**
+     * @brief View object to the vector of affected track IDs
+     */
+    vecmem::data::vector_view<unsigned int> updated_tracks_view;
 };
 
 /// Function used for updating vectors

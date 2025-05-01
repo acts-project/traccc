@@ -36,6 +36,8 @@ TRACCC_HOST_DEVICE inline void update_vectors(
         payload.n_accepted_tracks_per_measurement_view);
     vecmem::device_vector<unsigned int> n_shared(payload.n_shared_view);
     vecmem::device_vector<traccc::scalar> rel_shared(payload.rel_shared_view);
+    vecmem::device_vector<unsigned int> updated_tracks(
+        payload.updated_tracks_view);
 
     const auto& meas_ids_of_track = meas_ids[payload.worst_track];
     const auto id = meas_ids_of_track[globalIndex];
@@ -82,6 +84,13 @@ TRACCC_HOST_DEVICE inline void update_vectors(
 
         rel_shared.at(tid) = static_cast<traccc::scalar>(n_shared.at(tid)) /
                              static_cast<traccc::scalar>(n_meas.at(tid));
+
+        // Write updated track IDs
+        vecmem::device_atomic_ref<unsigned int> num_updated_tracks(
+            *payload.n_updated_tracks);
+
+        const unsigned int pos = num_updated_tracks.fetch_add(1);
+        updated_tracks.at(pos) = tid;
     }
 }
 

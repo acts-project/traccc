@@ -65,6 +65,16 @@ struct shared_count_comparator {
     }
 };
 
+struct not_in_vector {
+    const unsigned int* begin;
+    const unsigned int* end;
+
+    TRACCC_HOST_DEVICE
+    bool operator()(unsigned int tid) const {
+        return !thrust::binary_search(thrust::seq, begin, end, tid);
+    }
+};
+
 greedy_ambiguity_resolution_algorithm::greedy_ambiguity_resolution_algorithm(
     const config_type& cfg, traccc::memory_resource& mr, vecmem::copy& copy,
     stream& str, std::unique_ptr<const Logger> logger)
@@ -296,9 +306,14 @@ greedy_ambiguity_resolution_algorithm::operator()(
     // Shared count comparator
     shared_count_comparator sh_comp(n_shared_buffer.ptr());
 
+    // Buffer for tracks whose shared meas has been changed
+    vecmem::data::vector_buffer<unsigned int> updated_tracks_buffer{n_accepted,
+                                                                    m_mr.main};
+
     // Iterate over tracks
     unsigned int max_track_id;
     unsigned int max_shared;
+    unsigned int n_updated_tracks;
     static constexpr int reject = 0;
     for (unsigned int iter = 0; iter < m_config.max_iterations; iter++) {
 
@@ -341,12 +356,14 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
         m_stream.get().synchronize();
 
-        // Fill the accepted ids vector using counting iterator
-        thrust::copy_if(thrust_policy, cit_begin, cit_end, status_buffer.ptr(),
-                        pre_accepted_ids_buffer.ptr(), thrust::identity<int>());
-
         // Remove the worst (rejected) id from the sorted ids
         n_accepted--;
+
+        // The number of updated tracks
+        vecmem::unique_alloc_ptr<unsigned int> n_updated_tracks_device =
+            vecmem::make_unique_alloc<unsigned int>(m_mr.main);
+        TRACCC_CUDA_ERROR_CHECK(cudaMemsetAsync(
+            n_updated_tracks_device.get(), 0, sizeof(unsigned int), stream));
 
         // Update vectors after the removal
         {
@@ -367,15 +384,73 @@ greedy_ambiguity_resolution_algorithm::operator()(
                     .n_accepted_tracks_per_measurement_view =
                         n_accepted_tracks_per_measurement_buffer,
                     .n_shared_view = n_shared_buffer,
-                    .rel_shared_view = rel_shared_buffer});
+                    .rel_shared_view = rel_shared_buffer,
+                    .n_updated_tracks = n_updated_tracks_device.get(),
+                    .updated_tracks_view = updated_tracks_buffer});
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+            // Global counter object: Device -> Host
+            TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
+                &n_updated_tracks, n_updated_tracks_device.get(),
+                sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
 
             m_stream.get().synchronize();
         }
 
-        // Keep the sorted ids vector sorted
-        thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
-                     sorted_ids_buffer.ptr() + n_accepted, trk_comp);
+        if (n_updated_tracks > 0) {
+            // Keep the sorted ids vector sorted
+            thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
+                         sorted_ids_buffer.ptr() + n_accepted, trk_comp);
+        }
+
+        /*
+        // Sort the updated track IDs
+        thrust::sort(thrust_policy, updated_tracks_buffer.ptr(),
+                     updated_tracks_buffer.ptr() + n_updated_tracks, trk_comp);
+
+        // Make new sorted ids vector without updated track ID
+        vecmem::data::vector_buffer<unsigned int> subtracted_buffer{
+            n_accepted - n_updated_tracks, m_mr.main};
+        m_copy.get().setup(subtracted_buffer)->ignore();
+        */
+
+        /*
+        not_in_vector pred{updated_tracks_buffer.ptr(),
+                           updated_tracks_buffer.ptr() + n_updated_tracks};
+
+        thrust::copy_if(thrust_policy, sorted_ids_buffer.ptr(),
+                        sorted_ids_buffer.ptr() + n_accepted,
+                        subtracted_buffer.ptr(), pred);
+        */
+        /*
+        vecmem::data::vector_buffer<std::size_t> lower_bounds{n_updated_tracks,
+                                                              m_mr.main};
+
+        thrust::lower_bound(thrust_policy, sorted_ids_buffer.ptr(),
+                            sorted_ids_buffer.ptr() + n_accepted,
+                            updated_tracks_buffer.ptr(),
+                            updated_tracks_buffer.ptr() + n_updated_tracks,
+                            lower_bounds.begin(), trk_comp);
+        */
+        /*
+        // Sort track IDs
+        {
+            const unsigned int nThreads = m_warp_size * 2;
+            const unsigned int nBlocks =
+                (n_updated_tracks + nThreads - 1) / nThreads;
+
+            kernels::sort_tracks<<<nBlocks, nThreads, 0, stream>>>(
+                device::update_vectors_payload{
+                    .n_updated_tracks = n_updated_tracks,
+                    .updated_tracks_view = updated_tracks_buffer,
+                    .rel_shared_view = rel_shared_buffer,
+                    .pvals_view = pvals_buffer,
+                    .sorted_ids_view = sorted_ids_buffer});
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+            m_stream.get().synchronize();
+        }
+        */
     }
 
     std::vector<unsigned int> accepted_ids;
