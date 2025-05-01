@@ -37,6 +37,7 @@ void read_particles(particle_container_types::host& particles,
                     std::string_view particles_file, std::string_view hits_file,
                     std::string_view measurements_file,
                     std::string_view hit_map_file,
-                    const traccc::default_detector::host* detector);
+                    const traccc::default_detector::host* detector,
+                    const bool sort_measurements = true);
 
 }  // namespace traccc::io::csv

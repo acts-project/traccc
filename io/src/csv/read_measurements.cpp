@@ -11,14 +11,14 @@
 #include "traccc/io/csv/make_measurement_reader.hpp"
 
 // System include(s).
-#include <algorithm>
+#include <numeric>
+#include <ranges>
 
 namespace traccc::io::csv {
 
-void read_measurements(measurement_collection_types::host& measurements,
-                       std::string_view filename,
-                       const traccc::default_detector::host* detector,
-                       const bool do_sort) {
+std::vector<std::size_t> read_measurements(
+    measurement_collection_types::host& measurements, std::string_view filename,
+    const traccc::default_detector::host* detector, const bool do_sort) {
 
     // Construct the measurement reader object.
     auto reader = make_measurement_reader(filename);
@@ -78,10 +78,32 @@ void read_measurements(measurement_collection_types::host& measurements,
         measurements.push_back(meas);
     }
 
+    // Contains the index of the new position at the entry of the old position
+    std::vector<std::size_t> new_idx_map(measurements.size());
     if (do_sort) {
-        std::sort(measurements.begin(), measurements.end(),
-                  measurement_sort_comp());
+        // Remeber index locations
+        std::vector<std::size_t> idx(measurements.size());
+        std::iota(idx.begin(), idx.end(), 0);
+
+        // Sort the indices the way the measurements will be sorted
+        // https://stackoverflow.com/questions/1577475/c-sorting-and-keeping-track-of-indexes
+        std::ranges::sort(idx.begin(), idx.end(),
+                          [&measurements](size_t i, size_t j) {
+                              return measurement_sort_comp{}(measurements[i],
+                                                             measurements[j]);
+                          });
+
+        // Map the indices to the new positions
+        for (std::size_t i = 0u; i < idx.size(); ++i) {
+            new_idx_map[idx[i]] = i;
+        }
+
+        // Now sort the actual measurements (@TODO: Use new_idx_map as
+        // permutations)
+        std::ranges::sort(measurements, measurement_sort_comp());
     }
+
+    return new_idx_map;
 }
 
 }  // namespace traccc::io::csv

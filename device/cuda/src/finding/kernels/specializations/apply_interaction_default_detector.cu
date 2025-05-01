@@ -9,10 +9,10 @@
 #include "apply_interaction_src.cuh"
 #include "types.hpp"
 
-namespace traccc::cuda::kernels {
+namespace traccc::cuda {
 
-template __global__ void apply_interaction<traccc::default_detector::device>(
-    const finding_config,
+template void apply_interaction<traccc::default_detector::device>(
+    const dim3& grid_size, const dim3& block_size, std::size_t shared_mem_size,
+    const cudaStream_t& stream, const finding_config,
     device::apply_interaction_payload<traccc::default_detector::device>);
-
 }

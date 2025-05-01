@@ -20,6 +20,10 @@ if(${CMAKE_CXX_STANDARD} LESS 20)
    message(SEND_ERROR "CMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}, but traccc requires C++>=20")
 endif()
 
+# Set the CUDA architecture to build code for.
+set( CMAKE_CUDA_ARCHITECTURES "75" CACHE STRING
+   "CUDA architectures to build device code for" )
+
 # Flag controlling whether warnings should make the build fail.
 option( TRACCC_FAIL_ON_WARNINGS
    "Make the build fail on compiler/linker warnings" FALSE )

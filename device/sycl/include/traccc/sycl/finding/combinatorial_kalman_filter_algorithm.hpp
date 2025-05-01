@@ -17,11 +17,10 @@
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/bfield.hpp"
+#include "traccc/utils/detector_type_utils.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
-
-// Detray include(s).
-#include <detray/detectors/bfield.hpp>
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
@@ -35,14 +34,14 @@ namespace traccc::sycl {
 class combinatorial_kalman_filter_algorithm
     : public algorithm<track_candidate_container_types::buffer(
           const default_detector::view&,
-          const detray::bfield::const_field_t<
-              default_detector::device::scalar_type>::view_t&,
+          const covfie::field<traccc::const_bfield_backend_t<
+              default_detector::device::scalar_type>>::view_t&,
           const measurement_collection_types::const_view&,
           const bound_track_parameters_collection_types::const_view&)>,
       public algorithm<track_candidate_container_types::buffer(
           const telescope_detector::view&,
-          const detray::bfield::const_field_t<
-              telescope_detector::device::scalar_type>::view_t&,
+          const covfie::field<traccc::const_bfield_backend_t<
+              default_detector::device::scalar_type>>::view_t&,
           const measurement_collection_types::const_view&,
           const bound_track_parameters_collection_types::const_view&)>,
       public messaging {
@@ -71,8 +70,8 @@ class combinatorial_kalman_filter_algorithm
     ///
     output_type operator()(
         const default_detector::view& det,
-        const detray::bfield::const_field_t<
-            default_detector::device::scalar_type>::view_t& field,
+        const covfie::field<const_bfield_backend_t<
+            telescope_detector::device::scalar_type>>::view_t& field,
         const measurement_collection_types::const_view& measurements,
         const bound_track_parameters_collection_types::const_view& seeds)
         const override;
@@ -89,8 +88,8 @@ class combinatorial_kalman_filter_algorithm
     ///
     output_type operator()(
         const telescope_detector::view& det,
-        const detray::bfield::const_field_t<
-            telescope_detector::device::scalar_type>::view_t& field,
+        const covfie::field<const_bfield_backend_t<
+            telescope_detector::device::scalar_type>>::view_t& field,
         const measurement_collection_types::const_view& measurements,
         const bound_track_parameters_collection_types::const_view& seeds)
         const override;

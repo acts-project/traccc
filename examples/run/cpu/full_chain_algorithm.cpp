@@ -21,8 +21,9 @@ full_chain_algorithm::full_chain_algorithm(
     detector_type* detector, std::unique_ptr<const traccc::Logger> logger)
     : messaging(logger->clone()),
       m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
-      m_field(detray::bfield::create_const_field<
-              typename detector_type::scalar_type>(m_field_vec)),
+      m_field(
+          traccc::construct_const_bfield<typename detector_type::scalar_type>(
+              m_field_vec)),
       m_det_descr(det_descr),
       m_detector(detector),
       m_clusterization(mr, logger->cloneWithSuffix("ClusteringAlg")),

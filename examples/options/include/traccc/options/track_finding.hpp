@@ -26,6 +26,12 @@ class track_finding : public interface, public config_provider<finding_config> {
     /// Constructor
     track_finding();
 
+    /// Read/process the command line options
+    ///
+    /// @param vm The command line options to interpret/read
+    ///
+    void read(const boost::program_options::variables_map& vm) override;
+
     /// Configuration conversion operators
     operator finding_config() const override;
 

@@ -23,10 +23,6 @@ if( "${CMAKE_CUDA_COMPILER_ID}" MATCHES "NVIDIA" )
    traccc_add_flag( CMAKE_CUDA_FLAGS "-Wconversion" )
 endif()
 
-# Set the CUDA architecture to build code for.
-set( CMAKE_CUDA_ARCHITECTURES "52" CACHE STRING
-   "CUDA architectures to build device code for" )
-
 # Allow to use functions in device code that are constexpr, even if they are
 # not marked with __device__.
 traccc_add_flag( CMAKE_CUDA_FLAGS "--expt-relaxed-constexpr" )

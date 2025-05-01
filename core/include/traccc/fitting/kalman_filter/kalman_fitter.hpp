@@ -20,11 +20,7 @@
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/utils/particle.hpp"
 #include "traccc/utils/prob.hpp"
-
-// detray include(s).
-#include <detray/navigation/direct_navigator.hpp>
-#include <detray/propagator/actors.hpp>
-#include <detray/propagator/propagator.hpp>
+#include "traccc/utils/propagation.hpp"
 
 // vecmem include(s)
 #include <vecmem/containers/device_vector.hpp>

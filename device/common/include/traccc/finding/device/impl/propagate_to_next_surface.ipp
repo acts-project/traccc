@@ -21,6 +21,8 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     const global_index_t globalIndex, const finding_config& cfg,
     const propagate_to_next_surface_payload<propagator_t, bfield_t>& payload) {
 
+    using scalar_t = propagator_t::detector_type::scalar_type;
+
     if (globalIndex >= payload.n_in_params) {
         return;
     }
@@ -100,14 +102,23 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     typename detray::detail::tuple_element<2, actor_tuple_type>::type::state s2{
         s3};
     typename detray::detail::tuple_element<4, actor_tuple_type>::type::state s4;
-    s4.min_step_length = cfg.min_step_length_for_next_surface;
-    s4.max_count = cfg.max_step_counts_for_next_surface;
+
+    typename detray::detail::tuple_element<5, actor_tuple_type>::type::state s5;
+    s5.min_step_length = cfg.min_step_length_for_next_surface;
+    s5.max_count = cfg.max_step_counts_for_next_surface;
+    if (cfg.is_min_pT) {
+        s4.min_pT(static_cast<scalar_t>(cfg.min_p_mag));
+    } else {
+        s4.min_p(static_cast<scalar_t>(cfg.min_p_mag));
+    }
 
     // Propagate to the next surface
-    propagator.propagate_sync(propagation, detray::tie(s0, s2, s3, s4));
+    propagator.propagate_sync(propagation, detray::tie(s0, s2, s3, s4, s5));
 
     // If a surface found, add the parameter for the next step
-    if (s4.success) {
+    if (s5.success) {
+        assert(propagation._navigation.is_on_sensitive());
+
         params[param_id] = propagation._stepping.bound_params();
 
         if (payload.step == cfg.max_track_candidates_per_track - 1) {

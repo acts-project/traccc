@@ -8,6 +8,7 @@
 // core
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/memory_resource.hpp"
+#include "traccc/utils/propagation.hpp"
 
 // io
 #include "traccc/io/read_cells.hpp"
@@ -24,6 +25,7 @@
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
+#include "traccc/utils/bfield.hpp"
 
 // performance
 #include "traccc/efficiency/finding_performance_writer.hpp"
@@ -43,13 +45,6 @@
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/options/track_resolution.hpp"
 #include "traccc/options/track_seeding.hpp"
-
-// Detray include(s).
-#include <detray/detectors/bfield.hpp>
-#include <detray/io/frontend/detector_reader.hpp>
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -119,8 +114,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
     // Constant B field for the track finding and fitting
     const traccc::vector3 field_vec = {0.f, 0.f,
                                        seeding_opts.seedfinder.bFieldInZ};
-    const detray::bfield::const_field_t<traccc::scalar> field =
-        detray::bfield::create_const_field<traccc::scalar>(field_vec);
+    const covfie::field<traccc::const_bfield_backend_t<traccc::scalar>> field =
+        traccc::construct_const_bfield<traccc::scalar>(field_vec);
 
     // Algorithm configuration(s).
     detray::propagation::config propagation_config(propagation_opts);

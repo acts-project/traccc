@@ -10,6 +10,7 @@
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/memory_resource.hpp"
+#include "traccc/utils/propagation.hpp"
 
 // io
 #include "traccc/io/read_detector.hpp"
@@ -40,14 +41,6 @@
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/options/track_resolution.hpp"
 #include "traccc/options/track_seeding.hpp"
-
-// Detray include(s).
-#include <detray/core/detector.hpp>
-#include <detray/detectors/bfield.hpp>
-#include <detray/io/frontend/detector_reader.hpp>
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -105,7 +98,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     // B field value and its type
     // @TODO: Set B field as argument
     const traccc::vector3 B{0, 0, 2 * traccc::unit<traccc::scalar>::T};
-    auto field = detray::bfield::create_const_field<traccc::scalar>(B);
+    const covfie::field<traccc::const_bfield_backend_t<traccc::scalar>> field =
+        traccc::construct_const_bfield<traccc::scalar>(B);
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host detector{host_mr};

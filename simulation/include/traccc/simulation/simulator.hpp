@@ -10,16 +10,9 @@
 // Project include(s).
 #include "traccc/simulation/smearing_writer.hpp"
 #include "traccc/utils/particle.hpp"
+#include "traccc/utils/propagation.hpp"
 
 // Detray include(s).
-#include <detray/definitions/pdg_particle.hpp>
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/actor_chain.hpp>
-#include <detray/propagator/actors/aborters.hpp>
-#include <detray/propagator/actors/parameter_resetter.hpp>
-#include <detray/propagator/actors/parameter_transporter.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
 #include <detray/test/utils/simulation/random_scatterer.hpp>
 
 // System include(s).
@@ -32,21 +25,40 @@ template <typename detector_t, typename bfield_t, typename track_generator_t,
           typename writer_t>
 struct simulator {
 
+    using algebra_type = typename detector_t::algebra_type;
     using scalar_type = typename detector_t::scalar_type;
+    using bfield_type = bfield_t;
 
     struct config {
         detray::propagation::config propagation;
 
         /// Particle hypothesis
-        detray::pdg_particle<traccc::scalar> ptc_type =
-            detray::muon<traccc::scalar>();
+        traccc::pdg_particle<scalar_type> ptc_type{traccc::muon<scalar_type>()};
+
+        // Simulation setup
+        bool do_energy_loss = true;
+        bool do_multiple_scattering = true;
+        bool m_is_min_pT = false;
+        scalar_type m_min_p = 10.f * traccc::unit<scalar_type>::MeV;
+
+        /// Set the momentum limit to @param p
+        TRACCC_HOST_DEVICE
+        inline void min_p(const scalar_type p) {
+            m_is_min_pT = false;
+            m_min_p = p;
+        }
+
+        /// Set the transverse momentum limit to @param p
+        TRACCC_HOST_DEVICE
+        inline void min_pT(const scalar_type p) {
+            m_is_min_pT = true;
+            m_min_p = p;
+        }
     };
 
-    using algebra_type = typename detector_t::algebra_type;
-    using bfield_type = bfield_t;
-
     using actor_chain_type =
-        detray::actor_chain<detray::parameter_transporter<algebra_type>,
+        detray::actor_chain<detray::momentum_aborter<scalar_type>,
+                            detray::parameter_transporter<algebra_type>,
                             detray::random_scatterer<algebra_type>,
                             detray::parameter_resetter<algebra_type>, writer_t>;
 
@@ -78,6 +90,15 @@ struct simulator {
 
     void run() {
 
+        // Update the actor config
+        if (m_cfg.m_is_min_pT) {
+            m_aborter_state.min_pT(m_cfg.m_min_p);
+        } else {
+            m_aborter_state.min_p(m_cfg.m_min_p);
+        }
+        m_scatterer.do_energy_loss = m_cfg.do_energy_loss;
+        m_scatterer.do_multiple_scattering = m_cfg.do_multiple_scattering;
+
         for (std::size_t event_id = 0u; event_id < m_events; event_id++) {
 
             typename writer_t::state writer_state(
@@ -87,8 +108,8 @@ struct simulator {
             m_scatterer.set_seed(event_id);
             writer_state.set_seed(event_id);
 
-            auto actor_states = detray::tie(m_transporter, m_scatterer,
-                                            m_resetter, writer_state);
+            auto actor_states =
+                detray::tie(m_aborter_state, m_scatterer, writer_state);
 
             for (auto track : *m_track_generator.get()) {
 
@@ -126,9 +147,8 @@ struct simulator {
     typename writer_t::config m_writer_cfg;
 
     /// Actor states
-    typename detray::parameter_transporter<algebra_type>::state m_transporter{};
+    typename detray::momentum_aborter<scalar_type>::state m_aborter_state{};
     typename detray::random_scatterer<algebra_type>::state m_scatterer{};
-    typename detray::parameter_resetter<algebra_type>::state m_resetter{};
 };
 
 }  // namespace traccc

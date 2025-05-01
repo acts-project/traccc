@@ -13,16 +13,18 @@
 #include "traccc/io/utils.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
+#include "traccc/simulation/event_generators.hpp"
 #include "traccc/simulation/measurement_smearer.hpp"
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/simulation/smearing_writer.hpp"
+#include "traccc/utils/bfield.hpp"
 
 // Detray include(s).
-#include <detray/detectors/bfield.hpp>
 #include <detray/io/frontend/detector_writer.hpp>
 #include <detray/test/utils/detectors/build_toy_detector.hpp>
-#include <detray/test/utils/simulation/event_generator/track_generators.hpp>
-#include <detray/tracks/ray.hpp>
+
+// Covfie include(s)
+#include <covfie/core/field.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -66,7 +68,8 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
 
     // B field value and its type
     // @TODO: Set B field as argument
-    using b_field_t = covfie::field<detray::bfield::const_bknd_t<scalar_type>>;
+    using b_field_t =
+        covfie::field<traccc::const_bfield_backend_t<scalar_type>>;
 
     static constexpr traccc::vector3 B{0, 0, 2 * traccc::unit<scalar_type>::T};
 
@@ -89,7 +92,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
             detray::build_toy_detector<algebra_type>(host_mr, get_toy_config());
 
         // B field
-        auto field = detray::bfield::create_const_field<scalar_type>(B);
+        b_field_t field = traccc::construct_const_bfield<scalar_type>(B);
 
         // Origin of particles
         using generator_type = detray::random_track_generator<
@@ -120,7 +123,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
 
         auto sim = traccc::simulator<detector_type, b_field_t, generator_type,
                                      writer_type>(
-            detray::muon<scalar_type>(), n_events, det, field,
+            traccc::muon<scalar_type>(), n_events, det, field,
             std::move(generator), std::move(smearer_writer_cfg), full_path);
 
         // Same propagation configuration for sim and reco

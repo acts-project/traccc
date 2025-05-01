@@ -63,6 +63,22 @@ track_finding::track_finding() : interface("Track Finding Options") {
     m_desc.add_options()("particle-hypothesis",
                          po::value(&m_pdg_number)->default_value(m_pdg_number),
                          "PDG number for the particle hypothesis");
+    m_desc.add_options()(
+        "min-total-momentum [GeV]",
+        po::value(&m_config.min_p_mag)->default_value(m_config.min_p_mag),
+        "Minimum total track momentum");
+    m_desc.add_options()(
+        "min-transverse-momentum [GeV]",
+        po::value(&m_config.min_p_mag)->default_value(m_config.min_p_mag),
+        "Minimum transverse track momentum");
+}
+
+void track_finding::read(const po::variables_map &vm) {
+
+    m_config.min_p_mag *= traccc::unit<float>::GeV;
+
+    // If not set as total momentum, interpret as transverse momentum
+    m_config.is_min_pT = vm["min-total-momentum"].defaulted();
 }
 
 track_finding::operator finding_config() const {
@@ -102,6 +118,16 @@ std::unique_ptr<configuration_printable> track_finding::as_printable() const {
         std::to_string(m_config.max_num_skipping_per_cand)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "PDG number", std::to_string(m_pdg_number)));
+    // How to interpret the minimum track momentum value
+    if (m_config.is_min_pT) {
+        cat->add_child(std::make_unique<configuration_kv_pair>(
+            "Minimum transverse track momentum",
+            std::to_string(m_config.min_p_mag)));
+    } else {
+        cat->add_child(std::make_unique<configuration_kv_pair>(
+            "Minimum total track momentum",
+            std::to_string(m_config.min_p_mag)));
+    }
 
     return cat;
 }

@@ -13,9 +13,6 @@
 // Project include(s).
 #include "traccc/geometry/silicon_detector_description.hpp"
 
-// Detray include(s).
-#include <detray/geometry/barcode.hpp>
-
 // System include(s).
 #include <cstdint>
 #include <map>
