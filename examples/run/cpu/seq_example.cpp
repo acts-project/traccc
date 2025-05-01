@@ -8,6 +8,7 @@
 // core
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/propagation.hpp"
+#include "traccc/utils/memory_resource.hpp"
 
 // io
 #include "traccc/io/read_cells.hpp"
@@ -64,14 +65,16 @@ int seq_run(const traccc::opts::input_data& input_opts,
             const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::track_finding& finding_opts,
             const traccc::opts::track_propagation& propagation_opts,
-            const traccc::opts::track_fitting& fitting_opts,
             const traccc::opts::track_resolution& resolution_opts,
+            const traccc::opts::track_fitting& fitting_opts,
             const traccc::opts::performance& performance_opts,
             std::unique_ptr<const traccc::Logger> ilogger) {
     TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
     // Memory resource used by the application.
     vecmem::host_memory_resource host_mr;
+    traccc::memory_resource mr{host_mr, &host_mr};
+
     // Copy obejct
     vecmem::copy copy;
 
@@ -98,8 +101,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
     uint64_t n_spacepoints = 0;
     uint64_t n_seeds = 0;
     uint64_t n_found_tracks = 0;
-    uint64_t n_fitted_tracks = 0;
     uint64_t n_ambiguity_free_tracks = 0;
+    uint64_t n_fitted_tracks = 0;
 
     // Type definitions
     using spacepoint_formation_algorithm =
@@ -120,6 +123,9 @@ int seq_run(const traccc::opts::input_data& input_opts,
     finding_algorithm::config_type finding_cfg(finding_opts);
     finding_cfg.propagation = propagation_config;
 
+    traccc::host::greedy_ambiguity_resolution_algorithm::config_type
+        resolution_config(resolution_opts);
+
     fitting_algorithm::config_type fitting_cfg(fitting_opts);
     fitting_cfg.propagation = propagation_config;
 
@@ -136,23 +142,22 @@ int seq_run(const traccc::opts::input_data& input_opts,
     traccc::host::track_params_estimation tp(host_mr,
                                              logger().clone("TrackParEstAlg"));
     finding_algorithm finding_alg(finding_cfg, logger().clone("FindingAlg"));
+    traccc::host::greedy_ambiguity_resolution_algorithm resolution_alg(
+        resolution_config, mr, logger().clone("AmbiguityResolutionAlg"));
     fitting_algorithm fitting_alg(fitting_cfg, host_mr, copy,
                                   logger().clone("FittingAlg"));
-    traccc::greedy_ambiguity_resolution_algorithm::config_t resolution_config;
-    traccc::greedy_ambiguity_resolution_algorithm resolution_alg(
-        resolution_config, logger().clone("AmbiguityResolutionAlg"));
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
         traccc::seeding_performance_writer::config{});
     traccc::finding_performance_writer find_performance_writer(
         traccc::finding_performance_writer::config{});
-    traccc::fitting_performance_writer fit_performance_writer(
-        traccc::fitting_performance_writer::config{});
     traccc::finding_performance_writer::config ar_writer_cfg;
     ar_writer_cfg.file_path = "performance_track_ambiguity_resolution.root";
     ar_writer_cfg.algorithm_name = "ambiguity_resolution";
     traccc::finding_performance_writer ar_performance_writer(ar_writer_cfg);
+    traccc::fitting_performance_writer fit_performance_writer(
+        traccc::fitting_performance_writer::config{});
 
     // Timers
     traccc::performance::timing_info elapsedTimes;
@@ -171,9 +176,9 @@ int seq_run(const traccc::opts::input_data& input_opts,
         traccc::host::seeding_algorithm::output_type seeds{host_mr};
         traccc::host::track_params_estimation::output_type params{&host_mr};
         finding_algorithm::output_type track_candidates{&host_mr};
+        traccc::host::greedy_ambiguity_resolution_algorithm::output_type
+            resolved_track_candidates{&host_mr};
         fitting_algorithm::output_type track_states{&host_mr};
-        traccc::greedy_ambiguity_resolution_algorithm::output_type
-            resolved_track_states{&host_mr};
 
         {  // Start measuring wall time.
             traccc::performance::timer timer_wall{"Wall time", elapsedTimes};
@@ -263,19 +268,22 @@ int seq_run(const traccc::opts::input_data& input_opts,
                         event, output_opts.directory, output_opts.format,
                         traccc::get_data(track_candidates), detector);
                 }
+
+                {
+                    // Perform ambiguity resolution only if asked for.
+                    traccc::performance::timer timer{
+                        "Track ambiguity resolution", elapsedTimes};
+                    resolved_track_candidates =
+                        resolution_alg(traccc::get_data(track_candidates));
+                }
+
                 {
                     traccc::performance::timer timer{"Track fitting",
                                                      elapsedTimes};
                     track_states = fitting_alg(
-                        detector, field, traccc::get_data(track_candidates));
+                        detector, field,
+                        traccc::get_data(resolved_track_candidates));
                 }
-            }
-
-            // Perform ambiguity resolution only if asked for.
-            if (resolution_opts.run) {
-                traccc::performance::timer timer{"Track ambiguity resolution",
-                                                 elapsedTimes};
-                resolved_track_states = resolution_alg(track_states);
             }
 
             /*----------------------------
@@ -287,8 +295,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
             n_spacepoints += spacepoints_per_event.size();
             n_seeds += seeds.size();
             n_found_tracks += track_candidates.size();
+            n_ambiguity_free_tracks += resolved_track_candidates.size();
             n_fitted_tracks += track_states.size();
-            n_ambiguity_free_tracks += resolved_track_states.size();
 
         }  // Stop measuring Wall time.
 
@@ -310,6 +318,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
                 vecmem::get_data(measurements_per_event), evt_data);
             find_performance_writer.write(traccc::get_data(track_candidates),
                                           evt_data);
+            ar_performance_writer.write(
+                traccc::get_data(resolved_track_candidates), evt_data);
 
             for (unsigned int i = 0; i < track_states.size(); i++) {
                 const auto& trk_states_per_track = track_states.at(i).items;
@@ -319,21 +329,14 @@ int seq_run(const traccc::opts::input_data& input_opts,
                 fit_performance_writer.write(trk_states_per_track, fit_res,
                                              detector, evt_data);
             }
-
-            if (resolution_opts.run) {
-                ar_performance_writer.write(
-                    traccc::get_data(resolved_track_states), evt_data);
-            }
         }
     }
 
     if (performance_opts.run) {
         sd_performance_writer.finalize();
         find_performance_writer.finalize();
+        ar_performance_writer.finalize();
         fit_performance_writer.finalize();
-        if (resolution_opts.run) {
-            ar_performance_writer.finalize();
-        }
     }
 
     std::cout << "==> Statistics ... " << std::endl;
@@ -344,9 +347,9 @@ int seq_run(const traccc::opts::input_data& input_opts,
               << std::endl;
     std::cout << "- created  " << n_seeds << " seeds" << std::endl;
     std::cout << "- found    " << n_found_tracks << " tracks" << std::endl;
-    std::cout << "- fitted   " << n_fitted_tracks << " tracks" << std::endl;
     std::cout << "- resolved " << n_ambiguity_free_tracks << " tracks"
               << std::endl;
+    std::cout << "- fitted   " << n_fitted_tracks << " tracks" << std::endl;
     std::cout << "==> Elapsed times...\n" << elapsedTimes << std::endl;
 
     return EXIT_SUCCESS;
@@ -366,20 +369,21 @@ int main(int argc, char* argv[]) {
     traccc::opts::track_seeding seeding_opts;
     traccc::opts::track_finding finding_opts;
     traccc::opts::track_propagation propagation_opts;
-    traccc::opts::track_fitting fitting_opts;
     traccc::opts::track_resolution resolution_opts;
+    traccc::opts::track_fitting fitting_opts;
     traccc::opts::performance performance_opts;
     traccc::opts::program_options program_opts{
         "Full Tracking Chain on the Host",
         {detector_opts, input_opts, output_opts, clusterization_opts,
-         seeding_opts, finding_opts, fitting_opts, propagation_opts,
-         resolution_opts, performance_opts},
+         seeding_opts, finding_opts, resolution_opts, fitting_opts,
+         propagation_opts, performance_opts},
         argc,
         argv,
         logger->cloneWithSuffix("Options")};
 
     // Run the application.
     return seq_run(input_opts, output_opts, detector_opts, clusterization_opts,
-                   seeding_opts, finding_opts, propagation_opts, fitting_opts,
-                   resolution_opts, performance_opts, logger->clone());
+                   seeding_opts, finding_opts, propagation_opts,
+                   resolution_opts, fitting_opts, performance_opts,
+                   logger->clone());
 }
