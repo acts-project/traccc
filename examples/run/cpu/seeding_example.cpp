@@ -9,8 +9,8 @@
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/geometry/detector.hpp"
-#include "traccc/utils/propagation.hpp"
 #include "traccc/utils/memory_resource.hpp"
+#include "traccc/utils/propagation.hpp"
 
 // io
 #include "traccc/io/read_detector.hpp"

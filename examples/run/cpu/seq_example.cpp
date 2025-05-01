@@ -7,8 +7,8 @@
 
 // core
 #include "traccc/geometry/detector.hpp"
-#include "traccc/utils/propagation.hpp"
 #include "traccc/utils/memory_resource.hpp"
+#include "traccc/utils/propagation.hpp"
 
 // io
 #include "traccc/io/read_cells.hpp"
