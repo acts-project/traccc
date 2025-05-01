@@ -28,9 +28,14 @@ namespace traccc::device {
 struct update_vectors_payload {
 
     /**
-     * @brief The id of worst track to be removed
+     * @brief View object to the vector of sorted track ids
      */
-    unsigned int worst_track;
+    vecmem::data::vector_view<const unsigned int> sorted_ids_view;
+
+    /**
+     * @brief The number of accepted tracks
+     */
+    unsigned int n_accepted;
 
     /**
      * @brief View object to the vector of measured ids per track

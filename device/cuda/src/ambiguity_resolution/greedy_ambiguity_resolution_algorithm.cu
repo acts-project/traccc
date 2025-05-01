@@ -351,8 +351,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
             &worst_track, sorted_ids_buffer.ptr() + n_accepted - 1,
             sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
 
-        // Remove the worst (rejected) id from the sorted ids
-        n_accepted--;
 
         // Reset the number of updated tracks
         TRACCC_CUDA_ERROR_CHECK(cudaMemsetAsync(
@@ -365,7 +363,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
             kernels::
                 update_vectors<<<1, candidate_sizes[worst_track], 0, stream>>>(
                     device::update_vectors_payload{
-                        .worst_track = worst_track,
+                        .sorted_ids_view = sorted_ids_buffer,
+                        .n_accepted = n_accepted,
                         .meas_ids_view = meas_ids_buffer,
                         .n_meas_view = n_meas_buffer,
                         .unique_meas_view = unique_meas_buffer,
@@ -392,6 +391,9 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 cudaMemcpyAsync(&has_max_changed, has_max_changed_device.get(),
                                 sizeof(bool), cudaMemcpyDeviceToHost, stream));
         }
+
+        // Remove the worst (rejected) id from the sorted ids
+        n_accepted--;
 
         if (n_updated_tracks > 0) {
 

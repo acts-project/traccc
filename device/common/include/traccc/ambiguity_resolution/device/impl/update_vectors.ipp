@@ -23,13 +23,10 @@ TRACCC_HOST_DEVICE inline void update_vectors(
     const global_index_t globalIndex, const barrier_t& barrier,
     const update_vectors_payload& payload) {
 
+    vecmem::device_vector<const unsigned int> sorted_ids(
+        payload.sorted_ids_view);
     vecmem::jagged_device_vector<const std::size_t> meas_ids(
         payload.meas_ids_view);
-
-    if (globalIndex >= meas_ids[payload.worst_track].size()) {
-        return;
-    }
-
     vecmem::device_vector<const std::size_t> n_meas(payload.n_meas_view);
     vecmem::device_vector<const std::size_t> unique_meas(
         payload.unique_meas_view);
@@ -44,7 +41,8 @@ TRACCC_HOST_DEVICE inline void update_vectors(
     vecmem::device_vector<unsigned int> updated_tracks(
         payload.updated_tracks_view);
 
-    const auto& meas_ids_of_track = meas_ids[payload.worst_track];
+    const auto worst_track = sorted_ids[payload.n_accepted - 1];
+    const auto& meas_ids_of_track = meas_ids[worst_track];
     const auto id = meas_ids_of_track[globalIndex];
 
     if (thrust::find(thrust::seq, meas_ids_of_track.begin(),
@@ -68,8 +66,8 @@ TRACCC_HOST_DEVICE inline void update_vectors(
     const auto& tracks = tracks_per_measurement[unique_meas_idx];
     auto track_status = track_status_per_measurement[unique_meas_idx];
 
-    const auto it2 = thrust::find(thrust::seq, tracks.begin(), tracks.end(),
-                                  payload.worst_track);
+    const auto it2 =
+        thrust::find(thrust::seq, tracks.begin(), tracks.end(), worst_track);
     const unsigned int worst_idx =
         static_cast<unsigned int>(thrust::distance(tracks.begin(), it2));
     track_status[worst_idx] = 0;
