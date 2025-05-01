@@ -387,25 +387,37 @@ greedy_ambiguity_resolution_algorithm::operator()(
             m_stream.get().synchronize();
         }
 
-        printf("n updated tracks %d \n", n_updated_tracks);
+        // printf("n updated tracks %d \n", n_updated_tracks);
 
         if (n_updated_tracks > 0) {
 
+            // Find the lowest value of updated tracks
+            auto it1 = thrust::min_element(
+                thrust_policy, updated_tracks_buffer.ptr(),
+                updated_tracks_buffer.ptr() + n_updated_tracks, sh_comp);
+
+            unsigned int min_track_id;
+
+            TRACCC_CUDA_ERROR_CHECK(
+                cudaMemcpyAsync(&min_track_id, it1, sizeof(unsigned int),
+                                cudaMemcpyDeviceToHost, stream));
+            m_stream.get().synchronize();
+
+            auto it2 = thrust::find(thrust_policy, sorted_ids_buffer.ptr(),
+                                    sorted_ids_buffer.ptr() + n_accepted,
+                                    min_track_id);
+
+            auto it3 = thrust::lower_bound(
+                thrust_policy, sorted_ids_buffer.ptr(), it2, *it2, sh_comp);
+
+            thrust::sort(thrust_policy, it3,
+                         sorted_ids_buffer.ptr() + n_accepted, trk_comp);
+
             /*
-            // Sort the updated track IDs
-            thrust::sort(thrust_policy, updated_tracks_buffer.ptr(),
-                         updated_tracks_buffer.ptr() + n_updated_tracks,
-            trk_comp);
-
-            // Make new sorted ids vector without updated track ID
-            vecmem::data::vector_buffer<unsigned int> subtracted_buffer{
-                n_accepted - n_updated_tracks, m_mr.main};
-            m_copy.get().setup(subtracted_buffer)->ignore();
-            */
-
             // Keep the sorted ids vector sorted
             thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
                          sorted_ids_buffer.ptr() + n_accepted, trk_comp);
+            */
         }
     }
 
