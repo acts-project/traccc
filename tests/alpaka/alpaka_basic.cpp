@@ -131,16 +131,36 @@ GTEST_TEST(AlpakaBasic, VecMemOp) {
     using WorkDiv = WorkDivMembers<Dim, Idx>;
     auto workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
 
+    // In the actual traccc::alpaka library, we could use the
+    // traccc::alpaka::details::vecmem_objects class here...
+    //
+    // But the tests are a bit different, as they do use
+    // alpaka directly.
+    //
+    // Since we have no way of guaranteeing that the Dim, Idx, Acc and Queue
+    // types here, are the same as the ones in the
+    // vecmem::alpaka::details::vecmem_objects, lets instead just hardcode the
+    // types here.
+
 #ifdef ALPAKA_ACC_SYCL_ENABLED
     ::sycl::queue q;
     vecmem::sycl::queue_wrapper qw{&q};
-    traccc::alpaka::vecmem_resources::device_copy vm_copy(qw);
+    vecmem::sycl::copy vm_copy(qw);
+    vecmem::sycl::host_memory_resource host_mr(qw);
+    vecmem::sycl::device_memory_resource device_mr(qw);
+#elif defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
+    vecmem::cuda::copy vm_copy;
+    vecmem::cuda::host_memory_resource host_mr;
+    vecmem::cuda::device_memory_resource device_mr;
+#elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
+    vecmem::hip::copy vm_copy;
+    vecmem::hip::host_memory_resource host_mr;
+    vecmem::hip::device_memory_resource device_mr;
 #else
-    traccc::alpaka::vecmem_resources::device_copy vm_copy;
+    vecmem::copy vm_copy;
+    vecmem::host_memory_resource host_mr;
+    vecmem::host_memory_resource device_mr;
 #endif
-
-    traccc::alpaka::vecmem_resources::host_memory_resource host_mr;
-    traccc::alpaka::vecmem_resources::device_memory_resource device_mr;
 
     vecmem::vector<float> host_vector{n, &host_mr};
 

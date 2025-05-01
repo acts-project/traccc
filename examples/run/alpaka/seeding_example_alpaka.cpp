@@ -44,11 +44,6 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 #include "traccc/utils/propagation.hpp"
 
-#ifdef ALPAKA_ACC_SYCL_ENABLED
-#include <sycl/sycl.hpp>
-#include <vecmem/utils/sycl/queue_wrapper.hpp>
-#endif
-
 // System include(s).
 #include <cmath>
 #include <exception>
@@ -80,21 +75,14 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     using device_fitter_type =
         traccc::kalman_fitter<rk_stepper_type, device_navigator_type>;
 
-#ifdef ALPAKA_ACC_SYCL_ENABLED
-    ::sycl::queue q;
-    vecmem::sycl::queue_wrapper qw{&q};
-    traccc::alpaka::vecmem_resources::device_copy copy(qw);
-    traccc::alpaka::vecmem_resources::host_memory_resource host_mr(qw);
-    traccc::alpaka::vecmem_resources::device_memory_resource device_mr(qw);
-    traccc::alpaka::vecmem_resources::managed_memory_resource mng_mr(qw);
+    traccc::alpaka::queue queue;
+    traccc::alpaka::details::vecmem_objects vo(queue);
+
+    vecmem::copy& copy = vo.copy();
+    vecmem::memory_resource& host_mr = vo.host_mr();
+    vecmem::memory_resource& device_mr = vo.device_mr();
+    vecmem::memory_resource& mng_mr = vo.managed_mr();
     traccc::memory_resource mr{device_mr, &host_mr};
-#else
-    traccc::alpaka::vecmem_resources::device_copy copy;
-    traccc::alpaka::vecmem_resources::host_memory_resource host_mr;
-    traccc::alpaka::vecmem_resources::device_memory_resource device_mr;
-    traccc::alpaka::vecmem_resources::managed_memory_resource mng_mr;
-    traccc::memory_resource mr{device_mr, &host_mr};
-#endif
     vecmem::copy host_copy;
 
     // Performance writer

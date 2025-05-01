@@ -120,19 +120,19 @@ class full_chain_algorithm
         const edm::silicon_cell_collection::host& cells) const override;
 
     private:
+    // Alpaka Queue
+    traccc::alpaka::queue m_queue;
+
+    /// Vecmem resources object, creates the device-specific resources
+    traccc::alpaka::details::vecmem_objects m_vecmem_objects;
+
     /// Host memory resource
     ::vecmem::memory_resource& m_host_mr;
 
-#if defined(ALPAKA_ACC_SYCL_ENABLED)
-    /// The SYCL queue to use for the computations
-    ::sycl::queue m_queue;
-    vecmem::sycl::queue_wrapper m_queue_wrapper;
-#endif
-
     /// Device memory resource
-    traccc::alpaka::vecmem_resources::device_memory_resource m_device_mr;
+    std::reference_wrapper<vecmem::memory_resource> m_device_mr;
     /// Memory copy object
-    traccc::alpaka::vecmem_resources::device_copy m_copy;
+    std::reference_wrapper<vecmem::copy> m_copy;
     /// Device caching memory resource
     std::unique_ptr<::vecmem::binary_page_memory_resource> m_cached_device_mr;
 
