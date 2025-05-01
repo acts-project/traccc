@@ -29,7 +29,6 @@
 #endif
 
 #if defined(TRACCC_BUILD_SYCL)
-#include <sycl/sycl.hpp>
 #include <vecmem/memory/sycl/device_memory_resource.hpp>
 #include <vecmem/memory/sycl/host_memory_resource.hpp>
 #include <vecmem/memory/sycl/shared_memory_resource.hpp>

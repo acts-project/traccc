@@ -75,7 +75,7 @@ jobs:
           - platform:
               name: "ALPAKA_CUDA"
               container: ghcr.io/acts-project/ubuntu2404_cuda:69
-              options: --preset alpaka-fp32 -Dalpaka_ACC_GPU_CUDA_ENABLE=ON -DTRACCC_FAIL_ON_WARNINGS=OFF
+              options: --preset alpaka-fp32 -Dalpaka_ACC_GPU_CUDA_ENABLE=ON -DTRACCC_FAIL_ON_WARNINGS=OFF -DTRACCC_BUILD_CUDA=ON
               run_tests: false
             build: Release
           - platform:
@@ -87,7 +87,7 @@ jobs:
           - platform:
               name: "ALPAKA_SYCL"
               container: ghcr.io/acts-project/ubuntu2404_oneapi:69
-              options: --preset alpaka-fp32 -Dalpaka_ACC_CPU_B_SEQ_T_THREADS_ENABLE=OFF -Dalpaka_ACC_SYCL_ENABLE=ON -Dalpaka_SYCL_ONEAPI_GPU=ON -Dalpaka_SYCL_ONEAPI_GPU_DEVICES=spir64
+              options: --preset alpaka-fp32 -Dalpaka_ACC_CPU_B_SEQ_T_THREADS_ENABLE=OFF -Dalpaka_ACC_SYCL_ENABLE=ON -Dalpaka_SYCL_ONEAPI_GPU=ON -Dalpaka_SYCL_ONEAPI_GPU_DEVICES=spir64 -DTRACCC_BUILD_SYCL=ON
               run_tests: false
             build: Release
     # Use BASH as the shell from the images.
