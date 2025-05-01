@@ -16,6 +16,15 @@ opaque_queue::opaque_queue(std::size_t device)
     : m_device{device}, m_queue(nullptr) {
     auto devAcc = ::alpaka::getDevByIdx(::alpaka::Platform<Acc>{}, device);
     m_queue = std::make_unique<Queue>(devAcc);
+
+#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_GPU_HIP_ENABLED)
+    m_nativeQueue = static_cast<void*>(::alpaka::getNativeHandle(*(m_queue)));
+#elif defined(ALPAKA_ACC_SYCL_ENABLED)
+    auto nativeQueue = ::alpaka::getNativeHandle(*(m_queue));
+    m_nativeQueue = reinterpret_cast<void*>(&nativeQueue);
+#else
+    m_nativeQueue = nullptr;
+#endif
 }
 
 }  // namespace traccc::alpaka::details

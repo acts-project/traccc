@@ -60,13 +60,8 @@ void* queue::alpakaQueue() const {
 
 void* queue::deviceNativeQueue() const {
 
-#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_GPU_HIP_ENABLED)
-    return static_cast<void*>(::alpaka::getNativeHandle(*(m_queue->m_queue)));
-#elif defined(ALPAKA_ACC_SYCL_ENABLED)
-    auto nativeQueue = ::alpaka::getNativeHandle(*(m_queue->m_queue));
-    return static_cast<void*>(&nativeQueue);
-#endif
-    throw std::runtime_error("Native queue not available for this device");
+    assert(m_queue->m_nativeQueue != nullptr);
+    return m_queue->m_nativeQueue;
 }
 
 }  // namespace traccc::alpaka

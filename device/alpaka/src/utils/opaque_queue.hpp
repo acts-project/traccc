@@ -26,6 +26,8 @@ struct opaque_queue {
     std::size_t m_device;
     /// Queue managed by the object
     std::unique_ptr<Queue> m_queue;
+    /// Device-specific queue object
+    void* m_nativeQueue;
 
 };  // class opaque_queue
 
