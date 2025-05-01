@@ -24,7 +24,6 @@
 #include <vecmem/memory/hip/device_memory_resource.hpp>
 #include <vecmem/memory/hip/host_memory_resource.hpp>
 #include <vecmem/memory/hip/managed_memory_resource.hpp>
-#include <vecmem/utils/hip/async_copy.hpp>
 #include <vecmem/utils/hip/copy.hpp>
 #endif
 

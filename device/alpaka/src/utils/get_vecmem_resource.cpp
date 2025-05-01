@@ -40,7 +40,7 @@ struct host_device_types<::alpaka::TagGpuHipRt> {
     using host_memory_resource = vecmem::hip::host_memory_resource;
     using managed_memory_resource = vecmem::hip::managed_memory_resource;
     using device_copy = vecmem::hip::copy;
-    using device_async_copy = vecmem::hip::async_copy;
+    using device_async_copy = vecmem::hip::copy;
 };
 template <>
 struct host_device_types<::alpaka::TagCpuSycl> {
