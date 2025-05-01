@@ -29,11 +29,13 @@
 #endif
 
 #if defined(TRACCC_BUILD_SYCL)
+#include <sycl/sycl.hpp>
 #include <vecmem/memory/sycl/device_memory_resource.hpp>
 #include <vecmem/memory/sycl/host_memory_resource.hpp>
 #include <vecmem/memory/sycl/shared_memory_resource.hpp>
 #include <vecmem/utils/sycl/async_copy.hpp>
 #include <vecmem/utils/sycl/copy.hpp>
+#include <vecmem/utils/sycl/queue_wrapper.hpp>
 #endif
 
 #include <vecmem/memory/memory_resource.hpp>
