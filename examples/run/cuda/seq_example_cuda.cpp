@@ -385,11 +385,15 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 }
 
                 // CPU
+                auto track_candidates_cuda_tmp =
+                    copy_track_candidates(track_candidates_buffer);
+
                 if (accelerator_opts.compare_with_cpu) {
                     traccc::performance::timer timer{
                         "Ambiguity resolution (cpu)", elapsedTimes};
-                    res_track_candidates =
-                        resolution_alg_cpu(traccc::get_data(track_candidates));
+                    res_track_candidates = resolution_alg_cpu(
+                        traccc::get_data(track_candidates_cuda_tmp));
+                    //resolution_alg_cpu(traccc::get_data(track_candidates));
                 }
 
                 // CUDA
