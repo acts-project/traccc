@@ -82,6 +82,16 @@ struct update_vectors_payload {
      * @brief View object to the vector of affected track IDs
      */
     vecmem::data::vector_view<unsigned int> updated_tracks_view;
+
+    /**
+     * @brief Track Id with max shared measurement
+     */
+    unsigned int max_track_id;
+
+    /**
+     * @brief if max track id has changed in the kernel
+     */    
+    bool* has_max_changed;
 };
 
 /// Function used for updating vectors

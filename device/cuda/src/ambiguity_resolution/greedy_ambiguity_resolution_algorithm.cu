@@ -304,6 +304,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
     unsigned int max_track_id;
     unsigned int max_shared;
     unsigned int n_updated_tracks;
+    bool has_max_changed = true;
+    unsigned int worst_track;
     static constexpr int reject = 0;
     for (unsigned int iter = 0; iter < m_config.max_iterations; iter++) {
 
@@ -312,28 +314,30 @@ greedy_ambiguity_resolution_algorithm::operator()(
             break;
         }
 
-        auto max_it =
-            thrust::max_element(thrust_policy, sorted_ids_buffer.ptr(),
-                                sorted_ids_buffer.ptr() + n_accepted, sh_comp);
+        if (has_max_changed || (worst_track == max_track_id)) {
+            auto max_it = thrust::max_element(
+                thrust_policy, sorted_ids_buffer.ptr(),
+                sorted_ids_buffer.ptr() + n_accepted, sh_comp);
 
-        TRACCC_CUDA_ERROR_CHECK(
-            cudaMemcpyAsync(&max_track_id, max_it, sizeof(unsigned int),
-                            cudaMemcpyDeviceToHost, stream));
+            TRACCC_CUDA_ERROR_CHECK(
+                cudaMemcpyAsync(&max_track_id, max_it, sizeof(unsigned int),
+                                cudaMemcpyDeviceToHost, stream));
 
-        m_stream.get().synchronize();
+            m_stream.get().synchronize();
 
-        TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
-            &max_shared, n_shared_buffer.ptr() + max_track_id,
-            sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
+            TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
+                &max_shared, n_shared_buffer.ptr() + max_track_id,
+                sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
 
-        m_stream.get().synchronize();
+            m_stream.get().synchronize();
 
-        // Terminate if the max shared measurements is less than the cut value
-        if (max_shared < m_config.max_shared_meas) {
-            break;
+            // Terminate if the max shared measurements is less than the cut
+            // value
+            if (max_shared < m_config.max_shared_meas) {
+                break;
+            }
         }
 
-        unsigned int worst_track;
         TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
             &worst_track, sorted_ids_buffer.ptr() + n_accepted - 1,
             sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
@@ -349,11 +353,17 @@ greedy_ambiguity_resolution_algorithm::operator()(
         // Remove the worst (rejected) id from the sorted ids
         n_accepted--;
 
-        // The number of updated tracks
+        // Device object for the The number of updated tracks
         vecmem::unique_alloc_ptr<unsigned int> n_updated_tracks_device =
             vecmem::make_unique_alloc<unsigned int>(m_mr.main);
         TRACCC_CUDA_ERROR_CHECK(cudaMemsetAsync(
             n_updated_tracks_device.get(), 0, sizeof(unsigned int), stream));
+
+        // Device object for has_max_changed
+        vecmem::unique_alloc_ptr<bool> has_max_changed_device =
+            vecmem::make_unique_alloc<bool>(m_mr.main);
+        TRACCC_CUDA_ERROR_CHECK(cudaMemsetAsync(has_max_changed_device.get(),
+                                                false, sizeof(bool), stream));
 
         // Update vectors after the removal
         {
@@ -376,48 +386,27 @@ greedy_ambiguity_resolution_algorithm::operator()(
                     .n_shared_view = n_shared_buffer,
                     .rel_shared_view = rel_shared_buffer,
                     .n_updated_tracks = n_updated_tracks_device.get(),
-                    .updated_tracks_view = updated_tracks_buffer});
+                    .updated_tracks_view = updated_tracks_buffer,
+                    .max_track_id = max_track_id,
+                    .has_max_changed = has_max_changed_device.get()});
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-            // Global counter object: Device -> Host
+            // Device to Host copies
             TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
                 &n_updated_tracks, n_updated_tracks_device.get(),
                 sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
 
+            TRACCC_CUDA_ERROR_CHECK(
+                cudaMemcpyAsync(&has_max_changed, has_max_changed_device.get(),
+                                sizeof(bool), cudaMemcpyDeviceToHost, stream));
+
             m_stream.get().synchronize();
         }
 
-        // printf("n updated tracks %d \n", n_updated_tracks);
-
         if (n_updated_tracks > 0) {
-
-            // Find the lowest value of updated tracks
-            auto it1 = thrust::min_element(
-                thrust_policy, updated_tracks_buffer.ptr(),
-                updated_tracks_buffer.ptr() + n_updated_tracks, sh_comp);
-
-            unsigned int min_track_id;
-
-            TRACCC_CUDA_ERROR_CHECK(
-                cudaMemcpyAsync(&min_track_id, it1, sizeof(unsigned int),
-                                cudaMemcpyDeviceToHost, stream));
-            m_stream.get().synchronize();
-
-            auto it2 = thrust::find(thrust_policy, sorted_ids_buffer.ptr(),
-                                    sorted_ids_buffer.ptr() + n_accepted,
-                                    min_track_id);
-
-            auto it3 = thrust::lower_bound(
-                thrust_policy, sorted_ids_buffer.ptr(), it2, *it2, sh_comp);
-
-            thrust::sort(thrust_policy, it3,
-                         sorted_ids_buffer.ptr() + n_accepted, trk_comp);
-
-            /*
             // Keep the sorted ids vector sorted
             thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
                          sorted_ids_buffer.ptr() + n_accepted, trk_comp);
-            */
         }
     }
 
