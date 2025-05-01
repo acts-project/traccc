@@ -374,7 +374,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 /* ---------- Stage-2：Covariance 更新 ---------- */
                 kernels::propagate_stage2<
                     std::decay_t<propagator_type>, std::decay_t<bfield_type>>
-                    <<<nBlocks, nThreads, 0, m_stream>>>(
+                    <<<nBlocks, nThreads, 0, details::get_stream(m_stream)>>>(
                         m_cfg,
                         typename device::propagate_to_next_surface_payload<
                             std::decay_t<propagator_type>, std::decay_t<bfield_type>>{

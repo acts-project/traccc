@@ -1,0 +1,30 @@
+===== --maxrregcount=32 =====
+10:32:40 PM ThroughputExample             INFO                    Event processing  28.9333 ms/event, 34.5622 events/s
+===== --maxrregcount=48 =====
+10:38:35 PM ThroughputExample             INFO                    Event processing  25.7365 ms/event, 38.8553 events/s
+===== --maxrregcount=64 =====
+10:44:15 PM ThroughputExample             INFO                    Event processing  23.3127 ms/event, 42.895 events/s
+===== --maxrregcount=80 =====
+10:49:59 PM ThroughputExample             INFO                    Event processing  22.1836 ms/event, 45.0783 events/s
+===== --maxrregcount=96 =====
+10:55:38 PM ThroughputExample             INFO                    Event processing  21.3678 ms/event, 46.7995 events/s
+===== --maxrregcount=112 =====
+11:01:18 PM ThroughputExample             INFO                    Event processing  21.3074 ms/event, 46.9322 events/s
+===== --maxrregcount=128 =====
+11:07:02 PM ThroughputExample             INFO                    Event processing  21.1965 ms/event, 47.1775 events/s
+===== --maxrregcount=144 =====
+11:12:44 PM ThroughputExample             INFO                    Event processing  20.6641 ms/event, 48.393 events/s
+===== --maxrregcount=160 =====
+11:18:26 PM ThroughputExample             INFO                    Event processing  20.4847 ms/event, 48.817 events/s
+===== --maxrregcount=176 =====
+11:24:06 PM ThroughputExample             INFO                    Event processing  20.8078 ms/event, 48.0588 events/s
+===== --maxrregcount=192 =====
+11:29:46 PM ThroughputExample             INFO                    Event processing  20.7757 ms/event, 48.1333 events/s
+===== --maxrregcount=208 =====
+11:35:24 PM ThroughputExample             INFO                    Event processing  20.6922 ms/event, 48.3275 events/s
+===== --maxrregcount=224 =====
+11:41:04 PM ThroughputExample             INFO                    Event processing  20.6753 ms/event, 48.3669 events/s
+===== --maxrregcount=240 =====
+11:46:44 PM ThroughputExample             INFO                    Event processing  20.3169 ms/event, 49.2201 events/s
+===== --maxrregcount=255 =====
+11:52:20 PM ThroughputExample             INFO                    Event processing  20.5553 ms/event, 48.6492 events/s
