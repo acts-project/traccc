@@ -19,15 +19,11 @@
 #include "traccc/options/track_fitting.hpp"
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
+#include "traccc/utils/propagation.hpp"
 #include "traccc/utils/seed_generator.hpp"
 
 // Detray include(s).
-#include <detray/core/detector.hpp>
-#include <detray/detectors/bfield.hpp>
 #include <detray/io/frontend/detector_reader.hpp>
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -83,7 +79,8 @@ int main(int argc, char* argv[]) {
     // B field value and its type
     // @TODO: Set B field as argument
     const traccc::vector3 B{0, 0, 2 * traccc::unit<traccc::scalar>::T};
-    auto field = detray::bfield::create_const_field<traccc::scalar>(B);
+    const covfie::field<traccc::const_bfield_backend_t<traccc::scalar>> field =
+        traccc::construct_const_bfield<traccc::scalar>(B);
 
     // Read the detector
     detray::io::detector_reader_config reader_cfg{};

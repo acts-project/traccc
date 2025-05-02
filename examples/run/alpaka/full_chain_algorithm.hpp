@@ -24,14 +24,9 @@
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/bfield.hpp"
 #include "traccc/utils/messaging.hpp"
-
-// Detray include(s).
-#include <detray/core/detector.hpp>
-#include <detray/detectors/bfield.hpp>
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
+#include "traccc/utils/propagation.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/vector.hpp>
@@ -62,9 +57,12 @@ class full_chain_algorithm
 
     using scalar_type = device_detector_type::scalar_type;
 
+    using bfield_type =
+        covfie::field<traccc::const_bfield_backend_t<traccc::scalar>>;
+
     /// Stepper type used by the track finding and fitting algorithms
     using stepper_type =
-        detray::rk_stepper<detray::bfield::const_field_t<scalar_type>::view_t,
+        detray::rk_stepper<bfield_type::view_t,
                            device_detector_type::algebra_type,
                            detray::constrained_step<scalar_type>>;
     /// Navigator type used by the track finding and fitting algorithms
@@ -141,7 +139,7 @@ class full_chain_algorithm
     /// Constant B field for the (seed) track parameter estimation
     traccc::vector3 m_field_vec;
     /// Constant B field for the track finding and fitting
-    detray::bfield::const_field_t<traccc::scalar> m_field;
+    bfield_type m_field;
 
     /// Detector description
     std::reference_wrapper<const silicon_detector_description::host>

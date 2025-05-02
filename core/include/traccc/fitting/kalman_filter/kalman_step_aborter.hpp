@@ -56,7 +56,9 @@ struct kalman_step_aborter : public detray::actor {
         // Abort if the step count exceeds the maximum allowed
         if (++(abrt_state.step) > abrt_state.max_steps) {
             VECMEM_DEBUG_MSG(1, "Kalman fitter step aborter triggered");
-            prop_state._heartbeat &= navigation.abort();
+            prop_state._heartbeat &= navigation.abort(
+                "Kalman Fitter: Maximum number of steps to reach next "
+                "sensitive surface exceeded");
         }
     }
 

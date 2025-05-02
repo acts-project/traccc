@@ -10,9 +10,9 @@
 // traccc include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
+#include "traccc/utils/particle.hpp"
 
 // detray include(s).
-#include <detray/definitions/pdg_particle.hpp>
 #include <detray/propagator/propagation_config.hpp>
 
 namespace traccc {
@@ -45,9 +45,13 @@ struct finding_config {
     /// Propagation configuration
     detray::propagation::config propagation{};
 
+    /// Minimum momentum for reconstructed tracks
+    bool is_min_pT = true;
+    float min_p_mag = 100.f * traccc::unit<float>::MeV;
+
     /// Particle hypothesis
-    detray::pdg_particle<traccc::scalar> ptc_hypothesis =
-        detray::muon<traccc::scalar>();
+    traccc::pdg_particle<traccc::scalar> ptc_hypothesis =
+        traccc::muon<traccc::scalar>();
 
     /// @name Performance parameters
     /// These parameters impact only compute performance; any case in which a
@@ -64,6 +68,20 @@ struct finding_config {
     /// @note This parameter affects GPU-based track finding only.
     unsigned int initial_links_per_seed = 100;
     /// @}
+
+    /// Set the momentum limit to @param p
+    TRACCC_HOST_DEVICE
+    inline void min_p(const float p) {
+        is_min_pT = false;
+        min_p_mag = p;
+    }
+
+    /// Set the transverse momentum limit to @param p
+    TRACCC_HOST_DEVICE
+    inline void min_pT(const float p) {
+        is_min_pT = true;
+        min_p_mag = p;
+    }
 };
 
 }  // namespace traccc

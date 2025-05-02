@@ -23,9 +23,6 @@
 #include "traccc/io/data_format.hpp"
 #include "traccc/utils/seed_generator.hpp"
 
-// Detray include(s).
-#include <detray/io/frontend/detector_reader.hpp>
-
 // Vecmem include(s).
 #include <vecmem/memory/memory_resource.hpp>
 

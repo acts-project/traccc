@@ -11,7 +11,9 @@
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
+#include "traccc/simulation/event_generators.hpp"
 #include "traccc/simulation/simulator.hpp"
+#include "traccc/utils/bfield.hpp"
 #include "traccc/utils/event_data.hpp"
 #include "traccc/utils/ranges.hpp"
 
@@ -21,8 +23,6 @@
 
 // detray include(s).
 #include <detray/io/frontend/detector_reader.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
@@ -49,7 +49,7 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
     const std::array<scalar, 2u> eta_range = std::get<4>(GetParam());
     const std::array<scalar, 2u> theta_range = eta_to_theta_range(eta_range);
     const std::array<scalar, 2u> phi_range = std::get<5>(GetParam());
-    const detray::pdg_particle<scalar> ptc = std::get<6>(GetParam());
+    const traccc::pdg_particle<scalar> ptc = std::get<6>(GetParam());
     const unsigned int n_truth_tracks = std::get<7>(GetParam());
     const unsigned int n_events = std::get<8>(GetParam());
     const bool random_charge = std::get<9>(GetParam());
@@ -74,7 +74,7 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
         detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);
 
     auto field =
-        detray::bfield::create_const_field<host_detector_type::scalar_type>(
+        traccc::construct_const_bfield<host_detector_type::scalar_type>(
             std::get<13>(GetParam()));
 
     // Detector view object
@@ -239,7 +239,7 @@ INSTANTIATE_TEST_SUITE_P(
                         std::array<scalar, 2u>{100.f, 100.f},
                         std::array<scalar, 2u>{0.f, 0.f},
                         std::array<scalar, 2u>{0.f, 0.f},
-                        detray::muon<scalar>(), 2, 1, false, 20.f, 9u, 20.f,
+                        traccc::muon<scalar>(), 2, 1, false, 20.f, 9u, 20.f,
                         vector3{2 * traccc::unit<scalar>::T, 0, 0}),
         std::make_tuple("telescope_combinatorics_trio",
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
@@ -247,5 +247,5 @@ INSTANTIATE_TEST_SUITE_P(
                         std::array<scalar, 2u>{100.f, 100.f},
                         std::array<scalar, 2u>{0.f, 0.f},
                         std::array<scalar, 2u>{0.f, 0.f},
-                        detray::muon<scalar>(), 3, 1, false, 20.f, 9u, 20.f,
+                        traccc::muon<scalar>(), 3, 1, false, 20.f, 9u, 20.f,
                         vector3{2 * traccc::unit<scalar>::T, 0, 0})));

@@ -17,7 +17,8 @@
 // System include(s).
 #include <utility>
 
-namespace traccc::cuda::kernels {
+namespace traccc::cuda {
+namespace kernels {
 
 template <typename detector_t>
 __global__ void find_tracks(const finding_config cfg,
@@ -36,4 +37,15 @@ __global__ void find_tracks(const finding_config cfg,
         thread_id, barrier, cfg, payload,
         {shared_num_candidates, shared_candidates, shared_candidates_size});
 }
-}  // namespace traccc::cuda::kernels
+
+}  // namespace kernels
+
+template <typename detector_t>
+void find_tracks(const dim3& grid_size, const dim3& block_size,
+                 std::size_t shared_mem_size, const cudaStream_t& stream,
+                 const finding_config cfg,
+                 device::find_tracks_payload<detector_t> payload) {
+    kernels::find_tracks<<<grid_size, block_size, shared_mem_size, stream>>>(
+        cfg, payload);
+}
+}  // namespace traccc::cuda

@@ -3,5 +3,9 @@
       "*.hip": "cpp",
       "*.sycl": "cpp",
       "*.ipp": "cpp"
+   },
+   "sonarlint.connectedMode.project": {
+      "connectionId": "acts-project",
+      "projectKey": "acts-project_traccc"
    }
 }

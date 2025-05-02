@@ -13,8 +13,8 @@ Demonstrator tracking chain for accelerators.
 |                    | Seed finding           | ✅  | ✅   | ✅   | ✅     | ⚪     | ⚪      |
 |                    | Track param estimation | ✅  | ✅   | ✅   | ✅     | ⚪     | ⚪      |
 | **Track finding**  | Combinatorial KF       | ✅  | ✅   | ✅   | 🟡     | ⚪     | ⚪      |
-| **Track fitting**  | KF                     | ✅  | ✅   | 🟡   | ⚪     | ⚪     | ⚪      |
 | **Ambiguity resolution**  | Greedy resolver   | ✅  | ⚪   |  ⚪  | ⚪     | ⚪     | ⚪      |
+| **Track fitting**  | KF                     | ✅  | ✅   | 🟡   | ⚪     | ⚪     | ⚪      |
 
 ✅: exists, 🟡: work started, ⚪: work not started yet
 
@@ -403,3 +403,16 @@ You may experience errors being issued about standard library features, for exam
 In this case, your `nvcc` host compiler is most likely incompatible with your
 CUDA toolkit. Consider installing a supported version and selecting it through
 the `CUDAHOSTCXX` environment variable at build-time.
+
+#### `ptxas` failures due to non-ASCII characters
+
+You may encounter errors that look like the following:
+
+```
+ptxas fatal   : Unexpected non-ASCII character encountered on line 30
+ptxas fatal   : Ptx assembly aborted due to errors
+```
+
+This means that you are compiling with a version later than CUDA 12.8 which has
+not been fixed and you are running in debug mode. This error is due to a bug in
+the CUDA toolkit. Either downgrade to CUDA 12.6 or disable the debug build.

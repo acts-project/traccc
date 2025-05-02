@@ -16,11 +16,9 @@
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/bfield.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
-
-// Detray include(s).
-#include <detray/detectors/bfield.hpp>
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
@@ -34,13 +32,13 @@ namespace traccc::sycl {
 class kalman_fitting_algorithm
     : public algorithm<track_state_container_types::buffer(
           const default_detector::view&,
-          const detray::bfield::const_field_t<
-              default_detector::device::scalar_type>::view_t&,
+          const covfie::field<const_bfield_backend_t<
+              default_detector::device::scalar_type>>::view_t&,
           const track_candidate_container_types::const_view&)>,
       public algorithm<track_state_container_types::buffer(
           const telescope_detector::view&,
-          const detray::bfield::const_field_t<
-              telescope_detector::device::scalar_type>::view_t&,
+          const covfie::field<const_bfield_backend_t<
+              telescope_detector::device::scalar_type>>::view_t&,
           const track_candidate_container_types::const_view&)>,
       public messaging {
 
@@ -69,8 +67,8 @@ class kalman_fitting_algorithm
     ///
     output_type operator()(
         const default_detector::view& det,
-        const detray::bfield::const_field_t<
-            default_detector::device::scalar_type>::view_t& field,
+        const covfie::field<traccc::const_bfield_backend_t<
+            default_detector::device::scalar_type>>::view_t& field,
         const track_candidate_container_types::const_view& track_candidates)
         const override;
 
@@ -84,8 +82,8 @@ class kalman_fitting_algorithm
     ///
     output_type operator()(
         const telescope_detector::view& det,
-        const detray::bfield::const_field_t<
-            telescope_detector::device::scalar_type>::view_t& field,
+        const covfie::field<traccc::const_bfield_backend_t<
+            telescope_detector::device::scalar_type>>::view_t& field,
         const track_candidate_container_types::const_view& track_candidates)
         const override;
 

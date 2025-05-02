@@ -17,15 +17,13 @@
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/read_spacepoints.hpp"
+#include "traccc/utils/propagation.hpp"
 
 // Local include(s).
 #include "benchmarks/toy_detector_benchmark.hpp"
 
 // Detray include(s).
-#include <detray/detectors/bfield.hpp>
 #include <detray/io/frontend/detector_reader.hpp>
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
@@ -68,8 +66,8 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
         sim_dir + "toy_detector_surface_grids.json");
 
     // B field
-    auto field =
-        detray::bfield::create_const_field<host_detector_type::scalar_type>(B);
+    b_field_t field =
+        traccc::construct_const_bfield<host_detector_type::scalar_type>(B);
 
     // Algorithms
     traccc::cuda::seeding_algorithm sa_cuda(seeding_cfg, grid_cfg, filter_cfg,

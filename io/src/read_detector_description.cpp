@@ -13,6 +13,9 @@
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/utils.hpp"
 
+// Detray include(s)
+#include <detray/geometry/tracking_surface.hpp>
+
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 
@@ -117,8 +120,7 @@ void read_json_dd(traccc::silicon_detector_description::host& dd,
         dd.resize(dd.size() + 1);
 
         // Construct a Detray surface object.
-        const detray::tracking_surface<traccc::default_detector::host> surface{
-            detector, surface_desc};
+        const detray::tracking_surface surface{detector, surface_desc};
 
         // Fill the new element with the geometry ID and the transformation of
         // the surface in question.

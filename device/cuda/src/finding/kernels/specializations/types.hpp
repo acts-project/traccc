@@ -12,24 +12,12 @@
 #include "traccc/finding/actors/ckf_aborter.hpp"
 #include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/utils/detector_type_utils.hpp"
+#include "traccc/utils/propagation.hpp"
 
-// Detray include(s)
-#include <detray/detectors/bfield.hpp>
-#include <detray/propagator/actors.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
-
-namespace traccc::cuda::kernels {
-
-using default_detector_type = traccc::default_detector::device;
-using default_stepper_type = detray::rk_stepper<
-    covfie::field<detray::bfield::const_bknd_t<
-        default_detector_type::scalar_type>>::view_t,
-    default_detector_type::algebra_type,
-    detray::constrained_step<default_detector_type::scalar_type>>;
-using default_navigator_type = detray::navigator<const default_detector_type>;
-
+namespace traccc::cuda {
 using default_finding_algorithm =
-    finding_algorithm<default_stepper_type, default_navigator_type>;
+    finding_algorithm<stepper_for_t<traccc::default_detector::device>,
+                      navigator_for_t<traccc::default_detector::device>>;
 
-}  // namespace traccc::cuda::kernels
+}  // namespace traccc::cuda

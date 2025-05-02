@@ -109,7 +109,7 @@ struct kalman_actor : detray::actor {
 
         // If the iterator reaches the end, terminate the propagation
         if (actor_state.is_complete()) {
-            propagation._heartbeat &= navigation.abort();
+            propagation._heartbeat &= navigation.exit();
             return;
         }
 
@@ -153,7 +153,8 @@ struct kalman_actor : detray::actor {
 
             // Abort if the Kalman update fails
             if (res != kalman_fitter_status::SUCCESS) {
-                propagation._heartbeat &= navigation.abort();
+                propagation._heartbeat &=
+                    navigation.abort(fitter_debug_msg{res});
                 return;
             }
 

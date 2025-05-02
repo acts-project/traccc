@@ -9,12 +9,13 @@
 
 // Library include(s).
 #include "traccc/edm/track_parameters.hpp"
+#include "traccc/utils/particle.hpp"
 
 // detray include(s).
 #include <detray/geometry/barcode.hpp>
 #include <detray/geometry/tracking_surface.hpp>
-#include <detray/propagator/actors.hpp>
-#include <detray/propagator/propagator.hpp>
+#include <detray/navigation/navigator.hpp>  // < navigation::direction
+#include <detray/propagator/actors/pointwise_material_interactor.hpp>
 
 // System include(s).
 #include <random>
@@ -45,7 +46,7 @@ struct seed_generator {
     bound_track_parameters<algebra_type> operator()(
         const detray::geometry::barcode surface_link,
         const free_track_parameters<algebra_type>& free_param,
-        const detray::pdg_particle<scalar>& ptc_type) {
+        const traccc::pdg_particle<scalar>& ptc_type) {
 
         // Get bound parameter
         const detray::tracking_surface sf{m_detector, surface_link};

@@ -1,7 +1,10 @@
+# SPDX-PackageName = "traccc, a part of the ACTS project"
+# SPDX-FileCopyrightText: CERN
+# SPDX-License-Identifier: MPL-2.0
+
 import argparse
 import sys
 import csv
-import pandas
 import git
 import pathlib
 import shutil
@@ -10,9 +13,8 @@ import tempfile
 import subprocess
 import os
 import time
-import operator
-import functools
-import numpy
+
+from traccc_bench_tools import parse_profile, types
 
 
 log = logging.getLogger("traccc_benchmark")
@@ -23,133 +25,11 @@ BOOLEAN_FLAG_COMMIT = "380fc78ba63a79ed5c8f19d01d57636aa31cf4fd"
 SPACK_LIBS_COMMIT = "069cc80b845c16bf36430fdc90130f0306b47f3e"
 
 
-class GpuSpec:
-    def __init__(self, n_sm, n_threads_per_sm):
-        self.n_sm = n_sm
-        self.n_threads_per_sm = n_threads_per_sm
-
-
-def harmonic_sum(vals):
-    return 1.0 / sum(1.0 / x for x in vals)
-
-
-def parse_triple(triple):
-    assert triple[0] == "(" and triple[-1] == ")"
-    x, y, z = triple[1:-1].split(", ")
-    return int(x), int(y), int(z)
-
-
-def simplify_name(name):
-    if name[:5] == "void ":
-        name = name[5:]
-
-    val = ""
-
-    while name:
-        if name[:2] == "::":
-            val = ""
-            name = name[2:]
-        elif name[0] == "(" or name[0] == "<":
-            return val
-        else:
-            val = val + name[0]
-            name = name[1:]
-
-    raise RuntimeError("An error occured in name simpliciation")
-
-
 def is_parent_of(subj, parent_str):
     for p in subj.iter_parents():
         if str(subj) == parent_str or str(p) == parent_str:
             return True
     return False
-
-
-def map_name(name):
-    if name in [
-        "DeviceRadixSortUpsweepKernel",
-        "RadixSortScanBinsKernel",
-        "DeviceRadixSortDownsweepKernel",
-        "DeviceRadixSortSingleTileKernel",
-        "DeviceMergeSortBlockSortKernel",
-        "DeviceMergeSortMergeKernel",
-        "DeviceMergeSortPartitionKernel",
-        "_kernel_agent",
-    ]:
-        return "Thrust::sort"
-    else:
-        return name
-
-
-def parse_profile_csv(file: pathlib.Path, gpu_spec: GpuSpec):
-    df = pandas.read_csv(file)
-
-    ndf = df[df["Metric Name"] == "gpu__time_duration.sum"][
-        ["ID", "Kernel Name", "Block Size", "Grid Size", "Metric Value", "Metric Unit"]
-    ]
-
-    assert (ndf["Metric Unit"] == "ns").all()
-
-    ndf["ThreadsPerBlock"] = df["Block Size"].apply(
-        lambda x: functools.reduce(operator.mul, (parse_triple(x)))
-    )
-    ndf["BlocksPerGrid"] = df["Grid Size"].apply(
-        lambda x: functools.reduce(operator.mul, (parse_triple(x)))
-    )
-    ndf["TotalThreads"] = ndf["ThreadsPerBlock"] * ndf["BlocksPerGrid"]
-    ndf = ndf.drop(
-        ["Block Size", "Grid Size", "ThreadsPerBlock", "BlocksPerGrid", "Metric Unit"],
-        axis=1,
-    )
-    ndf["Metric Value"] = ndf["Metric Value"].apply(lambda x: int(x.replace(",", "")))
-    ndf["Kernel Name"] = ndf["Kernel Name"].apply(simplify_name)
-    ndf["Kernel Name"] = ndf["Kernel Name"].apply(map_name)
-
-    curr_evt_id = None
-    evt_ids = []
-    for x in ndf.iloc:
-        if x["Kernel Name"] == "ccl_kernel":
-            if curr_evt_id is None:
-                curr_evt_id = 0
-            else:
-                curr_evt_id += 1
-        evt_ids.append(curr_evt_id)
-
-    ndf["EventID"] = evt_ids
-
-    thr_occ = df[df["Metric Name"] == "Theoretical Occupancy"]
-
-    ndf = ndf.merge(
-        thr_occ[["ID", "Metric Value"]],
-        on="ID",
-        how="left",
-        validate="one_to_one",
-        suffixes=("", "R"),
-    )
-
-    ndf["Occupancy"] = ndf["Metric ValueR"].apply(lambda x: float(x) / 100.0)
-
-    ndf["k"] = ndf["TotalThreads"] / (
-        gpu_spec.n_sm * gpu_spec.n_threads_per_sm * ndf["Occupancy"]
-    )
-
-    ndf["Throughput"] = (numpy.ceil(ndf["k"]) / ndf["k"]) / (ndf["Metric Value"] / 1e9)
-    ndf["RecThroughput"] = 1.0 / ndf["Throughput"]
-
-    ndf = ndf.drop(["Metric ValueR"], axis=1)
-
-    ndf = ndf.groupby(["Kernel Name", "EventID"], as_index=False).agg(
-        {"Throughput": harmonic_sum, "RecThroughput": "sum"},
-    )
-
-    ndf = ndf.groupby("Kernel Name", as_index=False).agg(
-        ThroughputMean=("Throughput", "mean"),
-        ThroughputStd=("Throughput", "std"),
-        RecThroughputMean=("RecThroughput", "mean"),
-        RecThroughputStd=("RecThroughput", "std"),
-    )
-
-    return ndf.fillna(0)
 
 
 def main():
@@ -473,37 +353,12 @@ def main():
                     "Completed benchmark step in %.1f seconds", end_time - start_time
                 )
 
-                log.info("Running CSV conversion step")
-
-                profile_file = build_dir / "profile.csv"
-
-                start_time = time.time()
-                with open(profile_file, "w") as f:
-                    subprocess.run(
-                        [
-                            "ncu",
-                            "-i",
-                            build_dir / "profile.ncu-rep",
-                            "--csv",
-                            "--print-units",
-                            "base",
-                        ],
-                        stdout=f,
-                    )
-                end_time = time.time()
-                shutil.copyfile(profile_file, "test.csv")
-
-                log.info(
-                    "Completed CSV conversion step in %.1f seconds",
-                    end_time - start_time,
-                )
-
                 log.info("Running data processing step")
 
                 start_time = time.time()
-                result_df = parse_profile_csv(
-                    profile_file,
-                    GpuSpec(
+                result_df = parse_profile.parse_profile_ncu(
+                    build_dir / "profile.ncu-rep",
+                    types.GpuSpec(
                         getattr(args, "num_sm"), getattr(args, "num_threads_per_sm")
                     ),
                 )

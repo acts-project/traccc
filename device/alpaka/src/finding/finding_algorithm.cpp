@@ -25,12 +25,9 @@
 #include "traccc/finding/device/find_tracks.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/utils/detector_type_utils.hpp"
 #include "traccc/utils/projections.hpp"
-
-// detray include(s).
-#include <detray/detectors/bfield.hpp>
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
+#include "traccc/utils/propagation.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_buffer.hpp>
@@ -488,14 +485,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 }
 
 // Explicit template instantiation
-using default_detector_type = traccc::default_detector::device;
-using default_stepper_type = detray::rk_stepper<
-    covfie::field<detray::bfield::const_bknd_t<
-        default_detector_type::scalar_type>>::view_t,
-    default_detector_type::algebra_type,
-    detray::constrained_step<default_detector_type::scalar_type>>;
-using default_navigator_type = detray::navigator<const default_detector_type>;
-template class finding_algorithm<default_stepper_type, default_navigator_type>;
+template class finding_algorithm<
+    ::traccc::stepper_for_t<::traccc::default_detector::device>,
+    ::traccc::navigator_for_t<::traccc::default_detector::device>>;
 
 }  // namespace traccc::alpaka
 

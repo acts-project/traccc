@@ -10,7 +10,9 @@
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
+#include "traccc/simulation/event_generators.hpp"
 #include "traccc/simulation/simulator.hpp"
+#include "traccc/utils/bfield.hpp"
 #include "traccc/utils/ranges.hpp"
 
 // Test include(s).
@@ -19,8 +21,6 @@
 
 // detray include(s).
 #include <detray/io/frontend/detector_reader.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -64,8 +64,8 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
     const auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
 
-    auto field =
-        detray::bfield::create_const_field<host_detector_type::scalar_type>(
+    const covfie::field<traccc::const_bfield_backend_t<traccc::scalar>> field =
+        traccc::construct_const_bfield<traccc::scalar>(
             std::get<13>(GetParam()));
 
     /***************************
@@ -177,7 +177,7 @@ INSTANTIATE_TEST_SUITE_P(
         "telescope_combinatorics_twin", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 2, 1, false,
+        std::array<scalar, 2u>{0.f, 0.f}, traccc::muon<scalar>(), 2, 1, false,
         20.f, 9u, 20.f, vector3{2 * traccc::unit<scalar>::T, 0, 0})));
 
 // Testing three identical tracks
@@ -187,5 +187,5 @@ INSTANTIATE_TEST_SUITE_P(
         "telescope_combinatorics_trio", std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 3u>{0.f, 0.f, 0.f},
         std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
-        std::array<scalar, 2u>{0.f, 0.f}, detray::muon<scalar>(), 3, 1, false,
+        std::array<scalar, 2u>{0.f, 0.f}, traccc::muon<scalar>(), 3, 1, false,
         20.f, 9u, 20.f, vector3{2 * traccc::unit<scalar>::T, 0, 0})));

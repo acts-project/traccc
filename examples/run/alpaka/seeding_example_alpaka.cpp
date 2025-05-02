@@ -42,14 +42,7 @@
 #include "traccc/resolution/fitting_performance_writer.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
-
-// Detray include(s).
-#include <cmath>
-#include <detray/detectors/bfield.hpp>
-#include <detray/io/frontend/detector_reader.hpp>
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
+#include "traccc/utils/propagation.hpp"
 
 #ifdef ALPAKA_ACC_SYCL_ENABLED
 #include <sycl/sycl.hpp>
@@ -57,6 +50,7 @@
 #endif
 
 // System include(s).
+#include <cmath>
 #include <exception>
 #include <iomanip>
 #include <iostream>
@@ -76,7 +70,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     /// Type declarations
     using scalar_t = traccc::default_detector::host::scalar_type;
-    using b_field_t = covfie::field<detray::bfield::const_bknd_t<scalar_t>>;
+    using b_field_t = covfie::field<traccc::const_bfield_backend_t<scalar_t>>;
     using rk_stepper_type =
         detray::rk_stepper<b_field_t::view_t,
                            traccc::default_detector::host::algebra_type,
@@ -137,7 +131,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     // B field value and its type
     // @TODO: Set B field as argument
     const traccc::vector3 B{0, 0, 2 * traccc::unit<traccc::scalar>::T};
-    auto field = detray::bfield::create_const_field<traccc::scalar>(B);
+    auto field = traccc::construct_const_bfield<traccc::scalar>(B);
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host host_det{mng_mr};

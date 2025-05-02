@@ -13,6 +13,7 @@
 
 // System include(s).
 #include <string_view>
+#include <vector>
 
 namespace traccc::io::csv {
 
@@ -23,9 +24,9 @@ namespace traccc::io::csv {
 /// @param[in]  detector  detray detector
 /// @param[in]  do_sort      Whether to sort the measurements or not
 ///
-void read_measurements(measurement_collection_types::host& measurements,
-                       std::string_view filename,
-                       const traccc::default_detector::host* detector = nullptr,
-                       const bool do_sort = true);
+std::vector<std::size_t> read_measurements(
+    measurement_collection_types::host& measurements, std::string_view filename,
+    const traccc::default_detector::host* detector = nullptr,
+    const bool do_sort = true);
 
 }  // namespace traccc::io::csv
