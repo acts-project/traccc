@@ -15,7 +15,24 @@
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/copy.hpp>
 
-#include "traccc/alpaka/utils/get_vecmem_resource.hpp"
+// VecMem include(s).
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+#include <vecmem/memory/cuda/device_memory_resource.hpp>
+#include <vecmem/memory/cuda/host_memory_resource.hpp>
+#include <vecmem/utils/cuda/copy.hpp>
+#elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
+#include <vecmem/memory/hip/device_memory_resource.hpp>
+#include <vecmem/memory/hip/host_memory_resource.hpp>
+#include <vecmem/utils/hip/copy.hpp>
+#elif defined(ALPAKA_ACC_SYCL_ENABLED)
+#include <vecmem/memory/sycl/device_memory_resource.hpp>
+#include <vecmem/memory/sycl/host_memory_resource.hpp>
+#include <vecmem/utils/sycl/copy.hpp>
+#include <vecmem/utils/sycl/queue_wrapper.hpp>
+#endif
+
+#include <vecmem/memory/memory_resource.hpp>
+#include <vecmem/utils/copy.hpp>
 
 // GoogleTest include(s).
 #include <gtest/gtest.h>
@@ -134,13 +151,22 @@ GTEST_TEST(AlpakaBasic, VecMemOp) {
 #ifdef ALPAKA_ACC_SYCL_ENABLED
     ::sycl::queue q;
     vecmem::sycl::queue_wrapper qw{&q};
-    traccc::alpaka::vecmem_resources::device_copy vm_copy(qw);
+    vecmem::sycl::copy vm_copy(qw);
+    vecmem::sycl::host_memory_resource host_mr(qw);
+    vecmem::sycl::device_memory_resource device_mr(qw);
+#elif defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
+    vecmem::cuda::copy vm_copy;
+    vecmem::cuda::host_memory_resource host_mr;
+    vecmem::cuda::device_memory_resource device_mr;
+#elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
+    vecmem::hip::copy vm_copy;
+    vecmem::hip::host_memory_resource host_mr;
+    vecmem::hip::device_memory_resource device_mr;
 #else
-    traccc::alpaka::vecmem_resources::device_copy vm_copy;
+    vecmem::copy vm_copy;
+    vecmem::host_memory_resource host_mr;
+    vecmem::host_memory_resource device_mr;
 #endif
-
-    traccc::alpaka::vecmem_resources::host_memory_resource host_mr;
-    traccc::alpaka::vecmem_resources::device_memory_resource device_mr;
 
     vecmem::vector<float> host_vector{n, &host_mr};
 
