@@ -33,6 +33,7 @@
 #include <vecmem/memory/binary_page_memory_resource.hpp>
 
 // System include(s).
+#include <functional>
 #include <memory>
 
 namespace traccc::alpaka {
@@ -130,7 +131,7 @@ class full_chain_algorithm
     /// Device memory resource
     ::vecmem::memory_resource& m_device_mr;
     /// Memory copy object
-    mutable ::vecmem::copy m_copy;
+    mutable std::reference_wrapper<::vecmem::copy> m_copy;
     /// Device caching memory resource
     std::unique_ptr<::vecmem::binary_page_memory_resource> m_cached_device_mr;
 
