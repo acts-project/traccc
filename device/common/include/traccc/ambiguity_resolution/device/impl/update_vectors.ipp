@@ -23,6 +23,13 @@ TRACCC_HOST_DEVICE inline void update_vectors(
     const global_index_t globalIndex, const barrier_t& barrier,
     const update_vectors_payload& payload) {
 
+    if (globalIndex == 0){
+        *payload.has_max_changed = false;
+        *payload.n_updated_tracks = 0;
+    }
+
+    barrier.blockBarrier();
+
     vecmem::device_vector<const unsigned int> sorted_ids(
         payload.sorted_ids_view);
     vecmem::jagged_device_vector<const std::size_t> meas_ids(

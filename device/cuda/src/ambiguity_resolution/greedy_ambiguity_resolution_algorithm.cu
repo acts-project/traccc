@@ -318,11 +318,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
     // Iterate over tracks
     for (unsigned int iter = 0; iter < m_config.max_iterations; iter++) {
 
-        // Terminate if there are no tracks to iterate
-        if (n_accepted == 0) {
-            break;
-        }
-
         if (has_max_changed || (worst_track == max_track_id)) {
             auto max_it = thrust::max_element(
                 thrust_policy, sorted_ids_buffer.ptr(),
@@ -341,20 +336,11 @@ greedy_ambiguity_resolution_algorithm::operator()(
             if (max_shared < m_config.max_shared_meas) {
                 break;
             }
-
-            // Reset the has_max_changed
-            TRACCC_CUDA_ERROR_CHECK(cudaMemsetAsync(
-                has_max_changed_device.get(), false, sizeof(bool), stream));
         }
 
         TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
             &worst_track, sorted_ids_buffer.ptr() + n_accepted - 1,
             sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
-
-
-        // Reset the number of updated tracks
-        TRACCC_CUDA_ERROR_CHECK(cudaMemsetAsync(
-            n_updated_tracks_device.get(), 0, sizeof(unsigned int), stream));
 
         // Update vectors after the removal
         {
@@ -394,6 +380,11 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
         // Remove the worst (rejected) id from the sorted ids
         n_accepted--;
+
+        // Terminate if there are no tracks to iterate
+        if (n_accepted == 0) {
+            break;
+        }
 
         if (n_updated_tracks > 0) {
 
