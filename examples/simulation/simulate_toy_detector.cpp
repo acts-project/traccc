@@ -14,15 +14,15 @@
 #include "traccc/options/output_data.hpp"
 #include "traccc/options/program_options.hpp"
 #include "traccc/options/track_propagation.hpp"
+#include "traccc/simulation/event_generators.hpp"
 #include "traccc/simulation/measurement_smearer.hpp"
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/simulation/smearing_writer.hpp"
+#include "traccc/utils/bfield.hpp"
 
 // detray include(s).
-#include <detray/detectors/bfield.hpp>
 #include <detray/io/frontend/detector_writer.hpp>
 #include <detray/test/utils/detectors/build_toy_detector.hpp>
-#include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -53,9 +53,9 @@ int simulate(const traccc::opts::generation& generation_opts,
 
     // B field value and its type
     // @TODO: Set B field as argument
-    using b_field_t = covfie::field<detray::bfield::const_bknd_t<scalar>>;
+    using b_field_t = covfie::field<traccc::const_bfield_backend_t<scalar>>;
     const vector3 B{0, 0, 2 * traccc::unit<scalar>::T};
-    auto field = detray::bfield::create_const_field<scalar>(B);
+    b_field_t field = traccc::construct_const_bfield<scalar>(B);
 
     // Create the toy geometry
     detray::toy_det_config<scalar> toy_cfg{};

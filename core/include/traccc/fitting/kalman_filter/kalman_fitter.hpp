@@ -20,11 +20,7 @@
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/utils/particle.hpp"
 #include "traccc/utils/prob.hpp"
-
-// detray include(s).
-#include <detray/navigation/direct_navigator.hpp>
-#include <detray/propagator/actors.hpp>
-#include <detray/propagator/propagator.hpp>
+#include "traccc/utils/propagation.hpp"
 
 // vecmem include(s)
 #include <vecmem/containers/device_vector.hpp>
@@ -212,7 +208,7 @@ class kalman_fitter {
 
         // Create propagator state
         typename forward_propagator_type::state propagation(
-            seed_params, m_field, m_detector);
+            seed_params, m_field, m_detector, m_cfg.propagation.context);
         propagation.set_particle(detail::correct_particle_hypothesis(
             m_cfg.ptc_hypothesis, seed_params));
 
@@ -299,7 +295,7 @@ class kalman_fitter {
 
         typename backward_propagator_type::state propagation(
             last.smoothed(), m_field, m_detector,
-            fitter_state.m_sequence_buffer);
+            fitter_state.m_sequence_buffer, backward_cfg.context);
         propagation.set_particle(detail::correct_particle_hypothesis(
             m_cfg.ptc_hypothesis, last.smoothed()));
 

@@ -6,13 +6,9 @@
  */
 
 // Project include(s).
+#include "tests/test_detectors.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
-
-// Detray include(s).
-#include <detray/geometry/shapes/rectangle2D.hpp>
-#include <detray/test/utils/detectors/build_telescope_detector.hpp>
-#include <detray/tracks/ray.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>

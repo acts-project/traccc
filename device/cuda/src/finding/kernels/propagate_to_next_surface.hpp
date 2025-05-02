@@ -11,11 +11,15 @@
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
 #include "traccc/finding/finding_config.hpp"
 
-namespace traccc::cuda::kernels {
+// CUDA include(s).
+#include <cuda_runtime.h>
+
+namespace traccc::cuda {
 
 template <typename propagator_t, typename bfield_t>
-__global__ void propagate_to_next_surface(
-    const finding_config cfg,
+void propagate_to_next_surface(
+    const dim3& grid_size, const dim3& block_size, std::size_t shared_mem_size,
+    const cudaStream_t& stream, const finding_config cfg,
     device::propagate_to_next_surface_payload<propagator_t, bfield_t> payload);
 
-}  // namespace traccc::cuda::kernels
+}  // namespace traccc::cuda

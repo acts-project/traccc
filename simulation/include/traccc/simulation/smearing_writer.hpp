@@ -8,19 +8,17 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/edm/track_parameters.hpp"
 #include "traccc/io/csv/hit.hpp"
 #include "traccc/io/csv/measurement.hpp"
 #include "traccc/io/csv/measurement_hit_id.hpp"
 #include "traccc/io/csv/particle.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/simulation/measurement_smearer.hpp"
+#include "traccc/utils/particle.hpp"
 
 // Detray core include(s).
-#include <detray/definitions/pdg_particle.hpp>
-#include <detray/geometry/tracking_surface.hpp>
 #include <detray/propagator/base_actor.hpp>
-#include <detray/tracks/bound_track_parameters.hpp>
-#include <detray/tracks/free_track_parameters.hpp>
 
 // DFE include(s).
 #include <dfe/dfe_io_dsv.hpp>
@@ -82,7 +80,7 @@ struct smearing_writer : detray::actor {
 
         void write_particle(
             const traccc::free_track_parameters<algebra_type>& track,
-            const detray::pdg_particle<scalar_type>& ptc_type) {
+            const traccc::pdg_particle<scalar_type>& ptc_type) {
             io::csv::particle particle;
             const auto pos = track.pos();
             const auto mom = track.mom(ptc_type.charge());

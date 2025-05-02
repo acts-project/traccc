@@ -32,6 +32,7 @@ void read_spacepoints(edm::spacepoint_collection::host& spacepoints,
                       std::string_view hit_filename,
                       std::string_view meas_filename,
                       std::string_view meas_hit_map_filename,
-                      const traccc::default_detector::host* detector = nullptr);
+                      const traccc::default_detector::host* detector = nullptr,
+                      const bool sort_measurements = true);
 
 }  // namespace traccc::io::csv

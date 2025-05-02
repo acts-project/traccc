@@ -13,7 +13,7 @@ message( STATUS "Fetching covfie as part of the traccc project" )
 
 # Declare where to get covfie from.
 set( TRACCC_COVFIE_SOURCE
-   "URL;https://github.com/acts-project/covfie/archive/refs/tags/v0.12.1.tar.gz;URL_MD5;1512b389d8d7d08ef3bd30d6b18dcee1"
+   "URL;https://github.com/acts-project/covfie/archive/refs/tags/v0.13.0.tar.gz;URL_MD5;9dbff64d68a9d8c88acff12e8f99584a"
    CACHE STRING "Source for covfie, when built as part of this project" )
 mark_as_advanced( TRACCC_COVFIE_SOURCE )
 FetchContent_Declare( covfie SYSTEM ${TRACCC_COVFIE_SOURCE} )
@@ -25,6 +25,7 @@ set( COVFIE_BUILD_BENCHMARKS OFF CACHE BOOL "Build covfie benchmarks")
 
 set( COVFIE_PLATFORM_CPU ON CACHE BOOL "Enable covfie CPU platform")
 set( COVFIE_PLATFORM_CUDA ${TRACCC_BUILD_CUDA} CACHE BOOL "Enable covfie CUDA platform")
+set( COVFIE_PLATFORM_SYCL ${TRACCC_BUILD_SYCL} CACHE BOOL "Enable covfie SYCL platform")
 
 set( COVFIE_QUIET ON CACHE BOOL "Quiet covfie feature warnings")
 

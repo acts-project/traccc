@@ -7,6 +7,7 @@
 # Set up the "build" of the traccc::io library.
 traccc_add_library( traccc_simulation simulation TYPE INTERFACE
   # Public headers
+  "include/traccc/simulation/event_generators.hpp"
   "include/traccc/simulation/measurement_smearer.hpp"
   "include/traccc/simulation/simulator.hpp"
   "include/traccc/simulation/smearing_writer.hpp" )

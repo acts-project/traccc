@@ -9,12 +9,13 @@
 
 // Local include(s).
 #include "../../../utils/global_index.hpp"
-#include "../propagate_to_next_surface.cuh"
+#include "../propagate_to_next_surface.hpp"
 
 // Project include(s).
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
 
-namespace traccc::cuda::kernels {
+namespace traccc::cuda {
+namespace kernels {
 
 template <typename propagator_t, typename bfield_t>
 __global__ void propagate_to_next_surface(
@@ -25,4 +26,15 @@ __global__ void propagate_to_next_surface(
         details::global_index1(), cfg, payload);
 }
 
-}  // namespace traccc::cuda::kernels
+}  // namespace kernels
+
+template <typename propagator_t, typename bfield_t>
+void propagate_to_next_surface(
+    const dim3& grid_size, const dim3& block_size, std::size_t shared_mem_size,
+    const cudaStream_t& stream, const finding_config cfg,
+    device::propagate_to_next_surface_payload<propagator_t, bfield_t> payload) {
+
+    kernels::propagate_to_next_surface<<<grid_size, block_size, shared_mem_size,
+                                         stream>>>(cfg, payload);
+}
+}  // namespace traccc::cuda

@@ -37,7 +37,7 @@ full_chain_algorithm::full_chain_algorithm(
     const fitting_algorithm::config_type& fitting_config,
     const silicon_detector_description::host& det_descr,
     host_detector_type* detector, std::unique_ptr<const traccc::Logger> logger)
-    : messaging(std::move(logger->clone())),
+    : messaging(logger->clone()),
       m_host_mr(host_mr),
       m_stream(),
       m_device_mr(),
@@ -45,9 +45,8 @@ full_chain_algorithm::full_chain_algorithm(
           std::make_unique<vecmem::binary_page_memory_resource>(m_device_mr)),
       m_copy(m_stream.cudaStream()),
       m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
-      m_field(
-          detray::bfield::create_const_field<host_detector_type::scalar_type>(
-              m_field_vec)),
+      m_field(traccc::construct_const_bfield<host_detector_type::scalar_type>(
+          m_field_vec)),
       m_det_descr(det_descr),
       m_device_det_descr(
           static_cast<silicon_detector_description::buffer::size_type>(
