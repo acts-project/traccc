@@ -90,14 +90,9 @@ struct update_vectors_payload {
     vecmem::data::vector_view<unsigned int> updated_tracks_view;
 
     /**
-     * @brief Track Id with max shared measurement
+     * @brief The number of max shared
      */
-    unsigned int max_track_id;
-
-    /**
-     * @brief if max track id has changed in the kernel
-     */
-    bool* has_max_changed;
+    unsigned int* max_shared;
 };
 
 /// Function used for updating vectors
@@ -107,7 +102,7 @@ struct update_vectors_payload {
 /// @param[inout] payload      The function call payload
 ///
 template <concepts::barrier barrier_t>
-TRACCC_HOST_DEVICE inline void update_vectors(
+TRACCC_DEVICE inline void update_vectors(
     global_index_t globalIndex, const barrier_t& barrier,
     const update_vectors_payload& payload);
 

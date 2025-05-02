@@ -19,13 +19,13 @@
 namespace traccc::device {
 
 template <concepts::barrier barrier_t>
-TRACCC_HOST_DEVICE inline void update_vectors(
+TRACCC_DEVICE inline void update_vectors(
     const global_index_t globalIndex, const barrier_t& barrier,
     const update_vectors_payload& payload) {
 
-    if (globalIndex == 0){
-        *payload.has_max_changed = false;
+    if (globalIndex == 0) {
         *payload.n_updated_tracks = 0;
+        *payload.max_shared = 0;
     }
 
     barrier.blockBarrier();
@@ -48,8 +48,65 @@ TRACCC_HOST_DEVICE inline void update_vectors(
     vecmem::device_vector<unsigned int> updated_tracks(
         payload.updated_tracks_view);
 
+    // Find max shared
+    const auto n_iter = payload.n_accepted / blockDim.x + 1;
+    // printf("n accepted %d blockDim %d n_iter %d \n", payload.n_accepted,
+    // blockDim.x, n_iter);
+    auto max_track_id = 0;
+
+    for (int i = 0; i < n_iter; i++) {
+        const auto gid = globalIndex + i * 32;
+
+        unsigned int tid = 0;
+        unsigned int shared = 0;
+
+        if (gid < payload.n_accepted) {
+            tid = sorted_ids[gid];
+            shared = n_shared[tid];
+
+            //printf("shared %d \n", shared);
+        }
+
+        for (int offset = 16; offset > 0; offset >>= 1) {
+            unsigned int other_tid = __shfl_down_sync(0xffffffff, tid, offset);
+            unsigned int other_shared =
+                __shfl_down_sync(0xffffffff, shared, offset);
+
+            //printf("gid %d other shared %d shared %d offset %d \n", gid,
+            //       other_shared, shared, offset);
+
+            if (other_shared > shared) {
+                tid = other_tid;
+                shared = other_shared;
+
+                //printf("new shared %d \n", shared);
+            }
+        }
+
+        barrier.blockBarrier();
+
+        if (globalIndex == 0) {
+            //printf("%d %d \n", shared, *payload.max_shared);
+            if (shared > *payload.max_shared) {
+                *payload.max_shared = shared;
+                max_track_id = tid;
+            }
+        }
+
+        barrier.blockBarrier();
+    }
+    /*
+    if (globalIndex == 0) {
+        printf("Max shared %d Max track Id %d \n", max_shared, max_track_id);
+    }
+    */
     const auto worst_track = sorted_ids[payload.n_accepted - 1];
     const auto& meas_ids_of_track = meas_ids[worst_track];
+
+    if (globalIndex >= meas_ids_of_track.size()) {
+        return;
+    }
+
     const auto id = meas_ids_of_track[globalIndex];
 
     if (thrust::find(thrust::seq, meas_ids_of_track.begin(),
@@ -101,10 +158,6 @@ TRACCC_HOST_DEVICE inline void update_vectors(
 
         const unsigned int pos = num_updated_tracks.fetch_add(1);
         updated_tracks.at(pos) = tid;
-
-        if (tid == payload.max_track_id) {
-            *payload.has_max_changed = true;
-        }
     }
 }
 
