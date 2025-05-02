@@ -56,7 +56,8 @@ class fitting_performance_writer {
     template <typename detector_t>
     void write(const track_state_collection_types::host& track_states_per_track,
                const fitting_result<traccc::default_algebra>& fit_res,
-               const detector_t& det, event_data& evt_data) {
+               const detector_t& det, event_data& evt_data,
+               const detector_t::geometry_context& ctx = {}) {
 
         static_assert(std::same_as<typename detector_t::algebra_type,
                                    traccc::default_algebra>);
@@ -97,8 +98,6 @@ class fitting_performance_writer {
         const auto global_mom = meas_to_param_map.at(meas).second;
 
         const detray::tracking_surface sf{det, meas.surface_link};
-        using cxt_t = typename detector_t::geometry_context;
-        const cxt_t ctx{};
         const auto truth_bound =
             sf.global_to_bound(ctx, global_pos, vector::normalize(global_mom));
 

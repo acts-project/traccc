@@ -26,7 +26,7 @@ namespace traccc {
 template <typename detector_t>
 struct seed_generator {
     using algebra_type = typename detector_t::algebra_type;
-    using cxt_t = typename detector_t::geometry_context;
+    using ctx_t = typename detector_t::geometry_context;
 
     /// Constructor with detector
     ///
@@ -34,8 +34,8 @@ struct seed_generator {
     /// @param stddevs standard deviations for parameter smearing
     seed_generator(const detector_t& det,
                    const std::array<scalar, e_bound_size>& stddevs,
-                   const std::size_t sd = 0)
-        : m_detector(det), m_stddevs(stddevs) {
+                   const std::size_t sd = 0, ctx_t ctx = {})
+        : m_detector(det), m_stddevs(stddevs), m_ctx(ctx) {
         m_generator.seed(static_cast<std::mt19937::result_type>(sd));
     }
 
@@ -51,8 +51,7 @@ struct seed_generator {
         // Get bound parameter
         const detray::tracking_surface sf{m_detector, surface_link};
 
-        const cxt_t ctx{};
-        auto bound_vec = sf.free_to_bound_vector(ctx, free_param);
+        auto bound_vec = sf.free_to_bound_vector(m_ctx, free_param);
         auto bound_cov = matrix::zero<traccc::bound_matrix<algebra_type>>();
 
         bound_track_parameters<algebra_type> bound_param{surface_link,
@@ -68,7 +67,7 @@ struct seed_generator {
         typename interactor_type::state interactor_state;
         interactor_state.do_multiple_scattering = false;
         interactor_type{}.update(
-            ctx, ptc_type, bound_param, interactor_state,
+            m_ctx, ptc_type, bound_param, interactor_state,
             static_cast<int>(detray::navigation::direction::e_backward), sf);
 
         for (std::size_t i = 0; i < e_bound_size; i++) {
@@ -94,6 +93,7 @@ struct seed_generator {
     const detector_t& m_detector;
     /// Standard deviations for parameter smearing
     std::array<scalar, e_bound_size> m_stddevs;
+    ctx_t m_ctx;
 };
 
 }  // namespace traccc

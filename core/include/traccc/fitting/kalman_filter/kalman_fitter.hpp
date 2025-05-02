@@ -208,7 +208,7 @@ class kalman_fitter {
 
         // Create propagator state
         typename forward_propagator_type::state propagation(
-            seed_params, m_field, m_detector);
+            seed_params, m_field, m_detector, m_cfg.propagation.context);
         propagation.set_particle(detail::correct_particle_hypothesis(
             m_cfg.ptc_hypothesis, seed_params));
 
@@ -295,7 +295,7 @@ class kalman_fitter {
 
         typename backward_propagator_type::state propagation(
             last.smoothed(), m_field, m_detector,
-            fitter_state.m_sequence_buffer);
+            fitter_state.m_sequence_buffer, backward_cfg.context);
         propagation.set_particle(detail::correct_particle_hypothesis(
             m_cfg.ptc_hypothesis, last.smoothed()));
 
