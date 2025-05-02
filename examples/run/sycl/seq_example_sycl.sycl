@@ -182,7 +182,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
         mr, copy, queue, clusterization_opts,
         logger().clone("SyclClusteringAlg"));
     traccc::sycl::measurement_sorting_algorithm ms_sycl(
-        copy, queue, logger().clone("SyclMeasSortingAlg"));
+        mr, copy, queue, logger().clone("SyclMeasSortingAlg"));
     traccc::sycl::silicon_pixel_spacepoint_formation_algorithm sf_sycl(
         mr, copy, queue, logger().clone("SyclSpFormationAlg"));
     traccc::sycl::seeding_algorithm sa_sycl(
