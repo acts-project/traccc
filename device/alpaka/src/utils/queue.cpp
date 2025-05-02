@@ -21,7 +21,11 @@ struct queue::impl {
     /// Constructor
     /// @param device The device to create the queue for
     explicit impl(std::size_t device)
-        : m_queue(::alpaka::getDevByIdx(::alpaka::Platform<Acc>{}, device)) {}
+        : m_device(device == INVALID_DEVICE ? 0 : device),
+          m_queue(::alpaka::getDevByIdx(::alpaka::Platform<Acc>{}, m_device)) {}
+
+    /// The device the queue is created for
+    std::size_t m_device;
 
     /// The real Alpaka queue object
     Queue m_queue;
@@ -35,6 +39,11 @@ queue::queue(queue&&) noexcept = default;
 queue::~queue() = default;
 
 queue& queue::operator=(queue&& rhs) noexcept = default;
+
+std::size_t queue::device() const {
+
+    return m_impl->m_device;
+}
 
 void* queue::alpakaQueue() {
 
