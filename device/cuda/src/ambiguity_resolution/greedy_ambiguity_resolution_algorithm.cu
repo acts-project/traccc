@@ -305,6 +305,13 @@ greedy_ambiguity_resolution_algorithm::operator()(
     unsigned int n_updated_tracks;
 
     // Device object for the The number of updated tracks
+    vecmem::unique_alloc_ptr<unsigned int> n_accepted_device =
+        vecmem::make_unique_alloc<unsigned int>(m_mr.main);
+    TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(n_accepted_device.get(),
+                                            &n_accepted, sizeof(unsigned int),
+                                            cudaMemcpyHostToDevice, stream));
+    m_stream.get().synchronize();
+
     vecmem::unique_alloc_ptr<unsigned int> n_updated_tracks_device =
         vecmem::make_unique_alloc<unsigned int>(m_mr.main);
 
@@ -320,7 +327,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
             update_vectors<<<1, 1024, 32 * sizeof(unsigned int) * 2, stream>>>(
                 device::update_vectors_payload{
                     .sorted_ids_view = sorted_ids_buffer,
-                    .n_accepted = n_accepted,
+                    .n_accepted = n_accepted_device.get(),
                     .meas_ids_view = meas_ids_buffer,
                     .n_meas_view = n_meas_buffer,
                     .unique_meas_view = unique_meas_buffer,
@@ -339,6 +346,10 @@ greedy_ambiguity_resolution_algorithm::operator()(
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
         TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
+            &n_accepted, n_accepted_device.get(),
+            sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
+
+        TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
             &n_updated_tracks, n_updated_tracks_device.get(),
             sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
 
@@ -347,10 +358,9 @@ greedy_ambiguity_resolution_algorithm::operator()(
             cudaMemcpyDeviceToHost, stream));
 
         if (max_shared < m_config.max_shared_meas) {
+            n_accepted++;
             break;
         }
-
-        n_accepted--;
 
         // Terminate if there are no tracks to iterate
         if (n_accepted == 0) {
