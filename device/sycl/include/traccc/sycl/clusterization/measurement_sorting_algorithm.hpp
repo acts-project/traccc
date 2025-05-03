@@ -13,8 +13,8 @@
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/utils/algorithm.hpp"
-#include "traccc/utils/messaging.hpp"
 #include "traccc/utils/memory_resource.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
