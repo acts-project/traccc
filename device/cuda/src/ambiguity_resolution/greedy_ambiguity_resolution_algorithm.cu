@@ -337,7 +337,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
                     .max_shared = max_shared_device.get(),
                 });
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
-        m_stream.get().synchronize();
 
         TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
             &n_updated_tracks, n_updated_tracks_device.get(),
@@ -346,7 +345,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
         TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
             &max_shared, max_shared_device.get(), sizeof(unsigned int),
             cudaMemcpyDeviceToHost, stream));
-        m_stream.get().synchronize();
 
         if (max_shared < m_config.max_shared_meas) {
             break;
