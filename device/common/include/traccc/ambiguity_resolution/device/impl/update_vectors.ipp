@@ -55,7 +55,7 @@ TRACCC_DEVICE inline void update_vectors(
         payload.updated_tracks_view);
 
     // Find max shared
-    const auto n_iter = *payload.n_accepted / blockDim.x + 1;
+    const auto n_iter = payload.n_accepted / blockDim.x + 1;
     auto max_track_id = 0;
     unsigned int warp_id = threadIdx.x / warp_size;
 
@@ -65,7 +65,7 @@ TRACCC_DEVICE inline void update_vectors(
         unsigned int tid = 0;
         unsigned int shared = 0;
 
-        if (gid < *payload.n_accepted) {
+        if (gid < payload.n_accepted) {
             tid = sorted_ids[gid];
             shared = n_shared[tid];
         }
@@ -98,11 +98,7 @@ TRACCC_DEVICE inline void update_vectors(
         }
     }
 
-    const auto worst_track = sorted_ids[*payload.n_accepted - 1];
-
-    if (globalIndex == 0) {
-        (*payload.n_accepted)--;
-    }
+    const auto worst_track = sorted_ids[payload.n_accepted - 1];
 
     const auto& meas_ids_of_track = meas_ids[worst_track];
 

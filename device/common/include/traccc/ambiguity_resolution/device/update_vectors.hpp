@@ -35,7 +35,7 @@ struct update_vectors_payload {
     /**
      * @brief The number of accepted tracks
      */
-    unsigned int* n_accepted;
+    unsigned int n_accepted;
 
     /**
      * @brief View object to the vector of measured ids per track
@@ -102,9 +102,9 @@ struct update_vectors_payload {
 /// @param[inout] payload      The function call payload
 ///
 template <concepts::barrier barrier_t>
-TRACCC_DEVICE inline void update_vectors(
-    global_index_t globalIndex, const barrier_t& barrier,
-    const update_vectors_payload& payload);
+TRACCC_DEVICE inline void update_vectors(global_index_t globalIndex,
+                                         const barrier_t& barrier,
+                                         const update_vectors_payload& payload);
 
 }  // namespace traccc::device
 
