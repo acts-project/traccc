@@ -301,53 +301,43 @@ greedy_ambiguity_resolution_algorithm::operator()(
                                                                     m_mr.main};
 
     // Useful host objects
-    unsigned int max_shared;
-    unsigned int n_updated_tracks;
+    update_result update_res;
 
     // Device object for the The number of updated tracks
-    vecmem::unique_alloc_ptr<unsigned int> n_updated_tracks_device =
-        vecmem::make_unique_alloc<unsigned int>(m_mr.main);
-
-    // Device object for max_shared
-    vecmem::unique_alloc_ptr<unsigned int> max_shared_device =
-        vecmem::make_unique_alloc<unsigned int>(m_mr.main);
+    vecmem::unique_alloc_ptr<update_result> update_res_device =
+        vecmem::make_unique_alloc<update_result>(m_mr.main);
 
     // Iterate over tracks
     for (unsigned int iter = 0; iter < m_config.max_iterations; iter++) {
 
+        const int shared_bytes = 32 * sizeof(unsigned int) * 2 + 1;
+
         // Do not change the thread-block dimension
-        kernels::
-            update_vectors<<<1, 1024, 32 * sizeof(unsigned int) * 2, stream>>>(
-                device::update_vectors_payload{
-                    .sorted_ids_view = sorted_ids_buffer,
-                    .n_accepted = n_accepted,
-                    .meas_ids_view = meas_ids_buffer,
-                    .n_meas_view = n_meas_buffer,
-                    .unique_meas_view = unique_meas_buffer,
-                    .tracks_per_measurement_view =
-                        tracks_per_measurement_buffer,
-                    .track_status_per_measurement_view =
-                        track_status_per_measurement_buffer,
-                    .n_accepted_tracks_per_measurement_view =
-                        n_accepted_tracks_per_measurement_buffer,
-                    .n_shared_view = n_shared_buffer,
-                    .rel_shared_view = rel_shared_buffer,
-                    .n_updated_tracks = n_updated_tracks_device.get(),
-                    .updated_tracks_view = updated_tracks_buffer,
-                    .max_shared = max_shared_device.get(),
-                });
+        kernels::update_vectors<<<1, 1024, shared_bytes, stream>>>(
+            device::update_vectors_payload{
+                .sorted_ids_view = sorted_ids_buffer,
+                .n_accepted = n_accepted,
+                .meas_ids_view = meas_ids_buffer,
+                .n_meas_view = n_meas_buffer,
+                .unique_meas_view = unique_meas_buffer,
+                .tracks_per_measurement_view = tracks_per_measurement_buffer,
+                .track_status_per_measurement_view =
+                    track_status_per_measurement_buffer,
+                .n_accepted_tracks_per_measurement_view =
+                    n_accepted_tracks_per_measurement_buffer,
+                .n_shared_view = n_shared_buffer,
+                .rel_shared_view = rel_shared_buffer,
+                .updated_tracks_view = updated_tracks_buffer,
+                .update_res = update_res_device.get(),
+            });
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
         // TODO: Make n_updated track and max shared a pair
         TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
-            &n_updated_tracks, n_updated_tracks_device.get(),
-            sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
-
-        TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
-            &max_shared, max_shared_device.get(), sizeof(unsigned int),
+            &update_res, update_res_device.get(), sizeof(update_result),
             cudaMemcpyDeviceToHost, stream));
 
-        if (max_shared < m_config.max_shared_meas) {
+        if (update_res.max_shared < m_config.max_shared_meas) {
             break;
         }
 
@@ -358,7 +348,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
             break;
         }
 
-        if (n_updated_tracks > 0) {
+        if (update_res.n_updated_tracks > 0) {
             // Keep the sorted ids vector sorted
             thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
                          sorted_ids_buffer.ptr() + n_accepted, trk_comp);

@@ -21,6 +21,13 @@
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/containers/jagged_device_vector.hpp>
 
+struct update_result{
+    unsigned int max_shared;
+    unsigned int n_updated_tracks;
+    unsigned int min_id_for_sorting;
+    unsigned int max_id_for_sotring;
+};
+
 namespace traccc::device {
 
 /// (Event Data) Payload for the @c
@@ -80,19 +87,14 @@ struct update_vectors_payload {
     vecmem::data::vector_view<traccc::scalar> rel_shared_view;
 
     /**
-     * @brief The number of updated tracks
-     */
-    unsigned int* n_updated_tracks;
-
-    /**
      * @brief View object to the vector of affected track IDs
      */
     vecmem::data::vector_view<unsigned int> updated_tracks_view;
 
     /**
-     * @brief The number of max shared
+     * @brief Update result
      */
-    unsigned int* max_shared;
+    update_result* update_res;
 };
 
 /// Function used for updating vectors

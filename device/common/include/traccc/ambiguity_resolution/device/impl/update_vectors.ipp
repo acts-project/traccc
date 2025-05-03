@@ -28,10 +28,11 @@ TRACCC_DEVICE inline void update_vectors(
 
     __shared__ unsigned int shared_per_warp[warps_per_block];
     __shared__ unsigned int tid_per_warp[warps_per_block];
+    __shared__ unsigned int min_shared_changed;
 
     if (globalIndex == 0) {
-        *payload.n_updated_tracks = 0;
-        *payload.max_shared = 0;
+        (*payload.update_res).n_updated_tracks = 0;
+        (*payload.update_res).max_shared = 0;
     }
 
     barrier.blockBarrier();
@@ -90,8 +91,8 @@ TRACCC_DEVICE inline void update_vectors(
 
         if (globalIndex == 0) {
             for (int i = 0; i < warps_per_block; ++i) {
-                if (shared_per_warp[i] > *payload.max_shared) {
-                    *payload.max_shared = shared_per_warp[i];
+                if (shared_per_warp[i] > (*payload.update_res).max_shared) {
+                    (*payload.update_res).max_shared = shared_per_warp[i];
                     max_track_id = tid_per_warp[i];
                 }
             }
@@ -148,18 +149,26 @@ TRACCC_DEVICE inline void update_vectors(
                     thrust::count(thrust::seq, meas_ids.at(tid).begin(),
                                   meas_ids.at(tid).end(), id)));
 
+        atomicMin(&min_shared_changed, n_shared.at(tid));
+
         rel_shared.at(tid) = static_cast<traccc::scalar>(n_shared.at(tid)) /
                              static_cast<traccc::scalar>(n_meas.at(tid));
 
         // Write updated track IDs
         vecmem::device_atomic_ref<unsigned int> num_updated_tracks(
-            *payload.n_updated_tracks);
+            (*payload.update_res).n_updated_tracks);
 
         const unsigned int pos = num_updated_tracks.fetch_add(1);
         updated_tracks.at(pos) = tid;
     }
 
     // Find range for sorting
+    barrier.blockBarrier();
+    /*
+    for (int i = 0; i < n_iter; i++) {
+        const auto gid = globalIndex + i * blockDim.x;
+    }
+    */
 }
 
 }  // namespace traccc::device
