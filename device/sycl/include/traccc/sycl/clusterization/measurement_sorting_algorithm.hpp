@@ -14,16 +14,13 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/messaging.hpp"
+#include "traccc/utils/memory_resource.hpp"
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
 
 // System include(s).
 #include <functional>
-
-namespace traccc {
-struct memory_resource;
-}
 
 namespace traccc::sycl {
 
