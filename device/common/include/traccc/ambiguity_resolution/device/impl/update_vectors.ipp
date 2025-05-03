@@ -23,6 +23,11 @@ TRACCC_DEVICE inline void update_vectors(
     const global_index_t globalIndex, const barrier_t& barrier,
     const update_vectors_payload& payload) {
 
+    const int warps_per_block = 32;
+
+    __shared__ unsigned int shared_per_warp[warps_per_block];
+    __shared__ unsigned int tid_per_warp[warps_per_block];
+
     if (globalIndex == 0) {
         *payload.n_updated_tracks = 0;
         *payload.max_shared = 0;
@@ -49,10 +54,9 @@ TRACCC_DEVICE inline void update_vectors(
         payload.updated_tracks_view);
 
     // Find max shared
-    const auto n_iter = payload.n_accepted / blockDim.x + 1;
-    // printf("n accepted %d blockDim %d n_iter %d \n", payload.n_accepted,
-    // blockDim.x, n_iter);
+    const auto n_iter = *payload.n_accepted / blockDim.x + 1;
     auto max_track_id = 0;
+    unsigned int warp_id = threadIdx.x / 32;
 
     for (int i = 0; i < n_iter; i++) {
         const auto gid = globalIndex + i * 32;
@@ -60,11 +64,9 @@ TRACCC_DEVICE inline void update_vectors(
         unsigned int tid = 0;
         unsigned int shared = 0;
 
-        if (gid < payload.n_accepted) {
+        if (gid < *payload.n_accepted) {
             tid = sorted_ids[gid];
             shared = n_shared[tid];
-
-            //printf("shared %d \n", shared);
         }
 
         for (int offset = 16; offset > 0; offset >>= 1) {
@@ -72,36 +74,38 @@ TRACCC_DEVICE inline void update_vectors(
             unsigned int other_shared =
                 __shfl_down_sync(0xffffffff, shared, offset);
 
-            //printf("gid %d other shared %d shared %d offset %d \n", gid,
-            //       other_shared, shared, offset);
-
             if (other_shared > shared) {
                 tid = other_tid;
                 shared = other_shared;
-
-                //printf("new shared %d \n", shared);
             }
+        }
+
+        if ((gid & 31) == 0) {
+            shared_per_warp[warp_id] = shared;
+            tid_per_warp[warp_id] = tid;
         }
 
         barrier.blockBarrier();
 
         if (globalIndex == 0) {
-            //printf("%d %d \n", shared, *payload.max_shared);
-            if (shared > *payload.max_shared) {
-                *payload.max_shared = shared;
-                max_track_id = tid;
+            unsigned int max_val = 0, max_id = 0;
+            for (int i = 0; i < warps_per_block; ++i) {
+                if (shared_per_warp[i] > max_val) {
+                    max_val = shared_per_warp[i];
+                    max_id = tid_per_warp[i];
+                }
             }
+            *payload.max_shared = max_val;
+            max_track_id = max_id;
         }
+    }
 
-        barrier.blockBarrier();
-    }
-    /*
-    if (globalIndex == 0) {
-        printf("Max shared %d Max track Id %d \n", max_shared, max_track_id);
-    }
-    */
-    const auto worst_track = sorted_ids[payload.n_accepted - 1];
+    const auto worst_track = sorted_ids[*payload.n_accepted - 1];
     const auto& meas_ids_of_track = meas_ids[worst_track];
+
+    if (threadIdx.x == 0) {
+        (*payload.n_accepted)--;
+    }
 
     if (globalIndex >= meas_ids_of_track.size()) {
         return;
