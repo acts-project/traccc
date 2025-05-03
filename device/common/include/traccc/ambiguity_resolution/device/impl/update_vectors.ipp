@@ -23,6 +23,7 @@ TRACCC_DEVICE inline void update_vectors(
     const global_index_t globalIndex, const barrier_t& barrier,
     const update_vectors_payload& payload) {
 
+    const int warp_size = 32;
     const int warps_per_block = 32;
 
     __shared__ unsigned int shared_per_warp[warps_per_block];
@@ -54,17 +55,17 @@ TRACCC_DEVICE inline void update_vectors(
         payload.updated_tracks_view);
 
     // Find max shared
-    const auto n_iter = *payload.n_accepted / blockDim.x + 1;
+    const auto n_iter = payload.n_accepted / blockDim.x + 1;
     auto max_track_id = 0;
-    unsigned int warp_id = threadIdx.x / 32;
+    unsigned int warp_id = threadIdx.x / warp_size;
 
     for (int i = 0; i < n_iter; i++) {
-        const auto gid = globalIndex + i * 32;
+        const auto gid = globalIndex + i * blockDim.x;
 
         unsigned int tid = 0;
         unsigned int shared = 0;
 
-        if (gid < *payload.n_accepted) {
+        if (gid < payload.n_accepted) {
             tid = sorted_ids[gid];
             shared = n_shared[tid];
         }
@@ -80,7 +81,7 @@ TRACCC_DEVICE inline void update_vectors(
             }
         }
 
-        if ((gid & 31) == 0) {
+        if (gid % warp_size == 0) {
             shared_per_warp[warp_id] = shared;
             tid_per_warp[warp_id] = tid;
         }
@@ -88,24 +89,17 @@ TRACCC_DEVICE inline void update_vectors(
         barrier.blockBarrier();
 
         if (globalIndex == 0) {
-            unsigned int max_val = 0, max_id = 0;
             for (int i = 0; i < warps_per_block; ++i) {
-                if (shared_per_warp[i] > max_val) {
-                    max_val = shared_per_warp[i];
-                    max_id = tid_per_warp[i];
+                if (shared_per_warp[i] > *payload.max_shared) {
+                    *payload.max_shared = shared_per_warp[i];
+                    max_track_id = tid_per_warp[i];
                 }
             }
-            *payload.max_shared = max_val;
-            max_track_id = max_id;
         }
     }
 
-    const auto worst_track = sorted_ids[*payload.n_accepted - 1];
+    const auto worst_track = sorted_ids[payload.n_accepted - 1];
     const auto& meas_ids_of_track = meas_ids[worst_track];
-
-    if (threadIdx.x == 0) {
-        (*payload.n_accepted)--;
-    }
 
     if (globalIndex >= meas_ids_of_track.size()) {
         return;
