@@ -338,6 +338,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 });
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
+        // TODO: Make n_updated track and max shared a pair
         TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
             &n_updated_tracks, n_updated_tracks_device.get(),
             sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));

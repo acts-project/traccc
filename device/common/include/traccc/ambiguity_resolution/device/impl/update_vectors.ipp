@@ -158,6 +158,8 @@ TRACCC_DEVICE inline void update_vectors(
         const unsigned int pos = num_updated_tracks.fetch_add(1);
         updated_tracks.at(pos) = tid;
     }
+
+    // Find range for sorting
 }
 
 }  // namespace traccc::device
