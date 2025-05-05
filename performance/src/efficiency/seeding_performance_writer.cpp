@@ -83,13 +83,19 @@ void seeding_performance_writer::write(
         std::vector<particle_hit_count> particle_hit_counts;
 
         // Get the measurements for this seed.
+        assert(spacepoints.at(sd.bottom_index()).measurement_index_2() ==
+               edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX);
+        assert(spacepoints.at(sd.middle_index()).measurement_index_2() ==
+               edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX);
+        assert(spacepoints.at(sd.top_index()).measurement_index_2() ==
+               edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX);
         std::array<measurement, 3> seed_measurements{
             measurements.at(
-                spacepoints.at(sd.bottom_index()).measurement_index()),
+                spacepoints.at(sd.bottom_index()).measurement_index_1()),
             measurements.at(
-                spacepoints.at(sd.middle_index()).measurement_index()),
+                spacepoints.at(sd.middle_index()).measurement_index_1()),
             measurements.at(
-                spacepoints.at(sd.top_index()).measurement_index())};
+                spacepoints.at(sd.top_index()).measurement_index_1())};
 
         if (!evt_data.m_found_meas_to_ptc_map.empty()) {
             particle_hit_counts = identify_contributing_particles(
