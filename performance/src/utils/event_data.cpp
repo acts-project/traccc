@@ -300,6 +300,16 @@ void event_data::fill_cca_result(
         found_meas_to_cluster_map[meas] = iocells;
     }
 
+    // Construct a mapping of geometry IDs to cells and the associated
+    // particles, in order to get much faster lookups later.
+    std::map<geometry_id, std::vector<std::reference_wrapper<const std::decay_t<
+                              decltype(m_cell_to_particle_map)>::value_type>>>
+        geo_id_to_cell_to_particle_map;
+
+    for (auto const& v : m_cell_to_particle_map) {
+        geo_id_to_cell_to_particle_map[v.first.geometry_id].emplace_back(v);
+    }
+
     for (auto const& [ms, cluster] : found_meas_to_cluster_map) {
 
         std::map<uint64_t, std::size_t> meas_counts;
@@ -308,10 +318,13 @@ void event_data::fill_cca_result(
         for (const auto& cell1 : cluster) {
 
             // Cells from truth [cell, particle] map
-            for (auto const& [cell2, ptc] : m_cell_to_particle_map) {
+            for (auto const& v :
+                 geo_id_to_cell_to_particle_map[cell1.geometry_id]) {
+                const auto& cell2 = v.get().first;
+                const auto& ptc = v.get().second;
+                assert(cell1.geometry_id == cell2.geometry_id);
                 // Increase the particle number if the cell is the same
-                if (cell1.geometry_id == cell2.geometry_id &&
-                    cell1.channel0 == cell2.channel0 &&
+                if (cell1.channel0 == cell2.channel0 &&
                     cell1.channel1 == cell2.channel1) {
                     m_found_meas_to_ptc_map[ms][ptc]++;
                     meas_counts[cell2.measurement_id]++;
