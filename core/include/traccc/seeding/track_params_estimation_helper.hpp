@@ -14,6 +14,7 @@
 #include "traccc/edm/track_parameters.hpp"
 
 // System include(s).
+#include <cassert>
 #include <cmath>
 
 namespace traccc {
@@ -105,7 +106,10 @@ inline TRACCC_HOST_DEVICE bound_vector<> seed_to_bound_vector(
     getter::element(params, e_bound_theta, 0) = vector::theta(direction);
 
     // The measured loc0 and loc1
-    const measurement& meas_for_spB = measurements.at(spB.measurement_index());
+    assert(spB.measurement_index_2() ==
+           edm::spacepoint_collection::device::INVALID_MEASUREMENT_INDEX);
+    const measurement& meas_for_spB =
+        measurements.at(spB.measurement_index_1());
     getter::element(params, e_bound_loc0, 0) = meas_for_spB.local[0];
     getter::element(params, e_bound_loc1, 0) = meas_for_spB.local[1];
 

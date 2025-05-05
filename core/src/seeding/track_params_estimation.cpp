@@ -10,6 +10,9 @@
 
 #include "traccc/seeding/track_params_estimation_helper.hpp"
 
+// System include(s).
+#include <cassert>
+
 namespace traccc::host {
 
 track_params_estimation::track_params_estimation(
@@ -50,8 +53,10 @@ track_params_estimation::output_type track_params_estimation::operator()(
         // Get geometry ID for bottom spacepoint
         const edm::spacepoint_collection::const_device::const_proxy_type spB =
             spacepoints.at(seeds[i].bottom_index());
+        assert(spB.measurement_index_2() ==
+               edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX);
         track_params.set_surface_link(
-            measurements.at(spB.measurement_index()).surface_link);
+            measurements.at(spB.measurement_index_1()).surface_link);
     }
 
     // Return the result.
