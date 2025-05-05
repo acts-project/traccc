@@ -11,6 +11,9 @@
 #include "traccc/seeding/device/estimate_track_params.hpp"
 #include "traccc/seeding/track_params_estimation_helper.hpp"
 
+// System include(s).
+#include <cassert>
+
 namespace traccc::device {
 
 TRACCC_HOST_DEVICE
@@ -52,8 +55,10 @@ inline void estimate_track_params(
     // Get geometry ID for bottom spacepoint
     const edm::spacepoint_collection::const_device::const_proxy_type spB =
         spacepoints_device.at(this_seed.bottom_index());
+    assert(spB.measurement_index_2() ==
+           edm::spacepoint_collection::const_device::INVALID_MEASUREMENT_INDEX);
     track_params.set_surface_link(
-        measurements_device.at(spB.measurement_index()).surface_link);
+        measurements_device.at(spB.measurement_index_1()).surface_link);
 
     // Save the object into global memory.
     params_device.at(globalIndex) = track_params;
