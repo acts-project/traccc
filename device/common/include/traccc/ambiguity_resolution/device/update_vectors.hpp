@@ -87,11 +87,6 @@ struct update_vectors_payload {
     vecmem::data::vector_view<traccc::scalar> rel_shared_view;
 
     /**
-     * @brief View object to the vector of affected track IDs
-     */
-    vecmem::data::vector_view<unsigned int> updated_tracks_view;
-
-    /**
      * @brief Update result
      */
     update_result* update_res;

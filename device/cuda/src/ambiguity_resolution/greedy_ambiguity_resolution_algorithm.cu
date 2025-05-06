@@ -296,10 +296,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
     // Shared count comparator
     shared_count_comparator sh_comp(n_shared_buffer.ptr());
 
-    // Buffer for tracks whose shared meas has been changed
-    vecmem::data::vector_buffer<unsigned int> updated_tracks_buffer{n_accepted,
-                                                                    m_mr.main};
-
     // Useful host objects
     update_result update_res;
 
@@ -327,7 +323,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
                     n_accepted_tracks_per_measurement_buffer,
                 .n_shared_view = n_shared_buffer,
                 .rel_shared_view = rel_shared_buffer,
-                .updated_tracks_view = updated_tracks_buffer,
                 .update_res = update_res_device.get(),
             });
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
