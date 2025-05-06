@@ -139,8 +139,8 @@ auto transcribe_to_trace(
         // Build an intersection
         using nav_link_t = typename intersection_t::nav_link_t;
         intersection_t intr{
-            sf_desc, path, static_cast<nav_link_t>(bcd.volume()),
-            true,    true, {meas.local[0], meas.local[1], 0.f}};
+            {sf_desc, path, static_cast<nav_link_t>(bcd.volume()), true, true},
+            {meas.local[0], meas.local[1], 0.f}};
 
         // TODO: Don't use intial particle momentum
         candidates.emplace_back(glob_pos, dir, intr, q, p);
