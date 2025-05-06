@@ -28,7 +28,6 @@ TRACCC_DEVICE inline void update_vectors(
 
     __shared__ unsigned int shared_per_warp[warps_per_block];
     __shared__ unsigned int tid_per_warp[warps_per_block];
-    __shared__ unsigned int min_shared_changed;
 
     if (globalIndex == 0) {
         (*payload.update_res).n_updated_tracks = 0;
@@ -146,10 +145,8 @@ TRACCC_DEVICE inline void update_vectors(
         const unsigned int N_S =
             vecmem::device_atomic_ref<unsigned int>(n_shared.at(tid))
                 .fetch_add(-static_cast<unsigned int>(
-                    thrust::count(thrust::seq, meas_ids.at(tid).begin(),
-                                  meas_ids.at(tid).end(), id)));
-
-        atomicMin(&min_shared_changed, n_shared.at(tid));
+                    thrust::count(thrust::seq, meas_ids[tid].begin(),
+                                  meas_ids[tid].end(), id)));
 
         rel_shared.at(tid) = static_cast<traccc::scalar>(n_shared.at(tid)) /
                              static_cast<traccc::scalar>(n_meas.at(tid));
