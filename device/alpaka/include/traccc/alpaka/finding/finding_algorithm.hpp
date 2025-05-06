@@ -7,6 +7,9 @@
 
 #pragma once
 
+// Local include(s).
+#include "traccc/alpaka/utils/queue.hpp"
+
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/measurement.hpp"
@@ -68,10 +71,10 @@ class finding_algorithm
     /// @param cfg  Configuration object
     /// @param mr   The memory resource to use
     /// @param copy Copy object
-    /// @param str  Cuda stream object
+    /// @param a    Alpaka queue object
     finding_algorithm(
         const config_type& cfg, const traccc::memory_resource& mr,
-        vecmem::copy& copy,
+        vecmem::copy& copy, queue &q,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Get config object (const access)
@@ -95,6 +98,8 @@ class finding_algorithm
     traccc::memory_resource m_mr;
     /// The copy object to use
     vecmem::copy& m_copy;
+    /// The Alpaka queue to use
+    queue& m_queue;
 };
 
 }  // namespace traccc::alpaka
