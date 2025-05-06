@@ -435,3 +435,37 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest6) {
     ASSERT_TRUE(find_pattern(res_trk_cands,
                              std::vector<std::size_t>({8, 9, 0, 8, 1, 4, 6})));
 }
+
+TEST(CudaAmbiguitySolverTests, GreedyResolverTest7) {
+
+    // Memory resource used by the EDM.
+    vecmem::cuda::managed_memory_resource mng_mr;
+    vecmem::host_memory_resource host_mr;
+    traccc::memory_resource mr{mng_mr, &host_mr};
+
+    // Cuda stream
+    traccc::cuda::stream stream;
+
+    // Cuda copy objects
+    vecmem::cuda::async_copy copy{stream.cudaStream()};
+
+    track_candidate_container_types::host trk_cands{&mr.main};
+
+    trk_cands.resize(5u);
+    fill_pattern(trk_cands, 0, 0.173853f, {10, 3, 6, 8});
+    fill_pattern(trk_cands, 1, 0.548019f, {3, 3, 1});
+    fill_pattern(trk_cands, 2, 0.276757f, {2, 8, 5, 4});
+
+    traccc::cuda::greedy_ambiguity_resolution_algorithm::config_type
+        resolution_config;
+    traccc::cuda::greedy_ambiguity_resolution_algorithm resolution_alg_cuda(
+        resolution_config, mr, copy, stream);
+
+    auto res_trk_cands_buffer =
+        resolution_alg_cuda(traccc::get_data(trk_cands));
+    track_candidate_container_types::device res_trk_cands(res_trk_cands_buffer);
+    ASSERT_EQ(res_trk_cands.size(), 1u);
+
+    ASSERT_TRUE(
+        find_pattern(res_trk_cands, std::vector<std::size_t>({2, 8, 5, 4})));
+}
