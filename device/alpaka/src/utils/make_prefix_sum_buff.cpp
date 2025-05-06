@@ -7,6 +7,7 @@
 
 // Local include(s).
 #include "../utils/utils.hpp"
+#include "../utils/get_queue.hpp"
 
 // Project include(s).
 #include "traccc/alpaka/utils/make_prefix_sum_buff.hpp"
@@ -28,7 +29,7 @@ struct PrefixSumBuffKernel {
 
 vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
     const std::vector<device::prefix_sum_size_t>& sizes, vecmem::copy& copy,
-    const traccc::memory_resource& mr, Queue& queue) {
+    const traccc::memory_resource& mr, queue& q) {
 
     const device::prefix_sum_buffer_t make_sum_result =
         device::make_prefix_sum_buffer(sizes, copy, mr);
@@ -52,6 +53,7 @@ vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
         (sizes_sum_view.size() + threadsPerBlock - 1) / threadsPerBlock;
     auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
+    auto queue = details::get_queue(q);
     ::alpaka::exec<Acc>(queue, workDiv, PrefixSumBuffKernel{}, sizes_sum_view,
                         data_prefix_sum_buff);
     ::alpaka::wait(queue);

@@ -9,6 +9,7 @@
 #include "traccc/alpaka/seeding/details/spacepoint_binning.hpp"
 
 #include "../utils/utils.hpp"
+#include "../utils/get_queue.hpp"
 
 // Project include(s).
 #include "traccc/seeding/device/count_grid_capacities.hpp"
@@ -56,21 +57,20 @@ namespace details {
 
 spacepoint_binning::spacepoint_binning(
     const seedfinder_config& config, const spacepoint_grid_config& grid_config,
-    const traccc::memory_resource& mr, vecmem::copy& copy,
+    const traccc::memory_resource& mr, vecmem::copy& copy, queue& q,
     std::unique_ptr<const Logger> logger)
     : messaging(std::move(logger)),
       m_config(config),
       m_axes(get_axes(grid_config, (mr.host ? *(mr.host) : mr.main))),
       m_mr(mr),
-      m_copy(copy) {}
+      m_copy(copy),
+      m_queue(q) {}
 
 traccc::details::spacepoint_grid_types::buffer spacepoint_binning::operator()(
     const edm::spacepoint_collection::const_view& spacepoints_view) const {
 
     // Setup alpaka
-    auto const platformAcc = ::alpaka::Platform<Acc>{};
-    auto devAcc = ::alpaka::getDevByIdx(platformAcc, 0u);
-    auto queue = Queue{devAcc};
+    auto queue = details::get_queue(m_queue);
 
     // Get the spacepoint sizes from the view
     auto sp_size = m_copy.get_size(spacepoints_view);
@@ -97,7 +97,6 @@ traccc::details::spacepoint_grid_types::buffer spacepoint_binning::operator()(
     ::alpaka::exec<Acc>(queue, workDiv, kernels::CountGridCapacity{}, m_config,
                         m_axes.first, m_axes.second, spacepoints_view,
                         grid_capacities_view);
-    ::alpaka::wait(queue);
 
     // Copy grid capacities back to the host
     vecmem::vector<unsigned int> grid_capacities_host(m_mr.host ? m_mr.host
@@ -115,7 +114,6 @@ traccc::details::spacepoint_grid_types::buffer spacepoint_binning::operator()(
 
     ::alpaka::exec<Acc>(queue, workDiv, kernels::PopulateGrid{}, m_config,
                         spacepoints_view, grid_view);
-    ::alpaka::wait(queue);
 
     // Return the freshly filled buffer.
     return grid_buffer;
