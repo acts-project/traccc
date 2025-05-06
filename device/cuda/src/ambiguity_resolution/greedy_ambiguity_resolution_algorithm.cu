@@ -295,8 +295,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     // Iterate over tracks
     for (unsigned int iter = 0; iter < m_config.max_iterations; iter++) {
 
-        const int shared_bytes =
-            32 * 2 * sizeof(unsigned int) + 100 * sizeof(std::size_t);
+        const int shared_bytes = 32 * 2 * sizeof(unsigned int);
 
         // Do not change the thread-block dimension
         kernels::update_vectors<<<1, 1024, shared_bytes, stream>>>(

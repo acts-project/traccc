@@ -28,8 +28,6 @@ TRACCC_DEVICE inline void update_vectors(
 
     __shared__ unsigned int shared_per_warp[warps_per_block];
     __shared__ unsigned int tid_per_warp[warps_per_block];
-    // Make sure track length is always shorter than 100
-    __shared__ std::size_t meas_ids_of_track[100];
 
     if (globalIndex == 0) {
         (*payload.update_res).n_updated_tracks = 0;
@@ -98,12 +96,11 @@ TRACCC_DEVICE inline void update_vectors(
 
     const auto worst_track = sorted_ids[*payload.n_accepted - 1];
 
+    const auto& meas_ids_of_track = meas_ids[worst_track];
+
     if (globalIndex == 0) {
         (*payload.n_accepted)--;
         (*payload.update_res).n_accepted = *payload.n_accepted;
-
-        thrust::copy(thrust::seq, meas_ids[worst_track].begin(),
-                     meas_ids[worst_track].end(), meas_ids_of_track);
     }
 
     barrier.blockBarrier();
@@ -112,9 +109,9 @@ TRACCC_DEVICE inline void update_vectors(
 
         const auto id = meas_ids_of_track[globalIndex];
 
-        if (thrust::find(thrust::seq, meas_ids_of_track,
-                         meas_ids_of_track + globalIndex,
-                         id) != (meas_ids_of_track + globalIndex)) {
+        if (thrust::find(thrust::seq, meas_ids_of_track.begin(),
+                         meas_ids_of_track.begin() + globalIndex,
+                         id) != (meas_ids_of_track.begin() + globalIndex)) {
             return;
         }
     } else {
