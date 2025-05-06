@@ -309,7 +309,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
         vecmem::make_unique_alloc<update_result>(m_mr.main);
 
     // Iterate over tracks
-    const int shared_bytes = 32 * 2 * sizeof(unsigned int);
+    const int shared_bytes =
+        32 * 2 * sizeof(unsigned int) + 100 * sizeof(std::size_t);
     for (unsigned int iter = 0; iter < m_config.max_iterations; iter++) {
 
         // Do not change the thread-block dimension
