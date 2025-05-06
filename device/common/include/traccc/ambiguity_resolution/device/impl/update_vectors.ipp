@@ -166,14 +166,6 @@ TRACCC_DEVICE inline void update_vectors(
             const unsigned int pos = num_updated_tracks.fetch_add(1);
         }
     } 
-
-    // Find range for sorting
-    //barrier.blockBarrier();
-    /*
-    for (int i = 0; i < n_iter; i++) {
-        const auto gid = globalIndex + i * blockDim.x;
-    }
-    */
 }
 
 }  // namespace traccc::device
