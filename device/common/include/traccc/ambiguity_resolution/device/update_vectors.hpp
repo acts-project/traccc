@@ -24,6 +24,7 @@
 struct update_result {
     unsigned int max_shared;
     unsigned int n_updated_tracks;
+    unsigned int n_accepted;
 };
 
 namespace traccc::device {
@@ -40,7 +41,7 @@ struct update_vectors_payload {
     /**
      * @brief The number of accepted tracks
      */
-    unsigned int n_accepted;
+    unsigned int* n_accepted;
 
     /**
      * @brief View object to the vector of measured ids per track

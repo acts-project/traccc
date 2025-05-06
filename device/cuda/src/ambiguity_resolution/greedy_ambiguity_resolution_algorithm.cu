@@ -154,6 +154,11 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     unsigned int n_accepted = static_cast<unsigned int>(thrust::count(
         thrust_policy, status_buffer.ptr(), status_buffer.ptr() + n_tracks, 1));
+    vecmem::unique_alloc_ptr<unsigned int> n_accepted_device =
+        vecmem::make_unique_alloc<unsigned int>(m_mr.main);
+    TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(n_accepted_device.get(),
+                                            &n_accepted, sizeof(unsigned int),
+                                            cudaMemcpyHostToDevice, stream));
 
     // Make accepted ids vector
     vecmem::data::vector_buffer<unsigned int> pre_accepted_ids_buffer{
@@ -311,7 +316,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
         kernels::update_vectors<<<1, 1024, shared_bytes, stream>>>(
             device::update_vectors_payload{
                 .sorted_ids_view = sorted_ids_buffer,
-                .n_accepted = n_accepted,
+                .n_accepted = n_accepted_device.get(),
                 .meas_ids_view = meas_ids_buffer,
                 .n_meas_view = n_meas_buffer,
                 .unique_meas_view = unique_meas_buffer,
@@ -326,7 +331,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
             });
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-        // TODO: Make n_updated track and max shared a pair
         TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
             &update_res, update_res_device.get(), sizeof(update_result),
             cudaMemcpyDeviceToHost, stream));
@@ -335,14 +339,15 @@ greedy_ambiguity_resolution_algorithm::operator()(
             break;
         }
 
-        n_accepted--;
-
         if (update_res.n_updated_tracks > 0) {
             // Keep the sorted ids vector sorted
             thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
-                         sorted_ids_buffer.ptr() + n_accepted, trk_comp);
+                         sorted_ids_buffer.ptr() + update_res.n_accepted,
+                         trk_comp);
         }
     }
+
+    n_accepted = update_res.n_accepted + 1;
 
     auto max_it =
         std::max_element(candidate_sizes.begin(), candidate_sizes.end());
