@@ -58,6 +58,9 @@ struct gain_matrix_updater {
 
         assert(dim == 1u || dim == 2u);
 
+        assert(!bound_params.is_invalid());
+        assert(!bound_params.surface_link().is_invalid());
+
         const auto meas = trk_state.get_measurement();
 
         // Some identity matrices
