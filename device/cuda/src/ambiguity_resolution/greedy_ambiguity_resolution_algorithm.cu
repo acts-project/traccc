@@ -14,6 +14,7 @@
 #include "./kernels/fill_vectors.cuh"
 #include "./kernels/update_vectors.cuh"
 #include "traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
+#include "traccc/edm/device/update_result.hpp"
 
 // Thrust include(s).
 #include <thrust/execution_policy.h>
@@ -286,16 +287,15 @@ greedy_ambiguity_resolution_algorithm::operator()(
                  sorted_ids_buffer.ptr() + n_accepted, trk_comp);
 
     // Useful host objects
-    update_result update_res;
+    device::update_result update_res;
 
     // Device object for the The number of updated tracks
-    vecmem::unique_alloc_ptr<update_result> update_res_device =
-        vecmem::make_unique_alloc<update_result>(m_mr.main);
+    vecmem::unique_alloc_ptr<device::update_result> update_res_device =
+        vecmem::make_unique_alloc<device::update_result>(m_mr.main);
 
     // Iterate over tracks
+    const int shared_bytes = 32 * 2 * sizeof(unsigned int);
     for (unsigned int iter = 0; iter < m_config.max_iterations; iter++) {
-
-        const int shared_bytes = 32 * 2 * sizeof(unsigned int);
 
         // Do not change the thread-block dimension
         kernels::update_vectors<<<1, 1024, shared_bytes, stream>>>(
@@ -317,7 +317,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
         cudaMemcpyAsync(&update_res, update_res_device.get(),
-                        sizeof(update_result), cudaMemcpyDeviceToHost, stream);
+                        sizeof(device::update_result), cudaMemcpyDeviceToHost,
+                        stream);
 
         if (update_res.max_shared < m_config.max_shared_meas) {
             break;

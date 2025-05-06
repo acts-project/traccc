@@ -10,6 +10,7 @@
 // Local include(s).
 #include "traccc/device/concepts/barrier.hpp"
 #include "traccc/device/global_index.hpp"
+#include "traccc/edm/device/update_result.hpp"
 
 // Project include(s)
 #include "traccc/definitions/primitives.hpp"
@@ -20,12 +21,6 @@
 #include <vecmem/containers/data/vector_view.hpp>
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/containers/jagged_device_vector.hpp>
-
-struct update_result {
-    unsigned int max_shared;
-    unsigned int n_updated_tracks;
-    unsigned int n_accepted;
-};
 
 namespace traccc::device {
 
