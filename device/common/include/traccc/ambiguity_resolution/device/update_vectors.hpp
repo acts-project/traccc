@@ -21,7 +21,7 @@
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/containers/jagged_device_vector.hpp>
 
-struct update_result{
+struct update_result {
     unsigned int max_shared;
     unsigned int n_updated_tracks;
     unsigned int min_id_for_sorting;
