@@ -52,19 +52,6 @@ struct track_comparator {
     }
 };
 
-struct shared_count_comparator {
-    const unsigned int* n_shared;
-
-    TRACCC_HOST_DEVICE
-    shared_count_comparator(const unsigned int* n_shared_)
-        : n_shared(n_shared_) {}
-
-    TRACCC_HOST_DEVICE
-    bool operator()(unsigned int a, unsigned int b) const {
-        return n_shared[a] < n_shared[b];
-    }
-};
-
 greedy_ambiguity_resolution_algorithm::greedy_ambiguity_resolution_algorithm(
     const config_type& cfg, traccc::memory_resource& mr, vecmem::copy& copy,
     stream& str, std::unique_ptr<const Logger> logger)
@@ -298,9 +285,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
     thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
                  sorted_ids_buffer.ptr() + n_accepted, trk_comp);
 
-    // Shared count comparator
-    shared_count_comparator sh_comp(n_shared_buffer.ptr());
-
     // Useful host objects
     update_result update_res;
 
@@ -309,9 +293,10 @@ greedy_ambiguity_resolution_algorithm::operator()(
         vecmem::make_unique_alloc<update_result>(m_mr.main);
 
     // Iterate over tracks
-    const int shared_bytes =
-        32 * 2 * sizeof(unsigned int) + 100 * sizeof(std::size_t);
     for (unsigned int iter = 0; iter < m_config.max_iterations; iter++) {
+
+        const int shared_bytes =
+            32 * 2 * sizeof(unsigned int) + 100 * sizeof(std::size_t);
 
         // Do not change the thread-block dimension
         kernels::update_vectors<<<1, 1024, shared_bytes, stream>>>(
@@ -332,9 +317,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
             });
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-        TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
-            &update_res, update_res_device.get(), sizeof(update_result),
-            cudaMemcpyDeviceToHost, stream));
+        cudaMemcpyAsync(&update_res, update_res_device.get(),
+                        sizeof(update_result), cudaMemcpyDeviceToHost, stream);
 
         if (update_res.max_shared < m_config.max_shared_meas) {
             break;

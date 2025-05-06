@@ -28,6 +28,7 @@ TRACCC_DEVICE inline void update_vectors(
 
     __shared__ unsigned int shared_per_warp[warps_per_block];
     __shared__ unsigned int tid_per_warp[warps_per_block];
+    // Make sure track length is always shorter than 100
     __shared__ std::size_t meas_ids_of_track[100];
 
     if (globalIndex == 0) {
@@ -55,7 +56,6 @@ TRACCC_DEVICE inline void update_vectors(
 
     // Find max shared
     const auto n_iter = *payload.n_accepted / blockDim.x + 1;
-    auto max_track_id = 0;
     unsigned int warp_id = threadIdx.x / warp_size;
 
     for (int i = 0; i < n_iter; i++) {
@@ -91,7 +91,6 @@ TRACCC_DEVICE inline void update_vectors(
             for (int i = 0; i < warps_per_block; ++i) {
                 if (shared_per_warp[i] > (*payload.update_res).max_shared) {
                     (*payload.update_res).max_shared = shared_per_warp[i];
-                    max_track_id = tid_per_warp[i];
                 }
             }
         }
