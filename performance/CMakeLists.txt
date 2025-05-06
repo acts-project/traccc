@@ -32,10 +32,10 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    "src/resolution/stat_plot_tool.cpp"
    # Utils
    "include/traccc/utils/event_data.hpp"
+   "src/utils/event_data.cpp"
    "include/traccc/utils/helpers.hpp"
    "include/traccc/utils/navigation_validation.hpp"
    "include/traccc/utils/ranges.hpp"
-   "src/utils/event_data.cpp"
    "src/utils/helpers.hpp"
    "src/utils/helpers.cpp"
    # Value/object comparison code.
@@ -65,6 +65,9 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    "include/traccc/performance/impl/container_comparator.ipp"
    "include/traccc/performance/soa_comparator.hpp"
    "include/traccc/performance/impl/soa_comparator.ipp"
+   # Truth collection comparison
+   "include/traccc/performance/navigation_comparison.hpp"
+   "src/performance/navigation_comparison.cpp"
    # Performance time measurement code.
    "include/traccc/performance/timer.hpp"
    "src/performance/timer.cpp"
@@ -73,8 +76,7 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    "include/traccc/performance/throughput.hpp"
    "src/performance/throughput.cpp" )
 target_link_libraries( traccc_performance
-   PUBLIC traccc::core traccc::io covfie::core detray::test_utils
-   PRIVATE indicators::indicators )
+   PUBLIC traccc::core traccc::io covfie::core detray::test_utils detray::validation_utils PRIVATE indicators::indicators )
 
 # Use ROOT in traccc::performance, if requested.
 if( TRACCC_USE_ROOT )
