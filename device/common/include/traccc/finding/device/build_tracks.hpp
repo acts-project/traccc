@@ -52,17 +52,6 @@ struct build_tracks_payload {
      * @brief View object to the vector of track candidates
      */
     track_candidate_container_types::view track_candidates_view;
-
-    /**
-     * @brief View object to the vector of indices meeting the selection
-     * criteria
-     */
-    vecmem::data::vector_view<unsigned int> valid_indices_view;
-
-    /**
-     * @brief The number of valid tracks meeting criteria
-     */
-    unsigned int* n_valid_tracks;
 };
 
 /// Function for building full tracks from the link container:
@@ -75,8 +64,7 @@ struct build_tracks_payload {
 /// @param[inout] payload      The function call payload
 ///
 TRACCC_HOST_DEVICE inline void build_tracks(
-    global_index_t globalIndex, const finding_config& cfg,
-    const build_tracks_payload& payload);
+    global_index_t globalIndex, const build_tracks_payload& payload);
 
 }  // namespace traccc::device
 

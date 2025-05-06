@@ -14,6 +14,8 @@
 #include <detray/navigation/direct_navigator.hpp>
 #include <detray/navigation/navigator.hpp>
 #include <detray/propagator/actors.hpp>
+// TODO: Remove when updating to future detray version.
+#include <detray/propagator/constrained_step.hpp>
 #include <detray/propagator/line_stepper.hpp>
 #include <detray/propagator/propagator.hpp>
 #include <detray/propagator/rk_stepper.hpp>
