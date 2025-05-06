@@ -22,6 +22,7 @@
 #include <vecmem/memory/hip/device_memory_resource.hpp>
 #include <vecmem/memory/hip/host_memory_resource.hpp>
 #include <vecmem/memory/hip/managed_memory_resource.hpp>
+#include <vecmem/utils/hip/async_copy.hpp>
 #include <vecmem/utils/hip/copy.hpp>
 #elif defined(ALPAKA_ACC_SYCL_ENABLED)
 #include <vecmem/memory/sycl/device_memory_resource.hpp>
@@ -47,12 +48,7 @@ struct vecmem_objects::impl {
               ::alpaka::getDev(details::get_queue(q)))),
           m_shared_mr(),
           m_copy(),
-// TODO: Remove when vecmem version is updated!
-#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
           m_async_copy(::alpaka::getNativeHandle(details::get_queue(q)))
-#else
-          m_async_copy()
-#endif
 #elif defined(ALPAKA_ACC_SYCL_ENABLED)
           m_queue(::alpaka::getNativeHandle(details::get_queue(q))),
           m_host_mr(&m_queue),
@@ -81,7 +77,7 @@ struct vecmem_objects::impl {
     vecmem::hip::device_memory_resource m_device_mr;
     vecmem::hip::managed_memory_resource m_shared_mr;
     vecmem::hip::copy m_copy;
-    vecmem::hip::copy m_async_copy;
+    vecmem::hip::async_copy m_async_copy;
 #elif defined(ALPAKA_ACC_SYCL_ENABLED)
     ::sycl::queue m_queue;
     vecmem::sycl::host_memory_resource m_host_mr;
