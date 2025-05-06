@@ -84,6 +84,11 @@ struct update_vectors_payload {
      * @brief Update result
      */
     update_result* update_res;
+
+    /**
+     * @brief View object to the updated track
+     */
+    vecmem::data::vector_view<unsigned int> updated_tracks_view;
 };
 
 /// Function used for updating vectors

@@ -51,6 +51,8 @@ TRACCC_DEVICE inline void update_vectors(
         payload.n_accepted_tracks_per_measurement_view);
     vecmem::device_vector<unsigned int> n_shared(payload.n_shared_view);
     vecmem::device_vector<traccc::scalar> rel_shared(payload.rel_shared_view);
+    vecmem::device_vector<unsigned int> updated_tracks(
+        payload.updated_tracks_view);
 
     // Find max shared
     const auto n_iter = *payload.n_accepted / blockDim.x + 1;
@@ -161,6 +163,7 @@ TRACCC_DEVICE inline void update_vectors(
             (*payload.update_res).n_updated_tracks);
 
         const unsigned int pos = num_updated_tracks.fetch_add(1);
+        updated_tracks[pos] = tid;
     }
 }
 

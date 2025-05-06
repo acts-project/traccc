@@ -286,7 +286,12 @@ greedy_ambiguity_resolution_algorithm::operator()(
     thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
                  sorted_ids_buffer.ptr() + n_accepted, trk_comp);
 
-    // Useful host objects
+    // Update track ids
+    vecmem::data::vector_buffer<unsigned int> updated_tracks_buffer{n_accepted,
+                                                                    m_mr.main};
+    m_copy.get().setup(updated_tracks_buffer)->ignore();
+
+    // Update result from iteration
     device::update_result update_res;
 
     // Device object for the The number of updated tracks
@@ -313,6 +318,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .n_shared_view = n_shared_buffer,
                 .rel_shared_view = rel_shared_buffer,
                 .update_res = update_res_device.get(),
+                .updated_tracks_view = updated_tracks_buffer,
             });
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
