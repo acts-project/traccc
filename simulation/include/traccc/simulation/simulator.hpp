@@ -68,7 +68,7 @@ struct simulator {
     using propagator_type =
         detray::propagator<stepper_type, navigator_type, actor_chain_type>;
 
-    simulator(const detray::pdg_particle<scalar>& ptc_type, std::size_t events,
+    simulator(const detray::pdg_particle<scalar>& ptc, std::size_t events,
               const detector_t& det, const bfield_type& field,
               track_generator_t&& track_gen,
               typename writer_t::config&& writer_cfg,
@@ -81,8 +81,8 @@ struct simulator {
               std::make_unique<track_generator_t>(std::move(track_gen))),
           m_writer_cfg(writer_cfg) {
 
-        m_cfg.ptc_type = ptc_type;
-        m_track_generator->config().charge(ptc_type.charge());
+        m_cfg.ptc_type = ptc;
+        m_track_generator->config().charge(ptc.charge());
     }
 
     config& get_config() { return m_cfg; }
