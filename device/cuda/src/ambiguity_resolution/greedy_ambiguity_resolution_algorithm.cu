@@ -304,9 +304,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
         vecmem::make_unique_alloc<update_result>(m_mr.main);
 
     // Iterate over tracks
+    const int shared_bytes = 32 * 2 * sizeof(unsigned int);
     for (unsigned int iter = 0; iter < m_config.max_iterations; iter++) {
-
-        const int shared_bytes = 32 * sizeof(unsigned int) * 2;
 
         // Do not change the thread-block dimension
         kernels::update_vectors<<<1, 1024, shared_bytes, stream>>>(
@@ -337,11 +336,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
         }
 
         n_accepted--;
-
-        // Terminate if there are no tracks to iterate
-        if (n_accepted == 0) {
-            break;
-        }
 
         if (update_res.n_updated_tracks > 0) {
             // Keep the sorted ids vector sorted

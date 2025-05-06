@@ -97,7 +97,6 @@ TRACCC_DEVICE inline void update_vectors(
     }
 
     const auto worst_track = sorted_ids[payload.n_accepted - 1];
-
     const auto& meas_ids_of_track = meas_ids[worst_track];
 
     if (globalIndex < meas_ids_of_track.size()) {
@@ -156,11 +155,6 @@ TRACCC_DEVICE inline void update_vectors(
             (*payload.update_res).n_updated_tracks);
 
         const unsigned int pos = num_updated_tracks.fetch_add(1);
-
-        barrier.blockBarrier();
-
-        // Check if the vector stays sorted
-        
     }
 }
 

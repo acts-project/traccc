@@ -24,8 +24,6 @@
 struct update_result {
     unsigned int max_shared;
     unsigned int n_updated_tracks;
-    unsigned int min_id_for_sorting;
-    unsigned int max_id_for_sotring;
 };
 
 namespace traccc::device {
