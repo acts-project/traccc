@@ -17,6 +17,7 @@
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
 #include "traccc/alpaka/utils/get_device_info.hpp"
 #include "traccc/alpaka/utils/vecmem_objects.hpp"
+#include "traccc/alpaka/utils/queue.hpp"
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/track_state.hpp"

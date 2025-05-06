@@ -11,6 +11,7 @@
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
 #include "traccc/alpaka/utils/vecmem_objects.hpp"
+#include "traccc/alpaka/utils/queue.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
@@ -132,6 +133,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     // Copy objects
     vecmem::copy host_copy;
     vecmem::copy& copy = vo.copy();
+    vecmem::copy& async_copy = vo.async_copy();
 
     traccc::device::container_d2h_copy_alg<
         traccc::track_candidate_container_types>
@@ -154,10 +156,11 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         {seeding_opts.seedfinder},
         seeding_opts.seedfilter,
         mr,
-        copy,
+        async_copy,
+        queue,
         logger().clone("AlpakaSeedingAlg")};
     traccc::alpaka::track_params_estimation tp_alpaka{
-        mr, copy, logger().clone("AlpakaTrackParEstAlg")};
+        mr, async_copy, queue, logger().clone("AlpakaTrackParEstAlg")};
 
     // Propagation configuration
     detray::propagation::config propagation_config(propagation_opts);
@@ -170,7 +173,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(
         cfg, logger().clone("HostFindingAlg"));
     traccc::alpaka::finding_algorithm<rk_stepper_type, device_navigator_type>
-        device_finding(cfg, mr, copy, logger().clone("AlpakaFindingAlg"));
+        device_finding(cfg, mr, async_copy, queue,
+                       logger().clone("AlpakaFindingAlg"));
 
     // Fitting algorithm object
     traccc::fitting_config fit_cfg(fitting_opts);
@@ -179,7 +183,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::host::kalman_fitting_algorithm host_fitting(
         fit_cfg, host_mr, host_copy, logger().clone("HostFittingAlg"));
     traccc::alpaka::fitting_algorithm<device_fitter_type> device_fitting(
-        fit_cfg, mr, copy, logger().clone("AlpakaFittingAlg"));
+        fit_cfg, mr, async_copy, queue, logger().clone("AlpakaFittingAlg"));
 
     traccc::performance::timing_info elapsedTimes;
 
@@ -236,7 +240,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 spacepoints_alpaka_buffer(
                     static_cast<unsigned int>(spacepoints_per_event.size()),
                     mr.main);
-            copy(vecmem::get_data(spacepoints_per_event),
+            async_copy.setup(spacepoints_alpaka_buffer)->wait();
+            async_copy(vecmem::get_data(spacepoints_per_event),
                  spacepoints_alpaka_buffer)
                 ->wait();
 
@@ -244,7 +249,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 measurements_alpaka_buffer(
                     static_cast<unsigned int>(measurements_per_event.size()),
                     mr.main);
-            copy(vecmem::get_data(measurements_per_event),
+            async_copy.setup(measurements_alpaka_buffer)->wait();
+            async_copy(vecmem::get_data(measurements_per_event),
                  measurements_alpaka_buffer)
                 ->wait();
 
@@ -253,6 +259,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 // Reconstruct the spacepoints into seeds.
                 seeds_alpaka_buffer =
                     sa_alpaka(vecmem::get_data(spacepoints_alpaka_buffer));
+                queue.synchronize();
             }
 
             // CPU
@@ -275,6 +282,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                     tp_alpaka(measurements_alpaka_buffer,
                               spacepoints_alpaka_buffer, seeds_alpaka_buffer,
                               {0.f, 0.f, seeding_opts.seedfinder.bFieldInZ});
+                queue.synchronize();
             }  // stop measuring track params alpaka timer
 
             // CPU
@@ -336,8 +344,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         traccc::edm::seed_collection::host seeds_alpaka{host_mr};
         traccc::bound_track_parameters_collection_types::host params_alpaka{
             &host_mr};
-        copy(seeds_alpaka_buffer, seeds_alpaka)->wait();
-        copy(params_alpaka_buffer, params_alpaka)->wait();
+        async_copy(seeds_alpaka_buffer, seeds_alpaka)->wait();
+        async_copy(params_alpaka_buffer, params_alpaka)->wait();
 
         // Copy track candidates from device to host
         traccc::track_candidate_container_types::host track_candidates_alpaka =
