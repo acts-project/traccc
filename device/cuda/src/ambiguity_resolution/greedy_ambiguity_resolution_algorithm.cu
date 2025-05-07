@@ -365,8 +365,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
         }
     }
 
-    // n_accepted = update_res.n_accepted + 1;
-
     auto max_it =
         std::max_element(candidate_sizes.begin(), candidate_sizes.end());
     const unsigned int max_cands_size = *max_it;
