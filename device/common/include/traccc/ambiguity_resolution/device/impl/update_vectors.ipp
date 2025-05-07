@@ -68,10 +68,10 @@ TRACCC_DEVICE inline void update_vectors(
         return;
     }
 
-    const auto unique_meas_idx = static_cast<std::size_t>(
-        thrust::distance(unique_meas.begin(),
-                         thrust::lower_bound(thrust::seq, unique_meas.begin(),
-                                             unique_meas.end(), id)));
+    const std::size_t unique_meas_idx =
+        thrust::lower_bound(thrust::seq, unique_meas.begin(), unique_meas.end(),
+                            id) -
+        unique_meas.begin();
 
     vecmem::device_atomic_ref<unsigned int> n_accepted_per_meas(
         n_accepted_tracks_per_measurement.at(
@@ -83,20 +83,20 @@ TRACCC_DEVICE inline void update_vectors(
     const auto& tracks = tracks_per_measurement[unique_meas_idx];
     auto track_status = track_status_per_measurement[unique_meas_idx];
 
-    const auto it2 =
-        thrust::find(thrust::seq, tracks.begin(), tracks.end(), worst_track);
     const unsigned int worst_idx =
-        static_cast<unsigned int>(thrust::distance(tracks.begin(), it2));
+        thrust::find(thrust::seq, tracks.begin(), tracks.end(), worst_track) -
+        tracks.begin();
+
     track_status[worst_idx] = 0;
 
     if (N_A != 2) {
         return;
     }
 
-    const auto it3 =
-        thrust::find(thrust::seq, track_status.begin(), track_status.end(), 1);
     const unsigned int alive_idx =
-        static_cast<unsigned int>(thrust::distance(track_status.begin(), it3));
+        thrust::find(thrust::seq, track_status.begin(), track_status.end(), 1) -
+        track_status.begin();
+        
     const auto tid = static_cast<unsigned int>(tracks[alive_idx]);
 
     const unsigned int N_S =
