@@ -23,11 +23,22 @@
 namespace traccc::device {
 
 /// (Event Data) Payload for the @c
-/// traccc::device::sort_tracks function
-struct sort_tracks_payload {
+/// traccc::device::rearrange_tracks function
+struct rearrange_tracks_payload {
 
     /**
-     * @brief View object to the vector of relative number of shared measurements
+     * @brief View object to the sorted track
+     */
+    vecmem::data::vector_view<const unsigned int> sorted_ids_view;
+
+    /**
+     * @brief View object to the inverted ids
+     */
+    vecmem::data::vector_view<const unsigned int> inverted_ids_view;
+
+    /**
+     * @brief View object to the vector of relative number of shared
+     * measurements
      */
     vecmem::data::vector_view<const traccc::scalar> rel_shared_view;
 
@@ -47,9 +58,9 @@ struct sort_tracks_payload {
     vecmem::data::vector_view<const unsigned int> updated_tracks_view;
 
     /**
-     * @brief View object to the vector of sorted track ids
+     * @brief View object to the temporary sorted track
      */
-    vecmem::data::vector_view<unsigned int> sorted_ids_view;    
+    vecmem::data::vector_view<unsigned int> temp_sorted_ids_view;
 };
 
 /// Function used for updating vectors
@@ -59,11 +70,11 @@ struct sort_tracks_payload {
 /// @param[inout] payload      The function call payload
 ///
 template <concepts::barrier barrier_t>
-TRACCC_DEVICE inline void sort_tracks(global_index_t globalIndex,
-                                         const barrier_t& barrier,
-                                         const sort_tracks_payload& payload);
+TRACCC_DEVICE inline void rearrange_tracks(
+    global_index_t globalIndex, const barrier_t& barrier,
+    const rearrange_tracks_payload& payload);
 
 }  // namespace traccc::device
 
 // Include the implementation.
-#include "./impl/sort_tracks.ipp"
+#include "./impl/rearrange_tracks.ipp"

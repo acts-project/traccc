@@ -466,6 +466,14 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest7) {
     track_candidate_container_types::device res_trk_cands(res_trk_cands_buffer);
     ASSERT_EQ(res_trk_cands.size(), 1u);
 
+    for (unsigned int i = 0 ; i < res_trk_cands.size(); i++){
+        auto cands = res_trk_cands.at(i).items;        
+        for (auto c: cands){
+            std::cout << c.measurement_id << " ";
+        }
+        std::cout << std::endl;
+    }   
+
     ASSERT_TRUE(
         find_pattern(res_trk_cands, std::vector<std::size_t>({2, 8, 5, 4})));
 }

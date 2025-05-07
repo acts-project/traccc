@@ -6,17 +6,15 @@
  */
 
 // Local include(s).
-#include "../../utils/barrier.hpp"
 #include "../../utils/global_index.hpp"
-#include "sort_tracks.cuh"
+#include "fill_inverted_ids.cuh"
 
 namespace traccc::cuda::kernels {
 
-__global__ void sort_tracks(device::sort_tracks_payload payload) {
+__global__ void fill_inverted_ids(
+    device::fill_inverted_ids_payload payload) {
 
-    cuda::barrier barrier;
-
-    device::sort_tracks(details::global_index1(), barrier, payload);
+    device::fill_inverted_ids(details::global_index1(), payload);
 }
 
 }  // namespace traccc::cuda::kernels
