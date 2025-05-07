@@ -57,29 +57,26 @@ TRACCC_DEVICE inline void update_vectors(
 
     barrier.blockBarrier();
 
-    if (globalIndex < n_meas[worst_track]) {
+    if (globalIndex >= n_meas[worst_track])
+        return;
 
-        const auto id = meas_ids_of_track[globalIndex];
+    const auto id = meas_ids_of_track[globalIndex];
 
-        if (thrust::find(thrust::seq, meas_ids_of_track.begin(),
-                         meas_ids_of_track.begin() + globalIndex,
-                         id) != (meas_ids_of_track.begin() + globalIndex)) {
-            return;
-        }
-    } else {
+    if (thrust::find(thrust::seq, meas_ids_of_track.begin(),
+                     meas_ids_of_track.begin() + globalIndex,
+                     id) != meas_ids_of_track.begin() + globalIndex) {
         return;
     }
 
-    const auto id = meas_ids_of_track[globalIndex];
     const auto unique_meas_idx = static_cast<std::size_t>(
         thrust::distance(unique_meas.begin(),
                          thrust::lower_bound(thrust::seq, unique_meas.begin(),
                                              unique_meas.end(), id)));
 
-    vecmem::device_atomic_ref<unsigned int> n_accepted(
+    vecmem::device_atomic_ref<unsigned int> n_accepted_per_meas(
         n_accepted_tracks_per_measurement.at(
             static_cast<unsigned int>(unique_meas_idx)));
-    const unsigned int N_A = n_accepted.fetch_add(-1u);
+    const unsigned int N_A = n_accepted_per_meas.fetch_add(-1u);
 
     // If there is only one track associated with measurement, the
     // number of shared measurement can be reduced by one
