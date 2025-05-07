@@ -171,6 +171,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
         thrust::unique_count(thrust_policy, flat_meas_ids_buffer.ptr(),
                              flat_meas_ids_buffer.ptr() + n_cands_total,
                              thrust::equal_to<int>()));
+
     // Unique measurement ids
     vecmem::data::vector_buffer<std::size_t> unique_meas_buffer{meas_count,
                                                                 m_mr.main};
