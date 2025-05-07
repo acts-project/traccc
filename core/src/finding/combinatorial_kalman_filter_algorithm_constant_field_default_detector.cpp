@@ -29,8 +29,9 @@ combinatorial_kalman_filter_algorithm::operator()(
         detray::rk_stepper<bfield_type::view_t,
                            detector_type::host::algebra_type,
                            detray::constrained_step<scalar_type>>,
-        detray::navigator<const detector_type::host>>(det, field, measurements,
-                                                      seeds, m_config);
+        detray::navigator<const detector_type::host,
+                          traccc::detail::ckf_nav_cache_size>>(
+        det, field, measurements, seeds, m_config);
 }
 
 }  // namespace traccc::host

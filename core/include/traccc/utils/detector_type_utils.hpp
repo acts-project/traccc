@@ -16,8 +16,9 @@
 namespace traccc {
 /// Helper type constructors to facilitate the consistent instantiation of
 /// tools such as steppers and fitters for specific detectors.
-template <typename detector_t>
-using navigator_for_t = detray::navigator<const detector_t>;
+template <typename detector_t,
+          unsigned int cache_size = detray::navigation::default_cache_size>
+using navigator_for_t = detray::navigator<const detector_t, cache_size>;
 
 template <typename detector_t>
 using stepper_for_t = ::detray::rk_stepper<

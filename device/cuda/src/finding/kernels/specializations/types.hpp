@@ -18,6 +18,7 @@
 namespace traccc::cuda {
 using default_finding_algorithm =
     finding_algorithm<stepper_for_t<traccc::default_detector::device>,
-                      navigator_for_t<traccc::default_detector::device>>;
+                      navigator_for_t<traccc::default_detector::device,
+                                      traccc::detail::ckf_nav_cache_size>>;
 
 }  // namespace traccc::cuda

@@ -68,7 +68,12 @@ class full_chain_algorithm
                            device_detector_type::algebra_type,
                            detray::constrained_step<scalar_type>>;
     /// Navigator type used by the track finding and fitting algorithms
-    using navigator_type = detray::navigator<const device_detector_type>;
+    using ckf_navigator_type =
+        detray::navigator<const device_detector_type,
+                          traccc::detail::ckf_nav_cache_size>;
+    using fitting_navigator_type =
+        detray::navigator<const device_detector_type>;
+
     /// Spacepoint formation algorithm type
     using spacepoint_formation_algorithm =
         traccc::cuda::spacepoint_formation_algorithm<
@@ -77,10 +82,10 @@ class full_chain_algorithm
     using clustering_algorithm = traccc::cuda::clusterization_algorithm;
     /// Track finding algorithm type
     using finding_algorithm =
-        traccc::cuda::finding_algorithm<stepper_type, navigator_type>;
+        traccc::cuda::finding_algorithm<stepper_type, ckf_navigator_type>;
     /// Track fitting algorithm type
     using fitting_algorithm = traccc::cuda::fitting_algorithm<
-        traccc::kalman_fitter<stepper_type, navigator_type>>;
+        traccc::kalman_fitter<stepper_type, fitting_navigator_type>>;
 
     /// @}
 

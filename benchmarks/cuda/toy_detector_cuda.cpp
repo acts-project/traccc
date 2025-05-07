@@ -43,9 +43,13 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
         detray::constrained_step<typename detector_type::scalar_type>>;
     using host_detector_type = traccc::default_detector::host;
     using device_detector_type = traccc::default_detector::device;
-    using device_navigator_type = detray::navigator<const device_detector_type>;
+    using ckf_navigator_type =
+        detray::navigator<const device_detector_type,
+                          traccc::detail::ckf_nav_cache_size>;
+    using fitting_navigator_type =
+        detray::navigator<const device_detector_type>;
     using device_fitter_type =
-        traccc::kalman_fitter<rk_stepper_type, device_navigator_type>;
+        traccc::kalman_fitter<rk_stepper_type, fitting_navigator_type>;
 
     // Memory resources used by the application.
     vecmem::cuda::host_memory_resource cuda_host_mr;
@@ -73,7 +77,7 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
     traccc::cuda::seeding_algorithm sa_cuda(seeding_cfg, grid_cfg, filter_cfg,
                                             mr, async_copy, stream);
     traccc::cuda::track_params_estimation tp_cuda(mr, async_copy, stream);
-    traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
+    traccc::cuda::finding_algorithm<rk_stepper_type, ckf_navigator_type>
         device_finding(finding_cfg, mr, async_copy, stream);
     traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
         fitting_cfg, mr, async_copy, stream);

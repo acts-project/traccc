@@ -136,7 +136,7 @@ TEST_P(CkfToyDetectorTests, Run) {
 
     // Finding algorithm configuration
     typename traccc::cuda::finding_algorithm<
-        rk_stepper_type, device_navigator_type>::config_type cfg;
+        rk_stepper_type, ckf_navigator_type>::config_type cfg;
     cfg.ptc_hypothesis = ptc;
     cfg.max_num_branches_per_seed = 500;
     cfg.propagation.navigation.search_window = search_window;
@@ -145,7 +145,7 @@ TEST_P(CkfToyDetectorTests, Run) {
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(cfg);
 
     // Finding algorithm object
-    traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
+    traccc::cuda::finding_algorithm<rk_stepper_type, ckf_navigator_type>
         device_finding(cfg, mr, copy, stream);
 
     // Iterate over events

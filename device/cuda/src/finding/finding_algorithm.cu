@@ -458,5 +458,6 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 // Explicit template instantiation
 template class finding_algorithm<
     stepper_for_t<::traccc::default_detector::device>,
-    navigator_for_t<::traccc::default_detector::device>>;
+    navigator_for_t<::traccc::default_detector::device,
+                    traccc::detail::ckf_nav_cache_size>>;
 }  // namespace traccc::cuda

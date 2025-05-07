@@ -133,17 +133,21 @@ int seq_run(const traccc::opts::detector& detector_opts,
         detray::rk_stepper<bfield_type::view_t,
                            traccc::default_detector::host::algebra_type,
                            detray::constrained_step<scalar_type>>;
-    using device_navigator_type =
+
+    using ckf_navigator_type =
+        detray::navigator<const traccc::default_detector::device,
+                          traccc::detail::ckf_nav_cache_size>;
+    using fitting_navigator_type =
         detray::navigator<const traccc::default_detector::device>;
 
     using host_finding_algorithm =
         traccc::host::combinatorial_kalman_filter_algorithm;
     using device_finding_algorithm =
-        traccc::alpaka::finding_algorithm<stepper_type, device_navigator_type>;
+        traccc::alpaka::finding_algorithm<stepper_type, ckf_navigator_type>;
 
     using host_fitting_algorithm = traccc::host::kalman_fitting_algorithm;
     using device_fitting_algorithm = traccc::alpaka::fitting_algorithm<
-        traccc::kalman_fitter<stepper_type, device_navigator_type>>;
+        traccc::kalman_fitter<stepper_type, fitting_navigator_type>>;
 
     // Algorithm configuration(s).
     detray::propagation::config propagation_config(propagation_opts);

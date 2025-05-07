@@ -487,7 +487,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 // Explicit template instantiation
 template class finding_algorithm<
     ::traccc::stepper_for_t<::traccc::default_detector::device>,
-    ::traccc::navigator_for_t<::traccc::default_detector::device>>;
+    ::traccc::navigator_for_t<::traccc::default_detector::device,
+                              traccc::detail::ckf_nav_cache_size>>;
 
 }  // namespace traccc::alpaka
 

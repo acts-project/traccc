@@ -71,10 +71,13 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     using rk_stepper_type =
         detray::rk_stepper<b_field_t::view_t, traccc::default_algebra,
                            detray::constrained_step<scalar_type>>;
-    using device_navigator_type =
+    using ckf_navigator_type =
+        detray::navigator<const traccc::default_detector::device,
+                          traccc::detail::ckf_nav_cache_size>;
+    using fitting_navigator_type =
         detray::navigator<const traccc::default_detector::device>;
     using device_fitter_type =
-        traccc::kalman_fitter<rk_stepper_type, device_navigator_type>;
+        traccc::kalman_fitter<rk_stepper_type, fitting_navigator_type>;
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
@@ -153,7 +156,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     // Finding algorithm object
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(
         cfg, logger().clone("HostFindingAlg"));
-    traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
+    traccc::cuda::finding_algorithm<rk_stepper_type, ckf_navigator_type>
         device_finding(cfg, mr, async_copy, stream,
                        logger().clone("CudaFindingAlg"));
 

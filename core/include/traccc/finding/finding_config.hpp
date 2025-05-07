@@ -17,6 +17,12 @@
 
 namespace traccc {
 
+namespace detail {
+
+inline constexpr unsigned int ckf_nav_cache_size{3u};
+
+}  // namespace detail
+
 /// Configuration struct for track finding
 struct finding_config {
     /// Maxmimum number of branches per seed
