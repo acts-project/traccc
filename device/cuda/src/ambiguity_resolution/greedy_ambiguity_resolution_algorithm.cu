@@ -296,17 +296,10 @@ greedy_ambiguity_resolution_algorithm::operator()(
     // Update result from iteration
     device::update_result update_res;
     update_res.n_accepted = n_accepted;
-    // update_res.max_shared = 0;
-    // update_res.n_updated_tracks = 0;
 
     // Device object for the The number of updated tracks
     vecmem::unique_alloc_ptr<device::update_result> update_res_device =
         vecmem::make_unique_alloc<device::update_result>(m_mr.main);
-    /*
-    TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(update_res_device.get(),
-                                            &update_res, sizeof(update_result),
-                                            cudaMemcpyHostToDevice, stream));
-    */
 
     // Iterate over tracks
     const int shared_bytes = 32 * 2 * sizeof(unsigned int);
@@ -321,6 +314,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
             .n_accepted = n_accepted_device.get(),
             .n_shared_view = n_shared_buffer,
             .update_res = update_res_device.get()});
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
         kernels::update_vectors<<<1, 1024, shared_bytes, stream>>>(
             device::update_vectors_payload{
