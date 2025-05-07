@@ -26,7 +26,7 @@ TRACCC_DEVICE inline void update_vectors(
     if (globalIndex == 0) {
         (*payload.update_res).n_updated_tracks = 0;
     }
-    
+
     barrier.blockBarrier();
 
     vecmem::device_vector<const unsigned int> sorted_ids(
@@ -71,10 +71,10 @@ TRACCC_DEVICE inline void update_vectors(
     }
 
     const auto id = meas_ids_of_track[globalIndex];
-    const auto it = thrust::lower_bound(thrust::seq, unique_meas.begin(),
-                                        unique_meas.end(), id);
-    const std::size_t unique_meas_idx =
-        static_cast<std::size_t>(thrust::distance(unique_meas.begin(), it));
+    const auto unique_meas_idx = static_cast<std::size_t>(
+        thrust::distance(unique_meas.begin(),
+                         thrust::lower_bound(thrust::seq, unique_meas.begin(),
+                                             unique_meas.end(), id)));
 
     vecmem::device_atomic_ref<unsigned int> n_accepted(
         n_accepted_tracks_per_measurement.at(
@@ -92,29 +92,30 @@ TRACCC_DEVICE inline void update_vectors(
         static_cast<unsigned int>(thrust::distance(tracks.begin(), it2));
     track_status[worst_idx] = 0;
 
-    if (N_A == 2) {
-        const auto it3 = thrust::find(thrust::seq, track_status.begin(),
-                                      track_status.end(), 1);
-        const unsigned int alive_idx = static_cast<unsigned int>(
-            thrust::distance(track_status.begin(), it3));
-        const auto tid = static_cast<unsigned int>(tracks[alive_idx]);
-
-        const unsigned int N_S =
-            vecmem::device_atomic_ref<unsigned int>(n_shared.at(tid))
-                .fetch_add(-static_cast<unsigned int>(
-                    thrust::count(thrust::seq, meas_ids[tid].begin(),
-                                  meas_ids[tid].end(), id)));
-
-        rel_shared.at(tid) = static_cast<traccc::scalar>(n_shared.at(tid)) /
-                             static_cast<traccc::scalar>(n_meas.at(tid));
-
-        // Write updated track IDs
-        vecmem::device_atomic_ref<unsigned int> num_updated_tracks(
-            (*payload.update_res).n_updated_tracks);
-
-        const unsigned int pos = num_updated_tracks.fetch_add(1);
-        updated_tracks[pos] = tid;
+    if (N_A != 2) {
+        return;
     }
+
+    const auto it3 =
+        thrust::find(thrust::seq, track_status.begin(), track_status.end(), 1);
+    const unsigned int alive_idx =
+        static_cast<unsigned int>(thrust::distance(track_status.begin(), it3));
+    const auto tid = static_cast<unsigned int>(tracks[alive_idx]);
+
+    const unsigned int N_S =
+        vecmem::device_atomic_ref<unsigned int>(n_shared.at(tid))
+            .fetch_add(-static_cast<unsigned int>(thrust::count(
+                thrust::seq, meas_ids[tid].begin(), meas_ids[tid].end(), id)));
+
+    rel_shared.at(tid) = static_cast<traccc::scalar>(n_shared.at(tid)) /
+                         static_cast<traccc::scalar>(n_meas.at(tid));
+
+    // Write updated track IDs
+    vecmem::device_atomic_ref<unsigned int> num_updated_tracks(
+        (*payload.update_res).n_updated_tracks);
+
+    const unsigned int pos = num_updated_tracks.fetch_add(1);
+    updated_tracks[pos] = tid;
 }
 
 }  // namespace traccc::device
