@@ -23,17 +23,10 @@ TRACCC_DEVICE inline void update_vectors(
     const global_index_t globalIndex, const barrier_t& barrier,
     const update_vectors_payload& payload) {
 
-    const int warp_size = 32;
-    const int warps_per_block = 32;
-
-    __shared__ unsigned int shared_per_warp[warps_per_block];
-    __shared__ unsigned int tid_per_warp[warps_per_block];
-
     if (globalIndex == 0) {
         (*payload.update_res).n_updated_tracks = 0;
-        (*payload.update_res).max_shared = 0;
     }
-
+    
     barrier.blockBarrier();
 
     vecmem::device_vector<const unsigned int> sorted_ids(
@@ -53,7 +46,7 @@ TRACCC_DEVICE inline void update_vectors(
     vecmem::device_vector<traccc::scalar> rel_shared(payload.rel_shared_view);
     vecmem::device_vector<unsigned int> updated_tracks(
         payload.updated_tracks_view);
-
+    /*
     // Find max shared
     const auto n_iter = *payload.n_accepted / blockDim.x + 1;
     unsigned int warp_id = threadIdx.x / warp_size;
@@ -95,6 +88,7 @@ TRACCC_DEVICE inline void update_vectors(
             }
         }
     }
+    */
 
     const auto worst_track = sorted_ids[*payload.n_accepted - 1];
 

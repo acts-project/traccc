@@ -76,7 +76,8 @@ struct update_vectors_payload {
     vecmem::data::vector_view<unsigned int> n_shared_view;
 
     /**
-     * @brief View object to the vector of relative number of sharedmeasurements
+     * @brief View object to the vector of relative number of shared
+     * measurements
      */
     vecmem::data::vector_view<traccc::scalar> rel_shared_view;
 

@@ -23,33 +23,28 @@
 namespace traccc::device {
 
 /// (Event Data) Payload for the @c
-/// traccc::device::sort_tracks function
-struct sort_tracks_payload {
+/// traccc::device::find_max_shared function
+struct find_max_shared_payload {
 
     /**
-     * @brief View object to the vector of relative number of shared measurements
+     * @brief View object to the vector of sorted track ids
      */
-    vecmem::data::vector_view<const traccc::scalar> rel_shared_view;
+    vecmem::data::vector_view<const unsigned int> sorted_ids_view;
 
     /**
-     * @brief View object to the vector of relative number of pvalues
+     * @brief The number of accepted tracks
      */
-    vecmem::data::vector_view<const traccc::scalar> pvals_view;
+    unsigned int* n_accepted;
+
+    /**
+     * @brief View object to the vector of number of shared measurements
+     */
+    vecmem::data::vector_view<const unsigned int> n_shared_view;
 
     /**
      * @brief Update result
      */
     update_result* update_res;
-
-    /**
-     * @brief View object to the updated track
-     */
-    vecmem::data::vector_view<const unsigned int> updated_tracks_view;
-
-    /**
-     * @brief View object to the vector of sorted track ids
-     */
-    vecmem::data::vector_view<unsigned int> sorted_ids_view;    
 };
 
 /// Function used for updating vectors
@@ -59,11 +54,11 @@ struct sort_tracks_payload {
 /// @param[inout] payload      The function call payload
 ///
 template <concepts::barrier barrier_t>
-TRACCC_DEVICE inline void sort_tracks(global_index_t globalIndex,
+TRACCC_DEVICE inline void find_max_shared(global_index_t globalIndex,
                                          const barrier_t& barrier,
-                                         const sort_tracks_payload& payload);
+                                         const find_max_shared_payload& payload);
 
 }  // namespace traccc::device
 
 // Include the implementation.
-#include "./impl/sort_tracks.ipp"
+#include "./impl/find_max_shared.ipp"

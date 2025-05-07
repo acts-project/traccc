@@ -12,6 +12,8 @@
 #include "./kernels/fill_track_candidates.cuh"
 #include "./kernels/fill_tracks_per_measurement.cuh"
 #include "./kernels/fill_vectors.cuh"
+#include "./kernels/find_max_shared.cuh"
+#include "./kernels/sort_tracks.cuh"
 #include "./kernels/update_vectors.cuh"
 #include "traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 #include "traccc/edm/device/update_result.hpp"
@@ -293,16 +295,33 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     // Update result from iteration
     device::update_result update_res;
+    update_res.n_accepted = n_accepted;
+    // update_res.max_shared = 0;
+    // update_res.n_updated_tracks = 0;
 
     // Device object for the The number of updated tracks
     vecmem::unique_alloc_ptr<device::update_result> update_res_device =
         vecmem::make_unique_alloc<device::update_result>(m_mr.main);
+    /*
+    TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(update_res_device.get(),
+                                            &update_res, sizeof(update_result),
+                                            cudaMemcpyHostToDevice, stream));
+    */
 
     // Iterate over tracks
     const int shared_bytes = 32 * 2 * sizeof(unsigned int);
     for (unsigned int iter = 0; iter < m_config.max_iterations; iter++) {
 
-        // Do not change the thread-block dimension
+        unsigned int nThreads = m_warp_size;
+        unsigned int nBlocks = (n_accepted + nThreads - 1) / nThreads;
+
+        kernels::find_max_shared<<<nBlocks, nThreads, sizeof(unsigned int),
+                                   stream>>>(device::find_max_shared_payload{
+            .sorted_ids_view = sorted_ids_buffer,
+            .n_accepted = n_accepted_device.get(),
+            .n_shared_view = n_shared_buffer,
+            .update_res = update_res_device.get()});
+
         kernels::update_vectors<<<1, 1024, shared_bytes, stream>>>(
             device::update_vectors_payload{
                 .sorted_ids_view = sorted_ids_buffer,
@@ -330,15 +349,28 @@ greedy_ambiguity_resolution_algorithm::operator()(
             break;
         }
 
+        n_accepted--;
+
         if (update_res.n_updated_tracks > 0) {
             // Keep the sorted ids vector sorted
             thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
                          sorted_ids_buffer.ptr() + update_res.n_accepted,
                          trk_comp);
+
+            /*
+            kernels::sort_tracks<<<1, 1024, shared_bytes, stream>>>(
+                device::sort_tracks_payload{
+                    .rel_shared_view = rel_shared_buffer,
+                    .pvals_view = pvals_buffer,
+                    .update_res = update_res_device.get(),
+                    .updated_tracks_view = updated_tracks_buffer,
+                    .sorted_ids_view = sorted_ids_buffer,
+                });
+            */
         }
     }
 
-    n_accepted = update_res.n_accepted + 1;
+    // n_accepted = update_res.n_accepted + 1;
 
     auto max_it =
         std::max_element(candidate_sizes.begin(), candidate_sizes.end());
