@@ -23,8 +23,6 @@ TRACCC_DEVICE inline void find_max_shared(
     const global_index_t globalIndex, const barrier_t& barrier,
     const find_max_shared_payload& payload) {
 
-    __shared__ unsigned int max_shared_per_block;
-
     // Unsafe for multiple blocks!
     if (globalIndex == 0) {
         (*payload.update_res).max_shared = 0;
@@ -34,14 +32,12 @@ TRACCC_DEVICE inline void find_max_shared(
         payload.sorted_ids_view);
     vecmem::device_vector<const unsigned int> n_shared(payload.n_shared_view);
 
-    unsigned int tid = 0;
-    unsigned int shared = 0;
-    const auto gid = globalIndex;
-
-    if (gid < *payload.n_accepted) {
-        auto tid = sorted_ids[gid];
-        shared = n_shared[tid];
+    if (globalIndex >= *payload.n_accepted) {
+        return;
     }
+
+    auto tid = sorted_ids[globalIndex];
+    auto shared = n_shared[tid];
 
     for (int offset = 16; offset > 0; offset >>= 1) {
         unsigned int other_tid = __shfl_down_sync(0xffffffff, tid, offset);
@@ -55,8 +51,7 @@ TRACCC_DEVICE inline void find_max_shared(
     }
 
     if (threadIdx.x == 0) {
-        max_shared_per_block = shared;
-        atomicMax(&((*payload.update_res).max_shared), max_shared_per_block);
+        atomicMax(&((*payload.update_res).max_shared), shared);
     }
 }
 

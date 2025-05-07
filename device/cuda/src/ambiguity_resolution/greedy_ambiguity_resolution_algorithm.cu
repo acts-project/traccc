@@ -305,18 +305,18 @@ greedy_ambiguity_resolution_algorithm::operator()(
     // Iterate over tracks
     unsigned int nThreads = m_warp_size;
     unsigned int nBlocks = (n_accepted + nThreads - 1) / nThreads;
-    const int shared_bytes = 32 * 2 * sizeof(unsigned int);
+
     for (unsigned int iter = 0; iter < m_config.max_iterations; iter++) {
 
-        kernels::find_max_shared<<<nBlocks, nThreads, sizeof(unsigned int),
-                                   stream>>>(device::find_max_shared_payload{
-            .sorted_ids_view = sorted_ids_buffer,
-            .n_accepted = n_accepted_device.get(),
-            .n_shared_view = n_shared_buffer,
-            .update_res = update_res_device.get()});
+        kernels::find_max_shared<<<nBlocks, nThreads, 0, stream>>>(
+            device::find_max_shared_payload{
+                .sorted_ids_view = sorted_ids_buffer,
+                .n_accepted = n_accepted_device.get(),
+                .n_shared_view = n_shared_buffer,
+                .update_res = update_res_device.get()});
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-        kernels::update_vectors<<<1, 1024, shared_bytes, stream>>>(
+        kernels::update_vectors<<<1, 1024, 0, stream>>>(
             device::update_vectors_payload{
                 .sorted_ids_view = sorted_ids_buffer,
                 .n_accepted = n_accepted_device.get(),
