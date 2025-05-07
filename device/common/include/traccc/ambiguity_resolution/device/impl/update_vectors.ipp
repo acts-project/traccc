@@ -46,52 +46,8 @@ TRACCC_DEVICE inline void update_vectors(
     vecmem::device_vector<traccc::scalar> rel_shared(payload.rel_shared_view);
     vecmem::device_vector<unsigned int> updated_tracks(
         payload.updated_tracks_view);
-    /*
-    // Find max shared
-    const auto n_iter = *payload.n_accepted / blockDim.x + 1;
-    unsigned int warp_id = threadIdx.x / warp_size;
-
-    for (int i = 0; i < n_iter; i++) {
-        const auto gid = globalIndex + i * blockDim.x;
-
-        unsigned int tid = 0;
-        unsigned int shared = 0;
-
-        if (gid < *payload.n_accepted) {
-            tid = sorted_ids[gid];
-            shared = n_shared[tid];
-        }
-
-        for (int offset = 16; offset > 0; offset >>= 1) {
-            unsigned int other_tid = __shfl_down_sync(0xffffffff, tid, offset);
-            unsigned int other_shared =
-                __shfl_down_sync(0xffffffff, shared, offset);
-
-            if (other_shared > shared) {
-                tid = other_tid;
-                shared = other_shared;
-            }
-        }
-
-        if (gid % warp_size == 0) {
-            shared_per_warp[warp_id] = shared;
-            tid_per_warp[warp_id] = tid;
-        }
-
-        barrier.blockBarrier();
-
-        if (globalIndex == 0) {
-            for (int i = 0; i < warps_per_block; ++i) {
-                if (shared_per_warp[i] > (*payload.update_res).max_shared) {
-                    (*payload.update_res).max_shared = shared_per_warp[i];
-                }
-            }
-        }
-    }
-    */
 
     const auto worst_track = sorted_ids[*payload.n_accepted - 1];
-
     const auto& meas_ids_of_track = meas_ids[worst_track];
 
     if (globalIndex == 0) {
