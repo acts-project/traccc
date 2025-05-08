@@ -5,15 +5,19 @@
  * Mozilla Public License Version 2.0
  */
 
-#include <gtest/gtest.h>
-
-#include <functional>
-#include <vecmem/memory/host_memory_resource.hpp>
-
+// Local include(s).
 #include "tests/cca_test.hpp"
+
+// Project include(s).
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
 #include "traccc/alpaka/utils/vecmem_objects.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
+
+// GoogleTest include(s).
+#include <gtest/gtest.h>
+
+// Standard include(s).
+#include <functional>
 
 namespace {
 
@@ -29,7 +33,7 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
 
         vecmem::memory_resource& host_mr = vo.host_mr();
         vecmem::memory_resource& device_mr = vo.device_mr();
-        vecmem::copy copy = vo.copy();
+        vecmem::copy& copy = vo.copy();
 
         traccc::alpaka::clusterization_algorithm cc({device_mr}, copy, cfg);
 

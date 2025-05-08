@@ -34,6 +34,13 @@ struct queue::impl {
 
 queue::queue(std::size_t device) : m_impl{std::make_unique<impl>(device)} {}
 
+queue::queue(void* input_queue)
+    : m_impl{std::make_unique<impl>(INVALID_DEVICE)} {
+
+    // Copy the queue pointer
+    m_impl->m_queue = *static_cast<Queue*>(input_queue);
+}
+
 queue::queue(queue&&) noexcept = default;
 
 queue::~queue() = default;
