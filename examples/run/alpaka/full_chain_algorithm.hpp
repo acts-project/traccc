@@ -128,10 +128,6 @@ class full_chain_algorithm
 
     /// Host memory resource
     ::vecmem::memory_resource& m_host_mr;
-    /// Device memory resource
-    ::vecmem::memory_resource& m_device_mr;
-    /// Memory copy object
-    mutable std::reference_wrapper<::vecmem::copy> m_copy;
     /// Device caching memory resource
     std::unique_ptr<::vecmem::binary_page_memory_resource> m_cached_device_mr;
 
