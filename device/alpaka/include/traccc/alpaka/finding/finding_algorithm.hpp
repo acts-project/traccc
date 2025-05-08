@@ -30,8 +30,8 @@ class finding_algorithm
     : public algorithm<track_candidate_container_types::buffer(
           const typename navigator_t::detector_type::view_type&,
           const typename stepper_t::magnetic_field_type&,
-          const typename measurement_collection_types::view&,
-          const bound_track_parameters_collection_types::buffer&)>,
+          const measurement_collection_types::const_view&,
+          const bound_track_parameters_collection_types::const_view&)>,
       public messaging {
 
     /// Detector type
@@ -84,8 +84,8 @@ class finding_algorithm
     track_candidate_container_types::buffer operator()(
         const typename detector_type::view_type& det_view,
         const bfield_type& field_view,
-        const typename measurement_collection_types::view& measurements,
-        const bound_track_parameters_collection_types::buffer& seeds)
+        const measurement_collection_types::const_view& measurements,
+        const bound_track_parameters_collection_types::const_view& seeds)
         const override;
 
     private:
