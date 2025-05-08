@@ -26,6 +26,12 @@ class queue {
     /// Construct a new stream (possibly for a specified device)
     explicit queue(std::size_t device = INVALID_DEVICE);
 
+    /// Wrap an existing ::alpaka::Queue object
+    ///
+    /// Without taking ownership of it!
+    ///
+    queue(void* input_queue);
+
     /// Move constructor
     queue(queue&& parent) noexcept;
 

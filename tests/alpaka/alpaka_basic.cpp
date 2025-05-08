@@ -6,37 +6,22 @@
  * Mozilla Public License Version 2.0
  */
 
-// Alpaka include(s).
-#include <alpaka/alpaka.hpp>
-#include <alpaka/example/ExampleDefaultAcc.hpp>
+// Project include(s).
+#include "traccc/alpaka/utils/vecmem_objects.hpp"
+
+// VecMem include(s).
 #include <vecmem/containers/data/vector_buffer.hpp>
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/containers/vector.hpp>
-#include <vecmem/memory/host_memory_resource.hpp>
-#include <vecmem/utils/copy.hpp>
 
-// VecMem include(s).
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-#include <vecmem/memory/cuda/device_memory_resource.hpp>
-#include <vecmem/memory/cuda/host_memory_resource.hpp>
-#include <vecmem/utils/cuda/copy.hpp>
-#elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
-#include <vecmem/memory/hip/device_memory_resource.hpp>
-#include <vecmem/memory/hip/host_memory_resource.hpp>
-#include <vecmem/utils/hip/copy.hpp>
-#elif defined(ALPAKA_ACC_SYCL_ENABLED)
-#include <vecmem/memory/sycl/device_memory_resource.hpp>
-#include <vecmem/memory/sycl/host_memory_resource.hpp>
-#include <vecmem/utils/sycl/copy.hpp>
-#include <vecmem/utils/sycl/queue_wrapper.hpp>
-#endif
-
-#include <vecmem/memory/memory_resource.hpp>
-#include <vecmem/utils/copy.hpp>
+// Alpaka include(s).
+#include <alpaka/alpaka.hpp>
+#include <alpaka/example/ExampleDefaultAcc.hpp>
 
 // GoogleTest include(s).
 #include <gtest/gtest.h>
 
+// Standard include(s).
 #include <cstdint>
 #include <iostream>
 
@@ -138,7 +123,7 @@ GTEST_TEST(AlpakaBasic, VecMemOp) {
     auto const devAcc = getDevByIdx(platformAcc, 0u);
 
     using Queue = Queue<Acc, Blocking>;
-    auto queue = Queue{devAcc};
+    auto alpaka_queue = Queue{devAcc};
 
     uint32_t n = 10000;
 
@@ -148,25 +133,12 @@ GTEST_TEST(AlpakaBasic, VecMemOp) {
     using WorkDiv = WorkDivMembers<Dim, Idx>;
     auto workDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
 
-#ifdef ALPAKA_ACC_SYCL_ENABLED
-    ::sycl::queue q;
-    vecmem::sycl::queue_wrapper qw{&q};
-    vecmem::sycl::copy vm_copy(qw);
-    vecmem::sycl::host_memory_resource host_mr(qw);
-    vecmem::sycl::device_memory_resource device_mr(qw);
-#elif defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
-    vecmem::cuda::copy vm_copy;
-    vecmem::cuda::host_memory_resource host_mr;
-    vecmem::cuda::device_memory_resource device_mr;
-#elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
-    vecmem::hip::copy vm_copy;
-    vecmem::hip::host_memory_resource host_mr;
-    vecmem::hip::device_memory_resource device_mr;
-#else
-    vecmem::copy vm_copy;
-    vecmem::host_memory_resource host_mr;
-    vecmem::host_memory_resource device_mr;
-#endif
+    traccc::alpaka::queue traccc_queue(&alpaka_queue);
+    traccc::alpaka::vecmem_objects vo(traccc_queue);
+
+    vecmem::memory_resource& host_mr = vo.host_mr();
+    vecmem::memory_resource& device_mr = vo.device_mr();
+    vecmem::copy& vm_copy = vo.copy();
 
     vecmem::vector<float> host_vector{n, &host_mr};
 
@@ -178,12 +150,9 @@ GTEST_TEST(AlpakaBasic, VecMemOp) {
     std::cout << "Using alpaka accelerator: " << alpaka::getAccName<Acc>()
               << std::endl;
 
-    // Create a device for host for memory allocation, using the first CPU
-    // available
-    auto const platformDevCpu = alpaka::Platform<DevCpu>{};
-    auto devHost = getDevByIdx(platformDevCpu, 0u);
-
-    alpaka::exec<Acc>(queue, workDiv, VecMemOpKernel{}, data_dev_vec_buf);
+    alpaka::exec<Acc>(alpaka_queue, workDiv, VecMemOpKernel{},
+                      data_dev_vec_buf);
+    alpaka::wait(alpaka_queue);
 
     vm_copy(device_buffer, host_buffer, vecmem::copy::type::device_to_host)
         ->wait();
