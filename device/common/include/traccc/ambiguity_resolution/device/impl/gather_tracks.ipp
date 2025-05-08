@@ -12,13 +12,12 @@
 
 namespace traccc::device {
 
-TRACCC_DEVICE inline void fill_inverted_ids(
-    const global_index_t globalIndex,
-    const fill_inverted_ids_payload& payload) {
+TRACCC_DEVICE inline void gather_tracks(const global_index_t globalIndex,
+                                        const gather_tracks_payload& payload) {
 
-    vecmem::device_vector<const unsigned int> sorted_ids(
-        payload.sorted_ids_view);
-    vecmem::device_vector<unsigned int> inverted_ids(payload.inverted_ids_view);
+    vecmem::device_vector<const unsigned int> temp_sorted_ids(
+        payload.temp_sorted_ids_view);
+    vecmem::device_vector<unsigned int> sorted_ids(payload.sorted_ids_view);
 
     const unsigned int n_accepted = (*payload.update_res).n_accepted;
 
@@ -26,7 +25,7 @@ TRACCC_DEVICE inline void fill_inverted_ids(
         return;
     }
 
-    inverted_ids[sorted_ids[globalIndex]] = globalIndex;
+    sorted_ids[globalIndex] = temp_sorted_ids[globalIndex];
 }
 
 }  // namespace traccc::device

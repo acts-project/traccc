@@ -83,6 +83,8 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/ambiguity_resolution/kernels/fill_track_candidates.cuh"
   "src/ambiguity_resolution/kernels/fill_vectors.cu"
   "src/ambiguity_resolution/kernels/fill_vectors.cuh"
+  "src/ambiguity_resolution/kernels/gather_tracks.cu"
+  "src/ambiguity_resolution/kernels/gather_tracks.cuh"
   "src/ambiguity_resolution/kernels/rearrange_tracks.cu"
   "src/ambiguity_resolution/kernels/rearrange_tracks.cuh"
   "src/ambiguity_resolution/kernels/sort_updated_tracks.cu"

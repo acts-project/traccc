@@ -65,7 +65,14 @@ TRACCC_DEVICE inline void rearrange_tracks(
 
     // Found the ids in the updated tracks
     const auto it_end =
-        updated_tracks.begin() + (*payload.update_res).n_updated_tracks;    
+        updated_tracks.begin() + (*payload.update_res).n_updated_tracks;
+    /*
+    if (globalIndex == 0) {
+        printf("N accepted tracks %d N updated tracks %d \n",
+               (*payload.update_res).n_accepted,
+               (*payload.update_res).n_updated_tracks);
+    }
+    */
     auto it = thrust::find(thrust::seq, updated_tracks.begin(), it_end, tid);
     if (it != it_end) {
         track_comparator trk_comp(rel_shared, pvals);
@@ -75,24 +82,31 @@ TRACCC_DEVICE inline void rearrange_tracks(
         auto it2 = thrust::lower_bound(thrust::seq, sorted_ids.begin(),
                                        sorted_ids.begin() + sid, sid, trk_comp);
 
-        auto shifted_idx = it2 - sorted_ids.begin();
-    }
+        shifted_idx = it2 - sorted_ids.begin();
+        shifted_idx += it - updated_tracks.begin();
+    } else {
+        for (int i = 0; i < (*payload.update_res).n_updated_tracks; i++) {
 
-    for (int i = 0; i < (*payload.update_res).n_updated_tracks; i++) {
+            auto id = updated_tracks[i];
+            auto rel_sh = rel_shared[id];
+            auto pval = pvals[id];
 
-        auto id = updated_tracks[i];
-        auto rel_sh = rel_shared[id];
-        auto pval = pvals[id];
-
-        if (inverted_ids[id] > globalIndex) {
-            if (rel_sh < rel_sh_ref) {
-                shifted_idx++;
-            } else if (rel_sh == rel_sh_ref && pval > pval_ref) {
-                shifted_idx++;
+            if (inverted_ids[id] > globalIndex) {
+                if (rel_sh < rel_sh_ref) {
+                    shifted_idx++;
+                } else if (rel_sh == rel_sh_ref && pval > pval_ref) {
+                    shifted_idx++;
+                }
             }
         }
     }
-
+    /*
+    if (it == it_end) {
+        printf("Non-updated track: shifted idx %d tid %d \n", shifted_idx, tid);
+    } else {
+        printf("Updated track: shifted idx %d tid %d \n", shifted_idx, tid);
+    }
+    */
     temp_sorted_ids[shifted_idx] = tid;
 }
 
