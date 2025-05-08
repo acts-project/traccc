@@ -28,7 +28,7 @@ TRACCC_DEVICE inline void update_vectors(
     if (globalIndex == 0) {
         (*payload.update_res).n_updated_tracks = 0;
         /*
-        printf("n accepted %d \n", *payload.n_accepted == 0);
+        printf("n accepted %d \n", *payload.n_accepted);
         printf("Max shared %d n accepted %d n updated %d \n",
                (*payload.update_res).max_shared,
                (*payload.update_res).n_accepted,
@@ -64,7 +64,7 @@ TRACCC_DEVICE inline void update_vectors(
 
     const auto worst_track = sorted_ids[*payload.n_accepted - 1];
     const auto& meas_ids_of_track = meas_ids[worst_track];
-    /*
+
     if (globalIndex == 0) {
 
         printf("Sorted ids: ");
@@ -75,7 +75,7 @@ TRACCC_DEVICE inline void update_vectors(
 
         printf("Worst track: %d \n", worst_track);
     }
-    */
+
     if (globalIndex == 0) {
         (*payload.n_accepted)--;
         (*payload.update_res).n_accepted = *payload.n_accepted;
@@ -148,8 +148,9 @@ TRACCC_DEVICE inline void update_vectors(
         vecmem::device_atomic_ref<unsigned int>(n_shared.at(tid))
             .fetch_sub(m_count);
 
-    rel_shared.at(tid) = static_cast<traccc::scalar>(n_shared.at(tid)) /
-                         static_cast<traccc::scalar>(n_meas.at(tid));
+    // printf("m count %d Meas ID %lu \n", m_count, id);
+
+    barrier.blockBarrier();
 
     if (threadIdx.x == 0 || thrust::find(thrust::seq, tids, tids + threadIdx.x,
                                          tid) == tids + threadIdx.x) {
@@ -161,10 +162,12 @@ TRACCC_DEVICE inline void update_vectors(
         const unsigned int pos = num_updated_tracks.fetch_add(1);
 
         updated_tracks[pos] = tid;
-        /*
-        printf("Added updated tid: %d %d %d measid %lu \n", tid, m_count,
-               n_shared.at(tid), id);
-        */
+        
+        printf("Added updated tid: %d %d %lu \n", tid, n_shared.at(tid),
+               n_meas.at(tid));
+        
+        rel_shared.at(tid) = static_cast<traccc::scalar>(n_shared.at(tid)) /
+                             static_cast<traccc::scalar>(n_meas.at(tid));
     }
     /*
     if (thrust::find(thrust::seq, updated_tracks.begin(),

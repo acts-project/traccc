@@ -147,11 +147,26 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     unsigned int n_accepted = static_cast<unsigned int>(thrust::count(
         thrust_policy, status_buffer.ptr(), status_buffer.ptr() + n_tracks, 1));
+
+    // printf("Pre accepted: %d \n", n_accepted);
+
     vecmem::unique_alloc_ptr<unsigned int> n_accepted_device =
         vecmem::make_unique_alloc<unsigned int>(m_mr.main);
     TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(n_accepted_device.get(),
                                             &n_accepted, sizeof(unsigned int),
                                             cudaMemcpyHostToDevice, stream));
+
+    m_stream.get().synchronize();
+
+    if (n_accepted == 0) {
+
+        // Create resolved candidate buffer
+        track_candidate_container_types::buffer res_track_candidates_buffer{
+            {n_accepted, m_mr.main},
+            {std::vector<std::size_t>(0, 0), m_mr.main}};
+
+        return res_track_candidates_buffer;
+    }
 
     // Make accepted ids vector
     vecmem::data::vector_buffer<unsigned int> pre_accepted_ids_buffer{
@@ -324,9 +339,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
     unsigned int nBlocks = (n_accepted + nThreads - 1) / nThreads;
 
     for (unsigned int iter = 0; iter < m_config.max_iterations; iter++) {
-        
-        //printf("Iter %d \n", iter);
 
+        // printf("Iter %d \n", iter);
         kernels::find_max_shared<<<nBlocks, nThreads, 0, stream>>>(
             device::find_max_shared_payload{
                 .sorted_ids_view = sorted_ids_buffer,
@@ -335,23 +349,25 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .update_res = update_res_device.get()});
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-        kernels::update_vectors<<<1, 1024, 1024 *sizeof(unsigned int), stream>>>(
-            device::update_vectors_payload{
-                .sorted_ids_view = sorted_ids_buffer,
-                .n_accepted = n_accepted_device.get(),
-                .meas_ids_view = meas_ids_buffer,
-                .n_meas_view = n_meas_buffer,
-                .unique_meas_view = unique_meas_buffer,
-                .tracks_per_measurement_view = tracks_per_measurement_buffer,
-                .track_status_per_measurement_view =
-                    track_status_per_measurement_buffer,
-                .n_accepted_tracks_per_measurement_view =
-                    n_accepted_tracks_per_measurement_buffer,
-                .n_shared_view = n_shared_buffer,
-                .rel_shared_view = rel_shared_buffer,
-                .update_res = update_res_device.get(),
-                .updated_tracks_view = updated_tracks_buffer,
-            });
+        kernels::
+            update_vectors<<<1, 1024, 1024 * sizeof(unsigned int), stream>>>(
+                device::update_vectors_payload{
+                    .sorted_ids_view = sorted_ids_buffer,
+                    .n_accepted = n_accepted_device.get(),
+                    .meas_ids_view = meas_ids_buffer,
+                    .n_meas_view = n_meas_buffer,
+                    .unique_meas_view = unique_meas_buffer,
+                    .tracks_per_measurement_view =
+                        tracks_per_measurement_buffer,
+                    .track_status_per_measurement_view =
+                        track_status_per_measurement_buffer,
+                    .n_accepted_tracks_per_measurement_view =
+                        n_accepted_tracks_per_measurement_buffer,
+                    .n_shared_view = n_shared_buffer,
+                    .rel_shared_view = rel_shared_buffer,
+                    .update_res = update_res_device.get(),
+                    .updated_tracks_view = updated_tracks_buffer,
+                });
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
         cudaMemcpyAsync(&update_res, update_res_device.get(),
@@ -393,7 +409,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                     .temp_sorted_ids_view = temp_sorted_ids_buffer,
                 });
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
-
+            /*
             // Print out
             cudaMemcpyAsync(sorted_ids_host_buffer.ptr(),
                             sorted_ids_buffer.ptr(),
@@ -408,7 +424,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                             cudaMemcpyDeviceToHost, stream);
             vecmem::device_vector<unsigned int> temp_sorted_ids(
                 temp_sorted_ids_host_buffer);
-            
+            */
             /*
             printf("Iter %d %d \n", iter, update_res.max_shared);
 

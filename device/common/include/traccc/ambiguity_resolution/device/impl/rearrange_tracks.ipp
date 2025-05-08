@@ -74,16 +74,77 @@ TRACCC_DEVICE inline void rearrange_tracks(
     }
     */
     auto it = thrust::find(thrust::seq, updated_tracks.begin(), it_end, tid);
+    
+    if (globalIndex == 0) {
+        printf("Sorted ids: ");
+        for (int i = 0; i < n_accepted; i++) {
+            printf("%d ", sorted_ids[i]);
+        }
+        printf("\n");
+    }
+    
     if (it != it_end) {
         track_comparator trk_comp(rel_shared, pvals);
-        auto id = *it;
         // index of sorted_ids
-        auto sid = inverted_ids[id];
+        auto sid = inverted_ids[tid];
+
+        /*
         auto it2 = thrust::lower_bound(thrust::seq, sorted_ids.begin(),
                                        sorted_ids.begin() + sid, sid, trk_comp);
-
         shifted_idx = it2 - sorted_ids.begin();
+        printf("sid %d tid %d initial shifted_idx %lu \n", sid, tid,
+               it2 - sorted_ids.begin());
+        */
+
+        // shifted_idx = i;
+
+        printf("tid %d shifted_idx %d \n", tid, shifted_idx);
+
+        if (sid > 0) {
+            for (int i = sid - 1; i >= 0; i--) {
+                auto tid2 = sorted_ids[i];
+
+                auto rel_sh = rel_shared[tid2];
+                auto pval = pvals[tid2];
+
+                if (rel_sh > rel_sh_ref ||
+                    (rel_sh == rel_sh_ref && pval < pval_ref)) {
+                    /*
+                    auto it2 = thrust::find(thrust::seq, updated_tracks.begin(),
+                                            it_end, tid2);
+
+                    if (it2 != it_end) {
+                        // shifted_idx = i;
+                        // printf("reset tid %d shifted_idx %d \n", tid,
+                        // shifted_idx);
+
+                        shifted_idx--;
+                        // continue;
+                    }
+                    */
+                    shifted_idx--;
+                } else {
+
+                    auto it2 = thrust::find(thrust::seq, updated_tracks.begin(),
+                                            it_end, tid2);
+
+                    if (it2 != it_end) {
+                        // shifted_idx = i;
+                        // printf("reset tid %d shifted_idx %d \n", tid,
+                        // shifted_idx);
+
+                        shifted_idx--;
+                        // continue;
+                    }
+                }
+            }
+        }
+
+        printf("tid %d shifted_idx %d \n", tid, shifted_idx);
+
         shifted_idx += it - updated_tracks.begin();
+
+        printf("tid %d shifted_idx %d \n", tid, shifted_idx);
     } else {
         for (int i = 0; i < (*payload.update_res).n_updated_tracks; i++) {
 
@@ -100,13 +161,13 @@ TRACCC_DEVICE inline void rearrange_tracks(
             }
         }
     }
-    /*
+    
     if (it == it_end) {
         printf("Non-updated track: shifted idx %d tid %d \n", shifted_idx, tid);
     } else {
         printf("Updated track: shifted idx %d tid %d \n", shifted_idx, tid);
     }
-    */
+    
     temp_sorted_ids[shifted_idx] = tid;
 }
 
