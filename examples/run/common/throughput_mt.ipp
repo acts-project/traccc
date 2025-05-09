@@ -54,9 +54,6 @@
 #include <tbb/task_arena.h>
 #include <tbb/task_group.h>
 
-// Indicators include(s).
-#include <indicators/progress_bar.hpp>
-
 // System include(s).
 #include <atomic>
 #include <cstdlib>
@@ -212,19 +209,12 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     // Cold Run events. To discard any "initialisation issues" in the
     // measurements.
     {
-        // Set up a progress bar for the warm-up processing.
-        indicators::ProgressBar progress_bar{
-            indicators::option::BarWidth{50},
-            indicators::option::PrefixText{"Warm-up processing "},
-            indicators::option::ShowPercentage{true},
-            indicators::option::ShowRemainingTime{true},
-            indicators::option::MaxProgress{throughput_opts.cold_run_events}};
-
         // Measure the time of execution.
         performance::timer t{"Warm-up processing", times};
 
         // Process the requested number of events.
         for (std::size_t i = 0; i < throughput_opts.cold_run_events; ++i) {
+            TRACCC_INFO("Processing warm-up event #" << i);
 
             // Choose which event to process.
             const std::size_t event =
@@ -240,7 +230,6 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
                         tbb::this_task_arena::current_thread_index()))(
                                                        input[event])
                                                    .size());
-                    progress_bar.tick();
                 });
             });
         }
@@ -253,19 +242,12 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     rec_track_params = 0;
 
     {
-        // Set up a progress bar for the event processing.
-        indicators::ProgressBar progress_bar{
-            indicators::option::BarWidth{50},
-            indicators::option::PrefixText{"Event processing   "},
-            indicators::option::ShowPercentage{true},
-            indicators::option::ShowRemainingTime{true},
-            indicators::option::MaxProgress{throughput_opts.processed_events}};
-
         // Measure the total time of execution.
         performance::timer t{"Event processing", times};
 
         // Process the requested number of events.
         for (std::size_t i = 0; i < throughput_opts.processed_events; ++i) {
+            TRACCC_INFO("Processing event #" << i);
 
             // Choose which event to process.
             const std::size_t event =
@@ -281,7 +263,6 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
                         tbb::this_task_arena::current_thread_index()))(
                                                        input[event])
                                                    .size());
-                    progress_bar.tick();
                 });
             });
         }

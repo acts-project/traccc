@@ -42,7 +42,7 @@ target_link_libraries( traccc_examples_alpaka
    traccc::core traccc::device_common traccc::alpaka ${EXTRA_LIBS})
 
 traccc_add_executable( throughput_st_alpaka "throughput_st.cpp"
-   LINK_LIBRARIES indicators::indicators ${LIBRARIES} ${DETRAY} traccc_examples_alpaka )
+   LINK_LIBRARIES ${LIBRARIES} ${DETRAY} traccc_examples_alpaka )
 
 traccc_add_executable( throughput_mt_alpaka "throughput_mt.cpp"
-   LINK_LIBRARIES TBB::tbb indicators::indicators ${LIBRARIES} ${DETRAY} traccc_examples_alpaka )
+   LINK_LIBRARIES TBB::tbb ${LIBRARIES} ${DETRAY} traccc_examples_alpaka )
