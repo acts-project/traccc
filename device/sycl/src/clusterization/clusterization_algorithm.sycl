@@ -159,12 +159,12 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
                     const details::thread_id thread_id{item};
 
                     // Run the algorithm for this thread.
-                    device::ccl_kernel(cfg, thread_id, cells_view, det_descr,
-                                       partition_start, partition_end, outi,
-                                       f_view, gf_view, f_backup_view,
-                                       gf_backup_view, adjc_backup_view,
-                                       adjv_backup_view, backup_mutex, barrier,
-                                       measurements_view, cell_links_view);
+                    device::ccl_kernel(
+                        cfg, thread_id, cells_view, det_descr, partition_start,
+                        partition_end, outi, f_view, gf_view, f_backup_view,
+                        gf_backup_view, adjc_backup_view, adjv_backup_view,
+                        backup_mutex, nullptr, nullptr, barrier,
+                        measurements_view, cell_links_view);
                 });
         })
         .wait_and_throw();
