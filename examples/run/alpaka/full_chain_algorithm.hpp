@@ -16,7 +16,7 @@
 #include "traccc/alpaka/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
 #include "traccc/alpaka/utils/get_device_info.hpp"
-#include "traccc/alpaka/utils/get_vecmem_resource.hpp"
+#include "traccc/alpaka/utils/vecmem_objects.hpp"
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/track_state.hpp"
@@ -33,6 +33,7 @@
 #include <vecmem/memory/binary_page_memory_resource.hpp>
 
 // System include(s).
+#include <functional>
 #include <memory>
 
 namespace traccc::alpaka {
@@ -120,19 +121,13 @@ class full_chain_algorithm
         const edm::silicon_cell_collection::host& cells) const override;
 
     private:
+    /// Alpaka Queue
+    traccc::alpaka::queue m_queue;
+    /// Alpaka Vecmem objects, to get the memory resources
+    traccc::alpaka::vecmem_objects m_vecmem_objects;
+
     /// Host memory resource
     ::vecmem::memory_resource& m_host_mr;
-
-#if defined(ALPAKA_ACC_SYCL_ENABLED)
-    /// The SYCL queue to use for the computations
-    ::sycl::queue m_queue;
-    vecmem::sycl::queue_wrapper m_queue_wrapper;
-#endif
-
-    /// Device memory resource
-    traccc::alpaka::vecmem_resources::device_memory_resource m_device_mr;
-    /// Memory copy object
-    traccc::alpaka::vecmem_resources::device_copy m_copy;
     /// Device caching memory resource
     std::unique_ptr<::vecmem::binary_page_memory_resource> m_cached_device_mr;
 

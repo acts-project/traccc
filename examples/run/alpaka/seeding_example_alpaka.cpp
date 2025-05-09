@@ -10,7 +10,7 @@
 #include "traccc/alpaka/fitting/fitting_algorithm.hpp"
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
-#include "traccc/alpaka/utils/get_vecmem_resource.hpp"
+#include "traccc/alpaka/utils/vecmem_objects.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
@@ -44,11 +44,6 @@
 #include "traccc/seeding/track_params_estimation.hpp"
 #include "traccc/utils/propagation.hpp"
 
-#ifdef ALPAKA_ACC_SYCL_ENABLED
-#include <sycl/sycl.hpp>
-#include <vecmem/utils/sycl/queue_wrapper.hpp>
-#endif
-
 // System include(s).
 #include <cmath>
 #include <exception>
@@ -80,22 +75,14 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     using device_fitter_type =
         traccc::kalman_fitter<rk_stepper_type, device_navigator_type>;
 
-#ifdef ALPAKA_ACC_SYCL_ENABLED
-    ::sycl::queue q;
-    vecmem::sycl::queue_wrapper qw{&q};
-    traccc::alpaka::vecmem_resources::device_copy copy(qw);
-    traccc::alpaka::vecmem_resources::host_memory_resource host_mr(qw);
-    traccc::alpaka::vecmem_resources::device_memory_resource device_mr(qw);
-    traccc::alpaka::vecmem_resources::managed_memory_resource mng_mr(qw);
+    // Memory resources used by the application.
+    traccc::alpaka::queue queue;
+    traccc::alpaka::vecmem_objects vo(queue);
+
+    vecmem::memory_resource& host_mr = vo.host_mr();
+    vecmem::memory_resource& device_mr = vo.device_mr();
+    vecmem::memory_resource& mng_mr = vo.shared_mr();
     traccc::memory_resource mr{device_mr, &host_mr};
-#else
-    traccc::alpaka::vecmem_resources::device_copy copy;
-    traccc::alpaka::vecmem_resources::host_memory_resource host_mr;
-    traccc::alpaka::vecmem_resources::device_memory_resource device_mr;
-    traccc::alpaka::vecmem_resources::managed_memory_resource mng_mr;
-    traccc::memory_resource mr{device_mr, &host_mr};
-#endif
-    vecmem::copy host_copy;
 
     // Performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -143,6 +130,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::default_detector::view det_view = detray::get_data(host_det);
 
     // Copy objects
+    vecmem::copy host_copy;
+    vecmem::copy& copy = vo.copy();
+
     traccc::device::container_d2h_copy_alg<
         traccc::track_candidate_container_types>
         track_candidate_d2h{mr, copy,
