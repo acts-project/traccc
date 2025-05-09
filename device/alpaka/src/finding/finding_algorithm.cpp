@@ -62,8 +62,9 @@ track_candidate_container_types::buffer
 finding_algorithm<stepper_t, navigator_t>::operator()(
     const typename detector_type::view_type& det_view,
     const bfield_type& field_view,
-    const typename measurement_collection_types::view& measurements,
-    const bound_track_parameters_collection_types::buffer& seeds_buffer) const {
+    const measurement_collection_types::const_view& measurements,
+    const bound_track_parameters_collection_types::const_view& seeds_view)
+    const {
 
     assert(m_cfg.min_step_length_for_next_surface >
                math::fabs(m_cfg.propagation.navigation.overstep_tolerance) &&
@@ -75,9 +76,6 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     auto devAcc = ::alpaka::getDevByIdx(::alpaka::Platform<Acc>{}, 0u);
     auto queue = Queue{devAcc};
     Idx threadsPerBlock = getWarpSize<Acc>() * 2;
-
-    // Copy setup
-    m_copy.setup(seeds_buffer)->ignore();
 
 #if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_GPU_HIP_ENABLED)
     auto thrustExecPolicy = thrust::device;
@@ -139,19 +137,17 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
         ::alpaka::exec<Acc>(queue, workDiv, MakeBarcodeSequenceKernel{},
                             device::make_barcode_sequence_payload{
-                                vecmem::get_data(uniques_buffer),
-                                vecmem::get_data(barcodes_buffer)});
+                                uniques_buffer, barcodes_buffer});
         ::alpaka::wait(queue);
     }
 
-    const unsigned int n_seeds = m_copy.get_size(seeds_buffer);
+    const unsigned int n_seeds = m_copy.get_size(seeds_view);
 
     // Prepare input parameters with seeds
     bound_track_parameters_collection_types::buffer in_params_buffer(n_seeds,
                                                                      m_mr.main);
     m_copy.setup(in_params_buffer)->ignore();
-    m_copy(vecmem::get_data(seeds_buffer), vecmem::get_data(in_params_buffer))
-        ->ignore();
+    m_copy(seeds_view, in_params_buffer)->ignore();
     vecmem::data::vector_buffer<unsigned int> param_liveness_buffer(n_seeds,
                                                                     m_mr.main);
     m_copy.setup(param_liveness_buffer)->ignore();
@@ -196,8 +192,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 queue, workDiv,
                 ApplyInteractionKernel<std::decay_t<detector_type>>{}, m_cfg,
                 device::apply_interaction_payload<std::decay_t<detector_type>>{
-                    det_view, n_in_params, vecmem::get_data(in_params_buffer),
-                    vecmem::get_data(param_liveness_buffer)});
+                    det_view, n_in_params, in_params_buffer,
+                    param_liveness_buffer});
             ::alpaka::wait(queue);
         }
 
@@ -266,19 +262,17 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             new (payload) PayloadType{
                 .det_data = det_view,
                 .measurements_view = measurements,
-                .in_params_view = vecmem::get_data(in_params_buffer),
-                .in_params_liveness_view =
-                    vecmem::get_data(param_liveness_buffer),
+                .in_params_view = in_params_buffer,
+                .in_params_liveness_view = param_liveness_buffer,
                 .n_in_params = n_in_params,
-                .barcodes_view = vecmem::get_data(barcodes_buffer),
-                .upper_bounds_view = vecmem::get_data(upper_bounds_buffer),
-                .links_view = vecmem::get_data(links_buffer),
+                .barcodes_view = barcodes_buffer,
+                .upper_bounds_view = upper_bounds_buffer,
+                .links_view = links_buffer,
                 .prev_links_idx = prev_link_idx,
                 .curr_links_idx = step_to_link_idx_map[step],
                 .step = step,
-                .out_params_view = vecmem::get_data(updated_params_buffer),
-                .out_params_liveness_view =
-                    vecmem::get_data(updated_liveness_buffer)};
+                .out_params_view = updated_params_buffer,
+                .out_params_liveness_view = updated_liveness_buffer};
 
             auto bufAcc_payload =
                 ::alpaka::allocBuf<PayloadType, Idx>(devAcc, 1u);
@@ -318,11 +312,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     (n_candidates + threadsPerBlock - 1) / threadsPerBlock;
                 auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
-                ::alpaka::exec<Acc>(queue, workDiv, FillSortKeysKernel{},
-                                    device::fill_sort_keys_payload{
-                                        vecmem::get_data(in_params_buffer),
-                                        vecmem::get_data(keys_buffer),
-                                        vecmem::get_data(param_ids_buffer)});
+                ::alpaka::exec<Acc>(
+                    queue, workDiv, FillSortKeysKernel{},
+                    device::fill_sort_keys_payload{
+                        in_params_buffer, keys_buffer, param_ids_buffer});
                 ::alpaka::wait(queue);
 
                 // Sort the key and values
@@ -358,17 +351,15 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 new (payload) PayloadType{
                     .det_data = det_view,
                     .field_data = field_view,
-                    .params_view = vecmem::get_data(in_params_buffer),
-                    .params_liveness_view =
-                        vecmem::get_data(param_liveness_buffer),
-                    .param_ids_view = vecmem::get_data(param_ids_buffer),
-                    .links_view = vecmem::get_data(links_buffer),
+                    .params_view = in_params_buffer,
+                    .params_liveness_view = param_liveness_buffer,
+                    .param_ids_view = param_ids_buffer,
+                    .links_view = links_buffer,
                     .prev_links_idx = step_to_link_idx_map[step],
                     .step = step,
                     .n_in_params = n_candidates,
-                    .tips_view = vecmem::get_data(tips_buffer),
-                    .n_tracks_per_seed_view =
-                        vecmem::get_data(n_tracks_per_seed_buffer)};
+                    .tips_view = tips_buffer,
+                    .n_tracks_per_seed_view = n_tracks_per_seed_buffer};
 
                 auto bufAcc_payload =
                     ::alpaka::allocBuf<PayloadType, Idx>(devAcc, 1u);
@@ -435,15 +426,11 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             (n_tips_total + threadsPerBlock - 1) / threadsPerBlock;
         auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
-        track_candidate_container_types::view track_candidates_view(
-            track_candidates_buffer);
-
         ::alpaka::exec<Acc>(
             queue, workDiv, BuildTracksKernel{}, m_cfg,
             device::build_tracks_payload{
-                measurements, vecmem::get_data(seeds_buffer),
-                vecmem::get_data(links_buffer), vecmem::get_data(tips_buffer),
-                track_candidates_view, vecmem::get_data(valid_indices_buffer),
+                measurements, seeds_view, links_buffer, tips_buffer,
+                track_candidates_buffer, valid_indices_buffer,
                 ::alpaka::getPtrNative(n_valid_tracks_device)});
         ::alpaka::wait(queue);
 
@@ -467,17 +454,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             (*n_valid_tracks + threadsPerBlock - 1) / threadsPerBlock;
         auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
-        track_candidate_container_types::const_view track_candidates_view(
-            track_candidates_buffer);
-
-        track_candidate_container_types::view prune_candidates_view(
-            prune_candidates_buffer);
-
-        ::alpaka::exec<Acc>(
-            queue, workDiv, PruneTracksKernel{},
-            device::prune_tracks_payload{track_candidates_view,
-                                         vecmem::get_data(valid_indices_buffer),
-                                         prune_candidates_view});
+        ::alpaka::exec<Acc>(queue, workDiv, PruneTracksKernel{},
+                            device::prune_tracks_payload{
+                                track_candidates_buffer, valid_indices_buffer,
+                                prune_candidates_buffer});
         ::alpaka::wait(queue);
     }
 

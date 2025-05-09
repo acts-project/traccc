@@ -67,8 +67,9 @@ track_candidate_container_types::buffer
 finding_algorithm<stepper_t, navigator_t>::operator()(
     const typename detector_type::view_type& det_view,
     const bfield_type& field_view,
-    const typename measurement_collection_types::view& measurements,
-    const bound_track_parameters_collection_types::buffer& seeds_buffer) const {
+    const measurement_collection_types::const_view& measurements,
+    const bound_track_parameters_collection_types::const_view& seeds_view)
+    const {
 
     assert(m_cfg.min_step_length_for_next_surface >
                math::fabs(m_cfg.propagation.navigation.overstep_tolerance) &&
@@ -77,9 +78,6 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
-
-    // Copy setup
-    m_copy.setup(seeds_buffer)->ignore();
 
     // The Thrust policy to use.
     auto thrust_policy =
@@ -151,14 +149,13 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
     }
 
-    const unsigned int n_seeds = m_copy.get_size(seeds_buffer);
+    const unsigned int n_seeds = m_copy.get_size(seeds_view);
 
     // Prepare input parameters with seeds
     bound_track_parameters_collection_types::buffer in_params_buffer(n_seeds,
                                                                      m_mr.main);
     m_copy.setup(in_params_buffer)->ignore();
-    m_copy(vecmem::get_data(seeds_buffer), vecmem::get_data(in_params_buffer))
-        ->ignore();
+    m_copy(seeds_view, in_params_buffer)->ignore();
     vecmem::data::vector_buffer<unsigned int> param_liveness_buffer(n_seeds,
                                                                     m_mr.main);
     m_copy.setup(param_liveness_buffer)->ignore();
@@ -414,7 +411,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(
             m_cfg, device::build_tracks_payload{
                        .measurements_view = measurements,
-                       .seeds_view = seeds_buffer,
+                       .seeds_view = seeds_view,
                        .links_view = links_buffer,
                        .tips_view = tips_buffer,
                        .track_candidates_view = track_candidates_buffer,
