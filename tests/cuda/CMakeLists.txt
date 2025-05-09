@@ -32,6 +32,7 @@ traccc_add_test(
     cuda
 
     # Define the sources for the test.
+    test_ambiguity_resolution.cpp
     test_basic.cu
     test_barrier.cu
     test_cca.cpp

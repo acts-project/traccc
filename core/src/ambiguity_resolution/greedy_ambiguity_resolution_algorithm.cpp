@@ -29,6 +29,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     const std::size_t n_tracks = track_candidates.size();
 
+    // Make sure there is no duplicate measurement
+
     // Make the output container
     track_candidate_container_types::host output{&m_mr.main};
 
@@ -43,14 +45,14 @@ greedy_ambiguity_resolution_algorithm::operator()(
     std::vector<unsigned int> accepted_ids(n_tracks);
     std::iota(accepted_ids.begin(), accepted_ids.end(), 0);
 
-    // Make measurement ID, chi2 and n_measurement vector
+    // Make measurement ID, pval and n_measurement vector
     std::vector<std::vector<std::size_t>> meas_ids(n_tracks);
-    std::vector<traccc::scalar> chi_squares(n_tracks);
-    std::vector<std::size_t> n_meas(n_tracks);
+    std::vector<traccc::scalar> pvals(n_tracks);
+    std::vector<std::size_t> n_meas(n_tracks, 0);
 
     for (unsigned int i = 0; i < n_tracks; i++) {
-        // Fill the chi-squares vectors
-        chi_squares[i] = track_candidates.at(i).header.trk_quality.chi2;
+        // Fill the pval vectors
+        pvals[i] = track_candidates.at(i).header.trk_quality.pval;
 
         const auto& candidates = track_candidates.at(i).items;
         const unsigned int n_cands = candidates.size();
@@ -90,7 +92,19 @@ greedy_ambiguity_resolution_algorithm::operator()(
     tracks_per_measurement.resize(unique_meas.size());
 
     for (const auto& i : accepted_ids) {
-        for (const auto& meas_id : meas_ids[i]) {
+
+        // Make sure there is no duplicate
+        /*
+        assert(meas_ids[i].size() != std::unordered_set<std::size_t>(
+                                         meas_ids[i].begin(), meas_ids[i].end())
+                                         .size());
+        */
+        std::unordered_set<std::size_t> deduplicated_ids(meas_ids[i].begin(),
+                                                         meas_ids[i].end());
+
+        for (const auto& meas_id : deduplicated_ids) {
+
+            // for (const auto& meas_id : meas_ids[i]) {
             const auto it = std::lower_bound(unique_meas.begin(),
                                              unique_meas.end(), meas_id);
             assert(it != unique_meas.end());
@@ -101,7 +115,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     }
 
     // Count the number of shared measurements
-    std::vector<unsigned int> n_shared(n_tracks);
+    std::vector<unsigned int> n_shared(n_tracks, 0);
     for (const auto& i : accepted_ids) {
         for (const auto& meas_id : meas_ids[i]) {
             const auto it = std::lower_bound(unique_meas.begin(),
@@ -109,6 +123,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
             assert(it != unique_meas.end());
             const std::size_t unique_meas_idx = static_cast<std::size_t>(
                 std::distance(unique_meas.begin(), it));
+
             if (tracks_per_measurement[unique_meas_idx].size() > 1) {
                 n_shared[i]++;
             }
@@ -122,32 +137,36 @@ greedy_ambiguity_resolution_algorithm::operator()(
                         static_cast<traccc::scalar>(n_meas[i]);
     }
 
-    // Sort the track id with rel_shared and chi2 to find the worst track fast
+    // Sort the track id with rel_shared and pval to find the worst track
+    // fast
     std::vector<unsigned int> sorted_ids = accepted_ids;
 
-    auto track_comparator = [&rel_shared, &chi_squares](unsigned int a,
-                                                        unsigned int b) {
+    auto track_comparator = [&rel_shared, &pvals](unsigned int a,
+                                                  unsigned int b) {
         if (rel_shared[a] != rel_shared[b]) {
             return rel_shared[a] < rel_shared[b];
         }
-        return chi_squares[a] < chi_squares[b];
+        return pvals[a] > pvals[b];
     };
     std::sort(sorted_ids.begin(), sorted_ids.end(), track_comparator);
 
     // Iterate over tracks
     for (unsigned int iter = 0; iter < m_config.max_iterations; iter++) {
+
         // Terminate if there are no tracks to iterate
         if (accepted_ids.empty()) {
             break;
         }
 
-        unsigned int max_shared{0u};
+        unsigned int max_shared(0);
         for (const auto& i : accepted_ids) {
-            if (n_shared[i] > max_shared)
+            if (n_shared[i] > max_shared) {
                 max_shared = n_shared[i];
+            }
         }
 
-        // Terminate if the max shared measurements is less than the cut value
+        // Terminate if the max shared measurements is less than the cut
+        // value
         if (max_shared < m_config.max_shared_meas) {
             break;
         }
@@ -164,7 +183,14 @@ greedy_ambiguity_resolution_algorithm::operator()(
         // Pop the worst (rejected) id from the sorted ids
         sorted_ids.pop_back();
 
-        const auto& meas_ids_to_remove = meas_ids[worst_track];
+        std::unordered_set<std::size_t> seen;
+        std::vector<std::size_t> meas_ids_to_remove;
+        for (const auto& id : meas_ids[worst_track]) {
+            if (seen.insert(id).second) {
+                meas_ids_to_remove.push_back(id);
+            }
+        }
+
         for (const auto& id : meas_ids_to_remove) {
             const auto it =
                 std::lower_bound(unique_meas.begin(), unique_meas.end(), id);
@@ -174,29 +200,39 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
             auto& tracks = tracks_per_measurement[unique_meas_idx];
 
-            // Remove the worst (rejected) id from the tracks associated with
-            // measurement
+            if (tracks.empty()) {
+                continue;
+            }
+
+            // Remove the worst (rejected) id from the tracks associated
+            // with measurement
             const auto it2 =
                 std::lower_bound(tracks.begin(), tracks.end(), worst_track);
             assert(it2 != tracks.end() && *it2 == worst_track);
+
             tracks.erase(it2);
 
             // If there is only one track associated with measurement, the
             // number of shared measurement can be reduced by one
             if (tracks.size() == 1) {
                 const auto tid = tracks[0];
-                n_shared[tid]--;
+
+                n_shared[tid] -= static_cast<unsigned int>(
+                    std::count(meas_ids[tid].begin(), meas_ids[tid].end(), id));
                 rel_shared[tid] = static_cast<traccc::scalar>(n_shared[tid]) /
                                   static_cast<traccc::scalar>(n_meas[tid]);
-                // Reposition the track to the next of the worse track which is
-                // firstly found during the reverse iteration
+                // Reposition the track to the next of the worse track which
+                // is firstly found during the reverse iteration
                 const auto it3 =
                     std::find(sorted_ids.begin(), sorted_ids.end(), tid);
                 assert(it3 != sorted_ids.end());
                 const auto it4 = std::lower_bound(sorted_ids.begin(), it3, tid,
                                                   track_comparator);
-                sorted_ids.erase(it3);
-                sorted_ids.insert(it4, tid);
+
+                if (it3 != it4) {
+                    sorted_ids.erase(it3);
+                    sorted_ids.insert(it4, tid);
+                }
             }
         }
 
