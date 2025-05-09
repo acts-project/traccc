@@ -40,3 +40,8 @@
 # Build system related files.
 CMakeUserPresets.json
 out/
+log/build01.log
+log/ptxas.log
+log/spill.log
+log/spill_summary.log
+build/

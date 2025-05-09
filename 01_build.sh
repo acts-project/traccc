@@ -23,3 +23,5 @@ grep -nE "ptxas info.*Function properties" -n ./log/build02.log \
       sed -n "$((L-2)),$((L+3))p" ./log/build02.log \
         | grep -E "spill|Used [0-9]+ registers" && echo
   done | tee ./log/spill.log
+
+grep -rn error -A 2 ./log/build02.log | tee ./log/error.log

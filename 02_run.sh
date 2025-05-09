@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+./01_build.sh
+
 ./build/bin/traccc_throughput_mt_cuda \
   --detector-file=geometries/odd/odd-detray_geometry_detray.json \
   --material-file=geometries/odd/odd-detray_material_detray.json \
