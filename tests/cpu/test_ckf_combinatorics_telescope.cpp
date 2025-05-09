@@ -162,6 +162,10 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
             host_finding_limit(host_det, field, measurements_view, seeds_view);
 
         // Make sure that the number of found tracks = n_track ^ (n_planes + 1)
+
+        std::cout << n_truth_tracks << std::endl;
+        std::cout << track_candidates.size() << std::endl;
+        std::cout << track_candidates_limit.size() << std::endl;
         ASSERT_TRUE(track_candidates.size() > track_candidates_limit.size());
         ASSERT_EQ(track_candidates.size(),
                   std::pow(n_truth_tracks, std::get<11>(GetParam()) + 1));
