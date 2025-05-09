@@ -28,10 +28,10 @@ traccc::memory_resource mr{host_mr, &host_mr};
 }  // namespace
 
 void fill_pattern(track_candidate_container_types::host& track_candidates,
-                  const std::size_t idx, const traccc::scalar chi2,
+                  const std::size_t idx, const traccc::scalar pval,
                   const std::vector<std::size_t>& pattern) {
 
-    track_candidates.at(idx).header.trk_quality.chi2 = chi2;
+    track_candidates.at(idx).header.trk_quality.pval = pval;
 
     auto& cands = track_candidates.at(idx).items;
     for (const auto& meas_id : pattern) {
@@ -57,9 +57,9 @@ TEST(AmbiguitySolverTests, GreedyResolverTest0) {
     track_candidate_container_types::host trk_cands;
 
     trk_cands.resize(3u);
-    fill_pattern(trk_cands, 0, 8.3f, {1, 3, 5, 11});
-    fill_pattern(trk_cands, 1, 2.2f, {6, 7, 8, 9, 10, 12});
-    fill_pattern(trk_cands, 2, 3.7f, {2, 4, 13});
+    fill_pattern(trk_cands, 0, 0.23f, {1, 3, 5, 11});
+    fill_pattern(trk_cands, 1, 0.85f, {6, 7, 8, 9, 10, 12});
+    fill_pattern(trk_cands, 2, 0.42f, {2, 4, 13});
 
     traccc::host::greedy_ambiguity_resolution_algorithm::config_type
         resolution_config;
@@ -122,8 +122,8 @@ TEST(AmbiguitySolverTests, GreedyResolverTest1) {
     track_candidate_container_types::host trk_cands;
 
     trk_cands.resize(2u);
-    fill_pattern(trk_cands, 0, 4.3f, {1, 3, 5, 11, 14, 16, 18});
-    fill_pattern(trk_cands, 1, 1.2f, {3, 5, 6, 13});
+    fill_pattern(trk_cands, 0, 0.12f, {1, 3, 5, 11, 14, 16, 18});
+    fill_pattern(trk_cands, 1, 0.53f, {3, 5, 6, 13});
 
     traccc::host::greedy_ambiguity_resolution_algorithm::config_type
         resolution_config;
@@ -166,8 +166,8 @@ TEST(AmbiguitySolverTests, GreedyResolverTest2) {
     track_candidate_container_types::host trk_cands;
 
     trk_cands.resize(2u);
-    fill_pattern(trk_cands, 0, 4.3f, {1, 3, 5, 11});
-    fill_pattern(trk_cands, 1, 1.2f, {3, 5, 6, 13});
+    fill_pattern(trk_cands, 0, 0.8f, {1, 3, 5, 11});
+    fill_pattern(trk_cands, 1, 0.9f, {3, 5, 6, 13});
 
     traccc::host::greedy_ambiguity_resolution_algorithm::config_type
         resolution_config;
@@ -178,7 +178,7 @@ TEST(AmbiguitySolverTests, GreedyResolverTest2) {
         ASSERT_EQ(res_trk_cands.size(), 1u);
 
         // The second track is selected over the first one as their relative
-        // shared measurement (2/4) is the same but its chi square is smaller
+        // shared measurement (2/4) is the same but its p-value is higher
         ASSERT_EQ(get_pattern(res_trk_cands, 0),
                   std::vector<std::size_t>({3, 5, 6, 13}));
     }
@@ -188,12 +188,12 @@ TEST(AmbiguitySolverTests, GreedyResolverTest3) {
 
     track_candidate_container_types::host trk_cands;
     trk_cands.resize(6u);
-    fill_pattern(trk_cands, 0, 5.3f, {1, 3, 5, 11});
-    fill_pattern(trk_cands, 1, 2.4f, {2, 6});
-    fill_pattern(trk_cands, 2, 2.5f, {3, 6, 12, 14, 19, 21});
-    fill_pattern(trk_cands, 3, 13.3f, {2, 7, 11, 13, 16});
-    fill_pattern(trk_cands, 4, 4.1f, {1, 7, 8});
-    fill_pattern(trk_cands, 5, 1.1f, {1, 3, 11, 22});
+    fill_pattern(trk_cands, 0, 0.2f, {1, 3, 5, 11});
+    fill_pattern(trk_cands, 1, 0.5f, {2, 6});
+    fill_pattern(trk_cands, 2, 0.4f, {3, 6, 12, 14, 19, 21});
+    fill_pattern(trk_cands, 3, 0.1f, {2, 7, 11, 13, 16});
+    fill_pattern(trk_cands, 4, 0.3f, {1, 7, 8});
+    fill_pattern(trk_cands, 5, 0.6f, {1, 3, 11, 22});
 
     traccc::host::greedy_ambiguity_resolution_algorithm::config_type
         resolution_config;
@@ -239,10 +239,10 @@ TEST(AmbiguitySolverTests, GreedyResolverTest4) {
 
         std::uniform_int_distribution<std::size_t> track_length_dist(1, 20);
         std::uniform_int_distribution<std::size_t> meas_id_dist(0, 10000);
-        std::uniform_real_distribution<traccc::scalar> chi2_dist(0.0f, 10.0f);
+        std::uniform_real_distribution<traccc::scalar> pval_dist(0.0f, 1.0f);
 
         const std::size_t track_length = track_length_dist(gen);
-        const traccc::scalar chi2 = chi2_dist(gen);
+        const traccc::scalar pval = pval_dist(gen);
         std::vector<std::size_t> pattern;
         while (pattern.size() < track_length) {
 
@@ -264,7 +264,7 @@ TEST(AmbiguitySolverTests, GreedyResolverTest4) {
         ASSERT_EQ(pattern.size(), track_length);
 
         // Fill the pattern
-        fill_pattern(trk_cands, i, chi2, pattern);
+        fill_pattern(trk_cands, i, pval, pattern);
     }
 
     traccc::host::greedy_ambiguity_resolution_algorithm::config_type
