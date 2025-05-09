@@ -300,14 +300,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
                                                                      m_mr.main};
     m_copy.get().setup(temp_sorted_ids_buffer)->ignore();
 
-    // (DELETE ME) Host buffers for debugging
-    vecmem::data::vector_buffer<unsigned int> sorted_ids_host_buffer{
-        n_accepted, *m_mr.host};
-    vecmem::data::vector_buffer<unsigned int> temp_sorted_ids_host_buffer{
-        n_accepted, *m_mr.host};
-
     // track id to the index of sorted ids
-    vecmem::data::vector_buffer<unsigned int> inverted_ids_buffer{n_accepted,
+    vecmem::data::vector_buffer<unsigned int> inverted_ids_buffer{n_tracks,
                                                                   m_mr.main};
     m_copy.get().setup(inverted_ids_buffer)->ignore();
 
@@ -409,58 +403,13 @@ greedy_ambiguity_resolution_algorithm::operator()(
                     .temp_sorted_ids_view = temp_sorted_ids_buffer,
                 });
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
-            /*
-            // Print out
-            cudaMemcpyAsync(sorted_ids_host_buffer.ptr(),
-                            sorted_ids_buffer.ptr(),
-                            sizeof(unsigned int) * update_res.n_accepted,
-                            cudaMemcpyDeviceToHost, stream);
-            vecmem::device_vector<unsigned int> sorted_ids(
-                sorted_ids_host_buffer);
 
-            cudaMemcpyAsync(temp_sorted_ids_host_buffer.ptr(),
-                            temp_sorted_ids_buffer.ptr(),
-                            sizeof(unsigned int) * update_res.n_accepted,
-                            cudaMemcpyDeviceToHost, stream);
-            vecmem::device_vector<unsigned int> temp_sorted_ids(
-                temp_sorted_ids_host_buffer);
-            */
-            /*
-            printf("Iter %d %d \n", iter, update_res.max_shared);
-
-            for (int i = 0; i < update_res.n_accepted; i++) {
-                printf("%d ", sorted_ids[i]);
-            }
-            printf("\n");
-
-            for (int i = 0; i < update_res.n_accepted; i++) {
-                printf("%d ", temp_sorted_ids[i]);
-            }
-            printf("\n");
-            */
             kernels::gather_tracks<<<nBlocks, nThreads, 0, stream>>>(
                 device::gather_tracks_payload{
                     .update_res = update_res_device.get(),
                     .temp_sorted_ids_view = temp_sorted_ids_buffer,
                     .sorted_ids_view = sorted_ids_buffer});
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
-
-            /*
-            sorted_ids_host_buffer = std::move(temp_sorted_ids_host_buffer);
-            sorted_ids_buffer = std::move(temp_sorted_ids_buffer);
-
-            for (int i = 0; i < update_res.n_accepted; i++) {
-                printf("%d ", sorted_ids[i]);
-            }
-            printf("\n");
-            */
-
-            /*
-            // Keep the sorted ids vector sorted
-            thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
-                         sorted_ids_buffer.ptr() + update_res.n_accepted,
-                         trk_comp);
-            */
         }
     }
 

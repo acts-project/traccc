@@ -38,8 +38,6 @@ TRACCC_HOST_DEVICE inline void fill_tracks_per_measurement(
 
     const unsigned int id = accepted_ids.at(globalIndex);
 
-    // for (const auto& meas_id : meas_ids[id]) {
-
     for (unsigned int i = 0; i < meas_ids[id].size(); i++) {
         auto meas_id = meas_ids[id][i];
 
