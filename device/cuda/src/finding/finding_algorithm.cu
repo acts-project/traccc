@@ -364,7 +364,12 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                         .tips_view              = tips_buffer,
                         .n_tracks_per_seed_view = n_tracks_per_seed_buffer};
 
-                void* coopArgs[] = { &m_cfg, &payload };
+                /*  runtime-API 需要 void**，
+                    而 m_cfg 為 const finding_config，必須顯式去掉 const。
+                    payload 為 non-const，則可直接隱式轉成 void*                                  */
+                void* coopArgs[] = {
+                    const_cast<void*>(static_cast<const void*>(&m_cfg)),
+                    &payload };
 
                 TRACCC_CUDA_ERROR_CHECK(cudaLaunchCooperativeKernel(
                     reinterpret_cast<void*>(

@@ -1,183 +1,183 @@
 [  0%] Building CXX object _deps/tbb-build/src/tbbmalloc/CMakeFiles/tbbmalloc.dir/backend.cpp.o
+[  0%] Building CXX object _deps/tbb-build/src/tbbbind/CMakeFiles/tbbbind_2_5.dir/tbb_bind.cpp.o
+[  0%] Building CXX object _deps/tbb-build/src/tbbmalloc/CMakeFiles/tbbmalloc.dir/frontend.cpp.o
+[  0%] Building CXX object _deps/tbb-build/src/tbbmalloc/CMakeFiles/tbbmalloc.dir/backref.cpp.o
+[  0%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/allocator.cpp.o
+[  0%] Building CXX object _deps/tbb-build/src/tbbmalloc/CMakeFiles/tbbmalloc.dir/tbbmalloc.cpp.o
+[  0%] Building CXX object _deps/tbb-build/src/tbbmalloc/CMakeFiles/tbbmalloc.dir/large_objects.cpp.o
+[  0%] Building CXX object _deps/tbb-build/src/tbbmalloc/CMakeFiles/tbbmalloc.dir/__/tbb/itt_notify.cpp.o
 [  1%] Building CXX object _deps/googletest-build/googletest/CMakeFiles/gtest.dir/src/gtest-all.cc.o
-[  1%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/address_waiter.cpp.o
-[  1%] Building CXX object _deps/tbb-build/src/tbbmalloc/CMakeFiles/tbbmalloc.dir/backref.cpp.o
-[  1%] Building CXX object _deps/tbb-build/src/tbbmalloc/CMakeFiles/tbbmalloc.dir/frontend.cpp.o
-[  1%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/arena.cpp.o
-[  1%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/allocator.cpp.o
-[  1%] Building CXX object _deps/tbb-build/src/tbbmalloc/CMakeFiles/tbbmalloc.dir/large_objects.cpp.o
-[  1%] Building CXX object _deps/tbb-build/src/tbbmalloc/CMakeFiles/tbbmalloc.dir/tbbmalloc.cpp.o
-[  1%] Building CXX object _deps/tbb-build/src/tbbmalloc/CMakeFiles/tbbmalloc.dir/__/tbb/itt_notify.cpp.o
-[  1%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark.cc.o
-[  1%] Building CXX object examples/utils/CMakeFiles/traccc_utils.dir/src/printable.cpp.o
-[  1%] Building CXX object _deps/tbb-build/src/tbbbind/CMakeFiles/tbbbind_2_5.dir/tbb_bind.cpp.o
-[  1%] Built target traccc_benchmarks_common
-[  1%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/allocator.cpp.o
-[  1%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_api_internal.cc.o
-[  1%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/ActsVersion.cpp.o
 [  1%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/details/is_aligned.cpp.o
-[  1%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/EventData/PrintParameters.cpp.o
-[  1%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/EventData/TrackParameters.cpp.o
-[  1%] Linking CXX shared library ../../lib/libtraccc_utils.so
-[  1%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/EventData/TransformationHelpers.cpp.o
 [  1%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/details/memory_resource_base.cpp.o
-[  1%] Built target traccc_utils
+[  1%] Building CXX object examples/utils/CMakeFiles/traccc_utils.dir/src/printable.cpp.o
+[  1%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/address_waiter.cpp.o
+[  1%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark.cc.o
+[  1%] Built target traccc_benchmarks_common
+[  1%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/ActsVersion.cpp.o
 [  2%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/host_memory_resource.cpp.o
 [  2%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/details/arena_memory_resource_impl.cpp.o
 [  2%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/arena_memory_resource.cpp.o
-[  2%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/arena_slot.cpp.o
-[  2%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/concurrent_bounded_queue.cpp.o
+[  2%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/EventData/PrintParameters.cpp.o
 [  2%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/details/binary_page_memory_resource_impl.cpp.o
-[  3%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/binary_page_memory_resource.cpp.o
-[  3%] Linking CXX shared library ../../../../gnu_13.3_cxx20_64_relwithdebinfo/libtbbbind_2_5.so
-[  3%] Built target tbbbind_2_5
-[  3%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/details/pool_memory_resource_impl.cpp.o
-[  3%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_name.cc.o
-[  3%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_register.cc.o
+[  2%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/binary_page_memory_resource.cpp.o
+[  2%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/details/pool_memory_resource_impl.cpp.o
+[  2%] Linking CXX shared library ../../lib/libtraccc_utils.so
+[  2%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_api_internal.cc.o
+[  2%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_name.cc.o
+[  2%] Built target traccc_utils
+[  2%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/allocator.cpp.o
+[  2%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_register.cc.o
+[  2%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/pool_memory_resource.cpp.o
+[  3%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/details/choice_memory_resource_impl.cpp.o
+[  3%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/choice_memory_resource.cpp.o
 [  5%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_runner.cc.o
-[  5%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/pool_memory_resource.cpp.o
-[  6%] Linking C shared library ../../../../gnu_13.3_cxx20_64_relwithdebinfo/libtbbmalloc.so
-[  6%] Built target tbbmalloc
-[  6%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/dynamic_link.cpp.o
-[  7%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/exception.cpp.o
-[  8%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/details/choice_memory_resource_impl.cpp.o
-[  8%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/check.cc.o
-[  8%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/choice_memory_resource.cpp.o
-[  8%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/EventData/CorrectedTransformationFreeToBound.cpp.o
-[  8%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/EventData/TrackStatePropMask.cpp.o
-[  8%] Building CXX object _deps/tbb-build/src/tbbmalloc_proxy/CMakeFiles/tbbmalloc_proxy.dir/function_replacement.cpp.o
-[  8%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/governor.cpp.o
-[  8%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/global_control.cpp.o
-[  8%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/itt_notify.cpp.o
-[  8%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/colorprint.cc.o
-[  8%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/details/coalescing_memory_resource_impl.cpp.o
-[  8%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/EventData/VectorMultiTrajectory.cpp.o
-[ 10%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/EventData/VectorTrackContainer.cpp.o
-[ 10%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/EventData/TrackParameterHelpers.cpp.o
-[ 10%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/coalescing_memory_resource.cpp.o
-[ 10%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/details/conditional_memory_resource_impl.cpp.o
-[ 10%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/commandlineflags.cc.o
-[ 10%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Definitions/Common.cpp.o
-[ 10%] Building CXX object _deps/tbb-build/src/tbbmalloc_proxy/CMakeFiles/tbbmalloc_proxy.dir/proxy.cpp.o
-[ 10%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Definitions/Direction.cpp.o
-[ 10%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Definitions/ParticleData.cpp.o
-[ 10%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/conditional_memory_resource.cpp.o
-[ 10%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/detail/BlueprintHelper.cpp.o
-[ 10%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/main.cpp.o
-[ 10%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/details/contiguous_memory_resource_impl.cpp.o
-[ 11%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/contiguous_memory_resource.cpp.o
-[ 11%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/details/debug_memory_resource_impl.cpp.o
-[ 11%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/detail/BlueprintDrawer.cpp.o
-[ 12%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/detail/CuboidalDetectorHelper.cpp.o
-[ 12%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/debug_memory_resource.cpp.o
-[ 12%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/detail/CylindricalDetectorHelper.cpp.o
-[ 12%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/detail/DetectorVolumeConsistency.cpp.o
-[ 12%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/identity_memory_resource.cpp.o
-[ 12%] Linking CXX shared library ../../../../gnu_13.3_cxx20_64_relwithdebinfo/libtbbmalloc_proxy.so
-[ 12%] Built target tbbmalloc_proxy
-[ 12%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/details/instrumenting_memory_resource_impl.cpp.o
-[ 12%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/instrumenting_memory_resource.cpp.o
-[ 12%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/detail/PortalHelper.cpp.o
-[ 12%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/terminal_memory_resource.cpp.o
-[ 12%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/complexity.cc.o
-[ 12%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/detail/ProtoMaterialHelper.cpp.o
-[ 12%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/market.cpp.o
-[ 13%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/synchronized_memory_resource.cpp.o
-[ 13%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/utils/copy.cpp.o
-[ 13%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/utils/memory_monitor.cpp.o
-[ 13%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/detail/SupportSurfacesHelper.cpp.o
-[ 13%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/detail/IndexedGridFiller.cpp.o
-[ 13%] Linking CXX shared library ../../../lib/libvecmem_core.so
-[ 13%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/console_reporter.cc.o
-[ 13%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/tcm_adaptor.cpp.o
-[ 13%] Built target vecmem_core
-[ 15%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/misc.cpp.o
-[ 15%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/counter.cc.o
+[  6%] Linking CXX shared library ../../../../gnu_13.3_cxx20_64_relwithdebinfo/libtbbbind_2_5.so
+[  6%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/details/coalescing_memory_resource_impl.cpp.o
+[  6%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/coalescing_memory_resource.cpp.o
+[  6%] Built target tbbbind_2_5
+[  6%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/details/conditional_memory_resource_impl.cpp.o
+[  6%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/conditional_memory_resource.cpp.o
+[  6%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/details/contiguous_memory_resource_impl.cpp.o
+[  6%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/arena.cpp.o
+[  7%] Linking C shared library ../../../../gnu_13.3_cxx20_64_relwithdebinfo/libtbbmalloc.so
+[  8%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/contiguous_memory_resource.cpp.o
+[  8%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/details/debug_memory_resource_impl.cpp.o
+[  8%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/debug_memory_resource.cpp.o
+[  8%] Built target tbbmalloc
+[  8%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/identity_memory_resource.cpp.o
+[  8%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/details/instrumenting_memory_resource_impl.cpp.o
+[  8%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/instrumenting_memory_resource.cpp.o
+[  8%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/terminal_memory_resource.cpp.o
+[ 10%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/memory/synchronized_memory_resource.cpp.o
+[ 10%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/EventData/TrackParameters.cpp.o
+[ 10%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/utils/copy.cpp.o
+[ 10%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/arena_slot.cpp.o
+[ 10%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/concurrent_bounded_queue.cpp.o
+[ 10%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/dynamic_link.cpp.o
+[ 10%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/EventData/TransformationHelpers.cpp.o
+[ 10%] Building CXX object _deps/tbb-build/src/tbbmalloc_proxy/CMakeFiles/tbbmalloc_proxy.dir/function_replacement.cpp.o
+[ 11%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/exception.cpp.o
+[ 11%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/governor.cpp.o
+[ 11%] Building CXX object _deps/tbb-build/src/tbbmalloc_proxy/CMakeFiles/tbbmalloc_proxy.dir/proxy.cpp.o
+[ 11%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/check.cc.o
+[ 11%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/global_control.cpp.o
+[ 11%] Building CXX object _deps/vecmem-build/core/CMakeFiles/vecmem_core.dir/src/utils/memory_monitor.cpp.o
+[ 11%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/itt_notify.cpp.o
+[ 11%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/main.cpp.o
+[ 11%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/colorprint.cc.o
+[ 11%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/commandlineflags.cc.o
+[ 11%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/complexity.cc.o
+[ 11%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/market.cpp.o
+[ 11%] Linking CXX shared library ../../../../gnu_13.3_cxx20_64_relwithdebinfo/libtbbmalloc_proxy.so
+[ 11%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/EventData/CorrectedTransformationFreeToBound.cpp.o
+[ 11%] Built target tbbmalloc_proxy
+[ 11%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/console_reporter.cc.o
+[ 11%] Linking CXX shared library ../../../lib/libvecmem_core.so
+[ 11%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/EventData/TrackStatePropMask.cpp.o
+[ 11%] Built target vecmem_core
+[ 11%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/EventData/VectorMultiTrajectory.cpp.o
+[ 11%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/tcm_adaptor.cpp.o
+[ 12%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/misc.cpp.o
+[ 12%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/misc_ex.cpp.o
+[ 12%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/observer_proxy.cpp.o
+[ 12%] Building CXX object _deps/vecmem-build/cuda/CMakeFiles/vecmem_cuda.dir/src/memory/device_memory_resource.cpp.o
+[ 12%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/counter.cc.o
+[ 12%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/parallel_pipeline.cpp.o
+[ 13%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/EventData/VectorTrackContainer.cpp.o
+[ 13%] Building CXX object _deps/vecmem-build/cuda/CMakeFiles/vecmem_cuda.dir/src/memory/host_memory_resource.cpp.o
+[ 13%] Building CXX object _deps/vecmem-build/cuda/CMakeFiles/vecmem_cuda.dir/src/memory/managed_memory_resource.cpp.o
+[ 15%] Building CXX object _deps/vecmem-build/cuda/CMakeFiles/vecmem_cuda.dir/src/utils/cuda/copy.cpp.o
+[ 15%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/EventData/TrackParameterHelpers.cpp.o
+[ 15%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Definitions/Common.cpp.o
+[ 15%] Building CXX object _deps/vecmem-build/cuda/CMakeFiles/vecmem_cuda.dir/src/utils/cuda/async_copy.cpp.o
+[ 15%] Building CXX object _deps/vecmem-build/cuda/CMakeFiles/vecmem_cuda.dir/src/utils/cuda_error_handling.cpp.o
+[ 15%] Building CXX object _deps/vecmem-build/cuda/CMakeFiles/vecmem_cuda.dir/src/utils/cuda_wrappers.cpp.o
+[ 15%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/private_server.cpp.o
+[ 15%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Definitions/Direction.cpp.o
+[ 15%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/profiling.cpp.o
+[ 15%] Building CXX object _deps/vecmem-build/cuda/CMakeFiles/vecmem_cuda.dir/src/utils/get_device_name.cpp.o
+[ 15%] Building CXX object _deps/vecmem-build/cuda/CMakeFiles/vecmem_cuda.dir/src/utils/select_device.cpp.o
+[ 15%] Building CXX object _deps/vecmem-build/cuda/CMakeFiles/vecmem_cuda.dir/src/utils/stream_wrapper.cpp.o
+[ 15%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/rml_tbb.cpp.o
+[ 15%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Definitions/ParticleData.cpp.o
+[ 15%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/detail/BlueprintHelper.cpp.o
 [ 16%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/csv_reporter.cc.o
-[ 16%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/misc_ex.cpp.o
-[ 16%] Building CXX object _deps/vecmem-build/cuda/CMakeFiles/vecmem_cuda.dir/src/memory/device_memory_resource.cpp.o
-[ 16%] Building CXX object _deps/vecmem-build/cuda/CMakeFiles/vecmem_cuda.dir/src/memory/host_memory_resource.cpp.o
-[ 17%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/CylindricalContainerBuilder.cpp.o
-[ 17%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/json_reporter.cc.o
-[ 17%] Building CXX object _deps/vecmem-build/cuda/CMakeFiles/vecmem_cuda.dir/src/memory/managed_memory_resource.cpp.o
-[ 18%] Building CXX object _deps/vecmem-build/cuda/CMakeFiles/vecmem_cuda.dir/src/utils/cuda/copy.cpp.o
-[ 18%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/observer_proxy.cpp.o
-[ 18%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/CuboidalContainerBuilder.cpp.o
-[ 18%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/Detector.cpp.o
+[ 16%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/json_reporter.cc.o
+[ 17%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/rtm_mutex.cpp.o
+[ 17%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/detail/BlueprintDrawer.cpp.o
+[ 18%] Linking CXX shared library ../../../lib/libvecmem_cuda.so
+[ 18%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/rtm_rw_mutex.cpp.o
+[ 18%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/semaphore.cpp.o
+[ 18%] Built target vecmem_cuda
 [ 18%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/perf_counters.cc.o
-[ 18%] Building CXX object _deps/vecmem-build/cuda/CMakeFiles/vecmem_cuda.dir/src/utils/cuda/async_copy.cpp.o
+[ 18%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/small_object_pool.cpp.o
 [ 18%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/reporter.cc.o
-[ 18%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/parallel_pipeline.cpp.o
 [ 18%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/statistics.cc.o
-[ 18%] Building CXX object _deps/vecmem-build/cuda/CMakeFiles/vecmem_cuda.dir/src/utils/cuda_error_handling.cpp.o
-[ 18%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/string_util.cc.o
-[ 18%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/sysinfo.cc.o
-[ 18%] Building CXX object _deps/vecmem-build/cuda/CMakeFiles/vecmem_cuda.dir/src/utils/cuda_wrappers.cpp.o
-[ 18%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/private_server.cpp.o
-[ 18%] Building CXX object _deps/vecmem-build/cuda/CMakeFiles/vecmem_cuda.dir/src/utils/get_device_name.cpp.o
-[ 20%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/timers.cc.o
-[ 20%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/DetectorBuilder.cpp.o
-[ 20%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/DetectorVolume.cpp.o
-[ 20%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/DetectorVolumeBuilder.cpp.o
-[ 20%] Linking CXX shared library ../../../lib/libgtest.so
-[ 20%] Building CXX object _deps/vecmem-build/cuda/CMakeFiles/vecmem_cuda.dir/src/utils/select_device.cpp.o
-[ 20%] Building CXX object _deps/vecmem-build/cuda/CMakeFiles/vecmem_cuda.dir/src/utils/stream_wrapper.cpp.o
-[ 20%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/profiling.cpp.o
-[ 20%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/rml_tbb.cpp.o
-[ 20%] Built target gtest
-[ 21%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/rtm_mutex.cpp.o
-[ 21%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/rtm_rw_mutex.cpp.o
-[ 21%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/semaphore.cpp.o
+[ 20%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/detail/CuboidalDetectorHelper.cpp.o
+[ 20%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/detail/CylindricalDetectorHelper.cpp.o
+[ 20%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/string_util.cc.o
+[ 20%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/task.cpp.o
+[ 20%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/sysinfo.cc.o
+[ 21%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/timers.cc.o
+[ 21%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/task_dispatcher.cpp.o
+[ 21%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/task_group_context.cpp.o
+[ 21%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/detail/DetectorVolumeConsistency.cpp.o
+[ 21%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/detail/PortalHelper.cpp.o
+[ 21%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/detail/ProtoMaterialHelper.cpp.o
+[ 21%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/detail/SupportSurfacesHelper.cpp.o
 [ 21%] Linking CXX static library ../../../lib/libbenchmark.a
-[ 21%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/small_object_pool.cpp.o
 [ 21%] Built target benchmark
-[ 21%] Building CXX object _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/src/gmock-all.cc.o
-[ 22%] Linking CXX shared library ../../../lib/libvecmem_cuda.so
-[ 22%] Built target vecmem_cuda
-[ 22%] Building CXX object _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/src/gtest_main.cc.o
-[ 22%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/task.cpp.o
-[ 22%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/task_dispatcher.cpp.o
-[ 22%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/task_group_context.cpp.o
-[ 22%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark_main.dir/benchmark_main.cc.o
-[ 22%] Linking CXX shared library ../../../lib/libgtest_main.so
-[ 22%] Building CXX object tests/cuda/CMakeFiles/traccc_tests_cuda_main.dir/cuda_main.cpp.o
-[ 22%] Built target gtest_main
-[ 24%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/thread_dispatcher.cpp.o
-[ 24%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/IndexedRootVolumeFinderBuilder.cpp.o
+[ 21%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/detail/IndexedGridFiller.cpp.o
+[ 22%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/thread_dispatcher.cpp.o
+[ 22%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/thread_request_serializer.cpp.o
+[ 24%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/CylindricalContainerBuilder.cpp.o
+[ 24%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/threading_control.cpp.o
+[ 24%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/CuboidalContainerBuilder.cpp.o
+[ 24%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/version.cpp.o
+[ 24%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/queuing_rw_mutex.cpp.o
+[ 24%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/Detector.cpp.o
+[ 24%] Linking CXX shared library ../../../lib/libgtest.so
+[ 24%] Built target gtest
+[ 24%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark_main.dir/benchmark_main.cc.o
+[ 24%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/DetectorBuilder.cpp.o
+[ 24%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/DetectorVolume.cpp.o
+[ 24%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/DetectorVolumeBuilder.cpp.o
+[ 24%] Linking CXX shared library ../../../../gnu_13.3_cxx20_64_relwithdebinfo/libtbb.so
 [ 24%] Linking CXX static library ../../../lib/libbenchmark_main.a
 [ 24%] Built target benchmark_main
-[ 24%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/thread_request_serializer.cpp.o
+[ 24%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/IndexedRootVolumeFinderBuilder.cpp.o
+[ 24%] Built target tbb
+[ 24%] Building CXX object tests/cuda/CMakeFiles/traccc_tests_cuda_main.dir/cuda_main.cpp.o
 [ 25%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/LayerStructureBuilder.cpp.o
-[ 25%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/threading_control.cpp.o
 [ 25%] Linking CXX static library ../../lib/libtraccc_tests_cuda_main.a
 [ 25%] Built target traccc_tests_cuda_main
 [ 25%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/Portal.cpp.o
-[ 25%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/version.cpp.o
-[ 25%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/queuing_rw_mutex.cpp.o
 [ 25%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/PortalGenerators.cpp.o
 [ 25%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/ProtoDetector.cpp.o
 [ 25%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/GeometryIdGenerator.cpp.o
+[ 25%] Building CXX object _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/src/gmock-all.cc.o
 [ 25%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/VolumeStructureBuilder.cpp.o
+[ 25%] Building CXX object _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/src/gtest_main.cc.o
 [ 25%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Detector/MultiWireStructureBuilder.cpp.o
-[ 25%] Linking CXX shared library ../../../../gnu_13.3_cxx20_64_relwithdebinfo/libtbb.so
 [ 26%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Geometry/ConeLayer.cpp.o
-[ 26%] Linking CXX shared library ../../../lib/libgmock.so
-[ 26%] Built target gmock
-[ 26%] Built target tbb
+[ 26%] Linking CXX shared library ../../../lib/libgtest_main.so
+[ 26%] Built target gtest_main
 [ 26%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Geometry/ConeVolumeBounds.cpp.o
-[ 26%] Building CXX object _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/src/gmock_main.cc.o
 [ 26%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Geometry/CuboidVolumeBounds.cpp.o
 [ 26%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Geometry/CuboidVolumeBuilder.cpp.o
 [ 26%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Geometry/CutoutCylinderVolumeBounds.cpp.o
-[ 26%] Linking CXX shared library ../../../lib/libgmock_main.so
-[ 26%] Built target gmock_main
 [ 26%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Geometry/CylinderLayer.cpp.o
 [ 26%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Geometry/CylinderVolumeBounds.cpp.o
+[ 26%] Linking CXX shared library ../../../lib/libgmock.so
+[ 26%] Built target gmock
 [ 27%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Geometry/CylinderVolumeBuilder.cpp.o
 [ 27%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Geometry/CylinderVolumeHelper.cpp.o
 [ 27%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Geometry/Extent.cpp.o
 [ 27%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Geometry/KDTreeTrackingGeometryBuilder.cpp.o
 [ 27%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Geometry/DiscLayer.cpp.o
+[ 27%] Building CXX object _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/src/gmock_main.cc.o
+[ 27%] Linking CXX shared library ../../../lib/libgmock_main.so
+[ 27%] Built target gmock_main
 [ 27%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Geometry/GenericApproachDescriptor.cpp.o
 [ 27%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Geometry/GenericCuboidVolumeBounds.cpp.o
 [ 29%] Building CXX object _deps/acts-build/Core/CMakeFiles/ActsCore.dir/src/Geometry/GeometryIdentifier.cpp.o
@@ -338,100 +338,93 @@
 [ 56%] Linking CXX shared library ../lib/libActsCore.so
 [ 56%] Built target ActsCore
 [ 56%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/AlgebraJsonConverter.cpp.o
-[ 56%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/DetectorVolumeJsonConverter.cpp.o
 [ 56%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/DetectorJsonConverter.cpp.o
-[ 56%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/ExtentJsonConverter.cpp.o
-[ 56%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/IndexedSurfacesJsonConverter.cpp.o
-[ 56%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/MaterialMapJsonConverter.cpp.o
-[ 58%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/GridJsonConverter.cpp.o
-[ 58%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/JsonMaterialDecorator.cpp.o
-[ 58%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/MaterialJsonConverter.cpp.o
-[ 58%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/PortalJsonConverter.cpp.o
-[ 58%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/DetectorVolumeFinderJsonConverter.cpp.o
-[ 58%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/UtilitiesJsonConverter.cpp.o
-[ 58%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/SurfaceJsonConverter.cpp.o
-[ 59%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/SurfaceBoundsJsonConverter.cpp.o
-[ 59%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/ProtoDetectorJsonConverter.cpp.o
-[ 59%] Building CXX object core/CMakeFiles/traccc_core.dir/src/utils/logging.cpp.o
-[ 59%] Building CXX object core/CMakeFiles/traccc_core.dir/src/clusterization/sparse_ccl_algorithm.cpp.o
-[ 59%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/VolumeBoundsJsonConverter.cpp.o
-[ 60%] Building CXX object core/CMakeFiles/traccc_core.dir/src/clusterization/measurement_creation_algorithm.cpp.o
-[ 60%] Building CXX object core/CMakeFiles/traccc_core.dir/src/clusterization/measurement_sorting_algorithm.cpp.o
-[ 60%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/VolumeJsonConverter.cpp.o
-[ 60%] Building CXX object core/CMakeFiles/traccc_core.dir/src/clusterization/clusterization_algorithm.cpp.o
-[ 60%] Building CXX object core/CMakeFiles/traccc_core.dir/src/finding/combinatorial_kalman_filter_algorithm.cpp.o
-[ 60%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/AmbiguityConfigJsonConverter.cpp.o
-[ 60%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/DetrayJsonHelper.cpp.o
-[ 60%] Building CXX object core/CMakeFiles/traccc_core.dir/src/finding/combinatorial_kalman_filter_algorithm_constant_field_default_detector.cpp.o
-[ 62%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/JsonDetectorElement.cpp.o
-[ 62%] Building CXX object core/CMakeFiles/traccc_core.dir/src/finding/combinatorial_kalman_filter_algorithm_constant_field_telescope_detector.cpp.o
-[ 62%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/JsonSurfacesReader.cpp.o
-[ 62%] Building CXX object core/CMakeFiles/traccc_core.dir/src/fitting/kalman_fitting_algorithm.cpp.o
-[ 63%] Building CXX object core/CMakeFiles/traccc_core.dir/src/fitting/kalman_fitting_algorithm_constant_field_default_detector.cpp.o
-[ 63%] Building CXX object core/CMakeFiles/traccc_core.dir/src/fitting/kalman_fitting_algorithm_constant_field_telescope_detector.cpp.o
-[ 63%] Building CXX object core/CMakeFiles/traccc_core.dir/src/seeding/seed_filtering.cpp.o
-[ 63%] Building CXX object core/CMakeFiles/traccc_core.dir/src/seeding/seeding_algorithm.cpp.o
-[ 63%] Building CXX object core/CMakeFiles/traccc_core.dir/src/seeding/track_params_estimation.cpp.o
-[ 63%] Building CXX object core/CMakeFiles/traccc_core.dir/src/seeding/seed_finding.cpp.o
-[ 63%] Building CXX object core/CMakeFiles/traccc_core.dir/src/seeding/spacepoint_binning.cpp.o
-[ 64%] Building CXX object core/CMakeFiles/traccc_core.dir/src/seeding/silicon_pixel_spacepoint_formation_algorithm.cpp.o
-[ 64%] Building CXX object core/CMakeFiles/traccc_core.dir/src/seeding/silicon_pixel_spacepoint_formation_algorithm_defdet.cpp.o
-[ 64%] Building CXX object core/CMakeFiles/traccc_core.dir/src/seeding/silicon_pixel_spacepoint_formation_algorithm_teldet.cpp.o
-[ 64%] Building CXX object core/CMakeFiles/traccc_core.dir/src/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.cpp.o
+[ 58%] Building CXX object core/CMakeFiles/traccc_core.dir/src/utils/logging.cpp.o
+[ 58%] Building CXX object core/CMakeFiles/traccc_core.dir/src/clusterization/sparse_ccl_algorithm.cpp.o
+[ 58%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/DetectorVolumeJsonConverter.cpp.o
+[ 58%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/ExtentJsonConverter.cpp.o
+[ 58%] Building CXX object core/CMakeFiles/traccc_core.dir/src/clusterization/measurement_sorting_algorithm.cpp.o
+[ 59%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/GridJsonConverter.cpp.o
+[ 59%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/DetectorVolumeFinderJsonConverter.cpp.o
+[ 59%] Building CXX object core/CMakeFiles/traccc_core.dir/src/clusterization/measurement_creation_algorithm.cpp.o
+[ 59%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/IndexedSurfacesJsonConverter.cpp.o
+[ 59%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/MaterialMapJsonConverter.cpp.o
+[ 59%] Building CXX object core/CMakeFiles/traccc_core.dir/src/finding/combinatorial_kalman_filter_algorithm.cpp.o
+[ 59%] Building CXX object core/CMakeFiles/traccc_core.dir/src/clusterization/clusterization_algorithm.cpp.o
+[ 59%] Building CXX object core/CMakeFiles/traccc_core.dir/src/finding/combinatorial_kalman_filter_algorithm_constant_field_default_detector.cpp.o
+[ 59%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/JsonMaterialDecorator.cpp.o
+[ 59%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/MaterialJsonConverter.cpp.o
+[ 59%] Building CXX object core/CMakeFiles/traccc_core.dir/src/finding/combinatorial_kalman_filter_algorithm_constant_field_telescope_detector.cpp.o
+[ 59%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/PortalJsonConverter.cpp.o
+[ 59%] Building CXX object core/CMakeFiles/traccc_core.dir/src/fitting/kalman_fitting_algorithm.cpp.o
+[ 60%] Building CXX object core/CMakeFiles/traccc_core.dir/src/fitting/kalman_fitting_algorithm_constant_field_default_detector.cpp.o
+[ 60%] Building CXX object core/CMakeFiles/traccc_core.dir/src/fitting/kalman_fitting_algorithm_constant_field_telescope_detector.cpp.o
+[ 60%] Building CXX object core/CMakeFiles/traccc_core.dir/src/seeding/seed_filtering.cpp.o
+[ 60%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/ProtoDetectorJsonConverter.cpp.o
+[ 62%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/SurfaceBoundsJsonConverter.cpp.o
+[ 62%] Building CXX object core/CMakeFiles/traccc_core.dir/src/seeding/seeding_algorithm.cpp.o
+[ 62%] Building CXX object core/CMakeFiles/traccc_core.dir/src/seeding/track_params_estimation.cpp.o
+[ 62%] Building CXX object core/CMakeFiles/traccc_core.dir/src/seeding/seed_finding.cpp.o
+[ 62%] Building CXX object core/CMakeFiles/traccc_core.dir/src/seeding/spacepoint_binning.cpp.o
+[ 62%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/SurfaceJsonConverter.cpp.o
+[ 63%] Building CXX object core/CMakeFiles/traccc_core.dir/src/seeding/silicon_pixel_spacepoint_formation_algorithm.cpp.o
+[ 63%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/UtilitiesJsonConverter.cpp.o
+[ 63%] Building CXX object core/CMakeFiles/traccc_core.dir/src/seeding/silicon_pixel_spacepoint_formation_algorithm_defdet.cpp.o
+[ 63%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/VolumeBoundsJsonConverter.cpp.o
+[ 63%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/VolumeJsonConverter.cpp.o
+[ 63%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/AmbiguityConfigJsonConverter.cpp.o
+[ 63%] Building CXX object core/CMakeFiles/traccc_core.dir/src/seeding/silicon_pixel_spacepoint_formation_algorithm_teldet.cpp.o
+[ 63%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/DetrayJsonHelper.cpp.o
+[ 63%] Building CXX object core/CMakeFiles/traccc_core.dir/src/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.cpp.o
+[ 64%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/JsonDetectorElement.cpp.o
+[ 64%] Building CXX object _deps/acts-build/Plugins/Json/CMakeFiles/ActsPluginJson.dir/src/JsonSurfacesReader.cpp.o
 [ 64%] Linking CXX shared library ../lib/libtraccc_core.so
 [ 64%] Built target traccc_core
-[ 64%] Building CXX object examples/tools/CMakeFiles/traccc_convert_csv_bfield.dir/convert_csv_bfield.cpp.o
-[ 64%] Building CXX object examples/run/cpu/CMakeFiles/traccc_examples_cpu.dir/full_chain_algorithm.cpp.o
-[ 64%] Building CXX object device/cuda/CMakeFiles/traccc_cuda.dir/src/utils/cuda_error_handling.cpp.o
-[ 64%] Building CXX object device/cuda/CMakeFiles/traccc_cuda.dir/src/utils/opaque_stream.cpp.o
-[ 65%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/utils/make_prefix_sum_buff.cu.o
-[ 65%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/seeding/track_params_estimation.cu.o
-[ 65%] Building CXX object device/cuda/CMakeFiles/traccc_cuda.dir/src/utils/stream.cpp.o
-[ 65%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/seeding/spacepoint_binning.cu.o
 [ 65%] Building CXX object examples/tools/CMakeFiles/traccc_generate_constant_bfield.dir/generate_constant_bfield.cpp.o
+[ 65%] Building CXX object device/cuda/CMakeFiles/traccc_cuda.dir/src/utils/cuda_error_handling.cpp.o
+[ 65%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/utils/make_prefix_sum_buff.cu.o
+[ 65%] Building CXX object examples/tools/CMakeFiles/traccc_convert_csv_bfield.dir/convert_csv_bfield.cpp.o
+[ 65%] Building CXX object device/cuda/CMakeFiles/traccc_cuda.dir/src/utils/stream.cpp.o
+[ 65%] Building CXX object examples/run/cpu/CMakeFiles/traccc_examples_cpu.dir/full_chain_algorithm.cpp.o
+[ 65%] Building CXX object device/cuda/CMakeFiles/traccc_cuda.dir/src/utils/opaque_stream.cpp.o
 [ 65%] Building CXX object device/cuda/CMakeFiles/traccc_cuda.dir/src/utils/utils.cpp.o
+[ 65%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/seeding/track_params_estimation.cu.o
+[ 65%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/seeding/spacepoint_binning.cu.o
 [ 67%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/seeding/seed_finding.cu.o
+[ 67%] Building CXX object device/cuda/CMakeFiles/traccc_cuda.dir/src/seeding/seeding_algorithm.cpp.o
 [ 67%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/seeding/spacepoint_formation_algorithm.cu.o
 [ 67%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/clusterization/clusterization_algorithm.cu.o
-[ 67%] Building CXX object device/cuda/CMakeFiles/traccc_cuda.dir/src/seeding/seeding_algorithm.cpp.o
 [ 67%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/clusterization/measurement_sorting_algorithm.cu.o
 [ 67%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/clusterization/kernels/ccl_kernel.cu.o
 [ 67%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/finding/finding_algorithm.cu.o
 [ 68%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/finding/kernels/make_barcode_sequence.cu.o
-[ 68%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/finding/kernels/fill_sort_keys.cu.o
-[ 68%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/finding/kernels/prune_tracks.cu.o
 [ 68%] Linking CXX executable ../../bin/traccc_generate_constant_bfield
 [ 68%] Built target traccc_generate_constant_bfield
-[ 68%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/finding/kernels/build_tracks.cu.o
+[ 68%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/finding/kernels/fill_sort_keys.cu.o
 [ 68%] Linking CXX executable ../../bin/traccc_convert_csv_bfield
 [ 68%] Built target traccc_convert_csv_bfield
+[ 68%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/finding/kernels/prune_tracks.cu.o
+[ 68%] Linking CXX static library ../../../lib/libtraccc_examples_cpu.a
+[ 68%] Built target traccc_examples_cpu
+[ 68%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/finding/kernels/build_tracks.cu.o
 [ 68%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/finding/kernels/specializations/find_tracks_default_detector.cu.o
 [ 68%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/finding/kernels/specializations/apply_interaction_default_detector.cu.o
 [ 68%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/finding/kernels/specializations/propagate_to_next_surface_default_detector.cu.o
 [ 69%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/finding/kernels/specializations/propagate_stage1_default_detector.cu.o
-[ 69%] Linking CXX static library ../../../lib/libtraccc_examples_cpu.a
-[ 69%] Built target traccc_examples_cpu
 [ 69%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/finding/kernels/specializations/propagate_stage2_default_detector.cu.o
-/home/noah/project/traccc/device/cuda/src/finding/finding_algorithm.cu(367): error: a value of type "const traccc::finding_config *" cannot be used to initialize an entity of type "void *"
-                  void* coopArgs[] = { &m_cfg, &payload };
-                                       ^
-
 [ 69%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/fitting/fitting_algorithm.cu.o
-1 error detected in the compilation of "/home/noah/project/traccc/device/cuda/src/finding/finding_algorithm.cu".
-gmake[2]: *** [device/cuda/CMakeFiles/traccc_cuda.dir/build.make:270: device/cuda/CMakeFiles/traccc_cuda.dir/src/finding/finding_algorithm.cu.o] Error 2
-gmake[2]: *** Waiting for unfinished jobs....
 [ 69%] Linking CXX shared library ../../lib/libActsPluginJson.so
 [ 69%] Built target ActsPluginJson
-[ 69%] Building CXX object io/CMakeFiles/traccc_io.dir/src/data_format.cpp.o
-[ 69%] Building CXX object io/CMakeFiles/traccc_io.dir/src/read_detector.cpp.o
-[ 69%] Building CXX object io/CMakeFiles/traccc_io.dir/src/read_detector_description.cpp.o
 [ 69%] Building CXX object io/CMakeFiles/traccc_io.dir/src/read_cells.cpp.o
-[ 70%] Building CXX object io/CMakeFiles/traccc_io.dir/src/read_geometry.cpp.o
-[ 70%] Building CXX object io/CMakeFiles/traccc_io.dir/src/read_digitization_config.cpp.o
-[ 70%] Building CXX object io/CMakeFiles/traccc_io.dir/src/read_measurements.cpp.o
-[ 70%] Building CXX object io/CMakeFiles/traccc_io.dir/src/read_particles.cpp.o
-[ 70%] Building CXX object io/CMakeFiles/traccc_io.dir/src/read_spacepoints.cpp.o
+[ 69%] Building CXX object io/CMakeFiles/traccc_io.dir/src/data_format.cpp.o
+[ 69%] Building CXX object io/CMakeFiles/traccc_io.dir/src/read_detector_description.cpp.o
+[ 69%] Building CXX object io/CMakeFiles/traccc_io.dir/src/read_geometry.cpp.o
 [ 70%] Building CXX object io/CMakeFiles/traccc_io.dir/src/write.cpp.o
+[ 70%] Building CXX object io/CMakeFiles/traccc_io.dir/src/read_particles.cpp.o
+[ 70%] Building CXX object io/CMakeFiles/traccc_io.dir/src/read_detector.cpp.o
+[ 70%] Building CXX object io/CMakeFiles/traccc_io.dir/src/read_measurements.cpp.o
+[ 70%] Building CXX object io/CMakeFiles/traccc_io.dir/src/read_digitization_config.cpp.o
+[ 70%] Building CXX object io/CMakeFiles/traccc_io.dir/src/read_spacepoints.cpp.o
 [ 70%] Building CXX object io/CMakeFiles/traccc_io.dir/src/utils.cpp.o
 [ 72%] Building CXX object io/CMakeFiles/traccc_io.dir/src/details/read_surfaces.cpp.o
 [ 72%] Building CXX object io/CMakeFiles/traccc_io.dir/src/csv/make_surface_reader.cpp.o
@@ -455,17 +448,17 @@ gmake[2]: *** Waiting for unfinished jobs....
 [ 74%] Linking CXX shared library ../lib/libtraccc_io.so
 [ 74%] Built target traccc_io
 [ 74%] Building CXX object tests/CMakeFiles/traccc_tests_common.dir/common/tests/kalman_fitting_momentum_resolution_test.cpp.o
-[ 74%] Building CXX object performance/CMakeFiles/traccc_performance.dir/src/efficiency/seeding_performance_writer.cpp.o
-[ 74%] Building CXX object performance/CMakeFiles/traccc_performance.dir/src/efficiency/nseed_performance_writer.cpp.o
-[ 74%] Building CXX object performance/CMakeFiles/traccc_performance.dir/src/efficiency/track_matcher.cpp.o
-[ 74%] Building CXX object performance/CMakeFiles/traccc_performance.dir/src/resolution/res_plot_tool.cpp.o
-[ 74%] Building CXX object performance/CMakeFiles/traccc_performance.dir/src/utils/event_data.cpp.o
+[ 74%] Building CXX object tests/CMakeFiles/traccc_tests_common.dir/common/tests/kalman_fitting_test.cpp.o
+[ 74%] Building CXX object performance/CMakeFiles/traccc_performance.dir/src/efficiency/finding_performance_writer.cpp.o
 [ 75%] Building CXX object performance/CMakeFiles/traccc_performance.dir/src/resolution/fitting_performance_writer.cpp.o
-[ 75%] Building CXX object performance/CMakeFiles/traccc_performance.dir/src/efficiency/finding_performance_writer.cpp.o
 [ 75%] Building CXX object performance/CMakeFiles/traccc_performance.dir/src/efficiency/track_filter.cpp.o
-[ 75%] Building CXX object benchmarks/cpu/CMakeFiles/traccc_benchmark_cpu.dir/toy_detector_cpu.cpp.o
-[ 75%] Building CXX object tests/CMakeFiles/traccc_tests_common.dir/common/tests/kalman_fitting_test.cpp.o
 [ 75%] Building CXX object performance/CMakeFiles/traccc_performance.dir/src/resolution/stat_plot_tool.cpp.o
+[ 75%] Building CXX object performance/CMakeFiles/traccc_performance.dir/src/resolution/res_plot_tool.cpp.o
+[ 75%] Building CXX object performance/CMakeFiles/traccc_performance.dir/src/efficiency/track_matcher.cpp.o
+[ 75%] Building CXX object performance/CMakeFiles/traccc_performance.dir/src/efficiency/nseed_performance_writer.cpp.o
+[ 75%] Building CXX object performance/CMakeFiles/traccc_performance.dir/src/efficiency/seeding_performance_writer.cpp.o
+[ 75%] Building CXX object benchmarks/cpu/CMakeFiles/traccc_benchmark_cpu.dir/toy_detector_cpu.cpp.o
+[ 75%] Building CXX object performance/CMakeFiles/traccc_performance.dir/src/utils/event_data.cpp.o
 [ 75%] Building CXX object performance/CMakeFiles/traccc_performance.dir/src/utils/helpers.cpp.o
 [ 77%] Building CXX object performance/CMakeFiles/traccc_performance.dir/src/performance/details/is_same_angle.cpp.o
 [ 77%] Building CXX object performance/CMakeFiles/traccc_performance.dir/src/performance/details/is_same_scalar.cpp.o
@@ -476,14 +469,14 @@ gmake[2]: *** Waiting for unfinished jobs....
 [ 77%] Linking CXX shared library ../lib/libtraccc_performance.so
 [ 77%] Built target traccc_performance
 [ 77%] Building CXX object examples/options/CMakeFiles/traccc_options.dir/src/details/interface.cpp.o
-[ 77%] Building CXX object examples/options/CMakeFiles/traccc_options.dir/src/clusterization.cpp.o
 [ 77%] Building CXX object examples/options/CMakeFiles/traccc_options.dir/src/generation.cpp.o
-[ 77%] Building CXX object examples/options/CMakeFiles/traccc_options.dir/src/output_data.cpp.o
+[ 77%] Building CXX object examples/options/CMakeFiles/traccc_options.dir/src/clusterization.cpp.o
+[ 77%] Building CXX object examples/options/CMakeFiles/traccc_options.dir/src/input_data.cpp.o
+[ 78%] Building CXX object examples/options/CMakeFiles/traccc_options.dir/src/accelerator.cpp.o
+[ 78%] Building CXX object examples/options/CMakeFiles/traccc_options.dir/src/performance.cpp.o
+[ 78%] Building CXX object examples/options/CMakeFiles/traccc_options.dir/src/output_data.cpp.o
+[ 78%] Building CXX object examples/options/CMakeFiles/traccc_options.dir/src/detector.cpp.o
 [ 79%] Building CXX object examples/options/CMakeFiles/traccc_options.dir/src/program_options.cpp.o
-[ 79%] Building CXX object examples/options/CMakeFiles/traccc_options.dir/src/accelerator.cpp.o
-[ 79%] Building CXX object examples/options/CMakeFiles/traccc_options.dir/src/performance.cpp.o
-[ 79%] Building CXX object examples/options/CMakeFiles/traccc_options.dir/src/input_data.cpp.o
-[ 79%] Building CXX object examples/options/CMakeFiles/traccc_options.dir/src/detector.cpp.o
 [ 79%] Building CXX object examples/options/CMakeFiles/traccc_options.dir/src/telescope_detector.cpp.o
 [ 79%] Building CXX object examples/options/CMakeFiles/traccc_options.dir/src/threading.cpp.o
 [ 79%] Building CXX object examples/options/CMakeFiles/traccc_options.dir/src/throughput.cpp.o
@@ -492,7 +485,6 @@ gmake[2]: *** Waiting for unfinished jobs....
 [ 79%] Building CXX object examples/options/CMakeFiles/traccc_options.dir/src/track_propagation.cpp.o
 [ 81%] Building CXX object examples/options/CMakeFiles/traccc_options.dir/src/track_resolution.cpp.o
 [ 81%] Building CXX object examples/options/CMakeFiles/traccc_options.dir/src/track_seeding.cpp.o
-[ 81%] Building CXX object examples/options/CMakeFiles/traccc_options.dir/src/truth_finding.cpp.o
 In file included from /home/noah/.local/src/miniconda3/envs/traccc_env/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/specfun.h:43,
                  from /home/noah/.local/src/miniconda3/envs/traccc_env/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/cmath:3699,
                  from /home/noah/project/traccc/tests/common/tests/kalman_fitting_momentum_resolution_test.cpp:8:
@@ -512,79 +504,123 @@ In static member function 'static void std::__copy_move<false, false, std::rando
 /home/noah/.local/src/miniconda3/envs/traccc_env/lib/gcc/x86_64-conda-linux-gnu/13.3.0/include/c++/bits/stl_algobase.h:398:17: warning: potential null pointer dereference [-Wnull-dereference]
   398 |         { *__to = *__from; }
       |           ~~~~~~^~~~~~~~~
+[ 81%] Building CXX object examples/options/CMakeFiles/traccc_options.dir/src/truth_finding.cpp.o
 [ 81%] Linking CXX static library ../lib/libtraccc_tests_common.a
 [ 81%] Built target traccc_tests_common
-[ 81%] Building CXX object tests/core/CMakeFiles/traccc_test_core.dir/test_pvalue.cpp.o
-[ 81%] Building CXX object tests/core/CMakeFiles/traccc_test_core.dir/test_module_map.cpp.o
-[ 81%] Building CXX object tests/core/CMakeFiles/traccc_test_core.dir/test_algorithm.cpp.o
-[ 81%] Building CXX object tests/io/CMakeFiles/traccc_test_io.dir/test_event_data.cpp.o
+[ 81%] Building CXX object tests/io/CMakeFiles/traccc_test_io.dir/test_csv.cpp.o
 [ 81%] Building CXX object tests/io/CMakeFiles/traccc_test_io.dir/test_binary.cpp.o
-[ 82%] Building CXX object tests/io/CMakeFiles/traccc_test_io.dir/test_csv.cpp.o
-[ 82%] Building CXX object tests/core/CMakeFiles/traccc_test_core.dir/particle.cpp.o
-[ 82%] Building CXX object tests/io/CMakeFiles/traccc_test_io.dir/test_json.cpp.o
-[ 83%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/compare_with_acts_seeding.cpp.o
-[ 83%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/seq_single_module.cpp.o
-[ 83%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_cca.cpp.o
-[ 83%] Linking CXX shared library ../../lib/libtraccc_options.so
-[ 83%] Built target traccc_options
-[ 83%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_ckf_combinatorics_telescope.cpp.o
+[ 81%] Building CXX object tests/io/CMakeFiles/traccc_test_io.dir/test_event_data.cpp.o
+[ 81%] Building CXX object tests/core/CMakeFiles/traccc_test_core.dir/test_algorithm.cpp.o
+[ 81%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/seq_single_module.cpp.o
+[ 82%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_cca.cpp.o
+[ 82%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/compare_with_acts_seeding.cpp.o
+[ 82%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_ckf_combinatorics_telescope.cpp.o
+[ 82%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_ckf_sparse_tracks_telescope.cpp.o
+[ 82%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_clusterization_resolution.cpp.o
+[ 82%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_copy.cpp.o
+[ 82%] Linking CXX shared library ../../lib/libtraccc_options.so
+[ 82%] Built target traccc_options
+[ 83%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_kalman_fitter_hole_count.cpp.o
+[ 83%] Building CXX object tests/core/CMakeFiles/traccc_test_core.dir/test_module_map.cpp.o
+[ 83%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_kalman_fitter_momentum_resolution.cpp.o
+[ 83%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_kalman_fitter_telescope.cpp.o
+[ 83%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_kalman_fitter_wire_chamber.cpp.o
+[ 83%] Building CXX object tests/core/CMakeFiles/traccc_test_core.dir/test_pvalue.cpp.o
+[ 83%] Building CXX object tests/core/CMakeFiles/traccc_test_core.dir/particle.cpp.o
 [ 84%] Building CXX object examples/run/cpu/CMakeFiles/traccc_seeding_example.dir/seeding_example.cpp.o
-[ 84%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_ckf_sparse_tracks_telescope.cpp.o
-[ 84%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_clusterization_resolution.cpp.o
-[ 84%] Building CXX object examples/run/cpu/CMakeFiles/traccc_seq_example.dir/seq_example.cpp.o
-[ 84%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_copy.cpp.o
-[ 84%] Linking CXX executable ../../bin/traccc_test_core
-[ 84%] Built target traccc_test_core
-[ 84%] Building CXX object examples/run/cpu/CMakeFiles/traccc_truth_finding_example.dir/truth_finding_example.cpp.o
-[ 84%] Building CXX object examples/run/cpu/CMakeFiles/traccc_truth_fitting_example.dir/truth_fitting_example.cpp.o
-[ 86%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_kalman_fitter_hole_count.cpp.o
-[ 86%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_kalman_fitter_momentum_resolution.cpp.o
-[ 86%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_kalman_fitter_telescope.cpp.o
-[ 86%] Building CXX object examples/run/cpu/CMakeFiles/traccc_throughput_st.dir/throughput_st.cpp.o
-[ 86%] Linking CXX executable ../../../bin/traccc_seeding_example
-[ 86%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_kalman_fitter_wire_chamber.cpp.o
-[ 86%] Built target traccc_seeding_example
+[ 86%] Building CXX object tests/io/CMakeFiles/traccc_test_io.dir/test_json.cpp.o
 [ 86%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_ranges.cpp.o
-[ 86%] Linking CXX executable ../../../bin/traccc_truth_finding_example
-[ 86%] Built target traccc_truth_finding_example
+[ 86%] Linking CXX executable ../../bin/traccc_test_core
+[ 86%] Built target traccc_test_core
+[ 86%] Building CXX object examples/run/cpu/CMakeFiles/traccc_seq_example.dir/seq_example.cpp.o
 [ 86%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_seeding.cpp.o
 [ 86%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_simulation.cpp.o
-[ 87%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_spacepoint_formation.cpp.o
-[ 87%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_track_params_estimation.cpp.o
-[ 87%] Linking CXX executable ../../../bin/traccc_seq_example
-[ 87%] Built target traccc_seq_example
-[ 88%] Building CXX object examples/run/cpu/CMakeFiles/traccc_throughput_mt.dir/throughput_mt.cpp.o
-[ 89%] Linking CXX executable ../../bin/traccc_benchmark_cpu
-[ 89%] Linking CXX executable ../../../bin/traccc_throughput_st
-[ 89%] Built target traccc_throughput_st
+[ 87%] Linking CXX executable ../../bin/traccc_benchmark_cpu
+[ 87%] Building CXX object examples/run/cpu/CMakeFiles/traccc_truth_finding_example.dir/truth_finding_example.cpp.o
+[ 88%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_spacepoint_formation.cpp.o
+[ 88%] Built target traccc_benchmark_cpu
+[ 88%] Building CXX object examples/run/cpu/CMakeFiles/traccc_truth_fitting_example.dir/truth_fitting_example.cpp.o
+[ 88%] Linking CXX executable ../../../bin/traccc_seeding_example
+[ 88%] Built target traccc_seeding_example
+[ 88%] Building CXX object examples/run/cpu/CMakeFiles/traccc_throughput_st.dir/throughput_st.cpp.o
+[ 88%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_track_params_estimation.cpp.o
+[ 88%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_sanity_ordered_on.cpp.o
+[ 88%] Linking CXX executable ../../../bin/traccc_seq_example
+[ 88%] Built target traccc_seq_example
+[ 89%] Building CXX object examples/run/cpu/CMakeFiles/traccc_throughput_mt.dir/throughput_mt.cpp.o
+[ 89%] Linking CXX executable ../../../bin/traccc_truth_finding_example
+[ 89%] Built target traccc_truth_finding_example
 [ 89%] Building CXX object examples/io/CMakeFiles/traccc_create_binaries.dir/create_binaries.cpp.o
-[ 89%] Built target traccc_benchmark_cpu
-[ 89%] Building CXX object examples/simulation/CMakeFiles/traccc_simulate.dir/simulate.cpp.o
-[ 89%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_sanity_ordered_on.cpp.o
 [ 89%] Building CXX object tests/cpu/CMakeFiles/traccc_test_cpu.dir/test_sanity_contiguous_on.cpp.o
+[ 89%] Linking CXX executable ../../../bin/traccc_throughput_st
+[ 89%] Building CXX object examples/simulation/CMakeFiles/traccc_simulate.dir/simulate.cpp.o
 [ 89%] Building CXX object examples/simulation/CMakeFiles/traccc_simulate_telescope.dir/simulate_telescope.cpp.o
+[ 89%] Built target traccc_throughput_st
 [ 89%] Building CXX object examples/simulation/CMakeFiles/traccc_simulate_toy_detector.dir/simulate_toy_detector.cpp.o
 [ 89%] Linking CXX executable ../../bin/traccc_create_binaries
 [ 89%] Built target traccc_create_binaries
 [ 91%] Building CXX object examples/simulation/CMakeFiles/traccc_simulate_wire_chamber.dir/simulate_wire_chamber.cpp.o
-[ 91%] Building CXX object tests/examples/CMakeFiles/traccc_test_examples.dir/test_options.cpp.o
 [ 91%] Linking CXX executable ../../../bin/traccc_throughput_mt
 [ 91%] Built target traccc_throughput_mt
+[ 91%] Building CXX object tests/examples/CMakeFiles/traccc_test_examples.dir/test_options.cpp.o
 [ 91%] Linking CXX executable ../../bin/traccc_test_examples
 [ 91%] Built target traccc_test_examples
-[ 91%] Linking CXX executable ../../bin/traccc_simulate_telescope
-[ 91%] Built target traccc_simulate_telescope
 [ 91%] Linking CXX executable ../../bin/traccc_test_io
 [ 91%] Built target traccc_test_io
-[ 91%] Linking CXX executable ../../../bin/traccc_truth_fitting_example
-[ 91%] Built target traccc_truth_fitting_example
+[ 91%] Linking CXX executable ../../bin/traccc_simulate_telescope
+[ 91%] Built target traccc_simulate_telescope
 [ 91%] Linking CXX executable ../../bin/traccc_simulate_toy_detector
+[ 91%] Linking CXX executable ../../../bin/traccc_truth_fitting_example
 [ 91%] Built target traccc_simulate_toy_detector
+[ 91%] Built target traccc_truth_fitting_example
 [ 91%] Linking CXX executable ../../bin/traccc_simulate_wire_chamber
 [ 91%] Built target traccc_simulate_wire_chamber
-[ 91%] Linking CXX executable ../../bin/traccc_simulate
-[ 91%] Built target traccc_simulate
 [ 91%] Linking CXX executable ../../bin/traccc_test_cpu
 [ 91%] Built target traccc_test_cpu
-gmake[1]: *** [CMakeFiles/Makefile2:4704: device/cuda/CMakeFiles/traccc_cuda.dir/all] Error 2
-gmake: *** [Makefile:166: all] Error 2
+[ 91%] Linking CXX executable ../../bin/traccc_simulate
+[ 91%] Built target traccc_simulate
+[ 91%] Linking CXX shared library ../../lib/libtraccc_cuda.so
+[ 91%] Built target traccc_cuda
+[ 91%] Building CXX object examples/run/cuda/CMakeFiles/traccc_seq_example_cuda.dir/seq_example_cuda.cpp.o
+[ 91%] Building CXX object examples/run/cuda/CMakeFiles/traccc_seeding_example_cuda.dir/seeding_example_cuda.cpp.o
+[ 91%] Building CXX object examples/run/cuda/CMakeFiles/traccc_examples_cuda.dir/full_chain_algorithm.cpp.o
+[ 91%] Building CXX object examples/run/cuda/CMakeFiles/traccc_truth_finding_example_cuda.dir/truth_finding_example_cuda.cpp.o
+[ 92%] Building CXX object examples/run/cuda/CMakeFiles/traccc_truth_fitting_example_cuda.dir/truth_fitting_example_cuda.cpp.o
+[ 92%] Building CXX object benchmarks/cuda/CMakeFiles/traccc_benchmark_cuda.dir/toy_detector_cuda.cpp.o
+[ 92%] Building CUDA object tests/cuda/CMakeFiles/traccc_test_cuda.dir/test_basic.cu.o
+[ 92%] Building CUDA object tests/cuda/CMakeFiles/traccc_test_cuda.dir/test_barrier.cu.o
+[ 93%] Building CXX object tests/cuda/CMakeFiles/traccc_test_cuda.dir/test_ckf_toy_detector.cpp.o
+[ 93%] Building CXX object tests/cuda/CMakeFiles/traccc_test_cuda.dir/test_cca.cpp.o
+[ 93%] Building CXX object tests/cuda/CMakeFiles/traccc_test_cuda.dir/test_ckf_combinatorics_telescope.cpp.o
+[ 93%] Building CUDA object tests/cuda/CMakeFiles/traccc_test_cuda.dir/test_copy.cu.o
+[ 93%] Building CXX object tests/cuda/CMakeFiles/traccc_test_cuda.dir/test_clusterization.cpp.o
+[ 93%] Building CXX object tests/cuda/CMakeFiles/traccc_test_cuda.dir/test_kalman_fitter_telescope.cpp.o
+[ 94%] Building CUDA object tests/cuda/CMakeFiles/traccc_test_cuda.dir/test_thrust.cu.o
+[ 94%] Building CXX object tests/cuda/CMakeFiles/traccc_test_cuda.dir/test_spacepoint_formation.cpp.o
+[ 94%] Building CUDA object tests/cuda/CMakeFiles/traccc_test_cuda.dir/test_sync.cu.o
+[ 94%] Building CUDA object tests/cuda/CMakeFiles/traccc_test_cuda.dir/test_array_wrapper.cu.o
+[ 94%] Building CUDA object tests/cuda/CMakeFiles/traccc_test_cuda.dir/test_mutex.cu.o
+[ 94%] Building CUDA object tests/cuda/CMakeFiles/traccc_test_cuda.dir/test_unique_lock.cu.o
+[ 94%] Building CUDA object tests/cuda/CMakeFiles/traccc_test_cuda.dir/test_sanity_contiguous_on.cu.o
+[ 94%] Building CUDA object tests/cuda/CMakeFiles/traccc_test_cuda.dir/test_sanity_ordered_on.cu.o
+[ 96%] Building CUDA object tests/cuda/CMakeFiles/traccc_test_cuda.dir/test_sort.cu.o
+[ 97%] Linking CXX static library ../../../lib/libtraccc_examples_cuda.a
+[ 97%] Linking CXX executable ../../../bin/traccc_truth_finding_example_cuda
+[ 97%] Built target traccc_examples_cuda
+[ 97%] Building CXX object examples/run/cuda/CMakeFiles/traccc_throughput_mt_cuda.dir/throughput_mt.cpp.o
+[ 97%] Building CXX object examples/run/cuda/CMakeFiles/traccc_throughput_st_cuda.dir/throughput_st.cpp.o
+[ 97%] Built target traccc_truth_finding_example_cuda
+[ 97%] Linking CXX executable ../../../bin/traccc_seeding_example_cuda
+[ 97%] Built target traccc_seeding_example_cuda
+[ 98%] Linking CXX executable ../../../bin/traccc_throughput_st_cuda
+[ 98%] Built target traccc_throughput_st_cuda
+[ 98%] Linking CXX executable ../../../bin/traccc_throughput_mt_cuda
+[ 98%] Built target traccc_throughput_mt_cuda
+[100%] Linking CXX executable ../../../bin/traccc_seq_example_cuda
+[100%] Built target traccc_seq_example_cuda
+[100%] Linking CXX executable ../../bin/traccc_benchmark_cuda
+[100%] Built target traccc_benchmark_cuda
+[100%] Linking CXX executable ../../../bin/traccc_truth_fitting_example_cuda
+[100%] Built target traccc_truth_fitting_example_cuda
+[100%] Linking CXX executable ../../bin/traccc_test_cuda
+[100%] Built target traccc_test_cuda

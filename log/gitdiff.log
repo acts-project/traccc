@@ -1,8 +1,8 @@
 diff --git a/device/cuda/src/finding/finding_algorithm.cu b/device/cuda/src/finding/finding_algorithm.cu
-index 7666bec6..8d1347ac 100644
+index 7666bec6..993711ca 100644
 --- a/device/cuda/src/finding/finding_algorithm.cu
 +++ b/device/cuda/src/finding/finding_algorithm.cu
-@@ -347,28 +347,36 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
+@@ -347,28 +347,41 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                  const unsigned int nThreads = m_warp_size * 2;
                  const unsigned int nBlocks =
                      (n_candidates + nThreads - 1) / nThreads;
@@ -28,7 +28,12 @@ index 7666bec6..8d1347ac 100644
 +                        .tips_view              = tips_buffer,
 +                        .n_tracks_per_seed_view = n_tracks_per_seed_buffer};
 +
-+                void* coopArgs[] = { &m_cfg, &payload };
++                /*  runtime-API 需要 void**，
++                    而 m_cfg 為 const finding_config，必須顯式去掉 const。
++                    payload 為 non-const，則可直接隱式轉成 void*                                  */
++                void* coopArgs[] = {
++                    const_cast<void*>(static_cast<const void*>(&m_cfg)),
++                    &payload };
 +
 +                TRACCC_CUDA_ERROR_CHECK(cudaLaunchCooperativeKernel(
 +                    reinterpret_cast<void*>(
@@ -57,36 +62,3 @@ index 7666bec6..8d1347ac 100644
                  m_stream.synchronize();
  
                  /* ---------- Stage-2：Covariance 更新 ---------- */
-diff --git a/device/cuda/src/finding/kernels/propagate_stage1.cuh b/device/cuda/src/finding/kernels/propagate_stage1.cuh
-index 5c6f4591..f1ef7637 100644
---- a/device/cuda/src/finding/kernels/propagate_stage1.cuh
-+++ b/device/cuda/src/finding/kernels/propagate_stage1.cuh
-@@ -11,6 +11,10 @@
- #include "traccc/finding/device/propagate_to_next_surface.hpp"
- #include "traccc/finding/finding_config.hpp"
- 
-+// ─── Cooperative-groups ────────────────────────────────────────────────────────
-+#include <cooperative_groups.h>
-+namespace cg = cooperative_groups;
-+
- namespace traccc::cuda::kernels {
- 
- template <typename propagator_t, typename bfield_t>
-@@ -18,8 +22,16 @@ __global__ void propagate_stage1(
-     const finding_config cfg,
-     device::propagate_to_next_surface_payload<propagator_t, bfield_t> payload) {
- 
-+    // (1) coarse stepping  ── regs 60–80, memory-bound
-     device::propagate_stage1<propagator_t, bfield_t>(
-         details::global_index1(), cfg, payload);
-+
-+    // (2) grid-wide barrier so EVERY block finishes before we touch covariance
-+    cg::this_grid().sync();
-+
-+    // (3) high-accuracy covariance update  ── regs 90-110, math-bound
-+    device::propagate_stage2<propagator_t, bfield_t>(
-+        details::global_index1(), cfg, payload);
- }
- 
- }  // namespace traccc::cuda::kernels
-\ No newline at end of file

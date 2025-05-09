@@ -1,15 +1,7 @@
-112:[ 18%] Building CXX object _deps/vecmem-build/cuda/CMakeFiles/vecmem_cuda.dir/src/utils/cuda_error_handling.cpp.o
-113-[ 18%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/string_util.cc.o
-114-[ 18%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/sysinfo.cc.o
+93:[ 15%] Building CXX object _deps/vecmem-build/cuda/CMakeFiles/vecmem_cuda.dir/src/utils/cuda_error_handling.cpp.o
+94-[ 15%] Building CXX object _deps/vecmem-build/cuda/CMakeFiles/vecmem_cuda.dir/src/utils/cuda_wrappers.cpp.o
+95-[ 15%] Building CXX object _deps/tbb-build/src/tbb/CMakeFiles/tbb.dir/private_server.cpp.o
 --
-385:[ 64%] Building CXX object device/cuda/CMakeFiles/traccc_cuda.dir/src/utils/cuda_error_handling.cpp.o
-386-[ 64%] Building CXX object device/cuda/CMakeFiles/traccc_cuda.dir/src/utils/opaque_stream.cpp.o
-387-[ 65%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/utils/make_prefix_sum_buff.cu.o
---
-415:/home/noah/project/traccc/device/cuda/src/finding/finding_algorithm.cu(367): error: a value of type "const traccc::finding_config *" cannot be used to initialize an entity of type "void *"
-416-                  void* coopArgs[] = { &m_cfg, &payload };
-417-                                       ^
---
-420:1 error detected in the compilation of "/home/noah/project/traccc/device/cuda/src/finding/finding_algorithm.cu".
-421-gmake[2]: *** [device/cuda/CMakeFiles/traccc_cuda.dir/build.make:270: device/cuda/CMakeFiles/traccc_cuda.dir/src/finding/finding_algorithm.cu.o] Error 2
-422-gmake[2]: *** Waiting for unfinished jobs....
+384:[ 65%] Building CXX object device/cuda/CMakeFiles/traccc_cuda.dir/src/utils/cuda_error_handling.cpp.o
+385-[ 65%] Building CUDA object device/cuda/CMakeFiles/traccc_cuda.dir/src/utils/make_prefix_sum_buff.cu.o
+386-[ 65%] Building CXX object examples/tools/CMakeFiles/traccc_convert_csv_bfield.dir/convert_csv_bfield.cpp.o
