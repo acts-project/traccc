@@ -1,0 +1,92 @@
+diff --git a/device/cuda/src/finding/finding_algorithm.cu b/device/cuda/src/finding/finding_algorithm.cu
+index 7666bec6..8d1347ac 100644
+--- a/device/cuda/src/finding/finding_algorithm.cu
++++ b/device/cuda/src/finding/finding_algorithm.cu
+@@ -347,28 +347,36 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
+                 const unsigned int nThreads = m_warp_size * 2;
+                 const unsigned int nBlocks =
+                     (n_candidates + nThreads - 1) / nThreads;
+-                /* ---------- Stage-1：粗步進 ---------- */
+-                kernels::propagate_stage1<
++                /* ---------- Propagate (coarse + covariance) — single cooperative kernel ---------- */
++
++                device::propagate_to_next_surface_payload<
+                     std::decay_t<propagator_type>, std::decay_t<bfield_type>>
+-                    <<<nBlocks, nThreads, 0, stream>>>(
+-                        m_cfg,
+-                        device::propagate_to_next_surface_payload<
++                    payload{
++                        .det_data               = det_view,
++                        .field_data             = field_view,
++                        .params_view            = in_params_buffer,
++                        .params_liveness_view   = param_liveness_buffer,
++                        .param_ids_view         = param_ids_buffer,
++                        .links_view             = links_buffer,
++                        .prev_links_idx         = step_to_link_idx_map[step],
++                        .step                   = step,
++                        .n_in_params            = n_candidates,
++                        .tips_view              = tips_buffer,
++                        .n_tracks_per_seed_view = n_tracks_per_seed_buffer};
++
++                void* coopArgs[] = { &m_cfg, &payload };
++
++                TRACCC_CUDA_ERROR_CHECK(cudaLaunchCooperativeKernel(
++                    reinterpret_cast<void*>(
++                        kernels::propagate_stage1<
+                             std::decay_t<propagator_type>,
+-                            std::decay_t<bfield_type>>{
+-                            .det_data = det_view,
+-                            .field_data = field_view,
+-                            .params_view = in_params_buffer,
+-                            .params_liveness_view = param_liveness_buffer,
+-                            .param_ids_view = param_ids_buffer,
+-                            .links_view = links_buffer,
+-                            .prev_links_idx = step_to_link_idx_map[step],
+-                            .step = step,
+-                            .n_in_params = n_candidates,
+-                            .tips_view = tips_buffer,
+-                            .n_tracks_per_seed_view =
+-                                n_tracks_per_seed_buffer});
++                            std::decay_t<bfield_type>>),
++                    dim3(nBlocks), dim3(nThreads), coopArgs,
++                    /*sharedMem*/ 0, stream));
++
+                 TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+ 
++                /* 保持語義：確保外推完成後才進入下一迴圈 / 下一步驟 */
+                 m_stream.synchronize();
+ 
+                 /* ---------- Stage-2：Covariance 更新 ---------- */
+diff --git a/device/cuda/src/finding/kernels/propagate_stage1.cuh b/device/cuda/src/finding/kernels/propagate_stage1.cuh
+index 5c6f4591..f1ef7637 100644
+--- a/device/cuda/src/finding/kernels/propagate_stage1.cuh
++++ b/device/cuda/src/finding/kernels/propagate_stage1.cuh
+@@ -11,6 +11,10 @@
+ #include "traccc/finding/device/propagate_to_next_surface.hpp"
+ #include "traccc/finding/finding_config.hpp"
+ 
++// ─── Cooperative-groups ────────────────────────────────────────────────────────
++#include <cooperative_groups.h>
++namespace cg = cooperative_groups;
++
+ namespace traccc::cuda::kernels {
+ 
+ template <typename propagator_t, typename bfield_t>
+@@ -18,8 +22,16 @@ __global__ void propagate_stage1(
+     const finding_config cfg,
+     device::propagate_to_next_surface_payload<propagator_t, bfield_t> payload) {
+ 
++    // (1) coarse stepping  ── regs 60–80, memory-bound
+     device::propagate_stage1<propagator_t, bfield_t>(
+         details::global_index1(), cfg, payload);
++
++    // (2) grid-wide barrier so EVERY block finishes before we touch covariance
++    cg::this_grid().sync();
++
++    // (3) high-accuracy covariance update  ── regs 90-110, math-bound
++    device::propagate_stage2<propagator_t, bfield_t>(
++        details::global_index1(), cfg, payload);
+ }
+ 
+ }  // namespace traccc::cuda::kernels
+\ No newline at end of file
