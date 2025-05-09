@@ -10,6 +10,10 @@
 // Traccc include(s).
 #include "traccc/device/concepts/barrier.hpp"
 
+// Thrust include(s).
+#include <thrust/execution_policy.h>
+#include <thrust/find.h>
+
 namespace traccc::device {
 
 TRACCC_DEVICE inline void fill_inverted_ids(

@@ -90,6 +90,11 @@ struct update_vectors_payload {
      * @brief View object to the updated track
      */
     vecmem::data::vector_view<unsigned int> updated_tracks_view;
+
+    /**
+     * @brief View object to the whether track id is updated
+     */
+    vecmem::data::vector_view<int> is_updated_view;
 };
 
 /// Function used for updating vectors

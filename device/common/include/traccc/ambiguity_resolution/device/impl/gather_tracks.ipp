@@ -18,8 +18,12 @@ TRACCC_DEVICE inline void gather_tracks(const global_index_t globalIndex,
     vecmem::device_vector<const unsigned int> temp_sorted_ids(
         payload.temp_sorted_ids_view);
     vecmem::device_vector<unsigned int> sorted_ids(payload.sorted_ids_view);
+    vecmem::device_vector<int> is_updated(payload.is_updated_view);
 
     const unsigned int n_accepted = (*payload.update_res).n_accepted;
+
+    // Reset is_updated vector
+    is_updated[globalIndex] = 0;
 
     if (globalIndex >= n_accepted) {
         return;

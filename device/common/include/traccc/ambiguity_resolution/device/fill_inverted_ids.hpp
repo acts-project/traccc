@@ -39,7 +39,6 @@ struct fill_inverted_ids_payload {
      * @brief View object to the inverted ids
      */
     vecmem::data::vector_view<unsigned int> inverted_ids_view;    
-
 };
 
 /// Function used for updating vectors

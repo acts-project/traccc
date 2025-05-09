@@ -305,6 +305,10 @@ greedy_ambiguity_resolution_algorithm::operator()(
                                                                   m_mr.main};
     m_copy.get().setup(inverted_ids_buffer)->ignore();
 
+    // Whether track id is updated after an iteration
+    vecmem::data::vector_buffer<int> is_updated_buffer{n_tracks, m_mr.main};
+    m_copy.get().setup(inverted_ids_buffer)->ignore();
+
     // Fill and sort the sorted ids vector
     thrust::copy(thrust_policy, pre_accepted_ids_buffer.ptr(),
                  pre_accepted_ids_buffer.ptr() + n_accepted,
@@ -330,7 +334,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     // Iterate over tracks
     unsigned int nThreads = m_warp_size;
-    unsigned int nBlocks = (n_accepted + nThreads - 1) / nThreads;
+    unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
 
     for (unsigned int iter = 0; iter < m_config.max_iterations; iter++) {
 
@@ -361,6 +365,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                     .rel_shared_view = rel_shared_buffer,
                     .update_res = update_res_device.get(),
                     .updated_tracks_view = updated_tracks_buffer,
+                    .is_updated_view = is_updated_buffer,
                 });
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
@@ -400,6 +405,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                     .pvals_view = pvals_buffer,
                     .update_res = update_res_device.get(),
                     .updated_tracks_view = updated_tracks_buffer,
+                    .is_updated_view = is_updated_buffer,
                     .temp_sorted_ids_view = temp_sorted_ids_buffer,
                 });
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
@@ -408,7 +414,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 device::gather_tracks_payload{
                     .update_res = update_res_device.get(),
                     .temp_sorted_ids_view = temp_sorted_ids_buffer,
-                    .sorted_ids_view = sorted_ids_buffer});
+                    .sorted_ids_view = sorted_ids_buffer,
+                    .is_updated_view = is_updated_buffer});
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
         }
     }

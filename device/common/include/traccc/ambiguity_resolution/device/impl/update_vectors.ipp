@@ -50,6 +50,7 @@ TRACCC_DEVICE inline void update_vectors(
     vecmem::device_vector<traccc::scalar> rel_shared(payload.rel_shared_view);
     vecmem::device_vector<unsigned int> updated_tracks(
         payload.updated_tracks_view);
+    vecmem::device_vector<int> is_updated(payload.is_updated_view);                
 
     if (*payload.n_accepted == 0) {
         return;
@@ -129,6 +130,7 @@ TRACCC_DEVICE inline void update_vectors(
         const unsigned int pos = num_updated_tracks.fetch_add(1);
 
         updated_tracks[pos] = tid;
+        is_updated[tid] = 1;
 
         rel_shared.at(tid) = static_cast<traccc::scalar>(n_shared.at(tid)) /
                              static_cast<traccc::scalar>(n_meas.at(tid));

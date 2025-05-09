@@ -58,6 +58,11 @@ struct rearrange_tracks_payload {
     vecmem::data::vector_view<const unsigned int> updated_tracks_view;
 
     /**
+     * @brief View object to the whether track id is updated
+     */
+    vecmem::data::vector_view<const int> is_updated_view;
+
+    /**
      * @brief View object to the temporary sorted track
      */
     vecmem::data::vector_view<unsigned int> temp_sorted_ids_view;

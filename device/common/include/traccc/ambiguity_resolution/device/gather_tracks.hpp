@@ -39,6 +39,13 @@ struct gather_tracks_payload {
      * @brief View object to the sorted track
      */
     vecmem::data::vector_view<unsigned int> sorted_ids_view;
+
+
+    /**
+     * @brief View object to the whether track id is updated
+     */
+    vecmem::data::vector_view<int> is_updated_view;
+
 };
 
 /// Function used for updating vectors
