@@ -39,30 +39,47 @@ class spacepoint : public BASE {
     /// @name Spacepoint Information
     /// @{
 
+    /// Invalid measurement index
+    static constexpr unsigned int INVALID_MEASUREMENT_INDEX =
+        std::numeric_limits<unsigned int>::max();
+
     /// The index of the measurement producing this spacepoint (non-const)
     ///
     /// @return A (non-const) vector of <tt>unsigned int</tt> values
     ///
     TRACCC_HOST_DEVICE
-    auto& measurement_index() { return BASE::template get<0>(); }
+    auto& measurement_index_1() { return BASE::template get<0>(); }
     /// The index of the measurement producing this spacepoint (const)
     ///
     /// @return A (const) vector of <tt>unsigned int</tt> values
     ///
     TRACCC_HOST_DEVICE
-    const auto& measurement_index() const { return BASE::template get<0>(); }
+    const auto& measurement_index_1() const { return BASE::template get<0>(); }
+
+    /// The index of the measurement producing this spacepoint (non-const)
+    ///
+    /// @return A (non-const) vector of <tt>unsigned int</tt> values
+    ///
+    TRACCC_HOST_DEVICE
+    auto& measurement_index_2() { return BASE::template get<1>(); }
+    /// The index of the measurement producing this spacepoint (const)
+    ///
+    /// @return A (const) vector of <tt>unsigned int</tt> values
+    ///
+    TRACCC_HOST_DEVICE
+    const auto& measurement_index_2() const { return BASE::template get<1>(); }
 
     /// Global / 3D position of the spacepoint
     ///
     /// @return A (non-const) vector of @c traccc::point3 values
     ///
-    TRACCC_HOST_DEVICE auto& global() { return BASE::template get<1>(); }
+    TRACCC_HOST_DEVICE auto& global() { return BASE::template get<2>(); }
     /// Global / 3D position of the spacepoint
     ///
     /// @return A (const) vector of @c traccc::point3 values
     ///
     TRACCC_HOST_DEVICE const auto& global() const {
-        return BASE::template get<1>();
+        return BASE::template get<2>();
     }
 
     /// The X position of the spacepoint (non-const)
@@ -123,13 +140,13 @@ class spacepoint : public BASE {
     ///
     /// @return A (non-const) vector of @c traccc::scalar values
     ///
-    TRACCC_HOST_DEVICE auto& z_variance() { return BASE::template get<2>(); }
+    TRACCC_HOST_DEVICE auto& z_variance() { return BASE::template get<3>(); }
     /// The variation on the spacepoint's Z coordinate (const)
     ///
     /// @return A (const) vector of @c traccc::scalar values
     ///
     TRACCC_HOST_DEVICE const auto& z_variance() const {
-        return BASE::template get<2>();
+        return BASE::template get<3>();
     }
 
     /// The radius of the spacepoint in the XY plane (non-const)
@@ -146,14 +163,14 @@ class spacepoint : public BASE {
     /// @return A (non-const) vector of @c traccc::scalar values
     ///
     TRACCC_HOST_DEVICE auto& radius_variance() {
-        return BASE::template get<3>();
+        return BASE::template get<4>();
     }
     /// The variation on the spacepoint radious (const)
     ///
     /// @return A (non-const) vector of @c traccc::scalar values
     ///
     TRACCC_HOST_DEVICE const auto& radius_variance() const {
-        return BASE::template get<3>();
+        return BASE::template get<4>();
     }
 
     /// The azimuthal angle of the spacepoint in the XY plane (non-const)
@@ -199,11 +216,10 @@ class spacepoint : public BASE {
 };  // class spacepoint
 
 /// SoA container describing reconstructed spacepoints
-using spacepoint_collection =
-    vecmem::edm::container<spacepoint, vecmem::edm::type::vector<unsigned int>,
-                           vecmem::edm::type::vector<point3>,
-                           vecmem::edm::type::vector<scalar>,
-                           vecmem::edm::type::vector<scalar> >;
+using spacepoint_collection = vecmem::edm::container<
+    spacepoint, vecmem::edm::type::vector<unsigned int>,
+    vecmem::edm::type::vector<unsigned int>, vecmem::edm::type::vector<point3>,
+    vecmem::edm::type::vector<scalar>, vecmem::edm::type::vector<scalar> >;
 
 }  // namespace traccc::edm
 
