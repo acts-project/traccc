@@ -39,9 +39,8 @@ TRACCC_HOST_DEVICE inline void apply_interaction(
 
     auto& bound_param = params.at(globalIndex);
 
-    if (params_liveness.at(globalIndex) != 0u) {
-        // Get surface corresponding to bound params
-        const detray::tracking_surface sf{det, bound_param.surface_link()};
+    if (const detray::tracking_surface sf{det, bound_param.surface_link()};
+        params_liveness.at(globalIndex) != 0u && sf.has_material()) {
         const typename detector_t::geometry_context ctx{};
 
         // Apply interactor
