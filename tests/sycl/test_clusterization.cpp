@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -21,32 +21,19 @@
 
 using namespace traccc;
 
-// Simple asynchronous handler function
-auto handle_async_error = [](::sycl::exception_list elist) {
-    for (auto& e : elist) {
-        try {
-            std::rethrow_exception(e);
-        } catch (::sycl::exception& e) {
-            std::cout << "ASYNC EXCEPTION!!\n";
-            std::cout << e.what() << "\n";
-        }
-    }
-};
-
 TEST(SYCLClustering, SingleModule) {
 
+    // Creating SYCL queue object
+    vecmem::sycl::queue_wrapper vecmem_queue;
+    traccc::sycl::queue_wrapper traccc_queue{vecmem_queue.queue()};
+    std::cout << "Running on device: " << vecmem_queue.device_name() << "\n";
+
     // Memory resource used by the EDM.
-    vecmem::sycl::shared_memory_resource shared_mr;
+    vecmem::sycl::shared_memory_resource shared_mr{vecmem_queue};
     traccc::memory_resource mr{shared_mr};
 
-    // Creating SYCL queue object
-    ::sycl::queue q(handle_async_error);
-    traccc::sycl::queue_wrapper queue{&q};
-    std::cout << "Running Seeding on device: "
-              << q.get_device().get_info<::sycl::info::device::name>() << "\n";
-
     // Copy object
-    vecmem::sycl::copy copy{&q};
+    vecmem::sycl::copy copy{vecmem_queue};
 
     // Create cell collection
     traccc::edm::silicon_cell_collection::host cells{shared_mr};
@@ -68,7 +55,7 @@ TEST(SYCLClustering, SingleModule) {
     dd.geometry_id()[0] = detray::geometry::barcode{0u};
 
     // Run Clusterization
-    traccc::sycl::clusterization_algorithm ca_sycl(mr, copy, queue,
+    traccc::sycl::clusterization_algorithm ca_sycl(mr, copy, traccc_queue,
                                                    default_ccl_test_config());
 
     auto measurements_buffer =

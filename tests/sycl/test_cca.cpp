@@ -1,22 +1,25 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
-#include <gtest/gtest.h>
+// Test include(s).
+#include "tests/cca_test.hpp"
 
-#include <functional>
-#include <sycl/sycl.hpp>
+// Project include(s).
+#include "traccc/clusterization/clustering_config.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
+#include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
+
+// VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/memory/sycl/device_memory_resource.hpp>
 #include <vecmem/utils/sycl/async_copy.hpp>
 
-#include "tests/cca_test.hpp"
-#include "traccc/clusterization/clustering_config.hpp"
-#include "traccc/geometry/silicon_detector_description.hpp"
-#include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
+// Google Test include(s).
+#include <gtest/gtest.h>
 
 namespace {
 
@@ -26,14 +29,14 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
         std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
             result;
 
+        vecmem::sycl::queue_wrapper vecmem_queue;
+        traccc::sycl::queue_wrapper traccc_queue{vecmem_queue.queue()};
         vecmem::host_memory_resource host_mr;
-        ::sycl::queue q;
-        traccc::sycl::queue_wrapper queue{&q};
-        vecmem::sycl::device_memory_resource device_mr;
-        vecmem::sycl::async_copy copy{&q};
+        vecmem::sycl::device_memory_resource device_mr{vecmem_queue};
+        vecmem::sycl::async_copy copy{vecmem_queue};
 
-        traccc::sycl::clusterization_algorithm cc({device_mr}, copy, queue,
-                                                  cfg);
+        traccc::sycl::clusterization_algorithm cc({device_mr, &host_mr}, copy,
+                                                  traccc_queue, cfg);
 
         traccc::silicon_detector_description::buffer dd_buffer{
             static_cast<

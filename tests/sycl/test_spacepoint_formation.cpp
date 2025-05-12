@@ -21,31 +21,18 @@
 
 using namespace traccc;
 
-// Simple asynchronous handler function
-auto handle_async_error = [](::sycl::exception_list elist) {
-    for (auto& e : elist) {
-        try {
-            std::rethrow_exception(e);
-        } catch (::sycl::exception& e) {
-            std::cout << "ASYNC EXCEPTION!!\n";
-            std::cout << e.what() << "\n";
-        }
-    }
-};
-
 TEST(SYCLSpacepointFormation, sycl) {
 
+    // Creating SYCL queue object
+    vecmem::sycl::queue_wrapper queue;
+    std::cout << "Running on device: " << queue.device_name() << "\n";
+
     // Memory resource used by the EDM.
-    vecmem::sycl::shared_memory_resource shared_mr;
+    vecmem::sycl::shared_memory_resource shared_mr{queue};
     traccc::memory_resource mr{shared_mr};
 
-    // Creating SYCL queue object
-    ::sycl::queue q(handle_async_error);
-    std::cout << "Running Seeding on device: "
-              << q.get_device().get_info<::sycl::info::device::name>() << "\n";
-
     // Copy object
-    vecmem::sycl::copy copy{&q};
+    vecmem::sycl::copy copy{queue};
 
     // Use rectangle surfaces
     detray::mask<detray::rectangle2D, traccc::default_algebra> rectangle{
@@ -81,7 +68,7 @@ TEST(SYCLSpacepointFormation, sycl) {
 
     // Run spacepoint formation
     traccc::sycl::silicon_pixel_spacepoint_formation_algorithm sp_formation(
-        mr, copy, &q);
+        mr, copy, queue.queue());
     auto spacepoints_buffer =
         sp_formation(detray::get_data(det), vecmem::get_data(measurements));
 

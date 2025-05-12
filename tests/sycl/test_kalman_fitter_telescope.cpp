@@ -1,29 +1,26 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
-
-// SYCL include(s)
-#include <sycl/sycl.hpp>
 
 // Project include(s).
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/edm/track_state.hpp"
-#include "traccc/fitting/fitting_algorithm.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/performance/details/is_same_object.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
 #include "traccc/simulation/event_generators.hpp"
 #include "traccc/simulation/simulator.hpp"
-#include "traccc/sycl/fitting/fitting_algorithm.hpp"
+#include "traccc/sycl/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/ranges.hpp"
 #include "traccc/utils/seed_generator.hpp"
 
 // Test include(s).
+#include "test_queue.hpp"
 #include "tests/kalman_fitting_telescope_test.hpp"
 
 // detray include(s).
@@ -44,18 +41,6 @@
 #include <string>
 
 using namespace traccc;
-
-// Simple asynchronous handler function
-auto handle_async_error = [](::sycl::exception_list elist) {
-    for (auto& e : elist) {
-        try {
-            std::rethrow_exception(e);
-        } catch (::sycl::exception& e) {
-            std::cout << "ASYNC EXCEPTION!!\n";
-            std::cout << e.what() << "\n";
-        }
-    }
-};
 
 // This defines the local frame test suite
 TEST_P(KalmanFittingTelescopeTests, Run) {
@@ -83,15 +68,22 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
      *****************************/
 
     // Creating SYCL queue object
-    ::sycl::queue q(handle_async_error);
-    std::cout << "Running Seeding on device: "
-              << q.get_device().get_info<::sycl::info::device::name>() << "\n";
+    traccc::sycl::test_queue queue;
+    traccc::sycl::queue_wrapper traccc_queue{queue.queue()};
+    vecmem::sycl::queue_wrapper vecmem_queue{queue.queue().queue()};
+
+    // Only run this test on NVIDIA and AMD backends.
+    if (!(queue.is_cuda() || queue.is_hip())) {
+        GTEST_SKIP();
+    }
+
+    std::cout << "Running on device: " << vecmem_queue.device_name() << "\n";
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
-    vecmem::sycl::device_memory_resource device_mr{&q};
+    vecmem::sycl::device_memory_resource device_mr{vecmem_queue};
     traccc::memory_resource mr{device_mr, &host_mr};
-    vecmem::sycl::shared_memory_resource shared_mr;
+    vecmem::sycl::shared_memory_resource shared_mr{vecmem_queue};
 
     // Read back detector file
     const std::string path = name + "/";
@@ -101,11 +93,10 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
 
     auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(shared_mr, reader_cfg);
-
-    // Detector view object
     auto det_view = detray::get_data(host_det);
     auto field =
-        traccc::construct_const_bfield<host_detector_type::scalar_type>(B);
+        traccc::construct_const_bfield<host_detector_type::scalar_type>(
+            std::get<13>(GetParam()));
 
     /***************************
      * Generate simulation data
@@ -139,15 +130,15 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     std::filesystem::create_directories(full_path);
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
                                  writer_type>(
-        std::get<6>(GetParam()), n_events, host_det, field,
-        std::move(generator), std::move(smearer_writer_cfg), full_path);
+        ptc, n_events, host_det, field, std::move(generator),
+        std::move(smearer_writer_cfg), full_path);
     sim.run();
 
     /***************
      * Run fitting
      ***************/
 
-    vecmem::sycl::copy copy{&q};
+    vecmem::sycl::copy copy{vecmem_queue};
 
     traccc::device::container_h2d_copy_alg<
         traccc::track_candidate_container_types>
@@ -160,24 +151,20 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     seed_generator<host_detector_type> sg(host_det, stddevs);
 
     // Fitting algorithm object
-    typename traccc::sycl::fitting_algorithm<device_fitter_type>::config_type
-        fit_cfg;
+    typename traccc::sycl::kalman_fitting_algorithm::config_type fit_cfg;
     fit_cfg.ptc_hypothesis = ptc;
-    traccc::sycl::fitting_algorithm<device_fitter_type> device_fitting(fit_cfg,
-                                                                       mr, &q);
+    traccc::sycl::kalman_fitting_algorithm device_fitting(fit_cfg, mr, copy,
+                                                          traccc_queue);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
+
         // Event map
-        traccc::event_data evt_data(path, i_evt, host_mr, host_det);
+        traccc::event_data evt_data(path, i_evt, host_mr);
 
         // Truth Track Candidates
         traccc::track_candidate_container_types::host track_candidates =
-            evt_data.generate_truth_candidates(sg, shared_mr);
-
-        // Instantiate cuda containers/collections
-        traccc::track_state_container_types::buffer track_states_sycl_buffer{
-            {{}, *(mr.host)}, {{}, *(mr.host), mr.host}};
+            evt_data.generate_truth_candidates(sg, host_mr);
 
         // n_trakcs = 100
         ASSERT_EQ(track_candidates.size(), n_truth_tracks);
@@ -188,7 +175,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
                 track_candidate_h2d(traccc::get_data(track_candidates));
 
         // Run fitting
-        track_states_sycl_buffer =
+        traccc::track_state_container_types::buffer track_states_sycl_buffer =
             device_fitting(det_view, field, track_candidates_sycl_buffer);
 
         traccc::track_state_container_types::host track_states_sycl =
@@ -208,8 +195,10 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
 
             ndf_tests(fit_res, track_states_per_track);
 
+            ASSERT_EQ(fit_res.trk_quality.n_holes, 0u);
+
             fit_performance_writer.write(track_states_per_track, fit_res,
-                                         host_det, evt_map);
+                                         host_det, evt_data);
         }
     }
 
@@ -222,29 +211,66 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     static const std::vector<std::string> pull_names{
         "pull_d0", "pull_z0", "pull_phi", "pull_theta", "pull_qop"};
     pull_value_tests(fit_writer_cfg.file_path, pull_names);
+
+    /********************
+     * P-value test
+     ********************/
+
+    p_value_tests(fit_writer_cfg.file_path);
+
+    /********************
+     * Success rate test
+     ********************/
+
+    float success_rate = static_cast<float>(n_success) /
+                         static_cast<float>(n_truth_tracks * n_events);
+
+    ASSERT_FLOAT_EQ(success_rate, 1.00f);
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    SYCLKalmanFitTelescopeValidation, KalmanFittingTelescopeTests,
-    ::testing::Values(std::make_tuple("sycl_telescope_1_GeV_0_phi",
-                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
-                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
-                                      std::array<scalar, 2u>{1.f, 1.f},
-                                      std::array<scalar, 2u>{0.f, 0.f},
-                                      std::array<scalar, 2u>{0.f, 0.f},
-                                      traccc::muon<scalar>(), 100, 100, false),
-                      std::make_tuple("sycl_telescope_10_GeV_0_phi",
-                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
-                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
-                                      std::array<scalar, 2u>{10.f, 10.f},
-                                      std::array<scalar, 2u>{0.f, 0.f},
-                                      std::array<scalar, 2u>{0.f, 0.f},
-                                      traccc::muon<scalar>(), 100, 100, false),
-                      std::make_tuple("sycl_telescope_100_GeV_0_phi",
-                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
-                                      std::array<scalar, 3u>{0.f, 0.f, 0.f},
-                                      std::array<scalar, 2u>{100.f, 100.f},
-                                      std::array<scalar, 2u>{0.f, 0.f},
-                                      std::array<scalar, 2u>{0.f, 0.f},
-                                      traccc::muon<scalar>(), 100, 100,
-                                      false)));
+    SYCLKalmanFitTelescopeValidation0, KalmanFittingTelescopeTests,
+    ::testing::Values(std::make_tuple(
+        "telescope_1_GeV_0_phi_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
+        std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
+        traccc::muon<scalar>(), 100, 100, false, 20.f, 20u, 20.f,
+        vector3{0, 0, 2 * traccc::unit<scalar>::T})));
+
+INSTANTIATE_TEST_SUITE_P(
+    SYCLKalmanFitTelescopeValidation1, KalmanFittingTelescopeTests,
+    ::testing::Values(std::make_tuple(
+        "telescope_10_GeV_0_phi_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 2u>{10.f, 10.f}, std::array<scalar, 2u>{0.f, 0.f},
+        std::array<scalar, 2u>{0.f, 0.f}, traccc::muon<scalar>(), 100, 100,
+        false, 20.f, 9u, 20.f, vector3{0, 0, 2 * traccc::unit<scalar>::T})));
+
+INSTANTIATE_TEST_SUITE_P(
+    SYCLKalmanFitTelescopeValidation2, KalmanFittingTelescopeTests,
+    ::testing::Values(std::make_tuple(
+        "telescope_100_GeV_0_phi_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 2u>{100.f, 100.f}, std::array<scalar, 2u>{0.f, 0.f},
+        std::array<scalar, 2u>{0.f, 0.f}, traccc::muon<scalar>(), 100, 100,
+        false, 20.f, 9u, 20.f, vector3{0, 0, 2 * traccc::unit<scalar>::T})));
+
+INSTANTIATE_TEST_SUITE_P(
+    SYCLKalmanFitTelescopeValidation3, KalmanFittingTelescopeTests,
+    ::testing::Values(std::make_tuple(
+        "telescope_1_GeV_0_phi_anti_muon",
+        std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
+        std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
+        traccc::antimuon<scalar>(), 100, 100, false, 20.f, 9u, 20.f,
+        vector3{0, 0, 2 * traccc::unit<scalar>::T})));
+
+INSTANTIATE_TEST_SUITE_P(
+    SYCLKalmanFitTelescopeValidation4, KalmanFittingTelescopeTests,
+    ::testing::Values(std::make_tuple(
+        "telescope_1_GeV_0_random_charge",
+        std::array<scalar, 3u>{0.f, 0.f, 0.f},
+        std::array<scalar, 3u>{0.f, 0.f, 0.f}, std::array<scalar, 2u>{1.f, 1.f},
+        std::array<scalar, 2u>{0.f, 0.f}, std::array<scalar, 2u>{0.f, 0.f},
+        traccc::antimuon<scalar>(), 100, 100, true, 20.f, 9u, 20.f,
+        vector3{0, 0, 2 * traccc::unit<scalar>::T})));
