@@ -1,7 +1,7 @@
 /**
  * traccc library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -104,7 +104,7 @@ is_contiguous_on(P&& projection, vecmem::memory_resource& mr,
     // This should never be a performance-critical step, so we can keep the
     // block size fixed.
     constexpr int local_size = 512;
-    constexpr int local_size_2d = 32;
+    constexpr int local_size_2d = 16;
 
     // Grab the number of elements in our vector.
     const typename VIEW::size_type n = copy.get_size(view);
