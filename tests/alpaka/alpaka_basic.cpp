@@ -136,6 +136,9 @@ GTEST_TEST(AlpakaBasic, VecMemOp) {
     traccc::alpaka::queue traccc_queue(&alpaka_queue);
     traccc::alpaka::vecmem_objects vo(traccc_queue);
 
+    // Check the queue was created on the same device.
+    EXPECT_EQ(traccc_queue.device(), 0u);
+
     vecmem::memory_resource& host_mr = vo.host_mr();
     vecmem::memory_resource& device_mr = vo.device_mr();
     vecmem::copy& vm_copy = vo.copy();

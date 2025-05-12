@@ -30,7 +30,7 @@ class queue {
     ///
     /// Without taking ownership of it!
     ///
-    queue(void* input_queue);
+    explicit queue(void* input_queue);
 
     /// Move constructor
     queue(queue&& parent) noexcept;

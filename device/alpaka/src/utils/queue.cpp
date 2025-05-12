@@ -17,28 +17,28 @@
 namespace traccc::alpaka {
 
 struct queue::impl {
-
-    /// Constructor
-    /// @param device The device to create the queue for
-    explicit impl(std::size_t device)
-        : m_device(device == INVALID_DEVICE ? 0 : device),
-          m_queue(::alpaka::getDevByIdx(::alpaka::Platform<Acc>{}, m_device)) {}
-
     /// The device the queue is created for
-    std::size_t m_device;
-
-    /// The real Alpaka queue object
-    Queue m_queue;
-
+    std::size_t m_device{INVALID_DEVICE};
+    /// Bare pointer to the wrapped queue object
+    Queue* m_queue = nullptr;
+    /// Unique pointer to the managed Queue object
+    std::unique_ptr<Queue> m_managedQueue;
 };  // struct queue::impl
 
-queue::queue(std::size_t device) : m_impl{std::make_unique<impl>(device)} {}
+queue::queue(std::size_t device) : m_impl{std::make_unique<impl>()} {
 
-queue::queue(void* input_queue)
-    : m_impl{std::make_unique<impl>(INVALID_DEVICE)} {
+    m_impl->m_device = device == INVALID_DEVICE ? 0 : device;
+    m_impl->m_managedQueue = std::make_unique<Queue>(
+        ::alpaka::getDevByIdx(::alpaka::Platform<Acc>{}, m_impl->m_device));
+    m_impl->m_queue = m_impl->m_managedQueue.get();
+}
 
-    // Copy the queue pointer
-    m_impl->m_queue = *static_cast<Queue*>(input_queue);
+queue::queue(void* input_queue) : m_impl{std::make_unique<impl>()} {
+
+    assert(input_queue != nullptr);
+    m_impl->m_queue = static_cast<Queue*>(input_queue);
+    m_impl->m_device =
+        ::alpaka::getNativeHandle(::alpaka::getDev(*m_impl->m_queue));
 }
 
 queue::queue(queue&&) noexcept = default;
@@ -54,17 +54,20 @@ std::size_t queue::device() const {
 
 void* queue::alpakaQueue() {
 
-    return &(m_impl->m_queue);
+    assert(m_impl->m_queue != nullptr);
+    return m_impl->m_queue;
 }
 
 const void* queue::alpakaQueue() const {
 
-    return &(m_impl->m_queue);
+    assert(m_impl->m_queue != nullptr);
+    return m_impl->m_queue;
 }
 
 void queue::synchronize() {
 
-    ::alpaka::wait(m_impl->m_queue);
+    assert(m_impl->m_queue != nullptr);
+    ::alpaka::wait(*m_impl->m_queue);
 }
 
 }  // namespace traccc::alpaka
