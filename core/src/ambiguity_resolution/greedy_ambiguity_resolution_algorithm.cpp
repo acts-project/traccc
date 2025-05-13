@@ -43,14 +43,14 @@ greedy_ambiguity_resolution_algorithm::operator()(
     std::vector<unsigned int> accepted_ids(n_tracks);
     std::iota(accepted_ids.begin(), accepted_ids.end(), 0);
 
-    // Make measurement ID, chi2 and n_measurement vector
+    // Make measurement ID, pval and n_measurement vector
     std::vector<std::vector<std::size_t>> meas_ids(n_tracks);
-    std::vector<traccc::scalar> chi_squares(n_tracks);
+    std::vector<traccc::scalar> pvals(n_tracks);
     std::vector<std::size_t> n_meas(n_tracks);
 
     for (unsigned int i = 0; i < n_tracks; i++) {
-        // Fill the chi-squares vectors
-        chi_squares[i] = track_candidates.at(i).header.trk_quality.chi2;
+        // Fill the pval vectors
+        pvals[i] = track_candidates.at(i).header.trk_quality.pval;
 
         const auto& candidates = track_candidates.at(i).items;
         const unsigned int n_cands = candidates.size();
@@ -122,15 +122,15 @@ greedy_ambiguity_resolution_algorithm::operator()(
                         static_cast<traccc::scalar>(n_meas[i]);
     }
 
-    // Sort the track id with rel_shared and chi2 to find the worst track fast
+    // Sort the track id with rel_shared and pval to find the worst track fast
     std::vector<unsigned int> sorted_ids = accepted_ids;
 
-    auto track_comparator = [&rel_shared, &chi_squares](unsigned int a,
-                                                        unsigned int b) {
+    auto track_comparator = [&rel_shared, &pvals](unsigned int a,
+                                                  unsigned int b) {
         if (rel_shared[a] != rel_shared[b]) {
             return rel_shared[a] < rel_shared[b];
         }
-        return chi_squares[a] < chi_squares[b];
+        return pvals[a] > pvals[b];
     };
     std::sort(sorted_ids.begin(), sorted_ids.end(), track_comparator);
 
