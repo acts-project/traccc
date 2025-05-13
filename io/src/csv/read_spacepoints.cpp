@@ -64,7 +64,11 @@ void read_spacepoints(edm::spacepoint_collection::host& spacepoints,
 
         // Create a new spacepoint for the SoA container.
         spacepoints.push_back(
-            {measurement_index, {iohit.tx, iohit.ty, iohit.tz}, 0.f, 0.f});
+            {measurement_index,
+             edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX,
+             {iohit.tx, iohit.ty, iohit.tz},
+             0.f,
+             0.f});
     }
 }
 

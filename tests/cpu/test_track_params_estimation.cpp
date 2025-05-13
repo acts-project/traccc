@@ -51,9 +51,15 @@ TEST(track_params_estimation, helix_negative_charge) {
     edm::spacepoint_collection::host spacepoints{host_mr};
     measurements.resize(3);
     spacepoints.reserve(3);
-    spacepoints.push_back({0, hlx(50 * unit<scalar>::mm), 0.f, 0.f});
-    spacepoints.push_back({1, hlx(100 * unit<scalar>::mm), 0.f, 0.f});
-    spacepoints.push_back({2, hlx(150 * unit<scalar>::mm), 0.f, 0.f});
+    spacepoints.push_back(
+        {0, traccc::edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX,
+         hlx(50 * unit<scalar>::mm), 0.f, 0.f});
+    spacepoints.push_back(
+        {1, traccc::edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX,
+         hlx(100 * unit<scalar>::mm), 0.f, 0.f});
+    spacepoints.push_back(
+        {2, traccc::edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX,
+         hlx(150 * unit<scalar>::mm), 0.f, 0.f});
 
     // Make a seed from the three spacepoints
     edm::seed_collection::host seeds{host_mr};
@@ -93,9 +99,15 @@ TEST(track_params_estimation, helix_positive_charge) {
     edm::spacepoint_collection::host spacepoints{host_mr};
     measurements.resize(3);
     spacepoints.reserve(3);
-    spacepoints.push_back({0, hlx(50 * unit<scalar>::mm), 0.f, 0.f});
-    spacepoints.push_back({1, hlx(100 * unit<scalar>::mm), 0.f, 0.f});
-    spacepoints.push_back({2, hlx(150 * unit<scalar>::mm), 0.f, 0.f});
+    spacepoints.push_back(
+        {0, traccc::edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX,
+         hlx(50 * unit<scalar>::mm), 0.f, 0.f});
+    spacepoints.push_back(
+        {1, traccc::edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX,
+         hlx(100 * unit<scalar>::mm), 0.f, 0.f});
+    spacepoints.push_back(
+        {2, traccc::edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX,
+         hlx(150 * unit<scalar>::mm), 0.f, 0.f});
 
     // Make a seed from the three spacepoints
     edm::seed_collection::host seeds{host_mr};

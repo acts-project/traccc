@@ -67,7 +67,8 @@ template <typename T>
 TRACCC_HOST_DEVICE bool spacepoint<BASE>::operator==(
     const spacepoint<T>& other) const {
 
-    return ((measurement_index() == other.measurement_index()) &&
+    return ((measurement_index_1() == other.measurement_index_1()) &&
+            (measurement_index_2() == other.measurement_index_2()) &&
             (math::fabs(x() - other.x()) < 1e-6f) &&
             (math::fabs(y() - other.y()) < 1e-6f) &&
             (math::fabs(z() - other.z()) < 1e-6f) &&
