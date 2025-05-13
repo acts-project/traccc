@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2022-2024 CERN for the benefit of the ACTS project
+# (c) 2022-2025 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -21,6 +21,9 @@ FetchContent_Declare( TBB SYSTEM ${TRACCC_TBB_SOURCE} OVERRIDE_FIND_PACKAGE )
 # Options used in the build of TBB.
 set( TBB_TEST FALSE CACHE BOOL "Turn off the TBB tests" )
 set( TBB_STRICT FALSE CACHE BOOL "Do not throw errors on compiler warnings" )
+
+# Make TBB work without warnings with modern CMake versions.
+set( CMAKE_POLICY_VERSION_MINIMUM "3.10" )
 
 # Get it into the current directory.
 FetchContent_MakeAvailable( TBB )
