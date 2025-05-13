@@ -37,8 +37,16 @@ queue::queue(void* input_queue) : m_impl{std::make_unique<impl>()} {
 
     assert(input_queue != nullptr);
     m_impl->m_queue = static_cast<Queue*>(input_queue);
-    m_impl->m_device =
-        ::alpaka::getNativeHandle(::alpaka::getDev(*m_impl->m_queue));
+
+#if defined(ALPAKA_ACC_SYCL_ENABLED)
+    auto sycl_device =
+        ::alpaka::getNativeHandle(::alpaka::getDev(*m_impl->m_queue)).first;
+    m_impl->m_device = static_cast<std::size_t>(
+        sycl_device.get_info<::sycl::info::device::vendor_id>());
+#else
+    m_impl->m_device = static_cast<std::size_t>(
+        ::alpaka::getNativeHandle(::alpaka::getDev(*m_impl->m_queue)));
+#endif
 }
 
 queue::queue(queue&&) noexcept = default;
