@@ -46,7 +46,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     // Make measurement ID, pval and n_measurement vector
     std::vector<std::vector<std::size_t>> meas_ids(n_tracks);
     std::vector<traccc::scalar> pvals(n_tracks);
-    std::vector<std::size_t> n_meas(n_tracks);
+    std::vector<std::size_t> n_meas(n_tracks, 0);
 
     for (unsigned int i = 0; i < n_tracks; i++) {
         // Fill the pval vectors
@@ -90,7 +90,12 @@ greedy_ambiguity_resolution_algorithm::operator()(
     tracks_per_measurement.resize(unique_meas.size());
 
     for (const auto& i : accepted_ids) {
-        for (const auto& meas_id : meas_ids[i]) {
+
+        std::unordered_set<std::size_t> deduplicated_ids(meas_ids[i].begin(),
+                                                         meas_ids[i].end());
+
+        for (const auto& meas_id : deduplicated_ids) {
+
             const auto it = std::lower_bound(unique_meas.begin(),
                                              unique_meas.end(), meas_id);
             assert(it != unique_meas.end());
@@ -101,7 +106,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     }
 
     // Count the number of shared measurements
-    std::vector<unsigned int> n_shared(n_tracks);
+    std::vector<unsigned int> n_shared(n_tracks, 0);
     for (const auto& i : accepted_ids) {
         for (const auto& meas_id : meas_ids[i]) {
             const auto it = std::lower_bound(unique_meas.begin(),
@@ -141,10 +146,11 @@ greedy_ambiguity_resolution_algorithm::operator()(
             break;
         }
 
-        unsigned int max_shared{0u};
+        unsigned int max_shared(0);
         for (const auto& i : accepted_ids) {
-            if (n_shared[i] > max_shared)
+            if (n_shared[i] > max_shared) {
                 max_shared = n_shared[i];
+            }
         }
 
         // Terminate if the max shared measurements is less than the cut value
@@ -164,7 +170,14 @@ greedy_ambiguity_resolution_algorithm::operator()(
         // Pop the worst (rejected) id from the sorted ids
         sorted_ids.pop_back();
 
-        const auto& meas_ids_to_remove = meas_ids[worst_track];
+        std::unordered_set<std::size_t> seen;
+        std::vector<std::size_t> meas_ids_to_remove;
+        for (const auto& id : meas_ids[worst_track]) {
+            if (seen.insert(id).second) {
+                meas_ids_to_remove.push_back(id);
+            }
+        }
+
         for (const auto& id : meas_ids_to_remove) {
             const auto it =
                 std::lower_bound(unique_meas.begin(), unique_meas.end(), id);
@@ -174,8 +187,12 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
             auto& tracks = tracks_per_measurement[unique_meas_idx];
 
-            // Remove the worst (rejected) id from the tracks associated with
-            // measurement
+            if (tracks.empty()) {
+                continue;
+            }
+
+            // Remove the worst (rejected) id from the tracks associated
+            // with measurement
             const auto it2 =
                 std::lower_bound(tracks.begin(), tracks.end(), worst_track);
             assert(it2 != tracks.end() && *it2 == worst_track);
@@ -185,7 +202,9 @@ greedy_ambiguity_resolution_algorithm::operator()(
             // number of shared measurement can be reduced by one
             if (tracks.size() == 1) {
                 const auto tid = tracks[0];
-                n_shared[tid]--;
+
+                n_shared[tid] -= static_cast<unsigned int>(
+                    std::count(meas_ids[tid].begin(), meas_ids[tid].end(), id));
                 rel_shared[tid] = static_cast<traccc::scalar>(n_shared[tid]) /
                                   static_cast<traccc::scalar>(n_meas[tid]);
                 // Reposition the track to the next of the worse track which is
@@ -195,8 +214,11 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 assert(it3 != sorted_ids.end());
                 const auto it4 = std::lower_bound(sorted_ids.begin(), it3, tid,
                                                   track_comparator);
-                sorted_ids.erase(it3);
-                sorted_ids.insert(it4, tid);
+
+                if (it3 != it4) {
+                    sorted_ids.erase(it3);
+                    sorted_ids.insert(it4, tid);
+                }
             }
         }
 
