@@ -51,11 +51,36 @@ TEST(seeding, case1) {
     // Spacepoints from 16.62 GeV muon
     measurements.resize(5);
     spacepoints.reserve(5);
-    spacepoints.push_back({0, {36.6706f, 10.6472f, 104.131f}, 0.f, 0.f});
-    spacepoints.push_back({1, {94.2191f, 29.6699f, 113.628f}, 0.f, 0.f});
-    spacepoints.push_back({2, {149.805f, 47.9518f, 122.979f}, 0.f, 0.f});
-    spacepoints.push_back({3, {218.514f, 70.3049f, 134.029f}, 0.f, 0.f});
-    spacepoints.push_back({4, {275.359f, 88.668f, 143.378f}, 0.f, 0.f});
+    spacepoints.push_back(
+        {0,
+         traccc::edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX,
+         {36.6706f, 10.6472f, 104.131f},
+         0.f,
+         0.f});
+    spacepoints.push_back(
+        {1,
+         traccc::edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX,
+         {94.2191f, 29.6699f, 113.628f},
+         0.f,
+         0.f});
+    spacepoints.push_back(
+        {2,
+         traccc::edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX,
+         {149.805f, 47.9518f, 122.979f},
+         0.f,
+         0.f});
+    spacepoints.push_back(
+        {3,
+         traccc::edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX,
+         {218.514f, 70.3049f, 134.029f},
+         0.f,
+         0.f});
+    spacepoints.push_back(
+        {4,
+         traccc::edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX,
+         {275.359f, 88.668f, 143.378f},
+         0.f,
+         0.f});
 
     // Run seeding
     auto seeds = sa(vecmem::get_data(spacepoints));
@@ -98,11 +123,36 @@ TEST(seeding, case2) {
     // Spacepoints from 1.85 GeV muon
     measurements.resize(5);
     spacepoints.reserve(5);
-    spacepoints.push_back({0, {36.301f, 13.1197f, 106.83f}, 0.f, 0.f});
-    spacepoints.push_back({1, {93.9366f, 33.7101f, 120.978f}, 0.f, 0.f});
-    spacepoints.push_back({2, {149.192f, 52.0562f, 134.678f}, 0.f, 0.f});
-    spacepoints.push_back({3, {218.398f, 73.1025f, 151.979f}, 0.f, 0.f});
-    spacepoints.push_back({4, {275.322f, 89.0663f, 166.229f}, 0.f, 0.f});
+    spacepoints.push_back(
+        {0,
+         traccc::edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX,
+         {36.301f, 13.1197f, 106.83f},
+         0.f,
+         0.f});
+    spacepoints.push_back(
+        {1,
+         traccc::edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX,
+         {93.9366f, 33.7101f, 120.978f},
+         0.f,
+         0.f});
+    spacepoints.push_back(
+        {2,
+         traccc::edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX,
+         {149.192f, 52.0562f, 134.678f},
+         0.f,
+         0.f});
+    spacepoints.push_back(
+        {3,
+         traccc::edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX,
+         {218.398f, 73.1025f, 151.979f},
+         0.f,
+         0.f});
+    spacepoints.push_back(
+        {4,
+         traccc::edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX,
+         {275.322f, 89.0663f, 166.229f},
+         0.f,
+         0.f});
 
     // Run seeding
     auto seeds = sa(vecmem::get_data(spacepoints));

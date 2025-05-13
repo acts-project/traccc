@@ -13,6 +13,7 @@
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
@@ -39,11 +40,13 @@ class measurement_sorting_algorithm
     public:
     /// Constructor for the algorithm
     ///
+    /// @param mr Unused, here for consistency of interface (see CUDA)
     /// @param copy The copy object to use in the algorithm
     /// @param queue Wrapper for the for the SYCL queue for kernel invocation
     ///
     measurement_sorting_algorithm(
-        vecmem::copy& copy, queue_wrapper& queue,
+        const traccc::memory_resource& mr, vecmem::copy& copy,
+        queue_wrapper& queue,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator performing the sorting on a container

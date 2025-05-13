@@ -83,7 +83,7 @@ inline void select_seeds(
     const traccc::details::spacepoint_grid_types::const_device sp_device(
         sp_view);
 
-    device_triplet_collection_types::const_device triplets(triplet_view);
+    const device_triplet_collection_types::const_device triplets(triplet_view);
     edm::seed_collection::device seeds_device(seed_view);
 
     // Current work item = middle spacepoint
@@ -176,15 +176,10 @@ inline void select_seeds(
 
             n_seeds_per_spM++;
 
-            const edm::seed_collection::device::size_type iseed =
-                seeds_device.push_back_default();
-            edm::seed_collection::device::proxy_type seed =
-                seeds_device.at(iseed);
-            seed.bottom_index() =
-                sp_device.bin(spB_loc.bin_idx)[spB_loc.sp_idx];
-            seed.middle_index() =
-                sp_device.bin(spM_loc.bin_idx)[spM_loc.sp_idx];
-            seed.top_index() = sp_device.bin(spT_loc.bin_idx)[spT_loc.sp_idx];
+            seeds_device.push_back(
+                {sp_device.bin(spB_loc.bin_idx)[spB_loc.sp_idx],
+                 sp_device.bin(spM_loc.bin_idx)[spM_loc.sp_idx],
+                 sp_device.bin(spT_loc.bin_idx)[spT_loc.sp_idx]});
         }
     }
 }

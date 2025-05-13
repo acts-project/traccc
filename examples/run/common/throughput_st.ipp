@@ -105,7 +105,7 @@ int throughput_st(std::string_view description, int argc, char* argv[],
         input.reserve(input_opts.events);
         for (std::size_t i = input_opts.skip;
              i < input_opts.skip + input_opts.events; ++i) {
-            input.push_back({uncached_host_mr});
+            input.emplace_back(uncached_host_mr);
             static constexpr bool DEDUPLICATE = true;
             io::read_cells(input.back(), i, input_opts.directory,
                            logger->clone(), &det_descr, input_opts.format,

@@ -58,6 +58,8 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
 
     // SYCL queue.
     sycl::test_queue queue;
+    traccc::sycl::queue_wrapper traccc_queue{queue.queue()};
+    vecmem::sycl::queue_wrapper vecmem_queue{queue.queue().queue()};
 
     // Only run this test on NVIDIA and AMD backends.
     if (!(queue.is_cuda() || queue.is_hip())) {
@@ -66,9 +68,9 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
-    vecmem::sycl::device_memory_resource device_mr{queue.queue().queue()};
+    vecmem::sycl::device_memory_resource device_mr{vecmem_queue};
     traccc::memory_resource mr{device_mr, &host_mr};
-    vecmem::sycl::shared_memory_resource shared_mr{queue.queue().queue()};
+    vecmem::sycl::shared_memory_resource shared_mr{vecmem_queue};
 
     // Path to the working directory.
     const std::filesystem::path path = std::filesystem::current_path() / name;
@@ -126,7 +128,7 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
      *****************************/
 
     // Copy objects
-    vecmem::sycl::async_copy copy{queue.queue().queue()};
+    vecmem::sycl::async_copy copy{vecmem_queue};
 
     traccc::device::container_d2h_copy_alg<
         traccc::track_candidate_container_types>
@@ -152,9 +154,9 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
 
     // Finding algorithm object
     traccc::sycl::combinatorial_kalman_filter_algorithm device_finding{
-        cfg_no_limit, mr, copy, queue.queue()};
+        cfg_no_limit, mr, copy, traccc_queue};
     traccc::sycl::combinatorial_kalman_filter_algorithm device_finding_limit{
-        cfg_limit, mr, copy, queue.queue()};
+        cfg_limit, mr, copy, traccc_queue};
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {

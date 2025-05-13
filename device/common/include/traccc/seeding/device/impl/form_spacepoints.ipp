@@ -44,7 +44,9 @@ TRACCC_HOST_DEVICE inline void form_spacepoints(
             spacepoints.push_back_default();
         edm::spacepoint_collection::device::proxy_type sp = spacepoints.at(i);
         traccc::details::fill_pixel_spacepoint(sp, det, meas);
-        sp.measurement_index() = globalIndex;
+        sp.measurement_index_1() = globalIndex;
+        sp.measurement_index_2() =
+            edm::spacepoint_collection::device::INVALID_MEASUREMENT_INDEX;
     }
 }
 

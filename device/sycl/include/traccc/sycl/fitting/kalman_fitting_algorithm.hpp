@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -52,10 +52,10 @@ class kalman_fitting_algorithm
     ///
     /// @param config The configuration object
     ///
-    kalman_fitting_algorithm(const config_type& config,
-                             const traccc::memory_resource& mr,
-                             vecmem::copy& copy, queue_wrapper queue,
-                             std::unique_ptr<const Logger> logger);
+    kalman_fitting_algorithm(
+        const config_type& config, const traccc::memory_resource& mr,
+        vecmem::copy& copy, queue_wrapper queue,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Execute the algorithm
     ///

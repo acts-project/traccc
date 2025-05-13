@@ -52,7 +52,7 @@ struct seed_generator {
         const detray::tracking_surface sf{m_detector, surface_link};
 
         auto bound_vec = sf.free_to_bound_vector(m_ctx, free_param);
-        auto bound_cov = matrix::zero<traccc::bound_matrix<algebra_type>>();
+        auto bound_cov = matrix::identity<traccc::bound_matrix<algebra_type>>();
 
         bound_track_parameters<algebra_type> bound_param{surface_link,
                                                          bound_vec, bound_cov};
@@ -64,11 +64,14 @@ struct seed_generator {
         assert(ptc_type.charge() * bound_param.qop() > 0.f);
 
         // Apply interactor
-        typename interactor_type::state interactor_state;
-        interactor_state.do_multiple_scattering = false;
-        interactor_type{}.update(
-            m_ctx, ptc_type, bound_param, interactor_state,
-            static_cast<int>(detray::navigation::direction::e_backward), sf);
+        if (sf.has_material()) {
+            typename interactor_type::state interactor_state;
+            interactor_state.do_multiple_scattering = false;
+            interactor_type{}.update(
+                m_ctx, ptc_type, bound_param, interactor_state,
+                static_cast<int>(detray::navigation::direction::e_backward),
+                sf);
+        }
 
         for (std::size_t i = 0; i < e_bound_size; i++) {
 

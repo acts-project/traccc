@@ -7,17 +7,23 @@
 
 #pragma once
 
+// Local include(s).
+#include <traccc/efficiency/track_filter.hpp>
+#include <traccc/efficiency/track_matcher.hpp>
+#include <traccc/utils/event_data.hpp>
+
+// Project include(s).
+#include <traccc/edm/measurement.hpp>
+#include <traccc/edm/nseed.hpp>
+#include <traccc/edm/spacepoint_collection.hpp>
+
+// System include(s).
+#include <cassert>
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <optional>
 #include <set>
-#include <traccc/edm/measurement.hpp>
-#include <traccc/edm/nseed.hpp>
-#include <traccc/edm/spacepoint_collection.hpp>
-#include <traccc/efficiency/track_filter.hpp>
-#include <traccc/efficiency/track_matcher.hpp>
-#include <traccc/utils/event_data.hpp>
 
 namespace traccc {
 class nseed_performance_writer {
@@ -57,8 +63,11 @@ class nseed_performance_writer {
                 s->cbegin(), s->cend(), std::back_inserter(particle_ids),
                 [&em, &measurements, &spacepoints](
                     const edm::spacepoint_collection::host::size_type& l) {
-                    traccc::measurement meas =
-                        measurements.at(spacepoints.at(l).measurement_index());
+                    assert(spacepoints.at(l).measurement_index_2() ==
+                           edm::spacepoint_collection::host::
+                               INVALID_MEASUREMENT_INDEX);
+                    traccc::measurement meas = measurements.at(
+                        spacepoints.at(l).measurement_index_1());
 
                     const auto& ptcs = em.m_meas_to_ptc_map.find(meas)->second;
 

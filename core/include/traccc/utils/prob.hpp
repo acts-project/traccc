@@ -297,7 +297,7 @@ TRACCC_HOST_DEVICE inline scalar_t lgam(scalar_t x) {
     if (x >= std::numeric_limits<scalar_t>::infinity())
         return (std::numeric_limits<scalar_t>::infinity());
 
-    if (x < -34.0) {
+    if (x < -34.0f) {
         q = -x;
 
         // For x > 34
@@ -311,7 +311,7 @@ TRACCC_HOST_DEVICE inline scalar_t lgam(scalar_t x) {
         else
             sgngam = 1;
         z = q - p;
-        if (z > 0.5) {
+        if (z > 0.5f) {
             p += 1.0f;
             z = p - q;
         }
@@ -323,7 +323,7 @@ TRACCC_HOST_DEVICE inline scalar_t lgam(scalar_t x) {
         return (z);
     }
 
-    if (x < 13.0) {
+    if (x < 13.0f) {
         z = 1.0f;
         p = 0.0f;
         u = x;
@@ -344,7 +344,7 @@ TRACCC_HOST_DEVICE inline scalar_t lgam(scalar_t x) {
             z = -z;
         } else
             sgngam = 1;
-        if (u == 2.0)
+        if (u == static_cast<scalar_t>(2.0))
             return (std::log(z));
         p -= 2.0f;
         x = x + p;
@@ -364,11 +364,11 @@ TRACCC_HOST_DEVICE inline scalar_t lgam_impl(scalar_t x) {
         return (sgngam * std::numeric_limits<scalar_t>::infinity());
 
     q = (x - 0.5f) * std::log(x) - x + log_gamma<scalar_t>::LS2PI;
-    if (x > 1.0e8)
+    if (x > 1.0e8f)
         return (q);
 
     p = 1.0f / (x * x);
-    if (x >= 1000.0)
+    if (x >= 1000.0f)
         q +=
             ((7.9365079365079365079365e-4f * p - 2.7777777777777777777778e-3f) *
                  p +

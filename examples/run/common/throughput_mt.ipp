@@ -124,7 +124,7 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
         const std::size_t first_event = input_opts.skip;
         const std::size_t last_event = input_opts.skip + input_opts.events;
         for (std::size_t i = first_event; i < last_event; ++i) {
-            input.push_back({uncached_host_mr});
+            input.emplace_back(uncached_host_mr);
         }
         // Read the input cells into memory in parallel.
         tbb::parallel_for(

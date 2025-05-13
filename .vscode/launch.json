@@ -1,0 +1,12 @@
+{
+   "version": "0.2.0",
+   "configurations": [
+      {
+         "name": "Debug NVIDIA Executable",
+         "type": "cuda-gdb",
+         "request": "launch",
+         "program": "${command:cmake.launchTargetPath}",
+         "cwd" : "${command:cmake.launchTargetDirectory}"
+      }
+   ]
+}

@@ -42,14 +42,12 @@ struct simulator {
         scalar_type m_min_p = 10.f * traccc::unit<scalar_type>::MeV;
 
         /// Set the momentum limit to @param p
-        TRACCC_HOST_DEVICE
         inline void min_p(const scalar_type p) {
             m_is_min_pT = false;
             m_min_p = p;
         }
 
         /// Set the transverse momentum limit to @param p
-        TRACCC_HOST_DEVICE
         inline void min_pT(const scalar_type p) {
             m_is_min_pT = true;
             m_min_p = p;

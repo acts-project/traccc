@@ -78,8 +78,9 @@ full_chain_algorithm::full_chain_algorithm(
       m_clusterization{memory_resource{m_cached_device_mr, &(m_host_mr.get())},
                        m_copy, m_data->m_queue_wrapper, clustering_config,
                        logger->clone("ClusteringAlg")},
-      m_measurement_sorting(m_copy, m_data->m_queue_wrapper,
-                            logger->clone("MeasSortingAlg")),
+      m_measurement_sorting(
+          memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
+          m_data->m_queue_wrapper, logger->clone("MeasSortingAlg")),
       m_spacepoint_formation{
           memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
           m_data->m_queue_wrapper, logger->clone("SpFormationAlg")},
@@ -138,8 +139,9 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
                        m_copy, m_data->m_queue_wrapper,
                        parent.m_clustering_config,
                        parent.logger().clone("ClusteringAlg")},
-      m_measurement_sorting(m_copy, m_data->m_queue_wrapper,
-                            parent.logger().clone("MeasSortingAlg")),
+      m_measurement_sorting(
+          memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
+          m_data->m_queue_wrapper, parent.logger().clone("MeasSortingAlg")),
       m_spacepoint_formation{
           memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
           m_data->m_queue_wrapper, parent.logger().clone("SpFormationAlg")},

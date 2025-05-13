@@ -73,16 +73,14 @@ class fitting_performance_writer {
         assert(!trk_state.is_hole);
         assert(trk_state.is_smoothed);
 
-        std::map<measurement, std::map<particle, std::size_t>> meas_to_ptc_map;
-        std::map<measurement, std::pair<point3, point3>> meas_to_param_map;
+        bool use_found = !evt_data.m_found_meas_to_ptc_map.empty();
 
-        if (!evt_data.m_found_meas_to_ptc_map.empty()) {
-            meas_to_ptc_map = evt_data.m_found_meas_to_ptc_map;
-            meas_to_param_map = evt_data.m_found_meas_to_param_map;
-        } else {
-            meas_to_ptc_map = evt_data.m_meas_to_ptc_map;
-            meas_to_param_map = evt_data.m_meas_to_param_map;
-        }
+        const std::map<measurement, std::map<particle, std::size_t>>&
+            meas_to_ptc_map = use_found ? evt_data.m_found_meas_to_ptc_map
+                                        : evt_data.m_meas_to_ptc_map;
+        const std::map<measurement, std::pair<point3, point3>>&
+            meas_to_param_map = use_found ? evt_data.m_found_meas_to_param_map
+                                          : evt_data.m_meas_to_param_map;
 
         const measurement meas = trk_state.get_measurement();
 

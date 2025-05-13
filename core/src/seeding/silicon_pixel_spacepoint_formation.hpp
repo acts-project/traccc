@@ -50,7 +50,9 @@ edm::spacepoint_collection::host silicon_pixel_spacepoint_formation(
             result.resize(sp_index + 1u);
             auto sp = result.at(sp_index);
             traccc::details::fill_pixel_spacepoint(sp, det, meas);
-            sp.measurement_index() = i;
+            sp.measurement_index_1() = i;
+            sp.measurement_index_2() =
+                edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX;
         }
     }
 
