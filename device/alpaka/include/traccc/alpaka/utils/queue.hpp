@@ -41,9 +41,6 @@ class queue {
     /// Move assignment
     queue& operator=(queue&& rhs) noexcept;
 
-    /// Device that the queue is associated to
-    std::size_t device() const;
-
     /// Access a typeless pointer to the managed @c ::alpaka::Queue object
     void* alpakaQueue();
     /// Access a typeless pointer to the managed @c ::alpaka::Queue object

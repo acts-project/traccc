@@ -17,8 +17,6 @@
 namespace traccc::alpaka {
 
 struct queue::impl {
-    /// The device the queue is created for
-    std::size_t m_device{INVALID_DEVICE};
     /// Bare pointer to the wrapped queue object
     Queue* m_queue = nullptr;
     /// Unique pointer to the managed Queue object
@@ -27,9 +25,8 @@ struct queue::impl {
 
 queue::queue(std::size_t device) : m_impl{std::make_unique<impl>()} {
 
-    m_impl->m_device = device == INVALID_DEVICE ? 0 : device;
-    m_impl->m_managedQueue = std::make_unique<Queue>(
-        ::alpaka::getDevByIdx(::alpaka::Platform<Acc>{}, m_impl->m_device));
+    m_impl->m_managedQueue = std::make_unique<Queue>(::alpaka::getDevByIdx(
+        ::alpaka::Platform<Acc>{}, device == INVALID_DEVICE ? 0 : device));
     m_impl->m_queue = m_impl->m_managedQueue.get();
 }
 
@@ -37,16 +34,6 @@ queue::queue(void* input_queue) : m_impl{std::make_unique<impl>()} {
 
     assert(input_queue != nullptr);
     m_impl->m_queue = static_cast<Queue*>(input_queue);
-
-#if defined(ALPAKA_ACC_SYCL_ENABLED)
-    auto sycl_device =
-        ::alpaka::getNativeHandle(::alpaka::getDev(*m_impl->m_queue)).first;
-    m_impl->m_device = static_cast<std::size_t>(
-        sycl_device.get_info<::sycl::info::device::vendor_id>());
-#else
-    m_impl->m_device = static_cast<std::size_t>(
-        ::alpaka::getNativeHandle(::alpaka::getDev(*m_impl->m_queue)));
-#endif
 }
 
 queue::queue(queue&&) noexcept = default;
@@ -54,11 +41,6 @@ queue::queue(queue&&) noexcept = default;
 queue::~queue() = default;
 
 queue& queue::operator=(queue&& rhs) noexcept = default;
-
-std::size_t queue::device() const {
-
-    return m_impl->m_device;
-}
 
 void* queue::alpakaQueue() {
 
