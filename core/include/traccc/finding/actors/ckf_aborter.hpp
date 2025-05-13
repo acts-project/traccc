@@ -14,9 +14,6 @@
 // detray include(s)
 #include <detray/propagator/base_actor.hpp>
 
-// System include(s)
-#include <limits>
-
 namespace traccc {
 
 /// Aborter triggered when the next surface is reached
@@ -38,7 +35,7 @@ struct ckf_aborter : detray::actor {
                                        propagator_state_t &prop_state) const {
 
         auto &navigation = prop_state._navigation;
-        auto &stepping = prop_state._stepping;
+        const auto &stepping = prop_state._stepping;
 
         abrt_state.count++;
         abrt_state.path_from_surface += stepping.step_size();
@@ -60,6 +57,16 @@ struct ckf_aborter : detray::actor {
             prop_state._heartbeat &= navigation.abort(
                 "CKF: Maximum number of steps to reach next sensitive surface "
                 "exceeded");
+        }
+
+        const auto &track = stepping();
+        const scalar q{stepping.particle_hypothesis().charge()};
+        const scalar mag{track.pT(q)};
+
+        if (mag <= 500.f * traccc::unit<scalar>::MeV) {
+            // Stop navigation
+            prop_state._heartbeat &= navigation.abort();
+            abrt_state.success = false;
         }
     }
 };
