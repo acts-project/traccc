@@ -11,18 +11,16 @@ enable_language(SYCL)
 traccc_add_test(
     sycl
 
-    # Define the sources for the test.
-    # TODO: Reactivate this once #655 is fixed.
-    # test_kalman_fitter_telescope.sycl
+    test_kalman_fitter_telescope.cpp
     test_ckf_combinatorics_telescope.cpp
     test_ckf_toy_detector.cpp
-    test_clusterization.sycl
+    test_clusterization.cpp
     test_dpl.sycl
-    test_spacepoint_formation.sycl
+    test_spacepoint_formation.cpp
     test_barrier.sycl
     test_mutex.sycl
     test_unique_lock.sycl
-    test_cca.sycl
+    test_cca.cpp
     test_sanity_contiguous_on.sycl
     test_sanity_ordered_on.sycl
     test_sort.sycl
