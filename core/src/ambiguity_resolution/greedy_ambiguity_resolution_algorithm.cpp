@@ -93,18 +93,11 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     for (const auto& i : accepted_ids) {
 
-        // Make sure there is no duplicate
-        /*
-        assert(meas_ids[i].size() != std::unordered_set<std::size_t>(
-                                         meas_ids[i].begin(), meas_ids[i].end())
-                                         .size());
-        */
         std::unordered_set<std::size_t> deduplicated_ids(meas_ids[i].begin(),
                                                          meas_ids[i].end());
 
         for (const auto& meas_id : deduplicated_ids) {
 
-            // for (const auto& meas_id : meas_ids[i]) {
             const auto it = std::lower_bound(unique_meas.begin(),
                                              unique_meas.end(), meas_id);
             assert(it != unique_meas.end());
