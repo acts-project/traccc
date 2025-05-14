@@ -29,8 +29,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     const std::size_t n_tracks = track_candidates.size();
 
-    // Make sure there is no duplicate measurement
-
     // Make the output container
     track_candidate_container_types::host output{&m_mr.main};
 
@@ -116,7 +114,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
             assert(it != unique_meas.end());
             const std::size_t unique_meas_idx = static_cast<std::size_t>(
                 std::distance(unique_meas.begin(), it));
-
             if (tracks_per_measurement[unique_meas_idx].size() > 1) {
                 n_shared[i]++;
             }
@@ -130,8 +127,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                         static_cast<traccc::scalar>(n_meas[i]);
     }
 
-    // Sort the track id with rel_shared and pval to find the worst track
-    // fast
+    // Sort the track id with rel_shared and pval to find the worst track fast
     std::vector<unsigned int> sorted_ids = accepted_ids;
 
     auto track_comparator = [&rel_shared, &pvals](unsigned int a,
@@ -145,7 +141,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     // Iterate over tracks
     for (unsigned int iter = 0; iter < m_config.max_iterations; iter++) {
-
         // Terminate if there are no tracks to iterate
         if (accepted_ids.empty()) {
             break;
@@ -158,8 +153,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
             }
         }
 
-        // Terminate if the max shared measurements is less than the cut
-        // value
+        // Terminate if the max shared measurements is less than the cut value
         if (max_shared < m_config.max_shared_meas) {
             break;
         }
@@ -202,7 +196,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
             const auto it2 =
                 std::lower_bound(tracks.begin(), tracks.end(), worst_track);
             assert(it2 != tracks.end() && *it2 == worst_track);
-
             tracks.erase(it2);
 
             // If there is only one track associated with measurement, the
@@ -214,8 +207,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
                     std::count(meas_ids[tid].begin(), meas_ids[tid].end(), id));
                 rel_shared[tid] = static_cast<traccc::scalar>(n_shared[tid]) /
                                   static_cast<traccc::scalar>(n_meas[tid]);
-                // Reposition the track to the next of the worse track which
-                // is firstly found during the reverse iteration
+                // Reposition the track to the next of the worse track which is
+                // firstly found during the reverse iteration
                 const auto it3 =
                     std::find(sorted_ids.begin(), sorted_ids.end(), tid);
                 assert(it3 != sorted_ids.end());
