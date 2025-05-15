@@ -5,20 +5,19 @@
  * Mozilla Public License Version 2.0
  */
 
+// Local include(s).
+#include "tests/cca_test.hpp"
+
+// Project include(s).
+#include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
+#include "traccc/alpaka/utils/vecmem_objects.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
+
+// GoogleTest include(s).
 #include <gtest/gtest.h>
 
+// Standard include(s).
 #include <functional>
-#include <vecmem/memory/host_memory_resource.hpp>
-
-#ifdef ALPAKA_ACC_SYCL_ENABLED
-#include <sycl/sycl.hpp>
-#include <vecmem/utils/sycl/queue_wrapper.hpp>
-#endif
-
-#include "tests/cca_test.hpp"
-#include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
-#include "traccc/alpaka/utils/get_vecmem_resource.hpp"
-#include "traccc/geometry/silicon_detector_description.hpp"
 
 namespace {
 
@@ -29,17 +28,12 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
         std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
             result;
 
-#ifdef ALPAKA_ACC_SYCL_ENABLED
-        ::sycl::queue q;
-        vecmem::sycl::queue_wrapper qw{&q};
-        traccc::alpaka::vecmem_resources::host_memory_resource host_mr(qw);
-        traccc::alpaka::vecmem_resources::device_copy copy(qw);
-        traccc::alpaka::vecmem_resources::device_memory_resource device_mr;
-#else
-        traccc::alpaka::vecmem_resources::host_memory_resource host_mr;
-        traccc::alpaka::vecmem_resources::device_copy copy;
-        traccc::alpaka::vecmem_resources::device_memory_resource device_mr;
-#endif
+        traccc::alpaka::queue queue;
+        traccc::alpaka::vecmem_objects vo(queue);
+
+        vecmem::memory_resource& host_mr = vo.host_mr();
+        vecmem::memory_resource& device_mr = vo.device_mr();
+        vecmem::copy& copy = vo.copy();
 
         traccc::alpaka::clusterization_algorithm cc({device_mr}, copy, cfg);
 
