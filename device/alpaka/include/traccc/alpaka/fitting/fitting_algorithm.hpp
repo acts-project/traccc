@@ -7,6 +7,9 @@
 
 #pragma once
 
+// Local include(s).
+#include "traccc/alpaka/utils/queue.hpp"
+
 // Project include(s).
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_state.hpp"
@@ -17,9 +20,6 @@
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
-
-// traccc library include(s).
-#include "traccc/utils/memory_resource.hpp"
 
 namespace traccc::alpaka {
 
@@ -42,9 +42,10 @@ class fitting_algorithm
     /// @param cfg  Configuration object
     /// @param mr   The memory resource to use
     /// @param copy Copy object
+    /// @param q    The queue to use
     fitting_algorithm(
         const config_type& cfg, const traccc::memory_resource& mr,
-        vecmem::copy& copy,
+        vecmem::copy& copy, queue& q,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Run the algorithm
@@ -61,6 +62,8 @@ class fitting_algorithm
     traccc::memory_resource m_mr;
     /// The copy object to use
     vecmem::copy& m_copy;
+    /// The queue to use
+    queue& m_queue;
 };
 
 }  // namespace traccc::alpaka

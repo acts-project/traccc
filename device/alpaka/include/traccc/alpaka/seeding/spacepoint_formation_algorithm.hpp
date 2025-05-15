@@ -7,6 +7,9 @@
 
 #pragma once
 
+// Local include(s).
+#include "traccc/alpaka/utils/queue.hpp"
+
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
@@ -38,9 +41,11 @@ class spacepoint_formation_algorithm
     /// Constructor for spacepoint_formation
     ///
     /// @param mr is the memory resource
+    /// @param copy is the copy object
+    /// @param q is the queue to use
     ///
     spacepoint_formation_algorithm(
-        const traccc::memory_resource& mr, vecmem::copy& copy,
+        const traccc::memory_resource& mr, vecmem::copy& copy, queue& q,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for the space point formation, based on one single
@@ -61,6 +66,8 @@ class spacepoint_formation_algorithm
     traccc::memory_resource m_mr;
     /// The copy object to use
     std::reference_wrapper<vecmem::copy> m_copy;
+    /// The Alpaka queue to use
+    std::reference_wrapper<queue> m_queue;
 };  // class spacepoint_formation_algorithm
 
 }  // namespace traccc::alpaka
