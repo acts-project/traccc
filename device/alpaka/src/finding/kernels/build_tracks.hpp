@@ -19,13 +19,13 @@ namespace traccc::alpaka {
 
 struct BuildTracksKernel {
     template <typename TAcc>
-    ALPAKA_FN_ACC void operator()(TAcc const& acc, const finding_config cfg,
+    ALPAKA_FN_ACC void operator()(TAcc const& acc,
                                   device::build_tracks_payload payload) const {
 
         device::global_index_t globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
 
-        device::build_tracks(globalThreadIdx, cfg, payload);
+        device::build_tracks(globalThreadIdx, payload);
     }
 };
 
