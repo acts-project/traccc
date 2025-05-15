@@ -8,8 +8,8 @@
 // Project include(s).
 #include "traccc/alpaka/fitting/fitting_algorithm.hpp"
 
-#include "../utils/utils.hpp"
 #include "../utils/get_queue.hpp"
+#include "../utils/utils.hpp"
 #include "traccc/fitting/device/fill_sort_keys.hpp"
 #include "traccc/fitting/device/fit.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"

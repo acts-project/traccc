@@ -8,8 +8,8 @@
 // Local include(s).
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
 
-#include "../utils/utils.hpp"
 #include "../utils/get_queue.hpp"
+#include "../utils/utils.hpp"
 
 // Project include(s).
 #include "traccc/seeding/device/estimate_track_params.hpp"

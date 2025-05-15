@@ -9,9 +9,9 @@
 #include "traccc/alpaka/finding/finding_algorithm.hpp"
 
 #include "../utils/barrier.hpp"
+#include "../utils/get_queue.hpp"
 #include "../utils/thread_id.hpp"
 #include "../utils/utils.hpp"
-#include "../utils/get_queue.hpp"
 #include "./kernels/apply_interaction.hpp"
 #include "./kernels/build_tracks.hpp"
 #include "./kernels/fill_sort_keys.hpp"

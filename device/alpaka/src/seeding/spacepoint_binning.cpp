@@ -8,8 +8,8 @@
 // Local include(s).
 #include "traccc/alpaka/seeding/details/spacepoint_binning.hpp"
 
-#include "../utils/utils.hpp"
 #include "../utils/get_queue.hpp"
+#include "../utils/utils.hpp"
 
 // Project include(s).
 #include "traccc/seeding/device/count_grid_capacities.hpp"

@@ -6,8 +6,8 @@
  */
 
 // Local include(s).
-#include "../utils/utils.hpp"
 #include "../utils/get_queue.hpp"
+#include "../utils/utils.hpp"
 
 // Project include(s).
 #include "traccc/alpaka/utils/make_prefix_sum_buff.hpp"

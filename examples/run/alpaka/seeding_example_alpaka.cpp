@@ -10,8 +10,8 @@
 #include "traccc/alpaka/fitting/fitting_algorithm.hpp"
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
-#include "traccc/alpaka/utils/vecmem_objects.hpp"
 #include "traccc/alpaka/utils/queue.hpp"
+#include "traccc/alpaka/utils/vecmem_objects.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
@@ -242,7 +242,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                     mr.main);
             async_copy.setup(spacepoints_alpaka_buffer)->wait();
             async_copy(vecmem::get_data(spacepoints_per_event),
-                 spacepoints_alpaka_buffer)
+                       spacepoints_alpaka_buffer)
                 ->wait();
 
             traccc::measurement_collection_types::buffer
@@ -251,7 +251,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                     mr.main);
             async_copy.setup(measurements_alpaka_buffer)->wait();
             async_copy(vecmem::get_data(measurements_per_event),
-                 measurements_alpaka_buffer)
+                       measurements_alpaka_buffer)
                 ->wait();
 
             {

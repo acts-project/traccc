@@ -74,7 +74,7 @@ class finding_algorithm
     /// @param a    Alpaka queue object
     finding_algorithm(
         const config_type& cfg, const traccc::memory_resource& mr,
-        vecmem::copy& copy, queue &q,
+        vecmem::copy& copy, queue& q,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Get config object (const access)

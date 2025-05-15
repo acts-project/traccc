@@ -9,8 +9,8 @@
 #include "traccc/alpaka/seeding/spacepoint_formation_algorithm.hpp"
 
 #include "../utils/barrier.hpp"
-#include "../utils/utils.hpp"
 #include "../utils/get_queue.hpp"
+#include "../utils/utils.hpp"
 
 // Project include(s).
 #include "traccc/geometry/detector.hpp"

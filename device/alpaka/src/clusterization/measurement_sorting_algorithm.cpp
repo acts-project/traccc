@@ -7,10 +7,11 @@
 
 // Library include(s).
 #include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
-#include "../utils/get_queue.hpp"
 
 #include <thrust/execution_policy.h>
 #include <thrust/sort.h>
+
+#include "../utils/get_queue.hpp"
 
 namespace traccc::alpaka {
 
@@ -41,15 +42,15 @@ measurement_sorting_algorithm::operator()(
 #elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
     auto stream = ::alpaka::getNativeHandle(queue);
     auto execPolicy = thrust::hip_rocprim::par_nosync(
-        std::pmr::polymorphic_allocator(&(m_mr.main)))
-        .on(stream);
+                          std::pmr::polymorphic_allocator(&(m_mr.main)))
+                          .on(stream);
 #else
     auto execPolicy = thrust::host;
 #endif
 
-                thrust::sort(execPolicy, measurements_view.ptr(),
-                             measurements_view.ptr() + n_measurements,
-                             measurement_sort_comp());
+    thrust::sort(execPolicy, measurements_view.ptr(),
+                 measurements_view.ptr() + n_measurements,
+                 measurement_sort_comp());
 
     // Return the view of the sorted measurements.
     return measurements_view;
