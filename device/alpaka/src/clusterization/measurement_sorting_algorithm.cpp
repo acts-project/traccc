@@ -5,13 +5,16 @@
  * Mozilla Public License Version 2.0
  */
 
-// Library include(s).
+// Local include(s).
 #include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
+#include "../utils/get_queue.hpp"
 
+// Thrust include(s).
 #include <thrust/execution_policy.h>
 #include <thrust/sort.h>
 
-#include "../utils/get_queue.hpp"
+// System include(s).
+#include <memory_resource>
 
 namespace traccc::alpaka {
 
