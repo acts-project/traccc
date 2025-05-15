@@ -52,7 +52,33 @@ TRACCC_DEVICE inline void rearrange_tracks(
         auto sid = inverted_ids[tid];
 
         if (sid > 0) {
+            /*
+            auto left = 0;
+            auto right = sid;
 
+            // Find valid left
+            while (is_updated[sorted_ids[left]] && left < sid - 1) {
+                left++;
+            }
+
+            // Find valid right
+            while (is_updated[sorted_ids[right]] && right > 0) {
+                right--;
+            }
+
+            auto mid = left + (right - left) / 2;
+
+            auto rel_sh = rel_shared[sorted_ids[mid]];
+            auto pval = pvals[sorted_ids[mid]];
+
+            if (rel_sh < rel_sh_ref ||
+                (rel_sh == rel_sh_ref && pval > pval_ref)) {
+                left = mid + 1;  // mid는 val보다 작으므로 제외
+            } else {
+                right = mid;  // mid는 후보가 될 수 있음
+            }
+            */
+            
             // Use binary search here
             for (int i = sid - 1; i >= 0; i--) {
 
@@ -84,7 +110,7 @@ TRACCC_DEVICE inline void rearrange_tracks(
             }
         }
 
-        //printf("%d %d \n", sid - k, N);
+        // printf("%d %d \n", sid - k, N);
 
         auto it = thrust::find(thrust::seq, updated_tracks.begin(),
                                updated_tracks.begin() + N, tid);

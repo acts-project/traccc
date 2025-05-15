@@ -8,6 +8,8 @@
 // Project include(s).
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/utils.hpp"
+#include "./kernels/add_offset.cuh"
+#include "./kernels/block_inclusive_scan.cuh"
 #include "./kernels/count_shared_measurements.cuh"
 #include "./kernels/fill_inverted_ids.cuh"
 #include "./kernels/fill_track_candidates.cuh"
@@ -309,6 +311,15 @@ greedy_ambiguity_resolution_algorithm::operator()(
     vecmem::data::vector_buffer<int> is_updated_buffer{n_tracks, m_mr.main};
     m_copy.get().setup(inverted_ids_buffer)->ignore();
 
+    // Prefix sum buffer
+    vecmem::data::vector_buffer<int> prefix_sums_buffer{n_tracks, m_mr.main};
+    m_copy.get().setup(prefix_sums_buffer)->ignore();
+
+    // block offsets buffer
+    vecmem::data::vector_buffer<int> block_offsets_buffer{
+        n_tracks / m_warp_size + 1, m_mr.main};
+    m_copy.get().setup(block_offsets_buffer)->ignore();
+
     // Fill and sort the sorted ids vector
     thrust::copy(thrust_policy, pre_accepted_ids_buffer.ptr(),
                  pre_accepted_ids_buffer.ptr() + n_accepted,
@@ -395,6 +406,19 @@ greedy_ambiguity_resolution_algorithm::operator()(
                     .update_res = update_res_device.get(),
                     .inverted_ids_view = inverted_ids_buffer,
                 });
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+            kernels::block_inclusive_scan<<<nBlocks, nThreads, 0, stream>>>(
+                device::block_inclusive_scan_payload{
+                    .is_updated_view = is_updated_buffer,
+                    .block_offsets_view = block_offsets_buffer,
+                    .prefix_sums_view = prefix_sums_buffer});
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+            kernels::add_offset<<<nBlocks, nThreads, 0, stream>>>(
+                device::add_offset_payload{
+                    .block_offsets_view = block_offsets_buffer,
+                    .prefix_sums_view = prefix_sums_buffer});
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
             kernels::rearrange_tracks<<<nBlocks, nThreads, 0, stream>>>(
