@@ -172,7 +172,6 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
         // Run the track fitting
         ::alpaka::exec<Acc>(queue, workDiv, FitTrackKernel<fitter_t>{}, m_cfg,
                             ::alpaka::getPtrNative(bufAcc_fitPayload));
-        ::alpaka::wait(queue);
     }
 
     ::alpaka::wait(queue);

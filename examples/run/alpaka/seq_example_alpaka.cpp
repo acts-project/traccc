@@ -75,7 +75,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     vecmem::copy host_copy;
 
     // Device types used.
-    vecmem::copy& copy = vo.copy();
+    vecmem::copy& copy = vo.async_copy();
 
     // Construct the detector description object.
     traccc::silicon_detector_description::host host_det_descr{host_mr};
@@ -102,6 +102,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
             host_detector, host_mr, detector_opts.detector_file,
             detector_opts.material_file, detector_opts.grid_file);
         device_detector = detray::get_buffer(host_detector, device_mr, copy);
+        queue.synchronize();
         device_detector_view = detray::get_data(device_detector);
     }
 

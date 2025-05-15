@@ -158,7 +158,7 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     m_vecmem_objects.async_copy()(::vecmem::get_data(cells), cells_buffer)
         ->ignore();
 
-    // Run the clusterization.
+    // Run the clusterization (asynchronously).
     const clusterization_algorithm::output_type measurements =
         m_clusterization(cells_buffer, m_device_det_descr);
     m_measurement_sorting(measurements);
@@ -166,18 +166,18 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     // If we have a Detray detector, run the track finding and fitting.
     if (m_detector != nullptr) {
 
-        // Run the seed-finding.
+        // Run the seed-finding (asynchronously).
         const spacepoint_formation_algorithm::output_type spacepoints =
             m_spacepoint_formation(m_device_detector_view, measurements);
         const track_params_estimation::output_type track_params =
             m_track_parameter_estimation(measurements, spacepoints,
                                          m_seeding(spacepoints), m_field_vec);
 
-        // Run the track finding.
+        // Run the track finding (asynchronously).
         const finding_algorithm::output_type track_candidates = m_finding(
             m_device_detector_view, m_field, measurements, track_params);
 
-        // Run the track fitting.
+        // Run the track fitting (asynchronously).
         const fitting_algorithm::output_type track_states =
             m_fitting(m_device_detector_view, m_field, track_candidates);
 
