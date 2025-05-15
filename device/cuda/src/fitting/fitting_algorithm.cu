@@ -67,12 +67,9 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
         default_algebra>::const_device::size_type n_tracks =
         m_copy.get_size(track_candidates_view);
 
-    // Get the sizes of the track candidates in each track. In a super
-    // sketchy way. Since index "5" is just harcoded to be the
-    // "measurement_indices" variable. As the current version of VecMem
-    // doesn't provide a better / more redable way for doing this.
+    // Get the sizes of the track candidates in each track.
     const std::vector<unsigned int> candidate_sizes =
-        m_copy.get_sizes(track_candidates_view.get<5>());
+        m_copy.get_sizes(track_candidates_view);
 
     track_state_container_types::buffer track_states_buffer{
         {n_tracks, m_mr.main},
