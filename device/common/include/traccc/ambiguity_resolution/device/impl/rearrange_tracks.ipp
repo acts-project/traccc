@@ -45,22 +45,11 @@ TRACCC_DEVICE inline void rearrange_tracks(
     auto rel_sh_ref = rel_shared[tid];
     auto pval_ref = pvals[tid];
     auto shifted_idx = globalIndex;
-
     auto N = (*payload.update_res).n_updated_tracks;
-    // Found the ids in the updated tracks
-    /*
-    const auto it_end =
-        updated_tracks.begin() + (*payload.update_res).n_updated_tracks;
 
-    auto it = thrust::find(thrust::seq, updated_tracks.begin(), it_end, tid);
-
-    if (it != it_end) {
-    */
     if (is_updated[tid]) {
         // index of sorted_ids
         auto sid = inverted_ids[tid];
-
-        //int k = 0;
 
         if (sid > 0) {
 
@@ -68,12 +57,7 @@ TRACCC_DEVICE inline void rearrange_tracks(
             for (int i = sid - 1; i >= 0; i--) {
 
                 auto tid2 = sorted_ids[i];
-                /*
-                auto it2 = thrust::find(thrust::seq, updated_tracks.begin(),
-                                        it_end, tid2);
 
-                if (it2 == it_end) {
-                */
                 if (!is_updated[tid2]) {
                     auto rel_sh = rel_shared[tid2];
                     auto pval = pvals[tid2];
@@ -83,7 +67,6 @@ TRACCC_DEVICE inline void rearrange_tracks(
 
                         shifted_idx--;
                     } else {
-                        //k = i;
                         break;
                     }
                 }
