@@ -36,12 +36,15 @@ TEST(CUDAClustering, SingleModule) {
 
     // Create cell collection
     traccc::edm::silicon_cell_collection::host cells{mng_mr};
-    cells.resize(8u);
-    cells.channel0() = {1u, 2u, 3u, 6u, 5u, 6u, 7u, 6u};
-    cells.channel1() = {2u, 2u, 2u, 4u, 5u, 5u, 5u, 6u};
-    cells.activation() = {1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f};
-    cells.time() = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
-    cells.module_index() = {0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u};
+    cells.reserve(8u);
+    cells.push_back({1u, 2u, 1.f, 0.f, 0u});
+    cells.push_back({2u, 2u, 1.f, 0.f, 0u});
+    cells.push_back({3u, 2u, 1.f, 0.f, 0u});
+    cells.push_back({6u, 4u, 1.f, 0.f, 0u});
+    cells.push_back({5u, 5u, 1.f, 0.f, 0u});
+    cells.push_back({6u, 5u, 1.f, 0.f, 0u});
+    cells.push_back({7u, 5u, 1.f, 0.f, 0u});
+    cells.push_back({6u, 6u, 1.f, 0.f, 0u});
 
     // Create a dummy detector description.
     traccc::silicon_detector_description::host dd{mng_mr};
