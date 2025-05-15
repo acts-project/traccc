@@ -24,6 +24,7 @@
 #include "traccc/utils/propagation.hpp"
 
 // VecMem include(s).
+#include <memory>
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/utils/copy.hpp>
 
@@ -81,6 +82,12 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
                          detector_type* detector,
                          std::unique_ptr<const traccc::Logger> logger);
 
+    full_chain_algorithm() = delete;
+    full_chain_algorithm(const full_chain_algorithm& other) = delete;
+    full_chain_algorithm(full_chain_algorithm&& other) noexcept;
+    full_chain_algorithm& operator=(const full_chain_algorithm& other) = delete;
+    full_chain_algorithm& operator=(full_chain_algorithm&& other) = delete;
+
     /// Reconstruct track parameters in the entire detector
     ///
     /// @param cells The cells for every detector module in the event
@@ -90,8 +97,10 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
         const edm::silicon_cell_collection::host& cells) const override;
 
     private:
+    /// The host memory resource
+    vecmem::memory_resource& m_mr;
     /// Vecmem copy object
-    vecmem::copy m_copy;
+    std::shared_ptr<vecmem::copy> m_copy;
     /// Constant B field for the (seed) track parameter estimation
     traccc::vector3 m_field_vec;
     /// Constant B field for the track finding and fitting
@@ -119,23 +128,6 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
     finding_algorithm m_finding;
     /// Track fitting algorithm
     fitting_algorithm m_fitting;
-
-    /// @}
-
-    /// @name Algorithm configurations
-    /// @{
-
-    /// Configuration for the seed finding
-    seedfinder_config m_finder_config;
-    /// Configuration for the spacepoint grid formation
-    spacepoint_grid_config m_grid_config;
-    /// Configuration for the seed filtering
-    seedfilter_config m_filter_config;
-
-    /// Configuration for the track finding
-    finding_algorithm::config_type m_finding_config;
-    /// Configuration for the track fitting
-    fitting_algorithm::config_type m_fitting_config;
 
     /// @}
 };  // class full_chain_algorithm

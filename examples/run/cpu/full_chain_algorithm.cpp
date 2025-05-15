@@ -20,26 +20,26 @@ full_chain_algorithm::full_chain_algorithm(
     const silicon_detector_description::host& det_descr,
     detector_type* detector, std::unique_ptr<const traccc::Logger> logger)
     : messaging(logger->clone()),
+      m_mr(mr),
+      m_copy(std::make_shared<vecmem::copy>()),
       m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
       m_field(
           traccc::construct_const_bfield<typename detector_type::scalar_type>(
               m_field_vec)),
       m_det_descr(det_descr),
       m_detector(detector),
-      m_clusterization(mr, logger->cloneWithSuffix("ClusteringAlg")),
-      m_spacepoint_formation(mr, logger->cloneWithSuffix("SpFormationAlg")),
-      m_seeding(finder_config, grid_config, filter_config, mr,
+      m_clusterization(m_mr, logger->cloneWithSuffix("ClusteringAlg")),
+      m_spacepoint_formation(m_mr, logger->cloneWithSuffix("SpFormationAlg")),
+      m_seeding(finder_config, grid_config, filter_config, m_mr,
                 logger->cloneWithSuffix("SeedingAlg")),
-      m_track_parameter_estimation(mr,
+      m_track_parameter_estimation(m_mr,
                                    logger->cloneWithSuffix("TrackParamEstAlg")),
       m_finding(finding_config, logger->cloneWithSuffix("TrackFindingAlg")),
-      m_fitting(fitting_config, mr, m_copy,
-                logger->cloneWithSuffix("TrackFittingAlg")),
-      m_finder_config(finder_config),
-      m_grid_config(grid_config),
-      m_filter_config(filter_config),
-      m_finding_config(finding_config),
-      m_fitting_config(fitting_config) {}
+      m_fitting(fitting_config, m_mr, *m_copy,
+                logger->cloneWithSuffix("TrackFittingAlg")) {}
+
+full_chain_algorithm::full_chain_algorithm(
+    full_chain_algorithm&& other) noexcept = default;
 
 full_chain_algorithm::output_type full_chain_algorithm::operator()(
     const edm::silicon_cell_collection::host& cells) const {
