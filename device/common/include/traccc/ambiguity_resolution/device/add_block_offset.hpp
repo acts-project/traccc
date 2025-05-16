@@ -9,6 +9,7 @@
 
 // Local include(s).
 #include "traccc/device/global_index.hpp"
+#include "traccc/edm/device/update_result.hpp"
 
 // Project include(s)
 #include "traccc/definitions/primitives.hpp"
@@ -20,8 +21,13 @@
 namespace traccc::device {
 
 /// (Event Data) Payload for the @c
-/// traccc::device::add_offset function
-struct add_offset_payload {
+/// traccc::device::add_block_offset function
+struct add_block_offset_payload {
+
+    /**
+     * @brief Update result
+     */
+    update_result* update_res;
 
     /**
      * @brief View object to the block_offset vector
@@ -39,11 +45,10 @@ struct add_offset_payload {
 /// @param[in] globalIndex   The index of the current thread
 /// @param[inout] payload      The function call payload
 ///
-TRACCC_DEVICE inline void add_offset(
-    global_index_t globalIndex,
-    const add_offset_payload& payload);
+TRACCC_DEVICE inline void add_block_offset(global_index_t globalIndex,
+                                     const add_block_offset_payload& payload);
 
 }  // namespace traccc::device
 
 // Include the implementation.
-#include "./impl/add_offset.ipp"
+#include "./impl/add_block_offset.ipp"

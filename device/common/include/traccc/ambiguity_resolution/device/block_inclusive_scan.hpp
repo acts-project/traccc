@@ -10,6 +10,7 @@
 // Local include(s).
 #include "traccc/device/concepts/barrier.hpp"
 #include "traccc/device/global_index.hpp"
+#include "traccc/edm/device/update_result.hpp"
 
 // Project include(s)
 #include "traccc/definitions/primitives.hpp"
@@ -23,6 +24,11 @@ namespace traccc::device {
 /// (Event Data) Payload for the @c
 /// traccc::device::block_inclusive_scan function
 struct block_inclusive_scan_payload {
+
+    /**
+     * @brief Update result
+     */
+    update_result* update_res;
 
     /**
      * @brief View object to the whether track id is updated

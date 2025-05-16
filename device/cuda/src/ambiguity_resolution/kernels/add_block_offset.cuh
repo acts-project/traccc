@@ -8,9 +8,9 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/ambiguity_resolution/device/add_offset.hpp"
+#include "traccc/ambiguity_resolution/device/add_block_offset.hpp"
 
 namespace traccc::cuda::kernels {
 
-__global__ void add_offset(device::add_offset_payload payload);
+__global__ void add_block_offset(device::add_block_offset_payload payload);
 }

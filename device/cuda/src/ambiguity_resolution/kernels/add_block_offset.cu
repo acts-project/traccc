@@ -8,13 +8,13 @@
 // Local include(s).
 #include "../../utils/barrier.hpp"
 #include "../../utils/global_index.hpp"
-#include "add_offset.cuh"
+#include "add_block_offset.cuh"
 
 namespace traccc::cuda::kernels {
 
-__global__ void add_offset(device::add_offset_payload payload) {
+__global__ void add_block_offset(device::add_block_offset_payload payload) {
 
-    device::add_offset(details::global_index1(), payload);
+    device::add_block_offset(details::global_index1(), payload);
 }
 
 }  // namespace traccc::cuda::kernels

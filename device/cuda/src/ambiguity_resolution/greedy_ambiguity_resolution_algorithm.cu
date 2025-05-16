@@ -8,7 +8,7 @@
 // Project include(s).
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/utils.hpp"
-#include "./kernels/add_offset.cuh"
+#include "./kernels/add_block_offset.cuh"
 #include "./kernels/block_inclusive_scan.cuh"
 #include "./kernels/count_shared_measurements.cuh"
 #include "./kernels/fill_inverted_ids.cuh"
@@ -410,13 +410,15 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
             kernels::block_inclusive_scan<<<nBlocks, nThreads, 0, stream>>>(
                 device::block_inclusive_scan_payload{
+                    .update_res = update_res_device.get(),
                     .is_updated_view = is_updated_buffer,
                     .block_offsets_view = block_offsets_buffer,
                     .prefix_sums_view = prefix_sums_buffer});
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-            kernels::add_offset<<<nBlocks, nThreads, 0, stream>>>(
-                device::add_offset_payload{
+            kernels::add_block_offset<<<nBlocks, nThreads, 0, stream>>>(
+                device::add_block_offset_payload{
+                    .update_res = update_res_device.get(),
                     .block_offsets_view = block_offsets_buffer,
                     .prefix_sums_view = prefix_sums_buffer});
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
