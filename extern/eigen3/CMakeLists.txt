@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2024 CERN for the benefit of the ACTS project
+# (c) 2021-2025 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -24,6 +24,9 @@ set( EIGEN_BUILD_DOC FALSE CACHE BOOL
    "Turn off the Eigen documentation build" )
 set( EIGEN_TEST_NOQT TRUE CACHE BOOL
    "Don't set up Qt based Eigen tests/demos" )
+
+# Make Eigen work without warnings with modern CMake versions.
+set( CMAKE_POLICY_VERSION_MINIMUM "3.10" )
 
 # Get it into the current directory.
 FetchContent_MakeAvailable( Eigen3 )
