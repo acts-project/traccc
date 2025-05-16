@@ -11,12 +11,13 @@ namespace traccc::device {
 
 TRACCC_HOST_DEVICE inline void fill_sort_keys(
     const global_index_t globalIndex,
-    const track_candidate_container_types::const_view& track_candidates_view,
+    const edm::track_candidate_collection<default_algebra>::const_view&
+        track_candidates_view,
     vecmem::data::vector_view<device::sort_key> keys_view,
     vecmem::data::vector_view<unsigned int> ids_view) {
 
-    const track_candidate_container_types::const_device track_candidates(
-        track_candidates_view);
+    const edm::track_candidate_collection<default_algebra>::const_device
+        track_candidates(track_candidates_view);
 
     // Keys
     vecmem::device_vector<device::sort_key> keys_device(keys_view);
@@ -30,7 +31,7 @@ TRACCC_HOST_DEVICE inline void fill_sort_keys(
 
     // Key = The number of measurements
     keys_device.at(globalIndex) = static_cast<traccc::scalar>(
-        track_candidates.at(globalIndex).items.size());
+        track_candidates.at(globalIndex).measurement_indices().size());
     ids_device.at(globalIndex) = globalIndex;
 }
 

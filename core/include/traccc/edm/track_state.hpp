@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -12,7 +12,6 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/container.hpp"
 #include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_quality.hpp"
 
@@ -58,7 +57,7 @@ struct track_state {
 
     /// Construction with track candidate
     TRACCC_HOST_DEVICE
-    track_state(const track_candidate& trk_cand)
+    track_state(const measurement& trk_cand)
         : m_surface_link(trk_cand.surface_link), m_measurement(trk_cand) {
         m_filtered.set_surface_link(m_surface_link);
         m_smoothed.set_surface_link(m_surface_link);

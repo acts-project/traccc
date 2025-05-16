@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -123,7 +123,8 @@ void write(std::size_t event, std::string_view directory,
 
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
-           track_candidate_container_types::const_view tracks,
+           edm::track_candidate_collection<default_algebra>::const_view tracks,
+           measurement_collection_types::const_view measurements,
            const traccc::default_detector::host& detector) {
 
     switch (format) {
@@ -133,7 +134,7 @@ void write(std::size_t event, std::string_view directory,
                                    std::filesystem::path(get_event_filename(
                                        event, "-track-candidates.obj")))
                                       .native()),
-                tracks, detector);
+                tracks, measurements, detector);
             break;
         default:
             throw std::invalid_argument("Unsupported data format");

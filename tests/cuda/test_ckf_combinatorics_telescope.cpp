@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -126,10 +126,6 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
     // Copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    traccc::device::container_d2h_copy_alg<
-        traccc::track_candidate_container_types>
-        track_candidate_d2h{mr, copy};
-
     traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
         track_state_d2h{mr, copy};
 
@@ -161,16 +157,20 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
         // Truth Track Candidates
         traccc::event_data evt_data(path, i_evt, host_mr);
 
-        traccc::track_candidate_container_types::host truth_track_candidates =
-            evt_data.generate_truth_candidates(sg, host_mr);
+        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+            truth_track_candidates{host_mr};
+        traccc::measurement_collection_types::host
+            truth_track_candidate_measurements{&host_mr};
+        evt_data.generate_truth_candidates(truth_track_candidates,
+                                           truth_track_candidate_measurements,
+                                           sg, host_mr);
 
         ASSERT_EQ(truth_track_candidates.size(), n_truth_tracks);
 
         // Prepare truth seeds
         traccc::bound_track_parameters_collection_types::host seeds(&host_mr);
         for (unsigned int i_trk = 0; i_trk < n_truth_tracks; i_trk++) {
-            seeds.push_back(
-                truth_track_candidates.at(i_trk).header.seed_params);
+            seeds.push_back(truth_track_candidates.at(i_trk).params());
         }
         ASSERT_EQ(seeds.size(), n_truth_tracks);
 
@@ -192,36 +192,29 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
         copy(vecmem::get_data(measurements_per_event), measurements_buffer)
             ->wait();
 
-        // Instantiate output cuda containers/collections
-        traccc::track_candidate_container_types::buffer
-            track_candidates_cuda_buffer{{{}, *(mr.host)},
-                                         {{}, *(mr.host), mr.host}};
-        copy.setup(track_candidates_cuda_buffer.headers)->wait();
-        copy.setup(track_candidates_cuda_buffer.items)->wait();
-
-        traccc::track_candidate_container_types::buffer
-            track_candidates_limit_cuda_buffer{{{}, *(mr.host)},
-                                               {{}, *(mr.host), mr.host}};
-        copy.setup(track_candidates_limit_cuda_buffer.headers)->wait();
-        copy.setup(track_candidates_limit_cuda_buffer.items)->wait();
-
         // Run device finding
-        track_candidates_cuda_buffer =
-            device_finding(det_view, field, measurements_buffer, seeds_buffer);
+        traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
+            track_candidates_cuda_buffer = device_finding(
+                det_view, field, measurements_buffer, seeds_buffer);
 
         // Run device finding (Limit)
-        track_candidates_limit_cuda_buffer = device_finding_limit(
-            det_view, field, measurements_buffer, seeds_buffer);
+        traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
+            track_candidates_limit_cuda_buffer = device_finding_limit(
+                det_view, field, measurements_buffer, seeds_buffer);
 
-        traccc::track_candidate_container_types::host track_candidates_cuda =
-            track_candidate_d2h(track_candidates_cuda_buffer);
-        traccc::track_candidate_container_types::host
-            track_candidates_limit_cuda =
-                track_candidate_d2h(track_candidates_limit_cuda_buffer);
+        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+            track_candidates_cuda{host_mr},
+            track_candidates_limit_cuda{host_mr};
+        copy(track_candidates_cuda_buffer, track_candidates_cuda,
+             vecmem::copy::type::device_to_host)
+            ->wait();
+        copy(track_candidates_limit_cuda_buffer, track_candidates_limit_cuda,
+             vecmem::copy::type::device_to_host)
+            ->wait();
 
         // Make sure that the number of found tracks = n_track ^ (n_planes + 1)
-        ASSERT_TRUE(track_candidates_cuda.size() >
-                    track_candidates_limit_cuda.size());
+        ASSERT_GT(track_candidates_cuda.size(),
+                  track_candidates_limit_cuda.size());
         ASSERT_EQ(track_candidates_cuda.size(),
                   std::pow(n_truth_tracks, std::get<11>(GetParam()) + 1));
         ASSERT_EQ(track_candidates_limit_cuda.size(),

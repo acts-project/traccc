@@ -57,7 +57,7 @@ finding_algorithm<stepper_t, navigator_t>::finding_algorithm(
     : messaging(std::move(logger)), m_cfg(cfg), m_mr(mr), m_copy(copy) {}
 
 template <typename stepper_t, typename navigator_t>
-track_candidate_container_types::buffer
+edm::track_candidate_collection<default_algebra>::buffer
 finding_algorithm<stepper_t, navigator_t>::operator()(
     const typename detector_type::view_type& det_view,
     const bfield_type& field_view,
@@ -398,14 +398,13 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     auto n_tips_total = m_copy.get_size(tips_buffer);
 
     // Create track candidate buffer
-    track_candidate_container_types::buffer track_candidates_buffer{
-        {n_tips_total, m_mr.main},
-        {std::vector<std::size_t>(n_tips_total,
-                                  m_cfg.max_track_candidates_per_track),
-         m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable}};
+    edm::track_candidate_collection<default_algebra>::buffer
+        track_candidates_buffer{
+            std::vector<std::size_t>(n_tips_total,
+                                     m_cfg.max_track_candidates_per_track),
+            m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable};
 
-    m_copy.setup(track_candidates_buffer.headers)->ignore();
-    m_copy.setup(track_candidates_buffer.items)->ignore();
+    m_copy.setup(track_candidates_buffer)->ignore();
 
     // @Note: nBlocks can be zero in case there is no tip. This happens when
     // chi2_max config is set tightly and no tips are found

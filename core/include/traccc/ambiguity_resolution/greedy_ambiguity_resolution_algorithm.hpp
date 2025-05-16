@@ -9,10 +9,17 @@
 
 // Project include(s).
 #include "traccc/ambiguity_resolution/ambiguity_resolution_config.hpp"
-#include "traccc/edm/track_candidate.hpp"
+#include "traccc/definitions/primitives.hpp"
+#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/track_candidate_collection.hpp"
 #include "traccc/utils/algorithm.hpp"
-#include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
+
+// VecMem include(s).
+#include <vecmem/memory/memory_resource.hpp>
+
+// System include(s).
+#include <functional>
 
 namespace traccc::host {
 
@@ -20,8 +27,9 @@ namespace traccc::host {
 /// greedy approach in the sense that it will remove the track which looks "most
 /// duplicate/fake"
 class greedy_ambiguity_resolution_algorithm
-    : public algorithm<track_candidate_container_types::host(
-          const typename track_candidate_container_types::const_view&)>,
+    : public algorithm<edm::track_candidate_collection<default_algebra>::host(
+          const edm::track_candidate_collection<default_algebra>::const_view&,
+          const measurement_collection_types::const_view&)>,
       public messaging {
 
     public:
@@ -31,17 +39,20 @@ class greedy_ambiguity_resolution_algorithm
     ///
     /// @param cfg  Configuration object
     greedy_ambiguity_resolution_algorithm(
-        const config_type& cfg, traccc::memory_resource& mr,
+        const config_type& cfg, vecmem::memory_resource& mr,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone())
         : messaging(std::move(logger)), m_config{cfg}, m_mr{mr} {}
 
     /// Run the algorithm
     ///
     /// @param track_candidates the container of found patterns
+    /// @param measurement all measurements of the event
     /// @return the container without ambiguous tracks
-    track_candidate_container_types::host operator()(
-        const track_candidate_container_types::const_view&
-            track_candidates_view) const override;
+    output_type operator()(
+        const edm::track_candidate_collection<default_algebra>::const_view&
+            track_candidates,
+        const measurement_collection_types::const_view& measurements)
+        const override;
 
     /// Get configuration
     config_type& get_config() { return m_config; }
@@ -50,7 +61,7 @@ class greedy_ambiguity_resolution_algorithm
     /// Algorithm configuration
     config_type m_config;
     /// The memory resource to use
-    traccc::memory_resource m_mr;
+    std::reference_wrapper<vecmem::memory_resource> m_mr;
 };
 
 }  // namespace traccc::host

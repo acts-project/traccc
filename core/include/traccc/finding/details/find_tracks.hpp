@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,7 +8,7 @@
 
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/track_candidate_collection.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/finding/actors/ckf_aborter.hpp"
 #include "traccc/finding/actors/interaction_register.hpp"
@@ -21,6 +21,9 @@
 #include "traccc/utils/prob.hpp"
 #include "traccc/utils/projections.hpp"
 #include "traccc/utils/propagation.hpp"
+
+// VecMem include(s).
+#include <vecmem/memory/memory_resource.hpp>
 
 // System include(s).
 #include <algorithm>
@@ -45,16 +48,19 @@ namespace traccc::host::details {
 /// @param seeds_view        All seeds in an event to start the track finding
 ///                          with
 /// @param config            The track finding configuration
+/// @param mr                The memory resource to use
 ///
 /// @return A container of the found track candidates
 ///
 template <typename stepper_t, typename navigator_t>
-track_candidate_container_types::host find_tracks(
+edm::track_candidate_collection<
+    typename navigator_t::detector_type::algebra_type>::host
+find_tracks(
     const typename navigator_t::detector_type& det,
     const typename stepper_t::magnetic_field_type& field,
     const measurement_collection_types::const_view& measurements_view,
     const bound_track_parameters_collection_types::const_view& seeds_view,
-    const finding_config& config) {
+    const finding_config& config, vecmem::memory_resource& mr) {
 
     assert(config.min_step_length_for_next_surface >
                math::fabs(config.propagation.navigation.overstep_tolerance) &&
@@ -363,7 +369,8 @@ track_candidate_container_types::host find_tracks(
      **********************/
 
     // Number of found tracks = number of tips
-    track_candidate_container_types::host output_candidates;
+    typename edm::track_candidate_collection<algebra_type>::host
+        output_candidates{mr};
     output_candidates.reserve(tips.size());
 
     for (const auto& tip : tips) {
@@ -381,7 +388,7 @@ track_candidate_container_types::host find_tracks(
         // Retrieve tip
         L = links.at(tip.first).at(tip.second);
 
-        vecmem::vector<track_candidate> cands_per_track;
+        vecmem::vector<unsigned int> cands_per_track;
         cands_per_track.resize(n_cands);
 
         // Track summary variables
@@ -404,13 +411,13 @@ track_candidate_container_types::host find_tracks(
                 break;
             }
 
-            *it = measurements.at(L.meas_idx);
+            *it = L.meas_idx;
 
             // Sanity check on chi2
             assert(L.chi2 < std::numeric_limits<traccc::scalar>::max());
             assert(L.chi2 >= 0.f);
 
-            ndf_sum += static_cast<scalar>(it->meas_dim);
+            ndf_sum += static_cast<scalar>(measurements.at(*it).meas_dim);
             chi2_sum += L.chi2;
 
             // Break the loop if the iterator is at the first candidate and
@@ -422,10 +429,8 @@ track_candidate_container_types::host find_tracks(
                 const auto pval = prob(chi2_sum, ndf_sum);
 
                 // Add seed and track candidates to the output container
-                output_candidates.push_back(
-                    finding_result{cand_seed, track_quality{ndf_sum, chi2_sum,
-                                                            pval, L.n_skipped}},
-                    cands_per_track);
+                output_candidates.push_back({cand_seed, ndf_sum, chi2_sum, pval,
+                                             L.n_skipped, cands_per_track});
             } else {
                 const auto l_pos =
                     param_to_link.at(L.step - 1u).at(L.previous_candidate_idx);
