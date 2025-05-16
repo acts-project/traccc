@@ -408,8 +408,10 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 });
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-            kernels::block_inclusive_scan<<<nBlocks, nThreads, 0, stream>>>(
+            kernels::block_inclusive_scan<<<nBlocks, nThreads, 32 * sizeof(int),
+                                            stream>>>(
                 device::block_inclusive_scan_payload{
+                    .sorted_ids_view = sorted_ids_buffer,
                     .update_res = update_res_device.get(),
                     .is_updated_view = is_updated_buffer,
                     .block_offsets_view = block_offsets_buffer,
@@ -422,7 +424,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                     .block_offsets_view = block_offsets_buffer,
                     .prefix_sums_view = prefix_sums_buffer});
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
-
+            
             kernels::rearrange_tracks<<<nBlocks, nThreads, 0, stream>>>(
                 device::rearrange_tracks_payload{
                     .sorted_ids_view = sorted_ids_buffer,
@@ -432,6 +434,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                     .update_res = update_res_device.get(),
                     .updated_tracks_view = updated_tracks_buffer,
                     .is_updated_view = is_updated_buffer,
+                    .prefix_sums_view = prefix_sums_buffer,
                     .temp_sorted_ids_view = temp_sorted_ids_buffer,
                 });
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());

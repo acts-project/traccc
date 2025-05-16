@@ -63,6 +63,11 @@ struct rearrange_tracks_payload {
     vecmem::data::vector_view<const int> is_updated_view;
 
     /**
+     * @brief View object to the prefix sum vector
+     */
+    vecmem::data::vector_view<const int> prefix_sums_view;
+
+    /**
      * @brief View object to the temporary sorted track
      */
     vecmem::data::vector_view<unsigned int> temp_sorted_ids_view;

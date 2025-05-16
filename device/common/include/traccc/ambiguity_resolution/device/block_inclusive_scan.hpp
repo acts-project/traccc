@@ -26,6 +26,11 @@ namespace traccc::device {
 struct block_inclusive_scan_payload {
 
     /**
+     * @brief View object to the sorted track
+     */
+    vecmem::data::vector_view<const unsigned int> sorted_ids_view;
+
+    /**
      * @brief Update result
      */
     update_result* update_res;

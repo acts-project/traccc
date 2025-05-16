@@ -32,6 +32,7 @@ TRACCC_DEVICE inline void rearrange_tracks(
     vecmem::device_vector<const unsigned int> updated_tracks(
         payload.updated_tracks_view);
     vecmem::device_vector<const int> is_updated(payload.is_updated_view);
+    vecmem::device_vector<const int> prefix_sums(payload.prefix_sums_view);
     vecmem::device_vector<unsigned int> temp_sorted_ids(
         payload.temp_sorted_ids_view);
 
@@ -78,7 +79,7 @@ TRACCC_DEVICE inline void rearrange_tracks(
                 right = mid;  // mid는 후보가 될 수 있음
             }
             */
-            
+
             // Use binary search here
             for (int i = sid - 1; i >= 0; i--) {
 

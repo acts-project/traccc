@@ -23,7 +23,9 @@ TRACCC_DEVICE inline void gather_tracks(const global_index_t globalIndex,
     const unsigned int n_accepted = (*payload.update_res).n_accepted;
 
     // Reset is_updated vector
-    is_updated[globalIndex] = 0;
+    if (globalIndex < is_updated.size()) {
+        is_updated[globalIndex] = 0;
+    }
 
     if (globalIndex >= n_accepted) {
         return;
