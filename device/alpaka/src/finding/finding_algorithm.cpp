@@ -417,17 +417,6 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     m_copy.setup(track_candidates_buffer.headers)->ignore();
     m_copy.setup(track_candidates_buffer.items)->ignore();
 
-    // Create buffer for valid indices
-    vecmem::data::vector_buffer<unsigned int> valid_indices_buffer(n_tips_total,
-                                                                   m_mr.main);
-
-    // Count the number of valid tracks
-    auto bufHost_n_valid_tracks =
-        ::alpaka::allocBuf<unsigned int, Idx>(devHost, 1u);
-    unsigned int* n_valid_tracks =
-        ::alpaka::getPtrNative(bufHost_n_valid_tracks);
-    ::alpaka::memset(queue, bufHost_n_valid_tracks, 0);
-
     // @Note: nBlocks can be zero in case there is no tip. This happens when
     // chi2_max config is set tightly and no tips are found
     if (n_tips_total > 0) {

@@ -17,6 +17,8 @@
 #include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
+#include <vecmem/containers/data/vector_view.hpp>
+#include <vecmem/containers/vector.hpp>
 #include <vecmem/utils/copy.hpp>
 
 // System include(s).
