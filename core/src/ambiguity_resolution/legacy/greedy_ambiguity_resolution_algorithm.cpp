@@ -25,7 +25,6 @@
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/track_state.hpp"
 #include "traccc/utils/algorithm.hpp"
 
 // Greedy ambiguity resolution adapted from ACTS code

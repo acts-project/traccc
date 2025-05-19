@@ -13,7 +13,8 @@
 
 // Project include(s).
 #include "traccc/edm/track_candidate_collection.hpp"
-#include "traccc/edm/track_state.hpp"
+#include "traccc/edm/track_fit_collection.hpp"
+#include "traccc/edm/track_state_collection.hpp"
 
 namespace traccc {
 
@@ -68,15 +69,16 @@ class stat_plot_tool {
     ///
     /// @param cache the cache for statistics plots
     /// @param fit_res fitting information that contains statistics
-    void fill(stat_plot_cache& cache,
-              const fitting_result<traccc::default_algebra>& fit_res) const;
+    template <typename T>
+    void fill(stat_plot_cache& cache, const edm::track_fit<T>& fit_res) const;
 
     /// @brief fill the cache
     ///
     /// @param cache the cache for statistics plots
     /// @param trk_state track state at local measurements
-    void fill(stat_plot_cache& cache,
-              const track_state<traccc::default_algebra>& trk_state) const;
+    template <typename T>
+    void fill(stat_plot_cache& cache, const edm::track_state<T>& trk_state,
+              const measurement_collection_types::host& measurements) const;
 
     /// @brief fill the cache
     /// @param cache the cache for statistics plots

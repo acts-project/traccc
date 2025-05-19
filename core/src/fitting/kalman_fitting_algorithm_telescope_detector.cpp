@@ -28,16 +28,16 @@ kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
             covfie::field<const_bfield_backend_t<scalar>>::view_t>
             fitter{det, bfield.as_view<const_bfield_backend_t<scalar>>(),
                    m_config};
-        return details::kalman_fitting(fitter, track_candidates, m_mr.get(),
-                                       m_copy.get());
+        return details::kalman_fitting<default_algebra>(
+            fitter, track_candidates, m_mr.get(), m_copy.get());
     } else if (bfield.is<host::inhom_bfield_backend_t<scalar>>()) {
         traccc::details::kalman_fitter_t<
             telescope_detector::host,
             covfie::field<host::inhom_bfield_backend_t<scalar>>::view_t>
             fitter{det, bfield.as_view<host::inhom_bfield_backend_t<scalar>>(),
                    m_config};
-        return details::kalman_fitting(fitter, track_candidates, m_mr.get(),
-                                       m_copy.get());
+        return details::kalman_fitting<default_algebra>(
+            fitter, track_candidates, m_mr.get(), m_copy.get());
     } else {
         throw std::invalid_argument(
             "Unsupported b-field type received in "
