@@ -6,7 +6,6 @@
  */
 
 // Test include(s).
-#include "test_queue.hpp"
 #include "tests/ckf_toy_detector_test.hpp"
 #include "traccc/utils/seed_generator.hpp"
 
@@ -54,12 +53,11 @@ TEST_P(CkfToyDetectorTests, Run) {
      *****************************/
 
     // SYCL queue.
-    sycl::test_queue queue;
-    vecmem::sycl::queue_wrapper vecmem_queue{queue.queue().queue()};
-    traccc::sycl::queue_wrapper traccc_queue{queue.queue()};
+    vecmem::sycl::queue_wrapper vecmem_queue;
+    traccc::sycl::queue_wrapper traccc_queue{vecmem_queue.queue()};
 
-    // Only run this test on NVIDIA and AMD backends.
-    if (!queue.is_cuda()) {
+    // Only run this test on NVIDIA backends.
+    if (!vecmem_queue.is_cuda()) {
         GTEST_SKIP();
     }
 

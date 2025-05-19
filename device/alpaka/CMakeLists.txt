@@ -57,7 +57,6 @@ traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   "src/finding/kernels/make_barcode_sequence.hpp"
   "src/finding/kernels/apply_interaction.hpp"
   "src/finding/kernels/fill_sort_keys.hpp"
-  "src/finding/kernels/prune_tracks.hpp"
   "src/finding/kernels/build_tracks.hpp"
   "src/finding/kernels/find_tracks.hpp"
   "src/finding/kernels/propagate_to_next_surface.hpp"

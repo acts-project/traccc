@@ -24,8 +24,6 @@ traccc_add_test(
     test_sanity_contiguous_on.sycl
     test_sanity_ordered_on.sycl
     test_sort.sycl
-    test_queue.hpp
-    test_queue.sycl
 
     LINK_LIBRARIES
     GTest::gtest_main

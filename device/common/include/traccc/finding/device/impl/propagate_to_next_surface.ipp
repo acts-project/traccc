@@ -32,39 +32,20 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
 
     const unsigned int param_id = param_ids.at(globalIndex);
 
-    // Number of tracks per seed
-    vecmem::device_vector<unsigned int> n_tracks_per_seed(
-        payload.n_tracks_per_seed_view);
-
     // Links
     vecmem::device_vector<const candidate_link> links(payload.links_view);
 
-    // Seed id
-    unsigned int orig_param_id =
-        links.at(payload.prev_links_idx + param_id).seed_idx;
+    const unsigned int link_idx = payload.prev_links_idx + param_id;
+    const auto& link = links.at(link_idx);
+    assert(link.step == payload.step);
+    const unsigned int n_cands = link.step + 1 - link.n_skipped;
 
-    // Count the number of tracks per seed
-    vecmem::device_atomic_ref<unsigned int> num_tracks_per_seed(
-        n_tracks_per_seed.at(orig_param_id));
-
-    const unsigned int s_pos = num_tracks_per_seed.fetch_add(1);
+    // Parameter liveness
     vecmem::device_vector<unsigned int> params_liveness(
         payload.params_liveness_view);
 
-    if (s_pos >= cfg.max_num_branches_per_seed) {
-        params_liveness[param_id] = 0u;
-        return;
-    }
-
     // tips
     vecmem::device_vector<unsigned int> tips(payload.tips_view);
-
-    if (links.at(payload.prev_links_idx + param_id).n_skipped >
-        cfg.max_num_skipping_per_cand) {
-        params_liveness[param_id] = 0u;
-        tips.push_back(payload.prev_links_idx + param_id);
-        return;
-    }
 
     // Detector
     typename propagator_t::detector_type det(payload.det_data);
@@ -120,18 +101,12 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
         assert(propagation._navigation.is_on_sensitive());
 
         params[param_id] = propagation._stepping.bound_params();
-
-        if (payload.step == cfg.max_track_candidates_per_track - 1) {
-            tips.push_back(payload.prev_links_idx + param_id);
-            params_liveness[param_id] = 0u;
-        } else {
-            params_liveness[param_id] = 1u;
-        }
+        params_liveness[param_id] = 1u;
     } else {
         params_liveness[param_id] = 0u;
 
-        if (payload.step >= cfg.min_track_candidates_per_track - 1) {
-            tips.push_back(payload.prev_links_idx + param_id);
+        if (n_cands >= cfg.min_track_candidates_per_track) {
+            tips.push_back(link_idx);
         }
     }
 }

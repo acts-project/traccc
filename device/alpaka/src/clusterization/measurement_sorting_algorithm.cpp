@@ -7,6 +7,7 @@
 
 // Local include(s).
 #include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
+
 #include "../utils/get_queue.hpp"
 
 // Thrust include(s).

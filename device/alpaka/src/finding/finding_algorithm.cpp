@@ -18,7 +18,6 @@
 #include "./kernels/find_tracks.hpp"
 #include "./kernels/make_barcode_sequence.hpp"
 #include "./kernels/propagate_to_next_surface.hpp"
-#include "./kernels/prune_tracks.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/device/sort_key.hpp"
@@ -230,6 +229,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 n_in_params * m_cfg.max_num_branches_per_surface, m_mr.main);
             m_copy.setup(updated_liveness_buffer)->ignore();
 
+            // Reset the number of tracks per seed
+            m_copy.memset(n_tracks_per_seed_buffer, 0)->ignore();
+
             const unsigned int links_size = m_copy.get_size(links_buffer);
 
             if (links_size + n_max_candidates > link_buffer_capacity) {
@@ -270,20 +272,22 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 ::alpaka::allocBuf<PayloadType, Idx>(devHost, 1u);
             PayloadType* payload = ::alpaka::getPtrNative(bufHost_payload);
 
-            new (payload) PayloadType{
-                .det_data = det_view,
-                .measurements_view = measurements,
-                .in_params_view = in_params_buffer,
-                .in_params_liveness_view = param_liveness_buffer,
-                .n_in_params = n_in_params,
-                .barcodes_view = barcodes_buffer,
-                .upper_bounds_view = upper_bounds_buffer,
-                .links_view = links_buffer,
-                .prev_links_idx = prev_link_idx,
-                .curr_links_idx = step_to_link_idx_map[step],
-                .step = step,
-                .out_params_view = updated_params_buffer,
-                .out_params_liveness_view = updated_liveness_buffer};
+            new (payload)
+                PayloadType{.det_data = det_view,
+                            .measurements_view = measurements,
+                            .in_params_view = in_params_buffer,
+                            .in_params_liveness_view = param_liveness_buffer,
+                            .n_in_params = n_in_params,
+                            .barcodes_view = barcodes_buffer,
+                            .upper_bounds_view = upper_bounds_buffer,
+                            .links_view = links_buffer,
+                            .prev_links_idx = prev_link_idx,
+                            .curr_links_idx = step_to_link_idx_map[step],
+                            .step = step,
+                            .out_params_view = updated_params_buffer,
+                            .out_params_liveness_view = updated_liveness_buffer,
+                            .tips_view = tips_buffer,
+                            .n_tracks_per_seed_view = n_tracks_per_seed_buffer};
 
             auto bufAcc_payload =
                 ::alpaka::allocBuf<PayloadType, Idx>(devAcc, 1u);
@@ -302,6 +306,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             n_candidates =
                 step_to_link_idx_map[step + 1] - step_to_link_idx_map[step];
             ::alpaka::wait(queue);
+        }
+
+        if (step == m_cfg.max_track_candidates_per_track - 1) {
+            break;
         }
 
         if (n_candidates > 0) {
@@ -344,9 +352,6 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
              *****************************************************************/
 
             {
-                // Reset the number of tracks per seed
-                m_copy.memset(n_tracks_per_seed_buffer, 0)->ignore();
-
                 Idx blocksPerGrid =
                     (n_candidates + threadsPerBlock - 1) / threadsPerBlock;
                 auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
@@ -359,18 +364,17 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     ::alpaka::allocBuf<PayloadType, Idx>(devHost, 1u);
                 PayloadType* payload = ::alpaka::getPtrNative(bufHost_payload);
 
-                new (payload) PayloadType{
-                    .det_data = det_view,
-                    .field_data = field_view,
-                    .params_view = in_params_buffer,
-                    .params_liveness_view = param_liveness_buffer,
-                    .param_ids_view = param_ids_buffer,
-                    .links_view = links_buffer,
-                    .prev_links_idx = step_to_link_idx_map[step],
-                    .step = step,
-                    .n_in_params = n_candidates,
-                    .tips_view = tips_buffer,
-                    .n_tracks_per_seed_view = n_tracks_per_seed_buffer};
+                new (payload)
+                    PayloadType{.det_data = det_view,
+                                .field_data = field_view,
+                                .params_view = in_params_buffer,
+                                .params_liveness_view = param_liveness_buffer,
+                                .param_ids_view = param_ids_buffer,
+                                .links_view = links_buffer,
+                                .prev_links_idx = step_to_link_idx_map[step],
+                                .step = step,
+                                .n_in_params = n_candidates,
+                                .tips_view = tips_buffer};
 
                 auto bufAcc_payload =
                     ::alpaka::allocBuf<PayloadType, Idx>(devAcc, 1u);
@@ -427,48 +431,18 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     // @Note: nBlocks can be zero in case there is no tip. This happens when
     // chi2_max config is set tightly and no tips are found
     if (n_tips_total > 0) {
-        auto n_valid_tracks_device =
-            ::alpaka::allocBuf<unsigned int, Idx>(devAcc, 1u);
-        ::alpaka::memset(queue, n_valid_tracks_device, 0);
-
         Idx blocksPerGrid =
             (n_tips_total + threadsPerBlock - 1) / threadsPerBlock;
         auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
         ::alpaka::exec<Acc>(
-            queue, workDiv, BuildTracksKernel{}, m_cfg,
-            device::build_tracks_payload{
-                measurements, seeds_view, links_buffer, tips_buffer,
-                track_candidates_buffer, valid_indices_buffer,
-                ::alpaka::getPtrNative(n_valid_tracks_device)});
-
-        // Global counter object: Device -> Host
-        ::alpaka::memcpy(queue, bufHost_n_valid_tracks, n_valid_tracks_device);
+            queue, workDiv, BuildTracksKernel{},
+            device::build_tracks_payload{measurements, seeds_view, links_buffer,
+                                         tips_buffer, track_candidates_buffer});
         ::alpaka::wait(queue);
     }
 
-    // Create pruned candidate buffer
-    track_candidate_container_types::buffer prune_candidates_buffer{
-        {*n_valid_tracks, m_mr.main},
-        {std::vector<std::size_t>(*n_valid_tracks,
-                                  m_cfg.max_track_candidates_per_track),
-         m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable}};
-
-    m_copy.setup(prune_candidates_buffer.headers)->ignore();
-    m_copy.setup(prune_candidates_buffer.items)->ignore();
-
-    if (*n_valid_tracks > 0) {
-        Idx blocksPerGrid =
-            (*n_valid_tracks + threadsPerBlock - 1) / threadsPerBlock;
-        auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
-
-        ::alpaka::exec<Acc>(queue, workDiv, PruneTracksKernel{},
-                            device::prune_tracks_payload{
-                                track_candidates_buffer, valid_indices_buffer,
-                                prune_candidates_buffer});
-    }
-
-    return prune_candidates_buffer;
+    return track_candidates_buffer;
 }
 
 // Explicit template instantiation

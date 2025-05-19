@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2024 CERN for the benefit of the ACTS project
+# (c) 2024-2025 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -25,6 +25,9 @@ set( INDICATORS_SAMPLES FALSE CACHE BOOL
    "Turn off the indicators samples build" )
 set( INDICATORS_DEMO FALSE CACHE BOOL
    "Turn off the indicators demo build" )
+
+# Make Indicators work without warnings with modern CMake versions.
+set( CMAKE_POLICY_VERSION_MINIMUM "3.10" )
 
 # Get it into the current directory.
 FetchContent_MakeAvailable( Indicators )
