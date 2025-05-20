@@ -136,8 +136,9 @@ TRACCC_DEVICE void fast_sv_1(const thread_id_t& thread_id,
 template <device::concepts::barrier barrier_t,
           device::concepts::thread_id1 thread_id_t>
 TRACCC_DEVICE inline void ccl_core(
-    const thread_id_t& thread_id, std::size_t& partition_start,
-    std::size_t& partition_end, vecmem::device_vector<details::index_t> f,
+    const clustering_config& cfg, const thread_id_t& thread_id,
+    std::size_t& partition_start, std::size_t& partition_end,
+    vecmem::device_vector<details::index_t> f,
     vecmem::device_vector<details::index_t> gf,
     vecmem::data::vector_view<unsigned int> cell_links, details::index_t* adjv,
     unsigned char* adjc,
@@ -202,7 +203,7 @@ TRACCC_DEVICE inline void ccl_core(
             const measurement_collection_types::device::size_type meas_pos =
                 measurements_device.push_back({});
             // Set up the measurement under the appropriate index.
-            aggregate_cluster(cells_device, det_descr, f,
+            aggregate_cluster(cfg, cells_device, det_descr, f,
                               static_cast<unsigned int>(partition_start),
                               static_cast<unsigned int>(partition_end), cid,
                               measurements_device.at(meas_pos), cell_links,
@@ -349,7 +350,7 @@ TRACCC_DEVICE inline void ccl_kernel(
         use_scratch = false;
     }
 
-    ccl_core(thread_id, partition_start, partition_end,
+    ccl_core(cfg, thread_id, partition_start, partition_end,
              use_scratch ? f_backup : f_primary,
              use_scratch ? gf_backup : gf_primary, cell_links, adjv, adjc,
              cells_device, det_descr, measurements_device, barrier);
