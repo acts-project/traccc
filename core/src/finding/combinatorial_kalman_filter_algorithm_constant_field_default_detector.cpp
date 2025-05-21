@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -29,8 +29,8 @@ combinatorial_kalman_filter_algorithm::operator()(
         detray::rk_stepper<bfield_type::view_t,
                            detector_type::host::algebra_type,
                            detray::constrained_step<scalar_type>>,
-        detray::navigator<const detector_type::host>>(det, field, measurements,
-                                                      seeds, m_config);
+        detray::navigator<const detector_type::host>>(
+        det, field, measurements, seeds, m_config, m_mr.get());
 }
 
 }  // namespace traccc::host

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -13,7 +13,7 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/track_candidate_collection.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/finding_config.hpp"
@@ -51,7 +51,8 @@ struct build_tracks_payload {
     /**
      * @brief View object to the vector of track candidates
      */
-    track_candidate_container_types::view track_candidates_view;
+    edm::track_candidate_collection<default_algebra>::view
+        track_candidates_view;
 };
 
 /// Function for building full tracks from the link container:

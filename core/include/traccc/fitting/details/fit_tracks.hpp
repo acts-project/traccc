@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,7 +8,8 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/track_candidate_collection.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/status_codes.hpp"
 
@@ -29,6 +30,7 @@ namespace traccc::host::details {
 ///       jagged vector are created using the default memory resource.
 ///
 /// @tparam fitter_t The fitter type used for the track fitting
+/// @tparam algebra_t The algebra type used for the track fitting
 ///
 /// @param[in] fitter           The fitter object to use on the track candidates
 /// @param[in] track_candidates All track candidates to fit
@@ -36,27 +38,36 @@ namespace traccc::host::details {
 ///
 /// @return A container of the fitted track states
 ///
-template <typename fitter_t>
+template <typename algebra_t, typename fitter_t>
 track_state_container_types::host fit_tracks(
     fitter_t& fitter,
-    const track_candidate_container_types::const_view& track_candidates_view,
+    const measurement_collection_types::const_view& measurements_view,
+    const typename edm::track_candidate_collection<algebra_t>::const_view&
+        track_candidates_view,
     vecmem::memory_resource& mr, vecmem::copy& copy) {
+
+    // Create the input container(s).
+    const measurement_collection_types::const_device measurements{
+        measurements_view};
+    const typename edm::track_candidate_collection<algebra_t>::const_device
+        track_candidates{track_candidates_view};
 
     // Create the output container.
     track_state_container_types::host result{&mr};
 
     // Iterate over the tracks,
-    const track_candidate_container_types::const_device track_candidates{
-        track_candidates_view};
-    for (track_candidate_container_types::const_device::size_type i = 0;
+    for (typename edm::track_candidate_collection<
+             algebra_t>::const_device::size_type i = 0;
          i < track_candidates.size(); ++i) {
 
         // Make a vector of track states for this track.
         vecmem::vector<track_state<typename fitter_t::algebra_type> >
             input_states{&mr};
-        input_states.reserve(track_candidates.get_items()[i].size());
-        for (auto& measurement : track_candidates.get_items()[i]) {
-            input_states.emplace_back(measurement);
+        input_states.reserve(
+            track_candidates.measurement_indices().at(i).size());
+        for (unsigned int measurement_index :
+             track_candidates.measurement_indices().at(i)) {
+            input_states.emplace_back(measurements.at(measurement_index));
         }
 
         vecmem::data::vector_buffer<detray::geometry::barcode> seqs_buffer{
@@ -73,8 +84,8 @@ track_state_container_types::host fit_tracks(
                                               seqs_buffer);
 
         // Run the fitter.
-        kalman_fitter_status fit_status = fitter.fit(
-            track_candidates.get_headers()[i].seed_params, fitter_state);
+        kalman_fitter_status fit_status =
+            fitter.fit(track_candidates.params().at(i), fitter_state);
 
         if (fit_status == kalman_fitter_status::SUCCESS) {
             // Save the results into the output container.
