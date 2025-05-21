@@ -133,7 +133,7 @@ inline void aggregate_cluster(
     /*
      * Fill output vector with calculated cluster properties
      */
-    out.local = mean + offset;
+    out.local = mean + offset + module_descr.measurement_translation();
     out.variance = var;
     out.surface_link = module_descr.geometry_id();
     // Set a unique identifier for the measurement.

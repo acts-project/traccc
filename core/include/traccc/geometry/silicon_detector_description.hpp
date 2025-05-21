@@ -191,6 +191,20 @@ class silicon_detector_description_interface : public BASE {
     TRACCC_HOST_DEVICE
     const auto& dimensions() const { return BASE::template get<7>(); }
 
+    /// The local translation vector to model e.g. Lorentz shifts
+    ///
+    /// @return A vector by which to translate the measurement in the local
+    /// coordinate frame.
+    ///
+    /// @{
+    TRACCC_HOST_DEVICE
+    auto& measurement_translation() { return BASE::template get<8>(); }
+
+    TRACCC_HOST_DEVICE
+    const auto& measurement_translation() const {
+        return BASE::template get<8>();
+    }
+    /// @}
     /// @}
 
 };  // class silicon_detector_description_interface
@@ -202,6 +216,7 @@ using silicon_detector_description = vecmem::edm::container<
     vecmem::edm::type::vector<geometry_id>, vecmem::edm::type::vector<scalar>,
     vecmem::edm::type::vector<scalar>, vecmem::edm::type::vector<scalar>,
     vecmem::edm::type::vector<scalar>, vecmem::edm::type::vector<scalar>,
-    vecmem::edm::type::vector<unsigned char> >;
+    vecmem::edm::type::vector<unsigned char>,
+    vecmem::edm::type::vector<vector2>>;
 
 }  // namespace traccc

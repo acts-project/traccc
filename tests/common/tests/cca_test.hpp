@@ -153,6 +153,7 @@ class ConnectedComponentAnalysisTests
             dd.reference_y()[i] = -0.5f;
             dd.pitch_x()[i] = pitch;
             dd.pitch_y()[i] = pitch;
+            dd.measurement_translation()[i] = {0.f, 0.f};
         }
 
         traccc::edm::silicon_cell_collection::host cells{mr};

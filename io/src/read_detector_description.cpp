@@ -73,6 +73,7 @@ void read_csv_dd(traccc::silicon_detector_description::host& dd,
         // the surface in question.
         dd.geometry_id().back() = detray::geometry::barcode{geom_id};
         dd.acts_geometry_id().back() = geom_id;
+        dd.measurement_translation().back() = {0.f, 0.f};
 
         // Find the module's digitization configuration.
         const traccc::digitization_config::Iterator digi_it =
@@ -126,6 +127,7 @@ void read_json_dd(traccc::silicon_detector_description::host& dd,
         // the surface in question.
         dd.geometry_id().back() = surface_desc.barcode();
         dd.acts_geometry_id().back() = geom_id;
+        dd.measurement_translation().back() = {0.f, 0.f};
 
         // Find the module's digitization configuration.
         const traccc::digitization_config::Iterator digi_it =
