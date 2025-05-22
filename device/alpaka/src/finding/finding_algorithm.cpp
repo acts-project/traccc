@@ -168,6 +168,9 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         m_cfg.max_num_branches_per_seed * n_seeds, m_mr.main,
         vecmem::data::buffer_type::resizable};
     m_copy.setup(tips_buffer)->wait();
+    vecmem::data::vector_buffer<unsigned int> tip_length_buffer{
+        m_cfg.max_num_branches_per_seed * n_seeds, m_mr.main};
+    m_copy.setup(tip_length_buffer)->wait();
 
     std::map<unsigned int, unsigned int> step_to_link_idx_map;
     step_to_link_idx_map[0] = 0;
@@ -276,6 +279,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                             .out_params_view = updated_params_buffer,
                             .out_params_liveness_view = updated_liveness_buffer,
                             .tips_view = tips_buffer,
+                            .tip_lengths_view = tip_length_buffer,
                             .n_tracks_per_seed_view = n_tracks_per_seed_buffer};
 
             auto bufAcc_payload =
@@ -363,7 +367,8 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                                 .prev_links_idx = step_to_link_idx_map[step],
                                 .step = step,
                                 .n_in_params = n_candidates,
-                                .tips_view = tips_buffer};
+                                .tips_view = tips_buffer,
+                                .tip_lengths_view = tip_length_buffer};
 
                 auto bufAcc_payload =
                     ::alpaka::allocBuf<PayloadType, Idx>(devAcc, 1u);
@@ -397,12 +402,16 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     // Get the number of tips
     auto n_tips_total = m_copy.get_size(tips_buffer);
 
+    std::vector<unsigned int> tips_length_host;
+
+    if (n_tips_total > 0) {
+        m_copy(tip_length_buffer, tips_length_host)->wait();
+        tips_length_host.resize(n_tips_total);
+    }
+
     // Create track candidate buffer
     track_candidate_container_types::buffer track_candidates_buffer{
-        {n_tips_total, m_mr.main},
-        {std::vector<std::size_t>(n_tips_total,
-                                  m_cfg.max_track_candidates_per_track),
-         m_mr.main, m_mr.host, vecmem::data::buffer_type::resizable}};
+        {n_tips_total, m_mr.main}, {tips_length_host, m_mr.main, m_mr.host}};
 
     m_copy.setup(track_candidates_buffer.headers)->ignore();
     m_copy.setup(track_candidates_buffer.items)->ignore();

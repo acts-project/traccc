@@ -72,6 +72,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     vecmem::device_vector<const unsigned int> upper_bounds(
         payload.upper_bounds_view);
     vecmem::device_vector<unsigned int> tips(payload.tips_view);
+    vecmem::device_vector<unsigned int> tip_lengths(payload.tip_lengths_view);
     vecmem::device_vector<unsigned int> n_tracks_per_seed(
         payload.n_tracks_per_seed_view);
 
@@ -276,7 +277,8 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                 // a tip
                 if (last_step &&
                     n_cands >= cfg.min_track_candidates_per_track) {
-                    tips.push_back(l_pos);
+                    auto tip_pos = tips.push_back(l_pos);
+                    tip_lengths.at(tip_pos) = n_cands;
                 }
             }
         }
@@ -331,7 +333,8 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                     // step being skipped, the links are empty, and the tip has
                     // nowhere to point
                     assert(payload.step > 0);
-                    tips.push_back(prev_link_idx);
+                    auto tip_pos = tips.push_back(prev_link_idx);
+                    tip_lengths.at(tip_pos) = n_cands;
                 }
             } else {
                 // Add measurement candidates to link
