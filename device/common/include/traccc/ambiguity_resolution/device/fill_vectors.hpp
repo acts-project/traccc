@@ -7,11 +7,11 @@
 
 #pragma once
 
-// Local include(s).
-#include "traccc/device/global_index.hpp"
-
 // Project include(s).
 #include "traccc/edm/track_candidate.hpp"
+
+// Project include(s).
+#include "traccc/definitions/primitives.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
@@ -52,16 +52,4 @@ struct fill_vectors_payload {
     vecmem::data::vector_view<int> status_view;
 };
 
-/// Function used for fill_vectors
-///
-/// @param[in] globalIndex   The index of the current thread
-/// @param[inout] payload      The function call payload
-///
-TRACCC_HOST_DEVICE inline void fill_vectors(
-    global_index_t globalIndex, const ambiguity_resolution_config& cfg,
-    const fill_vectors_payload& payload);
-
 }  // namespace traccc::device
-
-// Include the implementation.
-#include "./impl/fill_vectors.ipp"

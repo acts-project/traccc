@@ -7,17 +7,8 @@
 
 #pragma once
 
-// Local include(s).
-#include "traccc/device/concepts/barrier.hpp"
-#include "traccc/device/global_index.hpp"
-
-// Project include(s)
-#include "traccc/definitions/primitives.hpp"
-#include "traccc/definitions/qualifiers.hpp"
-
 // VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
-#include <vecmem/containers/device_vector.hpp>
 namespace traccc::device {
 
 /// (Event Data) Payload for the @c
@@ -60,20 +51,4 @@ struct block_inclusive_scan_payload {
     vecmem::data::vector_view<int> prefix_sums_view;
 };
 
-/// Function used for updating vectors
-///
-/// @param[in] globalIndex   The index of the current thread
-/// @param[in] barrier            A block-wide barrier
-/// @param[inout] payload      The function call payload
-///
-template <concepts::barrier barrier_t>
-TRACCC_DEVICE inline void block_inclusive_scan(
-    global_index_t globalIndex, const unsigned int blockSize,
-    const unsigned int blockIndex, const unsigned int threadIndex,
-    const barrier_t& barrier, const block_inclusive_scan_payload& payload,
-    int* shared_temp);
-
 }  // namespace traccc::device
-
-// Include the implementation.
-#include "./impl/block_inclusive_scan.ipp"

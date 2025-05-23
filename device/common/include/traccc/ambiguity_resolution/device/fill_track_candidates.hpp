@@ -7,18 +7,12 @@
 
 #pragma once
 
-// Local include(s).
-#include "traccc/device/global_index.hpp"
-
 // Project include(s)
-#include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/track_candidate.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/jagged_vector_view.hpp>
 #include <vecmem/containers/data/vector_view.hpp>
-#include <vecmem/containers/device_vector.hpp>
-#include <vecmem/containers/jagged_device_vector.hpp>
 
 namespace traccc::device {
 
@@ -47,15 +41,4 @@ struct fill_track_candidates_payload {
     track_candidate_container_types::view res_track_candidates_view;
 };
 
-/// Function used for fill_vectors
-///
-/// @param[in] globalIndex   The index of the current thread
-/// @param[inout] payload      The function call payload
-///
-TRACCC_HOST_DEVICE inline void fill_track_candidates(
-    global_index_t globalIndex, const fill_track_candidates_payload& payload);
-
 }  // namespace traccc::device
-
-// Include the implementation.
-#include "./impl/fill_track_candidates.ipp"

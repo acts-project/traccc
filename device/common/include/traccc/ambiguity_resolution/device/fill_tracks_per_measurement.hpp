@@ -7,17 +7,12 @@
 
 #pragma once
 
-// Local include(s).
-#include "traccc/device/global_index.hpp"
-
-// Project include(s)
-#include "traccc/definitions/qualifiers.hpp"
+// Project include(s).
+#include "traccc/edm/track_candidate.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/jagged_vector_view.hpp>
 #include <vecmem/containers/data/vector_view.hpp>
-#include <vecmem/containers/device_vector.hpp>
-#include <vecmem/containers/jagged_device_vector.hpp>
 
 namespace traccc::device {
 
@@ -57,16 +52,4 @@ struct fill_tracks_per_measurement_payload {
         n_accepted_tracks_per_measurement_view;
 };
 
-/// Function used for fill_vectors
-///
-/// @param[in] globalIndex   The index of the current thread
-/// @param[inout] payload      The function call payload
-///
-TRACCC_HOST_DEVICE inline void fill_tracks_per_measurement(
-    global_index_t globalIndex,
-    const fill_tracks_per_measurement_payload& payload);
-
 }  // namespace traccc::device
-
-// Include the implementation.
-#include "./impl/fill_tracks_per_measurement.ipp"

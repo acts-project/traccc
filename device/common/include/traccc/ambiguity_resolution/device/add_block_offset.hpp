@@ -7,16 +7,9 @@
 
 #pragma once
 
-// Local include(s).
-#include "traccc/device/global_index.hpp"
-
-// Project include(s)
-#include "traccc/definitions/primitives.hpp"
-#include "traccc/definitions/qualifiers.hpp"
-
 // VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
-#include <vecmem/containers/device_vector.hpp>
+
 namespace traccc::device {
 
 /// (Event Data) Payload for the @c
@@ -49,15 +42,4 @@ struct add_block_offset_payload {
     vecmem::data::vector_view<int> prefix_sums_view;
 };
 
-/// Function used for updating vectors
-///
-/// @param[in] globalIndex   The index of the current thread
-/// @param[inout] payload      The function call payload
-///
-TRACCC_DEVICE inline void add_block_offset(
-    global_index_t globalIndex, const add_block_offset_payload& payload);
-
 }  // namespace traccc::device
-
-// Include the implementation.
-#include "./impl/add_block_offset.ipp"

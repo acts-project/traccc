@@ -7,17 +7,9 @@
 
 #pragma once
 
-// Local include(s).
-#include "traccc/device/global_index.hpp"
-
-// Project include(s)
-#include "traccc/definitions/qualifiers.hpp"
-
 // VecMem include(s).
 #include <vecmem/containers/data/jagged_vector_view.hpp>
 #include <vecmem/containers/data/vector_view.hpp>
-#include <vecmem/containers/device_vector.hpp>
-#include <vecmem/containers/jagged_device_vector.hpp>
 
 namespace traccc::device {
 
@@ -52,16 +44,4 @@ struct count_shared_measurements_payload {
     vecmem::data::vector_view<unsigned int> n_shared_view;
 };
 
-/// Function used for fill_vectors
-///
-/// @param[in] globalIndex   The index of the current thread
-/// @param[inout] payload      The function call payload
-///
-TRACCC_HOST_DEVICE inline void count_shared_measurements(
-    global_index_t globalIndex,
-    const count_shared_measurements_payload& payload);
-
 }  // namespace traccc::device
-
-// Include the implementation.
-#include "./impl/count_shared_measurements.ipp"

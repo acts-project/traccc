@@ -7,17 +7,8 @@
 
 #pragma once
 
-// Local include(s).
-#include "traccc/device/concepts/barrier.hpp"
-#include "traccc/device/global_index.hpp"
-
-// Project include(s)
-#include "traccc/definitions/primitives.hpp"
-#include "traccc/definitions/qualifiers.hpp"
-
 // VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
-#include <vecmem/containers/device_vector.hpp>
 
 namespace traccc::device {
 

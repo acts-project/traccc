@@ -7,16 +7,8 @@
 
 #pragma once
 
-// Local include(s).
-#include "traccc/device/global_index.hpp"
-
-// Project include(s)
-#include "traccc/definitions/primitives.hpp"
-#include "traccc/definitions/qualifiers.hpp"
-
 // VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
-#include <vecmem/containers/device_vector.hpp>
 
 namespace traccc::device {
 
@@ -45,15 +37,4 @@ struct reset_status_payload {
     unsigned int* n_updated_tracks;
 };
 
-/// Function used for updating vectors
-///
-/// @param[in] globalIndex   The index of the current thread
-/// @param[inout] payload      The function call payload
-///
-TRACCC_DEVICE inline void reset_status(global_index_t globalIndex,
-                                       const reset_status_payload& payload);
-
 }  // namespace traccc::device
-
-// Include the implementation.
-#include "./impl/reset_status.ipp"

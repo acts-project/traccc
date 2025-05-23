@@ -10,6 +10,9 @@
 #include "../../utils/global_index.hpp"
 #include "find_max_shared.cuh"
 
+// VecMem include(s).
+#include <vecmem/containers/device_vector.hpp>
+
 namespace traccc::cuda::kernels {
 
 __global__ void find_max_shared(device::find_max_shared_payload payload) {

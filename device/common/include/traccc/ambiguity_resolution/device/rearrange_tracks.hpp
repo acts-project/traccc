@@ -7,13 +7,8 @@
 
 #pragma once
 
-// Local include(s).
-#include "traccc/device/concepts/barrier.hpp"
-#include "traccc/device/global_index.hpp"
-
-// Project include(s)
+// Project include(s).
 #include "traccc/definitions/primitives.hpp"
-#include "traccc/definitions/qualifiers.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
@@ -82,18 +77,4 @@ struct rearrange_tracks_payload {
     vecmem::data::vector_view<unsigned int> temp_sorted_ids_view;
 };
 
-/// Function used for updating vectors
-///
-/// @param[in] globalIndex   The index of the current thread
-/// @param[in] barrier            A block-wide barrier
-/// @param[inout] payload      The function call payload
-///
-template <concepts::barrier barrier_t>
-TRACCC_DEVICE inline void rearrange_tracks(
-    global_index_t globalIndex, const barrier_t& barrier,
-    const rearrange_tracks_payload& payload);
-
 }  // namespace traccc::device
-
-// Include the implementation.
-#include "./impl/rearrange_tracks.ipp"
