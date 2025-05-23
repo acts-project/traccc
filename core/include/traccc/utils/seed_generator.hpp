@@ -84,6 +84,8 @@ struct seed_generator {
                 m_stddevs[i] * m_stddevs[i];
         }
 
+        assert(!bound_param.is_invalid());
+
         return bound_param;
     }
 
