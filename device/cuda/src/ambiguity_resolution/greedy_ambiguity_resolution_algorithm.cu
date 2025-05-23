@@ -413,6 +413,22 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .is_updated_view = is_updated_buffer,
             });
 
+            // The seven kernels below are to keep sorted_ids sorted based on
+            // the relative shared measurements and pvalues. This can be reduced
+            // into thrust::sort():
+            /*
+            cudaMemcpyAsync(&n_accepted, n_accepted_device.get(),
+                            sizeof(unsigned int), cudaMemcpyDeviceToHost,
+            stream); thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
+                         sorted_ids_buffer.ptr() + n_accepted,
+                         trk_comp);
+            */
+            // Disadvantage: we need to do device-host copy which has large
+            // overhead and CUDA graph is not available anymore
+            // Advantage: This works for all cases (The below kernels only work
+            // when the number of updated tracks <= 1024) and might be faster
+            // with large number of updated tracks
+
             kernels::sort_updated_tracks<<<1, 1024, 1024 * sizeof(unsigned int),
                                            stream>>>(
                 device::sort_updated_tracks_payload{
