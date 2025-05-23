@@ -45,10 +45,10 @@ __global__ void rearrange_tracks(device::rearrange_tracks_payload payload) {
         return;
     }
 
-    auto globalIndex = threadIdx.x + blockIdx.x * blockDim.x;
+    auto gid = threadIdx.x + blockIdx.x * blockDim.x;
     const unsigned int n_accepted = *(payload.n_accepted);
 
-    if (globalIndex >= n_accepted) {
+    if (gid >= n_accepted) {
         return;
     }
 
@@ -66,33 +66,31 @@ __global__ void rearrange_tracks(device::rearrange_tracks_payload payload) {
     vecmem::device_vector<unsigned int> temp_sorted_ids(
         payload.temp_sorted_ids_view);
 
-    const auto tid = sorted_ids[globalIndex];
+    const auto tid = sorted_ids[gid];
     auto rel_sh_ref = rel_shared[tid];
     auto pval_ref = pvals[tid];
-    int shifted_idx = static_cast<int>(globalIndex);
+    int shifted_idx = static_cast<int>(gid);
     auto N = *(payload.n_updated_tracks);
 
     if (is_updated[tid]) {
-        // index of sorted_ids
-        auto sid = inverted_ids[tid];
 
-        if (sid > 0) {
+        if (gid > 0) {
 
             unsigned int left = 0;
-            unsigned int right = sid;
+            unsigned int right = gid;
 
             bool first_iteration = true;
             while (right > left) {
 
                 const bool find_left =
-                    find_valid_index(left, 0, sid, sorted_ids, is_updated);
+                    find_valid_index(left, 0, gid, sorted_ids, is_updated);
 
                 if (!find_left) {
                     break;
                 }
 
                 const bool find_right =
-                    find_valid_index(right, 0, sid, sorted_ids, is_updated);
+                    find_valid_index(right, 0, gid, sorted_ids, is_updated);
 
                 if (!find_right) {
                     break;
@@ -104,7 +102,7 @@ __global__ void rearrange_tracks(device::rearrange_tracks_payload payload) {
 
                     if (rel_sh < rel_sh_ref ||
                         (rel_sh == rel_sh_ref && pval >= pval_ref)) {
-                        left = sid;
+                        left = gid;
                         break;
                     }
                 }
@@ -134,9 +132,9 @@ __global__ void rearrange_tracks(device::rearrange_tracks_payload payload) {
             int delta = 0;
 
             if (is_updated[sorted_ids[left]]) {
-                delta = sid - left - (prefix_sums[sid] - prefix_sums[left]);
+                delta = gid - left - (prefix_sums[gid] - prefix_sums[left]);
             } else {
-                delta = sid - left - (prefix_sums[sid] - prefix_sums[left] - 1);
+                delta = gid - left - (prefix_sums[gid] - prefix_sums[left] - 1);
             }
 
             shifted_idx -= delta;
@@ -148,7 +146,7 @@ __global__ void rearrange_tracks(device::rearrange_tracks_payload payload) {
             auto rel_sh = rel_shared[id];
             auto pval = pvals[id];
 
-            if (inverted_ids[id] < globalIndex) {
+            if (inverted_ids[id] < gid) {
                 shifted_idx--;
             }
         }
@@ -169,7 +167,7 @@ __global__ void rearrange_tracks(device::rearrange_tracks_payload payload) {
             auto rel_sh = rel_shared[id];
             auto pval = pvals[id];
 
-            if (inverted_ids[id] > globalIndex) {
+            if (inverted_ids[id] > gid) {
                 if (rel_sh < rel_sh_ref) {
                     shifted_idx++;
                 } else if (rel_sh == rel_sh_ref && pval > pval_ref) {
