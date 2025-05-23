@@ -17,6 +17,7 @@
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/sanity/contiguous_on.hpp"
+#include "traccc/utils/logging.hpp"
 #include "traccc/utils/particle.hpp"
 #include "traccc/utils/prob.hpp"
 #include "traccc/utils/projections.hpp"
@@ -45,6 +46,7 @@ namespace traccc::host::details {
 /// @param seeds_view        All seeds in an event to start the track finding
 ///                          with
 /// @param config            The track finding configuration
+/// @param log               The logger object to use
 ///
 /// @return A container of the found track candidates
 ///
@@ -54,12 +56,15 @@ track_candidate_container_types::host find_tracks(
     const typename stepper_t::magnetic_field_type& field,
     const measurement_collection_types::const_view& measurements_view,
     const bound_track_parameters_collection_types::const_view& seeds_view,
-    const finding_config& config) {
+    const finding_config& config, const Logger& log) {
 
     assert(config.min_step_length_for_next_surface >
                math::fabs(config.propagation.navigation.overstep_tolerance) &&
            "Min step length for the next surface should be higher than the "
            "overstep tolerance");
+
+    // Create a logger.
+    auto logger = [&log]() -> const Logger& { return log; };
 
     /*****************************************************************
      * Types used by the track finding
@@ -148,6 +153,10 @@ track_candidate_container_types::host find_tracks(
     for (unsigned int step = 0u; step < config.max_track_candidates_per_track;
          step++) {
 
+        TRACCC_VERBOSE("Starting step "
+                       << step + 1 << " / "
+                       << config.max_track_candidates_per_track);
+
         // Iterate over input parameters
         const std::size_t n_in_params = in_params.size();
 
@@ -184,6 +193,11 @@ track_candidate_container_types::host find_tracks(
                      : links[step - 1][param_to_link[step - 1][in_param_id]]
                            .n_skipped);
 
+            TRACCC_VERBOSE("Processing input parameter "
+                           << in_param_id + 1 << " / " << n_in_params << ": "
+                           << in_param << " (orig_param_id=" << orig_param_id
+                           << ", skip_counter=" << skip_counter << ")");
+
             /*************************
              * Material interaction
              *************************/
@@ -191,16 +205,22 @@ track_candidate_container_types::host find_tracks(
             // Get surface corresponding to bound params
             const detray::tracking_surface sf{det, in_param.surface_link()};
 
-            const typename navigator_t::detector_type::geometry_context ctx{};
+            TRACCC_VERBOSE(
+                "  free params: " << sf.bound_to_free_vector({}, in_param));
 
             // Apply interactor
-            typename interactor_type::state interactor_state;
-            interactor_type{}.update(
-                ctx,
-                detail::correct_particle_hypothesis(config.ptc_hypothesis,
-                                                    in_param),
-                in_param, interactor_state,
-                static_cast<int>(detray::navigation::direction::e_forward), sf);
+            if (sf.has_material()) {
+                const typename navigator_t::detector_type::geometry_context
+                    ctx{};
+                typename interactor_type::state interactor_state;
+                interactor_type{}.update(
+                    ctx,
+                    detail::correct_particle_hypothesis(config.ptc_hypothesis,
+                                                        in_param),
+                    in_param, interactor_state,
+                    static_cast<int>(detray::navigation::direction::e_forward),
+                    sf);
+            }
 
             // Get barcode and measurements range on surface
             const auto bcd = in_param.surface_link();
@@ -263,6 +283,9 @@ track_candidate_container_types::host find_tracks(
                          .n_skipped = skip_counter,
                          .chi2 = chi2});
                     updated_params.push_back(trk_state.filtered());
+                    TRACCC_VERBOSE("updated_params["
+                                   << updated_params.size() - 1
+                                   << "] = " << updated_params.back());
                 }
             }
 
@@ -282,6 +305,9 @@ track_candidate_container_types::host find_tracks(
                      .chi2 = std::numeric_limits<traccc::scalar>::max()});
 
                 updated_params.push_back(in_param);
+                TRACCC_VERBOSE("updated_params["
+                               << updated_params.size() - 1
+                               << "] = " << updated_params.back());
                 n_branches++;
             }
         }

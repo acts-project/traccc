@@ -39,6 +39,21 @@ track_params_estimation::output_type track_params_estimation::operator()(
     for (edm::seed_collection::const_device::size_type i = 0; i < num_seeds;
          ++i) {
 
+        TRACCC_VERBOSE("Creating track parameters for seed " << i + 1 << " / "
+                                                             << num_seeds);
+        TRACCC_VERBOSE("  - bottom spacepoint: "
+                       << spacepoints.at(seeds.at(i).bottom_index()).global()
+                       << ", radius: "
+                       << spacepoints.at(seeds.at(i).bottom_index()).radius());
+        TRACCC_VERBOSE("  - middle spacepoint: "
+                       << spacepoints.at(seeds.at(i).middle_index()).global()
+                       << ", radius: "
+                       << spacepoints.at(seeds.at(i).middle_index()).radius());
+        TRACCC_VERBOSE("  - top spacepoint: "
+                       << spacepoints.at(seeds.at(i).top_index()).global()
+                       << ", radius: "
+                       << spacepoints.at(seeds.at(i).top_index()).radius());
+
         // Calculate the track parameter vector.
         bound_track_parameters<>& track_params = result[i];
         track_params.set_vector(
@@ -57,6 +72,7 @@ track_params_estimation::output_type track_params_estimation::operator()(
                edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX);
         track_params.set_surface_link(
             measurements.at(spB.measurement_index_1()).surface_link);
+        TRACCC_VERBOSE("  - bound track parameters: " << track_params);
     }
 
     // Return the result.
