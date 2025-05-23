@@ -55,10 +55,6 @@ __global__ void update_vectors(device::update_vectors_payload payload) {
         payload.updated_tracks_view);
     vecmem::device_vector<int> is_updated(payload.is_updated_view);
 
-    if (*payload.n_accepted == 0) {
-        return;
-    }
-
     const auto worst_track = sorted_ids[*payload.n_accepted - 1];
     const auto& worst_meas_list = meas_ids[worst_track];
     if (globalIndex < n_meas[worst_track]) {

@@ -17,7 +17,7 @@ __global__ void reset_status(device::reset_status_payload payload) {
         *(payload.terminate) = 0;
         *(payload.is_first_iteration) = 0;
     } else {
-        if (*(payload.max_shared) == 0) {
+        if (*(payload.max_shared) == 0 || *(payload.n_accepted) == 0) {
             *(payload.terminate) = 1;
         }
     }

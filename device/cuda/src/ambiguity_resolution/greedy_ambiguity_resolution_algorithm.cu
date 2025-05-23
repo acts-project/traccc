@@ -378,6 +378,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 device::reset_status_payload{
                     .is_first_iteration = is_first_iteration_device.get(),
                     .terminate = terminate_device.get(),
+                    .n_accepted = n_accepted_device.get(),
                     .max_shared = max_shared_device.get(),
                     .n_updated_tracks = n_updated_tracks_device.get()});
 

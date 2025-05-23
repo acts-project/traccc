@@ -29,6 +29,11 @@ struct reset_status_payload {
     /**
      * @brief The number of max shared
      */
+    unsigned int* n_accepted;
+
+    /**
+     * @brief The number of max shared
+     */
     unsigned int* max_shared;
 
     /**
