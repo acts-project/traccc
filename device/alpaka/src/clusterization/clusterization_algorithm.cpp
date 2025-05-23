@@ -83,7 +83,8 @@ clusterization_algorithm::clusterization_algorithm(
       m_gf_backup(m_config.backup_size(), m_mr.main),
       m_adjc_backup(m_config.backup_size(), m_mr.main),
       m_adjv_backup(m_config.backup_size() * 8, m_mr.main),
-      m_backup_mutex(vecmem::make_unique_alloc<unsigned int>(m_mr.main)) {
+      m_backup_mutex(vecmem::make_unique_alloc<unsigned int>(m_mr.main)),
+      m_setup_once(std::make_unique<std::once_flag>()) {
 
     m_copy.get().setup(m_f_backup)->wait();
     m_copy.get().setup(m_gf_backup)->wait();
@@ -100,7 +101,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     auto queue = Queue{devAcc};
 
     // Setup the mutex, if it is not already setup.
-    std::call_once(m_setup_once, [&queue, mutex_ptr = m_backup_mutex.get()]() {
+    std::call_once(*m_setup_once, [&queue, mutex_ptr = m_backup_mutex.get()]() {
         auto workDiv = makeWorkDiv<Acc>(1, 1);
         ::alpaka::exec<Acc>(queue, workDiv, ZeroMutexKernel{}, mutex_ptr);
         ::alpaka::wait(queue);
