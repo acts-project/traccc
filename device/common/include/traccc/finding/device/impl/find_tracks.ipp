@@ -535,6 +535,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
 
     unsigned int local_out_offset = 0;
     unsigned int local_num_params = 0;
+    unsigned int params_to_add = 0;
 
     bool in_param_can_create_hole =
         (n_skipped <= cfg.max_num_skipping_per_cand) && (!last_step);
@@ -553,11 +554,18 @@ TRACCC_HOST_DEVICE inline void find_tracks(
          * measurements.
          */
         if (local_num_params > 0 || in_param_can_create_hole) {
+            unsigned int desired_params_to_add = std::max(1u, local_num_params);
+            params_to_add = std::min(desired_params_to_add,
+                                     cfg.max_num_branches_per_seed -
+                                         std::min(cfg.max_num_branches_per_seed,
+                                                  num_tracks_per_seed.fetch_add(
+                                                      desired_params_to_add)));
+
             local_out_offset =
                 vecmem::device_atomic_ref<unsigned int,
                                           vecmem::device_address_space::local>(
                     shared_payload.shared_num_out_params)
-                    .fetch_add(std::max(1u, local_num_params));
+                    .fetch_add(params_to_add);
         }
     }
 
@@ -582,7 +590,9 @@ TRACCC_HOST_DEVICE inline void find_tracks(
 
     if (in_param_is_live) {
         if (local_num_params == 0) {
-            if (in_param_can_create_hole) {
+            assert(params_to_add <= 1);
+
+            if (in_param_can_create_hole && params_to_add == 1) {
                 const unsigned int out_offset =
                     shared_payload.shared_out_offset + local_out_offset;
 
@@ -608,7 +618,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                 }
             }
         } else {
-            for (unsigned int i = 0; i < local_num_params; ++i) {
+            for (unsigned int i = 0; i < params_to_add; ++i) {
                 const unsigned int in_offset =
                     thread_id.getGlobalThreadIdX() *
                         cfg.max_num_branches_per_surface +
