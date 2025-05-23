@@ -69,13 +69,9 @@ __global__ void update_vectors(device::update_vectors_payload payload) {
         (*payload.n_accepted)--;
     }
 
-    __syncthreads();
-
     if (globalIndex >= n_meas[worst_track]) {
         return;
     }
-
-    __syncthreads();
 
     const auto id = shared_meas_ids[globalIndex];
 
@@ -120,9 +116,10 @@ __global__ void update_vectors(device::update_vectors_payload payload) {
         track_status.begin();
 
     shared_tids[threadIndex] = static_cast<unsigned int>(tracks[alive_idx]);
-    auto tid = shared_tids[threadIndex];
 
     __syncthreads();
+
+    auto tid = shared_tids[threadIndex];
 
     const auto m_count = static_cast<unsigned int>(thrust::count(
         thrust::seq, meas_ids[tid].begin(), meas_ids[tid].end(), id));
@@ -130,8 +127,6 @@ __global__ void update_vectors(device::update_vectors_payload payload) {
     const unsigned int N_S =
         vecmem::device_atomic_ref<unsigned int>(n_shared.at(tid))
             .fetch_sub(m_count);
-
-    __syncthreads();
 
     bool already_pushed = false;
     for (unsigned int i = 0; i < threadIndex; ++i) {
