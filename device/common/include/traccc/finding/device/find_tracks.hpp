@@ -23,6 +23,7 @@
 #include <vecmem/containers/data/vector_view.hpp>
 
 // System include(s).
+#include <cstdint>
 #include <utility>
 
 namespace traccc::device {
@@ -114,15 +115,38 @@ struct find_tracks_payload {
      * input seed
      */
     vecmem::data::vector_view<unsigned int> n_tracks_per_seed_view;
+
+    /**
+     * @brief View object to the temporary track parameter vector
+     */
+    bound_track_parameters_collection_types::view tmp_params_view;
+
+    /**
+     * @brief View object to the temporary link vector
+     */
+    vecmem::data::vector_view<candidate_link> tmp_links_view;
 };
 
 /// (Shared Event Data) Payload for the @c traccc::device::find_tracks function
 struct find_tracks_shared_payload {
     /**
-     * @brief Shared-memory vector with the number of measurements found per
-     * track
+     * @brief Shared-memory value indicating the final number of track
+     * parameters to write to permanent storage.
      */
-    unsigned int* shared_num_candidates;
+    unsigned int& shared_num_out_params;
+
+    /**
+     * @brief Shared-memory value indicating the offset at which the block
+     * will write its parameters.
+     */
+    unsigned int& shared_out_offset;
+
+    /**
+     * @brief Shared-memory array with mutexes for the insertionof parameters.
+     *
+     * @note Length is always exactly the block size.
+     */
+    unsigned long long int* shared_insertion_mutex;
 
     /**
      * @brief Shared-memory vector of measurement candidats with ID and
