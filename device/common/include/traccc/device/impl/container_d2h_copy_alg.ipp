@@ -75,6 +75,11 @@ container_d2h_copy_alg<CONTAINER_TYPES>::operator()(input_type input) const {
     host_header_copy_event->wait();
     host_item_copy_event->wait();
 
+    const auto sizes = m_deviceCopy.get_sizes(input.items);
+    for (std::size_t i = 0; i < result.size(); ++i) {
+        result[i].items.resize(sizes[i]);
+    }
+
     // Return the host object.
     return result;
 }
