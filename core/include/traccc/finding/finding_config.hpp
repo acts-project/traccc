@@ -23,7 +23,7 @@ struct finding_config {
     unsigned int max_num_branches_per_seed = 10;
 
     /// Maximum number of branches per surface
-    unsigned int max_num_branches_per_surface = 10;
+    unsigned int max_num_branches_per_surface = 2;
 
     /// Min/Max number of track candidates per track
     unsigned int min_track_candidates_per_track = 3;
