@@ -7,6 +7,9 @@
 
 #pragma once
 
+// Library include(s).
+#include "traccc/alpaka/utils/queue.hpp"
+
 // Project include(s).
 #include "traccc/device/fill_prefix_sum.hpp"
 #include "traccc/utils/memory_resource.hpp"
@@ -23,6 +26,6 @@ namespace traccc::alpaka {
 ///
 vecmem::data::vector_buffer<device::prefix_sum_element_t> make_prefix_sum_buff(
     const std::vector<device::prefix_sum_size_t>& sizes, vecmem::copy& copy,
-    const traccc::memory_resource& mr, Queue& queue);
+    const traccc::memory_resource& mr, queue& q);
 
 }  // namespace traccc::alpaka

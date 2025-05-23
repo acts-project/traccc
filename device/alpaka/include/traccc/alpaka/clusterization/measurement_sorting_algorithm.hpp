@@ -7,12 +7,18 @@
 
 #pragma once
 
+// Local include(s).
+#include "traccc/alpaka/utils/queue.hpp"
+
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/utils/algorithm.hpp"
+#include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
+#include <vecmem/containers/data/vector_view.hpp>
+#include <vecmem/containers/vector.hpp>
 #include <vecmem/utils/copy.hpp>
 
 // System include(s).
@@ -37,9 +43,10 @@ class measurement_sorting_algorithm
     /// Constructor for the algorithm
     ///
     /// @param copy The copy object to use in the algorithm
+    /// @param q The Alpaka queue to schedule the measurement sorting in
     ///
     measurement_sorting_algorithm(
-        ::vecmem::copy& copy,
+        const traccc::memory_resource& mr, ::vecmem::copy& copy, queue& q,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator performing the sorting on a container
@@ -50,8 +57,12 @@ class measurement_sorting_algorithm
                                measurements_view) const override;
 
     private:
+    // The memory resource(s) to use
+    traccc::memory_resource m_mr;
     /// Copy object to use in the algorithm
     std::reference_wrapper<::vecmem::copy> m_copy;
+    /// The Alpaka queue to use
+    std::reference_wrapper<queue> m_queue;
 
 };  // class measurement_sorting_algorithm
 
