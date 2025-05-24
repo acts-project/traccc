@@ -335,6 +335,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
         vecmem::make_unique_alloc<int>(m_mr.main);
     cudaMemcpyAsync(is_first_iteration_device.get(), &is_first_iteration,
                     sizeof(int), cudaMemcpyHostToDevice, stream);
+    int terminate = 0;
     vecmem::unique_alloc_ptr<int> terminate_device =
         vecmem::make_unique_alloc<int>(m_mr.main);
     vecmem::unique_alloc_ptr<unsigned int> max_shared_device =
@@ -343,14 +344,18 @@ greedy_ambiguity_resolution_algorithm::operator()(
         vecmem::make_unique_alloc<unsigned int>(m_mr.main);
 
     // Thread block size
-    unsigned int nThreads_default = 1024;
-    unsigned int nBlocks_default = (n_tracks + 1023) / 1024;
+    unsigned int nThreads_adaptive = 1024;
+    unsigned int nBlocks_adaptive = (n_accepted + 1023) / 1024;
 
     unsigned int nThreads_warp = m_warp_size;
-    unsigned int nBlocks_warp = (n_tracks + nThreads_warp - 1) / nThreads_warp;
+    unsigned int nBlocks_warp =
+        (n_accepted + nThreads_warp - 1) / nThreads_warp;
+
+    unsigned int nThreads_full = 1024;
+    unsigned int nBlocks_full = (n_tracks + 1023) / 1024;
 
     unsigned int nThreads_scan = 1024;
-    unsigned int nBlocks_scan = (n_tracks + 1023) / 1024;
+    unsigned int nBlocks_scan = (n_accepted + 1023) / 1024;
 
     assert(nBlocks_scan <= 1024 &&
            "nBlocks_scan larger than 1024 will cause invalid arguments in "
@@ -368,26 +373,33 @@ greedy_ambiguity_resolution_algorithm::operator()(
     cudaGraph_t graph;
     cudaGraphExec_t graphExec;
 
-    cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal);
+    while (!terminate && n_accepted > 0) {
 
-    kernels::reset_status<<<1, 1, 0, stream>>>(device::reset_status_payload{
-        .is_first_iteration = is_first_iteration_device.get(),
-        .terminate = terminate_device.get(),
-        .n_accepted = n_accepted_device.get(),
-        .max_shared = max_shared_device.get(),
-        .n_updated_tracks = n_updated_tracks_device.get()});
+        nBlocks_adaptive = (n_accepted + 1023) / 1024;
+        nBlocks_warp = (n_accepted + nThreads_warp - 1) / nThreads_warp;
+        nBlocks_scan = (n_accepted + 1023) / 1024;
 
-    kernels::find_max_shared<<<nBlocks_warp, nThreads_warp, 0, stream>>>(
-        device::find_max_shared_payload{.sorted_ids_view = sorted_ids_buffer,
-                                        .n_accepted = n_accepted_device.get(),
-                                        .n_shared_view = n_shared_buffer,
-                                        .terminate = terminate_device.get(),
-                                        .max_shared = max_shared_device.get(),
-                                        .is_updated_view = is_updated_buffer});
+        cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal);
 
-    kernels::update_vectors<<<
-        1, 1024, 1024 * (sizeof(unsigned int) + sizeof(std::size_t)), stream>>>(
-        device::update_vectors_payload{
+        kernels::reset_status<<<1, 1, 0, stream>>>(device::reset_status_payload{
+            .is_first_iteration = is_first_iteration_device.get(),
+            .terminate = terminate_device.get(),
+            .n_accepted = n_accepted_device.get(),
+            .max_shared = max_shared_device.get(),
+            .n_updated_tracks = n_updated_tracks_device.get()});
+
+        kernels::find_max_shared<<<nBlocks_warp, nThreads_warp, 0, stream>>>(
+            device::find_max_shared_payload{
+                .sorted_ids_view = sorted_ids_buffer,
+                .n_accepted = n_accepted_device.get(),
+                .n_shared_view = n_shared_buffer,
+                .terminate = terminate_device.get(),
+                .max_shared = max_shared_device.get(),
+                .is_updated_view = is_updated_buffer});
+
+        kernels::update_vectors<<<
+            1, 1024, 1024 * (sizeof(unsigned int) + sizeof(std::size_t)),
+            stream>>>(device::update_vectors_payload{
             .sorted_ids_view = sorted_ids_buffer,
             .n_accepted = n_accepted_device.get(),
             .meas_ids_view = meas_ids_buffer,
@@ -406,24 +418,24 @@ greedy_ambiguity_resolution_algorithm::operator()(
             .is_updated_view = is_updated_buffer,
         });
 
-    // The seven kernels below are to keep sorted_ids sorted based on
-    // the relative shared measurements and pvalues. This can be reduced
-    // into thrust::sort():
-    /*
-    cudaMemcpyAsync(&n_accepted, n_accepted_device.get(),
-                    sizeof(unsigned int), cudaMemcpyDeviceToHost,
-    stream); thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
-                 sorted_ids_buffer.ptr() + n_accepted,
-                 trk_comp);
-    */
-    // Disadvantage: we need to do device-host copy which has large
-    // overhead and CUDA graph is not available anymore
-    // Advantage: This works for all cases (The below kernels only work
-    // when the number of updated tracks <= 1024) and might be faster
-    // with large number of updated tracks
+        // The seven kernels below are to keep sorted_ids sorted based on
+        // the relative shared measurements and pvalues. This can be reduced
+        // into thrust::sort():
+        /*
+        cudaMemcpyAsync(&n_accepted, n_accepted_device.get(),
+                        sizeof(unsigned int), cudaMemcpyDeviceToHost,
+        stream); thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
+                     sorted_ids_buffer.ptr() + n_accepted,
+                     trk_comp);
+        */
+        // Disadvantage: we need to do device-host copy which has large
+        // overhead and CUDA graph is not available anymore
+        // Advantage: This works for all cases (The below kernels only work
+        // when the number of updated tracks <= 1024) and might be faster
+        // with large number of updated tracks
 
-    kernels::
-        sort_updated_tracks<<<1, 1024, 1024 * sizeof(unsigned int), stream>>>(
+        kernels::sort_updated_tracks<<<1, 1024, 1024 * sizeof(unsigned int),
+                                       stream>>>(
             device::sort_updated_tracks_payload{
                 .rel_shared_view = rel_shared_buffer,
                 .pvals_view = pvals_buffer,
@@ -432,8 +444,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .updated_tracks_view = updated_tracks_buffer,
             });
 
-    kernels::
-        fill_inverted_ids<<<nBlocks_default, nThreads_default, 0, stream>>>(
+        kernels::fill_inverted_ids<<<nBlocks_adaptive, nThreads_adaptive, 0,
+                                     stream>>>(
             device::fill_inverted_ids_payload{
                 .sorted_ids_view = sorted_ids_buffer,
                 .terminate = terminate_device.get(),
@@ -442,35 +454,36 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .inverted_ids_view = inverted_ids_buffer,
             });
 
-    kernels::block_inclusive_scan<<<nBlocks_scan, nThreads_scan,
-                                    nThreads_scan * sizeof(int), stream>>>(
-        device::block_inclusive_scan_payload{
-            .sorted_ids_view = sorted_ids_buffer,
-            .terminate = terminate_device.get(),
-            .n_accepted = n_accepted_device.get(),
-            .n_updated_tracks = n_updated_tracks_device.get(),
-            .is_updated_view = is_updated_buffer,
-            .block_offsets_view = block_offsets_buffer,
-            .prefix_sums_view = prefix_sums_buffer});
+        kernels::block_inclusive_scan<<<nBlocks_scan, nThreads_scan,
+                                        nThreads_scan * sizeof(int), stream>>>(
+            device::block_inclusive_scan_payload{
+                .sorted_ids_view = sorted_ids_buffer,
+                .terminate = terminate_device.get(),
+                .n_accepted = n_accepted_device.get(),
+                .n_updated_tracks = n_updated_tracks_device.get(),
+                .is_updated_view = is_updated_buffer,
+                .block_offsets_view = block_offsets_buffer,
+                .prefix_sums_view = prefix_sums_buffer});
 
-    kernels::scan_block_offsets<<<1, nBlocks_scan, nBlocks_scan * sizeof(int),
-                                  stream>>>(device::scan_block_offsets_payload{
-        .terminate = terminate_device.get(),
-        .n_accepted = n_accepted_device.get(),
-        .n_updated_tracks = n_updated_tracks_device.get(),
-        .block_offsets_view = block_offsets_buffer,
-        .scanned_block_offsets_view = scanned_block_offsets_buffer});
+        kernels::scan_block_offsets<<<1, nBlocks_scan,
+                                      nBlocks_scan * sizeof(int), stream>>>(
+            device::scan_block_offsets_payload{
+                .terminate = terminate_device.get(),
+                .n_accepted = n_accepted_device.get(),
+                .n_updated_tracks = n_updated_tracks_device.get(),
+                .block_offsets_view = block_offsets_buffer,
+                .scanned_block_offsets_view = scanned_block_offsets_buffer});
 
-    kernels::add_block_offset<<<nBlocks_scan, nThreads_scan, 0, stream>>>(
-        device::add_block_offset_payload{
-            .terminate = terminate_device.get(),
-            .n_accepted = n_accepted_device.get(),
-            .n_updated_tracks = n_updated_tracks_device.get(),
-            .block_offsets_view = scanned_block_offsets_buffer,
-            .prefix_sums_view = prefix_sums_buffer});
+        kernels::add_block_offset<<<nBlocks_scan, nThreads_scan, 0, stream>>>(
+            device::add_block_offset_payload{
+                .terminate = terminate_device.get(),
+                .n_accepted = n_accepted_device.get(),
+                .n_updated_tracks = n_updated_tracks_device.get(),
+                .block_offsets_view = scanned_block_offsets_buffer,
+                .prefix_sums_view = prefix_sums_buffer});
 
-    kernels::rearrange_tracks<<<nBlocks_default, nThreads_default, 0, stream>>>(
-        device::rearrange_tracks_payload{
+        kernels::rearrange_tracks<<<nBlocks_adaptive, nThreads_adaptive, 0,
+                                    stream>>>(device::rearrange_tracks_payload{
             .sorted_ids_view = sorted_ids_buffer,
             .inverted_ids_view = inverted_ids_buffer,
             .rel_shared_view = rel_shared_buffer,
@@ -484,22 +497,27 @@ greedy_ambiguity_resolution_algorithm::operator()(
             .temp_sorted_ids_view = temp_sorted_ids_buffer,
         });
 
-    kernels::gather_tracks<<<nBlocks_default, nThreads_default, 0, stream>>>(
-        device::gather_tracks_payload{
-            .terminate = terminate_device.get(),
-            .n_accepted = n_accepted_device.get(),
-            .n_updated_tracks = n_updated_tracks_device.get(),
-            .temp_sorted_ids_view = temp_sorted_ids_buffer,
-            .sorted_ids_view = sorted_ids_buffer,
-            .is_updated_view = is_updated_buffer});
+        kernels::gather_tracks<<<nBlocks_full, nThreads_full, 0, stream>>>(
+            device::gather_tracks_payload{
+                .terminate = terminate_device.get(),
+                .n_accepted = n_accepted_device.get(),
+                .n_updated_tracks = n_updated_tracks_device.get(),
+                .temp_sorted_ids_view = temp_sorted_ids_buffer,
+                .sorted_ids_view = sorted_ids_buffer,
+                .is_updated_view = is_updated_buffer});
 
-    cudaStreamEndCapture(stream, &graph);
-    cudaGraphInstantiate(&graphExec, graph, nullptr, nullptr, 0);
+        cudaStreamEndCapture(stream, &graph);
+        cudaGraphInstantiate(&graphExec, graph, nullptr, nullptr, 0);
 
-    // Iterate over tracks using CUDA graph
-    unsigned int n_max_it = std::min(m_config.max_iterations, n_accepted);
-    for (unsigned int iter = 0; iter < n_max_it; iter++) {
-        cudaGraphLaunch(graphExec, stream);
+        unsigned int n_it = (n_tracks + 9) / 10;
+        for (unsigned int iter = 0; iter < n_it; iter++) {
+            cudaGraphLaunch(graphExec, stream);
+        }
+
+        cudaMemcpyAsync(&terminate, terminate_device.get(), sizeof(int),
+                        cudaMemcpyDeviceToHost, stream);
+        cudaMemcpyAsync(&n_accepted, n_accepted_device.get(),
+                        sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
     }
 
     cudaMemcpyAsync(&n_accepted, n_accepted_device.get(), sizeof(unsigned int),
