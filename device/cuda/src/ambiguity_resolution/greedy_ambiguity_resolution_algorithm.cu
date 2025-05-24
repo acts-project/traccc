@@ -364,152 +364,141 @@ greedy_ambiguity_resolution_algorithm::operator()(
                                                                   m_mr.main};
     m_copy.get().setup(block_offsets_buffer)->ignore();
 
-    unsigned int n_max_it = std::min(m_config.max_iterations, n_accepted);
-
-    // Iterate over tracks using CUDA graph
+    // Make CUDA Graph
     cudaGraph_t graph;
     cudaGraphExec_t graphExec;
-    bool instantiated = false;
-    for (unsigned int iter = 0; iter < n_max_it; iter++) {
-        if (!instantiated) {
-            cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal);
 
-            kernels::reset_status<<<1, 1, 0, stream>>>(
-                device::reset_status_payload{
-                    .is_first_iteration = is_first_iteration_device.get(),
-                    .terminate = terminate_device.get(),
-                    .n_accepted = n_accepted_device.get(),
-                    .max_shared = max_shared_device.get(),
-                    .n_updated_tracks = n_updated_tracks_device.get()});
+    cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal);
 
-            kernels::
-                find_max_shared<<<nBlocks_warp, nThreads_warp, 0, stream>>>(
-                    device::find_max_shared_payload{
-                        .sorted_ids_view = sorted_ids_buffer,
-                        .n_accepted = n_accepted_device.get(),
-                        .n_shared_view = n_shared_buffer,
-                        .terminate = terminate_device.get(),
-                        .max_shared = max_shared_device.get(),
-                        .is_updated_view = is_updated_buffer});
+    kernels::reset_status<<<1, 1, 0, stream>>>(device::reset_status_payload{
+        .is_first_iteration = is_first_iteration_device.get(),
+        .terminate = terminate_device.get(),
+        .n_accepted = n_accepted_device.get(),
+        .max_shared = max_shared_device.get(),
+        .n_updated_tracks = n_updated_tracks_device.get()});
 
-            kernels::update_vectors<<<
-                1, 1024, 1024 * (sizeof(unsigned int) + sizeof(std::size_t)),
-                stream>>>(device::update_vectors_payload{
-                .sorted_ids_view = sorted_ids_buffer,
-                .n_accepted = n_accepted_device.get(),
-                .meas_ids_view = meas_ids_buffer,
-                .n_meas_view = n_meas_buffer,
-                .unique_meas_view = unique_meas_buffer,
-                .tracks_per_measurement_view = tracks_per_measurement_buffer,
-                .track_status_per_measurement_view =
-                    track_status_per_measurement_buffer,
-                .n_accepted_tracks_per_measurement_view =
-                    n_accepted_tracks_per_measurement_buffer,
-                .n_shared_view = n_shared_buffer,
+    kernels::find_max_shared<<<nBlocks_warp, nThreads_warp, 0, stream>>>(
+        device::find_max_shared_payload{.sorted_ids_view = sorted_ids_buffer,
+                                        .n_accepted = n_accepted_device.get(),
+                                        .n_shared_view = n_shared_buffer,
+                                        .terminate = terminate_device.get(),
+                                        .max_shared = max_shared_device.get(),
+                                        .is_updated_view = is_updated_buffer});
+
+    kernels::update_vectors<<<
+        1, 1024, 1024 * (sizeof(unsigned int) + sizeof(std::size_t)), stream>>>(
+        device::update_vectors_payload{
+            .sorted_ids_view = sorted_ids_buffer,
+            .n_accepted = n_accepted_device.get(),
+            .meas_ids_view = meas_ids_buffer,
+            .n_meas_view = n_meas_buffer,
+            .unique_meas_view = unique_meas_buffer,
+            .tracks_per_measurement_view = tracks_per_measurement_buffer,
+            .track_status_per_measurement_view =
+                track_status_per_measurement_buffer,
+            .n_accepted_tracks_per_measurement_view =
+                n_accepted_tracks_per_measurement_buffer,
+            .n_shared_view = n_shared_buffer,
+            .rel_shared_view = rel_shared_buffer,
+            .terminate = terminate_device.get(),
+            .n_updated_tracks = n_updated_tracks_device.get(),
+            .updated_tracks_view = updated_tracks_buffer,
+            .is_updated_view = is_updated_buffer,
+        });
+
+    // The seven kernels below are to keep sorted_ids sorted based on
+    // the relative shared measurements and pvalues. This can be reduced
+    // into thrust::sort():
+    /*
+    cudaMemcpyAsync(&n_accepted, n_accepted_device.get(),
+                    sizeof(unsigned int), cudaMemcpyDeviceToHost,
+    stream); thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
+                 sorted_ids_buffer.ptr() + n_accepted,
+                 trk_comp);
+    */
+    // Disadvantage: we need to do device-host copy which has large
+    // overhead and CUDA graph is not available anymore
+    // Advantage: This works for all cases (The below kernels only work
+    // when the number of updated tracks <= 1024) and might be faster
+    // with large number of updated tracks
+
+    kernels::
+        sort_updated_tracks<<<1, 1024, 1024 * sizeof(unsigned int), stream>>>(
+            device::sort_updated_tracks_payload{
                 .rel_shared_view = rel_shared_buffer,
+                .pvals_view = pvals_buffer,
                 .terminate = terminate_device.get(),
                 .n_updated_tracks = n_updated_tracks_device.get(),
                 .updated_tracks_view = updated_tracks_buffer,
-                .is_updated_view = is_updated_buffer,
             });
 
-            // The seven kernels below are to keep sorted_ids sorted based on
-            // the relative shared measurements and pvalues. This can be reduced
-            // into thrust::sort():
-            /*
-            cudaMemcpyAsync(&n_accepted, n_accepted_device.get(),
-                            sizeof(unsigned int), cudaMemcpyDeviceToHost,
-            stream); thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
-                         sorted_ids_buffer.ptr() + n_accepted,
-                         trk_comp);
-            */
-            // Disadvantage: we need to do device-host copy which has large
-            // overhead and CUDA graph is not available anymore
-            // Advantage: This works for all cases (The below kernels only work
-            // when the number of updated tracks <= 1024) and might be faster
-            // with large number of updated tracks
+    kernels::
+        fill_inverted_ids<<<nBlocks_default, nThreads_default, 0, stream>>>(
+            device::fill_inverted_ids_payload{
+                .sorted_ids_view = sorted_ids_buffer,
+                .terminate = terminate_device.get(),
+                .n_accepted = n_accepted_device.get(),
+                .n_updated_tracks = n_updated_tracks_device.get(),
+                .inverted_ids_view = inverted_ids_buffer,
+            });
 
-            kernels::sort_updated_tracks<<<1, 1024, 1024 * sizeof(unsigned int),
-                                           stream>>>(
-                device::sort_updated_tracks_payload{
-                    .rel_shared_view = rel_shared_buffer,
-                    .pvals_view = pvals_buffer,
-                    .terminate = terminate_device.get(),
-                    .n_updated_tracks = n_updated_tracks_device.get(),
-                    .updated_tracks_view = updated_tracks_buffer,
-                });
+    kernels::block_inclusive_scan<<<nBlocks_scan, nThreads_scan,
+                                    nThreads_scan * sizeof(int), stream>>>(
+        device::block_inclusive_scan_payload{
+            .sorted_ids_view = sorted_ids_buffer,
+            .terminate = terminate_device.get(),
+            .n_accepted = n_accepted_device.get(),
+            .n_updated_tracks = n_updated_tracks_device.get(),
+            .is_updated_view = is_updated_buffer,
+            .block_offsets_view = block_offsets_buffer,
+            .prefix_sums_view = prefix_sums_buffer});
 
-            kernels::fill_inverted_ids<<<nBlocks_default, nThreads_default, 0,
-                                         stream>>>(
-                device::fill_inverted_ids_payload{
-                    .sorted_ids_view = sorted_ids_buffer,
-                    .terminate = terminate_device.get(),
-                    .n_accepted = n_accepted_device.get(),
-                    .n_updated_tracks = n_updated_tracks_device.get(),
-                    .inverted_ids_view = inverted_ids_buffer,
-                });
+    kernels::scan_block_offsets<<<1, nBlocks_scan, nBlocks_scan * sizeof(int),
+                                  stream>>>(device::scan_block_offsets_payload{
+        .terminate = terminate_device.get(),
+        .n_accepted = n_accepted_device.get(),
+        .n_updated_tracks = n_updated_tracks_device.get(),
+        .block_offsets_view = block_offsets_buffer,
+        .scanned_block_offsets_view = scanned_block_offsets_buffer});
 
-            kernels::
-                block_inclusive_scan<<<nBlocks_scan, nThreads_scan,
-                                       nThreads_scan * sizeof(int), stream>>>(
-                    device::block_inclusive_scan_payload{
-                        .sorted_ids_view = sorted_ids_buffer,
-                        .terminate = terminate_device.get(),
-                        .n_accepted = n_accepted_device.get(),
-                        .n_updated_tracks = n_updated_tracks_device.get(),
-                        .is_updated_view = is_updated_buffer,
-                        .block_offsets_view = block_offsets_buffer,
-                        .prefix_sums_view = prefix_sums_buffer});
+    kernels::add_block_offset<<<nBlocks_scan, nThreads_scan, 0, stream>>>(
+        device::add_block_offset_payload{
+            .terminate = terminate_device.get(),
+            .n_accepted = n_accepted_device.get(),
+            .n_updated_tracks = n_updated_tracks_device.get(),
+            .block_offsets_view = scanned_block_offsets_buffer,
+            .prefix_sums_view = prefix_sums_buffer});
 
-            kernels::scan_block_offsets<<<1, nBlocks_scan,
-                                          nBlocks_scan * sizeof(int), stream>>>(
-                device::scan_block_offsets_payload{
-                    .terminate = terminate_device.get(),
-                    .n_accepted = n_accepted_device.get(),
-                    .n_updated_tracks = n_updated_tracks_device.get(),
-                    .block_offsets_view = block_offsets_buffer,
-                    .scanned_block_offsets_view =
-                        scanned_block_offsets_buffer});
+    kernels::rearrange_tracks<<<nBlocks_default, nThreads_default, 0, stream>>>(
+        device::rearrange_tracks_payload{
+            .sorted_ids_view = sorted_ids_buffer,
+            .inverted_ids_view = inverted_ids_buffer,
+            .rel_shared_view = rel_shared_buffer,
+            .pvals_view = pvals_buffer,
+            .terminate = terminate_device.get(),
+            .n_accepted = n_accepted_device.get(),
+            .n_updated_tracks = n_updated_tracks_device.get(),
+            .updated_tracks_view = updated_tracks_buffer,
+            .is_updated_view = is_updated_buffer,
+            .prefix_sums_view = prefix_sums_buffer,
+            .temp_sorted_ids_view = temp_sorted_ids_buffer,
+        });
 
-            kernels::
-                add_block_offset<<<nBlocks_scan, nThreads_scan, 0, stream>>>(
-                    device::add_block_offset_payload{
-                        .terminate = terminate_device.get(),
-                        .n_accepted = n_accepted_device.get(),
-                        .n_updated_tracks = n_updated_tracks_device.get(),
-                        .block_offsets_view = scanned_block_offsets_buffer,
-                        .prefix_sums_view = prefix_sums_buffer});
+    kernels::gather_tracks<<<nBlocks_default, nThreads_default, 0, stream>>>(
+        device::gather_tracks_payload{
+            .terminate = terminate_device.get(),
+            .n_accepted = n_accepted_device.get(),
+            .n_updated_tracks = n_updated_tracks_device.get(),
+            .temp_sorted_ids_view = temp_sorted_ids_buffer,
+            .sorted_ids_view = sorted_ids_buffer,
+            .is_updated_view = is_updated_buffer});
 
-            kernels::rearrange_tracks<<<nBlocks_default, nThreads_default, 0,
-                                        stream>>>(
-                device::rearrange_tracks_payload{
-                    .sorted_ids_view = sorted_ids_buffer,
-                    .inverted_ids_view = inverted_ids_buffer,
-                    .rel_shared_view = rel_shared_buffer,
-                    .pvals_view = pvals_buffer,
-                    .terminate = terminate_device.get(),
-                    .n_accepted = n_accepted_device.get(),
-                    .n_updated_tracks = n_updated_tracks_device.get(),
-                    .updated_tracks_view = updated_tracks_buffer,
-                    .is_updated_view = is_updated_buffer,
-                    .prefix_sums_view = prefix_sums_buffer,
-                    .temp_sorted_ids_view = temp_sorted_ids_buffer,
-                });
+    cudaStreamEndCapture(stream, &graph);
+    cudaGraphInstantiate(&graphExec, graph, nullptr, nullptr, 0);
 
-            kernels::
-                gather_tracks<<<nBlocks_default, nThreads_default, 0, stream>>>(
-                    device::gather_tracks_payload{
-                        .terminate = terminate_device.get(),
-                        .n_accepted = n_accepted_device.get(),
-                        .n_updated_tracks = n_updated_tracks_device.get(),
-                        .temp_sorted_ids_view = temp_sorted_ids_buffer,
-                        .sorted_ids_view = sorted_ids_buffer,
-                        .is_updated_view = is_updated_buffer});
-
-            cudaStreamEndCapture(stream, &graph);
-            cudaGraphInstantiate(&graphExec, graph, nullptr, nullptr, 0);
-            instantiated = true;
-        }
+    // Iterate over tracks using CUDA graph
+    unsigned int n_max_it = std::min(m_config.max_iterations, n_accepted);
+    for (unsigned int iter = 0; iter < n_max_it; iter++) {
         cudaGraphLaunch(graphExec, stream);
     }
 
