@@ -8,12 +8,13 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/definitions/qualifiers.hpp"
 #include "traccc/simulation/smearing_writer.hpp"
 #include "traccc/utils/particle.hpp"
 #include "traccc/utils/propagation.hpp"
 
 // Detray include(s).
-#include <detray/test/utils/simulation/random_scatterer.hpp>
+#include <detray/test/utils/random_scatterer.hpp>
 
 // System include(s).
 #include <limits>

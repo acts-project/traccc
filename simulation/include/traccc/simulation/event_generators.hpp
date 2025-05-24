@@ -8,4 +8,4 @@
 #pragma once
 
 // Detray include(s).
-#include <detray/test/utils/simulation/event_generator/track_generators.hpp>
+#include <detray/test/common/track_generators.hpp>

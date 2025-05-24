@@ -22,7 +22,7 @@
 
 // detray include(s).
 #include <detray/io/frontend/detector_writer.hpp>
-#include <detray/test/utils/detectors/build_toy_detector.hpp>
+#include <detray/test/common/build_toy_detector.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
