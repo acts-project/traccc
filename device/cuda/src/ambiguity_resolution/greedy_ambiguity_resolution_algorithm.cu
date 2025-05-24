@@ -369,15 +369,15 @@ greedy_ambiguity_resolution_algorithm::operator()(
                                                                   m_mr.main};
     m_copy.get().setup(block_offsets_buffer)->ignore();
 
-    // Make CUDA Graph
-    cudaGraph_t graph;
-    cudaGraphExec_t graphExec;
-
     while (!terminate && n_accepted > 0) {
 
         nBlocks_adaptive = (n_accepted + 1023) / 1024;
         nBlocks_warp = (n_accepted + nThreads_warp - 1) / nThreads_warp;
         nBlocks_scan = (n_accepted + 1023) / 1024;
+
+        // Make CUDA Graph
+        cudaGraph_t graph;
+        cudaGraphExec_t graphExec;
 
         cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal);
 
