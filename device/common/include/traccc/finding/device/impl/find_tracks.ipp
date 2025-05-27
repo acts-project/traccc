@@ -519,25 +519,27 @@ TRACCC_HOST_DEVICE inline void find_tracks(
      * the condition of the while-loop above.
      */
 
-    const unsigned int prev_link_idx = payload.prev_links_idx + in_param_id;
-    const unsigned int seed_idx =
-        payload.step > 0 ? links.at(prev_link_idx).seed_idx : in_param_id;
-    const unsigned int n_skipped =
-        payload.step == 0 ? 0 : links.at(prev_link_idx).n_skipped;
-
-    vecmem::device_atomic_ref<unsigned int> num_tracks_per_seed(
-        n_tracks_per_seed.at(seed_idx));
-
-    bool in_param_is_live =
-        in_param_id < payload.n_in_params &&
-        in_params_liveness.at(in_param_id) > 0u &&
-        num_tracks_per_seed.load() < cfg.max_num_branches_per_seed;
+    unsigned int prev_link_idx = std::numeric_limits<unsigned int>::max();
+    unsigned int seed_idx = std::numeric_limits<unsigned int>::max();
+    unsigned int n_skipped = std::numeric_limits<unsigned int>::max();
 
     unsigned int local_out_offset = 0;
     unsigned int local_num_params = 0;
+    unsigned int params_to_add = 0;
 
-    bool in_param_can_create_hole =
-        (n_skipped <= cfg.max_num_skipping_per_cand) && (!last_step);
+    bool in_param_can_create_hole = false;
+
+    const bool in_param_is_live = in_param_id < payload.n_in_params &&
+                                  in_params_liveness.at(in_param_id) > 0u;
+
+    if (in_param_is_live) {
+        prev_link_idx = payload.prev_links_idx + in_param_id;
+        seed_idx =
+            payload.step > 0 ? links.at(prev_link_idx).seed_idx : in_param_id;
+        n_skipped = payload.step == 0 ? 0 : links.at(prev_link_idx).n_skipped;
+        in_param_can_create_hole =
+            (n_skipped <= cfg.max_num_skipping_per_cand) && (!last_step);
+    }
 
     /*
      * Compute the offset at which this block will write, as well as the index
@@ -553,11 +555,21 @@ TRACCC_HOST_DEVICE inline void find_tracks(
          * measurements.
          */
         if (local_num_params > 0 || in_param_can_create_hole) {
+            unsigned int desired_params_to_add = std::max(1u, local_num_params);
+
+            vecmem::device_atomic_ref<unsigned int> num_tracks_per_seed(
+                n_tracks_per_seed.at(seed_idx));
+            params_to_add = std::min(desired_params_to_add,
+                                     cfg.max_num_branches_per_seed -
+                                         std::min(cfg.max_num_branches_per_seed,
+                                                  num_tracks_per_seed.fetch_add(
+                                                      desired_params_to_add)));
+
             local_out_offset =
                 vecmem::device_atomic_ref<unsigned int,
                                           vecmem::device_address_space::local>(
                     shared_payload.shared_num_out_params)
-                    .fetch_add(std::max(1u, local_num_params));
+                    .fetch_add(params_to_add);
         }
     }
 
@@ -581,8 +593,14 @@ TRACCC_HOST_DEVICE inline void find_tracks(
         payload.out_params_liveness_view);
 
     if (in_param_is_live) {
+        assert(prev_link_idx != std::numeric_limits<unsigned int>::max());
+        assert(seed_idx != std::numeric_limits<unsigned int>::max());
+        assert(n_skipped != std::numeric_limits<unsigned int>::max());
+
         if (local_num_params == 0) {
-            if (in_param_can_create_hole) {
+            assert(params_to_add <= 1);
+
+            if (in_param_can_create_hole && params_to_add == 1) {
                 const unsigned int out_offset =
                     shared_payload.shared_out_offset + local_out_offset;
 
@@ -608,7 +626,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                 }
             }
         } else {
-            for (unsigned int i = 0; i < local_num_params; ++i) {
+            for (unsigned int i = 0; i < params_to_add; ++i) {
                 const unsigned int in_offset =
                     thread_id.getGlobalThreadIdX() *
                         cfg.max_num_branches_per_surface +
