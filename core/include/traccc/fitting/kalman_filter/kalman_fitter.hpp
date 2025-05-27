@@ -156,35 +156,51 @@ class kalman_fitter {
     /// @param fitter_state the state of kalman fitter
     template <typename seed_parameters_t>
     [[nodiscard]] TRACCC_HOST_DEVICE kalman_fitter_status
-    fit(const seed_parameters_t& seed_params, state& fitter_state) {
+    fit(const seed_parameters_t& seed_params, state& fitter_state) const {
+        seed_parameters_t params = seed_params;
+        fitter_state.m_fit_actor_state.reset();
 
         // Run the kalman filtering for a given number of iterations
         for (std::size_t i = 0; i < m_cfg.n_iterations; i++) {
-
-            // Reset the iterator of kalman actor
-            fitter_state.m_fit_actor_state.reset();
+            if (kalman_fitter_status res = fit_iteration(params, fitter_state);
+                res != kalman_fitter_status::SUCCESS) {
+                return res;
+            }
 
             // TODO: For multiple iterations, seed parameter should be set to
             // the first track state which has either filtered or smoothed
             // state. If the first track state is a hole, we need to back
             // extrapolate from the filtered or smoothed state of next valid
             // track state.
-            auto seed_params_cpy =
-                (i == 0) ? seed_params
-                         : fitter_state.m_fit_actor_state.m_track_states[0]
-                               .smoothed();
-
-            inflate_covariance(seed_params_cpy,
-                               m_cfg.covariance_inflation_factor);
-
-            if (kalman_fitter_status res =
-                    filter(seed_params_cpy, fitter_state);
-                res != kalman_fitter_status::SUCCESS) {
-                return res;
-            }
-
-            check_fitting_result(fitter_state);
+            params =
+                fitter_state.m_fit_actor_state.m_track_states[0].smoothed();
+            // Reset the iterator of kalman actor
+            fitter_state.m_fit_actor_state.reset();
         }
+
+        return kalman_fitter_status::SUCCESS;
+    }
+
+    template <typename seed_parameters_t>
+    [[nodiscard]] TRACCC_HOST_DEVICE kalman_fitter_status
+    fit_iteration(seed_parameters_t params, state& fitter_state) const {
+        inflate_covariance(params, m_cfg.covariance_inflation_factor);
+
+        if (kalman_fitter_status res = filter(params, fitter_state);
+            res != kalman_fitter_status::SUCCESS) {
+            return res;
+        }
+
+        // Run smoothing
+        if (kalman_fitter_status res = smooth(fitter_state);
+            res != kalman_fitter_status::SUCCESS) {
+            return res;
+        }
+
+        // Update track fitting qualities
+        update_statistics(fitter_state);
+
+        check_fitting_result(fitter_state);
 
         return kalman_fitter_status::SUCCESS;
     }
@@ -197,7 +213,7 @@ class kalman_fitter {
     /// @param fitter_state the state of kalman fitter
     template <typename seed_parameters_t>
     [[nodiscard]] TRACCC_HOST_DEVICE kalman_fitter_status
-    filter(const seed_parameters_t& seed_params, state& fitter_state) {
+    filter(const seed_parameters_t& seed_params, state& fitter_state) const {
 
         // Create propagator
         forward_propagator_type propagator(m_cfg.propagation);
@@ -223,15 +239,6 @@ class kalman_fitter {
         // Run forward filtering
         propagator.propagate(propagation, fitter_state());
 
-        // Run smoothing
-        if (kalman_fitter_status res = smooth(fitter_state);
-            res != kalman_fitter_status::SUCCESS) {
-            return res;
-        }
-
-        // Update track fitting qualities
-        update_statistics(fitter_state);
-
         return kalman_fitter_status::SUCCESS;
     }
 
@@ -242,7 +249,7 @@ class kalman_fitter {
     ///
     /// @param fitter_state the state of kalman fitter
     [[nodiscard]] TRACCC_HOST_DEVICE kalman_fitter_status
-    smooth(state& fitter_state) {
+    smooth(state& fitter_state) const {
 
         if (fitter_state.m_sequencer_state.overflow) {
             return kalman_fitter_status::ERROR_BARCODE_SEQUENCE_OVERFLOW;
@@ -326,7 +333,7 @@ class kalman_fitter {
     }
 
     TRACCC_HOST_DEVICE
-    void update_statistics(state& fitter_state) {
+    void update_statistics(state& fitter_state) const {
         auto& fit_res = fitter_state.m_fit_res;
         auto& track_states = fitter_state.m_fit_actor_state.m_track_states;
 
@@ -358,7 +365,7 @@ class kalman_fitter {
     }
 
     TRACCC_HOST_DEVICE
-    void check_fitting_result(state& fitter_state) {
+    void check_fitting_result(state& fitter_state) const {
         auto& fit_res = fitter_state.m_fit_res;
         const auto& track_states =
             fitter_state.m_fit_actor_state.m_track_states;
