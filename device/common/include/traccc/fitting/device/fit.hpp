@@ -31,14 +31,14 @@ struct fit_payload {
     typename fitter_t::bfield_type field_data;
 
     /**
-     * @brief View object to the input track candidates
-     */
-    track_candidate_container_types::const_view track_candidates_view;
-
-    /**
      * @brief View object to the input track parameters
      */
     vecmem::data::vector_view<const unsigned int> param_ids_view;
+
+    /**
+     * @brief View object to the vector of parameter liveness
+     */
+    vecmem::data::vector_view<unsigned int> param_liveness_view;
 
     /**
      * @brief View object to the output track states
@@ -50,21 +50,4 @@ struct fit_payload {
      */
     vecmem::data::jagged_vector_view<detray::geometry::barcode> barcodes_view;
 };
-
-/// Function used for fitting a track for a given track candidates
-///
-/// @param[in] globalIndex   The index of the current thread
-/// @param[in] det_data      Detector view object
-/// @param[in] track_candidates_view The input track candidates
-/// @param[out] track_states_view The output of fitted track states
-/// @param[out] barcodes_view The barcode sequence for backward filter
-///
-template <typename fitter_t>
-TRACCC_HOST_DEVICE inline void fit(global_index_t globalIndex,
-                                   const typename fitter_t::config_type cfg,
-                                   const fit_payload<fitter_t>&);
-
 }  // namespace traccc::device
-
-// Include the implementation.
-#include "traccc/fitting/device/impl/fit.ipp"
