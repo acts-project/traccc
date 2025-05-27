@@ -150,10 +150,6 @@ int seq_run(const traccc::opts::detector& detector_opts,
         traccc::host::combinatorial_kalman_filter_algorithm;
     using device_finding_algorithm =
         traccc::cuda::finding_algorithm<stepper_type, device_navigator_type>;
-    using host_ambiguity_resolution_algorithm =
-        traccc::host::greedy_ambiguity_resolution_algorithm;
-    using device_ambiguity_resolution_algorithm =
-        traccc::cuda::greedy_ambiguity_resolution_algorithm;
 
     using host_fitting_algorithm = traccc::host::kalman_fitting_algorithm;
     using device_fitting_algorithm = traccc::cuda::fitting_algorithm<
@@ -188,8 +184,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
         host_mr, logger().clone("HostTrackParEstAlg"));
     host_finding_algorithm finding_alg(finding_cfg,
                                        logger().clone("HostFindingAlg"));
-    host_ambiguity_resolution_algorithm resolution_alg_cpu(
-        resolution_config, hmr, logger().clone("AmbiguityResolutionAlg"));
+    traccc::host::greedy_ambiguity_resolution_algorithm resolution_alg_cpu(
+        resolution_config, hmr, logger().clone("HostAmbiguityResolutionAlg"));
     host_fitting_algorithm fitting_alg(fitting_cfg, host_mr, host_copy,
                                        logger().clone("HostFittingAlg"));
 
@@ -208,9 +204,9 @@ int seq_run(const traccc::opts::detector& detector_opts,
         mr, copy, stream, logger().clone("CudaTrackParEstAlg"));
     device_finding_algorithm finding_alg_cuda(finding_cfg, mr, copy, stream,
                                               logger().clone("CudaFindingAlg"));
-    device_ambiguity_resolution_algorithm resolution_alg_cuda(
+    traccc::cuda::greedy_ambiguity_resolution_algorithm resolution_alg_cuda(
         resolution_config, mr, copy, stream,
-        logger().clone("AmbiguityResolutionAlg"));
+        logger().clone("CudaAmbiguityResolutionAlg"));
     device_fitting_algorithm fitting_alg_cuda(fitting_cfg, mr, copy, stream,
                                               logger().clone("CudaFittingAlg"));
 
@@ -239,7 +235,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
         traccc::host::seeding_algorithm::output_type seeds{host_mr};
         traccc::host::track_params_estimation::output_type params;
         host_finding_algorithm::output_type track_candidates;
-        host_ambiguity_resolution_algorithm::output_type res_track_candidates;
+        traccc::host::greedy_ambiguity_resolution_algorithm::output_type
+            res_track_candidates;
         host_fitting_algorithm::output_type track_states;
 
         // Instantiate cuda containers/collections
@@ -381,15 +378,11 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 }
 
                 // CPU
-                auto track_candidates_cuda_tmp =
-                    copy_track_candidates(track_candidates_buffer);
-
                 if (accelerator_opts.compare_with_cpu) {
                     traccc::performance::timer timer{
                         "Ambiguity resolution (cpu)", elapsedTimes};
-                    res_track_candidates = resolution_alg_cpu(
-                        traccc::get_data(track_candidates_cuda_tmp));
-                    // resolution_alg_cpu(traccc::get_data(track_candidates));
+                    res_track_candidates =
+                        resolution_alg_cpu(traccc::get_data(track_candidates));
                 }
 
                 // CUDA

@@ -27,7 +27,7 @@ namespace traccc::cuda {
 /// duplicate/fake"
 class greedy_ambiguity_resolution_algorithm
     : public algorithm<track_candidate_container_types::buffer(
-          const typename track_candidate_container_types::const_view&)>,
+          const track_candidate_container_types::const_view&)>,
       public messaging {
 
     public:
