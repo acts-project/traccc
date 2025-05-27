@@ -248,58 +248,70 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 links_buffer = std::move(new_links_buffer);
             }
 
-            Idx blocksPerGrid =
-                (n_in_params + threadsPerBlock - 1) / threadsPerBlock;
-            auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
+            {
+                vecmem::data::vector_buffer<candidate_link> tmp_links_buffer(
+                    n_max_candidates, m_mr.main);
+                m_copy.setup(tmp_links_buffer)->ignore();
+                bound_track_parameters_collection_types::buffer
+                    tmp_params_buffer(n_max_candidates, m_mr.main);
+                m_copy.setup(tmp_params_buffer)->ignore();
 
-            const unsigned int prev_link_idx =
-                step == 0 ? 0 : step_to_link_idx_map[step - 1];
+                Idx blocksPerGrid =
+                    (n_in_params + threadsPerBlock - 1) / threadsPerBlock;
+                auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
-            assert(links_size == step_to_link_idx_map[step]);
+                const unsigned int prev_link_idx =
+                    step == 0 ? 0 : step_to_link_idx_map[step - 1];
 
-            typedef device::find_tracks_payload<std::decay_t<detector_type>>
-                PayloadType;
+                assert(links_size == step_to_link_idx_map[step]);
 
-            auto bufHost_payload =
-                ::alpaka::allocBuf<PayloadType, Idx>(devHost, 1u);
-            PayloadType* payload = ::alpaka::getPtrNative(bufHost_payload);
+                typedef device::find_tracks_payload<std::decay_t<detector_type>>
+                    PayloadType;
 
-            new (payload)
-                PayloadType{.det_data = det_view,
-                            .measurements_view = measurements,
-                            .in_params_view = in_params_buffer,
-                            .in_params_liveness_view = param_liveness_buffer,
-                            .n_in_params = n_in_params,
-                            .barcodes_view = barcodes_buffer,
-                            .upper_bounds_view = upper_bounds_buffer,
-                            .links_view = links_buffer,
-                            .prev_links_idx = prev_link_idx,
-                            .curr_links_idx = step_to_link_idx_map[step],
-                            .step = step,
-                            .out_params_view = updated_params_buffer,
-                            .out_params_liveness_view = updated_liveness_buffer,
-                            .tips_view = tips_buffer,
-                            .tip_lengths_view = tip_length_buffer,
-                            .n_tracks_per_seed_view = n_tracks_per_seed_buffer};
+                auto bufHost_payload =
+                    ::alpaka::allocBuf<PayloadType, Idx>(devHost, 1u);
+                PayloadType* payload = ::alpaka::getPtrNative(bufHost_payload);
 
-            auto bufAcc_payload =
-                ::alpaka::allocBuf<PayloadType, Idx>(devAcc, 1u);
-            ::alpaka::memcpy(queue, bufAcc_payload, bufHost_payload);
-            ::alpaka::wait(queue);
+                new (payload) PayloadType{
+                    .det_data = det_view,
+                    .measurements_view = measurements,
+                    .in_params_view = in_params_buffer,
+                    .in_params_liveness_view = param_liveness_buffer,
+                    .n_in_params = n_in_params,
+                    .barcodes_view = barcodes_buffer,
+                    .upper_bounds_view = upper_bounds_buffer,
+                    .links_view = links_buffer,
+                    .prev_links_idx = prev_link_idx,
+                    .curr_links_idx = step_to_link_idx_map[step],
+                    .step = step,
+                    .out_params_view = updated_params_buffer,
+                    .out_params_liveness_view = updated_liveness_buffer,
+                    .tips_view = tips_buffer,
+                    .tip_lengths_view = tip_length_buffer,
+                    .n_tracks_per_seed_view = n_tracks_per_seed_buffer,
+                    .tmp_params_view = tmp_params_buffer,
+                    .tmp_links_view = tmp_links_buffer};
 
-            ::alpaka::exec<Acc>(queue, workDiv,
-                                FindTracksKernel<std::decay_t<detector_type>>{},
-                                m_cfg, ::alpaka::getPtrNative(bufAcc_payload));
-            ::alpaka::wait(queue);
+                auto bufAcc_payload =
+                    ::alpaka::allocBuf<PayloadType, Idx>(devAcc, 1u);
+                ::alpaka::memcpy(queue, bufAcc_payload, bufHost_payload);
+                ::alpaka::wait(queue);
 
-            std::swap(in_params_buffer, updated_params_buffer);
-            std::swap(param_liveness_buffer, updated_liveness_buffer);
+                ::alpaka::exec<Acc>(
+                    queue, workDiv,
+                    FindTracksKernel<std::decay_t<detector_type>>{}, m_cfg,
+                    ::alpaka::getPtrNative(bufAcc_payload));
+                ::alpaka::wait(queue);
 
-            // Create a buffer for links
-            step_to_link_idx_map[step + 1] = m_copy.get_size(links_buffer);
-            n_candidates =
-                step_to_link_idx_map[step + 1] - step_to_link_idx_map[step];
-            ::alpaka::wait(queue);
+                std::swap(in_params_buffer, updated_params_buffer);
+                std::swap(param_liveness_buffer, updated_liveness_buffer);
+
+                // Create a buffer for links
+                step_to_link_idx_map[step + 1] = m_copy.get_size(links_buffer);
+                n_candidates =
+                    step_to_link_idx_map[step + 1] - step_to_link_idx_map[step];
+                ::alpaka::wait(queue);
+            }
         }
 
         if (step == m_cfg.max_track_candidates_per_track - 1) {

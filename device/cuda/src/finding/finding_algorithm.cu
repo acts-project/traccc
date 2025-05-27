@@ -253,49 +253,62 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 links_buffer = std::move(new_links_buffer);
             }
 
-            const unsigned int prev_link_idx =
-                step == 0 ? 0 : step_to_link_idx_map[step - 1];
+            {
+                vecmem::data::vector_buffer<candidate_link> tmp_links_buffer(
+                    n_max_candidates, m_mr.main);
+                m_copy.setup(tmp_links_buffer)->ignore();
+                bound_track_parameters_collection_types::buffer
+                    tmp_params_buffer(n_max_candidates, m_mr.main);
+                m_copy.setup(tmp_params_buffer)->ignore();
 
-            assert(links_size == step_to_link_idx_map[step]);
+                const unsigned int nThreads = m_warp_size * 2;
+                const unsigned int nBlocks =
+                    (n_in_params + nThreads - 1) / nThreads;
 
-            const unsigned int nThreads = m_warp_size * 2;
-            const unsigned int nBlocks =
-                (n_in_params + nThreads - 1) / nThreads;
-            const std::size_t shared_size =
-                nThreads * sizeof(unsigned int) +
-                2 * nThreads * sizeof(std::pair<unsigned int, unsigned int>);
+                const unsigned int prev_link_idx =
+                    step == 0 ? 0 : step_to_link_idx_map[step - 1];
 
-            find_tracks<std::decay_t<detector_type>>(
-                nBlocks, nThreads, shared_size, stream, m_cfg,
-                device::find_tracks_payload<std::decay_t<detector_type>>{
-                    .det_data = det_view,
-                    .measurements_view = measurements,
-                    .in_params_view = in_params_buffer,
-                    .in_params_liveness_view = param_liveness_buffer,
-                    .n_in_params = n_in_params,
-                    .barcodes_view = barcodes_buffer,
-                    .upper_bounds_view = upper_bounds_buffer,
-                    .links_view = links_buffer,
-                    .prev_links_idx = prev_link_idx,
-                    .curr_links_idx = step_to_link_idx_map[step],
-                    .step = step,
-                    .out_params_view = updated_params_buffer,
-                    .out_params_liveness_view = updated_liveness_buffer,
-                    .tips_view = tips_buffer,
-                    .tip_lengths_view = tip_length_buffer,
-                    .n_tracks_per_seed_view = n_tracks_per_seed_buffer});
-            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+                assert(links_size == step_to_link_idx_map[step]);
 
-            std::swap(in_params_buffer, updated_params_buffer);
-            std::swap(param_liveness_buffer, updated_liveness_buffer);
+                const std::size_t shared_size =
+                    nThreads * sizeof(unsigned int) +
+                    2 * nThreads *
+                        sizeof(std::pair<unsigned int, unsigned int>);
 
-            m_stream.synchronize();
+                find_tracks<std::decay_t<detector_type>>(
+                    nBlocks, nThreads, shared_size, stream, m_cfg,
+                    device::find_tracks_payload<std::decay_t<detector_type>>{
+                        .det_data = det_view,
+                        .measurements_view = measurements,
+                        .in_params_view = in_params_buffer,
+                        .in_params_liveness_view = param_liveness_buffer,
+                        .n_in_params = n_in_params,
+                        .barcodes_view = barcodes_buffer,
+                        .upper_bounds_view = upper_bounds_buffer,
+                        .links_view = links_buffer,
+                        .prev_links_idx = prev_link_idx,
+                        .curr_links_idx = step_to_link_idx_map[step],
+                        .step = step,
+                        .out_params_view = updated_params_buffer,
+                        .out_params_liveness_view = updated_liveness_buffer,
+                        .tips_view = tips_buffer,
+                        .tip_lengths_view = tip_length_buffer,
+                        .n_tracks_per_seed_view = n_tracks_per_seed_buffer,
+                        .tmp_params_view = tmp_params_buffer,
+                        .tmp_links_view = tmp_links_buffer});
+                TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-            step_to_link_idx_map[step + 1] = m_copy.get_size(links_buffer);
-            n_candidates =
-                step_to_link_idx_map[step + 1] - step_to_link_idx_map[step];
+                std::swap(in_params_buffer, updated_params_buffer);
+                std::swap(param_liveness_buffer, updated_liveness_buffer);
 
-            m_stream.synchronize();
+                m_stream.synchronize();
+
+                step_to_link_idx_map[step + 1] = m_copy.get_size(links_buffer);
+                n_candidates =
+                    step_to_link_idx_map[step + 1] - step_to_link_idx_map[step];
+
+                m_stream.synchronize();
+            }
         }
 
         // If no more CKF step is expected, the tips and links are populated,
