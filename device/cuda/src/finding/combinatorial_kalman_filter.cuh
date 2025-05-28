@@ -19,8 +19,11 @@
 #include "./kernels/fill_finding_duplicate_removal_sort_keys.cuh"
 #include "./kernels/fill_finding_propagation_sort_keys.cuh"
 #include "./kernels/find_tracks.cuh"
+#include "./kernels/gather_best_tips_per_measurement.cuh"
+#include "./kernels/gather_measurement_votes.cuh"
 #include "./kernels/propagate_to_next_surface.hpp"
 #include "./kernels/remove_duplicates.cuh"
+#include "./kernels/update_tip_length_buffer.cuh"
 
 // Project include(s).
 #include "traccc/edm/device/identity_projector.hpp"
@@ -455,11 +458,116 @@ combinatorial_kalman_filter(
     auto n_tips_total = get_size(tips_buffer, size_staging_ptr.get(), stream);
 
     vecmem::vector<unsigned int> tips_length_host(mr.host);
+    vecmem::unique_alloc_ptr<unsigned int[]> tip_to_output_map = nullptr;
 
-    if (n_tips_total > 0) {
-        copy(tip_length_buffer, tips_length_host)->wait();
-        tips_length_host.resize(n_tips_total);
+    unsigned int n_tips_total_filtered = n_tips_total;
+
+    if (n_tips_total > 0 && config.max_num_tracks_per_measurement > 0) {
+        // TODO: DOCS
+
+        vecmem::data::vector_buffer<unsigned int>
+            best_tips_per_measurement_index_buffer(
+                config.max_num_tracks_per_measurement * n_measurements,
+                mr.main);
+        copy.setup(best_tips_per_measurement_index_buffer)->wait();
+
+        vecmem::data::vector_buffer<unsigned long long int>
+            best_tips_per_measurement_insertion_mutex_buffer(n_measurements,
+                                                             mr.main);
+        copy.setup(best_tips_per_measurement_insertion_mutex_buffer)->wait();
+
+        // NOTE: This memset assumes that an all-zero bit vector interpreted
+        // as a floating point value has value zero, which is true for IEEE
+        // 754 but might not be true for arbitrary float formats.
+        copy.memset(best_tips_per_measurement_insertion_mutex_buffer, 0)
+            ->wait();
+
+        {
+            vecmem::data::vector_buffer<scalar>
+                best_tips_per_measurement_pval_buffer(
+                    config.max_num_tracks_per_measurement * n_measurements,
+                    mr.main);
+            copy.setup(best_tips_per_measurement_pval_buffer)->wait();
+
+            // NOTE: Normally, launching small blocks is a performance
+            // antipattern, but there is little use to having larger blocks
+            // here.
+            const unsigned int num_threads = 32;
+            const unsigned int num_blocks =
+                (n_tips_total + num_threads - 1) / num_threads;
+
+            kernels::gather_best_tips_per_measurement<<<num_blocks, num_threads,
+                                                        0, stream>>>(
+                tips_buffer, links_buffer, measurements_view,
+                best_tips_per_measurement_insertion_mutex_buffer,
+                best_tips_per_measurement_index_buffer,
+                best_tips_per_measurement_pval_buffer,
+                config.max_num_tracks_per_measurement);
+
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+        }
+
+        vecmem::data::vector_buffer<unsigned int> votes_per_tip_buffer(
+            n_tips_total, mr.main);
+        copy.setup(votes_per_tip_buffer)->wait();
+        copy.memset(votes_per_tip_buffer, 0)->wait();
+
+        {
+            const unsigned int num_threads = 512;
+            const unsigned int num_blocks =
+                (config.max_num_tracks_per_measurement * n_measurements +
+                 num_threads - 1) /
+                num_threads;
+
+            kernels::gather_measurement_votes<<<num_blocks, num_threads, 0,
+                                                stream>>>(
+                best_tips_per_measurement_insertion_mutex_buffer,
+                best_tips_per_measurement_index_buffer, votes_per_tip_buffer,
+                config.max_num_tracks_per_measurement);
+
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+        }
+
+        tip_to_output_map =
+            vecmem::make_unique_alloc<unsigned int[]>(mr.main, n_tips_total);
+
+        {
+            const unsigned int num_threads = 512;
+            const unsigned int num_blocks =
+                (n_tips_total + num_threads - 1) / num_threads;
+
+            vecmem::data::vector_buffer<unsigned int> new_tip_length_buffer{
+                n_tips_total, mr.main};
+            copy.setup(new_tip_length_buffer)->wait();
+
+            auto tip_to_output_map_idx =
+                vecmem::make_unique_alloc<unsigned int>(mr.main);
+
+            TRACCC_CUDA_ERROR_CHECK(cudaMemsetAsync(
+                tip_to_output_map_idx.get(), 0, sizeof(unsigned int), stream));
+
+            kernels::update_tip_length_buffer<<<num_blocks, num_threads, 0,
+                                                stream>>>(
+                tip_length_buffer, new_tip_length_buffer, votes_per_tip_buffer,
+                tip_to_output_map.get(), tip_to_output_map_idx.get(),
+                config.min_measurement_voting_fraction);
+
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+            str.synchronize();
+
+            TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
+                &n_tips_total_filtered, tip_to_output_map_idx.get(),
+                sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
+
+            tip_length_buffer = std::move(new_tip_length_buffer);
+
+            str.synchronize();
+        }
     }
+
+    copy(tip_length_buffer, tips_length_host)->wait();
+    tips_length_host.resize(n_tips_total_filtered);
 
     // Create track candidate buffer
     typename edm::track_container<typename detector_t::algebra_type>::buffer
@@ -477,7 +585,8 @@ combinatorial_kalman_filter(
             .seeds_view = seeds,
             .links_view = links_buffer,
             .tips_view = tips_buffer,
-            .tracks_view = {track_candidates_buffer}};
+            .tracks_view = {track_candidates_buffer},
+            .tip_to_output_map = tip_to_output_map.get()};
         kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(payload);
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 

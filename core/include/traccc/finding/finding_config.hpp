@@ -35,6 +35,14 @@ struct finding_config {
     /// Maximum number of consecutive holes
     unsigned int max_num_consecutive_skipped = 1;
 
+    /// Maximum number of tracks per measurement; if zero, don't prune
+    unsigned int max_num_tracks_per_measurement = 0;
+
+    /// If `max_num_tracks_per_measurement` is enabled, i.e. if it is non-zero
+    /// then this value determines the minimum fraction of measurements in
+    /// each track that vote for it
+    float min_measurement_voting_fraction = 0.5f;
+
     /// Minimum step length that track should make to reach the next surface. It
     /// should be set higher than the overstep tolerance not to make it stay on
     /// the same surface

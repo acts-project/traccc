@@ -35,6 +35,17 @@ track_finding::track_finding() : interface("Track Finding Options") {
         po::value(&m_config.max_num_branches_per_surface)
             ->default_value(m_config.max_num_branches_per_surface),
         "Max number of branches per surface");
+    m_desc.add_options()(
+        "max-num-tracks-per-measurement",
+        po::value(&m_config.max_num_tracks_per_measurement)
+            ->default_value(m_config.max_num_tracks_per_measurement),
+        "Max number of tracks per input measurement; zero disables pruning");
+    m_desc.add_options()(
+        "min-measurement-voting-fraction",
+        po::value(&m_config.min_measurement_voting_fraction)
+            ->default_value(m_config.min_measurement_voting_fraction),
+        "Min fraction of voting measurements; only used if "
+        "`max-num-tracks-per-measurement` is non-zero");
     m_desc.add_options()("track-candidates-range",
                          po::value(&m_track_candidates_range)
                              ->value_name("MIN:MAX")
@@ -109,6 +120,12 @@ std::unique_ptr<configuration_printable> track_finding::as_printable() const {
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Max branches at surface",
         std::to_string(m_config.max_num_branches_per_surface)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Max tracks per measurement",
+        std::to_string(m_config.max_num_tracks_per_measurement)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Min measurement voting fraction",
+        std::to_string(m_config.min_measurement_voting_fraction)));
     std::ostringstream candidate_ss;
     candidate_ss << m_track_candidates_range;
     cat->add_child(std::make_unique<configuration_kv_pair>(
