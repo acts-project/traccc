@@ -33,6 +33,7 @@ namespace traccc::device {
 ///
 TRACCC_HOST_DEVICE
 inline void aggregate_cluster(
+    const clustering_config& cfg,
     const edm::silicon_cell_collection::const_device& cells,
     const silicon_detector_description::const_device& det_descr,
     const vecmem::device_vector<details::index_t>& f, unsigned int start,
