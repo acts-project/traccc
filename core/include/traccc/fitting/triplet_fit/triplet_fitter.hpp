@@ -19,6 +19,7 @@
 // detray include(s).
 #include "detray/geometry/tracking_surface.hpp"
 #include "detray/tracks/bound_track_parameters.hpp"
+#include "detray/utils/geometry_utils.hpp"
 
 // vecmem include(s)
 #include <vecmem/containers/device_vector.hpp>
@@ -154,9 +155,9 @@ class triplet_fitter {
             }
 
             // Convert to global
-            point3 glob_3d_0 = meas_0_sf.bound_to_global({}, loc_2d_0, {});
-            point3 glob_3d_1 = meas_1_sf.bound_to_global({}, loc_2d_1, {});
-            point3 glob_3d_2 = meas_2_sf.bound_to_global({}, loc_2d_2, {});
+            point3 glob_3d_0 = meas_0_sf.local_to_global({}, loc_2d_0, {});
+            point3 glob_3d_1 = meas_1_sf.local_to_global({}, loc_2d_1, {});
+            point3 glob_3d_2 = meas_2_sf.local_to_global({}, loc_2d_2, {});
 
             // Make triplet
             triplet t(glob_3d_0, glob_3d_1, glob_3d_2);
@@ -316,8 +317,7 @@ class triplet_fitter {
         detray::tracking_surface scat_sf(m_detector, t.m_meas[1].surface_link);
 
         // effective thickness
-        scalar t_eff =
-            mat_scatter / scat_sf.cos_angle({}, tangent3D, t.m_meas[1].local);
+        scalar t_eff = mat_scatter / detray::cos_angle({}, scat_sf, tangent3D, t.m_meas[1].local);
 
         auto scattering_unc = [](scalar curvature_3D, scalar eff_thickness,
                                  vector3 field_strength_vector) {
@@ -476,7 +476,7 @@ class triplet_fitter {
 
                 // In global frame
                 vector3 pos_shifted_glob =
-                    sf.bound_to_global({}, pos_shifted_loc, {});
+                    sf.local_to_global({}, pos_shifted_loc, {});
 
                 global_shifted_positions[hit] = pos_shifted_glob;
 
@@ -673,7 +673,7 @@ class triplet_fitter {
 
             detray::tracking_surface sf0(detector, m0.surface_link);
 
-            point3 glob0 = sf0.bound_to_global({}, loc0_post_fit, {});
+            point3 glob0 = sf0.local_to_global({}, loc0_post_fit, {});
 
             // Second measurement
             auto m1 = input_states[1].get_measurement();
@@ -685,7 +685,7 @@ class triplet_fitter {
 
             detray::tracking_surface sf1(detector, m1.surface_link);
 
-            point3 glob1 = sf1.bound_to_global({}, loc1_post_fit, {});
+            point3 glob1 = sf1.local_to_global({}, loc1_post_fit, {});
 
             point3 r01 = glob1 - glob0;
 
