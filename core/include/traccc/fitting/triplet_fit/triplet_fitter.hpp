@@ -767,6 +767,7 @@ class triplet_fitter {
         track_states[0].smoothed_chi2() = chi2;
         track_states[0].smoothed().set_vector(fitted_params.vector());
         track_states[0].is_hole = false;
+        track_states[0].is_smoothed = true;
     }
 
     /// Run the fitter
