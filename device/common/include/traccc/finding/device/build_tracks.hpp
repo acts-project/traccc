@@ -52,6 +52,11 @@ struct build_tracks_payload {
      * @brief View object to the vector of track candidates
      */
     track_candidate_container_types::view track_candidates_view;
+
+    /**
+     * @brief Optional mapping from tip index to output index
+     */
+    const unsigned int* tip_to_output_map = nullptr;
 };
 
 /// Function for building full tracks from the link container:
