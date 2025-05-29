@@ -10,6 +10,7 @@
 #include "../utils/utils.hpp"
 #include "./kernels/add_block_offset.cuh"
 #include "./kernels/block_inclusive_scan.cuh"
+#include "./kernels/count_removable_tracks.cuh"
 #include "./kernels/count_shared_measurements.cuh"
 #include "./kernels/fill_inverted_ids.cuh"
 #include "./kernels/fill_track_candidates.cuh"
