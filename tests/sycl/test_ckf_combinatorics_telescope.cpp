@@ -144,11 +144,13 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
     cfg_no_limit.ptc_hypothesis = ptc;
     cfg_no_limit.max_num_branches_per_seed = 100000;
     cfg_no_limit.chi2_max = 30.f;
+    cfg_no_limit.max_num_branches_per_surface = 10;
 
     traccc::sycl::combinatorial_kalman_filter_algorithm::config_type cfg_limit;
     cfg_limit.ptc_hypothesis = ptc;
     cfg_limit.max_num_branches_per_seed = 500;
     cfg_limit.chi2_max = 30.f;
+    cfg_limit.max_num_branches_per_surface = 10;
 
     // Finding algorithm object
     traccc::sycl::combinatorial_kalman_filter_algorithm device_finding{
