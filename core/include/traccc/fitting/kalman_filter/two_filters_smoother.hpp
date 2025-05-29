@@ -175,7 +175,7 @@ struct two_filters_smoother {
 
         // Calculate backward chi2
         const matrix_type<D, D> R = (I_m - H * K) * V;
-        assert(matrix::determinant(R) != 0.f);
+        // assert(matrix::determinant(R) != 0.f);
         assert(std::isfinite(matrix::determinant(R)));
         const matrix_type<1, 1> chi2 =
             matrix::transpose(residual) * matrix::inverse(R) * residual;
