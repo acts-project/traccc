@@ -13,7 +13,7 @@
 #include "traccc/utils/propagation.hpp"
 
 // Detray include(s).
-#include <detray/test/utils/simulation/random_scatterer.hpp>
+#include <detray/test/utils/random_scatterer.hpp>
 
 // System include(s).
 #include <limits>
