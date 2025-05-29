@@ -77,7 +77,6 @@ int seq_run(const traccc::opts::detector& detector_opts,
     vecmem::cuda::host_memory_resource cuda_host_mr;
     vecmem::cuda::device_memory_resource device_mr;
     traccc::memory_resource mr{device_mr, &cuda_host_mr};
-    traccc::memory_resource hmr{host_mr};
 
     // Host copy object
     vecmem::copy host_copy;
@@ -185,7 +184,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
     host_finding_algorithm finding_alg(finding_cfg, host_mr,
                                        logger().clone("HostFindingAlg"));
     traccc::host::greedy_ambiguity_resolution_algorithm resolution_alg_cpu(
-        resolution_config, hmr, logger().clone("HostAmbiguityResolutionAlg"));
+        resolution_config, host_mr,
+        logger().clone("HostAmbiguityResolutionAlg"));
     host_fitting_algorithm fitting_alg(fitting_cfg, host_mr, host_copy,
                                        logger().clone("HostFittingAlg"));
 
@@ -233,7 +233,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
         traccc::host::track_params_estimation::output_type params;
         host_finding_algorithm::output_type track_candidates{host_mr};
         traccc::host::greedy_ambiguity_resolution_algorithm::output_type
-            res_track_candidates;
+            res_track_candidates{host_mr};
         host_fitting_algorithm::output_type track_states;
 
         // Instantiate cuda containers/collections
@@ -371,16 +371,17 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 {
                     traccc::performance::timer timer{
                         "Ambiguity resolution (cuda)", elapsedTimes};
-                    res_track_candidates_buffer =
-                        resolution_alg_cuda(track_candidates_buffer);
+                    res_track_candidates_buffer = resolution_alg_cuda(
+                        track_candidates_buffer, measurements_cuda_buffer);
                 }
 
                 // CPU
                 if (accelerator_opts.compare_with_cpu) {
                     traccc::performance::timer timer{
                         "Ambiguity resolution (cpu)", elapsedTimes};
-                    res_track_candidates =
-                        resolution_alg_cpu(traccc::get_data(track_candidates));
+                    res_track_candidates = resolution_alg_cpu(
+                        vecmem::get_data(track_candidates),
+                        vecmem::get_data(measurements_per_event));
                 }
 
                 // CUDA
