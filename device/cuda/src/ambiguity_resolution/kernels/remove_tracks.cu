@@ -54,6 +54,8 @@ __global__ void remove_tracks(device::remove_tracks_payload payload) {
     vecmem::device_vector<unsigned int> updated_tracks(
         payload.updated_tracks_view);
     vecmem::device_vector<int> is_updated(payload.is_updated_view);
+    vecmem::device_vector<const traccc::pair<std::size_t, unsigned int>>
+        meas_to_remove(payload.meas_to_remove_view);
 
     const auto worst_track = sorted_ids[*payload.n_accepted - 1];
     const auto& worst_meas_list = meas_ids[worst_track];

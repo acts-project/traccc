@@ -47,7 +47,7 @@ __global__ void count_removable_tracks(
         *(payload.n_removable_tracks) = 0;
         *(payload.n_meas_to_remove) = 0;
         n_tracks_to_iterate = 0;
-        min_thread = 0;
+        min_thread = std::numeric_limits<unsigned int>::max();
     }
 
     __syncthreads();
@@ -63,7 +63,6 @@ __global__ void count_removable_tracks(
 
     // @TODO: Improve the logic
     for (unsigned int stride = 1; stride < n_tracks_total; stride *= 2) {
-        // auto temp = shared_n_meas[threadIndex];
         shared_n_meas[threadIndex] += shared_n_meas[threadIndex + stride];
         __syncthreads();
 
@@ -152,13 +151,13 @@ __global__ void count_removable_tracks(
                         (meas_to_thread[threadIndex - 1].first != curr.first);
 
         if (is_start) {
-            // 그룹의 시작점에서 min threadIndex 찾기
+            // Find min thread id
             std::size_t id = curr.first;
-            min_thread = curr.second;
+            auto tid = curr.second;
 
-            // 같은 measurement_id인 구간에서 min 찾기
             int i = threadIndex + 1;
-            while (i < n_meas_total && meas_to_thread[i].first == id) {
+            while (i < n_meas_total && (meas_to_thread[i].first == id &&
+                                        meas_to_thread[i].second != tid)) {
                 atomicMin(&min_thread, meas_to_thread[i].second);
                 i++;
             }
@@ -166,6 +165,10 @@ __global__ void count_removable_tracks(
     }
 
     __syncthreads();
+
+    if (min_thread == std::numeric_limits<unsigned int>::max()){
+        return;
+    }
 
     // Bubble sort w.r.t thread index
     for (int iter = 0; iter < n_meas_total; ++iter) {
@@ -188,6 +191,7 @@ __global__ void count_removable_tracks(
         }
         __syncthreads();
     }
+    
     /*
     if (threadIndex == 0) {
         printf("Thread sort \n");
