@@ -97,8 +97,8 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/ambiguity_resolution/kernels/scan_block_offsets.cuh"
   "src/ambiguity_resolution/kernels/sort_updated_tracks.cu"
   "src/ambiguity_resolution/kernels/sort_updated_tracks.cuh"
-  "src/ambiguity_resolution/kernels/update_vectors.cu"
-  "src/ambiguity_resolution/kernels/update_vectors.cuh"
+  "src/ambiguity_resolution/kernels/remove_tracks.cu"
+  "src/ambiguity_resolution/kernels/remove_tracks.cuh"
   # Fitting
   "include/traccc/cuda/fitting/fitting_algorithm.hpp"
   "src/fitting/fitting_algorithm.cu")

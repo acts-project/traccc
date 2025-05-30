@@ -200,7 +200,8 @@ __global__ void count_removable_tracks(
     */
     // Make measurement list to remove
     if (meas_to_thread[threadIndex].second <= min_thread) {
-        meas_to_remove[threadIndex] = meas_to_thread[threadIndex];
+        meas_to_remove[threadIndex].first = meas_to_thread[threadIndex].first;
+        meas_to_remove[threadIndex].second = gid;
         atomicAdd(payload.n_meas_to_remove, 1);
     }
 

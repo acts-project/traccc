@@ -22,7 +22,7 @@
 #include "./kernels/reset_status.cuh"
 #include "./kernels/scan_block_offsets.cuh"
 #include "./kernels/sort_updated_tracks.cuh"
-#include "./kernels/update_vectors.cuh"
+#include "./kernels/remove_tracks.cuh"
 #include "traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 
 // Thrust include(s).
@@ -423,9 +423,9 @@ greedy_ambiguity_resolution_algorithm::operator()(
             .meas_to_remove_view = meas_to_remove_buffer,
         });
 
-        kernels::update_vectors<<<
+        kernels::remove_tracks<<<
             1, 1024, 1024 * (sizeof(unsigned int) + sizeof(std::size_t)),
-            stream>>>(device::update_vectors_payload{
+            stream>>>(device::remove_tracks_payload{
             .sorted_ids_view = sorted_ids_buffer,
             .n_accepted = n_accepted_device.get(),
             .meas_ids_view = meas_ids_buffer,
