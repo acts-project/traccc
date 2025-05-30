@@ -25,7 +25,7 @@ __global__ void count_removable_tracks(
     __shared__ int shared_n_meas[1024];
     __shared__ traccc::pair<std::size_t, unsigned int> meas_to_thread[1024];
     __shared__ unsigned int n_meas_total;
-    __shared__ unsigned int n_tracks;
+    __shared__ unsigned int n_tracks_to_iterate;
     __shared__ unsigned int min_thread;
 
     vecmem::device_vector<const unsigned int> sorted_ids(
@@ -46,13 +46,11 @@ __global__ void count_removable_tracks(
     if (threadIndex == 0) {
         *(payload.n_removable_tracks) = 0;
         *(payload.n_meas_to_remove) = 0;
-        n_tracks = 0;
+        n_tracks_to_iterate = 0;
         min_thread = 0;
     }
 
     __syncthreads();
-
-    // printf("hi1 %d \n", static_cast<int>(*payload.n_accepted));
 
     if (gid >= 0) {
         const auto trk_id = sorted_ids[gid];
@@ -71,15 +69,12 @@ __global__ void count_removable_tracks(
 
         if (shared_n_meas[0] < 1024) {
             if (threadIndex == 0) {
-                // n_meas_total = temp;
-                n_tracks = stride;
+                n_tracks_to_iterate = stride;
             }
         }
     }
 
     __syncthreads();
-
-    // printf("hi3 \n");
 
     if (threadIndex == 0) {
         n_meas_total = 0;
@@ -87,12 +82,9 @@ __global__ void count_removable_tracks(
 
     __syncthreads();
 
-    // printf("%d %d \n", threadIndex, n_tracks);
-
     // @TODO: Improve the logic
-    if (threadIndex < n_tracks) {
+    if (threadIndex < n_tracks_to_iterate) {
         auto mids = meas_ids[threadIndex];
-        // printf("size %d \n", mids.size());
         for (const auto& id : mids) {
 
             // Write updated track IDs
@@ -104,36 +96,55 @@ __global__ void count_removable_tracks(
             meas_to_thread[pos] = {id, threadIndex};
         }
     }
-
+    /*
     if (threadIndex == 0) {
-        printf("n tracks total %d n tracks %d n meas total %d \n",
-               n_tracks_total, n_tracks, n_meas_total);
+        printf("n tracks total %d n tracks_to_iterate %d n meas total %d \n",
+               n_tracks_total, n_tracks_to_iterate, n_meas_total);
     }
-
-    // printf("hi5 \n");
-
+    */
+    /*
+    if (threadIndex == 0) {
+        printf("No sort \n");
+        for (int i = 0; i < n_meas_total; i++) {
+            printf("(%lu %d)", meas_to_thread[i].first,
+                   meas_to_thread[i].second);
+        }
+        printf("\n");
+    }
+    */
     __syncthreads();
 
-    // Bitonic sort w.r.t measurement id
-    for (int k = 2; k <= n_meas_total; k <<= 1) {
-        for (int j = k >> 1; j > 0; j >>= 1) {
-            int ix = threadIdx.x;
-            if (ix < n_meas_total) {
-                int ixj = ix ^ j;
-                if (ixj < n_meas_total) {
-                    auto a = meas_to_thread[ix];
-                    auto b = meas_to_thread[ixj];
-                    bool should_swap = (ix < ixj) == (a.first > b.first);
-                    if (should_swap) {
-                        meas_to_thread[ix] = b;
-                        meas_to_thread[ixj] = a;
-                    }
+    // Bubble sort w.r.t measurement id
+    for (int iter = 0; iter < n_meas_total; ++iter) {
+        bool is_even = (iter % 2 == 0);
+        int i = threadIndex;
+
+        if (i < n_meas_total / 2) {
+            int idx = 2 * i + (is_even ? 0 : 1);
+            if (idx + 1 < n_meas_total) {
+                const auto a = meas_to_thread[idx];
+                const auto b = meas_to_thread[idx + 1];
+
+                bool swap = a.first > b.first;
+
+                if (swap) {
+                    meas_to_thread[idx] = b;
+                    meas_to_thread[idx + 1] = a;
                 }
             }
-            __syncthreads();
         }
+        __syncthreads();
     }
-
+    /*
+    if (threadIndex == 0) {
+        printf("Meas sort \n");
+        for (int i = 0; i < n_meas_total; i++) {
+            printf("(%lu %d)", meas_to_thread[i].first,
+                   meas_to_thread[i].second);
+        }
+        printf("\n");
+    }
+    */
     // Find starting point
     if (threadIndex < n_meas_total) {
         auto curr = meas_to_thread[threadIndex];
@@ -154,28 +165,41 @@ __global__ void count_removable_tracks(
         }
     }
 
-    // Bitonic sort w.r.t thread Index
-    for (int k = 2; k <= n_meas_total; k <<= 1) {
-        for (int j = k >> 1; j > 0; j >>= 1) {
-            int ix = threadIdx.x;
-            if (ix < n_meas_total) {
-                int ixj = ix ^ j;
-                if (ixj < n_meas_total) {
-                    auto a = meas_to_thread[ix];
-                    auto b = meas_to_thread[ixj];
-                    bool should_swap = (ix < ixj) == (a.second > b.second);
-                    if (should_swap) {
-                        meas_to_thread[ix] = b;
-                        meas_to_thread[ixj] = a;
-                    }
+    __syncthreads();
+
+    // Bubble sort w.r.t thread index
+    for (int iter = 0; iter < n_meas_total; ++iter) {
+        bool is_even = (iter % 2 == 0);
+        int i = threadIndex;
+
+        if (i < n_meas_total / 2) {
+            int idx = 2 * i + (is_even ? 0 : 1);
+            if (idx + 1 < n_meas_total) {
+                const auto a = meas_to_thread[idx];
+                const auto b = meas_to_thread[idx + 1];
+
+                bool swap = a.second > b.second;
+
+                if (swap) {
+                    meas_to_thread[idx] = b;
+                    meas_to_thread[idx + 1] = a;
                 }
             }
-            __syncthreads();
         }
+        __syncthreads();
     }
-
+    /*
+    if (threadIndex == 0) {
+        printf("Thread sort \n");
+        for (int i = 0; i < n_meas_total; i++) {
+            printf("(%lu %d)", meas_to_thread[i].first,
+                   meas_to_thread[i].second);
+        }
+        printf("\n");
+    }
+    */
     // Make measurement list to remove
-    if (meas_to_thread[threadIndex].second < min_thread) {
+    if (meas_to_thread[threadIndex].second <= min_thread) {
         meas_to_remove[threadIndex] = meas_to_thread[threadIndex];
         atomicAdd(payload.n_meas_to_remove, 1);
     }
@@ -183,6 +207,12 @@ __global__ void count_removable_tracks(
     if (threadIndex == 0) {
         *(payload.n_removable_tracks) = min_thread + 1;
     }
+    /*
+    if (threadIndex == 0) {
+        printf("n meas to remove %d n removable tracks %d \n",
+               *(payload.n_meas_to_remove), *(payload.n_removable_tracks));
+    }
+    */
 }
 
 }  // namespace traccc::cuda::kernels
