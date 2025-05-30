@@ -11,7 +11,8 @@
 #include "../utils/utils.hpp"
 #include "traccc/cuda/fitting/fitting_algorithm.hpp"
 #include "traccc/fitting/device/fill_sort_keys.hpp"
-#include "traccc/fitting/device/fit.hpp"
+#include "traccc/fitting/device/fit_backward.hpp"
+#include "traccc/fitting/device/fit_forward.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/detector_type_utils.hpp"
@@ -20,6 +21,7 @@
 #include <thrust/sort.h>
 
 // System include(s).
+#include <csetjmp>
 #include <memory_resource>
 #include <vector>
 
@@ -36,11 +38,55 @@ __global__ void fill_sort_keys(
                            keys_view, ids_view);
 }
 
-template <typename fitter_t>
-__global__ void fit(const typename fitter_t::config_type cfg,
-                    const device::fit_payload<fitter_t> payload) {
+__global__ void fit_prelude(
+    vecmem::data::vector_view<const unsigned int> param_ids_view,
+    track_candidate_container_types::const_view track_candidates_view,
+    track_state_container_types::view track_states_view,
+    vecmem::data::vector_view<unsigned int> param_liveness_view) {
+    std::size_t globalIndex = details::global_index1();
 
-    device::fit<fitter_t>(details::global_index1(), cfg, payload);
+    track_candidate_container_types::const_device track_candidates(
+        track_candidates_view);
+
+    track_state_container_types::device track_states(track_states_view);
+
+    if (globalIndex >= track_states.size()) {
+        return;
+    }
+
+    vecmem::device_vector<const unsigned int> param_ids(param_ids_view);
+    vecmem::device_vector<unsigned int> param_liveness(param_liveness_view);
+
+    const unsigned int param_id = param_ids.at(globalIndex);
+
+    // Track candidates per track
+    const auto& track_candidates_per_track =
+        track_candidates.at(param_id).items;
+
+    auto track_states_per_track = track_states.at(param_id).items;
+
+    for (auto& cand : track_candidates_per_track) {
+        track_states_per_track.emplace_back(cand);
+    }
+
+    // TODO: Set other stuff in the header?
+    track_states.at(param_id).header.fit_params =
+        track_candidates.at(param_id).header.seed_params;
+    param_liveness.at(param_id) = 1u;
+}
+
+template <typename fitter_t>
+__global__ void fit_forward(const typename fitter_t::config_type cfg,
+                            const device::fit_payload<fitter_t> payload) {
+
+    device::fit_forward<fitter_t>(details::global_index1(), cfg, payload);
+}
+
+template <typename fitter_t>
+__global__ void fit_backward(const typename fitter_t::config_type cfg,
+                             const device::fit_payload<fitter_t> payload) {
+
+    device::fit_backward<fitter_t>(details::global_index1(), cfg, payload);
 }
 
 }  // namespace kernels
@@ -97,14 +143,23 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
 
     // Calculate the number of threads and thread blocks to run the track
     // fitting
-    if (n_tracks > 0) {
-        const unsigned int nThreads = m_warp_size * 2;
-        const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
+    if (n_tracks == 0) {
+        return track_states_buffer;
+    }
 
+    vecmem::data::vector_buffer<unsigned int> param_ids_buffer(n_tracks,
+                                                               m_mr.main);
+    m_copy.setup(param_ids_buffer)->wait();
+    vecmem::data::vector_buffer<unsigned int> param_liveness_buffer(n_tracks,
+                                                                    m_mr.main);
+    m_copy.setup(param_liveness_buffer)->wait();
+
+    {
         vecmem::data::vector_buffer<device::sort_key> keys_buffer(n_tracks,
                                                                   m_mr.main);
-        vecmem::data::vector_buffer<unsigned int> param_ids_buffer(n_tracks,
-                                                                   m_mr.main);
+
+        const unsigned int nThreads = m_warp_size * 2;
+        const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
 
         // Get key and value for sorting
         kernels::fill_sort_keys<<<nBlocks, nThreads, 0, stream>>>(
@@ -120,16 +175,41 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
                                 .on(stream),
                             keys_device.begin(), keys_device.end(),
                             param_ids_device.begin());
+    }
 
-        // Run the track fitting
-        kernels::fit<fitter_t><<<nBlocks, nThreads, 0, stream>>>(
-            m_cfg, device::fit_payload<fitter_t>{
-                       .det_data = det_view,
-                       .field_data = field_view,
-                       .track_candidates_view = track_candidates_view,
-                       .param_ids_view = param_ids_buffer,
-                       .track_states_view = track_states_buffer,
-                       .barcodes_view = seqs_buffer});
+    {
+        const unsigned int nThreads = m_warp_size * 2;
+        const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
+
+        kernels::fit_prelude<<<nBlocks, nThreads, 0, stream>>>(
+            param_ids_buffer, track_candidates_view, track_states_buffer,
+            param_liveness_buffer);
+
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+        m_stream.synchronize();
+    }
+
+    device::fit_payload<fitter_t> payload{
+        .det_data = det_view,
+        .field_data = field_view,
+        .param_ids_view = param_ids_buffer,
+        .param_liveness_view = param_liveness_buffer,
+        .track_states_view = track_states_buffer,
+        .barcodes_view = seqs_buffer};
+
+    for (std::size_t i = 0; i < m_cfg.n_iterations; ++i) {
+        const unsigned int nThreads = m_warp_size * 2;
+        const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
+
+        kernels::fit_forward<fitter_t>
+            <<<nBlocks, nThreads, 0, stream>>>(m_cfg, payload);
+
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+        kernels::fit_backward<fitter_t>
+            <<<nBlocks, nThreads, 0, stream>>>(m_cfg, payload);
+
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
     }
 
