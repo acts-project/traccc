@@ -119,7 +119,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     m_copy.get().setup(meas_ids_buffer)->ignore();
 
     const unsigned int n_cands_total =
-        std::accumulate(candidate_sizes.begin(), candidate_sizes.end(), 0);
+        std::accumulate(candidate_sizes.begin(), candidate_sizes.end(), 0u);
 
     vecmem::data::vector_buffer<std::size_t> flat_meas_ids_buffer{
         n_cands_total, m_mr.main, vecmem::data::buffer_type::resizable};
