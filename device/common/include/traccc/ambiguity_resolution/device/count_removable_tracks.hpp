@@ -11,8 +11,8 @@
 #include "traccc/utils/pair.hpp"
 
 // VecMem include(s).
-#include <vecmem/containers/data/vector_view.hpp>
 #include <vecmem/containers/data/jagged_vector_view.hpp>
+#include <vecmem/containers/data/vector_view.hpp>
 
 namespace traccc::device {
 
@@ -48,7 +48,7 @@ struct count_removable_tracks_payload {
     /**
      * @brief The number of worst tracks removable
      */
-    unsigned int* n_worst_tracks;
+    unsigned int* n_removable_tracks;
 
     /**
      * @brief The number of measurements to remove
