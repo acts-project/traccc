@@ -33,6 +33,12 @@ struct candidate_link {
 
     // chi2
     traccc::scalar chi2;
+
+    // Sum of chi2 of this link and all previous ones
+    traccc::scalar chi2_sum;
+
+    // Sum of degrees of freedom in this link and all previous ones
+    unsigned int ndof_sum;
 };
 
 }  // namespace traccc
