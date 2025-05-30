@@ -99,15 +99,11 @@ class full_chain_algorithm
                          host_detector_type* detector,
                          std::unique_ptr<const traccc::Logger> logger);
 
-    /// Copy constructor
-    ///
-    /// An explicit copy constructor is necessary because in the MT tests
-    /// we do want to copy such objects, but a default copy-constructor can
-    /// not be generated for them.
-    ///
-    /// @param parent The parent algorithm chain to copy
-    ///
-    full_chain_algorithm(const full_chain_algorithm& parent);
+    full_chain_algorithm() = delete;
+    full_chain_algorithm(const full_chain_algorithm& other) = delete;
+    full_chain_algorithm(full_chain_algorithm&& other) noexcept;
+    full_chain_algorithm& operator=(const full_chain_algorithm& other) = delete;
+    full_chain_algorithm& operator=(full_chain_algorithm&& other) = delete;
 
     /// Algorithm destructor
     ~full_chain_algorithm();
@@ -122,9 +118,9 @@ class full_chain_algorithm
 
     private:
     /// Alpaka Queue
-    traccc::alpaka::queue m_queue;
+    std::shared_ptr<traccc::alpaka::queue> m_queue;
     /// Alpaka Vecmem objects, to get the memory resources
-    traccc::alpaka::vecmem_objects m_vecmem_objects;
+    std::shared_ptr<traccc::alpaka::vecmem_objects> m_vecmem_objects;
 
     /// Host memory resource
     ::vecmem::memory_resource& m_host_mr;
@@ -168,26 +164,6 @@ class full_chain_algorithm
     fitting_algorithm m_fitting;
 
     /// @}
-
-    /// @name Algorithm configurations
-    /// @{
-
-    /// Configuration for clustering
-    clustering_config m_clustering_config;
-    /// Configuration for the seed finding
-    seedfinder_config m_finder_config;
-    /// Configuration for the spacepoint grid formation
-    spacepoint_grid_config m_grid_config;
-    /// Configuration for the seed filtering
-    seedfilter_config m_filter_config;
-
-    /// Configuration for the track finding
-    finding_algorithm::config_type m_finding_config;
-    /// Configuration for the track fitting
-    fitting_algorithm::config_type m_fitting_config;
-
-    /// @}
-
 };  // class full_chain_algorithm
 
 }  // namespace traccc::alpaka
