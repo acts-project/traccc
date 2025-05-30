@@ -46,54 +46,71 @@ __global__ void count_removable_tracks(
     if (threadIndex == 0) {
         *(payload.n_removable_tracks) = 0;
         *(payload.n_meas_to_remove) = 0;
+        n_tracks = 0;
+        min_thread = 0;
     }
 
     __syncthreads();
 
-    if (gid >= 0) {
+    // printf("hi1 %d \n", static_cast<int>(*payload.n_accepted));
 
+    if (gid >= 0) {
         const auto trk_id = sorted_ids[gid];
         shared_n_meas[threadIndex] = n_meas[trk_id];
+    }
 
+    __syncthreads();
+
+    auto n_tracks_total = min(blockDim.x, *payload.n_accepted);
+
+    // @TODO: Improve the logic
+    for (unsigned int stride = 1; stride < n_tracks_total; stride *= 2) {
+        // auto temp = shared_n_meas[threadIndex];
+        shared_n_meas[threadIndex] += shared_n_meas[threadIndex + stride];
         __syncthreads();
 
-        auto blockSize = blockDim.x;
-
-        // @TODO: Improve the logic
-        for (unsigned int stride = 1; stride < blockSize; stride *= 2) {
-            // auto temp = shared_n_meas[threadIndex];
-            shared_n_meas[threadIndex] += shared_n_meas[threadIndex + stride];
-            __syncthreads();
-
-            if (shared_n_meas[0] > 1024) {
-                if (threadIndex == 0) {
-                    // n_meas_total = temp;
-                    n_tracks = stride;
-                }
-            }
-        }
-
-        __syncthreads();
-
-        if (threadIndex == 0) {
-            n_meas_total = 0;
-        }
-
-        // @TODO: Improve the logic
-        if (threadIndex < n_tracks) {
-            auto mids = meas_ids[threadIndex];
-            for (const auto& id : mids) {
-
-                // Write updated track IDs
-                vecmem::device_atomic_ref<unsigned int> num_meas_total(
-                    n_meas_total);
-
-                const unsigned int pos = num_meas_total.fetch_add(1);
-
-                meas_to_thread[pos] = {id, threadIndex};
+        if (shared_n_meas[0] < 1024) {
+            if (threadIndex == 0) {
+                // n_meas_total = temp;
+                n_tracks = stride;
             }
         }
     }
+
+    __syncthreads();
+
+    // printf("hi3 \n");
+
+    if (threadIndex == 0) {
+        n_meas_total = 0;
+    }
+
+    __syncthreads();
+
+    // printf("%d %d \n", threadIndex, n_tracks);
+
+    // @TODO: Improve the logic
+    if (threadIndex < n_tracks) {
+        auto mids = meas_ids[threadIndex];
+        // printf("size %d \n", mids.size());
+        for (const auto& id : mids) {
+
+            // Write updated track IDs
+            vecmem::device_atomic_ref<unsigned int> num_meas_total(
+                n_meas_total);
+
+            const unsigned int pos = num_meas_total.fetch_add(1);
+
+            meas_to_thread[pos] = {id, threadIndex};
+        }
+    }
+
+    if (threadIndex == 0) {
+        printf("n tracks total %d n tracks %d n meas total %d \n",
+               n_tracks_total, n_tracks, n_meas_total);
+    }
+
+    // printf("hi5 \n");
 
     __syncthreads();
 
