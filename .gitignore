@@ -40,3 +40,18 @@
 # Build system related files.
 CMakeUserPresets.json
 out/
+
+01_build.sh
+02_run.sh
+03_nc_report
+04_iterate_maxrregs.sh
+log/v1_0_0/maxreg_iter.log
+log/v1_1_0/maxreg_iter.log
+nc_report/rep2csv.sh
+nc_report/v1_0_0/baseline/nc_baseline_report.ncu-rep
+nc_report/v1_0_0/baseline/nc_report.csv
+nc_report/v1_0_0/maxregcount128/nc_maxreg_128_report.ncu-rep
+nc_report/v1_0_0/maxregcount128/nc_report.csv
+
+build/
+log/
