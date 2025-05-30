@@ -267,9 +267,9 @@ TEST(CudaAmbiguitySolverTests, CPU_Comparison) {
         traccc::track_candidate_container_types>
         track_candidate_d2h{mr, copy};
 
-    for (int i_evt = 0; i_evt < 5; i_evt++) {
+    for (std::size_t i_evt = 0u; i_evt < 5u; i_evt++) {
 
-        std::size_t sd = 42 + i_evt;
+        std::size_t sd = 42u + i_evt;
         std::mt19937 gen(sd);
         std::cout << "Event: " << i_evt << " Seed: " << sd << std::endl;
 
