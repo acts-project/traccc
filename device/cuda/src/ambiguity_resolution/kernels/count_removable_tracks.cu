@@ -160,6 +160,7 @@ __global__ void count_removable_tracks(
         }
     }
     */
+
     if (threadIndex == 0 && n_tracks_to_iterate == 0) {
         n_tracks_to_iterate = 1;
     }
@@ -232,6 +233,12 @@ __global__ void count_removable_tracks(
             *(payload.n_removable_tracks) = min_thread;
         }
     }
+
+    /*
+    if (threadIndex == 0) {
+        printf("%d \n", *(payload.n_removable_tracks));
+    }
+    */
 }
 
 }  // namespace traccc::cuda::kernels
