@@ -15,20 +15,36 @@
 
 namespace traccc::cuda::kernels {
 
-__device__ void count_tracks(int* sh_n_meas, int n_tracks, int bound,
-                             unsigned int& count) {
-    // @TODO: Improve the logic
-    for (unsigned int stride = 1; stride < n_tracks; stride *= 2) {
-        sh_n_meas[threadIdx.x] += sh_n_meas[threadIdx.x + stride];
+__device__ void count_tracks(int* sh_n_meas, int n_tracks_total, int bound,
+                             unsigned int& count, int tid) {
+
+    for (unsigned int stride = 1; stride < n_tracks_total; stride *= 2) {
+        sh_n_meas[tid] += sh_n_meas[tid + stride];
         __syncthreads();
 
         if (sh_n_meas[0] < bound) {
+            if (tid == 0) {
+                count = stride;
+            }
+        }
+    }
+
+    /*
+    // @TODO: Improve the logic
+    const unsigned int count_tmp = count;
+
+    for (unsigned int stride = 1; stride < (n_tracks - count_tmp); stride *= 2)
+    { sh_n_meas[count_tmp + threadIdx.x] += sh_n_meas[count_tmp + threadIdx.x +
+    stride];
+        __syncthreads();
+
+        if (sh_n_meas[count_tmp] < bound) {
             if (threadIdx.x == 0) {
                 count += stride;
             }
         }
     }
-
+    */
     __syncthreads();
 }
 
@@ -123,14 +139,16 @@ __global__ void count_removable_tracks(
     auto n_tracks_total = min(blockDim.x, *payload.n_accepted);
 
     // @TODO: Improve the logic
-    count_tracks(shared_n_meas, n_tracks_total, 1024, n_tracks_to_iterate);
+    count_tracks(shared_n_meas, n_tracks_total, 1024, n_tracks_to_iterate,
+                 threadIdx.x);
 
     /*
     if (gid >= 0) {
         const auto trk_id = sorted_ids[gid];
         shared_n_meas[threadIndex] = n_meas[trk_id];
-    } 
-    */   
+    }
+    */
+
     /*
     for (unsigned int stride = 1; stride < n_tracks_total; stride *= 2) {
         shared_n_meas[threadIndex] += shared_n_meas[threadIndex + stride];
@@ -145,7 +163,6 @@ __global__ void count_removable_tracks(
 
     __syncthreads();
     */
-
     if (threadIndex == 0 && n_tracks_to_iterate == 0) {
         n_tracks_to_iterate = 1;
     }
