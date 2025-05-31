@@ -140,20 +140,20 @@ __global__ void count_removable_tracks(
 
     __syncthreads();
 
-    auto n_tracks_total = min(blockDim.x, *payload.n_accepted);
+    auto n_tracks_total = min(bound, *payload.n_accepted);
 
     // @TODO: Improve the logic
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 1; i++) {
         count_tracks(threadIdx.x, shared_n_meas, n_tracks_total, bound,
                      n_tracks_to_iterate, stop);
+
+        if (stop) {
+            break;
+        }
 
         if (gid >= 0) {
             const auto trk_id = sorted_ids[gid];
             shared_n_meas[threadIndex] = n_meas[trk_id];
-        }
-
-        if (stop) {
-            break;
         }
     }
 
@@ -200,7 +200,6 @@ __global__ void count_removable_tracks(
                 }
                 i++;
             }
-
         }
     }
 
