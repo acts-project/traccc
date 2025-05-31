@@ -18,6 +18,14 @@ namespace traccc::cuda::kernels {
 __global__ void count_removable_tracks(
     device::count_removable_tracks_payload payload) {
 
+    /*
+    if (threadIdx.x == 0 && *(payload.n_accepted) == 1) {
+        *(payload.terminate) = 1;
+    }
+
+    __syncthreads();
+    */
+
     if (*(payload.terminate) == 1) {
         return;
     }
@@ -76,6 +84,20 @@ __global__ void count_removable_tracks(
 
     __syncthreads();
 
+    if (threadIndex == 0 && n_tracks_to_iterate == 0) {
+        n_tracks_to_iterate = 1;
+    }
+
+    __syncthreads();
+    /*
+    if (threadIdx.x == 0) {
+        printf(
+            "n accepted %d n_tracks_total %d n_tracks_to_iterate %d "
+            "shared_n_meas %d \n ",
+            *(payload.n_accepted), n_tracks_total, n_tracks_to_iterate,
+            shared_n_meas[0]);
+    }
+    */
     // @TODO: Improve the logic
     if (threadIndex < n_tracks_to_iterate && gid >= 0) {
         auto mids = meas_ids[sorted_ids[gid]];
@@ -92,13 +114,13 @@ __global__ void count_removable_tracks(
     }
 
     __syncthreads();
-
     /*
     if (threadIndex == 0) {
         printf("n tracks total %d n tracks_to_iterate %d n meas total %d \n",
                n_tracks_total, n_tracks_to_iterate, n_meas_total);
     }
-
+    */
+   /*
     if (threadIndex == 0) {
         printf("No sort \n");
         for (int i = 0; i < n_meas_total; i++) {
@@ -110,7 +132,6 @@ __global__ void count_removable_tracks(
 
     __syncthreads();
     */
-
     // Bubble sort w.r.t measurement id
     for (int iter = 0; iter < n_meas_total; ++iter) {
         bool is_even = (iter % 2 == 0);
@@ -143,7 +164,7 @@ __global__ void count_removable_tracks(
         printf("\n");
     }
     */
-   
+
     // Find starting point
     if (threadIndex < n_meas_total) {
         auto curr = meas_to_thread[threadIndex];
@@ -194,7 +215,6 @@ __global__ void count_removable_tracks(
         }
         __syncthreads();
     }
-
     /*
     if (threadIndex == 0) {
         printf("Thread sort \n");
@@ -205,10 +225,9 @@ __global__ void count_removable_tracks(
         printf("\n");
     }
     */
-
     // Make measurement list to remove
     const auto tid = meas_to_thread[threadIndex].second;
-    if (tid <= min_thread) {
+    if ((tid < min_thread) || (min_thread == 0 && tid == 0)) {
         // printf("%d %d \n", min_thread, gid);
         meas_to_remove[threadIndex] = meas_to_thread[threadIndex];
         /*
@@ -232,12 +251,10 @@ __global__ void count_removable_tracks(
         }
     }
 
-    /*
     if (threadIndex == 0) {
         printf("n meas to remove %d n removable tracks %d \n",
                *(payload.n_meas_to_remove), *(payload.n_removable_tracks));
     }
-    */
 }
 
 }  // namespace traccc::cuda::kernels

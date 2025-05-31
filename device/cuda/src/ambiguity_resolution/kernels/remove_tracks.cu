@@ -57,6 +57,17 @@ __global__ void remove_tracks(device::remove_tracks_payload payload) {
     vecmem::device_vector<const traccc::pair<std::size_t, unsigned int>>
         meas_to_remove(payload.meas_to_remove_view);
 
+    /*
+    if (threadIndex == 0) {
+        printf("Sorted IDs: ");
+        for (int i = 0; i < *payload.n_accepted; i++) {
+            printf("(%d %d %f) ", sorted_ids[i], n_shared[sorted_ids[i]],
+                   rel_shared[sorted_ids[i]]);
+        }
+        printf("\n");
+    }
+    */
+   
     unsigned int worst_track;
     /*
     if (globalIndex == 0) {
@@ -73,6 +84,8 @@ __global__ void remove_tracks(device::remove_tracks_payload payload) {
         int gid = static_cast<int>(*payload.n_accepted) - 1 -
                   meas_to_remove[globalIndex].second;
         worst_track = sorted_ids[gid];
+
+        //printf("gid %d worst track %d \n", gid, worst_track);
     }
 
     __syncthreads();
