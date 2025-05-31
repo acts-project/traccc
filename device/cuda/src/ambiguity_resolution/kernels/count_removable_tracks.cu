@@ -15,62 +15,31 @@
 
 namespace traccc::cuda::kernels {
 
-__device__ void count_tracks(int tid, int* sh_n_meas, int n_tracks, unsigned int& bound,
-                             unsigned int& count) {
+__device__ void count_tracks(int tid, int* sh_n_meas, int n_tracks,
+                             unsigned int& bound, unsigned int& count) {
 
     unsigned int add = 0;
+    unsigned int offset = 0;
     for (unsigned int stride = 1; stride < (n_tracks - count); stride *= 2) {
-        sh_n_meas[count + tid] += sh_n_meas[count + tid + stride];
+        if ((count + tid + stride) < n_tracks) {
+            sh_n_meas[count + tid] += sh_n_meas[count + tid + stride];
+        }
         __syncthreads();
 
         if (sh_n_meas[count] < bound) {
             if (tid == 0) {
-                add = stride;
+                offset = sh_n_meas[count];
+                add = stride * 2;
             }
             __syncthreads();
         }
     }
 
     if (tid == 0) {
-        bound -= sh_n_meas[count];
+        bound -= offset;
+        //printf("offset %d \n", offset);
         count += add;
     }
-
-    /*
-    unsigned int add = 0;
-    for (unsigned int stride = 1; stride < (n_tracks - count); stride *= 2) {
-        sh_n_meas[count + tid] += sh_n_meas[count + tid + stride];
-        __syncthreads();
-
-        if (sh_n_meas[count] < bound - n_meas_total) {
-            if (tid == 0) {
-                    unsigned int add = 0;
-    for (unsigned int stride = 1; stride < (n_tracks - count); stride *= 2) {
-        sh_n_meas[count + tid] += sh_n_meas[count + tid + stride];
-        __syncthreads();
-
-        if (sh_n_meas[count] < bound - n_meas_total) {
-            if (tid == 0) {
-                add = stride;
-                n_meas_total = sh_n_meas[count];
-            }
-            __syncthreads();
-        }
-    }
-
-    if (tid == 0) {
-        count += add;
-    }
-                n_meas_total = sh_n_meas[count];
-            }
-            __syncthreads();
-        }
-    }
-
-    if (tid == 0) {
-        count += add;
-    }
-    */
 
     __syncthreads();
 }
@@ -151,7 +120,7 @@ __global__ void count_removable_tracks(
         *(payload.n_removable_tracks) = 0;
         *(payload.n_meas_to_remove) = 0;
         n_meas_total = 0;
-        bound = 1024;
+        bound = 512;
         n_tracks_to_iterate = 0;
         min_thread = std::numeric_limits<unsigned int>::max();
     }
@@ -168,17 +137,14 @@ __global__ void count_removable_tracks(
     auto n_tracks_total = min(blockDim.x, *payload.n_accepted);
 
     // @TODO: Improve the logic
+
     count_tracks(threadIdx.x, shared_n_meas, n_tracks_total, bound,
                  n_tracks_to_iterate);
 
     /*
-    for (int i = 0; i < 10000; i++) {
-        if (threadIndex == 0) {
-            printf("%d \n", i);
-        }
-
-        count_tracks(threadIdx.x, shared_n_meas, n_tracks_total, 1024,
-                     n_tracks_to_iterate, n_meas_total_temp);
+    for (int i = 0; i < 1; i++) {
+        count_tracks(threadIdx.x, shared_n_meas, n_tracks_total, bound,
+                     n_tracks_to_iterate);
 
         if (gid >= 0) {
             const auto trk_id = sorted_ids[gid];
@@ -186,8 +152,10 @@ __global__ void count_removable_tracks(
         }
 
         if (threadIndex == 0) {
-            printf("%d %d \n", n_tracks_total, n_tracks_to_iterate);
+            printf("%d %d %d %d \n", i, n_tracks_total, n_tracks_to_iterate,
+                   1024 - bound);
         }
+
         if ((n_tracks_total - n_tracks_to_iterate) <= 1) {
             break;
         }
@@ -228,9 +196,10 @@ __global__ void count_removable_tracks(
 
     __syncthreads();
 
-    /*
+    /*    
     if (threadIndex == 0) {
-        printf("n meas total %d \n", n_meas_total);
+        printf("n meas total %d n_tracks_to_iterate %d \n", n_meas_total,
+               n_tracks_to_iterate);
     }
     */
 
