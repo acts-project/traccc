@@ -46,6 +46,7 @@ __global__ void count_removable_tracks(
     if (threadIndex == 0) {
         *(payload.n_removable_tracks) = 0;
         *(payload.n_meas_to_remove) = 0;
+        n_meas_total = 0;
         n_tracks_to_iterate = 0;
         min_thread = std::numeric_limits<unsigned int>::max();
     }
@@ -75,15 +76,9 @@ __global__ void count_removable_tracks(
 
     __syncthreads();
 
-    if (threadIndex == 0) {
-        n_meas_total = 0;
-    }
-
-    __syncthreads();
-
     // @TODO: Improve the logic
-    if (threadIndex < n_tracks_to_iterate) {
-        auto mids = meas_ids[threadIndex];
+    if (threadIndex < n_tracks_to_iterate && gid >= 0) {
+        auto mids = meas_ids[sorted_ids[gid]];
         for (const auto& id : mids) {
 
             // Write updated track IDs
@@ -95,13 +90,15 @@ __global__ void count_removable_tracks(
             meas_to_thread[pos] = {id, threadIndex};
         }
     }
+
+    __syncthreads();
+
     /*
     if (threadIndex == 0) {
         printf("n tracks total %d n tracks_to_iterate %d n meas total %d \n",
                n_tracks_total, n_tracks_to_iterate, n_meas_total);
     }
-    */
-    /*
+
     if (threadIndex == 0) {
         printf("No sort \n");
         for (int i = 0; i < n_meas_total; i++) {
@@ -110,8 +107,9 @@ __global__ void count_removable_tracks(
         }
         printf("\n");
     }
-    */
+
     __syncthreads();
+    */
 
     // Bubble sort w.r.t measurement id
     for (int iter = 0; iter < n_meas_total; ++iter) {
@@ -134,6 +132,7 @@ __global__ void count_removable_tracks(
         }
         __syncthreads();
     }
+
     /*
     if (threadIndex == 0) {
         printf("Meas sort \n");
@@ -144,6 +143,7 @@ __global__ void count_removable_tracks(
         printf("\n");
     }
     */
+   
     // Find starting point
     if (threadIndex < n_meas_total) {
         auto curr = meas_to_thread[threadIndex];
@@ -166,9 +166,12 @@ __global__ void count_removable_tracks(
 
     __syncthreads();
 
-    if (min_thread == std::numeric_limits<unsigned int>::max()){
-        return;
+    if (threadIndex == 0 &&
+        min_thread == std::numeric_limits<unsigned int>::max()) {
+        min_thread = 0;
     }
+
+    __syncthreads();
 
     // Bubble sort w.r.t thread index
     for (int iter = 0; iter < n_meas_total; ++iter) {
@@ -191,7 +194,7 @@ __global__ void count_removable_tracks(
         }
         __syncthreads();
     }
-    
+
     /*
     if (threadIndex == 0) {
         printf("Thread sort \n");
@@ -202,16 +205,33 @@ __global__ void count_removable_tracks(
         printf("\n");
     }
     */
+
     // Make measurement list to remove
-    if (meas_to_thread[threadIndex].second <= min_thread) {
+    const auto tid = meas_to_thread[threadIndex].second;
+    if (tid <= min_thread) {
+        // printf("%d %d \n", min_thread, gid);
+        meas_to_remove[threadIndex] = meas_to_thread[threadIndex];
+        /*
         meas_to_remove[threadIndex].first = meas_to_thread[threadIndex].first;
-        meas_to_remove[threadIndex].second = gid;
+        meas_to_remove[threadIndex].second = tid;
+        */
         atomicAdd(payload.n_meas_to_remove, 1);
+        /*
+        if (gid >= 0) {
+            meas_to_remove[threadIndex].second = sorted_ids[gid];
+            atomicAdd(payload.n_meas_to_remove, 1);
+        }
+        */
     }
 
     if (threadIndex == 0) {
-        *(payload.n_removable_tracks) = min_thread + 1;
+        if (min_thread == 0) {
+            *(payload.n_removable_tracks) = 1;
+        } else {
+            *(payload.n_removable_tracks) = min_thread;
+        }
     }
+
     /*
     if (threadIndex == 0) {
         printf("n meas to remove %d n removable tracks %d \n",
