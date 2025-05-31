@@ -38,7 +38,6 @@ __device__ void count_tracks(int tid, int* sh_n_meas, int n_tracks,
 
     if (tid == 0) {
         bound -= offset;
-        // printf("offset %d \n", offset);
         count += add;
 
         if (add == 0) {
@@ -144,11 +143,6 @@ __global__ void count_removable_tracks(
     auto n_tracks_total = min(blockDim.x, *payload.n_accepted);
 
     // @TODO: Improve the logic
-    /*
-    count_tracks(threadIdx.x, shared_n_meas, n_tracks_total, bound,
-                 n_tracks_to_iterate);
-    */
-
     for (int i = 0; i < 100; i++) {
         count_tracks(threadIdx.x, shared_n_meas, n_tracks_total, bound,
                      n_tracks_to_iterate, stop);
@@ -158,22 +152,9 @@ __global__ void count_removable_tracks(
             shared_n_meas[threadIndex] = n_meas[trk_id];
         }
 
-        /*  
-        if (threadIndex == 0) {
-            printf("%d %d %d %d \n", i, n_tracks_total, n_tracks_to_iterate,
-                   1024 - bound);
-        }
-        */
-       
         if (stop) {
             break;
         }
-
-        /*
-        if ((n_tracks_total - n_tracks_to_iterate) <= 1) {
-            break;
-        }
-        */
     }
 
     if (threadIndex == 0 && n_tracks_to_iterate == 0) {
@@ -197,12 +178,6 @@ __global__ void count_removable_tracks(
 
     __syncthreads();
 
-    /*
-    if (threadIndex == 0) {
-        printf("n meas total %d n_tracks_to_iterate %d \n", n_meas_total,
-               n_tracks_to_iterate);
-    }
-    */
     // Bitonic sort on meas_to_thread w.r.t. measurement id
     bitonic_sort_shared(meas_to_thread, n_meas_total);
 
@@ -226,13 +201,6 @@ __global__ void count_removable_tracks(
                 i++;
             }
 
-            /*
-            while (i < n_meas_total && (meas_to_thread[i].first == id &&
-                                        meas_to_thread[i].second != tid)) {
-                atomicMin(&min_thread, meas_to_thread[i].second);
-                i++;
-            }
-            */
         }
     }
 
@@ -261,8 +229,6 @@ __global__ void count_removable_tracks(
         } else {
             *(payload.n_removable_tracks) = min_thread;
         }
-
-        // printf("n removable tracks %d \n", *(payload.n_removable_tracks));
     }
 }
 
