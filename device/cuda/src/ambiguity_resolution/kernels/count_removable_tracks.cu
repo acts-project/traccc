@@ -15,20 +15,24 @@
 
 namespace traccc::cuda::kernels {
 
-__device__ void count_tracks(int* sh_n_meas, int n_tracks_total, int bound,
+__device__ void count_tracks(int* sh_n_meas, int n_tracks, int bound,
                              unsigned int& count, int tid) {
 
-    for (unsigned int stride = 1; stride < n_tracks_total; stride *= 2) {
-        sh_n_meas[tid] += sh_n_meas[tid + stride];
+    unsigned int add = 0;
+    for (unsigned int stride = 1; stride < (n_tracks - count); stride *= 2) {
+        sh_n_meas[count + tid] += sh_n_meas[count + tid + stride];
         __syncthreads();
 
         if (sh_n_meas[0] < bound) {
             if (tid == 0) {
-                count = stride;
+                add = stride;
             }
         }
     }
 
+    if (tid == 0) {
+        count += add;
+    }
     /*
     // @TODO: Improve the logic
     const unsigned int count_tmp = count;
