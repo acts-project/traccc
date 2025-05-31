@@ -411,7 +411,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
             1, 1024,
             sizeof(int) * 1024 +
                 sizeof(traccc::pair<std::size_t, unsigned int>) * 1024 +
-                sizeof(unsigned int) * 4,
+                sizeof(unsigned int) * 5,
             stream>>>(device::count_removable_tracks_payload{
             .terminate = terminate_device.get(),
             .sorted_ids_view = sorted_ids_buffer,
