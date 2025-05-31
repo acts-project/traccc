@@ -15,6 +15,49 @@
 
 namespace traccc::cuda::kernels {
 
+__device__ void bitonic_sort_shared(
+    traccc::pair<std::size_t, unsigned int>* shared_data, int count,
+    bool compare_first = true) {
+
+    // padding up to next power of 2
+    int N = 1;
+    while (N < count) {
+        N <<= 1;
+    }
+
+    // pad unused elements with max value
+    int tid = threadIdx.x;
+    if (tid >= count && tid < N) {
+        shared_data[tid] = {std::numeric_limits<std::size_t>::max(),
+                            std::numeric_limits<unsigned int>::max()};
+    }
+
+    __syncthreads();
+
+    for (int k = 2; k <= N; k <<= 1) {
+        for (int j = k >> 1; j > 0; j >>= 1) {
+            int ixj = tid ^ j;
+
+            if (ixj > tid && ixj < N && tid < N) {
+                auto elem_i = shared_data[tid];
+                auto elem_j = shared_data[ixj];
+
+                bool ascending = ((tid & k) == 0);
+                bool should_swap =
+                    compare_first
+                        ? (elem_i.first > elem_j.first) == ascending
+                        : (elem_i.second > elem_j.second) == ascending;
+
+                if (should_swap) {
+                    shared_data[tid] = elem_j;
+                    shared_data[ixj] = elem_i;
+                }
+            }
+            __syncthreads();
+        }
+    }
+}
+
 __global__ void count_removable_tracks(
     device::count_removable_tracks_payload payload) {
 
@@ -98,7 +141,7 @@ __global__ void count_removable_tracks(
     }
 
     __syncthreads();
-
+    /*
     // Bubble sort w.r.t measurement id
     for (int iter = 0; iter < n_meas_total; ++iter) {
         bool is_even = (iter % 2 == 0);
@@ -120,6 +163,10 @@ __global__ void count_removable_tracks(
         }
         __syncthreads();
     }
+    */
+
+    // Bitonic sort on meas_to_thread w.r.t. measurement id
+    bitonic_sort_shared(meas_to_thread, n_meas_total);
 
     // Find starting point
     if (threadIndex < n_meas_total) {
@@ -151,26 +198,7 @@ __global__ void count_removable_tracks(
     __syncthreads();
 
     // Bubble sort w.r.t thread index
-    for (int iter = 0; iter < n_meas_total; ++iter) {
-        bool is_even = (iter % 2 == 0);
-        int i = threadIndex;
-
-        if (i < n_meas_total / 2) {
-            int idx = 2 * i + (is_even ? 0 : 1);
-            if (idx + 1 < n_meas_total) {
-                const auto a = meas_to_thread[idx];
-                const auto b = meas_to_thread[idx + 1];
-
-                bool swap = a.second > b.second;
-
-                if (swap) {
-                    meas_to_thread[idx] = b;
-                    meas_to_thread[idx + 1] = a;
-                }
-            }
-        }
-        __syncthreads();
-    }
+    bitonic_sort_shared(meas_to_thread, n_meas_total, false);
 
     // Make measurement list to remove
     const auto tid = meas_to_thread[threadIndex].second;
