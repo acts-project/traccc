@@ -540,8 +540,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
         unsigned int n_it = (n_tracks + 9) / 10;
         for (unsigned int iter = 0; iter < n_it; iter++) {
-            // cudaGraphLaunch(graphExec, stream);
-
+            cudaGraphLaunch(graphExec, stream);
+            /*
             kernels::reset_status<<<1, 1, 0, stream>>>(
                 device::reset_status_payload{
                     .is_first_iteration = is_first_iteration_device.get(),
@@ -599,7 +599,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .updated_tracks_view = updated_tracks_buffer,
                 .is_updated_view = is_updated_buffer,
             });
-
+            */
             // The seven kernels below are to keep sorted_ids sorted based on
             // the relative shared measurements and pvalues. This can be reduced
             // into thrust::sort():
@@ -615,7 +615,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
             // Advantage: This works for all cases (The below kernels only work
             // when the number of updated tracks <= 1024) and might be faster
             // with large number of updated tracks
-
+            /*
             kernels::sort_updated_tracks<<<1, 1024, 1024 * sizeof(unsigned int),
                                            stream>>>(
                 device::sort_updated_tracks_payload{
@@ -691,6 +691,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                     .temp_sorted_ids_view = temp_sorted_ids_buffer,
                     .sorted_ids_view = sorted_ids_buffer,
                     .is_updated_view = is_updated_buffer});
+            */
         }
 
         cudaMemcpyAsync(&terminate, terminate_device.get(), sizeof(int),

@@ -141,29 +141,6 @@ __global__ void count_removable_tracks(
     }
 
     __syncthreads();
-    /*
-    // Bubble sort w.r.t measurement id
-    for (int iter = 0; iter < n_meas_total; ++iter) {
-        bool is_even = (iter % 2 == 0);
-        int i = threadIndex;
-
-        if (i < n_meas_total / 2) {
-            int idx = 2 * i + (is_even ? 0 : 1);
-            if (idx + 1 < n_meas_total) {
-                const auto a = meas_to_thread[idx];
-                const auto b = meas_to_thread[idx + 1];
-
-                bool swap = a.first > b.first;
-
-                if (swap) {
-                    meas_to_thread[idx] = b;
-                    meas_to_thread[idx + 1] = a;
-                }
-            }
-        }
-        __syncthreads();
-    }
-    */
 
     // Bitonic sort on meas_to_thread w.r.t. measurement id
     bitonic_sort_shared(meas_to_thread, n_meas_total);
