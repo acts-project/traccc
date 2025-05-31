@@ -537,8 +537,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
         cudaStreamEndCapture(stream, &graph);
         cudaGraphInstantiate(&graphExec, graph, nullptr, nullptr, 0);
-
-        cudaGraphLaunch(graphExec, stream);
         
         unsigned int n_it = (n_tracks + 9) / 10;
         for (unsigned int iter = 0; iter < n_it; iter++) {

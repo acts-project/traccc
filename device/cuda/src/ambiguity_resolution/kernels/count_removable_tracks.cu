@@ -186,8 +186,9 @@ __global__ void count_removable_tracks(
             *(payload.n_removable_tracks) = min_thread;
         }
         /*
-        printf("Removable tracks %d Meas to remove %d \n",
-               *(payload.n_removable_tracks), *(payload.n_meas_to_remove));
+        printf("n accepted %d Removable tracks %d Meas to remove %d \n",
+               *(payload.n_accepted), *(payload.n_removable_tracks),
+               *(payload.n_meas_to_remove));
         */
     }
 }

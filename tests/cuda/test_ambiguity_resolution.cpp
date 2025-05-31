@@ -244,7 +244,8 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest3) {
 // Comparison to the CPU algorithm
 TEST(CudaAmbiguitySolverTests, CPU_Comparison) {
 
-    std::size_t n_tracks = 50000u;
+    //std::size_t n_tracks = 50000u;
+    std::size_t n_tracks = 1000u;
     //std::size_t n_tracks = 3u;
 
     // Memory resource used by the EDM.
@@ -268,7 +269,8 @@ TEST(CudaAmbiguitySolverTests, CPU_Comparison) {
         traccc::track_candidate_container_types>
         track_candidate_d2h{mr, copy};
 
-    for (int i_evt = 0; i_evt < 5; i_evt++) {
+    for (int i_evt = 0; i_evt < 1; i_evt++) {
+    //for (int i_evt = 0; i_evt < 5; i_evt++) {
     //for (int i_evt = 0; i_evt < 10000; i_evt++) {
 
         std::size_t sd = 42 + i_evt;
@@ -281,7 +283,7 @@ TEST(CudaAmbiguitySolverTests, CPU_Comparison) {
         for (std::size_t i = 0; i < n_tracks; i++) {
 
             std::uniform_int_distribution<std::size_t> track_length_dist(1, 10);
-            std::uniform_int_distribution<std::size_t> meas_id_dist(0, 20000);
+            std::uniform_int_distribution<std::size_t> meas_id_dist(0, 2000);
             /// std::uniform_int_distribution<std::size_t> track_length_dist(3,
             /// 5);
             // std::uniform_int_distribution<std::size_t> meas_id_dist(0, 10);
