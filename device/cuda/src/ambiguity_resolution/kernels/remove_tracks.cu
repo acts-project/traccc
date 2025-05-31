@@ -8,7 +8,7 @@
 // Local include(s).
 #include "../../utils/barrier.hpp"
 #include "../../utils/global_index.hpp"
-#include "update_vectors.cuh"
+#include "remove_tracks.cuh"
 
 // VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>
@@ -22,7 +22,7 @@
 
 namespace traccc::cuda::kernels {
 
-__global__ void update_vectors(device::update_vectors_payload payload) {
+__global__ void remove_tracks(device::remove_tracks_payload payload) {
 
     __shared__ unsigned int shared_tids[1024];
     __shared__ std::size_t shared_meas_ids[1024];
@@ -54,18 +54,25 @@ __global__ void update_vectors(device::update_vectors_payload payload) {
     vecmem::device_vector<unsigned int> updated_tracks(
         payload.updated_tracks_view);
     vecmem::device_vector<int> is_updated(payload.is_updated_view);
+    vecmem::device_vector<const traccc::pair<std::size_t, unsigned int>>
+        meas_to_remove(payload.meas_to_remove_view);
 
-    const auto worst_track = sorted_ids[*payload.n_accepted - 1];
-    const auto& worst_meas_list = meas_ids[worst_track];
-    if (globalIndex < n_meas[worst_track]) {
-        shared_meas_ids[globalIndex] = worst_meas_list[globalIndex];
+    unsigned int worst_track;
+
+    if (globalIndex < *(payload.n_meas_to_remove)) {
+        shared_meas_ids[globalIndex] = meas_to_remove[globalIndex].first;
+        int gid = static_cast<int>(*payload.n_accepted) - 1 -
+                  meas_to_remove[globalIndex].second;
+        worst_track = sorted_ids[gid];
     }
+
+    __syncthreads();
 
     if (globalIndex == 0) {
-        (*payload.n_accepted)--;
+        (*payload.n_accepted) -= *(payload.n_removable_tracks);
     }
 
-    if (globalIndex >= n_meas[worst_track]) {
+    if (globalIndex >= *(payload.n_meas_to_remove)) {
         return;
     }
 

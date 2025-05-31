@@ -10,6 +10,7 @@
 #include "../utils/utils.hpp"
 #include "./kernels/add_block_offset.cuh"
 #include "./kernels/block_inclusive_scan.cuh"
+#include "./kernels/count_removable_tracks.cuh"
 #include "./kernels/count_shared_measurements.cuh"
 #include "./kernels/fill_inverted_ids.cuh"
 #include "./kernels/fill_track_candidates.cuh"
@@ -18,10 +19,10 @@
 #include "./kernels/find_max_shared.cuh"
 #include "./kernels/gather_tracks.cuh"
 #include "./kernels/rearrange_tracks.cuh"
+#include "./kernels/remove_tracks.cuh"
 #include "./kernels/reset_status.cuh"
 #include "./kernels/scan_block_offsets.cuh"
 #include "./kernels/sort_updated_tracks.cuh"
-#include "./kernels/update_vectors.cuh"
 #include "traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 
 // Thrust include(s).
@@ -329,6 +330,15 @@ greedy_ambiguity_resolution_algorithm::operator()(
                                                                     m_mr.main};
     m_copy.get().setup(updated_tracks_buffer)->ignore();
 
+    // Measurements to remove for each iteration
+    vecmem::data::vector_buffer<traccc::pair<std::size_t, unsigned int>>
+        meas_to_remove_buffer{1024, m_mr.main};
+
+    vecmem::unique_alloc_ptr<unsigned int> n_removable_tracks_device =
+        vecmem::make_unique_alloc<unsigned int>(m_mr.main);
+    vecmem::unique_alloc_ptr<unsigned int> n_meas_to_remove_device =
+        vecmem::make_unique_alloc<unsigned int>(m_mr.main);
+
     // Device objects
     int is_first_iteration = 1;
     vecmem::unique_alloc_ptr<int> is_first_iteration_device =
@@ -397,9 +407,25 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .max_shared = max_shared_device.get(),
                 .is_updated_view = is_updated_buffer});
 
-        kernels::update_vectors<<<
+        kernels::count_removable_tracks<<<
+            1, 1024,
+            sizeof(int) * 1024 +
+                sizeof(traccc::pair<std::size_t, unsigned int>) * 1024 +
+                sizeof(unsigned int) * 5 + sizeof(bool),
+            stream>>>(device::count_removable_tracks_payload{
+            .terminate = terminate_device.get(),
+            .sorted_ids_view = sorted_ids_buffer,
+            .n_accepted = n_accepted_device.get(),
+            .meas_ids_view = meas_ids_buffer,
+            .n_meas_view = n_meas_buffer,
+            .n_removable_tracks = n_removable_tracks_device.get(),
+            .n_meas_to_remove = n_meas_to_remove_device.get(),
+            .meas_to_remove_view = meas_to_remove_buffer,
+        });
+
+        kernels::remove_tracks<<<
             1, 1024, 1024 * (sizeof(unsigned int) + sizeof(std::size_t)),
-            stream>>>(device::update_vectors_payload{
+            stream>>>(device::remove_tracks_payload{
             .sorted_ids_view = sorted_ids_buffer,
             .n_accepted = n_accepted_device.get(),
             .meas_ids_view = meas_ids_buffer,
@@ -412,6 +438,9 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 n_accepted_tracks_per_measurement_buffer,
             .n_shared_view = n_shared_buffer,
             .rel_shared_view = rel_shared_buffer,
+            .n_removable_tracks = n_removable_tracks_device.get(),
+            .n_meas_to_remove = n_meas_to_remove_device.get(),
+            .meas_to_remove_view = meas_to_remove_buffer,
             .terminate = terminate_device.get(),
             .n_updated_tracks = n_updated_tracks_device.get(),
             .updated_tracks_view = updated_tracks_buffer,
