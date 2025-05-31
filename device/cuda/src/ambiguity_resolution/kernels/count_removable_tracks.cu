@@ -126,13 +126,11 @@ __global__ void count_removable_tracks(
     __syncthreads();
 
     // @TODO: Improve the logic
+    vecmem::device_atomic_ref<unsigned int> num_meas_total(n_meas_total);
+
     if (threadIndex < n_tracks_to_iterate && gid >= 0) {
         auto mids = meas_ids[sorted_ids[gid]];
         for (const auto& id : mids) {
-
-            // Write updated track IDs
-            vecmem::device_atomic_ref<unsigned int> num_meas_total(
-                n_meas_total);
 
             const unsigned int pos = num_meas_total.fetch_add(1);
 
@@ -141,6 +139,12 @@ __global__ void count_removable_tracks(
     }
 
     __syncthreads();
+
+    /*
+    if (threadIndex == 0) {
+        printf("n meas total %d \n", n_meas_total);
+    }
+    */
 
     // Bitonic sort on meas_to_thread w.r.t. measurement id
     bitonic_sort_shared(meas_to_thread, n_meas_total);
@@ -151,17 +155,27 @@ __global__ void count_removable_tracks(
         bool is_start = (threadIndex == 0) ||
                         (meas_to_thread[threadIndex - 1].first != curr.first);
 
+        // Find min thread id
+        std::size_t id = curr.first;
+        auto tid = curr.second;
+
         if (is_start) {
-            // Find min thread id
-            std::size_t id = curr.first;
-            auto tid = curr.second;
 
             int i = threadIndex + 1;
+            while (i < n_meas_total && meas_to_thread[i].first == id) {
+                if (meas_to_thread[i].second != tid) {
+                    atomicMin(&min_thread, meas_to_thread[i].second);
+                }
+                i++;
+            }
+
+            /*
             while (i < n_meas_total && (meas_to_thread[i].first == id &&
                                         meas_to_thread[i].second != tid)) {
                 atomicMin(&min_thread, meas_to_thread[i].second);
                 i++;
             }
+            */
         }
     }
 
@@ -190,6 +204,8 @@ __global__ void count_removable_tracks(
         } else {
             *(payload.n_removable_tracks) = min_thread;
         }
+
+        //printf("n removable tracks %d \n", *(payload.n_removable_tracks));
     }
 }
 
