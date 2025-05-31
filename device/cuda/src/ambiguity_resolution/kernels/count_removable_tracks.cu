@@ -15,6 +15,23 @@
 
 namespace traccc::cuda::kernels {
 
+__device__ void count_tracks(int* sh_n_meas, int n_tracks, int bound,
+                             unsigned int& count) {
+    // @TODO: Improve the logic
+    for (unsigned int stride = 1; stride < n_tracks; stride *= 2) {
+        sh_n_meas[threadIdx.x] += sh_n_meas[threadIdx.x + stride];
+        __syncthreads();
+
+        if (sh_n_meas[0] < bound) {
+            if (threadIdx.x == 0) {
+                count += stride;
+            }
+        }
+    }
+
+    __syncthreads();
+}
+
 __device__ void bitonic_sort_shared(
     traccc::pair<std::size_t, unsigned int>* shared_data, int count,
     bool compare_first = true) {
@@ -106,6 +123,15 @@ __global__ void count_removable_tracks(
     auto n_tracks_total = min(blockDim.x, *payload.n_accepted);
 
     // @TODO: Improve the logic
+    count_tracks(shared_n_meas, n_tracks_total, 1024, n_tracks_to_iterate);
+
+    /*
+    if (gid >= 0) {
+        const auto trk_id = sorted_ids[gid];
+        shared_n_meas[threadIndex] = n_meas[trk_id];
+    } 
+    */   
+    /*
     for (unsigned int stride = 1; stride < n_tracks_total; stride *= 2) {
         shared_n_meas[threadIndex] += shared_n_meas[threadIndex + stride];
         __syncthreads();
@@ -118,6 +144,7 @@ __global__ void count_removable_tracks(
     }
 
     __syncthreads();
+    */
 
     if (threadIndex == 0 && n_tracks_to_iterate == 0) {
         n_tracks_to_iterate = 1;
@@ -205,7 +232,7 @@ __global__ void count_removable_tracks(
             *(payload.n_removable_tracks) = min_thread;
         }
 
-        //printf("n removable tracks %d \n", *(payload.n_removable_tracks));
+        // printf("n removable tracks %d \n", *(payload.n_removable_tracks));
     }
 }
 
