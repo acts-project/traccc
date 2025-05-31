@@ -143,6 +143,9 @@ __global__ void count_removable_tracks(
     auto n_tracks_total = min(bound, *payload.n_accepted);
 
     // @TODO: Improve the logic
+    count_tracks(threadIdx.x, shared_n_meas, n_tracks_total, bound,
+                 n_tracks_to_iterate, stop);
+    /*
     for (int i = 0; i < 1; i++) {
         count_tracks(threadIdx.x, shared_n_meas, n_tracks_total, bound,
                      n_tracks_to_iterate, stop);
@@ -156,7 +159,7 @@ __global__ void count_removable_tracks(
             shared_n_meas[threadIndex] = n_meas[trk_id];
         }
     }
-
+    */
     if (threadIndex == 0 && n_tracks_to_iterate == 0) {
         n_tracks_to_iterate = 1;
     }
