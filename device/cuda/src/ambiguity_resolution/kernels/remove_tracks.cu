@@ -57,35 +57,13 @@ __global__ void remove_tracks(device::remove_tracks_payload payload) {
     vecmem::device_vector<const traccc::pair<std::size_t, unsigned int>>
         meas_to_remove(payload.meas_to_remove_view);
 
-    /*
-    if (threadIndex == 0) {
-        printf("Sorted IDs: ");
-        for (int i = 0; i < *payload.n_accepted; i++) {
-            printf("(%d %d %f) ", sorted_ids[i], n_shared[sorted_ids[i]],
-                   rel_shared[sorted_ids[i]]);
-        }
-        printf("\n");
-    }
-    */
-   
     unsigned int worst_track;
-    /*
-    if (globalIndex == 0) {
-        printf("gid %d tid %d \n", meas_to_remove[globalIndex].second,
-               sorted_ids[meas_to_remove[globalIndex].second]);
-    }
-    */
+
     if (globalIndex < *(payload.n_meas_to_remove)) {
         shared_meas_ids[globalIndex] = meas_to_remove[globalIndex].first;
-        /*
-        printf("gid %d n meas%d \n", meas_to_remove[globalIndex].second,
-               *(payload.n_meas_to_remove));
-        */
         int gid = static_cast<int>(*payload.n_accepted) - 1 -
                   meas_to_remove[globalIndex].second;
         worst_track = sorted_ids[gid];
-
-        //printf("gid %d worst track %d \n", gid, worst_track);
     }
 
     __syncthreads();
@@ -97,22 +75,6 @@ __global__ void remove_tracks(device::remove_tracks_payload payload) {
     if (globalIndex >= *(payload.n_meas_to_remove)) {
         return;
     }
-
-    /*
-    const auto worst_track = sorted_ids[*payload.n_accepted - 1];
-    const auto& worst_meas_list = meas_ids[worst_track];
-    if (globalIndex < n_meas[worst_track]) {
-        shared_meas_ids[globalIndex] = worst_meas_list[globalIndex];
-    }
-
-    if (globalIndex == 0) {
-        (*payload.n_accepted)--;
-    }
-
-    if (globalIndex >= n_meas[worst_track]) {
-        return;
-    }
-    */
 
     const auto id = shared_meas_ids[globalIndex];
 
