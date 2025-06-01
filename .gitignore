@@ -53,5 +53,5 @@ nc_report/v1_0_0/baseline/nc_report.csv
 nc_report/v1_0_0/maxregcount128/nc_maxreg_128_report.ncu-rep
 nc_report/v1_0_0/maxregcount128/nc_report.csv
 
-build/
+build*/
 log/
