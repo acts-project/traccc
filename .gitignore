@@ -44,7 +44,7 @@ log/build01.log
 log/ptxas.log
 log/spill.log
 log/spill_summary.log
-build/
+build*/
 
 01_build.sh
 02_run.sh
