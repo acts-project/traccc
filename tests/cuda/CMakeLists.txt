@@ -32,6 +32,7 @@ traccc_add_test(
     cuda
 
     # Define the sources for the test.
+    test_ambiguity_resolution.cpp
     test_basic.cu
     test_barrier.cu
     test_cca.cpp
@@ -58,7 +59,7 @@ traccc_add_test(
     vecmem::cuda
     detray::core
     detray::io
-    detray::test_utils
+    detray::test_common
     traccc::core
     traccc::device_common
     traccc::cuda

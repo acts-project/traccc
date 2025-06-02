@@ -58,26 +58,33 @@ struct two_filters_smoother {
         track_state<algebra_t>& trk_state,
         bound_track_parameters<algebra_t>& bound_params) const {
 
+        assert(!bound_params.is_invalid());
+        assert(!bound_params.surface_link().is_invalid());
         assert(trk_state.filtered().surface_link() ==
                bound_params.surface_link());
 
         static_assert(((D == 1u) || (D == 2u)),
                       "The measurement dimension should be 1 or 2");
 
+        // Do not smoothe if the forward pass produced an error
+        if (trk_state.filtered().is_invalid()) {
+            return kalman_fitter_status::ERROR_INVALID_TRACK_STATE;
+        }
+
         const auto meas = trk_state.get_measurement();
 
         matrix_type<D, e_bound_size> H = meas.subs.template projector<D>();
 
         // Measurement data on surface
-        const matrix_type<D, 1>& meas_local =
+        const matrix_type<D, 1> meas_local =
             trk_state.template measurement_local<D>();
 
         // Predicted vector of bound track parameters
-        const matrix_type<e_bound_size, 1> predicted_vec =
+        const matrix_type<e_bound_size, 1>& predicted_vec =
             bound_params.vector();
 
         // Predicted covaraince of bound track parameters
-        const matrix_type<e_bound_size, e_bound_size> predicted_cov =
+        const matrix_type<e_bound_size, e_bound_size>& predicted_cov =
             bound_params.covariance();
 
         const matrix_type<e_bound_size, e_bound_size> predicted_cov_inv =
@@ -90,6 +97,7 @@ struct two_filters_smoother {
         const matrix_type<e_bound_size, e_bound_size> smoothed_cov_inv =
             predicted_cov_inv + filtered_cov_inv;
 
+        assert(matrix::determinant(smoothed_cov_inv) != 0.f);
         const matrix_type<e_bound_size, e_bound_size> smoothed_cov =
             matrix::inverse(smoothed_cov_inv);
 
@@ -115,6 +123,7 @@ struct two_filters_smoother {
 
         // Eq (3.40) of "Pattern Recognition, Tracking and Vertex
         // Reconstruction in Particle Detectors"
+        assert(matrix::determinant(R_smt) != 0.f);
         const matrix_type<1, 1> chi2_smt = matrix::transpose(residual_smt) *
                                            matrix::inverse(R_smt) *
                                            residual_smt;
@@ -151,6 +160,8 @@ struct two_filters_smoother {
             H * predicted_cov * matrix::transpose(H) + V;
 
         // Kalman gain matrix
+        assert(matrix::determinant(M) != 0.f);
+        assert(std::isfinite(matrix::determinant(M)));
         const matrix_type<6, D> K =
             predicted_cov * matrix::transpose(H) * matrix::inverse(M);
 
@@ -164,6 +175,8 @@ struct two_filters_smoother {
 
         // Calculate backward chi2
         const matrix_type<D, D> R = (I_m - H * K) * V;
+        // assert(matrix::determinant(R) != 0.f);
+        assert(std::isfinite(matrix::determinant(R)));
         const matrix_type<1, 1> chi2 =
             matrix::transpose(residual) * matrix::inverse(R) * residual;
 
@@ -200,6 +213,9 @@ struct two_filters_smoother {
         wrap_phi(bound_params);
 
         trk_state.is_smoothed = true;
+
+        assert(!bound_params.is_invalid());
+
         return kalman_fitter_status::SUCCESS;
     }
 };

@@ -189,6 +189,9 @@ track_candidate_container_types::buffer find_tracks(
         config.max_num_branches_per_seed * n_seeds, mr.main,
         vecmem::data::buffer_type::resizable};
     copy.setup(tips_buffer)->wait();
+    vecmem::data::vector_buffer<unsigned int> tip_length_buffer{
+        config.max_num_branches_per_seed * n_seeds, mr.main};
+    copy.setup(tip_length_buffer)->wait();
 
     std::map<unsigned int, unsigned int> step_to_link_idx_map;
     step_to_link_idx_map[0] = 0;
@@ -258,67 +261,88 @@ track_candidate_container_types::buffer find_tracks(
             links_buffer = std::move(new_links_buffer);
         }
 
-        // The number of threads to use per block in the track finding.
-        static const unsigned int nFindTracksThreads = 64;
+        {
+            vecmem::data::vector_buffer<candidate_link> tmp_links_buffer(
+                n_max_candidates, mr.main);
+            copy.setup(tmp_links_buffer)->ignore();
+            bound_track_parameters_collection_types::buffer tmp_params_buffer(
+                n_max_candidates, mr.main);
+            copy.setup(tmp_params_buffer)->ignore();
 
-        // Submit the kernel to the queue.
-        queue
-            .submit([&](::sycl::handler& h) {
-                // Allocate shared memory for the kernel.
-                vecmem::sycl::local_accessor<unsigned int>
-                    shared_num_candidates(nFindTracksThreads, h);
-                vecmem::sycl::local_accessor<
-                    std::pair<unsigned int, unsigned int>>
-                    shared_candidates(2 * nFindTracksThreads, h);
-                vecmem::sycl::local_accessor<unsigned int>
-                    shared_candidates_size(1, h);
+            // The number of threads to use per block in the track finding.
+            static const unsigned int nFindTracksThreads = 64;
 
-                // Launch the kernel.
-                h.parallel_for<kernels::find_tracks<kernel_t>>(
-                    calculate1DimNdRange(n_in_params, nFindTracksThreads),
-                    [config, det, measurements,
-                     in_params = vecmem::get_data(in_params_buffer),
-                     param_liveness = vecmem::get_data(param_liveness_buffer),
-                     n_in_params, barcodes = vecmem::get_data(barcodes_buffer),
-                     upper_bounds = vecmem::get_data(upper_bounds_buffer),
-                     links_view = vecmem::get_data(links_buffer),
-                     prev_links_idx =
-                         step == 0 ? 0 : step_to_link_idx_map[step - 1],
-                     curr_links_idx = step_to_link_idx_map[step], step,
-                     updated_params = vecmem::get_data(updated_params_buffer),
-                     updated_liveness =
-                         vecmem::get_data(updated_liveness_buffer),
-                     tips = vecmem::get_data(tips_buffer),
-                     n_tracks_per_seed =
-                         vecmem::get_data(n_tracks_per_seed_buffer),
-                     shared_candidates_size, shared_num_candidates,
-                     shared_candidates](::sycl::nd_item<1> item) {
-                        // SYCL wrappers used in the algorithm.
-                        const details::barrier barrier{item};
-                        const details::thread_id thread_id{item};
+            // Submit the kernel to the queue.
+            queue
+                .submit([&](::sycl::handler& h) {
+                    // Allocate shared memory for the kernel.
+                    vecmem::sycl::local_accessor<unsigned long long int>
+                        shared_insertion_mutex(nFindTracksThreads, h);
+                    vecmem::sycl::local_accessor<
+                        std::pair<unsigned int, unsigned int>>
+                        shared_candidates(2 * nFindTracksThreads, h);
+                    vecmem::sycl::local_accessor<unsigned int>
+                        shared_candidates_size(1, h);
+                    vecmem::sycl::local_accessor<unsigned int>
+                        shared_num_out_params(1, h);
+                    vecmem::sycl::local_accessor<unsigned int>
+                        shared_out_offset(1, h);
+                    // Launch the kernel.
+                    h.parallel_for<kernels::find_tracks<kernel_t>>(
+                        calculate1DimNdRange(n_in_params, nFindTracksThreads),
+                        [config, det, measurements,
+                         in_params = vecmem::get_data(in_params_buffer),
+                         param_liveness =
+                             vecmem::get_data(param_liveness_buffer),
+                         n_in_params,
+                         barcodes = vecmem::get_data(barcodes_buffer),
+                         upper_bounds = vecmem::get_data(upper_bounds_buffer),
+                         links_view = vecmem::get_data(links_buffer),
+                         prev_links_idx =
+                             step == 0 ? 0 : step_to_link_idx_map[step - 1],
+                         curr_links_idx = step_to_link_idx_map[step], step,
+                         updated_params =
+                             vecmem::get_data(updated_params_buffer),
+                         updated_liveness =
+                             vecmem::get_data(updated_liveness_buffer),
+                         tips = vecmem::get_data(tips_buffer),
+                         tip_lengths = vecmem::get_data(tip_length_buffer),
+                         n_tracks_per_seed =
+                             vecmem::get_data(n_tracks_per_seed_buffer),
+                         tmp_params = vecmem::get_data(tmp_params_buffer),
+                         tmp_links = vecmem::get_data(tmp_links_buffer),
+                         shared_insertion_mutex, shared_candidates,
+                         shared_candidates_size, shared_num_out_params,
+                         shared_out_offset](::sycl::nd_item<1> item) {
+                            // SYCL wrappers used in the algorithm.
+                            const details::barrier barrier{item};
+                            const details::thread_id thread_id{item};
 
-                        // Call the device function to find tracks.
-                        device::find_tracks<
-                            std::decay_t<typename navigator_t::detector_type>>(
-                            thread_id, barrier, config,
-                            {det, measurements, in_params, param_liveness,
-                             n_in_params, barcodes, upper_bounds, links_view,
-                             prev_links_idx, curr_links_idx, step,
-                             updated_params, updated_liveness, tips,
-                             n_tracks_per_seed},
-                            {&(shared_num_candidates[0]),
-                             &(shared_candidates[0]),
-                             shared_candidates_size[0]});
-                    });
-            })
-            .wait_and_throw();
+                            // Call the device function to find tracks.
+                            device::find_tracks<std::decay_t<
+                                typename navigator_t::detector_type>>(
+                                thread_id, barrier, config,
+                                {det, measurements, in_params, param_liveness,
+                                 n_in_params, barcodes, upper_bounds,
+                                 links_view, prev_links_idx, curr_links_idx,
+                                 step, updated_params, updated_liveness, tips,
+                                 tip_lengths, n_tracks_per_seed, tmp_params,
+                                 tmp_links},
+                                {shared_num_out_params[0], shared_out_offset[0],
+                                 &(shared_insertion_mutex[0]),
+                                 &(shared_candidates[0]),
+                                 shared_candidates_size[0]});
+                        });
+                })
+                .wait_and_throw();
 
-        std::swap(in_params_buffer, updated_params_buffer);
-        std::swap(param_liveness_buffer, updated_liveness_buffer);
+            std::swap(in_params_buffer, updated_params_buffer);
+            std::swap(param_liveness_buffer, updated_liveness_buffer);
 
-        step_to_link_idx_map[step + 1] = copy.get_size(links_buffer);
-        n_candidates =
-            step_to_link_idx_map[step + 1] - step_to_link_idx_map[step];
+            step_to_link_idx_map[step + 1] = copy.get_size(links_buffer);
+            n_candidates =
+                step_to_link_idx_map[step + 1] - step_to_link_idx_map[step];
+        }
 
         if (step == config.max_track_candidates_per_track - 1) {
             break;
@@ -397,7 +421,8 @@ track_candidate_container_types::buffer find_tracks(
                          param_ids = vecmem::get_data(param_ids_buffer),
                          links_view = vecmem::get_data(links_buffer),
                          prev_links_idx = step_to_link_idx_map[step], step,
-                         n_candidates, tips = vecmem::get_data(tips_buffer)](
+                         n_candidates, tips = vecmem::get_data(tips_buffer),
+                         tip_lengths = vecmem::get_data(tip_length_buffer)](
                             ::sycl::nd_item<1> item) {
                             device::propagate_to_next_surface<
                                 propagator_type,
@@ -405,7 +430,7 @@ track_candidate_container_types::buffer find_tracks(
                                 details::global_index(item), config,
                                 {det, field, in_params, param_liveness,
                                  param_ids, links_view, prev_links_idx, step,
-                                 n_candidates, tips});
+                                 n_candidates, tips, tip_lengths});
                         });
                 })
                 .wait_and_throw();
@@ -421,12 +446,16 @@ track_candidate_container_types::buffer find_tracks(
     // Get the number of tips
     auto n_tips_total = copy.get_size(tips_buffer);
 
+    std::vector<unsigned int> tips_length_host;
+
+    if (n_tips_total > 0) {
+        copy(tip_length_buffer, tips_length_host)->wait();
+        tips_length_host.resize(n_tips_total);
+    }
+
     // Create track candidate buffer
     track_candidate_container_types::buffer track_candidates_buffer{
-        {n_tips_total, mr.main},
-        {std::vector<std::size_t>(n_tips_total,
-                                  config.max_track_candidates_per_track),
-         mr.main, mr.host, vecmem::data::buffer_type::resizable}};
+        {n_tips_total, mr.main}, {tips_length_host, mr.main, mr.host}};
     copy.setup(track_candidates_buffer.headers)->wait();
     copy.setup(track_candidates_buffer.items)->wait();
     track_candidate_container_types::view track_candidates =

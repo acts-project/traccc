@@ -64,23 +64,11 @@ container_h2d_copy_alg<CONTAINER_TYPES>::operator()(
     vecmem::memory_resource* host_mr =
         (m_mr.host != nullptr) ? m_mr.host : &(m_mr.main);
 
-    // Create/set the host buffer.
-    hostBuffer =
-        typename CONTAINER_TYPES::buffer{{size, *host_mr}, {sizes, *host_mr}};
-    vecmem::copy::event_type host_header_setup_event =
-        m_hostCopy.setup(hostBuffer.headers);
-    vecmem::copy::event_type host_items_setup_event =
-        m_hostCopy.setup(hostBuffer.items);
-    host_header_setup_event->wait();
-    host_items_setup_event->wait();
-
     // Copy the data into the host buffer.
-    vecmem::copy::event_type host_header_copy_event =
-        m_hostCopy(input.headers, hostBuffer.headers);
-    vecmem::copy::event_type host_items_copy_event =
-        m_hostCopy(input.items, hostBuffer.items);
-    host_header_copy_event->wait();
-    host_items_copy_event->wait();
+    hostBuffer.headers = m_hostCopy.to(input.headers, *host_mr,
+                                       vecmem::copy::type::host_to_host);
+    hostBuffer.items = m_hostCopy.to(input.items, *host_mr, nullptr,
+                                     vecmem::copy::type::host_to_host);
 
     // Create the output buffer with the correct sizes.
     output_type result{{size, m_mr.main}, {sizes, m_mr.main, m_mr.host}};

@@ -14,6 +14,34 @@
 
 namespace traccc {
 /**
+ * @brief The different strategies that can be used to compute the diameter
+ * of a cluster.
+ */
+enum class clustering_diameter_strategy {
+    /**
+     * @brief Compute the diameter as the size of the cluster in the channel0
+     * dimension.
+     */
+    CHANNEL0,
+    /**
+     * @brief Compute the diameter as the size of the cluster in the channel1
+     * dimension.
+     */
+    CHANNEL1,
+    /**
+     * @brief Compute the diameter as the maximum of the sizes of the cluster
+     * in the channel0 and channel1 dimensions.
+     */
+    MAXIMUM,
+    /**
+     * @brief Compute the diameter as the diagonal (i.e. the hypotenuse) of
+     * the triangle with sides bounding both the channel0 and channel1
+     * dimensions.
+     */
+    DIAGONAL
+};
+
+/**
  * @brief Configuration type for massively parallel clustering algorithms.
  */
 struct clustering_config {
@@ -53,6 +81,14 @@ struct clustering_config {
      * `threads_per_partition` and `max_cells_per_thread`
      */
     unsigned int backup_size_multiplier{256};
+
+    /**
+     * @brief The strategy for computing the cluster width.
+     *
+     * See the enum definition for more details.
+     */
+    clustering_diameter_strategy diameter_strategy =
+        clustering_diameter_strategy::MAXIMUM;
 
     /**
      * @brief The maximum number of cells per partition.

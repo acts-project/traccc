@@ -121,7 +121,7 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/ambiguity_resolution/legacy/greedy_ambiguity_resolution_algorithm.hpp"
   "src/ambiguity_resolution/legacy/greedy_ambiguity_resolution_algorithm.cpp")
 target_link_libraries( traccc_core
-  PUBLIC Eigen3::Eigen vecmem::core detray::core detray::detectors
+  PUBLIC Eigen3::Eigen vecmem::core covfie::core detray::core detray::detectors
          traccc::algebra ActsCore )
 
 # Prevent Eigen from getting confused when building code for a

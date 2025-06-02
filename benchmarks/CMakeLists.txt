@@ -14,8 +14,7 @@ target_include_directories( traccc_benchmarks_common
     INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/common )
 target_link_libraries( traccc_benchmarks_common
     INTERFACE benchmark::benchmark benchmark::benchmark_main
-    traccc::core traccc::io traccc::simulation detray::core detray::test_utils
-    vecmem::core Boost::filesystem)
+    traccc::core traccc::io traccc::simulation detray::core detray::test_common vecmem::core Boost::filesystem)
 
 add_subdirectory(cpu)
 if( TRACCC_BUILD_CUDA )

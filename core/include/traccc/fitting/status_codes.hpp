@@ -21,6 +21,7 @@ enum class kalman_fitter_status : uint32_t {
     ERROR_UPDATER_CHI2_NEGATIVE,
     ERROR_UPDATER_CHI2_NOT_FINITE,
     ERROR_BARCODE_SEQUENCE_OVERFLOW,
+    ERROR_INVALID_TRACK_STATE,
     ERROR_OTHER,
     MAX_STATUS
 };
@@ -55,6 +56,10 @@ struct fitter_debug_msg {
             }
             case ERROR_BARCODE_SEQUENCE_OVERFLOW: {
                 return msg + "Barcode sequence overflow in direct navigator";
+            }
+            case ERROR_INVALID_TRACK_STATE: {
+                return msg +
+                       "Invalid track state in forward pass (skipped or error)";
             }
             case ERROR_OTHER: {
                 return msg + "Unspecified error";
