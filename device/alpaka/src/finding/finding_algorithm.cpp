@@ -9,6 +9,7 @@
 #include "traccc/alpaka/finding/finding_algorithm.hpp"
 
 #include "../utils/barrier.hpp"
+#include "../utils/get_queue.hpp"
 #include "../utils/thread_id.hpp"
 #include "../utils/utils.hpp"
 #include "./kernels/apply_interaction.hpp"
@@ -53,8 +54,12 @@ namespace traccc::alpaka {
 template <typename stepper_t, typename navigator_t>
 finding_algorithm<stepper_t, navigator_t>::finding_algorithm(
     const config_type& cfg, const traccc::memory_resource& mr,
-    vecmem::copy& copy, std::unique_ptr<const Logger> logger)
-    : messaging(std::move(logger)), m_cfg(cfg), m_mr(mr), m_copy(copy) {}
+    vecmem::copy& copy, queue& q, std::unique_ptr<const Logger> logger)
+    : messaging(std::move(logger)),
+      m_cfg(cfg),
+      m_mr(mr),
+      m_copy(copy),
+      m_queue(q) {}
 
 template <typename stepper_t, typename navigator_t>
 track_candidate_container_types::buffer
@@ -73,13 +78,21 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     // Setup alpaka
     auto devHost = ::alpaka::getDevByIdx(::alpaka::Platform<Host>{}, 0u);
     auto devAcc = ::alpaka::getDevByIdx(::alpaka::Platform<Acc>{}, 0u);
-    auto queue = Queue{devAcc};
+    auto queue = details::get_queue(m_queue);
     Idx threadsPerBlock = getWarpSize<Acc>() * 2;
 
-#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_GPU_HIP_ENABLED)
-    auto thrustExecPolicy = thrust::device;
+#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
+    auto stream = ::alpaka::getNativeHandle(queue);
+    auto execPolicy =
+        thrust::cuda::par_nosync(std::pmr::polymorphic_allocator(&(m_mr.main)))
+            .on(stream);
+#elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
+    auto stream = ::alpaka::getNativeHandle(queue);
+    auto execPolicy = thrust::hip_rocprim::par_nosync(
+                          std::pmr::polymorphic_allocator(&(m_mr.main)))
+                          .on(stream);
 #else
-    auto thrustExecPolicy = thrust::host;
+    auto execPolicy = thrust::host;
 #endif
 
     /*****************************************************************
@@ -98,10 +111,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
     {
         measurement_collection_types::device uniques(uniques_buffer);
 
-        measurement* uniques_end =
-            thrust::unique_copy(thrustExecPolicy, measurements.ptr(),
-                                measurements.ptr() + n_measurements,
-                                uniques.begin(), measurement_equal_comp());
+        measurement* uniques_end = thrust::unique_copy(
+            execPolicy, measurements.ptr(), measurements.ptr() + n_measurements,
+            uniques.begin(), measurement_equal_comp());
+        ::alpaka::wait(queue);
         n_modules = static_cast<unsigned int>(uniques_end - uniques.begin());
     }
 
@@ -115,7 +128,7 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
         measurement_collection_types::device uniques(uniques_buffer);
 
-        thrust::upper_bound(thrustExecPolicy, measurements.ptr(),
+        thrust::upper_bound(execPolicy, measurements.ptr(),
                             measurements.ptr() + n_measurements,
                             uniques.begin(), uniques.begin() + n_modules,
                             upper_bounds.begin(), measurement_sort_comp());
@@ -137,7 +150,6 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
         ::alpaka::exec<Acc>(queue, workDiv, MakeBarcodeSequenceKernel{},
                             device::make_barcode_sequence_payload{
                                 uniques_buffer, barcodes_buffer});
-        ::alpaka::wait(queue);
     }
 
     const unsigned int n_seeds = m_copy.get_size(seeds_view);
@@ -196,7 +208,6 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 device::apply_interaction_payload<std::decay_t<detector_type>>{
                     det_view, n_in_params, in_params_buffer,
                     param_liveness_buffer});
-            ::alpaka::wait(queue);
         }
 
         /*****************************************************************
@@ -347,9 +358,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                     keys_buffer);
                 vecmem::device_vector<unsigned int> param_ids_device(
                     param_ids_buffer);
-                thrust::sort_by_key(thrustExecPolicy, keys_device.begin(),
+                thrust::sort_by_key(execPolicy, keys_device.begin(),
                                     keys_device.end(),
                                     param_ids_device.begin());
+                ::alpaka::wait(queue);
             }
 
             /*****************************************************************
@@ -385,7 +397,6 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                 auto bufAcc_payload =
                     ::alpaka::allocBuf<PayloadType, Idx>(devAcc, 1u);
                 ::alpaka::memcpy(queue, bufAcc_payload, bufHost_payload);
-                ::alpaka::wait(queue);
 
                 ::alpaka::exec<Acc>(
                     queue, workDiv,

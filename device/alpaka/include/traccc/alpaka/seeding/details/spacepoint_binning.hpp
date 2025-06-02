@@ -7,6 +7,9 @@
 
 #pragma once
 
+// Local include(s).
+#include "traccc/alpaka/utils/queue.hpp"
+
 // Project include(s).
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/seeding/detail/seeding_config.hpp"
@@ -30,7 +33,7 @@ class spacepoint_binning : public messaging {
     spacepoint_binning(
         const seedfinder_config& config,
         const spacepoint_grid_config& grid_config,
-        const traccc::memory_resource& mr, vecmem::copy& copy,
+        const traccc::memory_resource& mr, vecmem::copy& copy, queue& queue,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Function executing the algorithm with a view of spacepoints
@@ -44,7 +47,11 @@ class spacepoint_binning : public messaging {
               traccc::details::spacepoint_grid_types::host::axis_p1_type>
         m_axes;
     traccc::memory_resource m_mr;
+
+    /// The copy object to use
     vecmem::copy& m_copy;
+    /// The Alpaka queue to use
+    queue& m_queue;
 };  // class spacepoint_binning
 
 }  // namespace traccc::alpaka::details
