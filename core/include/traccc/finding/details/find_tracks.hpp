@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -246,18 +246,16 @@ track_candidate_container_types::host find_tracks(
                 range.second = upper_bounds[static_cast<std::size_t>(bcd_id)];
             }
 
-            unsigned int n_branches = 0;
-
             /*****************************************************************
              * Find tracks (CKF)
              *****************************************************************/
 
+            std::vector<std::tuple<candidate_link, track_state<algebra_type>>>
+                best_links;
+
             // Iterate over the measurements
             for (unsigned int item_id = range.first; item_id < range.second;
                  item_id++) {
-                if (n_branches > config.max_num_branches_per_surface) {
-                    break;
-                }
 
                 const auto& meas = measurements[item_id];
 
@@ -273,20 +271,41 @@ track_candidate_container_types::host find_tracks(
                 // The chi2 from Kalman update should be less than chi2_max
                 if (res == kalman_fitter_status::SUCCESS &&
                     chi2 < config.chi2_max) {
-                    n_branches++;
 
-                    links[step].push_back(
-                        {.step = step,
-                         .previous_candidate_idx = in_param_id,
-                         .meas_idx = item_id,
-                         .seed_idx = orig_param_id,
-                         .n_skipped = skip_counter,
-                         .chi2 = chi2});
-                    updated_params.push_back(trk_state.filtered());
-                    TRACCC_VERBOSE("updated_params["
-                                   << updated_params.size() - 1
-                                   << "] = " << updated_params.back());
+                    best_links.push_back(
+                        {{.step = step,
+                          .previous_candidate_idx = in_param_id,
+                          .meas_idx = item_id,
+                          .seed_idx = orig_param_id,
+                          .n_skipped = skip_counter,
+                          .chi2 = chi2},
+                         trk_state});
                 }
+            }
+
+            // Sort the links by chi2
+            std::sort(best_links.begin(), best_links.end(),
+                      [](const auto& a, const auto& b) {
+                          return std::get<0>(a).chi2 < std::get<0>(b).chi2;
+                      });
+            // Take the best links
+            const unsigned int n_branches =
+                std::min(config.max_num_branches_per_surface,
+                         static_cast<unsigned int>(best_links.size()));
+            TRACCC_VERBOSE("Found " << n_branches << " branches for step "
+                                    << step << " and input parameter "
+                                    << in_param_id);
+            for (unsigned int i = 0; i < n_branches; ++i) {
+                const auto& [link, trk_state] = best_links[i];
+
+                // Add the link to the links container
+                links[step].push_back(link);
+
+                // Add the updated parameter to the updated parameters
+                updated_params.push_back(trk_state.filtered());
+                TRACCC_VERBOSE("updated_params["
+                               << updated_params.size() - 1
+                               << "] = " << updated_params.back());
             }
 
             /*****************************************************************
@@ -308,7 +327,6 @@ track_candidate_container_types::host find_tracks(
                 TRACCC_VERBOSE("updated_params["
                                << updated_params.size() - 1
                                << "] = " << updated_params.back());
-                n_branches++;
             }
         }
 
