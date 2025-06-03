@@ -363,10 +363,10 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
                         .n_in_params            = n_candidates,
                         .tips_view              = tips_buffer,
                         .n_tracks_per_seed_view = n_tracks_per_seed_buffer};
-
-                /*  runtime-API 需要 void**，
-                    而 m_cfg 為 const finding_config，必須顯式去掉 const。
-                    payload 為 non-const，則可直接隱式轉成 void*                                  */
+                
+                /* runtime-API requires void**,
+                   and m_cfg is const finding_config, so we must explicitly remove const.
+                   payload is non-const, so it can be implicitly converted to void* */
                 void* coopArgs[] = {
                     const_cast<void*>(static_cast<const void*>(&m_cfg)),
                     &payload };
@@ -381,10 +381,12 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
                 TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-                /* 保持語義：確保外推完成後才進入下一迴圈 / 下一步驟 */
+                /* Make sure the cooperative kernel has finished before
+                 * proceeding to the next stage */
+
                 m_stream.synchronize();
 
-                /* ---------- Stage-2：Covariance 更新 ---------- */
+                /* ---------- Stage-2：Covariance Update ---------- */
                 kernels::propagate_stage2<
                     std::decay_t<propagator_type>, std::decay_t<bfield_type>>
                     <<<nBlocks, nThreads, 0, details::get_stream(m_stream)>>>(

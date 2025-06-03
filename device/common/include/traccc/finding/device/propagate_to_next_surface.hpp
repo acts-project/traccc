@@ -98,14 +98,16 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     global_index_t globalIndex, const finding_config& cfg,
     const propagate_to_next_surface_payload<propagator_t, bfield_t>& payload);
 
-    /// Stage-1：粗步進磁場外推（Reg/thread ≈ 64–80，記憶體瓶頸）
+    /// Stage-1 : Coarse step with a relaxed step_constraint to reduce register usage
+    /// ( Reg/thread ≈ 64–80, memory bottleneck)
     template <typename propagator_t, typename bfield_t>
     TRACCC_HOST_DEVICE inline void propagate_stage1(
         global_index_t globalIndex,
         const finding_config&           cfg,
         const propagate_to_next_surface_payload<propagator_t, bfield_t>& payload);
 
-    /// Stage-2：高精度誤差增益／covariance 更新（Reg/thread ≈ 96–112，計算瓶頸）
+    /// Stage-2 uses the original high precision settings for covariance and gain updates.
+    /// ( Reg/thread ≈ 96–112, compute bottleneck)
     template <typename propagator_t, typename bfield_t>
     TRACCC_HOST_DEVICE inline void propagate_stage2(
         global_index_t globalIndex,

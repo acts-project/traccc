@@ -243,7 +243,7 @@ class kalman_fitter {
         //  Run forward prediction
         propagator.propagate(propagation, fitter_state());
 
-        //  Block-level同步以提早釋放暫存器
+        //  Block-level synchronization to release registers early
         #ifdef __CUDA_ARCH__
             __syncthreads();
         #endif
