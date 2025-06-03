@@ -70,7 +70,8 @@ int main(int argc, char* argv[]) {
 
     // Performance writer
     traccc::fitting_performance_writer fit_performance_writer(
-        traccc::fitting_performance_writer::config{});
+        traccc::fitting_performance_writer::config{},
+        logger().clone("FittingPerformanceWriter"));
 
     /*****************************
      * Build a geometry

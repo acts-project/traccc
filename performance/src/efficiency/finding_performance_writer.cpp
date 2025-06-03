@@ -12,6 +12,7 @@
 #include "duplication_plot_tool.hpp"
 #include "eff_plot_tool.hpp"
 #include "fake_tracks_plot_tool.hpp"
+#include "traccc/utils/logging.hpp"
 #include "track_classification.hpp"
 
 // ROOT include(s).
@@ -61,8 +62,10 @@ struct finding_performance_writer_data {
 
 }  // namespace details
 
-finding_performance_writer::finding_performance_writer(const config& cfg)
-    : m_cfg(cfg),
+finding_performance_writer::finding_performance_writer(
+    const config& cfg, std::unique_ptr<const traccc::Logger> logger)
+    : messaging(std::move(logger)),
+      m_cfg(cfg),
       m_data(std::make_unique<details::finding_performance_writer_data>(cfg)) {
 
     m_data->m_eff_plot_tool.book(m_cfg.algorithm_name,

@@ -10,6 +10,7 @@
 // Local include(s).
 #include "traccc/resolution/stat_plot_tool_config.hpp"
 #include "traccc/utils/helpers.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // Project include(s).
 #include "traccc/edm/track_candidate.hpp"
@@ -31,7 +32,7 @@ struct finding_performance_writer_data;
 
 }  // namespace details
 
-class finding_performance_writer {
+class finding_performance_writer : public messaging {
 
     public:
     /// Configuration for the tool
@@ -65,7 +66,8 @@ class finding_performance_writer {
     /// Construct from configuration and log level.
     /// @param cfg The configuration
     ///
-    finding_performance_writer(const config& cfg);
+    finding_performance_writer(const config& cfg,
+                               std::unique_ptr<const traccc::Logger> logger);
 
     /// Destructor
     ~finding_performance_writer();

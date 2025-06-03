@@ -41,8 +41,10 @@ struct fitting_performance_writer_data {
 
 }  // namespace details
 
-fitting_performance_writer::fitting_performance_writer(const config& cfg)
-    : m_cfg(cfg),
+fitting_performance_writer::fitting_performance_writer(
+    const config& cfg, std::unique_ptr<const traccc::Logger> logger)
+    : messaging(std::move(logger)),
+      m_cfg(cfg),
       m_data(std::make_unique<details::fitting_performance_writer_data>(cfg)) {
 
     m_data->m_res_plot_tool.book(m_data->m_res_plot_cache);

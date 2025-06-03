@@ -91,11 +91,14 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     // Performance writer
     traccc::seeding_performance_writer sd_performance_writer(
-        traccc::seeding_performance_writer::config{});
+        traccc::seeding_performance_writer::config{},
+        logger().clone("SeedingPerformanceWriter"));
     traccc::finding_performance_writer find_performance_writer(
-        traccc::finding_performance_writer::config{});
+        traccc::finding_performance_writer::config{},
+        logger().clone("FindingPerformanceWriter"));
     traccc::fitting_performance_writer fit_performance_writer(
-        traccc::fitting_performance_writer::config{});
+        traccc::fitting_performance_writer::config{},
+        logger().clone("FittingPerformanceWriter"));
 
     traccc::nseed_performance_writer nsd_performance_writer(
         "nseed_performance_",

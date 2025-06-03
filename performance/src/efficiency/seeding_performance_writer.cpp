@@ -49,8 +49,10 @@ struct seeding_performance_writer_data {
 
 }  // namespace details
 
-seeding_performance_writer::seeding_performance_writer(const config& cfg)
-    : m_cfg(cfg),
+seeding_performance_writer::seeding_performance_writer(
+    const config& cfg, std::unique_ptr<const traccc::Logger> logger)
+    : messaging(std::move(logger)),
+      m_cfg(cfg),
       m_data(std::make_unique<details::seeding_performance_writer_data>(cfg)) {
 
     m_data->m_eff_plot_tool.book("seeding", m_data->m_eff_plot_cache);

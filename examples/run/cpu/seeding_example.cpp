@@ -73,15 +73,19 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     // Performance writer
     traccc::seeding_performance_writer sd_performance_writer(
-        traccc::seeding_performance_writer::config{});
+        traccc::seeding_performance_writer::config{},
+        logger().clone("SeedingPerformanceWriter"));
     traccc::finding_performance_writer find_performance_writer(
-        traccc::finding_performance_writer::config{});
+        traccc::finding_performance_writer::config{},
+        logger().clone("FindingPerformanceWriter"));
     traccc::finding_performance_writer::config ar_writer_cfg;
     ar_writer_cfg.file_path = "performance_track_ambiguity_resolution.root";
     ar_writer_cfg.algorithm_name = "ambiguity_resolution";
-    traccc::finding_performance_writer ar_performance_writer(ar_writer_cfg);
+    traccc::finding_performance_writer ar_performance_writer(
+        ar_writer_cfg, logger().clone("AmbiResFindingPerformanceWriter"));
     traccc::fitting_performance_writer fit_performance_writer(
-        traccc::fitting_performance_writer::config{});
+        traccc::fitting_performance_writer::config{},
+        logger().clone("FittingPerformanceWriter"));
 
     // Output stats
     uint64_t n_spacepoints = 0;
