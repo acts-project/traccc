@@ -53,7 +53,9 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     // Performance writer
     traccc::fitting_performance_writer::config fit_writer_cfg;
     fit_writer_cfg.file_path = "performance_track_fitting_" + name + ".root";
-    traccc::fitting_performance_writer fit_performance_writer(fit_writer_cfg);
+    traccc::fitting_performance_writer fit_performance_writer(
+        fit_writer_cfg, traccc::getDefaultLogger("FittingPerformanceWriter",
+                                                 traccc::Logging::Level::INFO));
 
     /*****************************
      * Build a telescope geometry

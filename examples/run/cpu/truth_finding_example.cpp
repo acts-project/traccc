@@ -58,9 +58,11 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
     // Performance writer
     traccc::finding_performance_writer find_performance_writer(
-        traccc::finding_performance_writer::config{});
+        traccc::finding_performance_writer::config{},
+        logger().clone("FindingPerformanceWriter"));
     traccc::fitting_performance_writer fit_performance_writer(
-        traccc::fitting_performance_writer::config{});
+        traccc::fitting_performance_writer::config{},
+        logger().clone("FittingPerformanceWriter"));
 
     /*****************************
      * Build a geometry

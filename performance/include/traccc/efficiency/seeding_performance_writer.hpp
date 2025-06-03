@@ -9,6 +9,7 @@
 
 // Local include(s).
 #include "traccc/utils/helpers.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
@@ -31,7 +32,7 @@ struct seeding_performance_writer_data;
 
 }  // namespace details
 
-class seeding_performance_writer {
+class seeding_performance_writer : public messaging {
 
     public:
     /// Configuration for the tool
@@ -60,7 +61,8 @@ class seeding_performance_writer {
     /// Construct from configuration and log level.
     /// @param cfg The configuration
     ///
-    seeding_performance_writer(const config& cfg);
+    seeding_performance_writer(const config& cfg,
+                               std::unique_ptr<const traccc::Logger> logger);
 
     /// Destructor
     ~seeding_performance_writer();

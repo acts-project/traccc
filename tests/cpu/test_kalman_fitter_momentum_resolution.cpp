@@ -54,7 +54,9 @@ TEST_P(KalmanFittingMomentumResolutionTests, Run) {
     fit_writer_cfg.res_config.var_binning["residual_qopT"] =
         plot_helpers::binning("r_{q/p_{T}} [c/GeV]", 1000, -0.1f, 0.1f);
     fit_writer_cfg.file_path = "performance_track_fitting_" + name + ".root";
-    traccc::fitting_performance_writer fit_performance_writer(fit_writer_cfg);
+    traccc::fitting_performance_writer fit_performance_writer(
+        fit_writer_cfg, traccc::getDefaultLogger("FittingPerformanceWriter",
+                                                 traccc::Logging::Level::INFO));
 
     // Set qop stddev to 10% of truth qop
     const scalar qop_stddev = 0.1f / p;
