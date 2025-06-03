@@ -176,33 +176,19 @@ int main(int argc, char* argv[]) {
                                     input_opts.use_acts_geom_source, &host_det,
                                     input_opts.format, false);
 
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+        traccc::edm::track_candidate_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
-        traccc::measurement_collection_types::host truth_measurements{&host_mr};
-        evt_data.generate_truth_candidates(truth_track_candidates,
-                                           truth_measurements, sg, host_mr);
+        evt_data.generate_truth_candidates(truth_track_candidates, sg, host_mr);
 
         // track candidates buffer
-        traccc::measurement_collection_types::buffer truth_measurements_buffer{
-            static_cast<unsigned int>(truth_measurements.size()), mr.main};
-        async_copy(vecmem::get_data(truth_measurements),
-                   truth_measurements_buffer,
-                   vecmem::copy::type::host_to_device)
-            ->wait();
-
-        std::vector<std::size_t> track_candidates_sizes(
-            truth_track_candidates.size());
-        for (std::size_t i = 0; i < truth_track_candidates.size(); i++) {
-            track_candidates_sizes[i] =
-                truth_track_candidates.at(i).measurement_indices().size();
-        }
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
-            truth_track_candidates_cuda_buffer{track_candidates_sizes, mr.main,
-                                               mr.host};
-        async_copy(vecmem::get_data(truth_track_candidates),
-                   truth_track_candidates_cuda_buffer,
-                   vecmem::copy::type::host_to_device)
-            ->wait();
+        traccc::edm::track_candidate_container<traccc::default_algebra>::buffer
+            truth_track_candidates_buffer{
+                async_copy.to(vecmem::get_data(truth_track_candidates.tracks),
+                              mr.main, mr.host,
+                              vecmem::copy::type::host_to_device),
+                async_copy.to(
+                    vecmem::get_data(truth_track_candidates.measurements),
+                    mr.main, vecmem::copy::type::host_to_device)};
 
         // Instantiate cuda containers/collections
         traccc::track_state_container_types::buffer track_states_cuda_buffer{
@@ -212,9 +198,10 @@ int main(int argc, char* argv[]) {
             traccc::performance::timer t("Track fitting  (cuda)", elapsedTimes);
 
             // Run fitting
-            track_states_cuda_buffer = device_fitting(
-                det_view, field, truth_track_candidates_cuda_buffer,
-                truth_measurements_buffer);
+            track_states_cuda_buffer =
+                device_fitting(det_view, field,
+                               {truth_track_candidates_buffer.tracks,
+                                truth_track_candidates_buffer.measurements});
         }
 
         traccc::track_state_container_types::host track_states_cuda =
@@ -231,8 +218,9 @@ int main(int argc, char* argv[]) {
 
                 // Run fitting
                 track_states = host_fitting(
-                    host_det, field, vecmem::get_data(truth_measurements),
-                    vecmem::get_data(truth_track_candidates));
+                    host_det, field,
+                    {vecmem::get_data(truth_track_candidates.tracks),
+                     vecmem::get_data(truth_track_candidates.measurements)});
             }
         }
 

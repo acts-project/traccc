@@ -154,42 +154,26 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
         traccc::event_data evt_data(path, i_evt, host_mr);
 
         // Truth Track Candidates
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+        traccc::edm::track_candidate_container<traccc::default_algebra>::host
             track_candidates{host_mr};
-        traccc::measurement_collection_types::host measurements{&host_mr};
-        evt_data.generate_truth_candidates(track_candidates, measurements, sg,
-                                           host_mr);
+        evt_data.generate_truth_candidates(track_candidates, sg, host_mr);
 
         // n_trakcs = 100
-        ASSERT_EQ(track_candidates.size(), n_truth_tracks);
+        ASSERT_EQ(track_candidates.tracks.size(), n_truth_tracks);
 
         // track candidates buffer
-        std::vector<std::size_t> track_candidates_sizes(
-            track_candidates.size());
-        for (std::size_t i = 0; i < track_candidates.size(); i++) {
-            track_candidates_sizes[i] =
-                track_candidates.at(i).measurement_indices().size();
-        }
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
-            track_candidates_cuda_buffer{track_candidates_sizes, mr.main,
-                                         mr.host};
-        copy.setup(track_candidates_cuda_buffer)->wait();
-        copy(vecmem::get_data(track_candidates), track_candidates_cuda_buffer,
-             vecmem::copy::type::host_to_device)
-            ->wait();
-
-        // Measurements buffer
-        traccc::measurement_collection_types::buffer measurements_buffer(
-            static_cast<unsigned int>(measurements.size()), mr.main);
-        copy.setup(measurements_buffer)->wait();
-        copy(vecmem::get_data(measurements), measurements_buffer,
-             vecmem::copy::type::host_to_device)
-            ->wait();
+        traccc::edm::track_candidate_container<traccc::default_algebra>::buffer
+            track_candidates_buffer{
+                copy.to(vecmem::get_data(track_candidates.tracks), mr.main,
+                        mr.host, vecmem::copy::type::host_to_device),
+                copy.to(vecmem::get_data(track_candidates.measurements),
+                        mr.main, vecmem::copy::type::host_to_device)};
 
         // Run fitting
         traccc::track_state_container_types::buffer track_states_cuda_buffer =
-            device_fitting(det_view, field, track_candidates_cuda_buffer,
-                           measurements_buffer);
+            device_fitting(det_view, field,
+                           {track_candidates_buffer.tracks,
+                            track_candidates_buffer.measurements});
 
         traccc::track_state_container_types::host track_states_cuda =
             track_state_d2h(track_states_cuda_buffer);

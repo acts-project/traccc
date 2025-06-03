@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -23,8 +23,8 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate_collection.hpp"
+#include "traccc/edm/track_candidate_container.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/messaging.hpp"
 
@@ -47,14 +47,13 @@ namespace traccc::legacy {
 ///  4) Back to square 1.
 class greedy_ambiguity_resolution_algorithm
     : public algorithm<edm::track_candidate_collection<default_algebra>::host(
-          const edm::track_candidate_collection<default_algebra>::host&,
-          const measurement_collection_types::host&)>,
+          const edm::track_candidate_container<default_algebra>::host&)>,
       public messaging {
 
     public:
     struct config_t {
 
-        config_t(){};
+        config_t() {}
 
         /// Maximum amount of shared hits per track. One (1) means "no shared
         /// hit allowed".
@@ -110,9 +109,8 @@ class greedy_ambiguity_resolution_algorithm
     /// @param track_states the container of the fitted track parameters
     /// @return the container without ambiguous tracks
     output_type operator()(
-        const edm::track_candidate_collection<default_algebra>::host&
-            track_states,
-        const measurement_collection_types::host& measurements) const override;
+        const edm::track_candidate_container<default_algebra>::host&
+            track_states) const override;
 
     /// Get configuration
     config_t& get_config() { return _config; }
@@ -126,11 +124,9 @@ class greedy_ambiguity_resolution_algorithm
     /// algorithm).
     /// @param state An empty state object which is expected to be default
     /// constructed.
-    void compute_initial_state(
-        const edm::track_candidate_collection<default_algebra>::host&
-            track_states,
-        const measurement_collection_types::host& measurements,
-        state_t& state) const;
+    void compute_initial_state(const edm::track_candidate_container<
+                                   default_algebra>::host& track_states,
+                               state_t& state) const;
 
     /// Updates the state iteratively by evicting one track after the other
     /// until the final state conditions are met.

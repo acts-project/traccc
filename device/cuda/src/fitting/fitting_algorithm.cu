@@ -55,9 +55,8 @@ template <typename fitter_t>
 track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
     const typename fitter_t::detector_type::view_type& det_view,
     const typename fitter_t::bfield_type& field_view,
-    const edm::track_candidate_collection<default_algebra>::const_view&
-        track_candidates_view,
-    const measurement_collection_types::const_view& measurements_view) const {
+    const edm::track_candidate_container<default_algebra>::const_view&
+        track_candidates_view) const {
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
@@ -65,11 +64,11 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
     // Number of tracks
     const edm::track_candidate_collection<
         default_algebra>::const_device::size_type n_tracks =
-        m_copy.get_size(track_candidates_view);
+        m_copy.get_size(track_candidates_view.tracks);
 
     // Get the sizes of the track candidates in each track.
     const std::vector<unsigned int> candidate_sizes =
-        m_copy.get_sizes(track_candidates_view);
+        m_copy.get_sizes(track_candidates_view.tracks);
 
     track_state_container_types::buffer track_states_buffer{
         {n_tracks, m_mr.main},
@@ -111,7 +110,7 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
 
         // Get key and value for sorting
         kernels::fill_sort_keys<<<nBlocks, nThreads, 0, stream>>>(
-            track_candidates_view, keys_buffer, param_ids_buffer);
+            track_candidates_view.tracks, keys_buffer, param_ids_buffer);
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
         // Sort the key to get the sorted parameter ids
@@ -130,8 +129,8 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
         const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
 
         fit_prelude(nBlocks, nThreads, 0, stream, param_ids_buffer,
-                    {track_candidates_view, measurements_view},
-                    track_states_buffer, param_liveness_buffer);
+                    track_candidates_view, track_states_buffer,
+                    param_liveness_buffer);
 
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 

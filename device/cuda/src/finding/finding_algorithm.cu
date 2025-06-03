@@ -423,11 +423,11 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
 
         kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(
             device::build_tracks_payload{
-                .measurements_view = measurements,
                 .seeds_view = seeds_view,
                 .links_view = links_buffer,
                 .tips_view = tips_buffer,
-                .track_candidates_view = track_candidates_buffer});
+                .track_candidates_view = {track_candidates_buffer,
+                                          measurements}});
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
         m_stream.synchronize();

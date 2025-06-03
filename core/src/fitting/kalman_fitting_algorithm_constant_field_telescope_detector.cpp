@@ -22,8 +22,7 @@ namespace traccc::host {
 
 kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
     const detector_type::host& det, const bfield_type::view_t& field,
-    const measurement_collection_types::const_view& measurements,
-    const edm::track_candidate_collection<default_algebra>::const_view&
+    const edm::track_candidate_container<default_algebra>::const_view&
         track_candidates) const {
 
     // Create the fitter object.
@@ -34,8 +33,8 @@ kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
         fitter{det, field, m_config};
 
     // Perform the track fitting using a common, templated function.
-    return details::fit_tracks<default_algebra>(
-        fitter, measurements, track_candidates, m_mr.get(), m_copy.get());
+    return details::fit_tracks<default_algebra>(fitter, track_candidates,
+                                                m_mr.get(), m_copy.get());
 }
 
 }  // namespace traccc::host

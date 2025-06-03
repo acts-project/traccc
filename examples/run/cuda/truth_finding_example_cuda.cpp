@@ -179,18 +179,16 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                                     input_opts.use_acts_geom_source, &detector,
                                     input_opts.format, false);
 
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+        traccc::edm::track_candidate_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
-        traccc::measurement_collection_types::host truth_measurements{&host_mr};
-        evt_data.generate_truth_candidates(truth_track_candidates,
-                                           truth_measurements, sg, host_mr,
+        evt_data.generate_truth_candidates(truth_track_candidates, sg, host_mr,
                                            truth_finding_opts.m_min_pt);
 
         // Prepare truth seeds
         traccc::bound_track_parameters_collection_types::host seeds(mr.host);
-        const std::size_t n_tracks = truth_track_candidates.size();
+        const std::size_t n_tracks = truth_track_candidates.tracks.size();
         for (std::size_t i_trk = 0; i_trk < n_tracks; i_trk++) {
-            seeds.push_back(truth_track_candidates.at(i_trk).params());
+            seeds.push_back(truth_track_candidates.tracks.at(i_trk).params());
         }
 
         traccc::bound_track_parameters_collection_types::buffer seeds_buffer{
@@ -241,9 +239,9 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
             traccc::performance::timer t("Track fitting  (cuda)", elapsedTimes);
 
             // Run fitting
-            track_states_cuda_buffer =
-                device_fitting(det_view, field, track_candidates_cuda_buffer,
-                               measurements_cuda_buffer);
+            track_states_cuda_buffer = device_fitting(
+                det_view, field,
+                {track_candidates_cuda_buffer, measurements_cuda_buffer});
         }
         traccc::track_state_container_types::host track_states_cuda =
             track_state_d2h(track_states_cuda_buffer);
@@ -270,9 +268,10 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                                              elapsedTimes);
 
                 // Run fitting
-                track_states = host_fitting(
-                    detector, field, vecmem::get_data(measurements_per_event),
-                    vecmem::get_data(track_candidates));
+                track_states =
+                    host_fitting(detector, field,
+                                 {vecmem::get_data(track_candidates),
+                                  vecmem::get_data(measurements_per_event)});
             }
         }
 

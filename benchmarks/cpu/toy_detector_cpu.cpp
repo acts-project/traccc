@@ -83,9 +83,10 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
                 vecmem::get_data(params));
 
             // Track fitting with KF
-            auto track_states = host_fitting(
-                det, field, vecmem::get_data(measurements_per_event),
-                vecmem::get_data(track_candidates));
+            auto track_states =
+                host_fitting(det, field,
+                             {vecmem::get_data(track_candidates),
+                              vecmem::get_data(measurements_per_event)});
         }
     }
 

@@ -160,18 +160,16 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
         // Truth Track Candidates
         traccc::event_data evt_data(path, i_evt, host_mr);
 
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+        traccc::edm::track_candidate_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
-        traccc::measurement_collection_types::host truth_measurements{&host_mr};
-        evt_data.generate_truth_candidates(truth_track_candidates,
-                                           truth_measurements, sg, host_mr);
+        evt_data.generate_truth_candidates(truth_track_candidates, sg, host_mr);
 
-        ASSERT_EQ(truth_track_candidates.size(), n_truth_tracks);
+        ASSERT_EQ(truth_track_candidates.tracks.size(), n_truth_tracks);
 
         // Prepare truth seeds
         traccc::bound_track_parameters_collection_types::host seeds(&host_mr);
         for (unsigned int i_trk = 0; i_trk < n_truth_tracks; i_trk++) {
-            seeds.push_back(truth_track_candidates.at(i_trk).params());
+            seeds.push_back(truth_track_candidates.tracks.at(i_trk).params());
         }
         ASSERT_EQ(seeds.size(), n_truth_tracks);
 

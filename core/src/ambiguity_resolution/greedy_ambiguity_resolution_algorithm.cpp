@@ -16,15 +16,13 @@
 namespace traccc::host {
 
 auto greedy_ambiguity_resolution_algorithm::operator()(
-    const edm::track_candidate_collection<default_algebra>::const_view&
-        track_candidates_view,
-    const measurement_collection_types::const_view& measurements_view) const
-    -> output_type {
+    const edm::track_candidate_container<default_algebra>::const_view&
+        track_container) const -> output_type {
 
     const edm::track_candidate_collection<default_algebra>::const_device
-        track_candidates(track_candidates_view);
+        track_candidates(track_container.tracks);
     const measurement_collection_types::const_device measurements{
-        measurements_view};
+        track_container.measurements};
 
     const std::size_t n_tracks = track_candidates.size();
 

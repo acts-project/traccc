@@ -13,7 +13,7 @@
 
 // Project include(s).
 #include "traccc/edm/device/sort_key.hpp"
-#include "traccc/edm/track_candidate_collection.hpp"
+#include "traccc/edm/track_candidate_container.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/device/fill_sort_keys.hpp"
 #include "traccc/fitting/device/fit.hpp"
@@ -56,20 +56,19 @@ template <typename fitter_t, typename fit_kernel_t>
 track_state_container_types::buffer fit_tracks(
     const typename fitter_t::detector_type::view_type& det_view,
     const typename fitter_t::bfield_type& field_view,
-    const edm::track_candidate_collection<default_algebra>::const_view&
+    const edm::track_candidate_container<default_algebra>::const_view&
         track_candidates_view,
-    const measurement_collection_types::const_view& measurements_view,
     const fitting_config& config, const memory_resource& mr, vecmem::copy& copy,
     ::sycl::queue& queue) {
 
     // Get the number of tracks.
     const edm::track_candidate_collection<
         default_algebra>::const_device::size_type n_tracks =
-        copy.get_size(track_candidates_view);
+        copy.get_size(track_candidates_view.tracks);
 
     // Get the sizes of the track candidates in each track.
     const std::vector<unsigned int> candidate_sizes =
-        copy.get_sizes(track_candidates_view);
+        copy.get_sizes(track_candidates_view.tracks);
 
     // Create the result buffer.
     track_state_container_types::buffer track_states_buffer{
@@ -126,7 +125,7 @@ track_state_container_types::buffer fit_tracks(
              param_ids_view =
                  vecmem::get_data(param_ids_buffer)](::sycl::nd_item<1> item) {
                 device::fill_sort_keys(details::global_index(item),
-                                       track_candidates_view, keys_view,
+                                       track_candidates_view.tracks, keys_view,
                                        param_ids_view);
             });
     });
@@ -147,15 +146,13 @@ track_state_container_types::buffer fit_tracks(
     queue
         .submit([&](::sycl::handler& h) {
             h.parallel_for(
-                range,
-                [param_ids_view = vecmem::get_data(param_ids_buffer),
-                 track_candidates_view, measurements_view, track_states_view,
-                 param_liveness_view = vecmem::get_data(param_liveness_buffer)](
-                    ::sycl::nd_item<1> item) {
-                    device::fit_prelude(
-                        details::global_index(item), param_ids_view,
-                        {track_candidates_view, measurements_view},
-                        track_states_view, param_liveness_view);
+                range, [param_ids_view = vecmem::get_data(param_ids_buffer),
+                        track_candidates_view, track_states_view,
+                        param_liveness_view = vecmem::get_data(
+                            param_liveness_buffer)](::sycl::nd_item<1> item) {
+                    device::fit_prelude(details::global_index(item),
+                                        param_ids_view, track_candidates_view,
+                                        track_states_view, param_liveness_view);
                 });
         })
         .wait_and_throw();

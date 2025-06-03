@@ -22,7 +22,7 @@ __global__ void fill_vectors(const ambiguity_resolution_config cfg,
                              device::fill_vectors_payload payload) {
 
     const edm::track_candidate_collection<default_algebra>::const_device
-        track_candidates(payload.track_candidates_view);
+        track_candidates(payload.track_candidates_view.tracks);
 
     const auto globalIndex = details::global_index1();
     if (globalIndex >= track_candidates.size()) {
@@ -30,7 +30,7 @@ __global__ void fill_vectors(const ambiguity_resolution_config cfg,
     }
 
     const measurement_collection_types::const_device measurements(
-        payload.measurements_view);
+        payload.track_candidates_view.measurements);
     const auto track = track_candidates.at(globalIndex);
 
     vecmem::jagged_device_vector<std::size_t> meas_ids(payload.meas_ids_view);

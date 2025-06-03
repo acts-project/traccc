@@ -434,10 +434,12 @@ finding_algorithm<stepper_t, navigator_t>::operator()(
             (n_tips_total + threadsPerBlock - 1) / threadsPerBlock;
         auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
-        ::alpaka::exec<Acc>(
-            queue, workDiv, BuildTracksKernel{},
-            device::build_tracks_payload{measurements, seeds_view, links_buffer,
-                                         tips_buffer, track_candidates_buffer});
+        ::alpaka::exec<Acc>(queue, workDiv, BuildTracksKernel{},
+                            device::build_tracks_payload{
+                                seeds_view,
+                                links_buffer,
+                                tips_buffer,
+                                {track_candidates_buffer, measurements}});
         ::alpaka::wait(queue);
     }
 

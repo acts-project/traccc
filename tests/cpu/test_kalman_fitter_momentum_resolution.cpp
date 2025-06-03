@@ -150,26 +150,26 @@ TEST_P(KalmanFittingMomentumResolutionTests, Run) {
         // Event map
         traccc::event_data evt_data(path, i_evt, host_mr);
         // Truth Track Candidates
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+        traccc::edm::track_candidate_container<traccc::default_algebra>::host
             track_candidates{host_mr};
-        traccc::measurement_collection_types::host measurements{&host_mr};
-        evt_data.generate_truth_candidates(track_candidates, measurements, sg,
-                                           host_mr);
+        evt_data.generate_truth_candidates(track_candidates, sg, host_mr);
 
         // n_trakcs = 100
-        ASSERT_EQ(track_candidates.size(), n_truth_tracks);
+        ASSERT_EQ(track_candidates.tracks.size(), n_truth_tracks);
 
         // The nubmer of track candidates per track should be equal to the
         // number of planes
         for (std::size_t i_trk = 0; i_trk < n_truth_tracks; i_trk++) {
-            ASSERT_EQ(track_candidates.at(i_trk).measurement_indices().size(),
-                      std::get<11>(GetParam()));
+            ASSERT_EQ(
+                track_candidates.tracks.at(i_trk).measurement_indices().size(),
+                std::get<11>(GetParam()));
         }
 
         // Run fitting
         auto track_states =
-            fitting(host_det, field, vecmem::get_data(measurements),
-                    vecmem::get_data(track_candidates));
+            fitting(host_det, field,
+                    {vecmem::get_data(track_candidates.tracks),
+                     vecmem::get_data(track_candidates.measurements)});
 
         // Iterator over tracks
         const std::size_t n_tracks = track_states.size();

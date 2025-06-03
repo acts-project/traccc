@@ -327,16 +327,17 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                                              elapsedTimes);
 
                 track_states_cuda_buffer = device_fitting(
-                    det_view, field, track_candidates_cuda_buffer,
-                    measurements_cuda_buffer);
+                    det_view, field,
+                    {track_candidates_cuda_buffer, measurements_cuda_buffer});
             }
 
             if (accelerator_opts.compare_with_cpu) {
                 traccc::performance::timer t("Track fitting with KF (cpu)",
                                              elapsedTimes);
-                track_states = host_fitting(
-                    host_det, field, vecmem::get_data(measurements_per_event),
-                    vecmem::get_data(track_candidates));
+                track_states =
+                    host_fitting(host_det, field,
+                                 {vecmem::get_data(track_candidates),
+                                  vecmem::get_data(measurements_per_event)});
             }
 
         }  // Stop measuring wall time

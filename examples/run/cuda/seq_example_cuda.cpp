@@ -372,7 +372,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                     traccc::performance::timer timer{
                         "Ambiguity resolution (cuda)", elapsedTimes};
                     res_track_candidates_buffer = resolution_alg_cuda(
-                        track_candidates_buffer, measurements_cuda_buffer);
+                        {track_candidates_buffer, measurements_cuda_buffer});
                 }
 
                 // CPU
@@ -380,17 +380,18 @@ int seq_run(const traccc::opts::detector& detector_opts,
                     traccc::performance::timer timer{
                         "Ambiguity resolution (cpu)", elapsedTimes};
                     res_track_candidates = resolution_alg_cpu(
-                        vecmem::get_data(track_candidates),
-                        vecmem::get_data(measurements_per_event));
+                        {vecmem::get_data(track_candidates),
+                         vecmem::get_data(measurements_per_event)});
                 }
 
                 // CUDA
                 {
                     traccc::performance::timer timer{"Track fitting (cuda)",
                                                      elapsedTimes};
-                    track_states_buffer = fitting_alg_cuda(
-                        device_detector_view, field,
-                        res_track_candidates_buffer, measurements_cuda_buffer);
+                    track_states_buffer =
+                        fitting_alg_cuda(device_detector_view, field,
+                                         {res_track_candidates_buffer,
+                                          measurements_cuda_buffer});
                 }
 
                 // CPU
@@ -399,8 +400,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
                                                      elapsedTimes};
                     track_states =
                         fitting_alg(host_detector, field,
-                                    vecmem::get_data(measurements_per_event),
-                                    vecmem::get_data(res_track_candidates));
+                                    {vecmem::get_data(res_track_candidates),
+                                     vecmem::get_data(measurements_per_event)});
                 }
             }
 

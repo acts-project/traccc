@@ -34,6 +34,7 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/edm/impl/seed_collection.ipp"
   "include/traccc/edm/track_candidate_collection.hpp"
   "include/traccc/edm/impl/track_candidate_collection.ipp"
+  "include/traccc/edm/track_candidate_container.hpp"
   # Geometry description.
   "include/traccc/geometry/detector.hpp"
   "include/traccc/geometry/module_map.hpp"

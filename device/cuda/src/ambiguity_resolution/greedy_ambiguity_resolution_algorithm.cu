@@ -72,9 +72,8 @@ greedy_ambiguity_resolution_algorithm::greedy_ambiguity_resolution_algorithm(
 
 greedy_ambiguity_resolution_algorithm::output_type
 greedy_ambiguity_resolution_algorithm::operator()(
-    const edm::track_candidate_collection<default_algebra>::const_view&
-        track_candidates_view,
-    const measurement_collection_types::const_view& measurements_view) const {
+    const edm::track_candidate_container<default_algebra>::const_view&
+        track_candidates_view) const {
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
@@ -84,7 +83,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
         thrust::cuda::par_nosync(std::pmr::polymorphic_allocator(&(m_mr.main)))
             .on(stream);
 
-    const unsigned int n_tracks = track_candidates_view.capacity();
+    const unsigned int n_tracks = track_candidates_view.tracks.capacity();
 
     if (n_tracks == 0) {
         return {};
@@ -101,7 +100,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     // Get the sizes of the measurement index vector in each track
     const std::vector<unsigned int> candidate_sizes =
-        m_copy.get().get_sizes(track_candidates_view);
+        m_copy.get().get_sizes(track_candidates_view.tracks);
 
     // Make measurement ID, pval and n_measurement vector
     vecmem::data::jagged_vector_buffer<std::size_t> meas_ids_buffer{
@@ -129,7 +128,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
         kernels::fill_vectors<<<nBlocks, nThreads, 0, stream>>>(
             m_config, device::fill_vectors_payload{
                           .track_candidates_view = track_candidates_view,
-                          .measurements_view = measurements_view,
                           .meas_ids_view = meas_ids_buffer,
                           .flat_meas_ids_view = flat_meas_ids_buffer,
                           .pvals_view = pvals_buffer,
@@ -526,7 +524,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
             kernels::fill_track_candidates<<<
                 static_cast<unsigned int>((n_accepted + 63) / 64), 64, 0,
                 stream>>>(device::fill_track_candidates_payload{
-                .track_candidates_view = track_candidates_view,
+                .track_candidates_view = track_candidates_view.tracks,
                 .n_accepted = n_accepted,
                 .sorted_ids_view = sorted_ids_buffer,
                 .res_track_candidates_view = res_track_candidates_buffer});

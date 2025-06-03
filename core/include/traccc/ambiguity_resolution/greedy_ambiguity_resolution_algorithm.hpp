@@ -10,8 +10,8 @@
 // Project include(s).
 #include "traccc/ambiguity_resolution/ambiguity_resolution_config.hpp"
 #include "traccc/definitions/primitives.hpp"
-#include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate_collection.hpp"
+#include "traccc/edm/track_candidate_container.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/messaging.hpp"
 
@@ -28,8 +28,7 @@ namespace traccc::host {
 /// duplicate/fake"
 class greedy_ambiguity_resolution_algorithm
     : public algorithm<edm::track_candidate_collection<default_algebra>::host(
-          const edm::track_candidate_collection<default_algebra>::const_view&,
-          const measurement_collection_types::const_view&)>,
+          const edm::track_candidate_container<default_algebra>::const_view&)>,
       public messaging {
 
     public:
@@ -46,13 +45,10 @@ class greedy_ambiguity_resolution_algorithm
     /// Run the algorithm
     ///
     /// @param track_candidates the container of found patterns
-    /// @param measurement all measurements of the event
     /// @return the container without ambiguous tracks
     output_type operator()(
-        const edm::track_candidate_collection<default_algebra>::const_view&
-            track_candidates,
-        const measurement_collection_types::const_view& measurements)
-        const override;
+        const edm::track_candidate_container<default_algebra>::const_view&
+            track_candidates) const override;
 
     /// Get configuration
     config_type& get_config() { return m_config; }

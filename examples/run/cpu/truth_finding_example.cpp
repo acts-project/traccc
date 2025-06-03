@@ -125,18 +125,16 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                                     input_opts.use_acts_geom_source, &detector,
                                     input_opts.format, false);
 
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+        traccc::edm::track_candidate_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
-        traccc::measurement_collection_types::host truth_measurements{&host_mr};
-        evt_data.generate_truth_candidates(truth_track_candidates,
-                                           truth_measurements, sg, host_mr,
+        evt_data.generate_truth_candidates(truth_track_candidates, sg, host_mr,
                                            truth_finding_opts.m_min_pt);
 
         // Prepare truth seeds
         traccc::bound_track_parameters_collection_types::host seeds(&host_mr);
-        const std::size_t n_tracks = truth_track_candidates.size();
+        const std::size_t n_tracks = truth_track_candidates.tracks.size();
         for (std::size_t i_trk = 0; i_trk < n_tracks; i_trk++) {
-            seeds.push_back(truth_track_candidates.at(i_trk).params());
+            seeds.push_back(truth_track_candidates.tracks.at(i_trk).params());
         }
 
         // Read measurements
@@ -156,9 +154,10 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                   << std::endl;
 
         // Run fitting
-        auto track_states = host_fitting(
-            detector, field, vecmem::get_data(measurements_per_event),
-            vecmem::get_data(track_candidates));
+        auto track_states =
+            host_fitting(detector, field,
+                         {vecmem::get_data(track_candidates),
+                          vecmem::get_data(measurements_per_event)});
 
         print_fitted_tracks_statistics(track_states);
 

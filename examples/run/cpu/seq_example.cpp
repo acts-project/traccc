@@ -280,8 +280,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
                     traccc::performance::timer timer{
                         "Track ambiguity resolution", elapsedTimes};
                     resolved_track_candidates = resolution_alg(
-                        vecmem::get_data(track_candidates),
-                        vecmem::get_data(measurements_per_event));
+                        {vecmem::get_data(track_candidates),
+                         vecmem::get_data(measurements_per_event)});
                 }
 
                 {
@@ -289,8 +289,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
                                                      elapsedTimes};
                     track_states = fitting_alg(
                         detector, field,
-                        vecmem::get_data(measurements_per_event),
-                        vecmem::get_data(resolved_track_candidates));
+                        {vecmem::get_data(resolved_track_candidates),
+                         vecmem::get_data(measurements_per_event)});
                 }
             }
 

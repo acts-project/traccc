@@ -8,8 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_candidate_collection.hpp"
+#include "traccc/edm/track_candidate_container.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/geometry/detector.hpp"
@@ -34,14 +33,12 @@ class kalman_fitting_algorithm
           const default_detector::host&,
           const covfie::field<const_bfield_backend_t<
               default_detector::host::scalar_type>>::view_t&,
-          const measurement_collection_types::const_view&,
-          const edm::track_candidate_collection<default_algebra>::const_view&)>,
+          const edm::track_candidate_container<default_algebra>::const_view&)>,
       public algorithm<track_state_container_types::host(
           const telescope_detector::host&,
           const covfie::field<const_bfield_backend_t<
               telescope_detector::host::scalar_type>>::view_t&,
-          const measurement_collection_types::const_view&,
-          const edm::track_candidate_collection<default_algebra>::const_view&)>,
+          const edm::track_candidate_container<default_algebra>::const_view&)>,
       public messaging {
 
     public:
@@ -63,7 +60,6 @@ class kalman_fitting_algorithm
     ///
     /// @param det             The (default) detector object
     /// @param field           The (constant) magnetic field object
-    /// @param measurements    All measurements of the event
     /// @param track_candidates All track candidates to fit
     ///
     /// @return A container of the fitted track states
@@ -72,15 +68,13 @@ class kalman_fitting_algorithm
         const default_detector::host& det,
         const covfie::field<traccc::const_bfield_backend_t<
             default_detector::host::scalar_type>>::view_t& field,
-        const measurement_collection_types::const_view& measurements,
-        const edm::track_candidate_collection<default_algebra>::const_view&
+        const edm::track_candidate_container<default_algebra>::const_view&
             track_candidates) const override;
 
     /// Execute the algorithm
     ///
     /// @param det             The (telescope) detector object
     /// @param field           The (constant) magnetic field object
-    /// @param measurements    All measurements of the event
     /// @param track_candidates All track candidates to fit
     ///
     /// @return A container of the fitted track states
@@ -89,8 +83,7 @@ class kalman_fitting_algorithm
         const telescope_detector::host& det,
         const covfie::field<traccc::const_bfield_backend_t<
             telescope_detector::host::scalar_type>>::view_t& field,
-        const measurement_collection_types::const_view& measurements,
-        const edm::track_candidate_collection<default_algebra>::const_view&
+        const edm::track_candidate_container<default_algebra>::const_view&
             track_candidates) const override;
 
     private:

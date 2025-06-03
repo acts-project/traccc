@@ -12,7 +12,7 @@
 #include "traccc/edm/particle.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/silicon_cluster_collection.hpp"
-#include "traccc/edm/track_candidate_collection.hpp"
+#include "traccc/edm/track_candidate_container.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/io/csv/cell.hpp"
@@ -74,14 +74,11 @@ struct event_data {
     /// Generate truth candidate used for truth fitting
     ///
     /// @param[out] truth_candidates Truth candidates
-    /// @param[out] truth_measurements Truth measurements
     /// @param[in] sg Seed generator for fitting
     /// @param[in] resource vecmem memory resource
     ///
     void generate_truth_candidates(
-        edm::track_candidate_collection<default_algebra>::host&
-            truth_candidates,
-        measurement_collection_types::host& truth_measurements,
+        edm::track_candidate_container<default_algebra>::host& truth_candidates,
         seed_generator<detector_type>& sg, vecmem::memory_resource& resource,
         float pt_cut = 0.f);
 

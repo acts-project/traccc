@@ -106,9 +106,8 @@ template <typename fitter_t>
 track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
     const typename fitter_t::detector_type::view_type& det_view,
     const typename fitter_t::bfield_type& field_view,
-    const edm::track_candidate_collection<default_algebra>::const_view&
-        track_candidates_view,
-    const measurement_collection_types::const_view& measurements_view) const {
+    const edm::track_candidate_container<default_algebra>::const_view&
+        track_candidates_view) const {
 
     // Setup alpaka
     auto devHost = ::alpaka::getDevByIdx(::alpaka::Platform<Host>{}, 0u);
@@ -125,11 +124,11 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
     // Number of tracks
     const edm::track_candidate_collection<
         default_algebra>::const_device::size_type n_tracks =
-        m_copy.get_size(track_candidates_view);
+        m_copy.get_size(track_candidates_view.tracks);
 
     // Get the sizes of the track candidates in each track.
     const std::vector<unsigned int> candidate_sizes =
-        m_copy.get_sizes(track_candidates_view);
+        m_copy.get_sizes(track_candidates_view.tracks);
 
     track_state_container_types::buffer track_states_buffer{
         {n_tracks, m_mr.main},
@@ -168,9 +167,9 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
                                                                     m_mr.main);
 
     // Get key and value for sorting
-    ::alpaka::exec<Acc>(queue, workDiv, FillSortKeysKernel{},
-                        track_candidates_view, vecmem::get_data(keys_buffer),
-                        vecmem::get_data(param_ids_buffer));
+    ::alpaka::exec<Acc>(
+        queue, workDiv, FillSortKeysKernel{}, track_candidates_view.tracks,
+        vecmem::get_data(keys_buffer), vecmem::get_data(param_ids_buffer));
     ::alpaka::wait(queue);
 
     // Sort the key to get the sorted parameter ids
@@ -182,8 +181,7 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
 
     ::alpaka::exec<Acc>(queue, workDiv, FitTrackPreludeKernel{},
                         vecmem::get_data(param_ids_buffer),
-                        {track_candidates_view, measurements_view},
-                        track_states_view,
+                        track_candidates_view, track_states_view,
                         vecmem::get_data(param_liveness_buffer));
     ::alpaka::wait(queue);
 

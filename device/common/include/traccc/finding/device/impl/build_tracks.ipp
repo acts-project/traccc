@@ -16,7 +16,7 @@ TRACCC_HOST_DEVICE inline void build_tracks(
     const global_index_t globalIndex, const build_tracks_payload& payload) {
 
     const measurement_collection_types::const_device measurements(
-        payload.measurements_view);
+        payload.track_candidates_view.measurements);
 
     const bound_track_parameters_collection_types::const_device seeds(
         payload.seeds_view);
@@ -26,7 +26,7 @@ TRACCC_HOST_DEVICE inline void build_tracks(
     const vecmem::device_vector<const unsigned int> tips(payload.tips_view);
 
     edm::track_candidate_collection<default_algebra>::device track_candidates(
-        payload.track_candidates_view);
+        payload.track_candidates_view.tracks);
 
     if (globalIndex >= tips.size()) {
         return;

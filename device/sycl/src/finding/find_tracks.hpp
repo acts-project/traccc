@@ -468,9 +468,12 @@ edm::track_candidate_collection<default_algebra>::buffer find_tracks(
                      tips = vecmem::get_data(tips_buffer),
                      track_candidates = vecmem::get_data(
                          track_candidates_buffer)](::sycl::nd_item<1> item) {
-                        device::build_tracks(details::global_index(item),
-                                             {measurements, seeds, links, tips,
-                                              track_candidates});
+                        device::build_tracks(
+                            details::global_index(item),
+                            {seeds,
+                             links,
+                             tips,
+                             {track_candidates, measurements}});
                     });
             })
             .wait_and_throw();

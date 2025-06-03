@@ -26,9 +26,8 @@ kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
     const telescope_detector::view& det,
     const covfie::field<traccc::const_bfield_backend_t<
         telescope_detector::device::scalar_type>>::view_t& field,
-    const edm::track_candidate_collection<default_algebra>::const_view&
-        track_candidates,
-    const measurement_collection_types::const_view& measurements) const {
+    const edm::track_candidate_container<default_algebra>::const_view&
+        track_candidates) const {
 
     using scalar_type = telescope_detector::device::scalar_type;
 
@@ -46,8 +45,8 @@ kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
     // Run the track fitting.
     return details::fit_tracks<
         fitter_type, kernels::fit_tracks_constant_field_telescope_detector>(
-        det, field, track_candidates, measurements, m_config, m_mr,
-        m_copy.get(), details::get_queue(m_queue));
+        det, field, track_candidates, m_config, m_mr, m_copy.get(),
+        details::get_queue(m_queue));
 }
 
 }  // namespace traccc::sycl

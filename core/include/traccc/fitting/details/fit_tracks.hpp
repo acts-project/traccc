@@ -8,8 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_candidate_collection.hpp"
+#include "traccc/edm/track_candidate_container.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/status_codes.hpp"
 
@@ -33,7 +32,7 @@ namespace traccc::host::details {
 /// @tparam algebra_t The algebra type used for the track fitting
 ///
 /// @param[in] fitter           The fitter object to use on the track candidates
-/// @param[in] track_candidates All track candidates to fit
+/// @param[in] track_container  All track candidates to fit
 /// @param[in] mr               Memory resource to use for the output container
 ///
 /// @return A container of the fitted track states
@@ -41,16 +40,15 @@ namespace traccc::host::details {
 template <typename algebra_t, typename fitter_t>
 track_state_container_types::host fit_tracks(
     fitter_t& fitter,
-    const measurement_collection_types::const_view& measurements_view,
-    const typename edm::track_candidate_collection<algebra_t>::const_view&
-        track_candidates_view,
+    const typename edm::track_candidate_container<algebra_t>::const_view&
+        track_container,
     vecmem::memory_resource& mr, vecmem::copy& copy) {
 
     // Create the input container(s).
     const measurement_collection_types::const_device measurements{
-        measurements_view};
+        track_container.measurements};
     const typename edm::track_candidate_collection<algebra_t>::const_device
-        track_candidates{track_candidates_view};
+        track_candidates{track_container.tracks};
 
     // Create the output container.
     track_state_container_types::host result{&mr};

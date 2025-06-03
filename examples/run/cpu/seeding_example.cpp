@@ -192,9 +192,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
            Ambiguity Resolution with Greedy Solver
           -----------------------------------------*/
 
-        track_candidates_ar =
-            host_ambiguity_resolution(vecmem::get_data(track_candidates),
-                                      vecmem::get_data(measurements_per_event));
+        track_candidates_ar = host_ambiguity_resolution(
+            {vecmem::get_data(track_candidates),
+             vecmem::get_data(measurements_per_event)});
         n_ambiguity_free_tracks += track_candidates_ar.size();
 
         /*------------------------
@@ -202,8 +202,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
           ------------------------*/
 
         track_states = host_fitting(detector, field,
-                                    vecmem::get_data(measurements_per_event),
-                                    vecmem::get_data(track_candidates_ar));
+                                    {vecmem::get_data(track_candidates_ar),
+                                     vecmem::get_data(measurements_per_event)});
         n_fitted_tracks += track_states.size();
 
         /*------------

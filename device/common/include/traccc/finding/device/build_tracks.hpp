@@ -12,8 +12,7 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_candidate_collection.hpp"
+#include "traccc/edm/track_candidate_container.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/finding_config.hpp"
@@ -26,13 +25,6 @@ namespace traccc::device {
 
 /// (Event Data) Payload for the @c traccc::device::build_tracks function
 struct build_tracks_payload {
-    /**
-     * @brief View object to the vector of measurements
-     *
-     * @warning Measurements on the same surface must be adjacent
-     */
-    measurement_collection_types::const_view measurements_view;
-
     /**
      * @brief View object to the vector of measurements
      */
@@ -51,8 +43,7 @@ struct build_tracks_payload {
     /**
      * @brief View object to the vector of track candidates
      */
-    edm::track_candidate_collection<default_algebra>::view
-        track_candidates_view;
+    edm::track_candidate_container<default_algebra>::view track_candidates_view;
 };
 
 /// Function for building full tracks from the link container:
