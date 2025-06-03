@@ -46,17 +46,19 @@ def main():
 
     valid_kernels = set()
 
-    commits = []
+    ccs = []
 
     log.info("Filtering kernels with a threshold of %f seconds", args.threshold)
 
     for x in df.iloc:
         if x["rec_throughput"] >= args.threshold:
             valid_kernels.add(x["kernel"])
-        if x["commit"] not in commits:
-            commits.append(x["commit"])
+        if x["cc"] not in ccs:
+            ccs.append(x["cc"])
 
-    log.info("Plotting %d kernels over %d commits", len(valid_kernels), len(commits))
+    log.info(
+        "Plotting %d kernels over %d Compute Capabilities", len(valid_kernels), len(ccs)
+    )
 
     sorted_valid_kernels = sorted(list(valid_kernels))
 
@@ -64,7 +66,7 @@ def main():
 
     f, a = matplotlib.pyplot.subplots(1, 1, figsize=(806 * px, 600 * px))
 
-    xrange = list(range(len(commits)))
+    xrange = list(range(len(ccs)))
 
     for x in sorted_valid_kernels:
         x_data = []
@@ -73,7 +75,7 @@ def main():
 
         for y in df.iloc:
             if y["kernel"] == x:
-                x_data.append(commits.index(y["commit"]))
+                x_data.append(ccs.index(y["cc"]))
                 y_data.append(y["rec_throughput"] * 1000)
                 y_error.append(y["rec_throughput_dev"] * 1000)
 
@@ -82,9 +84,10 @@ def main():
         )
 
     a.set_xticks(
-        xrange, [x[:8] for x in commits], rotation="vertical", family="monospace"
+        xrange,
+        ccs,
     )
-    a.set_xlabel("Commit hash")
+    a.set_xlabel("Compute Capability (PTX Target)")
     a.set_ylabel("Reciprocal throughput [ms]")
     a.legend(prop={"family": "monospace"})
     a.grid(color="lightgray", linewidth=0.5)

@@ -17,6 +17,22 @@ import time
 from traccc_bench_tools import parse_profile, types, build, profile, benchmark
 
 
+ALL_COMPUTE_CAPABILITIES = [
+    "50",
+    "52",
+    "60",
+    "61",
+    "70",
+    "75",
+    "80",
+    "86",
+    "89",
+    "90",
+    "100",
+    "120",
+]
+
+
 log = logging.getLogger("traccc_benchmark")
 
 
@@ -39,22 +55,6 @@ def main():
         "data",
         type=pathlib.Path,
         help="the traccc dataset to use",
-    )
-
-    parser.add_argument(
-        "-f",
-        "--from",
-        type=str,
-        help="the first commit in range (exclusive)",
-        required=True,
-    )
-
-    parser.add_argument(
-        "-t",
-        "--to",
-        type=str,
-        help="the last commit in range (inclusive)",
-        default="HEAD",
     )
 
     parser.add_argument(
@@ -84,6 +84,7 @@ def main():
         "--cc",
         help="Compute Capability of the modelled GPU",
         type=str,
+        required=True,
         dest="cc",
     )
 
@@ -147,20 +148,6 @@ def main():
     old_commit_hash = repo.head.object.hexsha
     log.info("Current commit hash is %s", old_commit_hash)
 
-    commit_range = repo.iter_commits(
-        "%s...%s" % (getattr(args, "from"), getattr(args, "to"))
-    )
-
-    commit_list = list(commit_range)
-    commit_str_list = list(str(x) for x in commit_list)
-
-    log.info(
-        "Examining a total of %d commits between %s and %s",
-        len(commit_list),
-        getattr(args, "from"),
-        getattr(args, "to"),
-    )
-
     if args.db.is_file():
         log.info('Database file "%s" already exists; creating a backup', args.db)
         shutil.copy(str(args.db), str(args.db) + ".bak")
@@ -174,65 +161,59 @@ def main():
         log.info('Database file "%s" does not exist; starting from scratch', args.db)
         results = []
 
-    known_commits = set(x["commit"] for x in results)
+    known_ccs = set(x["cc"] for x in results)
 
-    log.info("Currently have pre-existing results for %d commits", len(known_commits))
+    log.info(
+        "Currently have pre-existing results for %d Compute Capabilities",
+        len(known_ccs),
+    )
 
-    commits_to_skip = set()
-
-    for progress_id, x in enumerate(commit_list):
+    for progress_id, x in enumerate(ALL_COMPUTE_CAPABILITIES):
         log.info(
-            "Considering commit %s (%u out of %u)", x, progress_id, len(commit_list)
+            "Considering Compute Capability %s.%s (%u out of %u)",
+            x[:-1],
+            x[-1],
+            progress_id,
+            len(ALL_COMPUTE_CAPABILITIES),
         )
 
-        parents = x.parents
-
-        # If this commit has a parent with a single parent, and that
-        # grandparent is also a parent of this current commit, we have a
-        # single-commit merge which we don't need to measure separately.
-        if len(parents) == 2:
-            for p1 in parents:
-                if len(p1.parents) == 1 and p1.parents[0] in parents:
-                    log.info("Commit %s is a triangle commit; adding to skip list", p1)
-                    commits_to_skip.add(str(p1))
-
         # Skip commits which we have already benchmarked
-        if str(x) in known_commits:
-            log.info("Commit %s is already know; skipping", x)
+        if x in known_ccs:
+            log.info(
+                "Compute capability %s.%s is already know; skipping", x[:-1], x[-1]
+            )
             continue
 
-        if str(x) in commits_to_skip:
-            log.info("Commit %s is marked for skipping", x)
+        if int(x) > int(args.cc):
+            log.info(
+                "Compute Capability %s.%s is newer than target %s.%s; skipping",
+                x[:-1],
+                x[-1],
+                args.cc[:-1],
+                args.cc[-1],
+            )
             continue
 
         try:
-            log.info("Running benchmark for commit %s", x)
-
-            log.info("Running checkout step")
-
-            start_time = time.time()
-            repo.git.checkout(x)
-            end_time = time.time()
-
-            log.info("Completed checkout step in %.1f seconds", end_time - start_time)
+            log.info("Running benchmark for Compute Capability %s.%s", x[:-1], x[-1])
 
             result_df = benchmark.run_benchmark(
                 source_dir=args.repo,
                 data_dir=args.data,
-                commit=x,
+                commit=repo.head.object,
                 gpu_spec=types.GpuSpec(
                     getattr(args, "num_sm"), getattr(args, "num_threads_per_sm")
                 ),
                 parallel=args.parallel,
                 events=args.events,
                 ncu_wrapper=getattr(args, "ncu_wrapper", None),
-                cc=getattr(args, "cc", None),
+                cc=x,
             )
 
             for y in result_df.iloc:
                 results.append(
                     {
-                        "commit": str(x),
+                        "cc": str(x),
                         "kernel": y["Kernel Name"],
                         "throughput": y["ThroughputMean"],
                         "throughput_dev": y["ThroughputStd"],
@@ -248,18 +229,13 @@ def main():
             break
 
     log.info("Gathered a total of %d results (incl. pre-existing)", len(results))
-    output_results = sorted(
-        [x for x in results if x["commit"] in commit_str_list],
-        key=lambda x: -commit_str_list.index(x["commit"]),
-    )
-    log.info("Keeping a total of %d results after pruning", len(output_results))
 
     log.info("Writing data to %s", args.db)
     with open(args.db, "w") as f:
         writer = csv.DictWriter(
             f,
             fieldnames=[
-                "commit",
+                "cc",
                 "kernel",
                 "throughput",
                 "throughput_dev",
@@ -269,11 +245,9 @@ def main():
         )
         writer.writeheader()
 
-        for i in output_results:
+        for i in results:
             writer.writerow(i)
 
-    log.info("Checking out repository to previous commit %s", old_commit_hash)
-    repo.git.checkout(old_commit_hash)
     log.info("Processing complete; goodbye!")
 
 
