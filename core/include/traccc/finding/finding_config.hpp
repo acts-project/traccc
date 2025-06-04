@@ -32,6 +32,14 @@ struct finding_config {
     /// Maximum allowed number of skipped steps per candidate
     unsigned int max_num_skipping_per_cand = 3;
 
+    /// Maximum number of tracks per measurement; if zero, don't prune
+    unsigned int max_num_tracks_per_measurement = 5;
+
+    /// If `max_num_tracks_per_measurement` is enabled, i.e. if it is non-zero
+    /// then this value determines the minimum fraction of measurements in
+    /// each track that vote for it
+    float min_measurement_voting_fraction = 0.8f;
+
     /// Minimum step length that track should make to reach the next surface. It
     /// should be set higher than the overstep tolerance not to make it stay on
     /// the same surface
