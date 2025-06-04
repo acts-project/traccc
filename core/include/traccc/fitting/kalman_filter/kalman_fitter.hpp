@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "kalman_actor.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/track_candidate.hpp"
 #include "traccc/edm/track_parameters.hpp"
@@ -23,6 +24,7 @@
 #include "traccc/utils/propagation.hpp"
 
 // vecmem include(s)
+#include <type_traits>
 #include <vecmem/containers/device_vector.hpp>
 
 // System include(s).
@@ -54,17 +56,25 @@ class kalman_fitter {
     using aborter = detray::pathlimit_aborter<scalar_type>;
     using transporter = detray::parameter_transporter<algebra_type>;
     using interactor = detray::pointwise_material_interactor<algebra_type>;
-    using fit_actor = traccc::kalman_actor<algebra_type>;
+    using forward_fit_actor =
+        traccc::kalman_actor<algebra_type,
+                             kalman_actor_direction::FORWARD_ONLY>;
+    using backward_fit_actor =
+        traccc::kalman_actor<algebra_type,
+                             kalman_actor_direction::BACKWARD_ONLY>;
     using resetter = detray::parameter_resetter<algebra_type>;
     using barcode_sequencer = detray::barcode_sequencer;
 
+    static_assert(std::is_same_v<typename forward_fit_actor::state,
+                                 typename backward_fit_actor::state>);
+
     using forward_actor_chain_type =
-        detray::actor_chain<aborter, transporter, interactor, fit_actor,
+        detray::actor_chain<aborter, transporter, interactor, forward_fit_actor,
                             resetter, barcode_sequencer, kalman_step_aborter>;
 
     using backward_actor_chain_type =
-        detray::actor_chain<aborter, transporter, fit_actor, interactor,
-                            resetter, kalman_step_aborter>;
+        detray::actor_chain<aborter, transporter, backward_fit_actor,
+                            interactor, resetter, kalman_step_aborter>;
 
     // Navigator type for backward propagator
     using direct_navigator_type = detray::direct_navigator<detector_type>;
@@ -137,7 +147,7 @@ class kalman_fitter {
         /// Individual actor states
         typename aborter::state m_aborter_state{};
         typename interactor::state m_interactor_state{};
-        typename fit_actor::state m_fit_actor_state;
+        typename forward_fit_actor::state m_fit_actor_state;
         typename barcode_sequencer::state m_sequencer_state;
         kalman_step_aborter::state m_step_aborter_state{};
 
