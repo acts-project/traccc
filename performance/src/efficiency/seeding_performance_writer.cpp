@@ -84,6 +84,37 @@ void seeding_performance_writer::write(
 
         std::vector<particle_hit_count> particle_hit_counts;
 
+        if (sd.bottom_index() >= spacepoints.size() ||
+            sd.middle_index() >= spacepoints.size() ||
+            sd.top_index() >= spacepoints.size()) {
+            TRACCC_WARNING("Seed with index "
+                           << i << " (out of " << seeds.size()
+                           << ") has invalid spacepoint (B: "
+                           << sd.bottom_index() << ", M: " << sd.middle_index()
+                           << ", T: " << sd.top_index()
+                           << ", #SP: " << spacepoints.size() << ")");
+            continue;
+        }
+
+        if (spacepoints.at(sd.bottom_index()).measurement_index_1() >=
+                measurements.size() ||
+            spacepoints.at(sd.middle_index()).measurement_index_1() >=
+                measurements.size() ||
+            spacepoints.at(sd.top_index()).measurement_index_1() >=
+                measurements.size()) {
+            TRACCC_WARNING(
+                "Seed with index "
+                << i << " (out of " << seeds.size()
+                << ") has invalid measurement (B: "
+                << spacepoints.at(sd.bottom_index()).measurement_index_1()
+                << ", M: "
+                << spacepoints.at(sd.middle_index()).measurement_index_1()
+                << ", T: "
+                << spacepoints.at(sd.top_index()).measurement_index_1()
+                << ", #SP: " << spacepoints.size() << ")");
+            continue;
+        }
+
         // Get the measurements for this seed.
         assert(spacepoints.at(sd.bottom_index()).measurement_index_2() ==
                edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX);
