@@ -99,6 +99,9 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/ambiguity_resolution/kernels/update_vectors.cuh"
   # Fitting
   "include/traccc/cuda/fitting/fitting_algorithm.hpp"
+  "src/fitting/kernels/fit_prelude.cu"
+  "src/fitting/kernels/specializations/fit_forward_default_detector.cu"
+  "src/fitting/kernels/specializations/fit_backward_default_detector.cu"
   "src/fitting/fitting_algorithm.cu")
 
 if(TRACCC_ENABLE_NVTX_PROFILING)

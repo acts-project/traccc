@@ -17,6 +17,9 @@
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/device/fill_sort_keys.hpp"
 #include "traccc/fitting/device/fit.hpp"
+#include "traccc/fitting/device/fit_backward.hpp"
+#include "traccc/fitting/device/fit_forward.hpp"
+#include "traccc/fitting/device/fit_prelude.hpp"
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
@@ -101,11 +104,16 @@ track_state_container_types::buffer fit_tracks(
                                                               mr.main);
     vecmem::data::vector_buffer<unsigned int> param_ids_buffer(n_tracks,
                                                                mr.main);
+    vecmem::data::vector_buffer<unsigned int> param_liveness_buffer(n_tracks,
+                                                                    mr.main);
     vecmem::copy::event_type keys_setup_event = copy.setup(keys_buffer);
     vecmem::copy::event_type param_ids_setup_event =
         copy.setup(param_ids_buffer);
+    vecmem::copy::event_type param_liveness_setup_event =
+        copy.setup(param_liveness_buffer);
     keys_setup_event->wait();
     param_ids_setup_event->wait();
+    param_liveness_setup_event->wait();
 
     // The execution range for the two kernels of the function.
     static constexpr unsigned int localSize = 64;
@@ -136,24 +144,50 @@ track_state_container_types::buffer fit_tracks(
     track_state_container_types::view track_states_view = track_states_buffer;
     track_states_headers_setup_event->wait();
     track_states_items_setup_event->wait();
+
     queue
         .submit([&](::sycl::handler& h) {
-            h.parallel_for<fit_kernel_t>(
-                range,
-                [config,
-                 payload = device::fit_payload<fitter_t>{
-                     .det_data = det_view,
-                     .field_data = field_view,
-                     .track_candidates_view = track_candidates_view,
-                     .param_ids_view = vecmem::get_data(param_ids_buffer),
-                     .track_states_view = track_states_view,
-                     .barcodes_view = vecmem::get_data(
-                         seqs_buffer)}](::sycl::nd_item<1> item) {
-                    device::fit<fitter_t>(details::global_index(item), config,
-                                          payload);
+            h.parallel_for(
+                range, [param_ids_view = vecmem::get_data(param_ids_buffer),
+                        track_candidates_view, track_states_view,
+                        param_liveness_view = vecmem::get_data(
+                            param_liveness_buffer)](::sycl::nd_item<1> item) {
+                    device::fit_prelude(details::global_index(item),
+                                        param_ids_view, track_candidates_view,
+                                        track_states_view, param_liveness_view);
                 });
         })
         .wait_and_throw();
+
+    device::fit_payload<fitter_t> payload{
+        .det_data = det_view,
+        .field_data = field_view,
+        .param_ids_view = param_ids_buffer,
+        .param_liveness_view = param_liveness_buffer,
+        .track_states_view = track_states_view,
+        .barcodes_view = seqs_buffer};
+
+    for (std::size_t i = 0; i < config.n_iterations; ++i) {
+        queue
+            .submit([&](::sycl::handler& h) {
+                h.parallel_for(
+                    range, [config, payload](::sycl::nd_item<1> item) {
+                        device::fit_forward<fitter_t>(
+                            details::global_index(item), config, payload);
+                    });
+            })
+            .wait_and_throw();
+
+        queue
+            .submit([&](::sycl::handler& h) {
+                h.parallel_for(
+                    range, [config, payload](::sycl::nd_item<1> item) {
+                        device::fit_backward<fitter_t>(
+                            details::global_index(item), config, payload);
+                    });
+            })
+            .wait_and_throw();
+    }
 
     // Return the fitted tracks.
     return track_states_buffer;
