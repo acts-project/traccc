@@ -79,7 +79,7 @@ class clusterization_algorithm
     vecmem::data::vector_buffer<unsigned char> m_adjc_backup;
     vecmem::data::vector_buffer<device::details::index_t> m_adjv_backup;
     vecmem::unique_alloc_ptr<unsigned int> m_backup_mutex;
-    mutable std::once_flag m_setup_once;
+    std::unique_ptr<std::once_flag> m_setup_once;
 };
 
 }  // namespace traccc::alpaka
