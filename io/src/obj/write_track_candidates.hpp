@@ -8,7 +8,8 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/track_candidate_collection.hpp"
 #include "traccc/geometry/detector.hpp"
 
 // System include(s).
@@ -20,10 +21,13 @@ namespace traccc::io::obj {
 ///
 /// @param filename is the name of the output file
 /// @param tracks is the track candidate container to write
+/// @param measurements is the collection of all measurements in the event
 /// @param detector is the Detray detector describing the geometry
 ///
-void write_track_candidates(std::string_view filename,
-                            track_candidate_container_types::const_view tracks,
-                            const traccc::default_detector::host& detector);
+void write_track_candidates(
+    std::string_view filename,
+    edm::track_candidate_collection<default_algebra>::const_view tracks,
+    measurement_collection_types::const_view measurements,
+    const traccc::default_detector::host& detector);
 
 }  // namespace traccc::io::obj

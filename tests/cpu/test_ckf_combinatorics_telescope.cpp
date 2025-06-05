@@ -125,25 +125,26 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
 
     // Finding algorithm object
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(
-        cfg_no_limit);
+        cfg_no_limit, host_mr);
     traccc::host::combinatorial_kalman_filter_algorithm host_finding_limit(
-        cfg_limit);
+        cfg_limit, host_mr);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
 
         // Truth Track Candidates
         traccc::event_data evt_data(path, i_evt, host_mr);
-        traccc::track_candidate_container_types::host truth_track_candidates =
-            evt_data.generate_truth_candidates(sg, host_mr);
 
-        ASSERT_EQ(truth_track_candidates.size(), n_truth_tracks);
+        traccc::edm::track_candidate_container<traccc::default_algebra>::host
+            truth_track_candidates{host_mr};
+        evt_data.generate_truth_candidates(truth_track_candidates, sg, host_mr);
+
+        ASSERT_EQ(truth_track_candidates.tracks.size(), n_truth_tracks);
 
         // Prepare truth seeds
         traccc::bound_track_parameters_collection_types::host seeds(&host_mr);
         for (unsigned int i_trk = 0; i_trk < n_truth_tracks; i_trk++) {
-            seeds.push_back(
-                truth_track_candidates.at(i_trk).header.seed_params);
+            seeds.push_back(truth_track_candidates.tracks.at(i_trk).params());
         }
         ASSERT_EQ(seeds.size(), n_truth_tracks);
         const traccc::bound_track_parameters_collection_types::const_view

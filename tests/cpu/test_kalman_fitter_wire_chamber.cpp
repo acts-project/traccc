@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -134,15 +134,18 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
         // Event map
         traccc::event_data evt_data(path, i_evt, host_mr);
         // Truth Track Candidates
-        traccc::track_candidate_container_types::host track_candidates =
-            evt_data.generate_truth_candidates(sg, host_mr);
+        traccc::edm::track_candidate_container<traccc::default_algebra>::host
+            track_candidates{host_mr};
+        evt_data.generate_truth_candidates(track_candidates, sg, host_mr);
 
         // n_trakcs = 100
-        ASSERT_EQ(track_candidates.size(), n_truth_tracks);
+        ASSERT_EQ(track_candidates.tracks.size(), n_truth_tracks);
 
         // Run fitting
         auto track_states =
-            fitting(host_det, field, traccc::get_data(track_candidates));
+            fitting(host_det, field,
+                    {vecmem::get_data(track_candidates.tracks),
+                     vecmem::get_data(track_candidates.measurements)});
 
         // Iterator over tracks
         const std::size_t n_tracks = track_states.size();

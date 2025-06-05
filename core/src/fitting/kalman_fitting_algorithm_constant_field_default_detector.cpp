@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -22,7 +22,8 @@ namespace traccc::host {
 
 kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
     const detector_type::host& det, const bfield_type::view_t& field,
-    const track_candidate_container_types::const_view& track_candidates) const {
+    const edm::track_candidate_container<default_algebra>::const_view&
+        track_candidates) const {
 
     // Create the fitter object.
     kalman_fitter<detray::rk_stepper<bfield_type::view_t,
@@ -32,8 +33,8 @@ kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
         fitter{det, field, m_config};
 
     // Perform the track fitting using a common, templated function.
-    return details::fit_tracks(fitter, track_candidates, m_mr.get(),
-                               m_copy.get());
+    return details::fit_tracks<default_algebra>(fitter, track_candidates,
+                                                m_mr.get(), m_copy.get());
 }
 
 }  // namespace traccc::host

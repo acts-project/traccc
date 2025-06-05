@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -141,11 +141,6 @@ int main(int argc, char* argv[]) {
     vecmem::copy host_copy;
     vecmem::cuda::async_copy async_copy{stream.cudaStream()};
 
-    traccc::device::container_h2d_copy_alg<
-        traccc::track_candidate_container_types>
-        track_candidate_h2d{mr, async_copy,
-                            logger().clone("TrackCandidateH2DCopyAlg")};
-
     traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
         track_state_d2h{mr, async_copy, logger().clone("TrackStateD2HCopyAlg")};
 
@@ -181,13 +176,19 @@ int main(int argc, char* argv[]) {
                                     input_opts.use_acts_geom_source, &host_det,
                                     input_opts.format, false);
 
-        traccc::track_candidate_container_types::host truth_track_candidates =
-            evt_data.generate_truth_candidates(sg, host_mr);
+        traccc::edm::track_candidate_container<traccc::default_algebra>::host
+            truth_track_candidates{host_mr};
+        evt_data.generate_truth_candidates(truth_track_candidates, sg, host_mr);
 
         // track candidates buffer
-        const traccc::track_candidate_container_types::buffer
-            truth_track_candidates_cuda_buffer =
-                track_candidate_h2d(traccc::get_data(truth_track_candidates));
+        traccc::edm::track_candidate_container<traccc::default_algebra>::buffer
+            truth_track_candidates_buffer{
+                async_copy.to(vecmem::get_data(truth_track_candidates.tracks),
+                              mr.main, mr.host,
+                              vecmem::copy::type::host_to_device),
+                async_copy.to(
+                    vecmem::get_data(truth_track_candidates.measurements),
+                    mr.main, vecmem::copy::type::host_to_device)};
 
         // Instantiate cuda containers/collections
         traccc::track_state_container_types::buffer track_states_cuda_buffer{
@@ -197,8 +198,10 @@ int main(int argc, char* argv[]) {
             traccc::performance::timer t("Track fitting  (cuda)", elapsedTimes);
 
             // Run fitting
-            track_states_cuda_buffer = device_fitting(
-                det_view, field, truth_track_candidates_cuda_buffer);
+            track_states_cuda_buffer =
+                device_fitting(det_view, field,
+                               {truth_track_candidates_buffer.tracks,
+                                truth_track_candidates_buffer.measurements});
         }
 
         traccc::track_state_container_types::host track_states_cuda =
@@ -215,7 +218,9 @@ int main(int argc, char* argv[]) {
 
                 // Run fitting
                 track_states = host_fitting(
-                    host_det, field, traccc::get_data(truth_track_candidates));
+                    host_det, field,
+                    {vecmem::get_data(truth_track_candidates.tracks),
+                     vecmem::get_data(truth_track_candidates.measurements)});
             }
         }
 

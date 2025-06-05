@@ -73,7 +73,6 @@ int seq_run(const traccc::opts::input_data& input_opts,
 
     // Memory resource used by the application.
     vecmem::host_memory_resource host_mr;
-    traccc::memory_resource mr{host_mr, &host_mr};
 
     // Copy obejct
     vecmem::copy copy;
@@ -141,9 +140,11 @@ int seq_run(const traccc::opts::input_data& input_opts,
         seeding_opts.seedfilter, host_mr, logger().clone("SeedingAlg"));
     traccc::host::track_params_estimation tp(host_mr,
                                              logger().clone("TrackParEstAlg"));
-    finding_algorithm finding_alg(finding_cfg, logger().clone("FindingAlg"));
+
+    finding_algorithm finding_alg(finding_cfg, host_mr,
+                                  logger().clone("FindingAlg"));
     traccc::host::greedy_ambiguity_resolution_algorithm resolution_alg(
-        resolution_config, mr, logger().clone("AmbiguityResolutionAlg"));
+        resolution_config, host_mr, logger().clone("AmbiguityResolutionAlg"));
     fitting_algorithm fitting_alg(fitting_cfg, host_mr, copy,
                                   logger().clone("FittingAlg"));
 
@@ -179,9 +180,9 @@ int seq_run(const traccc::opts::input_data& input_opts,
             host_mr};
         traccc::host::seeding_algorithm::output_type seeds{host_mr};
         traccc::host::track_params_estimation::output_type params{&host_mr};
-        finding_algorithm::output_type track_candidates{&host_mr};
+        finding_algorithm::output_type track_candidates{host_mr};
         traccc::host::greedy_ambiguity_resolution_algorithm::output_type
-            resolved_track_candidates{&host_mr};
+            resolved_track_candidates{host_mr};
         fitting_algorithm::output_type track_states{&host_mr};
 
         {  // Start measuring wall time.
@@ -270,15 +271,17 @@ int seq_run(const traccc::opts::input_data& input_opts,
                 if (output_opts.directory != "") {
                     traccc::io::write(
                         event, output_opts.directory, output_opts.format,
-                        traccc::get_data(track_candidates), detector);
+                        vecmem::get_data(track_candidates),
+                        vecmem::get_data(measurements_per_event), detector);
                 }
 
                 {
                     // Perform ambiguity resolution only if asked for.
                     traccc::performance::timer timer{
                         "Track ambiguity resolution", elapsedTimes};
-                    resolved_track_candidates =
-                        resolution_alg(traccc::get_data(track_candidates));
+                    resolved_track_candidates = resolution_alg(
+                        {vecmem::get_data(track_candidates),
+                         vecmem::get_data(measurements_per_event)});
                 }
 
                 {
@@ -286,7 +289,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
                                                      elapsedTimes};
                     track_states = fitting_alg(
                         detector, field,
-                        traccc::get_data(resolved_track_candidates));
+                        {vecmem::get_data(resolved_track_candidates),
+                         vecmem::get_data(measurements_per_event)});
                 }
             }
 
@@ -320,10 +324,12 @@ int seq_run(const traccc::opts::input_data& input_opts,
                 vecmem::get_data(seeds),
                 vecmem::get_data(spacepoints_per_event),
                 vecmem::get_data(measurements_per_event), evt_data);
-            find_performance_writer.write(traccc::get_data(track_candidates),
-                                          evt_data);
+            find_performance_writer.write(
+                vecmem::get_data(track_candidates),
+                vecmem::get_data(measurements_per_event), evt_data);
             ar_performance_writer.write(
-                traccc::get_data(resolved_track_candidates), evt_data);
+                vecmem::get_data(resolved_track_candidates),
+                vecmem::get_data(measurements_per_event), evt_data);
 
             for (unsigned int i = 0; i < track_states.size(); i++) {
                 const auto& trk_states_per_track = track_states.at(i).items;

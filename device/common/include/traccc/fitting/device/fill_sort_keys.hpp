@@ -12,7 +12,7 @@
 #include "traccc/edm/device/sort_key.hpp"
 
 // Project include(s).
-#include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/track_candidate_collection.hpp"
 
 namespace traccc::device {
 
@@ -25,7 +25,8 @@ namespace traccc::device {
 ///
 TRACCC_HOST_DEVICE inline void fill_sort_keys(
     global_index_t globalIndex,
-    const track_candidate_container_types::const_view& track_candidates_view,
+    const edm::track_candidate_collection<default_algebra>::const_view&
+        track_candidates_view,
     vecmem::data::vector_view<device::sort_key> keys_view,
     vecmem::data::vector_view<unsigned int> ids_view);
 

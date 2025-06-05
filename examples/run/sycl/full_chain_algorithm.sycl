@@ -205,8 +205,8 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
             m_device_detector_view, m_field, measurements, track_params);
 
         // Get the final data back to the host.
-        finding_result_collection_types::host result(&(m_host_mr.get()));
-        m_copy(track_candidates.headers, result)->wait();
+        output_type result(m_host_mr.get());
+        m_copy(track_candidates, result)->wait();
 
         // Return the host container.
         return result;
@@ -221,7 +221,7 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
         m_copy(measurements, measurements_host)->wait();
 
         // Return an empty object.
-        return {};
+        return output_type{m_host_mr.get()};
     }
 }
 

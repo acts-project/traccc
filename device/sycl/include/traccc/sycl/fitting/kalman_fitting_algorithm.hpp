@@ -11,7 +11,7 @@
 #include "traccc/sycl/utils/queue_wrapper.hpp"
 
 // Project include(s).
-#include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/track_candidate_container.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/geometry/detector.hpp"
@@ -34,12 +34,12 @@ class kalman_fitting_algorithm
           const default_detector::view&,
           const covfie::field<const_bfield_backend_t<
               default_detector::device::scalar_type>>::view_t&,
-          const track_candidate_container_types::const_view&)>,
+          const edm::track_candidate_container<default_algebra>::const_view&)>,
       public algorithm<track_state_container_types::buffer(
           const telescope_detector::view&,
           const covfie::field<const_bfield_backend_t<
               telescope_detector::device::scalar_type>>::view_t&,
-          const track_candidate_container_types::const_view&)>,
+          const edm::track_candidate_container<default_algebra>::const_view&)>,
       public messaging {
 
     public:
@@ -69,8 +69,8 @@ class kalman_fitting_algorithm
         const default_detector::view& det,
         const covfie::field<traccc::const_bfield_backend_t<
             default_detector::device::scalar_type>>::view_t& field,
-        const track_candidate_container_types::const_view& track_candidates)
-        const override;
+        const edm::track_candidate_container<default_algebra>::const_view&
+            track_candidates) const override;
 
     /// Execute the algorithm
     ///
@@ -84,8 +84,8 @@ class kalman_fitting_algorithm
         const telescope_detector::view& det,
         const covfie::field<traccc::const_bfield_backend_t<
             telescope_detector::device::scalar_type>>::view_t& field,
-        const track_candidate_container_types::const_view& track_candidates)
-        const override;
+        const edm::track_candidate_container<default_algebra>::const_view&
+            track_candidates) const override;
 
     private:
     /// Algorithm configuration

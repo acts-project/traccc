@@ -133,15 +133,16 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
                             seeds_cuda_buffer, B);
 
             // Run CKF track finding
-            traccc::track_candidate_container_types::buffer
-                track_candidates_cuda_buffer =
-                    device_finding(det_view, field, measurements_cuda_buffer,
-                                   params_cuda_buffer);
+            traccc::edm::track_candidate_collection<
+                traccc::default_algebra>::buffer track_candidates_cuda_buffer =
+                device_finding(det_view, field, measurements_cuda_buffer,
+                               params_cuda_buffer);
 
             // Run track fitting
             traccc::track_state_container_types::buffer
                 track_states_cuda_buffer = device_fitting(
-                    det_view, field, track_candidates_cuda_buffer);
+                    det_view, field,
+                    {track_candidates_cuda_buffer, measurements_cuda_buffer});
 
             // Create a temporary buffer that will receive the device memory.
             /*auto size = track_states_cuda_buffer.headers.size();

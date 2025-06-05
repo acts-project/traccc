@@ -130,12 +130,15 @@ int main(int argc, char* argv[]) {
                                     input_opts.use_acts_geom_source, &host_det,
                                     input_opts.format, false);
 
-        traccc::track_candidate_container_types::host truth_track_candidates =
-            evt_data.generate_truth_candidates(sg, host_mr);
+        traccc::edm::track_candidate_container<traccc::default_algebra>::host
+            truth_track_candidates{host_mr};
+        evt_data.generate_truth_candidates(truth_track_candidates, sg, host_mr);
 
         // Run fitting
         auto track_states = host_fitting(
-            host_det, field, traccc::get_data(truth_track_candidates));
+            host_det, field,
+            {vecmem::get_data(truth_track_candidates.tracks),
+             vecmem::get_data(truth_track_candidates.measurements)});
 
         print_fitted_tracks_statistics(track_states);
 

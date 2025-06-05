@@ -12,7 +12,7 @@
 
 // Project include(s).
 #include "traccc/ambiguity_resolution/ambiguity_resolution_config.hpp"
-#include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/track_candidate_container.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
@@ -26,8 +26,8 @@ namespace traccc::cuda {
 /// greedy approach in the sense that it will remove the track which looks "most
 /// duplicate/fake"
 class greedy_ambiguity_resolution_algorithm
-    : public algorithm<track_candidate_container_types::buffer(
-          const track_candidate_container_types::const_view&)>,
+    : public algorithm<edm::track_candidate_collection<default_algebra>::buffer(
+          const edm::track_candidate_container<default_algebra>::const_view&)>,
       public messaging {
 
     public:
@@ -42,16 +42,17 @@ class greedy_ambiguity_resolution_algorithm
     /// @param str The CUDA stream to perform the operations in
     ///
     greedy_ambiguity_resolution_algorithm(
-        const config_type& cfg, traccc::memory_resource& mr, vecmem::copy& copy,
-        stream& str,
+        const config_type& cfg, const traccc::memory_resource& mr,
+        vecmem::copy& copy, stream& str,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Run the algorithm
     ///
-    /// @param track_candidates_view the container view of found patterns
+    /// @param track_candidates the container view of found patterns
     /// @return the container without ambiguous tracks
-    output_type operator()(const track_candidate_container_types::const_view&
-                               track_candidates_view) const override;
+    output_type operator()(
+        const edm::track_candidate_container<default_algebra>::const_view&
+            track_candidates) const override;
 
     /// Get configuration
     config_type& get_config() { return m_config; }

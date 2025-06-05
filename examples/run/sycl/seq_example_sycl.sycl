@@ -176,7 +176,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     traccc::host::track_params_estimation tp(
         host_mr, logger().clone("HostTrackParEstAlg"));
     traccc::host::combinatorial_kalman_filter_algorithm finding_alg{
-        finding_cfg, logger().clone("HostFindingAlg")};
+        finding_cfg, host_mr, logger().clone("HostFindingAlg")};
 
     traccc::sycl::clusterization_algorithm ca_sycl(
         mr, copy, queue, clusterization_opts,
@@ -193,11 +193,6 @@ int seq_run(const traccc::opts::detector& detector_opts,
         mr, copy, &q, logger().clone("SyclTrackParEstAlg"));
     traccc::sycl::combinatorial_kalman_filter_algorithm finding_alg_sycl{
         finding_cfg, mr, copy, queue, logger().clone("SyclFindingAlg")};
-
-    traccc::device::container_d2h_copy_alg<
-        traccc::track_candidate_container_types>
-        copy_track_candidates{mr, copy,
-                              logger().clone("TrackCandidateD2HCopyAlg")};
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -217,7 +212,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
         traccc::host::seeding_algorithm::output_type seeds{host_mr};
         traccc::host::track_params_estimation::output_type params{&host_mr};
         traccc::host::combinatorial_kalman_filter_algorithm::output_type
-            track_candidates{&host_mr};
+            track_candidates{host_mr};
 
         // Instantiate SYCL containers/collections
         traccc::sycl::clusterization_algorithm::output_type
@@ -362,14 +357,16 @@ int seq_run(const traccc::opts::detector& detector_opts,
         traccc::edm::seed_collection::host seeds_sycl{host_mr};
         traccc::bound_track_parameters_collection_types::host params_sycl{
             &host_mr};
+        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+            track_candidates_sycl{host_mr};
 
         copy(measurements_sycl_buffer, measurements_per_event_sycl)->wait();
         copy(spacepoints_sycl_buffer, spacepoints_per_event_sycl)->wait();
         copy(seeds_sycl_buffer, seeds_sycl)->wait();
         copy(params_sycl_buffer, params_sycl)->wait();
-        auto track_candidates_sycl =
-            copy_track_candidates(track_candidates_sycl_buffer);
-        q.wait_and_throw();
+        copy(track_candidates_sycl_buffer, track_candidates_sycl,
+             vecmem::copy::type::device_to_host)
+            ->wait();
 
         if (accelerator_opts.compare_with_cpu) {
 
@@ -405,33 +402,18 @@ int seq_run(const traccc::opts::detector& detector_opts,
                                      vecmem::get_data(params_sycl));
 
             // Compare tracks found on the host and on the device.
-            traccc::collection_comparator<
-                traccc::track_candidate_container_types::host::header_type>
-                compare_track_candidates{"track candidates (header)"};
-            compare_track_candidates(
-                vecmem::get_data(track_candidates.get_headers()),
-                vecmem::get_data(track_candidates_sycl.get_headers()));
-
-            unsigned int n_matches = 0;
-            for (unsigned int i = 0; i < track_candidates.size(); i++) {
-                auto iso = traccc::details::is_same_object(
-                    track_candidates.at(i).items);
-
-                for (unsigned int j = 0; j < track_candidates_sycl.size();
-                     j++) {
-                    if (iso(track_candidates_sycl.at(j).items)) {
-                        n_matches++;
-                        break;
-                    }
-                }
-            }
-
-            TRACCC_INFO("  Track candidates (item) matching rate: "
-                        << 100. * static_cast<double>(n_matches) /
-                               static_cast<double>(
-                                   std::max(track_candidates.size(),
-                                            track_candidates_sycl.size()))
-                        << "%");
+            traccc::soa_comparator<traccc::edm::track_candidate_collection<
+                traccc::default_algebra>>
+                compare_track_candidates{
+                    "track candidates",
+                    traccc::details::comparator_factory<
+                        traccc::edm::track_candidate_collection<
+                            traccc::default_algebra>::const_device::
+                            const_proxy_type>{
+                        vecmem::get_data(measurements_per_event),
+                        vecmem::get_data(measurements_per_event_sycl)}};
+            compare_track_candidates(vecmem::get_data(track_candidates),
+                                     vecmem::get_data(track_candidates_sycl));
         }
 
         /// Statistics

@@ -11,6 +11,7 @@
 
 // VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>
+#include <vecmem/containers/jagged_device_vector.hpp>
 
 // Thrust include(s).
 #include <thrust/binary_search.h>
@@ -25,8 +26,7 @@ __global__ void fill_tracks_per_measurement(
     vecmem::device_vector<const unsigned int> accepted_ids(
         payload.accepted_ids_view);
 
-    auto globalIndex = threadIdx.x + blockIdx.x * blockDim.x;
-
+    const auto globalIndex = details::global_index1();
     if (globalIndex >= accepted_ids.size()) {
         return;
     }

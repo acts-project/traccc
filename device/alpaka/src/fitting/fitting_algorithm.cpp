@@ -36,7 +36,8 @@ struct FillSortKeysKernel {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc,
-        track_candidate_container_types::const_view track_candidates_view,
+        edm::track_candidate_collection<default_algebra>::const_view
+            track_candidates_view,
         vecmem::data::vector_view<device::sort_key> keys_view,
         vecmem::data::vector_view<unsigned int> ids_view) const {
 
@@ -53,7 +54,8 @@ struct FitTrackPreludeKernel {
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc,
         vecmem::data::vector_view<const unsigned int> param_ids_view,
-        track_candidate_container_types::const_view track_candidates_view,
+        edm::track_candidate_container<default_algebra>::const_view
+            track_candidates_view,
         track_state_container_types::view track_states_view,
         vecmem::data::vector_view<unsigned int> param_liveness_view) const {
 
@@ -104,7 +106,7 @@ template <typename fitter_t>
 track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
     const typename fitter_t::detector_type::view_type& det_view,
     const typename fitter_t::bfield_type& field_view,
-    const typename track_candidate_container_types::const_view&
+    const edm::track_candidate_container<default_algebra>::const_view&
         track_candidates_view) const {
 
     // Setup alpaka
@@ -120,14 +122,13 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
 #endif
 
     // Number of tracks
-    const track_candidate_container_types::const_device::header_vector::
-        size_type n_tracks = m_copy.get_size(track_candidates_view.headers);
+    const edm::track_candidate_collection<
+        default_algebra>::const_device::size_type n_tracks =
+        m_copy.get_size(track_candidates_view.tracks);
 
-    // Get the sizes of the track candidates in each track
-    using jagged_buffer_size_type = track_candidate_container_types::
-        const_device::item_vector::value_type::size_type;
-    const std::vector<jagged_buffer_size_type> candidate_sizes =
-        m_copy.get_sizes(track_candidates_view.items);
+    // Get the sizes of the track candidates in each track.
+    const std::vector<unsigned int> candidate_sizes =
+        m_copy.get_sizes(track_candidates_view.tracks);
 
     track_state_container_types::buffer track_states_buffer{
         {n_tracks, m_mr.main},
@@ -135,10 +136,9 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
          vecmem::data::buffer_type::resizable}};
     track_state_container_types::view track_states_view(track_states_buffer);
 
-    std::vector<jagged_buffer_size_type> seqs_sizes(candidate_sizes.size());
+    std::vector<unsigned int> seqs_sizes(candidate_sizes.size());
     std::transform(candidate_sizes.begin(), candidate_sizes.end(),
-                   seqs_sizes.begin(),
-                   [this](const jagged_buffer_size_type sz) {
+                   seqs_sizes.begin(), [this](const unsigned int sz) {
                        return std::max(sz * m_cfg.barcode_sequence_size_factor,
                                        m_cfg.min_barcode_sequence_capacity);
                    });
@@ -167,9 +167,9 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
                                                                     m_mr.main);
 
     // Get key and value for sorting
-    ::alpaka::exec<Acc>(queue, workDiv, FillSortKeysKernel{},
-                        track_candidates_view, vecmem::get_data(keys_buffer),
-                        vecmem::get_data(param_ids_buffer));
+    ::alpaka::exec<Acc>(
+        queue, workDiv, FillSortKeysKernel{}, track_candidates_view.tracks,
+        vecmem::get_data(keys_buffer), vecmem::get_data(param_ids_buffer));
     ::alpaka::wait(queue);
 
     // Sort the key to get the sorted parameter ids

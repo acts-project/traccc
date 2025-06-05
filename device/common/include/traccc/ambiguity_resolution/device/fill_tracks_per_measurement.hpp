@@ -7,12 +7,12 @@
 
 #pragma once
 
-// Project include(s).
-#include "traccc/edm/track_candidate.hpp"
-
 // VecMem include(s).
 #include <vecmem/containers/data/jagged_vector_view.hpp>
 #include <vecmem/containers/data/vector_view.hpp>
+
+// System include(s).
+#include <cstddef>
 
 namespace traccc::device {
 
