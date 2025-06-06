@@ -57,8 +57,8 @@ full_chain_algorithm::full_chain_algorithm(
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
     const silicon_detector_description::host& det_descr,
-    host_detector_type* detector, std::unique_ptr<const traccc::Logger> logger)
-    : messaging(logger->clone()),
+    host_detector_type* detector, std::unique_ptr<const traccc::Logger> log)
+    : messaging(log->clone()),
       m_data(std::make_unique<details::full_chain_algorithm_data>(
           ::handle_async_error)),
       m_host_mr(host_mr),
@@ -77,29 +77,29 @@ full_chain_algorithm::full_chain_algorithm(
       m_device_detector{},
       m_clusterization{memory_resource{m_cached_device_mr, &(m_host_mr.get())},
                        m_copy, m_data->m_queue_wrapper, clustering_config,
-                       logger->clone("ClusteringAlg")},
+                       log->clone("ClusteringAlg")},
       m_measurement_sorting(
           memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
-          m_data->m_queue_wrapper, logger->clone("MeasSortingAlg")),
+          m_data->m_queue_wrapper, log->clone("MeasSortingAlg")),
       m_spacepoint_formation{
           memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
-          m_data->m_queue_wrapper, logger->clone("SpFormationAlg")},
+          m_data->m_queue_wrapper, log->clone("SpFormationAlg")},
       m_seeding{finder_config,
                 grid_config,
                 filter_config,
                 memory_resource{m_cached_device_mr, &(m_host_mr.get())},
                 m_copy,
                 m_data->m_queue_wrapper,
-                logger->clone("SeedingAlg")},
+                log->clone("SeedingAlg")},
       m_track_parameter_estimation{
           memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
-          m_data->m_queue_wrapper, logger->clone("TrackParEstAlg")},
+          m_data->m_queue_wrapper, log->clone("TrackParEstAlg")},
       m_finding{finding_config,
                 memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
-                m_data->m_queue_wrapper, logger->clone("TrackFindingAlg")},
+                m_data->m_queue_wrapper, log->clone("TrackFindingAlg")},
       m_fitting{fitting_config,
                 memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
-                m_data->m_queue_wrapper, logger->clone("TrackFittingAlg")},
+                m_data->m_queue_wrapper, log->clone("TrackFittingAlg")},
       m_clustering_config(clustering_config),
       m_finder_config(finder_config),
       m_grid_config(grid_config),
@@ -108,10 +108,9 @@ full_chain_algorithm::full_chain_algorithm(
       m_fitting_config(fitting_config) {
 
     // Tell the user what device is being used.
-    std::cout
-        << "Using SYCL device: "
-        << m_data->m_queue.get_device().get_info<::sycl::info::device::name>()
-        << std::endl;
+    TRACCC_INFO(
+        "Using SYCL device: "
+        << m_data->m_queue.get_device().get_info<::sycl::info::device::name>());
 
     // Copy the detector (description) to the device.
     m_copy(vecmem::get_data(m_det_descr.get()), m_device_det_descr)->wait();
@@ -161,10 +160,12 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
           m_data->m_queue_wrapper, parent.logger().clone("TrackParEstAlg")},
       m_finding{parent.m_finding_config,
                 memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
-                m_data->m_queue_wrapper, parent.logger().clone("FindingAlg")},
+                m_data->m_queue_wrapper,
+                parent.logger().clone("TrackFindingAlg")},
       m_fitting{parent.m_fitting_config,
                 memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
-                m_data->m_queue_wrapper, parent.logger().clone("FittingAlg")},
+                m_data->m_queue_wrapper,
+                parent.logger().clone("TrackFittingAlg")},
       m_clustering_config(parent.m_clustering_config),
       m_finder_config(parent.m_finder_config),
       m_grid_config(parent.m_grid_config),
