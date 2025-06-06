@@ -9,12 +9,12 @@
 
 // Project include(s).
 #include "traccc/edm/silicon_cell_collection.hpp"
-#include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 #include "traccc/sycl/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
+#include "traccc/sycl/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/sycl/seeding/seeding_algorithm.hpp"
 #include "traccc/sycl/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
@@ -41,7 +41,7 @@ struct full_chain_algorithm_data;
 /// At least as much as is implemented in the project at any given moment.
 ///
 class full_chain_algorithm
-    : public algorithm<edm::track_candidate_collection<default_algebra>::host(
+    : public algorithm<vecmem::vector<fitting_result<default_algebra>>(
           const edm::silicon_cell_collection::host&)>,
       public messaging {
 
@@ -75,7 +75,7 @@ class full_chain_algorithm
     using finding_algorithm =
         traccc::sycl::combinatorial_kalman_filter_algorithm;
     /// Track fitting algorithm type
-    using fitting_algorithm = traccc::host::kalman_fitting_algorithm;
+    using fitting_algorithm = traccc::sycl::kalman_fitting_algorithm;
 
     /// @}
 
@@ -160,6 +160,8 @@ class full_chain_algorithm
     track_params_estimation m_track_parameter_estimation;
     /// Track finding algorithm
     finding_algorithm m_finding;
+    /// Track fitting algorithm
+    fitting_algorithm m_fitting;
 
     /// @}
 
@@ -179,6 +181,8 @@ class full_chain_algorithm
 
     /// Configuration for the track finding
     finding_algorithm::config_type m_finding_config;
+    /// Configuration for the track fitting
+    fitting_algorithm::config_type m_fitting_config;
 
     /// @}
 };  // class full_chain_algorithm
