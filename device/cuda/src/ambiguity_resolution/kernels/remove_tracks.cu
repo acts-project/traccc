@@ -5,10 +5,14 @@
  * Mozilla Public License Version 2.0
  */
 
+// Project include(s).
+#include "traccc/utils/pair.hpp"
+
 // Local include(s).
 #include "../../utils/barrier.hpp"
 #include "../../utils/global_index.hpp"
-#include "update_vectors.cuh"
+#include "count_removable_tracks.cuh"
+#include "remove_tracks.cuh"
 
 // VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>
@@ -22,19 +26,19 @@
 
 namespace traccc::cuda::kernels {
 
-__global__ void update_vectors(device::update_vectors_payload payload) {
-
-    __shared__ unsigned int shared_tids[1024];
-    __shared__ std::size_t shared_meas_ids[1024];
+__global__ void remove_tracks(device::remove_tracks_payload payload) {
 
     if (*(payload.terminate) == 1) {
         return;
     }
 
-    auto globalIndex = threadIdx.x + blockIdx.x * blockDim.x;
+    __shared__ unsigned int shared_tids[1024];
+    __shared__ std::size_t sh_meas_ids[1024];
+    __shared__ unsigned int sh_threads[1024];
+
     auto threadIndex = threadIdx.x;
 
-    shared_tids[globalIndex] = std::numeric_limits<unsigned int>::max();
+    shared_tids[threadIndex] = std::numeric_limits<unsigned int>::max();
 
     vecmem::device_vector<const unsigned int> sorted_ids(
         payload.sorted_ids_view);
@@ -54,26 +58,27 @@ __global__ void update_vectors(device::update_vectors_payload payload) {
     vecmem::device_vector<unsigned int> updated_tracks(
         payload.updated_tracks_view);
     vecmem::device_vector<int> is_updated(payload.is_updated_view);
+    vecmem::device_vector<std::size_t> meas_to_remove(
+        payload.meas_to_remove_view);
+    vecmem::device_vector<unsigned int> threads(payload.threads_view);
 
-    const auto worst_track = sorted_ids[*payload.n_accepted - 1];
-    const auto& worst_meas_list = meas_ids[worst_track];
-    if (globalIndex < n_meas[worst_track]) {
-        shared_meas_ids[globalIndex] = worst_meas_list[globalIndex];
+    auto n_accepted_prev = (*payload.n_accepted);
+    if (threadIndex == 0) {
+        (*payload.n_accepted) -= *(payload.n_removable_tracks);
     }
 
-    if (globalIndex == 0) {
-        (*payload.n_accepted)--;
-    }
-
-    if (globalIndex >= n_meas[worst_track]) {
+    if (threadIndex < *(payload.n_meas_to_remove)) {
+        sh_meas_ids[threadIndex] = meas_to_remove[threadIndex];
+        sh_threads[threadIndex] = threads[threadIndex];
+    } else {
         return;
     }
 
-    const auto id = shared_meas_ids[globalIndex];
+    const auto id = sh_meas_ids[threadIndex];
 
     bool is_duplicate = false;
-    for (unsigned int i = 0; i < globalIndex; ++i) {
-        if (shared_meas_ids[i] == id) {
+    for (unsigned int i = 0; i < threadIndex; ++i) {
+        if (sh_meas_ids[i] == id) {
             is_duplicate = true;
             break;
         }
@@ -87,23 +92,45 @@ __global__ void update_vectors(device::update_vectors_payload payload) {
                             id) -
         unique_meas.begin();
 
-    vecmem::device_atomic_ref<unsigned int> n_accepted_per_meas(
-        n_accepted_tracks_per_measurement.at(
-            static_cast<unsigned int>(unique_meas_idx)));
-    const unsigned int N_A = n_accepted_per_meas.fetch_add(-1u);
-
     // If there is only one track associated with measurement, the
     // number of shared measurement can be reduced by one
     const auto& tracks = tracks_per_measurement[unique_meas_idx];
     auto track_status = track_status_per_measurement[unique_meas_idx];
 
-    const unsigned int worst_idx =
-        thrust::find(thrust::seq, tracks.begin(), tracks.end(), worst_track) -
+    auto trk_id = sorted_ids[n_accepted_prev - 1 - sh_threads[threadIndex]];
+
+    unsigned int worst_idx =
+        thrust::find(thrust::seq, tracks.begin(), tracks.end(), trk_id) -
         tracks.begin();
 
     track_status[worst_idx] = 0;
 
-    if (N_A != 2) {
+    int n_sharing_tracks = 1;
+    for (unsigned int i = threadIndex + 1; i < *(payload.n_meas_to_remove);
+         ++i) {
+
+        if (sh_meas_ids[i] == id && sh_threads[i] != sh_threads[i - 1]) {
+            n_sharing_tracks++;
+
+            trk_id = sorted_ids[n_accepted_prev - 1 - sh_threads[i]];
+
+            worst_idx = thrust::find(thrust::seq, tracks.begin(), tracks.end(),
+                                     trk_id) -
+                        tracks.begin();
+
+            track_status[worst_idx] = 0;
+
+        } else if (sh_meas_ids[i] != id) {
+            break;
+        }
+    }
+
+    vecmem::device_atomic_ref<unsigned int> n_accepted_per_meas(
+        n_accepted_tracks_per_measurement.at(
+            static_cast<unsigned int>(unique_meas_idx)));
+    const unsigned int N_A = n_accepted_per_meas.fetch_sub(n_sharing_tracks);
+
+    if (N_A != 1 + n_sharing_tracks) {
         return;
     }
 
