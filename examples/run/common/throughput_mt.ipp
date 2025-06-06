@@ -61,6 +61,7 @@
 #include <atomic>
 #include <cstdlib>
 #include <ctime>
+#include <format>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -134,8 +135,9 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
                      event != event_range.end(); ++event) {
                     static constexpr bool DEDUPLICATE = true;
                     io::read_cells(input.at(event - input_opts.skip), event,
-                                   input_opts.directory, logger().clone(),
-                                   &det_descr, input_opts.format, DEDUPLICATE,
+                                   input_opts.directory,
+                                   logger().clone("io::read_cells"), &det_descr,
+                                   input_opts.format, DEDUPLICATE,
                                    input_opts.use_acts_geom_source);
                 }
             });
@@ -187,7 +189,7 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
              fitting_cfg,
              det_descr,
              (detector_opts.use_detray_detector ? &detector : nullptr),
-             logger().clone()});
+             logger().clone(std::format("FullChainAlg{}", i))});
     }
 
     // Set up the TBB arena and thread group. From here on out TBB is only
@@ -297,14 +299,14 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
 
     // Print some results.
     TRACCC_INFO("Reconstructed track parameters: " << rec_track_params.load());
-    TRACCC_INFO("Time totals: " << times);
+    TRACCC_INFO("Time totals:\n" << times);
 
     performance::throughput throughput_wu{throughput_opts.cold_run_events,
                                           times, "Warm-up processing"};
     performance::throughput throughput_pr{throughput_opts.processed_events,
                                           times, "Event processing"};
 
-    TRACCC_INFO("Throughput:" << throughput_wu << "\n" << throughput_pr);
+    TRACCC_INFO("Throughput:\n" << throughput_wu << "\n" << throughput_pr);
 
     // Print results to log file
     if (throughput_opts.log_file != "\0") {
