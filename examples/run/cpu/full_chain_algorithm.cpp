@@ -20,6 +20,7 @@ full_chain_algorithm::full_chain_algorithm(
     const silicon_detector_description::host& det_descr,
     detector_type* detector, std::unique_ptr<const traccc::Logger> logger)
     : messaging(logger->clone()),
+      m_copy{std::make_unique<vecmem::copy>()},
       m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
       m_field(
           traccc::construct_const_bfield<typename detector_type::scalar_type>(
@@ -33,7 +34,7 @@ full_chain_algorithm::full_chain_algorithm(
       m_track_parameter_estimation(mr,
                                    logger->cloneWithSuffix("TrackParamEstAlg")),
       m_finding(finding_config, mr, logger->cloneWithSuffix("TrackFindingAlg")),
-      m_fitting(fitting_config, mr, m_copy,
+      m_fitting(fitting_config, mr, *m_copy,
                 logger->cloneWithSuffix("TrackFittingAlg")),
       m_finder_config(finder_config),
       m_grid_config(grid_config),
