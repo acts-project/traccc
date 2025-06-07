@@ -8,9 +8,9 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/ambiguity_resolution/device/update_vectors.hpp"
+#include "traccc/ambiguity_resolution/device/exclusive_scan.hpp"
 
 namespace traccc::cuda::kernels {
 
-__global__ void update_vectors(device::update_vectors_payload payload);
+__global__ void exclusive_scan(device::exclusive_scan_payload payload);
 }
