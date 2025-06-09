@@ -9,9 +9,11 @@
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/global_index.hpp"
 #include "../utils/utils.hpp"
+#include "kernels/fit_backward.hpp"
+#include "kernels/fit_forward.hpp"
+#include "kernels/fit_prelude.hpp"
 #include "traccc/cuda/fitting/fitting_algorithm.hpp"
 #include "traccc/fitting/device/fill_sort_keys.hpp"
-#include "traccc/fitting/device/fit.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/detector_type_utils.hpp"
@@ -28,21 +30,14 @@ namespace traccc::cuda {
 namespace kernels {
 
 __global__ void fill_sort_keys(
-    track_candidate_container_types::const_view track_candidates_view,
+    edm::track_candidate_collection<default_algebra>::const_view
+        track_candidates_view,
     vecmem::data::vector_view<device::sort_key> keys_view,
     vecmem::data::vector_view<unsigned int> ids_view) {
 
     device::fill_sort_keys(details::global_index1(), track_candidates_view,
                            keys_view, ids_view);
 }
-
-template <typename fitter_t>
-__global__ void fit(const typename fitter_t::config_type cfg,
-                    const device::fit_payload<fitter_t> payload) {
-
-    device::fit<fitter_t>(details::global_index1(), cfg, payload);
-}
-
 }  // namespace kernels
 
 template <typename fitter_t>
@@ -60,31 +55,29 @@ template <typename fitter_t>
 track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
     const typename fitter_t::detector_type::view_type& det_view,
     const typename fitter_t::bfield_type& field_view,
-    const typename track_candidate_container_types::const_view&
+    const edm::track_candidate_container<default_algebra>::const_view&
         track_candidates_view) const {
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
 
     // Number of tracks
-    const track_candidate_container_types::const_device::header_vector::
-        size_type n_tracks = m_copy.get_size(track_candidates_view.headers);
+    const edm::track_candidate_collection<
+        default_algebra>::const_device::size_type n_tracks =
+        m_copy.get_size(track_candidates_view.tracks);
 
-    // Get the sizes of the track candidates in each track
-    using jagged_buffer_size_type = track_candidate_container_types::
-        const_device::item_vector::value_type::size_type;
-    const std::vector<jagged_buffer_size_type> candidate_sizes =
-        m_copy.get_sizes(track_candidates_view.items);
+    // Get the sizes of the track candidates in each track.
+    const std::vector<unsigned int> candidate_sizes =
+        m_copy.get_sizes(track_candidates_view.tracks);
 
     track_state_container_types::buffer track_states_buffer{
         {n_tracks, m_mr.main},
         {candidate_sizes, m_mr.main, m_mr.host,
          vecmem::data::buffer_type::resizable}};
 
-    std::vector<jagged_buffer_size_type> seqs_sizes(candidate_sizes.size());
+    std::vector<unsigned int> seqs_sizes(candidate_sizes.size());
     std::transform(candidate_sizes.begin(), candidate_sizes.end(),
-                   seqs_sizes.begin(),
-                   [this](const jagged_buffer_size_type sz) {
+                   seqs_sizes.begin(), [this](const unsigned int sz) {
                        return std::max(sz * m_cfg.barcode_sequence_size_factor,
                                        m_cfg.min_barcode_sequence_capacity);
                    });
@@ -97,18 +90,27 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
 
     // Calculate the number of threads and thread blocks to run the track
     // fitting
-    if (n_tracks > 0) {
+    if (n_tracks == 0) {
+        return track_states_buffer;
+    }
+
+    vecmem::data::vector_buffer<unsigned int> param_ids_buffer(n_tracks,
+                                                               m_mr.main);
+    m_copy.setup(param_ids_buffer)->wait();
+    vecmem::data::vector_buffer<unsigned int> param_liveness_buffer(n_tracks,
+                                                                    m_mr.main);
+    m_copy.setup(param_liveness_buffer)->wait();
+
+    {
+        vecmem::data::vector_buffer<device::sort_key> keys_buffer(n_tracks,
+                                                                  m_mr.main);
+
         const unsigned int nThreads = m_warp_size * 2;
         const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
 
-        vecmem::data::vector_buffer<device::sort_key> keys_buffer(n_tracks,
-                                                                  m_mr.main);
-        vecmem::data::vector_buffer<unsigned int> param_ids_buffer(n_tracks,
-                                                                   m_mr.main);
-
         // Get key and value for sorting
         kernels::fill_sort_keys<<<nBlocks, nThreads, 0, stream>>>(
-            track_candidates_view, keys_buffer, param_ids_buffer);
+            track_candidates_view.tracks, keys_buffer, param_ids_buffer);
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
         // Sort the key to get the sorted parameter ids
@@ -120,16 +122,39 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
                                 .on(stream),
                             keys_device.begin(), keys_device.end(),
                             param_ids_device.begin());
+    }
 
-        // Run the track fitting
-        kernels::fit<fitter_t><<<nBlocks, nThreads, 0, stream>>>(
-            m_cfg, device::fit_payload<fitter_t>{
-                       .det_data = det_view,
-                       .field_data = field_view,
-                       .track_candidates_view = track_candidates_view,
-                       .param_ids_view = param_ids_buffer,
-                       .track_states_view = track_states_buffer,
-                       .barcodes_view = seqs_buffer});
+    {
+        const unsigned int nThreads = m_warp_size * 2;
+        const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
+
+        fit_prelude(nBlocks, nThreads, 0, stream, param_ids_buffer,
+                    track_candidates_view, track_states_buffer,
+                    param_liveness_buffer);
+
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+        m_stream.synchronize();
+    }
+
+    device::fit_payload<fitter_t> payload{
+        .det_data = det_view,
+        .field_data = field_view,
+        .param_ids_view = param_ids_buffer,
+        .param_liveness_view = param_liveness_buffer,
+        .track_states_view = track_states_buffer,
+        .barcodes_view = seqs_buffer};
+
+    for (std::size_t i = 0; i < m_cfg.n_iterations; ++i) {
+        const unsigned int nThreads = m_warp_size * 2;
+        const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
+
+        fit_forward<fitter_t>(nBlocks, nThreads, 0, stream, m_cfg, payload);
+
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+        fit_backward<fitter_t>(nBlocks, nThreads, 0, stream, m_cfg, payload);
+
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
     }
 

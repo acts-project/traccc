@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -29,6 +29,7 @@
 
 // System include(s).
 #include <functional>
+#include <memory>
 
 namespace traccc {
 
@@ -91,7 +92,7 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
 
     private:
     /// Vecmem copy object
-    vecmem::copy m_copy;
+    std::unique_ptr<vecmem::copy> m_copy;
     /// Constant B field for the (seed) track parameter estimation
     traccc::vector3 m_field_vec;
     /// Constant B field for the track finding and fitting

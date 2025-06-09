@@ -77,7 +77,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
-        traccc::seeding_performance_writer::config{});
+        traccc::seeding_performance_writer::config{},
+        logger().clone("SeedingPerformanceWriter"));
 
     traccc::performance::timing_info elapsedTimes;
 

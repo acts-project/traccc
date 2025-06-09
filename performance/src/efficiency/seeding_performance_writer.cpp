@@ -49,8 +49,10 @@ struct seeding_performance_writer_data {
 
 }  // namespace details
 
-seeding_performance_writer::seeding_performance_writer(const config& cfg)
-    : m_cfg(cfg),
+seeding_performance_writer::seeding_performance_writer(
+    const config& cfg, std::unique_ptr<const traccc::Logger> logger)
+    : messaging(std::move(logger)),
+      m_cfg(cfg),
       m_data(std::make_unique<details::seeding_performance_writer_data>(cfg)) {
 
     m_data->m_eff_plot_tool.book("seeding", m_data->m_eff_plot_cache);
@@ -81,6 +83,37 @@ void seeding_performance_writer::write(
         const auto sd = seeds.at(i);
 
         std::vector<particle_hit_count> particle_hit_counts;
+
+        if (sd.bottom_index() >= spacepoints.size() ||
+            sd.middle_index() >= spacepoints.size() ||
+            sd.top_index() >= spacepoints.size()) {
+            TRACCC_WARNING("Seed with index "
+                           << i << " (out of " << seeds.size()
+                           << ") has invalid spacepoint (B: "
+                           << sd.bottom_index() << ", M: " << sd.middle_index()
+                           << ", T: " << sd.top_index()
+                           << ", #SP: " << spacepoints.size() << ")");
+            continue;
+        }
+
+        if (spacepoints.at(sd.bottom_index()).measurement_index_1() >=
+                measurements.size() ||
+            spacepoints.at(sd.middle_index()).measurement_index_1() >=
+                measurements.size() ||
+            spacepoints.at(sd.top_index()).measurement_index_1() >=
+                measurements.size()) {
+            TRACCC_WARNING(
+                "Seed with index "
+                << i << " (out of " << seeds.size()
+                << ") has invalid measurement (B: "
+                << spacepoints.at(sd.bottom_index()).measurement_index_1()
+                << ", M: "
+                << spacepoints.at(sd.middle_index()).measurement_index_1()
+                << ", T: "
+                << spacepoints.at(sd.top_index()).measurement_index_1()
+                << ", #SP: " << spacepoints.size() << ")");
+            continue;
+        }
 
         // Get the measurements for this seed.
         assert(spacepoints.at(sd.bottom_index()).measurement_index_2() ==

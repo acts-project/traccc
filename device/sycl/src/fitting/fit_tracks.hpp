@@ -13,10 +13,13 @@
 
 // Project include(s).
 #include "traccc/edm/device/sort_key.hpp"
-#include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/track_candidate_container.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/device/fill_sort_keys.hpp"
 #include "traccc/fitting/device/fit.hpp"
+#include "traccc/fitting/device/fit_backward.hpp"
+#include "traccc/fitting/device/fit_forward.hpp"
+#include "traccc/fitting/device/fit_prelude.hpp"
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
@@ -53,20 +56,19 @@ template <typename fitter_t, typename fit_kernel_t>
 track_state_container_types::buffer fit_tracks(
     const typename fitter_t::detector_type::view_type& det_view,
     const typename fitter_t::bfield_type& field_view,
-    const typename track_candidate_container_types::const_view&
+    const edm::track_candidate_container<default_algebra>::const_view&
         track_candidates_view,
     const fitting_config& config, const memory_resource& mr, vecmem::copy& copy,
     ::sycl::queue& queue) {
 
     // Get the number of tracks.
-    const track_candidate_container_types::const_device::header_vector::
-        size_type n_tracks = copy.get_size(track_candidates_view.headers);
+    const edm::track_candidate_collection<
+        default_algebra>::const_device::size_type n_tracks =
+        copy.get_size(track_candidates_view.tracks);
 
-    // Get the number of the track candidates (measurements) in each track.
-    using jagged_buffer_size_type = track_candidate_container_types::
-        const_device::item_vector::value_type::size_type;
-    const std::vector<jagged_buffer_size_type> candidate_sizes =
-        copy.get_sizes(track_candidates_view.items);
+    // Get the sizes of the track candidates in each track.
+    const std::vector<unsigned int> candidate_sizes =
+        copy.get_sizes(track_candidates_view.tracks);
 
     // Create the result buffer.
     track_state_container_types::buffer track_states_buffer{
@@ -85,10 +87,9 @@ track_state_container_types::buffer fit_tracks(
         return track_states_buffer;
     }
 
-    std::vector<jagged_buffer_size_type> seqs_sizes(candidate_sizes.size());
+    std::vector<unsigned int> seqs_sizes(candidate_sizes.size());
     std::transform(candidate_sizes.begin(), candidate_sizes.end(),
-                   seqs_sizes.begin(),
-                   [&config](const jagged_buffer_size_type sz) {
+                   seqs_sizes.begin(), [&config](const unsigned int sz) {
                        return std::max(sz * config.barcode_sequence_size_factor,
                                        config.min_barcode_sequence_capacity);
                    });
@@ -101,11 +102,16 @@ track_state_container_types::buffer fit_tracks(
                                                               mr.main);
     vecmem::data::vector_buffer<unsigned int> param_ids_buffer(n_tracks,
                                                                mr.main);
+    vecmem::data::vector_buffer<unsigned int> param_liveness_buffer(n_tracks,
+                                                                    mr.main);
     vecmem::copy::event_type keys_setup_event = copy.setup(keys_buffer);
     vecmem::copy::event_type param_ids_setup_event =
         copy.setup(param_ids_buffer);
+    vecmem::copy::event_type param_liveness_setup_event =
+        copy.setup(param_liveness_buffer);
     keys_setup_event->wait();
     param_ids_setup_event->wait();
+    param_liveness_setup_event->wait();
 
     // The execution range for the two kernels of the function.
     static constexpr unsigned int localSize = 64;
@@ -119,7 +125,7 @@ track_state_container_types::buffer fit_tracks(
              param_ids_view =
                  vecmem::get_data(param_ids_buffer)](::sycl::nd_item<1> item) {
                 device::fill_sort_keys(details::global_index(item),
-                                       track_candidates_view, keys_view,
+                                       track_candidates_view.tracks, keys_view,
                                        param_ids_view);
             });
     });
@@ -136,24 +142,50 @@ track_state_container_types::buffer fit_tracks(
     track_state_container_types::view track_states_view = track_states_buffer;
     track_states_headers_setup_event->wait();
     track_states_items_setup_event->wait();
+
     queue
         .submit([&](::sycl::handler& h) {
-            h.parallel_for<fit_kernel_t>(
-                range,
-                [config,
-                 payload = device::fit_payload<fitter_t>{
-                     .det_data = det_view,
-                     .field_data = field_view,
-                     .track_candidates_view = track_candidates_view,
-                     .param_ids_view = vecmem::get_data(param_ids_buffer),
-                     .track_states_view = track_states_view,
-                     .barcodes_view = vecmem::get_data(
-                         seqs_buffer)}](::sycl::nd_item<1> item) {
-                    device::fit<fitter_t>(details::global_index(item), config,
-                                          payload);
+            h.parallel_for(
+                range, [param_ids_view = vecmem::get_data(param_ids_buffer),
+                        track_candidates_view, track_states_view,
+                        param_liveness_view = vecmem::get_data(
+                            param_liveness_buffer)](::sycl::nd_item<1> item) {
+                    device::fit_prelude(details::global_index(item),
+                                        param_ids_view, track_candidates_view,
+                                        track_states_view, param_liveness_view);
                 });
         })
         .wait_and_throw();
+
+    device::fit_payload<fitter_t> payload{
+        .det_data = det_view,
+        .field_data = field_view,
+        .param_ids_view = param_ids_buffer,
+        .param_liveness_view = param_liveness_buffer,
+        .track_states_view = track_states_view,
+        .barcodes_view = seqs_buffer};
+
+    for (std::size_t i = 0; i < config.n_iterations; ++i) {
+        queue
+            .submit([&](::sycl::handler& h) {
+                h.parallel_for(
+                    range, [config, payload](::sycl::nd_item<1> item) {
+                        device::fit_forward<fitter_t>(
+                            details::global_index(item), config, payload);
+                    });
+            })
+            .wait_and_throw();
+
+        queue
+            .submit([&](::sycl::handler& h) {
+                h.parallel_for(
+                    range, [config, payload](::sycl::nd_item<1> item) {
+                        device::fit_backward<fitter_t>(
+                            details::global_index(item), config, payload);
+                    });
+            })
+            .wait_and_throw();
+    }
 
     // Return the fitted tracks.
     return track_states_buffer;

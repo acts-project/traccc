@@ -8,10 +8,6 @@
 // Local include(s).
 #include "traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 
-// Project include(s).
-#include "traccc/definitions/primitives.hpp"
-#include "traccc/edm/track_candidate.hpp"
-
 // System include
 #include <algorithm>
 #include <unordered_set>
@@ -19,18 +15,19 @@
 
 namespace traccc::host {
 
-track_candidate_container_types::host
-greedy_ambiguity_resolution_algorithm::operator()(
-    const track_candidate_container_types::const_view& track_candidates_view)
-    const {
+auto greedy_ambiguity_resolution_algorithm::operator()(
+    const edm::track_candidate_container<default_algebra>::const_view&
+        track_container) const -> output_type {
 
-    const track_candidate_container_types::const_device track_candidates(
-        track_candidates_view);
+    const edm::track_candidate_collection<default_algebra>::const_device
+        track_candidates(track_container.tracks);
+    const measurement_collection_types::const_device measurements{
+        track_container.measurements};
 
     const std::size_t n_tracks = track_candidates.size();
 
     // Make the output container
-    track_candidate_container_types::host output{&m_mr.main};
+    edm::track_candidate_collection<default_algebra>::host output{m_mr.get()};
 
     if (n_tracks == 0) {
         return output;
@@ -50,10 +47,11 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     for (unsigned int i = 0; i < n_tracks; i++) {
         // Fill the pval vectors
-        pvals[i] = track_candidates.at(i).header.trk_quality.pval;
+        pvals[i] = track_candidates.at(i).pval();
 
-        const auto& candidates = track_candidates.at(i).items;
-        const unsigned int n_cands = candidates.size();
+        const auto measurement_indices =
+            track_candidates.at(i).measurement_indices();
+        const unsigned int n_cands = measurement_indices.size();
 
         if (n_cands < m_config.min_meas_per_track) {
             // Reject if the number of measurements is less than the cut
@@ -64,8 +62,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
         } else {
             // Fill measurement ids and n_measurements
             meas_ids[i].reserve(n_cands);
-            for (const auto& cand : candidates) {
-                meas_ids[i].push_back(cand.measurement_id);
+            for (const auto idx : measurement_indices) {
+                meas_ids[i].push_back(measurements.at(idx).measurement_id);
             }
             n_meas[i] = n_cands;
             assert(n_cands == meas_ids[i].size());
@@ -75,9 +73,10 @@ greedy_ambiguity_resolution_algorithm::operator()(
     // Get the sorted unique measurement vector
     std::unordered_set<std::size_t> unique_meas_set;
     for (const auto& i : accepted_ids) {
-        const auto& candidates = track_candidates.at(i).items;
-        for (const auto& cand : candidates) {
-            unique_meas_set.insert(cand.measurement_id);
+        const auto measurement_indices =
+            track_candidates.at(i).measurement_indices();
+        for (const auto idx : measurement_indices) {
+            unique_meas_set.insert(measurements.at(idx).measurement_id);
         }
     }
 
@@ -230,15 +229,19 @@ greedy_ambiguity_resolution_algorithm::operator()(
     // Fill the output container with accepted tracks
     output.reserve(accepted_ids.size());
     for (const auto& i : accepted_ids) {
-        vecmem::vector<traccc::track_candidate> output_cands;
-
-        const auto& input_cands = track_candidates.at(i).items;
-
-        output_cands.insert(output_cands.end(), input_cands.begin(),
-                            input_cands.end());
-
-        output.push_back(std::move(track_candidates.at(i).header),
-                         std::move(output_cands));
+        // Get the track candidate proxy.
+        const auto tcand = track_candidates.at(i);
+        // Add it to the output container. In such a complicated way, because
+        // the input container is a "device" container, and the output is a
+        // "host" one. So pushing back the device proxy doesn't work directly.
+        // (Jagged vectors cannot be converted to each other just so easily.)
+        output.push_back({tcand.params(),
+                          tcand.ndf(),
+                          tcand.chi2(),
+                          tcand.pval(),
+                          tcand.nholes(),
+                          {tcand.measurement_indices().begin(),
+                           tcand.measurement_indices().end()}});
     }
 
     return output;

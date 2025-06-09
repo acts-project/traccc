@@ -66,22 +66,25 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     // Memory resource used by the EDM.
     vecmem::host_memory_resource host_mr;
-    traccc::memory_resource mr{host_mr, &host_mr};
 
     // Copy obejct
     vecmem::copy copy;
 
     // Performance writer
     traccc::seeding_performance_writer sd_performance_writer(
-        traccc::seeding_performance_writer::config{});
+        traccc::seeding_performance_writer::config{},
+        logger().clone("SeedingPerformanceWriter"));
     traccc::finding_performance_writer find_performance_writer(
-        traccc::finding_performance_writer::config{});
+        traccc::finding_performance_writer::config{},
+        logger().clone("FindingPerformanceWriter"));
     traccc::finding_performance_writer::config ar_writer_cfg;
     ar_writer_cfg.file_path = "performance_track_ambiguity_resolution.root";
     ar_writer_cfg.algorithm_name = "ambiguity_resolution";
-    traccc::finding_performance_writer ar_performance_writer(ar_writer_cfg);
+    traccc::finding_performance_writer ar_performance_writer(
+        ar_writer_cfg, logger().clone("AmbiResFindingPerformanceWriter"));
     traccc::fitting_performance_writer fit_performance_writer(
-        traccc::fitting_performance_writer::config{});
+        traccc::fitting_performance_writer::config{},
+        logger().clone("FittingPerformanceWriter"));
 
     // Output stats
     uint64_t n_spacepoints = 0;
@@ -123,12 +126,12 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     cfg.propagation = propagation_config;
 
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(
-        cfg, logger().clone("FindingAlg"));
+        cfg, host_mr, logger().clone("FindingAlg"));
 
     traccc::host::greedy_ambiguity_resolution_algorithm::config_type
         host_ambiguity_config(resolution_opts);
     traccc::host::greedy_ambiguity_resolution_algorithm
-        host_ambiguity_resolution(host_ambiguity_config, mr,
+        host_ambiguity_resolution(host_ambiguity_config, host_mr,
                                   logger().clone("AmbiguityResolution"));
 
     // Fitting algorithm object
@@ -170,8 +173,10 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                {0.f, 0.f, seeding_opts.seedfinder.bFieldInZ});
 
         // Run CKF and KF if we are using a detray geometry
-        traccc::track_candidate_container_types::host track_candidates;
-        traccc::track_candidate_container_types::host track_candidates_ar;
+        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+            track_candidates{host_mr};
+        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+            track_candidates_ar{host_mr};
         traccc::track_state_container_types::host track_states;
 
         /*------------------------
@@ -187,8 +192,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
            Ambiguity Resolution with Greedy Solver
           -----------------------------------------*/
 
-        track_candidates_ar =
-            host_ambiguity_resolution(traccc::get_data(track_candidates));
+        track_candidates_ar = host_ambiguity_resolution(
+            {vecmem::get_data(track_candidates),
+             vecmem::get_data(measurements_per_event)});
         n_ambiguity_free_tracks += track_candidates_ar.size();
 
         /*------------------------
@@ -196,7 +202,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
           ------------------------*/
 
         track_states = host_fitting(detector, field,
-                                    traccc::get_data(track_candidates_ar));
+                                    {vecmem::get_data(track_candidates_ar),
+                                     vecmem::get_data(measurements_per_event)});
         n_fitted_tracks += track_states.size();
 
         /*------------
@@ -221,11 +228,13 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 vecmem::get_data(spacepoints_per_event),
                 vecmem::get_data(measurements_per_event), evt_data);
 
-            find_performance_writer.write(traccc::get_data(track_candidates),
-                                          evt_data);
+            find_performance_writer.write(
+                vecmem::get_data(track_candidates),
+                vecmem::get_data(measurements_per_event), evt_data);
 
-            ar_performance_writer.write(traccc::get_data(track_candidates_ar),
-                                        evt_data);
+            ar_performance_writer.write(
+                vecmem::get_data(track_candidates_ar),
+                vecmem::get_data(measurements_per_event), evt_data);
 
             for (unsigned int i = 0; i < track_states.size(); i++) {
                 const auto& trk_states_per_track = track_states.at(i).items;

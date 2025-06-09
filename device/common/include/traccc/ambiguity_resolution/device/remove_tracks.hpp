@@ -9,6 +9,7 @@
 
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
+#include "traccc/utils/pair.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/jagged_vector_view.hpp>
@@ -17,8 +18,8 @@
 namespace traccc::device {
 
 /// (Event Data) Payload for the @c
-/// traccc::device::update_vectors function
-struct update_vectors_payload {
+/// traccc::device::remove_tracks function
+struct remove_tracks_payload {
 
     /**
      * @brief View object to the vector of sorted track ids
@@ -72,6 +73,26 @@ struct update_vectors_payload {
      * measurements
      */
     vecmem::data::vector_view<traccc::scalar> rel_shared_view;
+
+    /**
+     * @brief The number of worst tracks removable
+     */
+    unsigned int* n_removable_tracks;
+
+    /**
+     * @brief The number of measurements to remove
+     */
+    unsigned int* n_meas_to_remove;
+
+    /**
+     * @brief View object to measurements to remove
+     */
+    vecmem::data::vector_view<std::size_t> meas_to_remove_view;
+
+    /**
+     * @brief View object to thread id of measurements to remove
+     */
+    vecmem::data::vector_view<unsigned int> threads_view;
 
     /**
      * @brief Whether to terminate the calculation

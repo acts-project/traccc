@@ -11,7 +11,7 @@
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/track_candidate_collection.hpp"
 #include "traccc/finding/actors/ckf_aborter.hpp"
 #include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/finding/finding_config.hpp"
@@ -29,7 +29,7 @@ namespace traccc::cuda {
 /// Track Finding algorithm for a set of tracks
 template <typename stepper_t, typename navigator_t>
 class finding_algorithm
-    : public algorithm<track_candidate_container_types::buffer(
+    : public algorithm<edm::track_candidate_collection<default_algebra>::buffer(
           const typename navigator_t::detector_type::view_type&,
           const typename stepper_t::magnetic_field_type&,
           const measurement_collection_types::const_view&,
@@ -83,7 +83,7 @@ class finding_algorithm
     ///
     /// @param det_view  Detector view object
     /// @param seeds     Input seeds
-    track_candidate_container_types::buffer operator()(
+    edm::track_candidate_collection<default_algebra>::buffer operator()(
         const typename detector_type::view_type& det_view,
         const bfield_type& field_view,
         const measurement_collection_types::const_view& measurements,

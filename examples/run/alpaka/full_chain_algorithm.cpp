@@ -178,8 +178,8 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
             m_device_detector_view, m_field, measurements, track_params);
 
         // Run the track fitting (asynchronously).
-        const fitting_algorithm::output_type track_states =
-            m_fitting(m_device_detector_view, m_field, track_candidates);
+        const fitting_algorithm::output_type track_states = m_fitting(
+            m_device_detector_view, m_field, {track_candidates, measurements});
 
         // Copy a limited amount of result data back to the host.
         output_type result{&m_host_mr};

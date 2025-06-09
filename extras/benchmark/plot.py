@@ -7,6 +7,7 @@ import pandas
 import argparse
 import logging
 import pathlib
+from datetime import datetime
 
 log = logging.getLogger("traccc_plot")
 
@@ -59,7 +60,9 @@ def main():
 
     sorted_valid_kernels = sorted(list(valid_kernels))
 
-    f, a = matplotlib.pyplot.subplots(1, 1, figsize=(max(6, 4 + 0.1 * len(commits)), 8))
+    px = 1 / matplotlib.pyplot.rcParams["figure.dpi"]
+
+    f, a = matplotlib.pyplot.subplots(1, 1, figsize=(806 * px, 600 * px))
 
     xrange = list(range(len(commits)))
 

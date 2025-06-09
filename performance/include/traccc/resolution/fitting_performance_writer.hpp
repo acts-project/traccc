@@ -10,6 +10,7 @@
 // Library include(s).
 #include "traccc/resolution/res_plot_tool_config.hpp"
 #include "traccc/resolution/stat_plot_tool_config.hpp"
+#include "traccc/utils/messaging.hpp"
 
 // Project include(s).
 #include "traccc/edm/particle.hpp"
@@ -29,7 +30,7 @@ struct fitting_performance_writer_data;
 
 }  // namespace details
 
-class fitting_performance_writer {
+class fitting_performance_writer : public messaging {
 
     public:
     struct config {
@@ -43,7 +44,8 @@ class fitting_performance_writer {
     };
 
     /// Constructor with writer config
-    fitting_performance_writer(const config& cfg);
+    fitting_performance_writer(const config& cfg,
+                               std::unique_ptr<const traccc::Logger> logger);
 
     /// Destructor that closes the file
     ~fitting_performance_writer();

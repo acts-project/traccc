@@ -14,22 +14,10 @@ import subprocess
 import os
 import time
 
-from traccc_bench_tools import parse_profile, types
+from traccc_bench_tools import parse_profile, types, build, profile, benchmark
 
 
 log = logging.getLogger("traccc_benchmark")
-
-
-DETERMINISTIC_ORDER_COMMIT = "7e7f17ccd2e2b0db8971655773b351a365ee1cfc"
-BOOLEAN_FLAG_COMMIT = "380fc78ba63a79ed5c8f19d01d57636aa31cf4fd"
-SPACK_LIBS_COMMIT = "069cc80b845c16bf36430fdc90130f0306b47f3e"
-
-
-def is_parent_of(subj, parent_str):
-    for p in subj.iter_parents():
-        if str(subj) == parent_str or str(p) == parent_str:
-            return True
-    return False
 
 
 def main():
@@ -93,6 +81,13 @@ def main():
     )
 
     parser.add_argument(
+        "--cc",
+        help="Compute Capability of the modelled GPU",
+        type=str,
+        dest="cc",
+    )
+
+    parser.add_argument(
         "--num-sm",
         help="number of SMs in the modelled GPU",
         type=int,
@@ -134,8 +129,9 @@ def main():
     log.info("Using git repository at %s", repo.git_dir)
 
     if repo.is_dirty():
-        log.fatal("Repository is dirty; please clean it before use!")
-        raise RuntimeError("Repository is dirty; please clean it before use!")
+        e = "Repository is dirty; please clean it before use!"
+        log.fatal(e)
+        raise RuntimeError(e)
 
     if "TRACCC_TEST_DATA_DIR" not in os.environ:
         e = 'Environment variable "TRACCC_TEST_DATA_DIR" is not set; aborting!'
@@ -184,8 +180,10 @@ def main():
 
     commits_to_skip = set()
 
-    for x in commit_list:
-        log.info("Considering commit %s", x)
+    for progress_id, x in enumerate(commit_list):
+        log.info(
+            "Considering commit %s (%u out of %u)", x, progress_id, len(commit_list)
+        )
 
         parents = x.parents
 
@@ -218,156 +216,18 @@ def main():
 
             log.info("Completed checkout step in %.1f seconds", end_time - start_time)
 
-            with tempfile.TemporaryDirectory() as tmpdirname:
-                tmppath = pathlib.Path(tmpdirname)
-
-                log.info('Created temporary directory "%s"', str(tmppath))
-
-                build_dir = tmppath / "build"
-
-                log.info('Building traccc into build directory "%s"', build_dir)
-
-                log.info("Running configuration step")
-
-                start_time = time.time()
-
-                config_args = [
-                    "cmake",
-                    "-S",
-                    args.repo,
-                    "-B",
-                    build_dir,
-                    "-DTRACCC_BUILD_CUDA=ON",
-                    "-DCMAKE_BUILD_TYPE=Release",
-                    "-DTRACCC_USE_ROOT=OFF",
-                ]
-
-                if is_parent_of(x, SPACK_LIBS_COMMIT):
-                    log.info(
-                        "Commit is a child of (or is) %s; enabling Spack libraries",
-                        SPACK_LIBS_COMMIT[:8],
-                    )
-                    config_args.append("-DTRACCC_USE_SPACK_LIBS=ON")
-                else:
-                    log.info(
-                        "Commit is not a child of %s; disabling Spack libraries",
-                        SPACK_LIBS_COMMIT[:8],
-                    )
-                    config_args.append("-DTRACCC_USE_SYSTEM_ACTS=ON")
-                    config_args.append("-DTRACCC_USE_SYSTEM_TBB=ON")
-
-                subprocess.run(
-                    config_args,
-                    check=True,
-                    stdout=subprocess.DEVNULL,
-                )
-                end_time = time.time()
-
-                log.info(
-                    "Completed configuration step in %.1f seconds",
-                    end_time - start_time,
-                )
-
-                log.info("Running build step with %d thread(s)", args.parallel)
-
-                start_time = time.time()
-
-                subprocess.run(
-                    [
-                        "cmake",
-                        "--build",
-                        build_dir,
-                        "--",
-                        "-j",
-                        str(args.parallel),
-                        "traccc_throughput_st_cuda",
-                    ],
-                    check=True,
-                    stdout=subprocess.DEVNULL,
-                )
-                end_time = time.time()
-
-                log.info("Completed build step in %.1f seconds", end_time - start_time)
-
-                log.info("Running benchmark step")
-
-                start_time = time.time()
-
-                profile_args = [
-                    "ncu",
-                    "--import-source",
-                    "no",
-                    "--section LaunchStats",
-                    "--section Occupancy",
-                    "--metrics gpu__time_duration.sum",
-                    "-f",
-                    "-o",
-                    build_dir / "profile",
-                    build_dir / "bin" / "traccc_throughput_st_cuda",
-                    "--input-directory=%s" % args.data,
-                    "--digitization-file=geometries/odd/odd-digi-geometric-config.json",
-                    "--detector-file=geometries/odd/odd-detray_geometry_detray.json",
-                    "--grid-file=geometries/odd/odd-detray_surface_grids_detray.json",
-                    "--input-events=%d" % min(100, args.events),
-                    "--cold-run-events=0",
-                    "--processed-events=%d" % args.events,
-                ]
-
-                if hasattr(args, "ncu_wrapper") and args.ncu_wrapper is not None:
-                    profile_args = getattr(args, "ncu_wrapper").split() + profile_args
-
-                if is_parent_of(x, DETERMINISTIC_ORDER_COMMIT):
-                    log.info(
-                        "Commit is a child of (or is) %s; enabling deterministic processing",
-                        DETERMINISTIC_ORDER_COMMIT[:8],
-                    )
-                    profile_args.append("--deterministic")
-                else:
-                    log.info(
-                        "Commit is not a child of %s; event order is random",
-                        DETERMINISTIC_ORDER_COMMIT[:8],
-                    )
-
-                if is_parent_of(x, BOOLEAN_FLAG_COMMIT):
-                    log.info(
-                        "Commit is a child of (or is) %s; using explicit boolean flags",
-                        BOOLEAN_FLAG_COMMIT[:8],
-                    )
-                    profile_args.append("--use-acts-geom-source=1")
-                    profile_args.append("--use-detray-detector=1")
-                else:
-                    log.info(
-                        "Commit is not a child of %s; using implicit boolean flags",
-                        BOOLEAN_FLAG_COMMIT[:8],
-                    )
-                    profile_args.append("--use-acts-geom-source")
-                    profile_args.append("--use-detray-detector")
-
-                subprocess.run(
-                    profile_args,
-                    stdout=subprocess.DEVNULL,
-                )
-                end_time = time.time()
-
-                log.info(
-                    "Completed benchmark step in %.1f seconds", end_time - start_time
-                )
-
-                log.info("Running data processing step")
-
-                start_time = time.time()
-                result_df = parse_profile.parse_profile_ncu(
-                    build_dir / "profile.ncu-rep",
-                    types.GpuSpec(
-                        getattr(args, "num_sm"), getattr(args, "num_threads_per_sm")
-                    ),
-                )
-                end_time = time.time()
-
-                log.info(
-                    "Completed data processing step in %.1f seconds",
-                    end_time - start_time,
-                )
+            result_df = benchmark.run_benchmark(
+                source_dir=args.repo,
+                data_dir=args.data,
+                commit=x,
+                gpu_spec=types.GpuSpec(
+                    getattr(args, "num_sm"), getattr(args, "num_threads_per_sm")
+                ),
+                parallel=args.parallel,
+                events=args.events,
+                ncu_wrapper=getattr(args, "ncu_wrapper", None),
+                cc=getattr(args, "cc", None),
+            )
 
             for y in result_df.iloc:
                 results.append(

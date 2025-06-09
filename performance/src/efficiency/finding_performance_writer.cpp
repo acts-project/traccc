@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -12,6 +12,7 @@
 #include "duplication_plot_tool.hpp"
 #include "eff_plot_tool.hpp"
 #include "fake_tracks_plot_tool.hpp"
+#include "traccc/utils/logging.hpp"
 #include "track_classification.hpp"
 
 // ROOT include(s).
@@ -61,8 +62,10 @@ struct finding_performance_writer_data {
 
 }  // namespace details
 
-finding_performance_writer::finding_performance_writer(const config& cfg)
-    : m_cfg(cfg),
+finding_performance_writer::finding_performance_writer(
+    const config& cfg, std::unique_ptr<const traccc::Logger> logger)
+    : messaging(std::move(logger)),
+      m_cfg(cfg),
       m_data(std::make_unique<details::finding_performance_writer_data>(cfg)) {
 
     m_data->m_eff_plot_tool.book(m_cfg.algorithm_name,
@@ -88,25 +91,30 @@ namespace {
  * with its corresponding measurements.
  */
 std::vector<std::vector<measurement>> prepare_data(
-    const track_candidate_container_types::const_view& track_candidates_view) {
+    const edm::track_candidate_collection<default_algebra>::const_view&
+        track_candidates_view,
+    const measurement_collection_types::const_view& measurements_view) {
     std::vector<std::vector<measurement>> result;
 
     // Iterate over the tracks.
-    track_candidate_container_types::const_device track_candidates(
-        track_candidates_view);
+    const edm::track_candidate_collection<default_algebra>::const_device
+        track_candidates(track_candidates_view);
+    const measurement_collection_types::const_device measurements{
+        measurements_view};
 
     const unsigned int n_tracks = track_candidates.size();
     result.reserve(n_tracks);
 
     for (unsigned int i = 0; i < n_tracks; i++) {
-        const auto& cands = track_candidates.at(i).items;
-
-        std::vector<measurement> measurements;
-        measurements.reserve(cands.size());
-        for (const auto& cand : cands) {
-            measurements.push_back(cand);
+        std::vector<measurement> m;
+        m.reserve(track_candidates.at(i).measurement_indices().size());
+        const edm::track_candidate_collection<
+            default_algebra>::const_device::const_proxy_type track =
+            track_candidates.at(i);
+        for (unsigned int midx : track.measurement_indices()) {
+            m.push_back(measurements.at(midx));
         }
-        result.push_back(std::move(measurements));
+        result.push_back(std::move(m));
     }
     return result;
 }
@@ -255,12 +263,14 @@ void finding_performance_writer::write_common(
 
 /// For track finding
 void finding_performance_writer::write(
-    const track_candidate_container_types::const_view& track_candidates_view,
+    const edm::track_candidate_collection<default_algebra>::const_view&
+        track_candidates_view,
+    const measurement_collection_types::const_view& measurements_view,
     const event_data& evt_data) {
 
-    // Iterate over the tracks.
-    track_candidate_container_types::const_device track_candidates(
-        track_candidates_view);
+    // Set up the input containers.
+    const edm::track_candidate_collection<default_algebra>::const_device
+        track_candidates(track_candidates_view);
 
     const unsigned int n_tracks = track_candidates.size();
 
@@ -268,11 +278,11 @@ void finding_performance_writer::write(
 
         // Fill stat plot
         m_data->m_stat_plot_tool.fill(m_data->m_stat_plot_cache,
-                                      track_candidates.at(i).header);
+                                      track_candidates.at(i));
     }
 
     std::vector<std::vector<measurement>> tracks =
-        prepare_data(track_candidates_view);
+        prepare_data(track_candidates_view, measurements_view);
     write_common(tracks, evt_data);
 }
 

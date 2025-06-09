@@ -54,7 +54,9 @@ TEST_P(KalmanFittingMomentumResolutionTests, Run) {
     fit_writer_cfg.res_config.var_binning["residual_qopT"] =
         plot_helpers::binning("r_{q/p_{T}} [c/GeV]", 1000, -0.1f, 0.1f);
     fit_writer_cfg.file_path = "performance_track_fitting_" + name + ".root";
-    traccc::fitting_performance_writer fit_performance_writer(fit_writer_cfg);
+    traccc::fitting_performance_writer fit_performance_writer(
+        fit_writer_cfg, traccc::getDefaultLogger("FittingPerformanceWriter",
+                                                 traccc::Logging::Level::INFO));
 
     // Set qop stddev to 10% of truth qop
     const scalar qop_stddev = 0.1f / p;
@@ -148,22 +150,26 @@ TEST_P(KalmanFittingMomentumResolutionTests, Run) {
         // Event map
         traccc::event_data evt_data(path, i_evt, host_mr);
         // Truth Track Candidates
-        traccc::track_candidate_container_types::host track_candidates =
-            evt_data.generate_truth_candidates(sg, host_mr);
+        traccc::edm::track_candidate_container<traccc::default_algebra>::host
+            track_candidates{host_mr};
+        evt_data.generate_truth_candidates(track_candidates, sg, host_mr);
 
         // n_trakcs = 100
-        ASSERT_EQ(track_candidates.size(), n_truth_tracks);
+        ASSERT_EQ(track_candidates.tracks.size(), n_truth_tracks);
 
         // The nubmer of track candidates per track should be equal to the
         // number of planes
         for (std::size_t i_trk = 0; i_trk < n_truth_tracks; i_trk++) {
-            ASSERT_EQ(track_candidates.at(i_trk).items.size(),
-                      std::get<11>(GetParam()));
+            ASSERT_EQ(
+                track_candidates.tracks.at(i_trk).measurement_indices().size(),
+                std::get<11>(GetParam()));
         }
 
         // Run fitting
         auto track_states =
-            fitting(host_det, field, traccc::get_data(track_candidates));
+            fitting(host_det, field,
+                    {vecmem::get_data(track_candidates.tracks),
+                     vecmem::get_data(track_candidates.measurements)});
 
         // Iterator over tracks
         const std::size_t n_tracks = track_states.size();

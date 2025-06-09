@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -60,7 +60,9 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     // Performance writer
     traccc::fitting_performance_writer::config fit_writer_cfg;
     fit_writer_cfg.file_path = "performance_track_fitting_" + name + ".root";
-    traccc::fitting_performance_writer fit_performance_writer(fit_writer_cfg);
+    traccc::fitting_performance_writer fit_performance_writer(
+        fit_writer_cfg, traccc::getDefaultLogger("FittingPerformanceWriter",
+                                                 traccc::Logging::Level::INFO));
 
     /*****************************
      * Build a telescope geometry
@@ -133,10 +135,6 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     // Copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    traccc::device::container_h2d_copy_alg<
-        traccc::track_candidate_container_types>
-        track_candidate_h2d{mr, copy};
-
     traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
         track_state_d2h{mr, copy};
 
@@ -156,24 +154,26 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
         traccc::event_data evt_data(path, i_evt, host_mr);
 
         // Truth Track Candidates
-        traccc::track_candidate_container_types::host track_candidates =
-            evt_data.generate_truth_candidates(sg, mng_mr);
-
-        // Instantiate cuda containers/collections
-        traccc::track_state_container_types::buffer track_states_cuda_buffer{
-            {{}, *(mr.host)}, {{}, *(mr.host), mr.host}};
+        traccc::edm::track_candidate_container<traccc::default_algebra>::host
+            track_candidates{host_mr};
+        evt_data.generate_truth_candidates(track_candidates, sg, host_mr);
 
         // n_trakcs = 100
-        ASSERT_EQ(track_candidates.size(), n_truth_tracks);
+        ASSERT_EQ(track_candidates.tracks.size(), n_truth_tracks);
 
         // track candidates buffer
-        const traccc::track_candidate_container_types::buffer
-            track_candidates_cuda_buffer =
-                track_candidate_h2d(traccc::get_data(track_candidates));
+        traccc::edm::track_candidate_container<traccc::default_algebra>::buffer
+            track_candidates_buffer{
+                copy.to(vecmem::get_data(track_candidates.tracks), mr.main,
+                        mr.host, vecmem::copy::type::host_to_device),
+                copy.to(vecmem::get_data(track_candidates.measurements),
+                        mr.main, vecmem::copy::type::host_to_device)};
 
         // Run fitting
-        track_states_cuda_buffer =
-            device_fitting(det_view, field, track_candidates_cuda_buffer);
+        traccc::track_state_container_types::buffer track_states_cuda_buffer =
+            device_fitting(det_view, field,
+                           {track_candidates_buffer.tracks,
+                            track_candidates_buffer.measurements});
 
         traccc::track_state_container_types::host track_states_cuda =
             track_state_d2h(track_states_cuda_buffer);

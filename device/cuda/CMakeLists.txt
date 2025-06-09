@@ -73,8 +73,12 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/ambiguity_resolution/kernels/add_block_offset.cuh"
   "src/ambiguity_resolution/kernels/block_inclusive_scan.cu"
   "src/ambiguity_resolution/kernels/block_inclusive_scan.cuh"
+  "src/ambiguity_resolution/kernels/count_removable_tracks.cu"
+  "src/ambiguity_resolution/kernels/count_removable_tracks.cuh"
   "src/ambiguity_resolution/kernels/count_shared_measurements.cu"
   "src/ambiguity_resolution/kernels/count_shared_measurements.cuh"
+  "src/ambiguity_resolution/kernels/exclusive_scan.cu"
+  "src/ambiguity_resolution/kernels/exclusive_scan.cuh"
   "src/ambiguity_resolution/kernels/find_max_shared.cu"
   "src/ambiguity_resolution/kernels/find_max_shared.cuh"
   "src/ambiguity_resolution/kernels/fill_inverted_ids.cu"
@@ -95,10 +99,13 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/ambiguity_resolution/kernels/scan_block_offsets.cuh"
   "src/ambiguity_resolution/kernels/sort_updated_tracks.cu"
   "src/ambiguity_resolution/kernels/sort_updated_tracks.cuh"
-  "src/ambiguity_resolution/kernels/update_vectors.cu"
-  "src/ambiguity_resolution/kernels/update_vectors.cuh"
+  "src/ambiguity_resolution/kernels/remove_tracks.cu"
+  "src/ambiguity_resolution/kernels/remove_tracks.cuh"
   # Fitting
   "include/traccc/cuda/fitting/fitting_algorithm.hpp"
+  "src/fitting/kernels/fit_prelude.cu"
+  "src/fitting/kernels/specializations/fit_forward_default_detector.cu"
+  "src/fitting/kernels/specializations/fit_backward_default_detector.cu"
   "src/fitting/fitting_algorithm.cu")
 
 if(TRACCC_ENABLE_NVTX_PROFILING)

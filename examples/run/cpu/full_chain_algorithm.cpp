@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -20,6 +20,7 @@ full_chain_algorithm::full_chain_algorithm(
     const silicon_detector_description::host& det_descr,
     detector_type* detector, std::unique_ptr<const traccc::Logger> logger)
     : messaging(logger->clone()),
+      m_copy{std::make_unique<vecmem::copy>()},
       m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
       m_field(
           traccc::construct_const_bfield<typename detector_type::scalar_type>(
@@ -32,8 +33,8 @@ full_chain_algorithm::full_chain_algorithm(
                 logger->cloneWithSuffix("SeedingAlg")),
       m_track_parameter_estimation(mr,
                                    logger->cloneWithSuffix("TrackParamEstAlg")),
-      m_finding(finding_config, logger->cloneWithSuffix("TrackFindingAlg")),
-      m_fitting(fitting_config, mr, m_copy,
+      m_finding(finding_config, mr, logger->cloneWithSuffix("TrackFindingAlg")),
+      m_fitting(fitting_config, mr, *m_copy,
                 logger->cloneWithSuffix("TrackFittingAlg")),
       m_finder_config(finder_config),
       m_grid_config(grid_config),
@@ -78,8 +79,9 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
             *m_detector, m_field, measurements_view, track_params_view);
 
         // Run the track fitting, and return its results.
-        const auto track_candidates_data = get_data(track_candidates);
-        return m_fitting(*m_detector, m_field, track_candidates_data);
+        return m_fitting(
+            *m_detector, m_field,
+            {vecmem::get_data(track_candidates), measurements_view});
     }
     // If not, just return an empty object.
     else {

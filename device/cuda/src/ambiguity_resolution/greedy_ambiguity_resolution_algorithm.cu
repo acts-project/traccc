@@ -10,7 +10,9 @@
 #include "../utils/utils.hpp"
 #include "./kernels/add_block_offset.cuh"
 #include "./kernels/block_inclusive_scan.cuh"
+#include "./kernels/count_removable_tracks.cuh"
 #include "./kernels/count_shared_measurements.cuh"
+#include "./kernels/exclusive_scan.cuh"
 #include "./kernels/fill_inverted_ids.cuh"
 #include "./kernels/fill_track_candidates.cuh"
 #include "./kernels/fill_tracks_per_measurement.cuh"
@@ -18,10 +20,10 @@
 #include "./kernels/find_max_shared.cuh"
 #include "./kernels/gather_tracks.cuh"
 #include "./kernels/rearrange_tracks.cuh"
+#include "./kernels/remove_tracks.cuh"
 #include "./kernels/reset_status.cuh"
 #include "./kernels/scan_block_offsets.cuh"
 #include "./kernels/sort_updated_tracks.cuh"
-#include "./kernels/update_vectors.cuh"
 #include "traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 
 // Thrust include(s).
@@ -33,7 +35,6 @@
 #include <thrust/sort.h>
 #include <thrust/transform.h>
 #include <thrust/unique.h>
-
 namespace traccc::cuda {
 
 // Device operator to calculate relative number of shared measurements
@@ -62,8 +63,8 @@ struct track_comparator {
 };
 
 greedy_ambiguity_resolution_algorithm::greedy_ambiguity_resolution_algorithm(
-    const config_type& cfg, traccc::memory_resource& mr, vecmem::copy& copy,
-    stream& str, std::unique_ptr<const Logger> logger)
+    const config_type& cfg, const traccc::memory_resource& mr,
+    vecmem::copy& copy, stream& str, std::unique_ptr<const Logger> logger)
     : messaging(std::move(logger)),
       m_config(cfg),
       m_mr(mr),
@@ -73,11 +74,8 @@ greedy_ambiguity_resolution_algorithm::greedy_ambiguity_resolution_algorithm(
 
 greedy_ambiguity_resolution_algorithm::output_type
 greedy_ambiguity_resolution_algorithm::operator()(
-    const track_candidate_container_types::const_view& track_candidates_view)
-    const {
-
-    const track_candidate_container_types::const_device track_candidates(
-        track_candidates_view);
+    const edm::track_candidate_container<default_algebra>::const_view&
+        track_candidates_view) const {
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
@@ -87,14 +85,10 @@ greedy_ambiguity_resolution_algorithm::operator()(
         thrust::cuda::par_nosync(std::pmr::polymorphic_allocator(&(m_mr.main)))
             .on(stream);
 
-    const track_candidate_container_types::const_view::header_vector::size_type
-        n_tracks = m_copy.get().get_size(track_candidates_view.headers);
+    const unsigned int n_tracks = track_candidates_view.tracks.capacity();
 
     if (n_tracks == 0) {
-        return track_candidate_container_types::buffer{
-            {0, m_mr.main},
-            {std::vector<std::size_t>(0, 0), m_mr.main, m_mr.host,
-             vecmem::data::buffer_type::resizable}};
+        return {};
     }
 
     // Make sure that max_shared_meas is largen than zero
@@ -106,11 +100,9 @@ greedy_ambiguity_resolution_algorithm::operator()(
     vecmem::device_vector<int> status_device(status_buffer);
     thrust::fill(thrust_policy, status_device.begin(), status_device.end(), 1);
 
-    // Get the sizes of the track candidates in each track
-    using jagged_buffer_size_type = track_candidate_container_types::
-        const_device::item_vector::value_type::size_type;
-    const std::vector<jagged_buffer_size_type> candidate_sizes =
-        m_copy.get().get_sizes(track_candidates_view.items);
+    // Get the sizes of the measurement index vector in each track
+    const std::vector<unsigned int> candidate_sizes =
+        m_copy.get().get_sizes(track_candidates_view.tracks);
 
     // Make measurement ID, pval and n_measurement vector
     vecmem::data::jagged_vector_buffer<std::size_t> meas_ids_buffer{
@@ -160,13 +152,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     m_stream.get().synchronize();
 
     if (n_accepted == 0) {
-
-        // Create resolved candidate buffer
-        track_candidate_container_types::buffer res_track_candidates_buffer{
-            {n_accepted, m_mr.main},
-            {std::vector<std::size_t>(0, 0), m_mr.main}};
-
-        return res_track_candidates_buffer;
+        return {};
     }
 
     // Make accepted ids vector
@@ -329,6 +315,16 @@ greedy_ambiguity_resolution_algorithm::operator()(
                                                                     m_mr.main};
     m_copy.get().setup(updated_tracks_buffer)->ignore();
 
+    // Measurements to remove for each iteration
+    vecmem::data::vector_buffer<std::size_t> meas_to_remove_buffer{1024,
+                                                                   m_mr.main};
+    vecmem::data::vector_buffer<unsigned int> threads_buffer{1024, m_mr.main};
+
+    vecmem::unique_alloc_ptr<unsigned int> n_removable_tracks_device =
+        vecmem::make_unique_alloc<unsigned int>(m_mr.main);
+    vecmem::unique_alloc_ptr<unsigned int> n_meas_to_remove_device =
+        vecmem::make_unique_alloc<unsigned int>(m_mr.main);
+
     // Device objects
     int is_first_iteration = 1;
     vecmem::unique_alloc_ptr<int> is_first_iteration_device =
@@ -370,7 +366,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
     m_copy.get().setup(block_offsets_buffer)->ignore();
 
     while (!terminate && n_accepted > 0) {
-
         nBlocks_adaptive = (n_accepted + 1023) / 1024;
         nBlocks_warp = (n_accepted + nThreads_warp - 1) / nThreads_warp;
         nBlocks_scan = (n_accepted + 1023) / 1024;
@@ -397,9 +392,40 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .max_shared = max_shared_device.get(),
                 .is_updated_view = is_updated_buffer});
 
-        kernels::update_vectors<<<
-            1, 1024, 1024 * (sizeof(unsigned int) + sizeof(std::size_t)),
-            stream>>>(device::update_vectors_payload{
+        kernels::count_removable_tracks<<<
+            1, 1024,
+            sizeof(int) * 1024 + sizeof(std::size_t) * 1024 +
+                sizeof(unsigned int) * 1024 + sizeof(unsigned int) * 6 +
+                sizeof(bool),
+            stream>>>(device::count_removable_tracks_payload{
+            .terminate = terminate_device.get(),
+            .max_shared = max_shared_device.get(),
+            .sorted_ids_view = sorted_ids_buffer,
+            .n_accepted = n_accepted_device.get(),
+            .meas_ids_view = meas_ids_buffer,
+            .n_meas_view = n_meas_buffer,
+            .unique_meas_view = unique_meas_buffer,
+            .n_accepted_tracks_per_measurement_view =
+                n_accepted_tracks_per_measurement_buffer,
+            .n_removable_tracks = n_removable_tracks_device.get(),
+            .n_meas_to_remove = n_meas_to_remove_device.get(),
+            .meas_to_remove_view = meas_to_remove_buffer,
+            .threads_view = threads_buffer});
+
+        kernels::
+            exclusive_scan<<<1, 1024,
+                             sizeof(int) * 1024 + sizeof(std::size_t) * 1024 +
+                                 sizeof(unsigned int) * 1024,
+                             stream>>>(device::exclusive_scan_payload{
+                .terminate = terminate_device.get(),
+                .n_removable_tracks = n_removable_tracks_device.get(),
+                .n_meas_to_remove = n_meas_to_remove_device.get(),
+                .meas_to_remove_view = meas_to_remove_buffer,
+                .threads_view = threads_buffer});
+
+        kernels::remove_tracks<<<
+            1, 1024, 1024 * (2 * sizeof(unsigned int) + sizeof(std::size_t)),
+            stream>>>(device::remove_tracks_payload{
             .sorted_ids_view = sorted_ids_buffer,
             .n_accepted = n_accepted_device.get(),
             .meas_ids_view = meas_ids_buffer,
@@ -412,11 +438,14 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 n_accepted_tracks_per_measurement_buffer,
             .n_shared_view = n_shared_buffer,
             .rel_shared_view = rel_shared_buffer,
+            .n_removable_tracks = n_removable_tracks_device.get(),
+            .n_meas_to_remove = n_meas_to_remove_device.get(),
+            .meas_to_remove_view = meas_to_remove_buffer,
+            .threads_view = threads_buffer,
             .terminate = terminate_device.get(),
             .n_updated_tracks = n_updated_tracks_device.get(),
             .updated_tracks_view = updated_tracks_buffer,
-            .is_updated_view = is_updated_buffer,
-        });
+            .is_updated_view = is_updated_buffer});
 
         // The seven kernels below are to keep sorted_ids sorted based on
         // the relative shared measurements and pvalues. This can be reduced
@@ -509,7 +538,9 @@ greedy_ambiguity_resolution_algorithm::operator()(
         cudaStreamEndCapture(stream, &graph);
         cudaGraphInstantiate(&graphExec, graph, nullptr, nullptr, 0);
 
-        unsigned int n_it = (n_tracks + 9) / 10;
+        // TODO: Make n_it adaptive based on the average track length, bound
+        // value in count_removable_tracks, etc.
+        const unsigned int n_it = 100;
         for (unsigned int iter = 0; iter < n_it; iter++) {
             cudaGraphLaunch(graphExec, stream);
         }
@@ -522,19 +553,17 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     cudaMemcpyAsync(&n_accepted, n_accepted_device.get(), sizeof(unsigned int),
                     cudaMemcpyDeviceToHost, stream);
-    n_accepted++;
 
     auto max_it =
         std::max_element(candidate_sizes.begin(), candidate_sizes.end());
     const unsigned int max_cands_size = *max_it;
 
     // Create resolved candidate buffer
-    track_candidate_container_types::buffer res_track_candidates_buffer{
-        {n_accepted, m_mr.main},
-        {std::vector<std::size_t>(n_accepted, max_cands_size), m_mr.main,
-         m_mr.host, vecmem::data::buffer_type::resizable}};
-    m_copy.get().setup(res_track_candidates_buffer.headers)->ignore();
-    m_copy.get().setup(res_track_candidates_buffer.items)->ignore();
+    edm::track_candidate_collection<default_algebra>::buffer
+        res_track_candidates_buffer{
+            std::vector<std::size_t>(n_accepted, max_cands_size), m_mr.main,
+            m_mr.host, vecmem::data::buffer_type::resizable};
+    m_copy.get().setup(res_track_candidates_buffer)->ignore();
 
     // Fill the output track candidates
     {
@@ -542,7 +571,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
             kernels::fill_track_candidates<<<
                 static_cast<unsigned int>((n_accepted + 63) / 64), 64, 0,
                 stream>>>(device::fill_track_candidates_payload{
-                .track_candidates_view = track_candidates_view,
+                .track_candidates_view = track_candidates_view.tracks,
                 .n_accepted = n_accepted,
                 .sorted_ids_view = sorted_ids_buffer,
                 .res_track_candidates_view = res_track_candidates_buffer});

@@ -128,10 +128,6 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
     // Copy objects
     vecmem::sycl::async_copy copy{vecmem_queue};
 
-    traccc::device::container_d2h_copy_alg<
-        traccc::track_candidate_container_types>
-        track_candidate_d2h{mr, copy};
-
     traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
         track_state_d2h{mr, copy};
 
@@ -164,16 +160,16 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
         // Truth Track Candidates
         traccc::event_data evt_data(path, i_evt, host_mr);
 
-        traccc::track_candidate_container_types::host truth_track_candidates =
-            evt_data.generate_truth_candidates(sg, host_mr);
+        traccc::edm::track_candidate_container<traccc::default_algebra>::host
+            truth_track_candidates{host_mr};
+        evt_data.generate_truth_candidates(truth_track_candidates, sg, host_mr);
 
-        ASSERT_EQ(truth_track_candidates.size(), n_truth_tracks);
+        ASSERT_EQ(truth_track_candidates.tracks.size(), n_truth_tracks);
 
         // Prepare truth seeds
         traccc::bound_track_parameters_collection_types::host seeds(&host_mr);
         for (unsigned int i_trk = 0; i_trk < n_truth_tracks; i_trk++) {
-            seeds.push_back(
-                truth_track_candidates.at(i_trk).header.seed_params);
+            seeds.push_back(truth_track_candidates.tracks.at(i_trk).params());
         }
         ASSERT_EQ(seeds.size(), n_truth_tracks);
 
@@ -204,10 +200,15 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
         auto track_candidates_limit_buffer = device_finding_limit(
             det_view, field, measurements_buffer, seeds_buffer);
 
-        traccc::track_candidate_container_types::host track_candidates =
-            track_candidate_d2h(track_candidates_buffer);
-        traccc::track_candidate_container_types::host track_candidates_limit =
-            track_candidate_d2h(track_candidates_limit_buffer);
+        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+            track_candidates{host_mr},
+            track_candidates_limit{host_mr};
+        copy(track_candidates_buffer, track_candidates,
+             vecmem::copy::type::device_to_host)
+            ->wait();
+        copy(track_candidates_limit_buffer, track_candidates_limit,
+             vecmem::copy::type::device_to_host)
+            ->wait();
 
         // Make sure that the number of found tracks = n_track ^ (n_planes + 1)
         EXPECT_GT(track_candidates.size(), track_candidates_limit.size());

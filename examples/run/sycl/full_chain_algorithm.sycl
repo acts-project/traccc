@@ -55,7 +55,7 @@ full_chain_algorithm::full_chain_algorithm(
     const spacepoint_grid_config& grid_config,
     const seedfilter_config& filter_config,
     const finding_algorithm::config_type& finding_config,
-    const fitting_algorithm::config_type&,
+    const fitting_algorithm::config_type& fitting_config,
     const silicon_detector_description::host& det_descr,
     host_detector_type* detector, std::unique_ptr<const traccc::Logger> logger)
     : messaging(logger->clone()),
@@ -97,11 +97,15 @@ full_chain_algorithm::full_chain_algorithm(
       m_finding{finding_config,
                 memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
                 m_data->m_queue_wrapper, logger->clone("TrackFindingAlg")},
+      m_fitting{fitting_config,
+                memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
+                m_data->m_queue_wrapper, logger->clone("TrackFittingAlg")},
       m_clustering_config(clustering_config),
       m_finder_config(finder_config),
       m_grid_config(grid_config),
       m_filter_config(filter_config),
-      m_finding_config(finding_config) {
+      m_finding_config(finding_config),
+      m_fitting_config(fitting_config) {
 
     // Tell the user what device is being used.
     std::cout
@@ -158,11 +162,15 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_finding{parent.m_finding_config,
                 memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
                 m_data->m_queue_wrapper, parent.logger().clone("FindingAlg")},
+      m_fitting{parent.m_fitting_config,
+                memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
+                m_data->m_queue_wrapper, parent.logger().clone("FittingAlg")},
       m_clustering_config(parent.m_clustering_config),
       m_finder_config(parent.m_finder_config),
       m_grid_config(parent.m_grid_config),
       m_filter_config(parent.m_filter_config),
-      m_finding_config(parent.m_finding_config) {
+      m_finding_config(parent.m_finding_config),
+      m_fitting_config(parent.m_fitting_config) {
 
     // Copy the detector (description) to the device.
     m_copy(vecmem::get_data(m_det_descr.get()), m_device_det_descr)->wait();
@@ -204,11 +212,13 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
         const finding_algorithm::output_type track_candidates = m_finding(
             m_device_detector_view, m_field, measurements, track_params);
 
-        // Get the final data back to the host.
-        finding_result_collection_types::host result(&(m_host_mr.get()));
-        m_copy(track_candidates.headers, result)->wait();
+        // Run the track fitting (asynchronously).
+        const fitting_algorithm::output_type track_states = m_fitting(
+            m_device_detector_view, m_field, {track_candidates, measurements});
 
-        // Return the host container.
+        // Copy a limited amount of result data back to the host.
+        output_type result{&(m_host_mr.get())};
+        m_copy(track_states.headers, result)->wait();
         return result;
     }
     // If not, copy the measurements back to the host, and return
