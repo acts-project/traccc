@@ -493,7 +493,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                             const_proxy_type>{
                         vecmem::get_data(measurements_per_event),
                         vecmem::get_data(measurements_per_event_cuda)}};
-            compare_track_candidates(
+            compare_resolved_track_candidates(
                 vecmem::get_data(res_track_candidates),
                 vecmem::get_data(res_track_candidates_cuda));
 
