@@ -140,8 +140,6 @@ __global__ void remove_tracks(device::remove_tracks_payload payload) {
 
     shared_tids[threadIndex] = static_cast<unsigned int>(tracks[alive_idx]);
 
-    __syncthreads();
-
     auto tid = shared_tids[threadIndex];
 
     const auto m_count = static_cast<unsigned int>(thrust::count(
@@ -150,6 +148,8 @@ __global__ void remove_tracks(device::remove_tracks_payload payload) {
     const unsigned int N_S =
         vecmem::device_atomic_ref<unsigned int>(n_shared.at(tid))
             .fetch_sub(m_count);
+
+    __syncthreads();
 
     bool already_pushed = false;
     for (unsigned int i = 0; i < threadIndex; ++i) {
