@@ -61,11 +61,11 @@ void read_particles(particle_container_types::host& particles,
 
     // Read in all measurements, into a temporary collection.
     measurement_collection_types::host temp_measurements{&mr};
-    const std::vector<std::size_t> new_idx_map = read_measurements(
+    const std::vector<measurement_id_type> new_idx_map = read_measurements(
         temp_measurements, measurements_file, detector, sort_measurements);
 
     // Make a hit to measurement map.
-    std::unordered_map<std::size_t, std::size_t> hit_to_measurement;
+    std::unordered_map<std::size_t, measurement_id_type> hit_to_measurement;
     measurement_hit_id mhid;
     while (measurement_hit_id_reader.read(mhid)) {
         if (sort_measurements) {

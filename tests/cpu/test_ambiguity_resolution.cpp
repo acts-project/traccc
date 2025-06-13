@@ -28,7 +28,8 @@ vecmem::host_memory_resource host_mr;
 
 void fill_pattern(
     edm::track_candidate_container<default_algebra>::host& track_candidates,
-    const traccc::scalar pval, const std::vector<std::size_t>& pattern) {
+    const traccc::scalar pval,
+    const std::vector<measurement_id_type>& pattern) {
 
     track_candidates.tracks.resize(track_candidates.tracks.size() + 1u);
     track_candidates.tracks.pval().back() = pval;
@@ -255,15 +256,16 @@ TEST(AmbiguitySolverTests, GreedyResolverTest4) {
     for (std::size_t i = 0; i < 10000u; i++) {
 
         std::uniform_int_distribution<std::size_t> track_length_dist(1, 20);
-        std::uniform_int_distribution<std::size_t> meas_id_dist(0, 10000);
+        std::uniform_int_distribution<measurement_id_type> meas_id_dist(0,
+                                                                        10000);
         std::uniform_real_distribution<traccc::scalar> pval_dist(0.0f, 1.0f);
 
         const std::size_t track_length = track_length_dist(gen);
         const traccc::scalar pval = pval_dist(gen);
-        std::vector<std::size_t> pattern;
+        std::vector<measurement_id_type> pattern;
         while (pattern.size() < track_length) {
 
-            const std::size_t meas_id = meas_id_dist(gen);
+            const measurement_id_type meas_id = meas_id_dist(gen);
             if (std::find(pattern.begin(), pattern.end(), meas_id) ==
                 pattern.end()) {
                 pattern.push_back(meas_id);

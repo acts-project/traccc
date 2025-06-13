@@ -70,7 +70,7 @@ class ConnectedComponentAnalysisTests
     public:
     struct cca_truth_hit {
         uint64_t geometry_id = 0;
-        uint64_t measurement_id = 0;
+        traccc::measurement_id_type measurement_id = 0;
         uint64_t num_cells = 0;
         traccc::scalar channel0 = 0;
         traccc::scalar channel1 = 0;

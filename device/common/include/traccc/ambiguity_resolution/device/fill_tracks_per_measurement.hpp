@@ -7,6 +7,9 @@
 
 #pragma once
 
+// Project include(s).
+#include "traccc/definitions/primitives.hpp"
+
 // VecMem include(s).
 #include <vecmem/containers/data/jagged_vector_view.hpp>
 #include <vecmem/containers/data/vector_view.hpp>
@@ -28,17 +31,17 @@ struct fill_tracks_per_measurement_payload {
     /**
      * @brief View object to the vector of measured ids per track
      */
-    vecmem::data::jagged_vector_view<const std::size_t> meas_ids_view;
+    vecmem::data::jagged_vector_view<const measurement_id_type> meas_ids_view;
 
     /**
      * @brief View object to the unique measurement ids
      */
-    vecmem::data::vector_view<const std::size_t> unique_meas_view;
+    vecmem::data::vector_view<const measurement_id_type> unique_meas_view;
 
     /**
      * @brief View object to the tracks per measurement
      */
-    vecmem::data::jagged_vector_view<std::size_t> tracks_per_measurement_view;
+    vecmem::data::jagged_vector_view<unsigned int> tracks_per_measurement_view;
 
     /**
      * @brief View object to the track status per measurement

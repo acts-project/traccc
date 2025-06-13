@@ -7,6 +7,9 @@
 
 #pragma once
 
+// Project include(s).
+#include "traccc/definitions/primitives.hpp"
+
 // DFE include(s).
 #include <dfe/dfe_namedtuple.hpp>
 

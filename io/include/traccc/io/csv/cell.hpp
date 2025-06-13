@@ -7,6 +7,9 @@
 
 #pragma once
 
+// Project include(s).
+#include "traccc/definitions/primitives.hpp"
+
 // DFE include(s).
 #include <dfe/dfe_namedtuple.hpp>
 
@@ -19,7 +22,7 @@ namespace traccc::io::csv {
 struct cell {
 
     uint64_t geometry_id = 0;
-    uint64_t measurement_id = 0;
+    measurement_id_type measurement_id = 0;
     uint32_t channel0 = 0;
     uint32_t channel1 = 0;
     float timestamp = 0.f;

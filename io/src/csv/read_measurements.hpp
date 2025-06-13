@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/geometry/detector.hpp"
 
@@ -24,7 +25,7 @@ namespace traccc::io::csv {
 /// @param[in]  detector  detray detector
 /// @param[in]  do_sort      Whether to sort the measurements or not
 ///
-std::vector<std::size_t> read_measurements(
+std::vector<measurement_id_type> read_measurements(
     measurement_collection_types::host& measurements, std::string_view filename,
     const traccc::default_detector::host* detector = nullptr,
     const bool do_sort = true);
