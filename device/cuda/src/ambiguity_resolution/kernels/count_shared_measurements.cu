@@ -31,9 +31,9 @@ __global__ void count_shared_measurements(
         return;
     }
 
-    vecmem::jagged_device_vector<const std::size_t> meas_ids(
+    vecmem::jagged_device_vector<const measurement_id_type> meas_ids(
         payload.meas_ids_view);
-    vecmem::device_vector<const std::size_t> unique_meas(
+    vecmem::device_vector<const measurement_id_type> unique_meas(
         payload.unique_meas_view);
     vecmem::device_vector<const unsigned int> n_accepted_tracks_per_measurement(
         payload.n_accepted_tracks_per_measurement_view);

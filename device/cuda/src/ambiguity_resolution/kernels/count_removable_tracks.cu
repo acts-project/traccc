@@ -68,7 +68,7 @@ __global__ void count_removable_tracks(
     }
 
     __shared__ int shared_n_meas[1024];
-    __shared__ std::size_t sh_meas_ids[1024];
+    __shared__ measurement_id_type sh_meas_ids[1024];
     __shared__ unsigned int sh_threads[1024];
     __shared__ unsigned int n_meas_total;
     __shared__ unsigned int bound;
@@ -79,13 +79,13 @@ __global__ void count_removable_tracks(
 
     vecmem::device_vector<const unsigned int> sorted_ids(
         payload.sorted_ids_view);
-    vecmem::jagged_device_vector<const std::size_t> meas_ids(
+    vecmem::jagged_device_vector<const measurement_id_type> meas_ids(
         payload.meas_ids_view);
-    vecmem::device_vector<const std::size_t> n_meas(payload.n_meas_view);
-    vecmem::device_vector<std::size_t> meas_to_remove(
+    vecmem::device_vector<const unsigned int> n_meas(payload.n_meas_view);
+    vecmem::device_vector<measurement_id_type> meas_to_remove(
         payload.meas_to_remove_view);
     vecmem::device_vector<unsigned int> threads(payload.threads_view);
-    vecmem::device_vector<const std::size_t> unique_meas(
+    vecmem::device_vector<const measurement_id_type> unique_meas(
         payload.unique_meas_view);
     vecmem::device_vector<const unsigned int> n_accepted_tracks_per_measurement(
         payload.n_accepted_tracks_per_measurement_view);
@@ -94,7 +94,7 @@ __global__ void count_removable_tracks(
 
     int gid = static_cast<int>(*payload.n_accepted) - 1 - threadIndex;
     shared_n_meas[threadIndex] = 0;
-    sh_meas_ids[threadIndex] = std::numeric_limits<std::size_t>::max();
+    sh_meas_ids[threadIndex] = std::numeric_limits<measurement_id_type>::max();
     sh_threads[threadIndex] = std::numeric_limits<unsigned int>::max();
 
     if (threadIndex == 0) {

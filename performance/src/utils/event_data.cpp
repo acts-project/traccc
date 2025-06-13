@@ -181,7 +181,13 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
             meas.time = iohit.tt;
         }
 
-        m_measurement_map[iomeas.measurement_id] = meas;
+        if (iomeas.measurement_id <=
+            std::numeric_limits<measurement_id_type>::max()) {
+            m_measurement_map[static_cast<measurement_id_type>(
+                iomeas.measurement_id)] = meas;
+        } else {
+            throw std::runtime_error("Measurement ID exceeds the bound");
+        }
     }
 
     // Particle map
@@ -243,8 +249,14 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
         const auto& ptc = m_particle_map.at(iohit.particle_id);
 
         // Construct the measurement object.
-        const traccc::measurement& meas =
-            m_measurement_map.at(iomeas.measurement_id);
+        traccc::measurement meas;
+        if (iomeas.measurement_id <=
+            std::numeric_limits<measurement_id_type>::max()) {
+            meas = m_measurement_map.at(
+                static_cast<measurement_id_type>(iomeas.measurement_id));
+        } else {
+            throw std::runtime_error("Measurement ID exceeds the bound");
+        }
 
         // Fill measurement to truth global position and momentum map
         m_meas_to_param_map[meas] = std::make_pair(global_pos, global_mom);
@@ -312,7 +324,7 @@ void event_data::fill_cca_result(
 
     for (auto const& [ms, cluster] : found_meas_to_cluster_map) {
 
-        std::map<uint64_t, std::size_t> meas_counts;
+        std::map<measurement_id_type, std::size_t> meas_counts;
 
         // Cells from CCL
         for (const auto& cell1 : cluster) {

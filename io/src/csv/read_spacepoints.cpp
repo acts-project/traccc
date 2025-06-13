@@ -5,10 +5,12 @@
  * Mozilla Public License Version 2.0
  */
 
-// Local include(s).
-#include "read_spacepoints.hpp"
+// Project include(s).
+#include "traccc/definitions/primitives.hpp"
 
+// Local include(s).
 #include "read_measurements.hpp"
+#include "read_spacepoints.hpp"
 #include "traccc/io/csv/make_hit_reader.hpp"
 #include "traccc/io/csv/make_measurement_hit_id_reader.hpp"
 
@@ -27,7 +29,7 @@ void read_spacepoints(edm::spacepoint_collection::host& spacepoints,
                       const bool sort_measurements) {
 
     // Read all measurements.
-    const std::vector<std::size_t> new_idx_map = read_measurements(
+    const std::vector<measurement_id_type> new_idx_map = read_measurements(
         measurements, meas_filename, detector, sort_measurements);
 
     // Measurement hit id reader

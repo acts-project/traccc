@@ -33,7 +33,7 @@ __global__ void remove_tracks(device::remove_tracks_payload payload) {
     }
 
     __shared__ unsigned int shared_tids[1024];
-    __shared__ std::size_t sh_meas_ids[1024];
+    __shared__ measurement_id_type sh_meas_ids[1024];
     __shared__ unsigned int sh_threads[1024];
 
     auto threadIndex = threadIdx.x;
@@ -42,12 +42,12 @@ __global__ void remove_tracks(device::remove_tracks_payload payload) {
 
     vecmem::device_vector<const unsigned int> sorted_ids(
         payload.sorted_ids_view);
-    vecmem::jagged_device_vector<const std::size_t> meas_ids(
+    vecmem::jagged_device_vector<const measurement_id_type> meas_ids(
         payload.meas_ids_view);
-    vecmem::device_vector<const std::size_t> n_meas(payload.n_meas_view);
-    vecmem::device_vector<const std::size_t> unique_meas(
+    vecmem::device_vector<const unsigned int> n_meas(payload.n_meas_view);
+    vecmem::device_vector<const measurement_id_type> unique_meas(
         payload.unique_meas_view);
-    vecmem::jagged_device_vector<const std::size_t> tracks_per_measurement(
+    vecmem::jagged_device_vector<const unsigned int> tracks_per_measurement(
         payload.tracks_per_measurement_view);
     vecmem::jagged_device_vector<int> track_status_per_measurement(
         payload.track_status_per_measurement_view);
@@ -58,7 +58,7 @@ __global__ void remove_tracks(device::remove_tracks_payload payload) {
     vecmem::device_vector<unsigned int> updated_tracks(
         payload.updated_tracks_view);
     vecmem::device_vector<int> is_updated(payload.is_updated_view);
-    vecmem::device_vector<std::size_t> meas_to_remove(
+    vecmem::device_vector<measurement_id_type> meas_to_remove(
         payload.meas_to_remove_view);
     vecmem::device_vector<unsigned int> threads(payload.threads_view);
 

@@ -31,7 +31,8 @@ using namespace traccc;
 
 void fill_pattern(
     edm::track_candidate_container<default_algebra>::host& track_candidates,
-    const traccc::scalar pval, const std::vector<std::size_t>& pattern) {
+    const traccc::scalar pval,
+    const std::vector<measurement_id_type>& pattern) {
 
     track_candidates.tracks.resize(track_candidates.tracks.size() + 1u);
     track_candidates.tracks.pval().back() = pval;
@@ -49,11 +50,11 @@ bool find_pattern(
     const edm::track_candidate_collection<default_algebra>::const_device&
         track_candidates,
     const measurement_collection_types::const_device& measurements,
-    const std::vector<std::size_t>& pattern) {
+    const std::vector<measurement_id_type>& pattern) {
 
     const auto n_tracks = track_candidates.size();
     for (unsigned int i = 0; i < n_tracks; i++) {
-        std::vector<std::size_t> ids;
+        std::vector<measurement_id_type> ids;
         for (unsigned int meas_idx :
              track_candidates.measurement_indices().at(i)) {
             ids.push_back(measurements.at(meas_idx).measurement_id);
@@ -65,13 +66,13 @@ bool find_pattern(
     return false;
 }
 
-std::vector<std::size_t> get_pattern(
+std::vector<measurement_id_type> get_pattern(
     const edm::track_candidate_collection<default_algebra>::const_device&
         track_candidates,
     const measurement_collection_types::const_device& measurements,
     const unsigned int idx) {
 
-    std::vector<std::size_t> ret;
+    std::vector<measurement_id_type> ret;
     for (unsigned int meas_idx :
          track_candidates.measurement_indices().at(idx)) {
         ret.push_back(measurements.at(meas_idx).measurement_id);
@@ -114,13 +115,12 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest0) {
             vecmem::get_data(trk_cands.measurements));
         // All tracks are accepted as they have more than three measurements
         EXPECT_EQ(res_trk_cands.size(), 3u);
-        ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                                 std::vector<std::size_t>({5, 1, 11, 3})));
         ASSERT_TRUE(
-            find_pattern(res_trk_cands, measurements_device,
-                         std::vector<std::size_t>({12, 10, 9, 8, 7, 6})));
+            find_pattern(res_trk_cands, measurements_device, {5, 1, 11, 3}));
         ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                                 std::vector<std::size_t>({4, 2, 13})));
+                                 {12, 10, 9, 8, 7, 6}));
+        ASSERT_TRUE(
+            find_pattern(res_trk_cands, measurements_device, {4, 2, 13}));
     }
 
     {
@@ -135,8 +135,8 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest0) {
             vecmem::get_data(trk_cands.measurements));
         // Only the second track with six measurements is accepted
         ASSERT_EQ(res_trk_cands.size(), 1u);
-        EXPECT_EQ(get_pattern(res_trk_cands, measurements_device, 0),
-                  std::vector<std::size_t>({12, 10, 9, 8, 7, 6}));
+        ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
+                                 {12, 10, 9, 8, 7, 6}));
     }
 }
 
@@ -177,9 +177,8 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest1) {
     // The first track is selected over the second one as its relative
     // shared measurement (2/7) is lower than the one of the second track
     // (2/4)
-    ASSERT_TRUE(
-        find_pattern(res_trk_cands, measurements_device,
-                     std::vector<std::size_t>({5, 14, 1, 11, 18, 16, 3})));
+    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
+                             {5, 14, 1, 11, 18, 16, 3}));
 }
 
 TEST(CudaAmbiguitySolverTests, GreedyResolverTest2) {
@@ -215,8 +214,8 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest2) {
 
     // The second track is selected over the first one as their relative
     // shared measurement (2/4) is the same but its p-value is higher
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({3, 5, 6, 13})));
+    ASSERT_TRUE(
+        find_pattern(res_trk_cands, measurements_device, {3, 5, 6, 13}));
 }
 
 TEST(CudaAmbiguitySolverTests, GreedyResolverTest3) {
@@ -255,9 +254,9 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest3) {
         vecmem::get_data(trk_cands.measurements));
 
     ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({3, 21, 12, 6, 19, 14})));
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({13, 16, 2, 7, 11})));
+                             {3, 21, 12, 6, 19, 14}));
+    ASSERT_TRUE(
+        find_pattern(res_trk_cands, measurements_device, {13, 16, 2, 7, 11}));
 }
 
 TEST(CudaAmbiguitySolverTests, GreedyResolverTest5) {
@@ -293,10 +292,8 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest5) {
     measurement_collection_types::const_device measurements_device(
         vecmem::get_data(trk_cands.measurements));
 
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({3, 2, 1})));
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({6, 6, 6, 6})));
+    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device, {3, 2, 1}));
+    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device, {6, 6, 6, 6}));
 }
 
 TEST(CudaAmbiguitySolverTests, GreedyResolverTest6) {
@@ -334,9 +331,9 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest6) {
         vecmem::get_data(trk_cands.measurements));
 
     ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({7, 3, 5, 7, 7, 7, 2})));
+                             {7, 3, 5, 7, 7, 7, 2}));
     ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({8, 9, 0, 8, 1, 4, 6})));
+                             {8, 9, 0, 8, 1, 4, 6}));
 }
 
 TEST(CudaAmbiguitySolverTests, GreedyResolverTest7) {
@@ -371,8 +368,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest7) {
     measurement_collection_types::const_device measurements_device(
         vecmem::get_data(trk_cands.measurements));
 
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({2, 8, 5, 4})));
+    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device, {2, 8, 5, 4}));
 }
 
 TEST(CudaAmbiguitySolverTests, GreedyResolverTest8) {
@@ -409,12 +405,9 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest8) {
     measurement_collection_types::const_device measurements_device(
         vecmem::get_data(trk_cands.measurements));
 
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({6, 7, 5})));
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({8, 2, 2})));
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({1, 9, 3, 0})));
+    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device, {6, 7, 5}));
+    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device, {8, 2, 2}));
+    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device, {1, 9, 3, 0}));
 }
 
 TEST(CudaAmbiguitySolverTests, GreedyResolverTest9) {
@@ -449,8 +442,8 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest9) {
     measurement_collection_types::const_device measurements_device(
         vecmem::get_data(trk_cands.measurements));
 
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({0, 4, 8, 1, 1})));
+    ASSERT_TRUE(
+        find_pattern(res_trk_cands, measurements_device, {0, 4, 8, 1, 1}));
 }
 
 TEST(CudaAmbiguitySolverTests, GreedyResolverTest10) {
@@ -487,12 +480,12 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest10) {
     measurement_collection_types::const_device measurements_device(
         vecmem::get_data(trk_cands.measurements));
 
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({80, 35, 41, 55})));
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({73, 63, 49, 89})));
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({81, 22, 58, 54, 91})));
+    ASSERT_TRUE(
+        find_pattern(res_trk_cands, measurements_device, {80, 35, 41, 55}));
+    ASSERT_TRUE(
+        find_pattern(res_trk_cands, measurements_device, {73, 63, 49, 89}));
+    ASSERT_TRUE(
+        find_pattern(res_trk_cands, measurements_device, {81, 22, 58, 54, 91}));
 }
 
 TEST(CudaAmbiguitySolverTests, GreedyResolverTest11) {
@@ -562,10 +555,10 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest12) {
     measurement_collection_types::const_device measurements_device(
         vecmem::get_data(trk_cands.measurements));
 
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({17, 6, 1, 69, 78})));
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({54, 64, 49, 96, 40})));
+    ASSERT_TRUE(
+        find_pattern(res_trk_cands, measurements_device, {17, 6, 1, 69, 78}));
+    ASSERT_TRUE(
+        find_pattern(res_trk_cands, measurements_device, {54, 64, 49, 96, 40}));
 }
 
 TEST(CudaAmbiguitySolverTests, GreedyResolverTest13) {
@@ -603,16 +596,14 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest13) {
     measurement_collection_types::const_device measurements_device(
         vecmem::get_data(trk_cands.measurements));
 
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({46, 92, 74, 58})));
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({15, 78, 9})));
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({38, 93, 68})));
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({57, 64, 57, 36})));
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({4, 85, 65, 14})));
+    ASSERT_TRUE(
+        find_pattern(res_trk_cands, measurements_device, {46, 92, 74, 58}));
+    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device, {15, 78, 9}));
+    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device, {38, 93, 68}));
+    ASSERT_TRUE(
+        find_pattern(res_trk_cands, measurements_device, {57, 64, 57, 36}));
+    ASSERT_TRUE(
+        find_pattern(res_trk_cands, measurements_device, {4, 85, 65, 14}));
 }
 
 TEST(CudaAmbiguitySolverTests, GreedyResolverTest14) {
@@ -648,10 +639,8 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest14) {
     measurement_collection_types::const_device measurements_device(
         vecmem::get_data(trk_cands.measurements));
 
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({8, 4, 3})));
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({1, 2, 5})));
+    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device, {8, 4, 3}));
+    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device, {1, 2, 5}));
 }
 
 TEST(CudaAmbiguitySolverTests, GreedyResolverTest15) {
@@ -687,10 +676,8 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest15) {
     measurement_collection_types::const_device measurements_device(
         vecmem::get_data(trk_cands.measurements));
 
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({2, 0, 4})));
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({8, 7, 1})));
+    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device, {2, 0, 4}));
+    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device, {8, 7, 1}));
 }
 
 TEST(CudaAmbiguitySolverTests, GreedyResolverTest16) {
@@ -727,14 +714,13 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest16) {
     measurement_collection_types::const_device measurements_device(
         vecmem::get_data(trk_cands.measurements));
 
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({95, 24, 62, 83, 67})));
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({14, 52, 29, 79, 89})));
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({57, 85, 63, 90})));
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({80, 45, 94})));
+    ASSERT_TRUE(
+        find_pattern(res_trk_cands, measurements_device, {95, 24, 62, 83, 67}));
+    ASSERT_TRUE(
+        find_pattern(res_trk_cands, measurements_device, {14, 52, 29, 79, 89}));
+    ASSERT_TRUE(
+        find_pattern(res_trk_cands, measurements_device, {57, 85, 63, 90}));
+    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device, {80, 45, 94}));
 }
 
 TEST(CudaAmbiguitySolverTests, GreedyResolverTest17) {
@@ -770,8 +756,8 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest17) {
     measurement_collection_types::const_device measurements_device(
         vecmem::get_data(trk_cands.measurements));
 
-    ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device,
-                             std::vector<std::size_t>({0, 6, 4, 5, 5})));
+    ASSERT_TRUE(
+        find_pattern(res_trk_cands, measurements_device, {0, 6, 4, 5, 5}));
 }
 
 // Test class for the ambiguity resolution comparison with CPU implementation
@@ -780,7 +766,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest17) {
 class GreedyResolutionCompareToCPU
     : public ::testing::TestWithParam<
           std::tuple<std::size_t, std::size_t, std::array<std::size_t, 2u>,
-                     std::size_t, bool>> {};
+                     measurement_id_type, bool>> {};
 
 TEST_P(GreedyResolutionCompareToCPU, Comparison) {
 
@@ -788,7 +774,7 @@ TEST_P(GreedyResolutionCompareToCPU, Comparison) {
     const std::size_t n_tracks = std::get<1>(GetParam());
     const std::array<std::size_t, 2u> trk_length_range =
         std::get<2>(GetParam());
-    const std::size_t max_meas_id = std::get<3>(GetParam());
+    const measurement_id_type max_meas_id = std::get<3>(GetParam());
     const bool allow_duplicate = std::get<4>(GetParam());
 
     // Memory resource used by the EDM.
@@ -815,14 +801,14 @@ TEST_P(GreedyResolutionCompareToCPU, Comparison) {
 
             std::uniform_int_distribution<std::size_t> track_length_dist(
                 trk_length_range[0], trk_length_range[1]);
-            std::uniform_int_distribution<std::size_t> meas_id_dist(
+            std::uniform_int_distribution<measurement_id_type> meas_id_dist(
                 0, max_meas_id);
             std::uniform_real_distribution<traccc::scalar> pval_dist(0.0f,
                                                                      1.0f);
 
             const std::size_t track_length = track_length_dist(gen);
             const traccc::scalar pval = pval_dist(gen);
-            std::vector<std::size_t> pattern;
+            std::vector<measurement_id_type> pattern;
             // std::cout << pval << std::endl;
             while (pattern.size() < track_length) {
 

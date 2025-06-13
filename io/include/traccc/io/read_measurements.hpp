@@ -32,7 +32,7 @@ namespace traccc::io {
 /// @param[in]  detector  detray detector
 /// @param[in]  format    The format of the measurement data files (to read)
 ///
-std::vector<std::size_t> read_measurements(
+std::vector<measurement_id_type> read_measurements(
     measurement_collection_types::host& measurements, std::size_t event,
     std::string_view directory,
     const traccc::default_detector::host* detector = nullptr,
@@ -47,7 +47,7 @@ std::vector<std::size_t> read_measurements(
 /// @param[in]  detector  detray detector
 /// @param[in]  format   The format of the measurement data files (to read)
 ///
-std::vector<std::size_t> read_measurements(
+std::vector<measurement_id_type> read_measurements(
     measurement_collection_types::host& measurements, std::string_view filename,
     const traccc::default_detector::host* detector = nullptr,
     const bool sort_measurements = true, data_format format = data_format::csv);

@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/definitions/primitives.hpp"
 #include "traccc/utils/pair.hpp"
 
 // VecMem include(s).
@@ -37,7 +38,7 @@ struct exclusive_scan_payload {
     /**
      * @brief View object to measurements to remove
      */
-    vecmem::data::vector_view<std::size_t> meas_to_remove_view;
+    vecmem::data::vector_view<measurement_id_type> meas_to_remove_view;
 
     /**
      * @brief View object to thread id of measurements to remove
