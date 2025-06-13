@@ -189,8 +189,8 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
     vecmem::device_vector<device::sort_key> keys_device(keys_buffer);
     vecmem::device_vector<unsigned int> param_ids_device(param_ids_buffer);
 
-    thrust::sort_by_key(execPolicy, keys_device.begin(),
-                        keys_device.end(), param_ids_device.begin());
+    thrust::sort_by_key(execPolicy, keys_device.begin(), keys_device.end(),
+                        param_ids_device.begin());
 
     ::alpaka::exec<Acc>(queue, workDiv, FitTrackPreludeKernel{},
                         vecmem::get_data(param_ids_buffer),
