@@ -943,6 +943,15 @@ INSTANTIATE_TEST_SUITE_P(
                                       100u, false)));
 
 INSTANTIATE_TEST_SUITE_P(
+    Long, GreedyResolutionCompareToCPU,
+    ::testing::Values(std::make_tuple(3u, 10000u,
+                                      std::array<std::size_t, 2u>{3u, 500u},
+                                      10000u, true),
+                      std::make_tuple(3u, 10000u,
+                                      std::array<std::size_t, 2u>{3u, 500u},
+                                      10000u, false)));
+
+INSTANTIATE_TEST_SUITE_P(
     Simple, GreedyResolutionCompareToCPU,
     ::testing::Values(
         std::make_tuple(3u, 5u, std::array<std::size_t, 2u>{3u, 5u}, 10u, true),
