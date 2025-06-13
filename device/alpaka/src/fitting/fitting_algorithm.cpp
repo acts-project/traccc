@@ -127,9 +127,10 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
             .on(stream);
 #elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
     auto stream = ::alpaka::getNativeHandle(queue);
-    auto execPolicy = thrust::hip_rocprim::par_nosync(
-                          std::pmr::polymorphic_allocator(&(m_mr.main)))
-                          .on(stream);
+    auto execPolicy =
+        thrust::hip_rocprim::par_nosync(
+            std::pmr::polymorphic_allocator<std::byte>(&(m_mr.main)))
+            .on(stream);
 #else
     auto execPolicy = thrust::host;
 #endif
