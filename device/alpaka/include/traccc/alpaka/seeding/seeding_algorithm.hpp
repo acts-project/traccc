@@ -10,6 +10,7 @@
 // Local include(s).
 #include "traccc/alpaka/seeding/details/seed_finding.hpp"
 #include "traccc/alpaka/seeding/details/spacepoint_binning.hpp"
+#include "traccc/alpaka/utils/queue.hpp"
 
 // Project include(s).
 #include "traccc/edm/seed_collection.hpp"
@@ -36,12 +37,13 @@ class seeding_algorithm : public algorithm<edm::seed_collection::buffer(
     /// @param mr The memory resource(s) to use in the algorithm
     /// @param copy The copy object to use for copying data between device
     ///             and host memory blocks
+    /// @param q  The Alpaka queue to perform the operations in
     ///
     seeding_algorithm(
         const seedfinder_config& finder_config,
         const spacepoint_grid_config& grid_config,
         const seedfilter_config& filter_config,
-        const traccc::memory_resource& mr, vecmem::copy& copy,
+        const traccc::memory_resource& mr, vecmem::copy& copy, queue& q,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Operator executing the algorithm.
