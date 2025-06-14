@@ -24,6 +24,8 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/utils/make_prefix_sum_buff.cu"
   "include/traccc/cuda/utils/stream.hpp"
   "src/utils/barrier.hpp"
+  "include/traccc/cuda/utils/bfield.hpp"
+  "src/utils/bfield.cpp"
   "src/utils/cuda_error_handling.hpp"
   "src/utils/cuda_error_handling.cpp"
   "src/utils/stream.cpp"
@@ -141,8 +143,8 @@ endif()
 target_compile_options( traccc_cuda
   PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr> )
 target_link_libraries( traccc_cuda
-  PUBLIC traccc::core detray::core vecmem::core covfie::core
-  PRIVATE CUDA::cudart traccc::device_common vecmem::cuda )
+  PUBLIC traccc::core detray::core detray::io vecmem::core covfie::core
+  PRIVATE CUDA::cudart traccc::device_common vecmem::cuda covfie::cuda )
 
 # Set up Thrust specifically for the traccc::cuda library.
 thrust_create_target( traccc::cuda_thrust
