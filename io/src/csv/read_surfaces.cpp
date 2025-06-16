@@ -8,10 +8,8 @@
 // Local include(s).
 #include "read_surfaces.hpp"
 
+#include "traccc/io/csv/dfe.hpp"
 #include "traccc/io/csv/make_surface_reader.hpp"
-
-// DFE include(s).
-#include <dfe/dfe_io_dsv.hpp>
 
 namespace traccc::io::csv {
 

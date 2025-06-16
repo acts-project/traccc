@@ -8,10 +8,8 @@
 #pragma once
 
 // Local include(s).
+#include "traccc/io/csv/dfe.hpp"
 #include "traccc/io/csv/measurement_hit_id.hpp"
-
-// DFE include(s).
-#include <dfe/dfe_io_dsv.hpp>
 
 // System include(s).
 #include <string_view>

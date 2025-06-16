@@ -13,4 +13,4 @@ traccc_add_library( traccc_simulation simulation TYPE INTERFACE
   "include/traccc/simulation/smearing_writer.hpp" )
 target_link_libraries( traccc_simulation
   INTERFACE traccc::core traccc::io detray::core detray::io
-            detray::test_common detray::test_utils dfelibs::dfelibs )
+            detray::test_common detray::test_utils)

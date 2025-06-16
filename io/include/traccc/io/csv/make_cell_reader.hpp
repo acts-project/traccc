@@ -9,9 +9,7 @@
 
 // Local include(s).
 #include "traccc/io/csv/cell.hpp"
-
-// DFE include(s).
-#include <dfe/dfe_io_dsv.hpp>
+#include "traccc/io/csv/dfe.hpp"
 
 // System include(s).
 #include <string_view>
