@@ -105,7 +105,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
         m_copy.get().get_sizes(track_candidates_view.tracks);
 
     // Make measurement ID, pval and n_measurement vector
-    vecmem::data::jagged_vector_buffer<std::size_t> meas_ids_buffer{
+    vecmem::data::jagged_vector_buffer<measurement_id_type> meas_ids_buffer{
         candidate_sizes, m_mr.main, m_mr.host,
         vecmem::data::buffer_type::resizable};
     m_copy.get().setup(meas_ids_buffer)->ignore();
@@ -113,12 +113,13 @@ greedy_ambiguity_resolution_algorithm::operator()(
     const unsigned int n_cands_total =
         std::accumulate(candidate_sizes.begin(), candidate_sizes.end(), 0u);
 
-    vecmem::data::vector_buffer<std::size_t> flat_meas_ids_buffer{
+    vecmem::data::vector_buffer<measurement_id_type> flat_meas_ids_buffer{
         n_cands_total, m_mr.main, vecmem::data::buffer_type::resizable};
     m_copy.get().setup(flat_meas_ids_buffer)->ignore();
     vecmem::data::vector_buffer<traccc::scalar> pvals_buffer{n_tracks,
                                                              m_mr.main};
-    vecmem::data::vector_buffer<std::size_t> n_meas_buffer{n_tracks, m_mr.main};
+    vecmem::data::vector_buffer<unsigned int> n_meas_buffer{n_tracks,
+                                                            m_mr.main};
     thrust::fill(thrust_policy, n_meas_buffer.ptr(),
                  n_meas_buffer.ptr() + n_tracks, 0);
 
@@ -178,8 +179,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
                              thrust::equal_to<int>()));
 
     // Unique measurement ids
-    vecmem::data::vector_buffer<std::size_t> unique_meas_buffer{meas_count,
-                                                                m_mr.main};
+    vecmem::data::vector_buffer<measurement_id_type> unique_meas_buffer{
+        meas_count, m_mr.main};
 
     // Counts of unique measurement id in flat id vector
     vecmem::data::vector_buffer<std::size_t> unique_meas_counts_buffer{
@@ -206,7 +207,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
         ->wait();
 
     // Make the tracks per measurement vector
-    vecmem::data::jagged_vector_buffer<std::size_t>
+    vecmem::data::jagged_vector_buffer<unsigned int>
         tracks_per_measurement_buffer(unique_meas_counts, m_mr.main, m_mr.host,
                                       vecmem::data::buffer_type::resizable);
     m_copy.get().setup(tracks_per_measurement_buffer)->ignore();
@@ -316,8 +317,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
     m_copy.get().setup(updated_tracks_buffer)->ignore();
 
     // Measurements to remove for each iteration
-    vecmem::data::vector_buffer<std::size_t> meas_to_remove_buffer{1024,
-                                                                   m_mr.main};
+    vecmem::data::vector_buffer<measurement_id_type> meas_to_remove_buffer{
+        1024, m_mr.main};
     vecmem::data::vector_buffer<unsigned int> threads_buffer{1024, m_mr.main};
 
     vecmem::unique_alloc_ptr<unsigned int> n_removable_tracks_device =
@@ -394,7 +395,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
         kernels::count_removable_tracks<<<
             1, 1024,
-            sizeof(int) * 1024 + sizeof(std::size_t) * 1024 +
+            sizeof(int) * 1024 + sizeof(measurement_id_type) * 1024 +
                 sizeof(unsigned int) * 1024 + sizeof(unsigned int) * 6 +
                 sizeof(bool),
             stream>>>(device::count_removable_tracks_payload{
@@ -412,20 +413,21 @@ greedy_ambiguity_resolution_algorithm::operator()(
             .meas_to_remove_view = meas_to_remove_buffer,
             .threads_view = threads_buffer});
 
-        kernels::
-            exclusive_scan<<<1, 1024,
-                             sizeof(int) * 1024 + sizeof(std::size_t) * 1024 +
-                                 sizeof(unsigned int) * 1024,
-                             stream>>>(device::exclusive_scan_payload{
-                .terminate = terminate_device.get(),
-                .n_removable_tracks = n_removable_tracks_device.get(),
-                .n_meas_to_remove = n_meas_to_remove_device.get(),
-                .meas_to_remove_view = meas_to_remove_buffer,
-                .threads_view = threads_buffer});
+        kernels::exclusive_scan<<<1, 1024,
+                                  sizeof(int) * 1024 +
+                                      sizeof(measurement_id_type) * 1024 +
+                                      sizeof(unsigned int) * 1024,
+                                  stream>>>(device::exclusive_scan_payload{
+            .terminate = terminate_device.get(),
+            .n_removable_tracks = n_removable_tracks_device.get(),
+            .n_meas_to_remove = n_meas_to_remove_device.get(),
+            .meas_to_remove_view = meas_to_remove_buffer,
+            .threads_view = threads_buffer});
 
-        kernels::remove_tracks<<<
-            1, 1024, 1024 * (2 * sizeof(unsigned int) + sizeof(std::size_t)),
-            stream>>>(device::remove_tracks_payload{
+        kernels::remove_tracks<<<1, 1024,
+                                 1024 * (2 * sizeof(unsigned int) +
+                                         sizeof(measurement_id_type)),
+                                 stream>>>(device::remove_tracks_payload{
             .sorted_ids_view = sorted_ids_buffer,
             .n_accepted = n_accepted_device.get(),
             .meas_ids_view = meas_ids_buffer,

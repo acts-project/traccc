@@ -31,11 +31,11 @@ __global__ void fill_tracks_per_measurement(
         return;
     }
 
-    vecmem::jagged_device_vector<const std::size_t> meas_ids(
+    vecmem::jagged_device_vector<const measurement_id_type> meas_ids(
         payload.meas_ids_view);
-    vecmem::device_vector<const std::size_t> unique_meas(
+    vecmem::device_vector<const measurement_id_type> unique_meas(
         payload.unique_meas_view);
-    vecmem::jagged_device_vector<std::size_t> tracks_per_measurement(
+    vecmem::jagged_device_vector<unsigned int> tracks_per_measurement(
         payload.tracks_per_measurement_view);
     vecmem::jagged_device_vector<int> track_status_per_measurement(
         payload.track_status_per_measurement_view);

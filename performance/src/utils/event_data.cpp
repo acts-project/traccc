@@ -181,7 +181,13 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
             meas.time = iohit.tt;
         }
 
-        m_measurement_map[iomeas.measurement_id] = meas;
+        if (iomeas.measurement_id <=
+            std::numeric_limits<measurement_id_type>::max()) {
+            m_measurement_map[static_cast<measurement_id_type>(
+                iomeas.measurement_id)] = meas;
+        } else {
+            throw std::runtime_error("Measurement ID exceeds the bound");
+        }
     }
 
     // Particle map
@@ -213,7 +219,14 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
             auto hid = csv_meas_hit_ids[meas_id].hit_id;
             const auto& iohit = csv_hits[hid];
 
-            const auto meas = m_measurement_map.at(meas_id);
+            traccc::measurement meas;
+            if (meas_id <= std::numeric_limits<measurement_id_type>::max()) {
+                meas = m_measurement_map.at(
+                    static_cast<measurement_id_type>(meas_id));
+            } else {
+                throw std::runtime_error("Measurement ID exceeds the bound");
+            }
+
             meas_to_cluster_map[meas].push_back(iocell);
 
             const auto& ptc = m_particle_map.at(iohit.particle_id);
@@ -243,8 +256,14 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
         const auto& ptc = m_particle_map.at(iohit.particle_id);
 
         // Construct the measurement object.
-        const traccc::measurement& meas =
-            m_measurement_map.at(iomeas.measurement_id);
+        traccc::measurement meas;
+        if (iomeas.measurement_id <=
+            std::numeric_limits<measurement_id_type>::max()) {
+            meas = m_measurement_map.at(
+                static_cast<measurement_id_type>(iomeas.measurement_id));
+        } else {
+            throw std::runtime_error("Measurement ID exceeds the bound");
+        }
 
         // Fill measurement to truth global position and momentum map
         m_meas_to_param_map[meas] = std::make_pair(global_pos, global_mom);
@@ -341,8 +360,14 @@ void event_data::fill_cca_result(
                              });
 
         const auto& meas_id = pr->first;
-        m_found_meas_to_param_map[ms] =
-            m_meas_to_param_map[m_measurement_map[meas_id]];
+
+        if (meas_id <= std::numeric_limits<measurement_id_type>::max()) {
+            m_found_meas_to_param_map[ms] = m_meas_to_param_map
+                [m_measurement_map[static_cast<measurement_id_type>(meas_id)]];
+
+        } else {
+            throw std::runtime_error("Measurement ID exceeds the bound");
+        }
     }
 }
 

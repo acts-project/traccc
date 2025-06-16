@@ -21,7 +21,7 @@ __global__ void exclusive_scan(device::exclusive_scan_payload payload) {
     }
 
     __shared__ int prefix[1024];
-    __shared__ std::size_t sh_meas_ids[1024];
+    __shared__ measurement_id_type sh_meas_ids[1024];
     __shared__ unsigned int sh_threads[1024];
 
     auto threadIndex = threadIdx.x;
@@ -30,7 +30,7 @@ __global__ void exclusive_scan(device::exclusive_scan_payload payload) {
         return;
     }
 
-    vecmem::device_vector<std::size_t> meas_to_remove(
+    vecmem::device_vector<measurement_id_type> meas_to_remove(
         payload.meas_to_remove_view);
     vecmem::device_vector<unsigned int> threads(payload.threads_view);
 

@@ -16,7 +16,7 @@
 
 namespace traccc::io::csv {
 
-std::vector<std::size_t> read_measurements(
+std::vector<measurement_id_type> read_measurements(
     measurement_collection_types::host& measurements, std::string_view filename,
     const traccc::default_detector::host* detector, const bool do_sort) {
 
@@ -73,13 +73,19 @@ std::vector<std::size_t> read_measurements(
         meas.subs.set_indices(indices);
         meas.surface_link = detray::geometry::barcode{geom_id};
         // Keeps measurement_id for ambiguity resolution
-        meas.measurement_id = iomeas.measurement_id;
+        if (iomeas.measurement_id <=
+            std::numeric_limits<measurement_id_type>::max()) {
+            meas.measurement_id =
+                static_cast<measurement_id_type>(iomeas.measurement_id);
+        } else {
+            throw std::runtime_error("Measurement ID exceeds the bound");
+        }
 
         measurements.push_back(meas);
     }
 
     // Contains the index of the new position at the entry of the old position
-    std::vector<std::size_t> new_idx_map(measurements.size());
+    std::vector<measurement_id_type> new_idx_map(measurements.size());
     if (do_sort) {
         // Remeber index locations
         std::vector<std::size_t> idx(measurements.size());
@@ -95,7 +101,7 @@ std::vector<std::size_t> read_measurements(
 
         // Map the indices to the new positions
         for (std::size_t i = 0u; i < idx.size(); ++i) {
-            new_idx_map[idx[i]] = i;
+            new_idx_map[idx[i]] = static_cast<measurement_id_type>(i);
         }
 
         // Now sort the actual measurements (@TODO: Use new_idx_map as

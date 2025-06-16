@@ -12,6 +12,9 @@
 #include "traccc/io/csv/make_hit_reader.hpp"
 #include "traccc/io/csv/make_measurement_hit_id_reader.hpp"
 
+// Project include(s).
+#include "traccc/definitions/primitives.hpp"
+
 // System include(s).
 #include <ranges>
 #include <stdexcept>
@@ -27,7 +30,7 @@ void read_spacepoints(edm::spacepoint_collection::host& spacepoints,
                       const bool sort_measurements) {
 
     // Read all measurements.
-    const std::vector<std::size_t> new_idx_map = read_measurements(
+    const std::vector<measurement_id_type> new_idx_map = read_measurements(
         measurements, meas_filename, detector, sort_measurements);
 
     // Measurement hit id reader

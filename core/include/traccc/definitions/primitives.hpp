@@ -27,7 +27,7 @@
 
 namespace traccc {
 
-using measurement_id = std::uint64_t;
+using measurement_id_type = unsigned int;
 using particle_id = std::uint64_t;
 using geometry_id = std::uint64_t;
 using channel_id = unsigned int;
