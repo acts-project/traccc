@@ -33,11 +33,12 @@ __global__ void fill_vectors(const ambiguity_resolution_config cfg,
         payload.track_candidates_view.measurements);
     const auto track = track_candidates.at(globalIndex);
 
-    vecmem::jagged_device_vector<std::size_t> meas_ids(payload.meas_ids_view);
-    vecmem::device_vector<std::size_t> flat_meas_ids(
+    vecmem::jagged_device_vector<measurement_id_type> meas_ids(
+        payload.meas_ids_view);
+    vecmem::device_vector<measurement_id_type> flat_meas_ids(
         payload.flat_meas_ids_view);
     vecmem::device_vector<traccc::scalar> pvals(payload.pvals_view);
-    vecmem::device_vector<std::size_t> n_meas(payload.n_meas_view);
+    vecmem::device_vector<unsigned int> n_meas(payload.n_meas_view);
     vecmem::device_vector<int> status(payload.status_view);
 
     pvals.at(globalIndex) = track.pval();

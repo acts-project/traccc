@@ -17,7 +17,7 @@
 
 namespace traccc::io {
 
-std::vector<std::size_t> read_measurements(
+std::vector<measurement_id_type> read_measurements(
     measurement_collection_types::host& measurements, std::size_t event,
     std::string_view directory, const traccc::default_detector::host* detector,
     const bool sort_measurements, data_format format) {
@@ -47,7 +47,7 @@ std::vector<std::size_t> read_measurements(
     }
 }
 
-std::vector<std::size_t> read_measurements(
+std::vector<measurement_id_type> read_measurements(
     measurement_collection_types::host& measurements, std::string_view filename,
     const traccc::default_detector::host* detector,
     const bool sort_measurements, data_format format) {
