@@ -41,7 +41,10 @@ void parse_opts(int argc, char* argv[],
         "input,i", boost::program_options::value<std::string>()->required(),
         "input magnetic field to read")(
         "output,o", boost::program_options::value<std::string>()->required(),
-        "output magnetic field to write");
+        "output magnetic field to write")(
+        "delimiter,d",
+        boost::program_options::value<char>()->default_value(' ')->required(),
+        "delimiter character");
 
     boost::program_options::parsed_options parsed =
         boost::program_options::command_line_parser(argc, argv)
@@ -63,7 +66,7 @@ void parse_opts(int argc, char* argv[],
     }
 }
 
-field_t read_bfield(const std::string& fn) {
+field_t read_bfield(const std::string& fn, char delimiter) {
     std::ifstream f;
 
     float minx = std::numeric_limits<float>::max();
@@ -111,19 +114,19 @@ field_t read_bfield(const std::string& fn) {
             std::stringstream ss(line);
             CHECK_IOSTATE(ss);
 
-            std::getline(ss, word, ' ');
+            std::getline(ss, word, delimiter);
             CHECK_IOSTATE(ss);
             xp = static_cast<float>(std::atof(word.c_str()));
-            std::getline(ss, word, ' ');
+            std::getline(ss, word, delimiter);
             CHECK_IOSTATE(ss);
             yp = static_cast<float>(std::atof(word.c_str()));
-            std::getline(ss, word, ' ');
+            std::getline(ss, word, delimiter);
             CHECK_IOSTATE(ss);
             zp = static_cast<float>(std::atof(word.c_str()));
-            std::getline(ss, word, ' ');
+            std::getline(ss, word, delimiter);
             CHECK_IOSTATE(ss);
             Bx = static_cast<float>(std::atof(word.c_str()));
-            std::getline(ss, word, ' ');
+            std::getline(ss, word, delimiter);
             CHECK_IOSTATE(ss);
             By = static_cast<float>(std::atof(word.c_str()));
             std::getline(ss, word);
@@ -216,19 +219,19 @@ field_t read_bfield(const std::string& fn) {
             std::stringstream ss(line);
             CHECK_IOSTATE(ss);
 
-            std::getline(ss, word, ' ');
+            std::getline(ss, word, delimiter);
             CHECK_IOSTATE(ss);
             xp = static_cast<float>(std::atof(word.c_str()));
-            std::getline(ss, word, ' ');
+            std::getline(ss, word, delimiter);
             CHECK_IOSTATE(ss);
             yp = static_cast<float>(std::atof(word.c_str()));
-            std::getline(ss, word, ' ');
+            std::getline(ss, word, delimiter);
             CHECK_IOSTATE(ss);
             zp = static_cast<float>(std::atof(word.c_str()));
-            std::getline(ss, word, ' ');
+            std::getline(ss, word, delimiter);
             CHECK_IOSTATE(ss);
             Bx = static_cast<float>(std::atof(word.c_str()));
-            std::getline(ss, word, ' ');
+            std::getline(ss, word, delimiter);
             CHECK_IOSTATE(ss);
             By = static_cast<float>(std::atof(word.c_str()));
             std::getline(ss, word);
@@ -262,7 +265,8 @@ int main(int argc, char** argv) {
                                                << "\"");
     TRACCC_INFO("Starting read of input file...");
 
-    field_t fb = read_bfield(vm["input"].as<std::string>());
+    field_t fb =
+        read_bfield(vm["input"].as<std::string>(), vm["delimiter"].as<char>());
 
     TRACCC_INFO("Writing magnetic field to file \""
                 << vm["output"].as<std::string>() << "\"...");
