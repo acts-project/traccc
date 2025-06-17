@@ -26,9 +26,7 @@ struct statistics_updater {
     /// @param index mask index of the current surface
     /// @param fit_res fitting information such as NDoF or Chi2
     /// @param trk_state track state of the current surface
-    template <typename mask_group_t, typename index_t>
     TRACCC_HOST_DEVICE inline void operator()(
-        const mask_group_t& /*mask_group*/, const index_t& /*index*/,
         fitting_result<algebra_t>& fit_res,
         const track_state<algebra_t>& trk_state) {
 

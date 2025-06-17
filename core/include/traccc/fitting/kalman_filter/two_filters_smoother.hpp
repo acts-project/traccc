@@ -32,39 +32,33 @@ struct two_filters_smoother {
     /// @param bound_params bound parameter
     ///
     /// @return true if the update succeeds
-    template <typename mask_group_t, typename index_t>
     [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status operator()(
-        const mask_group_t& /*mask_group*/, const index_t& /*index*/,
         track_state<algebra_t>& trk_state,
-        bound_track_parameters<algebra_t>& bound_params) const {
-
-        using shape_type = typename mask_group_t::value_type::shape;
+        bound_track_parameters<algebra_t>& bound_params,
+        const bool is_line) const {
 
         const auto D = trk_state.get_measurement().meas_dim;
-        assert(D == 1u || D == 2u);
-        if (D == 1u) {
-            return smoothe<1u, shape_type>(trk_state, bound_params);
-        } else if (D == 2u) {
-            return smoothe<2u, shape_type>(trk_state, bound_params);
-        }
 
-        return kalman_fitter_status::ERROR_OTHER;
+        assert(D == 1u || D == 2u);
+
+        return smoothe(trk_state, bound_params, D, is_line);
     }
 
     // Reference: The Optimun Linear Smoother as a Combination of Two Optimum
     // Linear Filters
-    template <size_type D, typename shape_t>
     [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status smoothe(
         track_state<algebra_t>& trk_state,
-        bound_track_parameters<algebra_t>& bound_params) const {
+        bound_track_parameters<algebra_t>& bound_params, const unsigned int dim,
+        const bool is_line) const {
+
+        static constexpr unsigned int D = 2;
+
+        assert(dim == 1u || dim == 2u);
 
         assert(!bound_params.is_invalid());
         assert(!bound_params.surface_link().is_invalid());
         assert(trk_state.filtered().surface_link() ==
                bound_params.surface_link());
-
-        static_assert(((D == 1u) || (D == 2u)),
-                      "The measurement dimension should be 1 or 2");
 
         // Do not smoothe if the forward pass produced an error
         if (trk_state.filtered().is_invalid()) {
@@ -73,11 +67,11 @@ struct two_filters_smoother {
 
         const auto meas = trk_state.get_measurement();
 
-        matrix_type<D, e_bound_size> H = meas.subs.template projector<D>();
-
         // Measurement data on surface
         const matrix_type<D, 1> meas_local =
             trk_state.template measurement_local<D>();
+
+        assert((dim > 1) || (getter::element(meas_local, 1u, 0u) == 0.f));
 
         // Predicted vector of bound track parameters
         const matrix_type<e_bound_size, 1>& predicted_vec =
@@ -110,11 +104,21 @@ struct two_filters_smoother {
         trk_state.smoothed().set_vector(smoothed_vec);
         trk_state.smoothed().set_covariance(smoothed_cov);
 
+        matrix_type<D, e_bound_size> H = meas.subs.template projector<D>();
+
+        if (dim == 1) {
+            getter::element(H, 1u, 0u) = 0.f;
+            getter::element(H, 1u, 1u) = 0.f;
+        }
+
         const matrix_type<D, 1> residual_smt = meas_local - H * smoothed_vec;
 
         // Spatial resolution (Measurement covariance)
-        const matrix_type<D, D> V =
-            trk_state.template measurement_covariance<D>();
+        matrix_type<D, D> V = trk_state.template measurement_covariance<D>();
+
+        if (dim == 1) {
+            getter::element(V, 1u, 1u) = 1.f;
+        }
 
         // Eq (3.39) of "Pattern Recognition, Tracking and Vertex
         // Reconstruction in Particle Detectors"
@@ -144,12 +148,8 @@ struct two_filters_smoother {
 
         // Flip the sign of projector matrix element in case the first element
         // of line measurement is negative
-        if constexpr (std::is_same_v<shape_t, detray::line<true>> ||
-                      std::is_same_v<shape_t, detray::line<false>>) {
-
-            if (getter::element(predicted_vec, e_bound_loc0, 0u) < 0) {
-                getter::element(H, 0u, e_bound_loc0) = -1;
-            }
+        if (is_line && getter::element(predicted_vec, e_bound_loc0, 0u) < 0) {
+            getter::element(H, 0u, e_bound_loc0) = -1;
         }
 
         const auto I66 =
