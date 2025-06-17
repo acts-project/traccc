@@ -7,10 +7,13 @@
 
 #pragma once
 
+// Project include(s).
 #include "traccc/edm/silicon_cluster_collection.hpp"
 
+// VecMem include(s).
+#include <vecmem/containers/data/vector_view.hpp>
 namespace traccc::cuda::kernels {
 __global__ void reify_cluster_data(
-    unsigned int* disjoint_set_ptr, unsigned int num_cells,
+    vecmem::data::vector_view<const unsigned int> disjoint_set_view,
     traccc::edm::silicon_cluster_collection::view cluster_view);
 }

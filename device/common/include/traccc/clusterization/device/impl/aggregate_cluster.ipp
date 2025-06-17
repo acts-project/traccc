@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -20,7 +20,7 @@ inline void aggregate_cluster(
     const vecmem::device_vector<details::index_t>& f, const unsigned int start,
     const unsigned int end, const unsigned short cid, measurement& out,
     vecmem::data::vector_view<unsigned int> cell_links, const unsigned int link,
-    unsigned int* disjoint_set_ptr,
+    vecmem::device_vector<unsigned int>& disjoint_set,
     std::optional<std::reference_wrapper<unsigned int>> cluster_size) {
     vecmem::device_vector<unsigned int> cell_links_device(cell_links);
 
@@ -130,8 +130,8 @@ inline void aggregate_cluster(
 
             tmp_cluster_size++;
 
-            if (disjoint_set_ptr != nullptr) {
-                disjoint_set_ptr[pos] = link;
+            if (disjoint_set.capacity()) {
+                disjoint_set.at(pos) = link;
             }
         }
 

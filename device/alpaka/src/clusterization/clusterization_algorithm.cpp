@@ -34,8 +34,9 @@ struct CCLKernel {
         vecmem::data::vector_view<device::details::index_t> gf_backup_view,
         vecmem::data::vector_view<unsigned char> adjc_backup_view,
         vecmem::data::vector_view<device::details::index_t> adjv_backup_view,
-        uint32_t* backup_mutex_ptr, unsigned int* disjoint_set_ptr,
-        unsigned int* cluster_size_ptr,
+        uint32_t* backup_mutex_ptr,
+        vecmem::data::vector_view<unsigned int> disjoint_set_view,
+        vecmem::data::vector_view<unsigned int> cluster_size_view,
         measurement_collection_types::view measurements_view,
         vecmem::data::vector_view<unsigned int> cell_links) const {
 
@@ -61,8 +62,8 @@ struct CCLKernel {
         device::ccl_kernel(
             cfg, thread_id, cells_view, det_descr_view, partition_start,
             partition_end, outi, f_view, gf_view, f_backup_view, gf_backup_view,
-            adjc_backup_view, adjv_backup_view, backup_mutex, disjoint_set_ptr,
-            cluster_size_ptr, barry_r, measurements_view, cell_links);
+            adjc_backup_view, adjv_backup_view, backup_mutex, disjoint_set_view,
+            cluster_size_view, barry_r, measurements_view, cell_links);
     }
 };
 
@@ -137,12 +138,13 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
                   "with support for multi-thread blocks.");
     auto workDiv = makeWorkDiv<Acc>(num_blocks, m_config.threads_per_partition);
 
+    vecmem::data::vector_view<unsigned int> dummy_view{0u, nullptr};
     ::alpaka::exec<Acc>(
         queue, workDiv, CCLKernel{}, m_config, cells, det_descr,
         vecmem::get_data(m_f_backup), vecmem::get_data(m_gf_backup),
         vecmem::get_data(m_adjc_backup), vecmem::get_data(m_adjv_backup),
-        m_backup_mutex.get(), nullptr, nullptr, vecmem::get_data(measurements),
-        vecmem::get_data(cell_links));
+        m_backup_mutex.get(), dummy_view, dummy_view,
+        vecmem::get_data(measurements), vecmem::get_data(cell_links));
     ::alpaka::wait(queue);
 
     return measurements;

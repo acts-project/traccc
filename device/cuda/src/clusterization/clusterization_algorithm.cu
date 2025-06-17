@@ -124,15 +124,13 @@ clusterization_algorithm::execute_impl(
     assert(m_config.max_cells_per_thread <=
            device::details::CELLS_PER_THREAD_STACK_LIMIT);
 
-    vecmem::unique_alloc_ptr<unsigned int[]> disjoint_set;
-    vecmem::unique_alloc_ptr<unsigned int[]> cluster_sizes;
+    vecmem::data::vector_buffer<unsigned int> disjoint_set;
+    vecmem::data::vector_buffer<unsigned int> cluster_sizes;
 
     // If we are keeping the disjoint set data structure, allocate space for it.
     if (keep_disjoint_set) {
-        disjoint_set =
-            vecmem::make_unique_alloc<unsigned int[]>(m_mr.main, num_cells);
-        cluster_sizes =
-            vecmem::make_unique_alloc<unsigned int[]>(m_mr.main, num_cells);
+        disjoint_set = {num_cells, m_mr.main};
+        cluster_sizes = {num_cells, m_mr.main};
     }
 
     kernels::ccl_kernel<<<num_blocks, m_config.threads_per_partition,
@@ -141,7 +139,7 @@ clusterization_algorithm::execute_impl(
                           stream>>>(
         m_config, cells, det_descr, measurements, cell_links, m_f_backup,
         m_gf_backup, m_adjc_backup, m_adjv_backup, m_backup_mutex.get(),
-        disjoint_set.get(), cluster_sizes.get());
+        disjoint_set, cluster_sizes);
 
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
@@ -153,12 +151,12 @@ clusterization_algorithm::execute_impl(
 
         auto num_measurements = m_copy.get().get_size(measurements);
 
-        std::vector<unsigned int> cluster_sizes_host;
+        // This could be further optimized by only copying the number of
+        // elements necessary. But since cluster making is mainly meant for
+        // performance measurements, on first order this should be good enough.
+        vecmem::vector<unsigned int> cluster_sizes_host{m_mr.host};
+        m_copy.get()(cluster_sizes, cluster_sizes_host)->wait();
         cluster_sizes_host.resize(num_measurements);
-
-        TRACCC_CUDA_ERROR_CHECK(cudaMemcpy(
-            cluster_sizes_host.data(), cluster_sizes.get(),
-            num_measurements * sizeof(unsigned int), cudaMemcpyDeviceToHost));
 
         cluster_data.emplace(cluster_sizes_host, m_mr.main, m_mr.host,
                              vecmem::data::buffer_type::resizable);
@@ -169,7 +167,7 @@ clusterization_algorithm::execute_impl(
             (num_cells + num_threads - 1) / num_threads;
 
         kernels::reify_cluster_data<<<num_blocks, num_threads, 0, stream>>>(
-            disjoint_set.get(), num_cells, *cluster_data);
+            disjoint_set, *cluster_data);
 
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
     }

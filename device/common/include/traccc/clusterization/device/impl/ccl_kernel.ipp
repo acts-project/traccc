@@ -145,8 +145,8 @@ TRACCC_DEVICE inline void ccl_core(
     const edm::silicon_cell_collection::const_device& cells_device,
     const silicon_detector_description::const_device& det_descr,
     measurement_collection_types::device measurements_device,
-    const barrier_t& barrier, unsigned int* disjoint_set_ptr,
-    unsigned int* cluster_size_ptr) {
+    const barrier_t& barrier, vecmem::device_vector<unsigned int>& disjoint_set,
+    vecmem::device_vector<unsigned int>& cluster_size) {
     const auto size =
         static_cast<details::index_t>(partition_end - partition_start);
 
@@ -210,11 +210,11 @@ TRACCC_DEVICE inline void ccl_core(
                 static_cast<unsigned int>(partition_start),
                 static_cast<unsigned int>(partition_end), cid,
                 measurements_device.at(meas_pos), cell_links, meas_pos,
-                disjoint_set_ptr,
-                cluster_size_ptr != nullptr
-                    ? cluster_size_ptr[meas_pos]
-                    : std::optional<std::reference_wrapper<unsigned int>>{
-                          std::nullopt});
+                disjoint_set,
+                (cluster_size.capacity()
+                     ? std::optional<std::reference_wrapper<
+                           unsigned int>>{cluster_size.at(meas_pos)}
+                     : std::nullopt));
         }
     }
 }
@@ -233,7 +233,8 @@ TRACCC_DEVICE inline void ccl_kernel(
     vecmem::data::vector_view<unsigned char> adjc_backup_view,
     vecmem::data::vector_view<details::index_t> adjv_backup_view,
     vecmem::device_atomic_ref<uint32_t> backup_mutex,
-    unsigned int* disjoint_set_ptr, unsigned int* cluster_size_ptr,
+    vecmem::data::vector_view<unsigned int> disjoint_set_view,
+    vecmem::data::vector_view<unsigned int> cluster_size_view,
     const barrier_t& barrier,
     measurement_collection_types::view measurements_view,
     vecmem::data::vector_view<unsigned int> cell_links) {
@@ -248,6 +249,8 @@ TRACCC_DEVICE inline void ccl_kernel(
     vecmem::device_vector<details::index_t> gf_backup(gf_backup_view);
     vecmem::device_vector<unsigned char> adjc_backup(adjc_backup_view);
     vecmem::device_vector<details::index_t> adjv_backup(adjv_backup_view);
+    vecmem::device_vector<unsigned int> disjoint_set(disjoint_set_view);
+    vecmem::device_vector<unsigned int> cluster_size(cluster_size_view);
 
     mutex<uint32_t> mutex(backup_mutex);
     unique_lock lock(mutex, std::defer_lock);
@@ -363,7 +366,7 @@ TRACCC_DEVICE inline void ccl_kernel(
              use_scratch ? f_backup : f_primary,
              use_scratch ? gf_backup : gf_primary, cell_links, adjv, adjc,
              cells_device, det_descr, measurements_device, barrier,
-             disjoint_set_ptr, cluster_size_ptr);
+             disjoint_set, cluster_size);
 
     barrier.blockBarrier();
 }

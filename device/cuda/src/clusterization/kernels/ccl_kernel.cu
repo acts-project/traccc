@@ -38,8 +38,9 @@ __global__ void ccl_kernel(
     vecmem::data::vector_view<device::details::index_t> gf_backup_view,
     vecmem::data::vector_view<unsigned char> adjc_backup_view,
     vecmem::data::vector_view<device::details::index_t> adjv_backup_view,
-    unsigned int* backup_mutex_ptr, unsigned int* disjoint_set_ptr,
-    unsigned int* cluster_size_ptr) {
+    unsigned int* backup_mutex_ptr,
+    vecmem::data::vector_view<unsigned int> disjoint_set_view,
+    vecmem::data::vector_view<unsigned int> cluster_size_view) {
 
     __shared__ std::size_t partition_start, partition_end;
     __shared__ std::size_t outi;
@@ -60,7 +61,7 @@ __global__ void ccl_kernel(
     device::ccl_kernel(
         cfg, thread_id, cells_view, det_descr_view, partition_start,
         partition_end, outi, f_view, gf_view, f_backup_view, gf_backup_view,
-        adjc_backup_view, adjv_backup_view, backup_mutex, disjoint_set_ptr,
-        cluster_size_ptr, barry_r, measurements_view, cell_links);
+        adjc_backup_view, adjv_backup_view, backup_mutex, disjoint_set_view,
+        cluster_size_view, barry_r, measurements_view, cell_links);
 }
 }  // namespace traccc::cuda::kernels

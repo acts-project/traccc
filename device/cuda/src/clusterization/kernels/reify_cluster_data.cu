@@ -11,11 +11,10 @@
 
 namespace traccc::cuda::kernels {
 __global__ void reify_cluster_data(
-    unsigned int* disjoint_set_ptr, unsigned int num_cells,
+    vecmem::data::vector_view<const unsigned int> disjoint_set_view,
     traccc::edm::silicon_cluster_collection::view cluster_view) {
     const details::thread_id1 thread_id;
 
-    device::reify_cluster_data(thread_id, disjoint_set_ptr, num_cells,
-                               cluster_view);
+    device::reify_cluster_data(thread_id, disjoint_set_view, cluster_view);
 }
 }  // namespace traccc::cuda::kernels
