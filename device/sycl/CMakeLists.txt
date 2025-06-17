@@ -55,6 +55,7 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "src/utils/get_queue.hpp"
   "src/utils/get_queue.sycl"
   "src/utils/thread_id.hpp"
+  "src/utils/oneDPL.hpp"
   "src/sanity/contiguous_on.hpp"
   "src/sanity/ordered_on.hpp"
 )
