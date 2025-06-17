@@ -348,10 +348,18 @@ class kalman_fitter {
 
         // Fit parameter = smoothed track parameter of the first smoothed track
         // state
-        for (const auto& st : track_states) {
-            if (st.is_smoothed) {
-                fit_res.fit_params = st.smoothed();
+        unsigned int final_state_id = std::numeric_limits<unsigned int>::max();
+
+        for (unsigned int i = 0; i < track_states.size(); ++i) {
+            if (track_states.at(i).is_smoothed) {
+                final_state_id = i;
             }
+        }
+
+        // TODO: It would seem that this condition failing should invoke some
+        // kind of error...
+        if (final_state_id < track_states.size()) {
+            fit_res.fit_params = track_states.at(final_state_id).smoothed();
         }
 
         for (const auto& trk_state : track_states) {
