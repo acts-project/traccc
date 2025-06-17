@@ -8,6 +8,7 @@
 // Project include(s).
 #include "traccc/alpaka/fitting/fitting_algorithm.hpp"
 
+#include "../utils/get_queue.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/fitting/device/fill_sort_keys.hpp"
 #include "traccc/fitting/device/fit.hpp"
@@ -99,8 +100,12 @@ struct FitTrackBackwardKernel {
 template <typename fitter_t>
 fitting_algorithm<fitter_t>::fitting_algorithm(
     const config_type& cfg, const traccc::memory_resource& mr,
-    vecmem::copy& copy, std::unique_ptr<const Logger> logger)
-    : messaging(std::move(logger)), m_cfg(cfg), m_mr(mr), m_copy(copy) {}
+    vecmem::copy& copy, queue& q, std::unique_ptr<const Logger> logger)
+    : messaging(std::move(logger)),
+      m_cfg(cfg),
+      m_mr(mr),
+      m_copy(copy),
+      m_queue(q) {}
 
 template <typename fitter_t>
 track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
@@ -112,13 +117,22 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
     // Setup alpaka
     auto devHost = ::alpaka::getDevByIdx(::alpaka::Platform<Host>{}, 0u);
     auto devAcc = ::alpaka::getDevByIdx(::alpaka::Platform<Acc>{}, 0u);
-    auto queue = Queue{devAcc};
+    auto queue = details::get_queue(m_queue);
     Idx threadsPerBlock = getWarpSize<Acc>() * 2;
 
-#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_GPU_HIP_ENABLED)
-    auto thrustExecPolicy = thrust::device;
+#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
+    auto stream = ::alpaka::getNativeHandle(queue);
+    auto execPolicy =
+        thrust::cuda::par_nosync(std::pmr::polymorphic_allocator(&(m_mr.main)))
+            .on(stream);
+#elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
+    auto stream = ::alpaka::getNativeHandle(queue);
+    auto execPolicy =
+        thrust::hip_rocprim::par_nosync(
+            std::pmr::polymorphic_allocator<std::byte>(&(m_mr.main)))
+            .on(stream);
 #else
-    auto thrustExecPolicy = thrust::host;
+    auto execPolicy = thrust::host;
 #endif
 
     // Number of tracks
@@ -159,31 +173,36 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
         (n_tracks + threadsPerBlock - 1) / threadsPerBlock;
     auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
-    vecmem::data::vector_buffer<device::sort_key> keys_buffer(n_tracks,
-                                                              m_mr.main);
     vecmem::data::vector_buffer<unsigned int> param_ids_buffer(n_tracks,
                                                                m_mr.main);
+    m_copy.setup(param_ids_buffer)->wait();
     vecmem::data::vector_buffer<unsigned int> param_liveness_buffer(n_tracks,
                                                                     m_mr.main);
+    m_copy.setup(param_liveness_buffer)->wait();
 
-    // Get key and value for sorting
-    ::alpaka::exec<Acc>(
-        queue, workDiv, FillSortKeysKernel{}, track_candidates_view.tracks,
-        vecmem::get_data(keys_buffer), vecmem::get_data(param_ids_buffer));
-    ::alpaka::wait(queue);
+    {
+        // Get key and value for sorting
+        vecmem::data::vector_buffer<device::sort_key> keys_buffer(n_tracks,
+                                                                  m_mr.main);
+        ::alpaka::exec<Acc>(
+            queue, workDiv, FillSortKeysKernel{}, track_candidates_view.tracks,
+            vecmem::get_data(keys_buffer), vecmem::get_data(param_ids_buffer));
 
-    // Sort the key to get the sorted parameter ids
-    vecmem::device_vector<device::sort_key> keys_device(keys_buffer);
-    vecmem::device_vector<unsigned int> param_ids_device(param_ids_buffer);
+        // Sort the key to get the sorted parameter ids
+        vecmem::device_vector<device::sort_key> keys_device(keys_buffer);
+        vecmem::device_vector<unsigned int> param_ids_device(param_ids_buffer);
 
-    thrust::sort_by_key(thrustExecPolicy, keys_device.begin(),
-                        keys_device.end(), param_ids_device.begin());
+        thrust::sort_by_key(execPolicy, keys_device.begin(), keys_device.end(),
+                            param_ids_device.begin());
+    }
 
-    ::alpaka::exec<Acc>(queue, workDiv, FitTrackPreludeKernel{},
-                        vecmem::get_data(param_ids_buffer),
-                        track_candidates_view, track_states_view,
-                        vecmem::get_data(param_liveness_buffer));
-    ::alpaka::wait(queue);
+    {
+        ::alpaka::exec<Acc>(queue, workDiv, FitTrackPreludeKernel{},
+                            vecmem::get_data(param_ids_buffer),
+                            track_candidates_view, track_states_view,
+                            vecmem::get_data(param_liveness_buffer));
+        ::alpaka::wait(queue);
+    }
 
     // Prepare the payload for the track fitting
     device::fit_payload<fitter_t> payload{
@@ -202,17 +221,16 @@ track_state_container_types::buffer fitting_algorithm<fitter_t>::operator()(
     auto bufAcc_fitPayload =
         ::alpaka::allocBuf<device::fit_payload<fitter_t>, Idx>(devAcc, 1u);
     ::alpaka::memcpy(queue, bufAcc_fitPayload, bufHost_fitPayload);
-    ::alpaka::wait(queue);
 
     for (std::size_t i = 0; i < m_cfg.n_iterations; ++i) {
         // Run the track fitting
         ::alpaka::exec<Acc>(queue, workDiv, FitTrackForwardKernel<fitter_t>{},
                             m_cfg, ::alpaka::getPtrNative(bufAcc_fitPayload));
-        ::alpaka::wait(queue);
         ::alpaka::exec<Acc>(queue, workDiv, FitTrackBackwardKernel<fitter_t>{},
                             m_cfg, ::alpaka::getPtrNative(bufAcc_fitPayload));
-        ::alpaka::wait(queue);
     }
+
+    ::alpaka::wait(queue);
 
     return track_states_buffer;
 }

@@ -35,7 +35,7 @@ using Acc = ::alpaka::AccCpuThreads<Dim, Idx>;
 #endif
 
 using Host = ::alpaka::DevCpu;
-using Queue = ::alpaka::Queue<Acc, ::alpaka::Blocking>;
+using Queue = ::alpaka::Queue<Acc, ::alpaka::NonBlocking>;
 
 template <typename TAcc>
 consteval Idx getWarpSize() {
