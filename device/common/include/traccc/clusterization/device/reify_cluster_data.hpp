@@ -8,7 +8,7 @@
 #pragma once
 
 // Local include(s).
-#include "traccc/device/concepts/thread_id.hpp"
+#include "traccc/device/global_index.hpp"
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
@@ -18,16 +18,19 @@
 #include <vecmem/containers/data/vector_view.hpp>
 
 namespace traccc::device {
-template <device::concepts::thread_id1 thread_id_t>
-TRACCC_HOST_DEVICE void reify_cluster_data(
-    const thread_id_t& thread_id,
-    vecmem::data::vector_view<const unsigned int> disjoint_set_view,
-    traccc::edm::silicon_cluster_collection::view cluster_view) {
 
-    vecmem::device_vector<const unsigned int> disjoint_set(disjoint_set_view);
-    traccc::edm::silicon_cluster_collection::device clusters(cluster_view);
-    if (auto idx = thread_id.getGlobalThreadIdX(); idx < disjoint_set.size()) {
-        clusters.cell_indices().at(disjoint_set.at(idx)).push_back(idx);
-    }
-}
+/// Fill a cluster collection with the cell indices
+///
+/// @param thread_id The thread identifier
+/// @param disjoint_set_view The cluster/measurement index of each cell
+/// @param cluster_view The collection to fill
+///
+TRACCC_HOST_DEVICE inline void reify_cluster_data(
+    global_index_t thread_id,
+    vecmem::data::vector_view<const unsigned int> disjoint_set_view,
+    traccc::edm::silicon_cluster_collection::view cluster_view);
+
 }  // namespace traccc::device
+
+// Include the implementation.
+#include "traccc/clusterization/device/impl/reify_cluster_data.ipp"
