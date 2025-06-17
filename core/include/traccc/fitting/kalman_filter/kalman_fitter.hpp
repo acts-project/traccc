@@ -351,6 +351,7 @@ class kalman_fitter {
         for (const auto& st : track_states) {
             if (st.is_smoothed) {
                 fit_res.fit_params = st.smoothed();
+                break;
             }
         }
 
