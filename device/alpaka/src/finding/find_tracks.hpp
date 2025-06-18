@@ -361,30 +361,30 @@ edm::track_candidate_collection<default_algebra>::buffer find_tracks(
             // Allocate the kernel's payload in host memory.
             using payload_t = device::find_tracks_payload<
                 typename navigator_t::detector_type>;
-            assert(mr.host != nullptr);
-            payload_t host_payload{
-                det,
-                measurements,
-                vecmem::get_data(in_params_buffer),
-                vecmem::get_data(param_liveness_buffer),
-                n_in_params,
-                vecmem::get_data(barcodes_buffer),
-                vecmem::get_data(upper_bounds_buffer),
-                vecmem::get_data(links_buffer),
-                (step == 0 ? 0 : step_to_link_idx_map[step - 1]),
-                step_to_link_idx_map[step],
-                step,
-                vecmem::get_data(updated_params_buffer),
-                vecmem::get_data(updated_liveness_buffer),
-                vecmem::get_data(tips_buffer),
-                vecmem::get_data(tip_length_buffer),
-                vecmem::get_data(n_tracks_per_seed_buffer),
-                vecmem::get_data(tmp_params_buffer),
-                vecmem::get_data(tmp_links_buffer)};
+            const payload_t host_payload{
+                .det_data = det,
+                .measurements_view = measurements,
+                .in_params_view = in_params_buffer,
+                .in_params_liveness_view = param_liveness_buffer,
+                .n_in_params = n_in_params,
+                .barcodes_view = barcodes_buffer,
+                .upper_bounds_view = upper_bounds_buffer,
+                .links_view = links_buffer,
+                .prev_links_idx =
+                    (step == 0 ? 0 : step_to_link_idx_map[step - 1]),
+                .curr_links_idx = step_to_link_idx_map[step],
+                .step = step,
+                .out_params_view = updated_params_buffer,
+                .out_params_liveness_view = updated_liveness_buffer,
+                .tips_view = tips_buffer,
+                .tip_lengths_view = tip_length_buffer,
+                .n_tracks_per_seed_view = n_tracks_per_seed_buffer,
+                .tmp_params_view = tmp_params_buffer,
+                .tmp_links_view = tmp_links_buffer};
             // Now copy it to device memory.
             vecmem::data::vector_buffer<payload_t> device_payload(1u, mr.main);
             copy.setup(device_payload)->wait();
-            copy(vecmem::data::vector_view<payload_t>(1u, &host_payload),
+            copy(vecmem::data::vector_view<const payload_t>(1u, &host_payload),
                  device_payload)
                 ->wait();
 
@@ -470,23 +470,24 @@ edm::track_candidate_collection<default_algebra>::buffer find_tracks(
                 // Allocate the kernel's payload in host memory.
                 using payload_t = device::propagate_to_next_surface_payload<
                     propagator_type, typename stepper_t::magnetic_field_type>;
-                assert(mr.host != nullptr);
-                payload_t host_payload{det,
-                                       field,
-                                       vecmem::get_data(in_params_buffer),
-                                       vecmem::get_data(param_liveness_buffer),
-                                       vecmem::get_data(param_ids_buffer),
-                                       vecmem::get_data(links_buffer),
-                                       step_to_link_idx_map[step],
-                                       step,
-                                       n_candidates,
-                                       vecmem::get_data(tips_buffer),
-                                       vecmem::get_data(tip_length_buffer)};
+                const payload_t host_payload{
+                    .det_data = det,
+                    .field_data = field,
+                    .params_view = in_params_buffer,
+                    .params_liveness_view = param_liveness_buffer,
+                    .param_ids_view = param_ids_buffer,
+                    .links_view = links_buffer,
+                    .prev_links_idx = step_to_link_idx_map[step],
+                    .step = step,
+                    .n_in_params = n_candidates,
+                    .tips_view = tips_buffer,
+                    .tip_lengths_view = tip_length_buffer};
                 // Now copy it to device memory.
                 vecmem::data::vector_buffer<payload_t> device_payload(1u,
                                                                       mr.main);
                 copy.setup(device_payload)->wait();
-                copy(vecmem::data::vector_view<payload_t>(1u, &host_payload),
+                copy(vecmem::data::vector_view<const payload_t>(1u,
+                                                                &host_payload),
                      device_payload)
                     ->wait();
 

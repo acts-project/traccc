@@ -8,7 +8,7 @@
 // Project include(s).
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
 #include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
-#include "traccc/alpaka/finding/finding_algorithm.hpp"
+#include "traccc/alpaka/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/alpaka/fitting/fitting_algorithm.hpp"
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/alpaka/seeding/spacepoint_formation_algorithm.hpp"
@@ -138,7 +138,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     using host_finding_algorithm =
         traccc::host::combinatorial_kalman_filter_algorithm;
     using device_finding_algorithm =
-        traccc::alpaka::finding_algorithm<stepper_type, device_navigator_type>;
+        traccc::alpaka::combinatorial_kalman_filter_algorithm;
 
     using host_fitting_algorithm = traccc::host::kalman_fitting_algorithm;
     using device_fitting_algorithm = traccc::alpaka::fitting_algorithm<
@@ -185,7 +185,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     traccc::alpaka::track_params_estimation tp_alpaka(
         mr, copy, logger().clone("AlpakaTrackParEstAlg"));
     device_finding_algorithm finding_alg_alpaka(
-        finding_cfg, mr, copy, logger().clone("AlpakaFindingAlg"));
+        finding_cfg, mr, copy, queue, logger().clone("AlpakaFindingAlg"));
     device_fitting_algorithm fitting_alg_alpaka(
         fitting_cfg, mr, copy, logger().clone("AlpakaFittingAlg"));
 

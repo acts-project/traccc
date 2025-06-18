@@ -10,7 +10,7 @@
 // Project include(s).
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
 #include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
-#include "traccc/alpaka/finding/finding_algorithm.hpp"
+#include "traccc/alpaka/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/alpaka/fitting/fitting_algorithm.hpp"
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/alpaka/seeding/spacepoint_formation_algorithm.hpp"
@@ -76,7 +76,7 @@ class full_chain_algorithm
     using clustering_algorithm = traccc::alpaka::clusterization_algorithm;
     /// Track finding algorithm type
     using finding_algorithm =
-        traccc::alpaka::finding_algorithm<stepper_type, navigator_type>;
+        traccc::alpaka::combinatorial_kalman_filter_algorithm;
     /// Track fitting algorithm type
     using fitting_algorithm = traccc::alpaka::fitting_algorithm<
         traccc::kalman_fitter<stepper_type, navigator_type>>;

@@ -53,9 +53,10 @@ full_chain_algorithm::full_chain_algorithm(
       m_track_parameter_estimation(
           memory_resource{*m_cached_device_mr, &m_host_mr},
           m_vecmem_objects.copy(), logger->cloneWithSuffix("TrackParamEstAlg")),
-      m_finding(
-          finding_config, memory_resource{*m_cached_device_mr, &m_host_mr},
-          m_vecmem_objects.copy(), logger->cloneWithSuffix("TrackFindingAlg")),
+      m_finding(finding_config,
+                memory_resource{*m_cached_device_mr, &m_host_mr},
+                m_vecmem_objects.copy(), m_queue,
+                logger->cloneWithSuffix("TrackFindingAlg")),
       m_fitting(
           fitting_config, memory_resource{*m_cached_device_mr, &m_host_mr},
           m_vecmem_objects.copy(), logger->cloneWithSuffix("TrackFittingAlg")),
@@ -114,7 +115,7 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
           parent.logger().cloneWithSuffix("TrackParamEstAlg")),
       m_finding(parent.m_finding_config,
                 memory_resource{*m_cached_device_mr, &m_host_mr},
-                m_vecmem_objects.copy(),
+                m_vecmem_objects.copy(), m_queue,
                 parent.logger().cloneWithSuffix("TrackFindingAlg")),
       m_fitting(parent.m_fitting_config,
                 memory_resource{*m_cached_device_mr, &m_host_mr},

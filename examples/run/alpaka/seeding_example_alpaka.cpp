@@ -6,7 +6,7 @@
  */
 
 // Project include(s).
-#include "traccc/alpaka/finding/finding_algorithm.hpp"
+#include "traccc/alpaka/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/alpaka/fitting/fitting_algorithm.hpp"
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
@@ -167,8 +167,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     // Finding algorithm object
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(
         cfg, host_mr, logger().clone("HostFindingAlg"));
-    traccc::alpaka::finding_algorithm<rk_stepper_type, device_navigator_type>
-        device_finding(cfg, mr, copy, logger().clone("AlpakaFindingAlg"));
+    traccc::alpaka::combinatorial_kalman_filter_algorithm device_finding(
+        cfg, mr, copy, queue, logger().clone("AlpakaFindingAlg"));
 
     // Fitting algorithm object
     traccc::fitting_config fit_cfg(fitting_opts);
