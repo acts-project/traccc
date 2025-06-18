@@ -10,6 +10,7 @@
 // Local include(s).
 #include "../utils/calculate1DimNdRange.hpp"
 #include "../utils/global_index.hpp"
+#include "../utils/oneDPL.hpp"
 
 // Project include(s).
 #include "traccc/edm/device/sort_key.hpp"
@@ -25,22 +26,6 @@
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
-
-// oneDPL include(s).
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wshadow"
-#pragma clang diagnostic ignored "-Wunused-parameter"
-#pragma clang diagnostic ignored "-Wshorten-64-to-32"
-#pragma clang diagnostic ignored "-Wsign-conversion"
-#pragma clang diagnostic ignored "-Wimplicit-int-conversion"
-#pragma clang diagnostic ignored "-Wimplicit-int-float-conversion"
-#pragma clang diagnostic ignored "-Wsign-compare"
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-#pragma clang diagnostic ignored "-Wunknown-pragmas"
-#pragma clang diagnostic ignored "-Wunused-variable"
-#include <oneapi/dpl/algorithm>
-#include <oneapi/dpl/execution>
-#pragma clang diagnostic pop
 
 // SYCL include(s).
 #include <sycl/sycl.hpp>
