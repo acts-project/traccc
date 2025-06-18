@@ -24,6 +24,7 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/utils/make_prefix_sum_buff.cu"
   "include/traccc/cuda/utils/stream.hpp"
   "src/utils/barrier.hpp"
+  "include/traccc/cuda/utils/bfield.hpp"
   "src/utils/cuda_error_handling.hpp"
   "src/utils/cuda_error_handling.cpp"
   "src/utils/stream.cpp"
@@ -52,8 +53,12 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/clusterization/kernels/ccl_kernel.cu"
   "src/clusterization/kernels/ccl_kernel.cuh"
   # Finding
+  "include/traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
   "include/traccc/cuda/finding/finding_algorithm.hpp"
   "src/finding/finding_algorithm.cu"
+  "src/finding/combinatorial_kalman_filter_algorithm.cu"
+  "src/finding/combinatorial_kalman_filter_algorithm_constant_field_default_detector.cu"
+  "src/finding/combinatorial_kalman_filter_algorithm_inhomogeneous_field_default_detector.cu"
   "src/finding/kernels/make_barcode_sequence.cu"
   "src/finding/kernels/make_barcode_sequence.cuh"
   "src/finding/kernels/apply_interaction.hpp"
@@ -66,6 +71,7 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/finding/kernels/specializations/find_tracks_default_detector.cu"
   "src/finding/kernels/specializations/apply_interaction_default_detector.cu"
   "src/finding/kernels/specializations/propagate_to_next_surface_default_detector.cu"
+  "src/finding/kernels/specializations/propagate_to_next_surface_inhomogeneous_field_default_detector.cu"
   # Ambiguity resolution
   "include/traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
   "src/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.cu"
@@ -142,7 +148,7 @@ target_compile_options( traccc_cuda
   PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr> )
 target_link_libraries( traccc_cuda
   PUBLIC traccc::core detray::core vecmem::core covfie::core
-  PRIVATE CUDA::cudart traccc::device_common vecmem::cuda )
+  PRIVATE CUDA::cudart traccc::device_common vecmem::cuda covfie::cuda )
 
 # Set up Thrust specifically for the traccc::cuda library.
 thrust_create_target( traccc::cuda_thrust

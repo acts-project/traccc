@@ -8,6 +8,8 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/cuda/utils/bfield.hpp"
+#include "traccc/cuda/utils/stream.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate_collection.hpp"
 #include "traccc/edm/track_parameters.hpp"
@@ -15,38 +17,30 @@
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/bfield.hpp"
+#include "traccc/utils/detector_type_utils.hpp"
+#include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
-#include <vecmem/memory/memory_resource.hpp>
+#include <vecmem/utils/copy.hpp>
 
 // System include(s).
 #include <functional>
 
-namespace traccc::host {
+namespace traccc::cuda {
 
 /// CKF track finding algorithm
-///
-/// This is the main host-based track finding algorithm of the project. More
-/// documentation to be written later...
-///
 class combinatorial_kalman_filter_algorithm
-    : public algorithm<edm::track_candidate_collection<default_algebra>::host(
-          const default_detector::host&,
-          const covfie::field<const_bfield_backend_t<
-              default_detector::host::scalar_type>>::view_t&,
-          const measurement_collection_types::const_view&,
-          const bound_track_parameters_collection_types::const_view&)>,
-      public algorithm<edm::track_candidate_collection<default_algebra>::host(
-          const telescope_detector::host&,
+    : public algorithm<edm::track_candidate_collection<default_algebra>::buffer(
+          const default_detector::view&,
           const covfie::field<traccc::const_bfield_backend_t<
-              telescope_detector::host::scalar_type>>::view_t&,
+              default_detector::device::scalar_type>>::view_t&,
           const measurement_collection_types::const_view&,
           const bound_track_parameters_collection_types::const_view&)>,
-      public algorithm<edm::track_candidate_collection<default_algebra>::host(
-          const default_detector::host&,
-          const covfie::field<inhom_bfield_backend_t<
-              default_detector::host::scalar_type>>::view_t&,
+      public algorithm<edm::track_candidate_collection<default_algebra>::buffer(
+          const default_detector::view&,
+          const covfie::field<traccc::cuda::inhom_bfield_backend_t<
+              default_detector::device::scalar_type>>::view_t&,
           const measurement_collection_types::const_view&,
           const bound_track_parameters_collection_types::const_view&)>,
       public messaging {
@@ -55,11 +49,13 @@ class combinatorial_kalman_filter_algorithm
     /// Configuration type
     using config_type = finding_config;
     /// Output type
-    using output_type = edm::track_candidate_collection<default_algebra>::host;
+    using output_type =
+        edm::track_candidate_collection<default_algebra>::buffer;
 
     /// Constructor with the algorithm's configuration
     explicit combinatorial_kalman_filter_algorithm(
-        const config_type& config, vecmem::memory_resource& mr,
+        const config_type& config, const traccc::memory_resource& mr,
+        vecmem::copy& copy, stream& str,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Execute the algorithm
@@ -73,27 +69,9 @@ class combinatorial_kalman_filter_algorithm
     /// @return A container of the found track candidates
     ///
     output_type operator()(
-        const default_detector::host& det,
-        const covfie::field<traccc::const_bfield_backend_t<
-            default_detector::host::scalar_type>>::view_t& field,
-        const measurement_collection_types::const_view& measurements,
-        const bound_track_parameters_collection_types::const_view& seeds)
-        const override;
-
-    /// Execute the algorithm
-    ///
-    /// @param det          The (telescope) detector object
-    /// @param field        The (constant) magnetic field object
-    /// @param measurements All measurements in an event
-    /// @param seeds        All seeds in an event to start the track finding
-    ///                     with
-    ///
-    /// @return A container of the found track candidates
-    ///
-    output_type operator()(
-        const telescope_detector::host& det,
-        const covfie::field<traccc::const_bfield_backend_t<
-            telescope_detector::host::scalar_type>>::view_t& field,
+        const default_detector::view& det,
+        const covfie::field<const_bfield_backend_t<
+            default_detector::device::scalar_type>>::view_t& field,
         const measurement_collection_types::const_view& measurements,
         const bound_track_parameters_collection_types::const_view& seeds)
         const override;
@@ -109,9 +87,9 @@ class combinatorial_kalman_filter_algorithm
     /// @return A container of the found track candidates
     ///
     output_type operator()(
-        const default_detector::host& det,
-        const covfie::field<traccc::inhom_bfield_backend_t<
-            default_detector::host::scalar_type>>::view_t& field,
+        const default_detector::view& det,
+        const covfie::field<cuda::inhom_bfield_backend_t<
+            default_detector::device::scalar_type>>::view_t& field,
         const measurement_collection_types::const_view& measurements,
         const bound_track_parameters_collection_types::const_view& seeds)
         const override;
@@ -119,9 +97,14 @@ class combinatorial_kalman_filter_algorithm
     private:
     /// Algorithm configuration
     config_type m_config;
-    /// Memory resource
-    std::reference_wrapper<vecmem::memory_resource> m_mr;
-
+    /// Memory resource used by the algorithm
+    traccc::memory_resource m_mr;
+    /// Copy object used by the algorithm
+    std::reference_wrapper<vecmem::copy> m_copy;
+    /// The CUDA stream to use
+    stream& m_stream;
+    /// Warp size of the GPU being used
+    unsigned int m_warp_size;
 };  // class combinatorial_kalman_filter_algorithm
 
-}  // namespace traccc::host
+}  // namespace traccc::cuda

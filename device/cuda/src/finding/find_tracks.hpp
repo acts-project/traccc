@@ -1,0 +1,456 @@
+/** TRACCC library, part of the ACTS project (R&D line)
+ *
+ * (c) 2025 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
+#pragma once
+
+// Local include(s).
+#include "../sanity/contiguous_on.cuh"
+#include "../utils/barrier.hpp"
+#include "../utils/global_index.hpp"
+#include "../utils/thread_id.hpp"
+#include "./kernels/apply_interaction.hpp"
+#include "./kernels/build_tracks.cuh"
+#include "./kernels/fill_sort_keys.cuh"
+#include "./kernels/find_tracks.cuh"
+#include "./kernels/make_barcode_sequence.cuh"
+#include "./kernels/propagate_to_next_surface.hpp"
+
+// Project include(s).
+#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/track_candidate_collection.hpp"
+#include "traccc/finding/actors/ckf_aborter.hpp"
+#include "traccc/finding/actors/interaction_register.hpp"
+#include "traccc/finding/candidate_link.hpp"
+#include "traccc/finding/finding_config.hpp"
+#include "traccc/utils/logging.hpp"
+#include "traccc/utils/memory_resource.hpp"
+#include "traccc/utils/projections.hpp"
+#include "traccc/utils/propagation.hpp"
+
+// VecMem include(s).
+#include <vecmem/utils/copy.hpp>
+
+// Thrust include(s).
+#include <thrust/copy.h>
+#include <thrust/execution_policy.h>
+#include <thrust/fill.h>
+#include <thrust/scan.h>
+#include <thrust/sort.h>
+#include <thrust/unique.h>
+
+namespace traccc::cuda::details {
+
+/// Templated implementation of the track finding algorithm.
+///
+/// Concrete track finding algorithms can use this function with the appropriate
+/// specializations, to find tracks on top of a specific detector type, magnetic
+/// field type, and track finding configuration.
+///
+/// @tparam stepper_t The stepper type used for the track propagation
+/// @tparam navigator_t The navigator type used for the track navigation
+/// @tparam kernel_t Structure to generate unique kernel names with
+///
+/// @param det               A view of the detector object
+/// @param field             The magnetic field object
+/// @param measurements_view All measurements in an event
+/// @param seeds_view        All seeds in an event to start the track finding
+///                          with
+/// @param config            The track finding configuration
+/// @param mr                The memory resource(s) to use
+/// @param copy              The copy object to use
+///
+/// @return A buffer of the found track candidates
+///
+template <typename stepper_t, typename navigator_t>
+edm::track_candidate_collection<default_algebra>::buffer find_tracks(
+    const typename navigator_t::detector_type::view_type& det_view,
+    const typename stepper_t::magnetic_field_type& field_view,
+    const measurement_collection_types::const_view& measurements,
+    const bound_track_parameters_collection_types::const_view& seeds_view,
+    const finding_config& config, const memory_resource& mr, vecmem::copy& copy,
+    stream& cu_stream, const unsigned int warp_size) {
+
+    using detector_type = typename navigator_t::detector_type;
+    using algebra_type = typename navigator_t::detector_type::algebra_type;
+    using scalar_type = typename navigator_t::detector_type::scalar_type;
+    using interactor_type = detray::pointwise_material_interactor<algebra_type>;
+    using actor_type =
+        detray::actor_chain<detray::pathlimit_aborter<scalar_type>,
+                            detray::parameter_transporter<algebra_type>,
+                            interaction_register<interactor_type>,
+                            interactor_type,
+                            detray::momentum_aborter<scalar_type>, ckf_aborter>;
+    using propagator_type =
+        detray::propagator<stepper_t, navigator_t, actor_type>;
+    using bfield_type = typename stepper_t::magnetic_field_type;
+
+    assert(config.min_step_length_for_next_surface >
+               math::fabs(config.propagation.navigation.overstep_tolerance) &&
+           "Min step length for the next surface should be higher than the "
+           "overstep tolerance");
+
+    // Get a convenience variable for the stream that we'll be using.
+    cudaStream_t stream = details::get_stream(cu_stream);
+
+    // The Thrust policy to use.
+    auto thrust_policy =
+        thrust::cuda::par_nosync(std::pmr::polymorphic_allocator(&(mr.main)))
+            .on(stream);
+
+    /*****************************************************************
+     * Measurement Operations
+     *****************************************************************/
+
+    unsigned int n_modules;
+    measurement_collection_types::const_view::size_type n_measurements =
+        copy.get_size(measurements);
+
+    // Get copy of barcode uniques
+    measurement_collection_types::buffer uniques_buffer{n_measurements,
+                                                        mr.main};
+    copy.setup(uniques_buffer)->ignore();
+
+    {
+        assert(is_contiguous_on<measurement_collection_types::const_device>(
+            measurement_module_projection(), mr.main, copy, cu_stream,
+            measurements));
+
+        measurement_collection_types::device uniques(uniques_buffer);
+
+        measurement* uniques_end =
+            thrust::unique_copy(thrust_policy, measurements.ptr(),
+                                measurements.ptr() + n_measurements,
+                                uniques.begin(), measurement_equal_comp());
+        cu_stream.synchronize();
+        n_modules = static_cast<unsigned int>(uniques_end - uniques.begin());
+    }
+
+    // Get upper bounds of unique elements
+    vecmem::data::vector_buffer<unsigned int> upper_bounds_buffer{n_modules,
+                                                                  mr.main};
+    copy.setup(upper_bounds_buffer)->ignore();
+
+    {
+        vecmem::device_vector<unsigned int> upper_bounds(upper_bounds_buffer);
+
+        measurement_collection_types::device uniques(uniques_buffer);
+
+        thrust::upper_bound(thrust_policy, measurements.ptr(),
+                            measurements.ptr() + n_measurements,
+                            uniques.begin(), uniques.begin() + n_modules,
+                            upper_bounds.begin(), measurement_sort_comp());
+    }
+
+    /*****************************************************************
+     * Kernel1: Create barcode sequence
+     *****************************************************************/
+
+    vecmem::data::vector_buffer<detray::geometry::barcode> barcodes_buffer{
+        n_modules, mr.main};
+    copy.setup(barcodes_buffer)->ignore();
+
+    {
+        const unsigned int nThreads = warp_size * 2;
+        const unsigned int nBlocks =
+            (barcodes_buffer.size() + nThreads - 1) / nThreads;
+
+        kernels::make_barcode_sequence<<<nBlocks, nThreads, 0, stream>>>(
+            device::make_barcode_sequence_payload{
+                .uniques_view = uniques_buffer,
+                .barcodes_view = barcodes_buffer});
+
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+    }
+
+    const unsigned int n_seeds = copy.get_size(seeds_view);
+
+    // Prepare input parameters with seeds
+    bound_track_parameters_collection_types::buffer in_params_buffer(n_seeds,
+                                                                     mr.main);
+    copy.setup(in_params_buffer)->ignore();
+    copy(seeds_view, in_params_buffer)->ignore();
+    vecmem::data::vector_buffer<unsigned int> param_liveness_buffer(n_seeds,
+                                                                    mr.main);
+    copy.setup(param_liveness_buffer)->ignore();
+    copy.memset(param_liveness_buffer, 1)->ignore();
+
+    // Number of tracks per seed
+    vecmem::data::vector_buffer<unsigned int> n_tracks_per_seed_buffer(n_seeds,
+                                                                       mr.main);
+    copy.setup(n_tracks_per_seed_buffer)->ignore();
+
+    // Create a buffer for links
+    unsigned int link_buffer_capacity = config.initial_links_per_seed * n_seeds;
+    vecmem::data::vector_buffer<candidate_link> links_buffer(
+        link_buffer_capacity, mr.main, vecmem::data::buffer_type::resizable);
+    copy.setup(links_buffer)->wait();
+
+    // Create a buffer of tip links
+    vecmem::data::vector_buffer<unsigned int> tips_buffer{
+        config.max_num_branches_per_seed * n_seeds, mr.main,
+        vecmem::data::buffer_type::resizable};
+    copy.setup(tips_buffer)->wait();
+    vecmem::data::vector_buffer<unsigned int> tip_length_buffer{
+        config.max_num_branches_per_seed * n_seeds, mr.main};
+    copy.setup(tip_length_buffer)->wait();
+
+    std::map<unsigned int, unsigned int> step_to_link_idx_map;
+    step_to_link_idx_map[0] = 0;
+
+    unsigned int n_in_params = n_seeds;
+
+    for (unsigned int step = 0; n_in_params > 0; step++) {
+
+        /*****************************************************************
+         * Kernel2: Apply material interaction
+         ****************************************************************/
+
+        {
+            const unsigned int nThreads = warp_size * 2;
+            const unsigned int nBlocks =
+                (n_in_params + nThreads - 1) / nThreads;
+
+            apply_interaction<std::decay_t<detector_type>>(
+                nBlocks, nThreads, 0, stream, config,
+                device::apply_interaction_payload<std::decay_t<detector_type>>{
+                    .det_data = det_view,
+                    .n_params = n_in_params,
+                    .params_view = in_params_buffer,
+                    .params_liveness_view = param_liveness_buffer});
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+        }
+
+        /*****************************************************************
+         * Kernel3: Find valid tracks
+         *****************************************************************/
+
+        unsigned int n_candidates = 0;
+
+        {
+            // Buffer for kalman-updated parameters spawned by the measurement
+            // candidates
+            const unsigned int n_max_candidates =
+                n_in_params * config.max_num_branches_per_surface;
+
+            bound_track_parameters_collection_types::buffer
+                updated_params_buffer(n_max_candidates, mr.main);
+            copy.setup(updated_params_buffer)->ignore();
+
+            vecmem::data::vector_buffer<unsigned int> updated_liveness_buffer(
+                n_max_candidates, mr.main);
+            copy.setup(updated_liveness_buffer)->ignore();
+
+            // Reset the number of tracks per seed
+            copy.memset(n_tracks_per_seed_buffer, 0)->ignore();
+
+            const unsigned int links_size = copy.get_size(links_buffer);
+
+            if (links_size + n_max_candidates > link_buffer_capacity) {
+                const unsigned int new_link_buffer_capacity = std::max(
+                    2 * link_buffer_capacity, links_size + n_max_candidates);
+                /*
+                TRACCC_INFO("Link buffer (capacity "
+                            << link_buffer_capacity << ") is too small to hold "
+                            << links_size << " current and " << n_max_candidates
+                            << " new links; increasing capacity to "
+                            << new_link_buffer_capacity);
+                */
+                link_buffer_capacity = new_link_buffer_capacity;
+
+                vecmem::data::vector_buffer<candidate_link> new_links_buffer(
+                    link_buffer_capacity, mr.main,
+                    vecmem::data::buffer_type::resizable);
+
+                copy.setup(new_links_buffer)->wait();
+                copy(links_buffer, new_links_buffer)->wait();
+
+                links_buffer = std::move(new_links_buffer);
+            }
+
+            {
+                vecmem::data::vector_buffer<candidate_link> tmp_links_buffer(
+                    n_max_candidates, mr.main);
+                copy.setup(tmp_links_buffer)->ignore();
+                bound_track_parameters_collection_types::buffer
+                    tmp_params_buffer(n_max_candidates, mr.main);
+                copy.setup(tmp_params_buffer)->ignore();
+
+                const unsigned int nThreads = warp_size * 2;
+                const unsigned int nBlocks =
+                    (n_in_params + nThreads - 1) / nThreads;
+
+                const unsigned int prev_link_idx =
+                    step == 0 ? 0 : step_to_link_idx_map[step - 1];
+
+                assert(links_size == step_to_link_idx_map[step]);
+
+                const std::size_t shared_size =
+                    nThreads * sizeof(unsigned int) +
+                    2 * nThreads *
+                        sizeof(std::pair<unsigned int, unsigned int>);
+
+                traccc::cuda::find_tracks<std::decay_t<detector_type>>(
+                    nBlocks, nThreads, shared_size, stream, config,
+                    device::find_tracks_payload<std::decay_t<detector_type>>{
+                        .det_data = det_view,
+                        .measurements_view = measurements,
+                        .in_params_view = in_params_buffer,
+                        .in_params_liveness_view = param_liveness_buffer,
+                        .n_in_params = n_in_params,
+                        .barcodes_view = barcodes_buffer,
+                        .upper_bounds_view = upper_bounds_buffer,
+                        .links_view = links_buffer,
+                        .prev_links_idx = prev_link_idx,
+                        .curr_links_idx = step_to_link_idx_map[step],
+                        .step = step,
+                        .out_params_view = updated_params_buffer,
+                        .out_params_liveness_view = updated_liveness_buffer,
+                        .tips_view = tips_buffer,
+                        .tip_lengths_view = tip_length_buffer,
+                        .n_tracks_per_seed_view = n_tracks_per_seed_buffer,
+                        .tmp_params_view = tmp_params_buffer,
+                        .tmp_links_view = tmp_links_buffer});
+                TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+                std::swap(in_params_buffer, updated_params_buffer);
+                std::swap(param_liveness_buffer, updated_liveness_buffer);
+
+                cu_stream.synchronize();
+
+                step_to_link_idx_map[step + 1] = copy.get_size(links_buffer);
+                n_candidates =
+                    step_to_link_idx_map[step + 1] - step_to_link_idx_map[step];
+
+                cu_stream.synchronize();
+            }
+        }
+
+        // If no more CKF step is expected, the tips and links are populated,
+        // and any further time-consuming action is avoided
+        if (step == config.max_track_candidates_per_track - 1) {
+            break;
+        }
+
+        if (n_candidates > 0) {
+            /*****************************************************************
+             * Kernel4: Get key and value for parameter sorting
+             *****************************************************************/
+
+            vecmem::data::vector_buffer<unsigned int> param_ids_buffer(
+                n_candidates, mr.main);
+            copy.setup(param_ids_buffer)->ignore();
+
+            {
+                vecmem::data::vector_buffer<device::sort_key> keys_buffer(
+                    n_candidates, mr.main);
+                copy.setup(keys_buffer)->ignore();
+
+                const unsigned int nThreads = warp_size * 2;
+                const unsigned int nBlocks =
+                    (n_candidates + nThreads - 1) / nThreads;
+                kernels::fill_sort_keys<<<nBlocks, nThreads, 0, stream>>>(
+                    device::fill_sort_keys_payload{
+                        .params_view = in_params_buffer,
+                        .keys_view = keys_buffer,
+                        .ids_view = param_ids_buffer});
+                TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+                // Sort the key and values
+                vecmem::device_vector<device::sort_key> keys_device(
+                    keys_buffer);
+                vecmem::device_vector<unsigned int> param_ids_device(
+                    param_ids_buffer);
+                thrust::sort_by_key(thrust_policy, keys_device.begin(),
+                                    keys_device.end(),
+                                    param_ids_device.begin());
+
+                cu_stream.synchronize();
+            }
+
+            /*****************************************************************
+             * Kernel5: Propagate to the next surface
+             *****************************************************************/
+
+            {
+                const unsigned int nThreads = warp_size * 2;
+                const unsigned int nBlocks =
+                    (n_candidates + nThreads - 1) / nThreads;
+                propagate_to_next_surface<std::decay_t<propagator_type>,
+                                          std::decay_t<bfield_type>>(
+                    nBlocks, nThreads, 0, stream, config,
+                    device::propagate_to_next_surface_payload<
+                        std::decay_t<propagator_type>,
+                        std::decay_t<bfield_type>>{
+                        .det_data = det_view,
+                        .field_data = field_view,
+                        .params_view = in_params_buffer,
+                        .params_liveness_view = param_liveness_buffer,
+                        .param_ids_view = param_ids_buffer,
+                        .links_view = links_buffer,
+                        .prev_links_idx = step_to_link_idx_map[step],
+                        .step = step,
+                        .n_in_params = n_candidates,
+                        .tips_view = tips_buffer,
+                        .tip_lengths_view = tip_length_buffer});
+                TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+                cu_stream.synchronize();
+            }
+        }
+
+        n_in_params = n_candidates;
+    }
+    /*
+    TRACCC_DEBUG("Final link buffer usage was "
+                 << copy.get_size(links_buffer) << " out of "
+                 << link_buffer_capacity << " ("
+                 << ((100.f * static_cast<float>(copy.get_size(links_buffer))) /
+                     static_cast<float>(link_buffer_capacity))
+                 << "%)");
+    */
+    /*****************************************************************
+     * Kernel6: Build tracks
+     *****************************************************************/
+
+    // Get the number of tips
+    auto n_tips_total = copy.get_size(tips_buffer);
+
+    std::vector<unsigned int> tips_length_host;
+
+    if (n_tips_total > 0) {
+        copy(tip_length_buffer, tips_length_host)->wait();
+        tips_length_host.resize(n_tips_total);
+    }
+
+    // Create track candidate buffer
+    edm::track_candidate_collection<default_algebra>::buffer
+        track_candidates_buffer{tips_length_host, mr.main, mr.host};
+
+    copy.setup(track_candidates_buffer)->ignore();
+
+    // @Note: nBlocks can be zero in case there is no tip. This happens when
+    // chi2_max config is set tightly and no tips are found
+    if (n_tips_total > 0) {
+        const unsigned int nThreads = warp_size * 2;
+        const unsigned int nBlocks = (n_tips_total + nThreads - 1) / nThreads;
+
+        kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(
+            device::build_tracks_payload{
+                .seeds_view = seeds_view,
+                .links_view = links_buffer,
+                .tips_view = tips_buffer,
+                .track_candidates_view = {track_candidates_buffer,
+                                          measurements}});
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+        cu_stream.synchronize();
+    }
+
+    return track_candidates_buffer;
+}
+
+}  // namespace traccc::cuda::details
