@@ -9,7 +9,7 @@
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
 #include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/alpaka/finding/combinatorial_kalman_filter_algorithm.hpp"
-#include "traccc/alpaka/fitting/fitting_algorithm.hpp"
+#include "traccc/alpaka/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/alpaka/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
@@ -118,22 +118,11 @@ int seq_run(const traccc::opts::detector& detector_opts,
     uint64_t n_fitted_tracks_alpaka = 0;
 
     // Type definitions
-    using scalar_type = traccc::default_detector::host::scalar_type;
     using host_spacepoint_formation_algorithm =
         traccc::host::silicon_pixel_spacepoint_formation_algorithm;
     using device_spacepoint_formation_algorithm =
         traccc::alpaka::spacepoint_formation_algorithm<
             traccc::default_detector::device>;
-
-    using bfield_type =
-        covfie::field<traccc::const_bfield_backend_t<traccc::scalar>>;
-
-    using stepper_type =
-        detray::rk_stepper<bfield_type::view_t,
-                           traccc::default_detector::host::algebra_type,
-                           detray::constrained_step<scalar_type>>;
-    using device_navigator_type =
-        detray::navigator<const traccc::default_detector::device>;
 
     using host_finding_algorithm =
         traccc::host::combinatorial_kalman_filter_algorithm;
@@ -141,8 +130,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
         traccc::alpaka::combinatorial_kalman_filter_algorithm;
 
     using host_fitting_algorithm = traccc::host::kalman_fitting_algorithm;
-    using device_fitting_algorithm = traccc::alpaka::fitting_algorithm<
-        traccc::kalman_fitter<stepper_type, device_navigator_type>>;
+    using device_fitting_algorithm = traccc::alpaka::kalman_fitting_algorithm;
 
     // Algorithm configuration(s).
     detray::propagation::config propagation_config(propagation_opts);
@@ -187,7 +175,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     device_finding_algorithm finding_alg_alpaka(
         finding_cfg, mr, copy, queue, logger().clone("AlpakaFindingAlg"));
     device_fitting_algorithm fitting_alg_alpaka(
-        fitting_cfg, mr, copy, logger().clone("AlpakaFittingAlg"));
+        fitting_cfg, mr, copy, queue, logger().clone("AlpakaFittingAlg"));
 
     traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
         copy_track_states(mr, copy, logger().clone("TrackStateD2HCopyAlg"));

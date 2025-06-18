@@ -11,7 +11,7 @@
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
 #include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/alpaka/finding/combinatorial_kalman_filter_algorithm.hpp"
-#include "traccc/alpaka/fitting/fitting_algorithm.hpp"
+#include "traccc/alpaka/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/alpaka/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
@@ -56,18 +56,9 @@ class full_chain_algorithm
     /// (Device) Detector type used during track finding and fitting
     using device_detector_type = traccc::default_detector::device;
 
-    using scalar_type = device_detector_type::scalar_type;
-
     using bfield_type =
         covfie::field<traccc::const_bfield_backend_t<traccc::scalar>>;
 
-    /// Stepper type used by the track finding and fitting algorithms
-    using stepper_type =
-        detray::rk_stepper<bfield_type::view_t,
-                           device_detector_type::algebra_type,
-                           detray::constrained_step<scalar_type>>;
-    /// Navigator type used by the track finding and fitting algorithms
-    using navigator_type = detray::navigator<const device_detector_type>;
     /// Spacepoint formation algorithm type
     using spacepoint_formation_algorithm =
         traccc::alpaka::spacepoint_formation_algorithm<
@@ -78,8 +69,7 @@ class full_chain_algorithm
     using finding_algorithm =
         traccc::alpaka::combinatorial_kalman_filter_algorithm;
     /// Track fitting algorithm type
-    using fitting_algorithm = traccc::alpaka::fitting_algorithm<
-        traccc::kalman_fitter<stepper_type, navigator_type>>;
+    using fitting_algorithm = traccc::alpaka::kalman_fitting_algorithm;
 
     /// @}
 

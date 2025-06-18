@@ -7,7 +7,7 @@
 
 // Project include(s).
 #include "traccc/alpaka/finding/combinatorial_kalman_filter_algorithm.hpp"
-#include "traccc/alpaka/fitting/fitting_algorithm.hpp"
+#include "traccc/alpaka/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
 #include "traccc/alpaka/utils/vecmem_objects.hpp"
@@ -62,18 +62,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::accelerator& accelerator_opts,
             [[maybe_unused]] std::unique_ptr<const traccc::Logger> ilogger) {
     TRACCC_LOCAL_LOGGER(std::move(ilogger));
-
-    /// Type declarations
-    using scalar_t = traccc::default_detector::host::scalar_type;
-    using b_field_t = covfie::field<traccc::const_bfield_backend_t<scalar_t>>;
-    using rk_stepper_type =
-        detray::rk_stepper<b_field_t::view_t,
-                           traccc::default_detector::host::algebra_type,
-                           detray::constrained_step<scalar_t>>;
-    using device_navigator_type =
-        detray::navigator<const traccc::default_detector::device>;
-    using device_fitter_type =
-        traccc::kalman_fitter<rk_stepper_type, device_navigator_type>;
 
     // Memory resources used by the application.
     traccc::alpaka::queue queue;
@@ -176,8 +164,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     traccc::host::kalman_fitting_algorithm host_fitting(
         fit_cfg, host_mr, host_copy, logger().clone("HostFittingAlg"));
-    traccc::alpaka::fitting_algorithm<device_fitter_type> device_fitting(
-        fit_cfg, mr, copy, logger().clone("AlpakaFittingAlg"));
+    traccc::alpaka::kalman_fitting_algorithm device_fitting(
+        fit_cfg, mr, copy, queue, logger().clone("AlpakaFittingAlg"));
 
     traccc::performance::timing_info elapsedTimes;
 
