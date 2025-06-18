@@ -22,6 +22,7 @@
 
 // Project include(s).
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
+#include "traccc/fitting/kalman_filter/is_line_visitor.hpp"
 #include "traccc/fitting/status_codes.hpp"
 
 // Detray include(s)
@@ -248,10 +249,12 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                 track_state<typename detector_t::algebra_type> trk_state(meas);
                 const detray::tracking_surface sf{det, in_par.surface_link()};
 
+                const bool is_line = sf.template visit_mask<is_line_visitor>();
+
                 // Run the Kalman update
-                const kalman_fitter_status res = sf.template visit_mask<
-                    gain_matrix_updater<typename detector_t::algebra_type>>(
-                    trk_state, in_par);
+                const kalman_fitter_status res =
+                    gain_matrix_updater<typename detector_t::algebra_type>{}(
+                        trk_state, in_par, is_line);
 
                 /*
                  * The $\chi^2$ value from the Kalman update should be less than

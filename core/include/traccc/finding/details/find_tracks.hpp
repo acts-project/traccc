@@ -15,6 +15,7 @@
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
+#include "traccc/fitting/kalman_filter/is_line_visitor.hpp"
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/sanity/contiguous_on.hpp"
 #include "traccc/utils/logging.hpp"
@@ -268,10 +269,12 @@ find_tracks(
 
                 track_state<algebra_type> trk_state(meas);
 
+                const bool is_line = sf.template visit_mask<is_line_visitor>();
+
                 // Run the Kalman update on a copy of the track parameters
                 const kalman_fitter_status res =
-                    sf.template visit_mask<gain_matrix_updater<algebra_type>>(
-                        trk_state, in_param);
+                    gain_matrix_updater<algebra_type>{}(trk_state, in_param,
+                                                        is_line);
 
                 const traccc::scalar chi2 = trk_state.filtered_chi2();
 
