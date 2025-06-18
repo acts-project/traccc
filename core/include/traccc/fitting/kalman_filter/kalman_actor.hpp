@@ -11,6 +11,7 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
+#include "traccc/fitting/kalman_filter/is_line_visitor.hpp"
 #include "traccc/fitting/kalman_filter/two_filters_smoother.hpp"
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/utils/particle.hpp"
@@ -145,6 +146,8 @@ struct kalman_actor : detray::actor {
             // Run Kalman Gain Updater
             const auto sf = navigation.get_surface();
 
+            const bool is_line = sf.template visit_mask<is_line_visitor>();
+
             kalman_fitter_status res = kalman_fitter_status::SUCCESS;
 
             if (!actor_state.backward_mode) {
@@ -153,9 +156,9 @@ struct kalman_actor : detray::actor {
                               direction_e ==
                                   kalman_actor_direction::BIDIRECTIONAL) {
                     // Forward filter
-                    res =
-                        sf.template visit_mask<gain_matrix_updater<algebra_t>>(
-                            trk_state, propagation._stepping.bound_params());
+                    res = gain_matrix_updater<algebra_t>{}(
+                        trk_state, propagation._stepping.bound_params(),
+                        is_line);
 
                     // Update the propagation flow
                     stepping.bound_params() = trk_state.filtered();
@@ -168,9 +171,9 @@ struct kalman_actor : detray::actor {
                               direction_e ==
                                   kalman_actor_direction::BIDIRECTIONAL) {
                     // Backward filter for smoothing
-                    res =
-                        sf.template visit_mask<two_filters_smoother<algebra_t>>(
-                            trk_state, propagation._stepping.bound_params());
+                    res = two_filters_smoother<algebra_t>{}(
+                        trk_state, propagation._stepping.bound_params(),
+                        is_line);
                 } else {
                     assert(false);
                 }
