@@ -72,7 +72,7 @@ edm::track_candidate_collection<default_algebra>::buffer find_tracks(
     const measurement_collection_types::const_view& measurements,
     const bound_track_parameters_collection_types::const_view& seeds_view,
     const finding_config& config, const memory_resource& mr, vecmem::copy& copy,
-    stream& cu_stream, const unsigned int warp_size) {
+    stream& cu_stream, const Logger& log, const unsigned int warp_size) {
 
     using detector_type = typename navigator_t::detector_type;
     using algebra_type = typename navigator_t::detector_type::algebra_type;
@@ -92,6 +92,9 @@ edm::track_candidate_collection<default_algebra>::buffer find_tracks(
                math::fabs(config.propagation.navigation.overstep_tolerance) &&
            "Min step length for the next surface should be higher than the "
            "overstep tolerance");
+
+    // Create a logger.
+    auto logger = [&log]() -> const Logger& { return log; };
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(cu_stream);
@@ -252,13 +255,13 @@ edm::track_candidate_collection<default_algebra>::buffer find_tracks(
             if (links_size + n_max_candidates > link_buffer_capacity) {
                 const unsigned int new_link_buffer_capacity = std::max(
                     2 * link_buffer_capacity, links_size + n_max_candidates);
-                /*
+                
                 TRACCC_INFO("Link buffer (capacity "
                             << link_buffer_capacity << ") is too small to hold "
                             << links_size << " current and " << n_max_candidates
                             << " new links; increasing capacity to "
                             << new_link_buffer_capacity);
-                */
+                
                 link_buffer_capacity = new_link_buffer_capacity;
 
                 vecmem::data::vector_buffer<candidate_link> new_links_buffer(
@@ -404,14 +407,14 @@ edm::track_candidate_collection<default_algebra>::buffer find_tracks(
 
         n_in_params = n_candidates;
     }
-    /*
+
     TRACCC_DEBUG("Final link buffer usage was "
                  << copy.get_size(links_buffer) << " out of "
                  << link_buffer_capacity << " ("
                  << ((100.f * static_cast<float>(copy.get_size(links_buffer))) /
                      static_cast<float>(link_buffer_capacity))
                  << "%)");
-    */
+    
     /*****************************************************************
      * Kernel6: Build tracks
      *****************************************************************/

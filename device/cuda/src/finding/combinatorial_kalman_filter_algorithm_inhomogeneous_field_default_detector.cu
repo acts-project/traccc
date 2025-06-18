@@ -34,7 +34,7 @@ combinatorial_kalman_filter_algorithm::operator()(
                            detray::constrained_step<scalar_type>>,
         detray::navigator<const detector_type::device>>(
         det, field, measurements, seeds, m_config, m_mr, m_copy, m_stream,
-        m_warp_size);
+        logger(), m_warp_size);
 }
 
 }  // namespace traccc::cuda
