@@ -13,9 +13,11 @@
 #include "../utils/thread_id.hpp"
 #include "../utils/utils.hpp"
 #include "./kernels/ccl_kernel.cuh"
+#include "./kernels/reify_cluster_data.cuh"
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
+#include "traccc/edm/silicon_cluster_collection.hpp"
 #include "traccc/utils/projections.hpp"
 #include "traccc/utils/relations.hpp"
 
@@ -47,10 +49,39 @@ clusterization_algorithm::clusterization_algorithm(
         sizeof(std::remove_extent_t<decltype(m_backup_mutex)::element_type>)));
 }
 
-clusterization_algorithm::output_type clusterization_algorithm::operator()(
+measurement_collection_types::buffer clusterization_algorithm::operator()(
     const edm::silicon_cell_collection::const_view& cells,
     const silicon_detector_description::const_view& det_descr) const {
+    return this->operator()(cells, det_descr,
+                            device::clustering_discard_disjoint_set{});
+}
 
+measurement_collection_types::buffer clusterization_algorithm::operator()(
+    const edm::silicon_cell_collection::const_view& cells,
+    const silicon_detector_description::const_view& det_descr,
+    device::clustering_discard_disjoint_set&&) const {
+    auto [res, djs] = this->execute_impl(cells, det_descr, false);
+    assert(!djs.has_value());
+    return std::move(res);
+}
+
+std::pair<measurement_collection_types::buffer,
+          traccc::edm::silicon_cluster_collection::buffer>
+clusterization_algorithm::operator()(
+    const edm::silicon_cell_collection::const_view& cells,
+    const silicon_detector_description::const_view& det_descr,
+    device::clustering_keep_disjoint_set&&) const {
+    auto [res, djs] = this->execute_impl(cells, det_descr, true);
+    assert(djs.has_value());
+    return {std::move(res), std::move(*djs)};
+}
+
+std::pair<measurement_collection_types::buffer,
+          std::optional<traccc::edm::silicon_cluster_collection::buffer>>
+clusterization_algorithm::execute_impl(
+    const edm::silicon_cell_collection::const_view& cells,
+    const silicon_detector_description::const_view& det_descr,
+    bool keep_disjoint_set) const {
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
 
@@ -65,7 +96,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 
     // If there are no cells, return right away.
     if (num_cells == 0) {
-        return measurements;
+        return {std::move(measurements),
+                traccc::edm::silicon_cluster_collection::buffer{}};
     }
 
     assert(is_contiguous_on<edm::silicon_cell_collection::const_device>(
@@ -92,16 +124,56 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
     assert(m_config.max_cells_per_thread <=
            device::details::CELLS_PER_THREAD_STACK_LIMIT);
 
+    vecmem::data::vector_buffer<unsigned int> disjoint_set;
+    vecmem::data::vector_buffer<unsigned int> cluster_sizes;
+
+    // If we are keeping the disjoint set data structure, allocate space for it.
+    if (keep_disjoint_set) {
+        disjoint_set = {num_cells, m_mr.main};
+        cluster_sizes = {num_cells, m_mr.main};
+    }
+
     kernels::ccl_kernel<<<num_blocks, m_config.threads_per_partition,
                           2 * m_config.max_partition_size() *
                               sizeof(device::details::index_t),
                           stream>>>(
         m_config, cells, det_descr, measurements, cell_links, m_f_backup,
-        m_gf_backup, m_adjc_backup, m_adjv_backup, m_backup_mutex.get());
+        m_gf_backup, m_adjc_backup, m_adjv_backup, m_backup_mutex.get(),
+        disjoint_set, cluster_sizes);
+
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
+    std::optional<traccc::edm::silicon_cluster_collection::buffer>
+        cluster_data = std::nullopt;
+
+    if (keep_disjoint_set) {
+        assert(m_mr.host != nullptr);
+
+        auto num_measurements = m_copy.get().get_size(measurements);
+
+        // This could be further optimized by only copying the number of
+        // elements necessary. But since cluster making is mainly meant for
+        // performance measurements, on first order this should be good enough.
+        vecmem::vector<unsigned int> cluster_sizes_host{m_mr.host};
+        m_copy.get()(cluster_sizes, cluster_sizes_host)->wait();
+        cluster_sizes_host.resize(num_measurements);
+
+        cluster_data.emplace(cluster_sizes_host, m_mr.main, m_mr.host,
+                             vecmem::data::buffer_type::resizable);
+        m_copy.get().setup(*cluster_data)->ignore();
+
+        const unsigned int num_threads = 512;
+        const unsigned int num_blocks =
+            (num_cells + num_threads - 1) / num_threads;
+
+        kernels::reify_cluster_data<<<num_blocks, num_threads, 0, stream>>>(
+            disjoint_set, *cluster_data);
+
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+    }
+
     // Return the reconstructed measurements.
-    return measurements;
+    return {std::move(measurements), std::move(cluster_data)};
 }
 
 }  // namespace traccc::cuda

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -30,6 +30,12 @@ namespace traccc::device {
 /// @param[in] end       partition end point this cell belongs to
 /// @param[in] cid       current cell id
 /// @param[out] out      cluster to fill
+/// @param[out] disjoint_set Array of unsigned integers of
+///                      length $|cells|$ to which an integer is written
+///                      identifying the measurement index to which each cell
+///                      belongs.
+/// @param[out] cluster_size Optional integer which is filled with the size of
+///                      the measurement that is created.
 ///
 TRACCC_HOST_DEVICE
 inline void aggregate_cluster(
@@ -38,7 +44,9 @@ inline void aggregate_cluster(
     const silicon_detector_description::const_device& det_descr,
     const vecmem::device_vector<details::index_t>& f, unsigned int start,
     unsigned int end, unsigned short cid, measurement& out,
-    vecmem::data::vector_view<unsigned int> cell_links, unsigned int link);
+    vecmem::data::vector_view<unsigned int> cell_links, unsigned int link,
+    vecmem::device_vector<unsigned int>& disjoint_set,
+    std::optional<std::reference_wrapper<unsigned int>> cluster_size);
 
 }  // namespace traccc::device
 
