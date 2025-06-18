@@ -37,19 +37,7 @@
 #include <vecmem/memory/binary_page_memory_resource.hpp>
 
 // TBB include(s).
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wold-style-cast"
 #include <tbb/global_control.h>
-#pragma clang diagnostic pop
-#elif defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#include <tbb/global_control.h>
-#pragma GCC diagnostic pop
-#else
-#include <tbb/global_control.h>
-#endif
 #include <tbb/parallel_for.h>
 #include <tbb/task_arena.h>
 #include <tbb/task_group.h>
