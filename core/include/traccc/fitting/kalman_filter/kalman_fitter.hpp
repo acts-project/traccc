@@ -359,8 +359,7 @@ class kalman_fitter {
 
             const detray::tracking_surface sf{m_detector,
                                               trk_state.surface_link()};
-            sf.template visit_mask<statistics_updater<algebra_type>>(fit_res,
-                                                                     trk_state);
+            statistics_updater<algebra_type>{}(fit_res, trk_state);
         }
 
         // Track quality
