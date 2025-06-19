@@ -163,7 +163,7 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
 
     // Run the clusterization (asynchronously).
     const measurement_collection_types::buffer measurements =
-        m_clusterization(cells_buffer, m_device_det_descr);
+        m_clusterization(cells_buffer, m_device_det_descr).measurements;
     m_measurement_sorting(measurements);
 
     // If we have a Detray detector, run the seeding, track finding and fitting.

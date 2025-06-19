@@ -279,7 +279,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                                              elapsedTimes);
                 // Reconstruct it into spacepoints on the device.
                 measurements_cuda_buffer =
-                    ca_cuda(cells_buffer, device_det_descr);
+                    ca_cuda(cells_buffer, device_det_descr).measurements;
                 ms_cuda(measurements_cuda_buffer);
                 stream.synchronize();
             }  // stop measuring clusterization cuda timer
