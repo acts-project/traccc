@@ -1,0 +1,45 @@
+/** TRACCC library, part of the ACTS project (R&D line)
+ *
+ * (c) 2025 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
+// Local include(s).
+#include "../utils/get_queue.hpp"
+#include "fit_tracks.hpp"
+#include "traccc/alpaka/fitting/kalman_fitting_algorithm.hpp"
+
+// Project include(s).
+#include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
+#include "traccc/utils/propagation.hpp"
+
+namespace traccc::alpaka {
+
+kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
+    const telescope_detector::view& det,
+    const covfie::field<traccc::const_bfield_backend_t<
+        telescope_detector::device::scalar_type>>::view_t& field,
+    const edm::track_candidate_container<default_algebra>::const_view&
+        track_candidates) const {
+
+    using scalar_type = telescope_detector::device::scalar_type;
+
+    using bfield_type =
+        covfie::field<traccc::const_bfield_backend_t<scalar_type>>;
+
+    // Construct the fitter type.
+    using stepper_type =
+        detray::rk_stepper<bfield_type::view_t,
+                           telescope_detector::device::algebra_type,
+                           detray::constrained_step<scalar_type>>;
+    using navigator_type = detray::navigator<const telescope_detector::device>;
+    using fitter_type = kalman_fitter<stepper_type, navigator_type>;
+
+    // Run the track fitting.
+    return details::fit_tracks<fitter_type>(det, field, track_candidates,
+                                            m_config, m_mr, m_copy.get(),
+                                            details::get_queue(m_queue.get()));
+}
+
+}  // namespace traccc::alpaka
