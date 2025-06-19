@@ -162,7 +162,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
                                        logger().clone("HostFittingAlg"));
 
     traccc::alpaka::clusterization_algorithm ca_alpaka(
-        mr, copy, clusterization_opts, logger().clone("AlpakaClusteringAlg"));
+        mr, copy, queue, clusterization_opts,
+        logger().clone("AlpakaClusteringAlg"));
     traccc::alpaka::measurement_sorting_algorithm ms_alpaka(
         copy, logger().clone("AlpakaMeasSortingAlg"));
     device_spacepoint_formation_algorithm sf_alpaka(
@@ -242,7 +243,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                                              elapsedTimes);
                 // Reconstruct it into spacepoints on the device.
                 measurements_alpaka_buffer =
-                    ca_alpaka(cells_buffer, device_det_descr);
+                    ca_alpaka(cells_buffer, device_det_descr).measurements;
                 ms_alpaka(measurements_alpaka_buffer);
             }  // stop measuring clusterization alpaka timer
 
