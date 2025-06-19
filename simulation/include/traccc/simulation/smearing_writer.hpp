@@ -19,6 +19,7 @@
 
 // Detray core include(s).
 #include <detray/propagator/base_actor.hpp>
+#include <detray/utils/concepts.hpp>
 
 // DFE include(s).
 #include <dfe/dfe_io_dsv.hpp>
@@ -102,13 +103,20 @@ struct smearing_writer : detray::actor {
 
     struct measurement_kernel {
 
-        template <typename mask_group_t, typename index_t>
+        template <typename mask_group_t, typename index_range_t>
         inline void operator()(
-            const mask_group_t& mask_group, const index_t& index,
+            const mask_group_t& mask_group, const index_range_t& index,
             const traccc::bound_track_parameters<algebra_type>& bound_params,
             smearer_t& smearer, io::csv::measurement& iomeas) const {
+            using mask_t = typename mask_group_t::value_type;
 
-            const auto& mask = mask_group[index];
+            mask_t mask;
+            if constexpr (detray::concepts::interval<index_range_t>) {
+                // The measurement smearer only needs to deduce the mask type
+                mask = mask_group[index.lower()];
+            } else {
+                mask = mask_group[index];
+            }
 
             smearer(mask, smearer.get_offset(), bound_params, iomeas);
         }
