@@ -22,12 +22,7 @@
 
 namespace {
 
-traccc::alpaka::queue queue;
-traccc::alpaka::vecmem_objects vo(queue);
-
-vecmem::memory_resource& host_mr = vo.host_mr();
-vecmem::memory_resource& device_mr = vo.device_mr();
-vecmem::copy& copy = vo.copy();
+vecmem::host_memory_resource host_mr;
 
 // template <TAccTag>
 cca_function_t get_f_with(traccc::clustering_config cfg) {
@@ -40,6 +35,12 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
                 std::optional<traccc::edm::silicon_cluster_collection::host>> {
             std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
                 result;
+
+            traccc::alpaka::queue queue;
+            traccc::alpaka::vecmem_objects vo(queue);
+
+            vecmem::memory_resource& device_mr = vo.device_mr();
+            vecmem::copy& copy = vo.copy();
 
             traccc::alpaka::clusterization_algorithm cc({device_mr, &host_mr},
                                                         copy, queue, cfg);

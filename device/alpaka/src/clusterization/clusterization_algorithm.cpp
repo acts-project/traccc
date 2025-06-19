@@ -75,11 +75,13 @@ struct ccl_kernel {
 struct reify_cluster_data {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        TAcc const& acc, vecmem::data::vector_view<unsigned int> disjoint_set,
+        TAcc const& acc,
+        vecmem::data::vector_view<const unsigned int> disjoint_set,
         edm::silicon_cluster_collection::view clusters) const {
 
-        device::reify_cluster_data(details::thread_id1{acc}.getGlobalThreadId(),
-                                   disjoint_set, clusters);
+        const device::global_index_t globalThreadIdx =
+            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
+        device::reify_cluster_data(globalThreadIdx, disjoint_set, clusters);
     }
 };
 
@@ -125,16 +127,11 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 
     // If there are no cells, return right away.
     if (num_cells == 0) {
-        return {
-            .measurements = {},
-            .clusters =
-                (reconstruct_clusters
-                     ? std::optional<
-                           edm::silicon_cluster_collection::
-                               buffer>{edm::silicon_cluster_collection::
-                                           buffer{}}
-                     : std::optional<edm::silicon_cluster_collection::buffer>{
-                           std::nullopt})};
+        if (reconstruct_clusters) {
+            return {{}, edm::silicon_cluster_collection::buffer{}};
+        } else {
+            return {};
+        }
     }
 
     // Create the result object, overestimating the number of measurements.
@@ -220,8 +217,9 @@ struct BlockSharedMemDynSizeBytes<traccc::alpaka::kernels::ccl_kernel, TAcc> {
         TVec const& /* blockThreadExtent */, TVec const& /* threadElemExtent */,
         const traccc::clustering_config config, TArgs const&... /* args */
         ) -> std::size_t {
-        return static_cast<std::size_t>(2 * config.max_partition_size() *
-                                        sizeof(unsigned short));
+        return static_cast<std::size_t>(
+            2 * config.max_partition_size() *
+            sizeof(traccc::device::details::index_t));
     }
 };
 

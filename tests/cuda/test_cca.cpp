@@ -20,12 +20,7 @@
 #include "traccc/geometry/silicon_detector_description.hpp"
 
 namespace {
-
-traccc::cuda::stream stream;
-
 vecmem::host_memory_resource host_mr;
-vecmem::cuda::device_memory_resource device_mr;
-vecmem::cuda::async_copy copy{stream.cudaStream()};
 
 cca_function_t get_f_with(traccc::clustering_config cfg) {
     return [cfg](const traccc::edm::silicon_cell_collection::host& cells,
@@ -35,6 +30,10 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
                             traccc::edm::silicon_cluster_collection::host> {
         std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
             geom_to_meas_map;
+
+        traccc::cuda::stream stream;
+        vecmem::cuda::device_memory_resource device_mr;
+        vecmem::cuda::async_copy copy{stream.cudaStream()};
 
         traccc::cuda::clusterization_algorithm cc({device_mr, &host_mr}, copy,
                                                   stream, cfg);

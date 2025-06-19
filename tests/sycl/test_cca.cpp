@@ -23,12 +23,7 @@
 
 namespace {
 
-vecmem::sycl::queue_wrapper vecmem_queue;
-traccc::sycl::queue_wrapper traccc_queue{vecmem_queue.queue()};
-
 vecmem::host_memory_resource host_mr;
-vecmem::sycl::device_memory_resource device_mr{vecmem_queue};
-vecmem::sycl::async_copy copy{vecmem_queue};
 
 cca_function_t get_f_with(traccc::clustering_config cfg) {
     return
@@ -40,6 +35,11 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
                 std::optional<traccc::edm::silicon_cluster_collection::host>> {
             std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
                 result;
+
+            vecmem::sycl::queue_wrapper vecmem_queue;
+            traccc::sycl::queue_wrapper traccc_queue{vecmem_queue.queue()};
+            vecmem::sycl::device_memory_resource device_mr{vecmem_queue};
+            vecmem::sycl::async_copy copy{vecmem_queue};
 
             traccc::sycl::clusterization_algorithm cc({device_mr, &host_mr},
                                                       copy, traccc_queue, cfg);

@@ -63,16 +63,11 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 
     // If there are no cells, return right away.
     if (num_cells == 0) {
-        return {
-            .measurements = {},
-            .clusters =
-                (reconstruct_clusters
-                     ? std::optional<
-                           edm::silicon_cluster_collection::
-                               buffer>{edm::silicon_cluster_collection::
-                                           buffer{}}
-                     : std::optional<edm::silicon_cluster_collection::buffer>{
-                           std::nullopt})};
+        if (reconstruct_clusters) {
+            return {{}, edm::silicon_cluster_collection::buffer{}};
+        } else {
+            return {};
+        }
     }
 
     // Create the result object, overestimating the number of measurements.
