@@ -192,8 +192,8 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     m_copy(vecmem::get_data(cells), cells_buffer)->wait();
 
     // Execute the algorithms.
-    const clusterization_algorithm::output_type measurements =
-        m_clusterization(cells_buffer, m_device_det_descr);
+    const auto measurements =
+        m_clusterization(cells_buffer, m_device_det_descr).measurements;
     m_measurement_sorting(measurements);
 
     // If we have a Detray detector, run the seeding, track

@@ -215,8 +215,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
             track_candidates{host_mr};
 
         // Instantiate SYCL containers/collections
-        traccc::sycl::clusterization_algorithm::output_type
-            measurements_sycl_buffer;
+        traccc::measurement_collection_types::buffer measurements_sycl_buffer;
         traccc::sycl::silicon_pixel_spacepoint_formation_algorithm::output_type
             spacepoints_sycl_buffer;
         traccc::sycl::seeding_algorithm::output_type seeds_sycl_buffer;
@@ -254,7 +253,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                                              elapsedTimes);
                 // Reconstruct it into spacepoints on the device.
                 measurements_sycl_buffer =
-                    ca_sycl(cells_buffer, device_det_descr);
+                    ca_sycl(cells_buffer, device_det_descr).measurements;
                 ms_sycl(measurements_sycl_buffer);
                 q.wait_and_throw();
             }  // stop measuring clusterization sycl timer
