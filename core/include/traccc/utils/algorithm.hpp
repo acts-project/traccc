@@ -1,7 +1,7 @@
 /**
  * TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2022 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -18,7 +18,8 @@ template <typename T>
 using rvalue_or_const_lvalue = std::disjunction<
     std::is_rvalue_reference<T>,
     std::conjunction<std::is_lvalue_reference<T>,
-                     std::is_const<std::remove_reference_t<T>>>>;
+                     std::is_const<std::remove_reference_t<T>>>,
+    std::is_fundamental<T>>;
 
 template <typename T>
 class algorithm {};
