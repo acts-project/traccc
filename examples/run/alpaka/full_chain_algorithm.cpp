@@ -41,7 +41,7 @@ full_chain_algorithm::full_chain_algorithm(
           m_vecmem_objects.device_mr()),
       m_detector(detector),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr},
-                       m_vecmem_objects.copy(), clustering_config),
+                       m_vecmem_objects.copy(), m_queue, clustering_config),
       m_measurement_sorting(m_vecmem_objects.copy(),
                             logger->cloneWithSuffix("MeasSortingAlg")),
       m_spacepoint_formation(memory_resource{*m_cached_device_mr, &m_host_mr},
@@ -99,7 +99,8 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
           m_vecmem_objects.device_mr()),
       m_detector(parent.m_detector),
       m_clusterization(memory_resource{*m_cached_device_mr, &m_host_mr},
-                       m_vecmem_objects.copy(), parent.m_clustering_config),
+                       m_vecmem_objects.copy(), m_queue,
+                       parent.m_clustering_config),
       m_measurement_sorting(m_vecmem_objects.copy(),
                             parent.logger().cloneWithSuffix("MeasSortingAlg")),
       m_spacepoint_formation(memory_resource{*m_cached_device_mr, &m_host_mr},
@@ -152,8 +153,8 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     m_vecmem_objects.copy()(::vecmem::get_data(cells), cells_buffer)->ignore();
 
     // Run the clusterization.
-    const clusterization_algorithm::output_type measurements =
-        m_clusterization(cells_buffer, m_device_det_descr);
+    const auto measurements =
+        m_clusterization(cells_buffer, m_device_det_descr).measurements;
     m_measurement_sorting(measurements);
 
     // If we have a Detray detector, run the track finding and fitting.
