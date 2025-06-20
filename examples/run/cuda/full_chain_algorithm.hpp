@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -11,7 +11,7 @@
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/cuda/clusterization/measurement_sorting_algorithm.hpp"
-#include "traccc/cuda/finding/finding_algorithm.hpp"
+#include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/cuda/fitting/fitting_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
@@ -77,7 +77,7 @@ class full_chain_algorithm
     using clustering_algorithm = traccc::cuda::clusterization_algorithm;
     /// Track finding algorithm type
     using finding_algorithm =
-        traccc::cuda::finding_algorithm<stepper_type, navigator_type>;
+        traccc::cuda::combinatorial_kalman_filter_algorithm;
     /// Track fitting algorithm type
     using fitting_algorithm = traccc::cuda::fitting_algorithm<
         traccc::kalman_fitter<stepper_type, navigator_type>>;

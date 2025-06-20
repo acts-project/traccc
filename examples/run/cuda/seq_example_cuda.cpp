@@ -11,7 +11,7 @@
 #include "traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/cuda/clusterization/measurement_sorting_algorithm.hpp"
-#include "traccc/cuda/finding/finding_algorithm.hpp"
+#include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/cuda/fitting/fitting_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
@@ -148,7 +148,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     using host_finding_algorithm =
         traccc::host::combinatorial_kalman_filter_algorithm;
     using device_finding_algorithm =
-        traccc::cuda::finding_algorithm<stepper_type, device_navigator_type>;
+        traccc::cuda::combinatorial_kalman_filter_algorithm;
 
     using host_fitting_algorithm = traccc::host::kalman_fitting_algorithm;
     using device_fitting_algorithm = traccc::cuda::fitting_algorithm<

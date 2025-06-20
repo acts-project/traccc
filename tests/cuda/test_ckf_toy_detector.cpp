@@ -6,7 +6,7 @@
  */
 
 // Project include(s).
-#include "traccc/cuda/finding/finding_algorithm.hpp"
+#include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
@@ -131,8 +131,8 @@ TEST_P(CkfToyDetectorTests, Run) {
     seed_generator<host_detector_type> sg(host_det, stddevs);
 
     // Finding algorithm configuration
-    typename traccc::cuda::finding_algorithm<
-        rk_stepper_type, device_navigator_type>::config_type cfg;
+    typename traccc::cuda::combinatorial_kalman_filter_algorithm::config_type
+        cfg;
     cfg.ptc_hypothesis = ptc;
     cfg.max_num_branches_per_seed = 500;
     cfg.propagation.navigation.search_window = search_window;
@@ -142,8 +142,8 @@ TEST_P(CkfToyDetectorTests, Run) {
                                                                      host_mr);
 
     // Finding algorithm object
-    traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
-        device_finding(cfg, mr, copy, stream);
+    traccc::cuda::combinatorial_kalman_filter_algorithm device_finding(
+        cfg, mr, copy, stream);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {

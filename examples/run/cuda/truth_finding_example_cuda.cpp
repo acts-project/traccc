@@ -6,7 +6,7 @@
  */
 
 // Project include(s).
-#include "traccc/cuda/finding/finding_algorithm.hpp"
+#include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/cuda/fitting/fitting_algorithm.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/definitions/common.hpp"
@@ -151,9 +151,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     // Finding algorithm object
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(
         cfg, host_mr, logger().clone("HostFindingAlg"));
-    traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
-        device_finding(cfg, mr, async_copy, stream,
-                       logger().clone("CudaFindingAlg"));
+    traccc::cuda::combinatorial_kalman_filter_algorithm device_finding(
+        cfg, mr, async_copy, stream, logger().clone("CudaFindingAlg"));
 
     // Fitting algorithm object
     traccc::fitting_config fit_cfg(fitting_opts);

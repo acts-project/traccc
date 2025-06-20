@@ -6,7 +6,7 @@
  */
 
 // Project include(s).
-#include "traccc/cuda/finding/finding_algorithm.hpp"
+#include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/cuda/fitting/fitting_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
@@ -73,8 +73,8 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
     traccc::cuda::seeding_algorithm sa_cuda(seeding_cfg, grid_cfg, filter_cfg,
                                             mr, async_copy, stream);
     traccc::cuda::track_params_estimation tp_cuda(mr, async_copy, stream);
-    traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
-        device_finding(finding_cfg, mr, async_copy, stream);
+    traccc::cuda::combinatorial_kalman_filter_algorithm device_finding(
+        finding_cfg, mr, async_copy, stream);
     traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
         fitting_cfg, mr, async_copy, stream);
 
