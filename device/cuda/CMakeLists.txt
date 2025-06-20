@@ -108,12 +108,19 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/ambiguity_resolution/kernels/sort_updated_tracks.cuh"
   "src/ambiguity_resolution/kernels/remove_tracks.cu"
   "src/ambiguity_resolution/kernels/remove_tracks.cuh"
-  # Fitting
-  "include/traccc/cuda/fitting/fitting_algorithm.hpp"
+  # Track fitting algorithm(s).
+  "include/traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
+  "src/fitting/kalman_fitting_algorithm.cpp"
+  "src/fitting/kalman_fitting_algorithm_constant_field_default_detector.cu"
+  "src/fitting/kalman_fitting_algorithm_constant_field_telescope_detector.cu"
+  "src/fitting/kalman_fitting.cuh"
+  "src/fitting/kernels/fill_sort_keys.cu"
   "src/fitting/kernels/fit_prelude.cu"
   "src/fitting/kernels/specializations/fit_forward_default_detector.cu"
+  "src/fitting/kernels/specializations/fit_forward_telescope_detector.cu"
   "src/fitting/kernels/specializations/fit_backward_default_detector.cu"
-  "src/fitting/fitting_algorithm.cu")
+  "src/fitting/kernels/specializations/fit_backward_telescope_detector.cu"
+)
 
 if(TRACCC_ENABLE_NVTX_PROFILING)
     traccc_add_library(
