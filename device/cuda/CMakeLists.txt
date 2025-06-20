@@ -52,9 +52,12 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/clusterization/kernels/ccl_kernel.cu"
   "src/clusterization/kernels/ccl_kernel.cuh"
   "src/clusterization/kernels/reify_cluster_data.cu"
-  # Finding
-  "include/traccc/cuda/finding/finding_algorithm.hpp"
-  "src/finding/finding_algorithm.cu"
+  # Track finding algorithm(s).
+  "include/traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
+  "src/finding/combinatorial_kalman_filter_algorithm.cpp"
+  "src/finding/combinatorial_kalman_filter_algorithm_constant_field_default_detector.cu"
+  "src/finding/combinatorial_kalman_filter_algorithm_constant_field_telescope_detector.cu"
+  "src/finding/combinatorial_kalman_filter.cuh"
   "src/finding/kernels/make_barcode_sequence.cu"
   "src/finding/kernels/make_barcode_sequence.cuh"
   "src/finding/kernels/apply_interaction.hpp"
@@ -65,8 +68,11 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/finding/kernels/find_tracks.cuh"
   "src/finding/kernels/propagate_to_next_surface.hpp"
   "src/finding/kernels/specializations/find_tracks_default_detector.cu"
+  "src/finding/kernels/specializations/find_tracks_telescope_detector.cu"
   "src/finding/kernels/specializations/apply_interaction_default_detector.cu"
+  "src/finding/kernels/specializations/apply_interaction_telescope_detector.cu"
   "src/finding/kernels/specializations/propagate_to_next_surface_default_detector.cu"
+  "src/finding/kernels/specializations/propagate_to_next_surface_telescope_detector.cu"
   # Ambiguity resolution
   "include/traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
   "src/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.cu"

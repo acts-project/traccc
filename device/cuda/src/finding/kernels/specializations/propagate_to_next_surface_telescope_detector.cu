@@ -21,8 +21,8 @@ namespace traccc::cuda {
 
 using interactor_t = detray::pointwise_material_interactor<default_algebra>;
 using propagator_t = detray::propagator<
-    stepper_for_t<traccc::default_detector::device>,
-    navigator_for_t<traccc::default_detector::device>,
+    stepper_for_t<traccc::telescope_detector::device>,
+    navigator_for_t<traccc::telescope_detector::device>,
     detray::actor_chain<detray::pathlimit_aborter<scalar>,
                         detray::parameter_transporter<default_algebra>,
                         interaction_register<interactor_t>, interactor_t,
