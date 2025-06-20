@@ -18,7 +18,6 @@
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/bfield.hpp"
-#include "traccc/utils/detector_type_utils.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
 
@@ -72,7 +71,7 @@ class combinatorial_kalman_filter_algorithm
     output_type operator()(
         const default_detector::view& det,
         const covfie::field<const_bfield_backend_t<
-            telescope_detector::device::scalar_type>>::view_t& field,
+            default_detector::device::scalar_type>>::view_t& field,
         const measurement_collection_types::const_view& measurements,
         const bound_track_parameters_collection_types::const_view& seeds)
         const override;

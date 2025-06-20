@@ -21,6 +21,7 @@
 #include "traccc/finding/actors/ckf_aborter.hpp"
 #include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/finding/candidate_link.hpp"
+#include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
 #include "traccc/finding/device/apply_interaction.hpp"
 #include "traccc/finding/device/build_tracks.hpp"
 #include "traccc/finding/device/fill_sort_keys.hpp"
@@ -58,9 +59,9 @@ struct build_tracks {};
 /// specializations, to find tracks on top of a specific detector type, magnetic
 /// field type, and track finding configuration.
 ///
-/// @tparam stepper_t The stepper type used for the track propagation
-/// @tparam navigator_t The navigator type used for the track navigation
-/// @tparam kernel_t Structure to generate unique kernel names with
+/// @tparam kernel_t   Structure to generate unique kernel names with
+/// @tparam detector_t The (device) detector type to use
+/// @tparam bfield_t   The magnetic field type to use
 ///
 /// @param det               A view of the detector object
 /// @param field             The magnetic field object
@@ -74,10 +75,10 @@ struct build_tracks {};
 ///
 /// @return A buffer of the found track candidates
 ///
-template <typename stepper_t, typename navigator_t, typename kernel_t>
-edm::track_candidate_collection<default_algebra>::buffer find_tracks(
-    const typename navigator_t::detector_type::view_type& det,
-    const typename stepper_t::magnetic_field_type& field,
+template <typename kernel_t, typename detector_t, typename bfield_t>
+edm::track_candidate_collection<default_algebra>::buffer
+combinatorial_kalman_filter(
+    const typename detector_t::view_type& det, const bfield_t& field,
     const measurement_collection_types::const_view& measurements,
     const bound_track_parameters_collection_types::const_view& seeds,
     const finding_config& config, const memory_resource& mr, vecmem::copy& copy,
@@ -201,8 +202,7 @@ edm::track_candidate_collection<default_algebra>::buffer find_tracks(
                      in_params = vecmem::get_data(in_params_buffer),
                      param_liveness = vecmem::get_data(param_liveness_buffer)](
                         ::sycl::nd_item<1> item) {
-                        device::apply_interaction<
-                            typename navigator_t::detector_type>(
+                        device::apply_interaction<detector_t>(
                             details::global_index(item), config,
                             {det, n_in_params, in_params, param_liveness});
                     });
@@ -307,8 +307,7 @@ edm::track_candidate_collection<default_algebra>::buffer find_tracks(
                             const details::thread_id thread_id{item};
 
                             // Call the device function to find tracks.
-                            device::find_tracks<std::decay_t<
-                                typename navigator_t::detector_type>>(
+                            device::find_tracks<detector_t>(
                                 thread_id, barrier, config,
                                 {det, measurements, in_params, param_liveness,
                                  n_in_params, barcodes, upper_bounds,
@@ -380,21 +379,6 @@ edm::track_candidate_collection<default_algebra>::buffer find_tracks(
              * Kernel5: Propagate to the next surface
              *****************************************************************/
 
-            /// Actor types
-            using algebra_type =
-                typename navigator_t::detector_type::algebra_type;
-            using scalar_type =
-                typename navigator_t::detector_type::scalar_type;
-            using interactor_type =
-                detray::pointwise_material_interactor<algebra_type>;
-            using actor_type = detray::actor_chain<
-                detray::pathlimit_aborter<scalar_type>,
-                detray::parameter_transporter<algebra_type>,
-                interaction_register<interactor_type>, interactor_type,
-                detray::momentum_aborter<scalar_type>, ckf_aborter>;
-            using propagator_type =
-                detray::propagator<stepper_t, navigator_t, actor_type>;
-
             // Launch the kernel to propagate all active tracks to the next
             // surface.
             queue
@@ -413,8 +397,9 @@ edm::track_candidate_collection<default_algebra>::buffer find_tracks(
                          tip_lengths = vecmem::get_data(tip_length_buffer)](
                             ::sycl::nd_item<1> item) {
                             device::propagate_to_next_surface<
-                                propagator_type,
-                                typename stepper_t::magnetic_field_type>(
+                                traccc::details::ckf_propagator_t<detector_t,
+                                                                  bfield_t>,
+                                bfield_t>(
                                 details::global_index(item), config,
                                 {det, field, in_params, param_liveness,
                                  param_ids, links_view, prev_links_idx, step,

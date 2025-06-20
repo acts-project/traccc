@@ -13,6 +13,7 @@
 #include "traccc/finding/actors/ckf_aborter.hpp"
 #include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/finding/candidate_link.hpp"
+#include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 #include "traccc/fitting/kalman_filter/is_line_visitor.hpp"
@@ -41,8 +42,8 @@ namespace traccc::host::details {
 /// specializations, to find tracks on top of a specific detector type, magnetic
 /// field type, and track finding configuration.
 ///
-/// @tparam stepper_t The stepper type used for the track propagation
-/// @tparam navigator_t The navigator type used for the track navigation
+/// @tparam detector_t The (host) detector type to use
+/// @tparam bfield_t   The magnetic field type to use
 ///
 /// @param det               The detector object
 /// @param field             The magnetic field object
@@ -55,12 +56,10 @@ namespace traccc::host::details {
 ///
 /// @return A container of the found track candidates
 ///
-template <typename stepper_t, typename navigator_t>
-edm::track_candidate_collection<
-    typename navigator_t::detector_type::algebra_type>::host
-find_tracks(
-    const typename navigator_t::detector_type& det,
-    const typename stepper_t::magnetic_field_type& field,
+template <typename detector_t, typename bfield_t>
+edm::track_candidate_collection<default_algebra>::host
+combinatorial_kalman_filter(
+    const detector_t& det, const bfield_t& field,
     const measurement_collection_types::const_view& measurements_view,
     const bound_track_parameters_collection_types::const_view& seeds_view,
     const finding_config& config, vecmem::memory_resource& mr,
@@ -70,29 +69,15 @@ find_tracks(
                math::fabs(config.propagation.navigation.overstep_tolerance) &&
            "Min step length for the next surface should be higher than the "
            "overstep tolerance");
+    assert(config.min_track_candidates_per_track >= 1);
+
+    /// The algebra type
+    using algebra_type = typename detector_t::algebra_type;
+    /// The scalar type
+    using scalar_type = detray::dscalar<algebra_type>;
 
     // Create a logger.
     auto logger = [&log]() -> const Logger& { return log; };
-
-    /*****************************************************************
-     * Types used by the track finding
-     *****************************************************************/
-
-    using algebra_type = typename navigator_t::detector_type::algebra_type;
-    using scalar_type = detray::dscalar<algebra_type>;
-
-    using transporter_type = detray::parameter_transporter<algebra_type>;
-    using interactor_type = detray::pointwise_material_interactor<algebra_type>;
-
-    using actor_type = detray::actor_chain<
-        detray::pathlimit_aborter<scalar_type>, transporter_type,
-        interaction_register<interactor_type>, interactor_type,
-        detray::momentum_aborter<scalar_type>, ckf_aborter>;
-
-    using propagator_type =
-        detray::propagator<stepper_t, navigator_t, actor_type>;
-
-    assert(config.min_track_candidates_per_track >= 1);
 
     /*****************************************************************
      * Measurement Operations
@@ -146,7 +131,8 @@ find_tracks(
     std::vector<std::pair<unsigned int, unsigned int>> tips;
 
     // Create propagator
-    propagator_type propagator(config.propagation);
+    traccc::details::ckf_propagator_t<detector_t, bfield_t> propagator(
+        config.propagation);
 
     // Create the input seeds container.
     bound_track_parameters_collection_types::const_device seeds{seeds_view};
@@ -218,10 +204,9 @@ find_tracks(
 
             // Apply interactor
             if (sf.has_material()) {
-                const typename navigator_t::detector_type::geometry_context
-                    ctx{};
-                typename interactor_type::state interactor_state;
-                interactor_type{}.update(
+                const typename detector_t::geometry_context ctx{};
+                traccc::details::ckf_interactor_t::state interactor_state;
+                traccc::details::ckf_interactor_t{}.update(
                     ctx,
                     detail::correct_particle_hypothesis(config.ptc_hypothesis,
                                                         in_param),
@@ -364,7 +349,8 @@ find_tracks(
 
             const auto& param = updated_params[link_id];
             // Create propagator state
-            typename propagator_type::state propagation(param, field, det);
+            typename traccc::details::ckf_propagator_t<
+                detector_t, bfield_t>::state propagation(param, field, det);
             propagation.set_particle(detail::correct_particle_hypothesis(
                 config.ptc_hypothesis, param));
 
@@ -373,8 +359,9 @@ find_tracks(
                     config.propagation.stepping.step_constraint);
 
             typename detray::pathlimit_aborter<scalar_type>::state s0;
-            typename interactor_type::state s2;
-            typename interaction_register<interactor_type>::state s1{s2};
+            traccc::details::ckf_interactor_t::state s2;
+            typename interaction_register<
+                traccc::details::ckf_interactor_t>::state s1{s2};
             typename detray::momentum_aborter<scalar_type>::state s3{};
             typename ckf_aborter::state s4;
             // Update the actor config

@@ -9,25 +9,15 @@
 #include "propagate_to_next_surface_src.cuh"
 
 // Project include(s).
-#include "traccc/definitions/common.hpp"
-#include "traccc/definitions/primitives.hpp"
-#include "traccc/finding/actors/ckf_aborter.hpp"
-#include "traccc/finding/actors/interaction_register.hpp"
+#include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
 #include "traccc/geometry/detector.hpp"
-#include "traccc/utils/detector_type_utils.hpp"
-#include "traccc/utils/propagation.hpp"
+#include "traccc/utils/bfield.hpp"
 
 namespace traccc::cuda {
 
-using interactor_t = detray::pointwise_material_interactor<default_algebra>;
-using propagator_t = detray::propagator<
-    stepper_for_t<traccc::default_detector::device>,
-    navigator_for_t<traccc::default_detector::device>,
-    detray::actor_chain<detray::pathlimit_aborter<scalar>,
-                        detray::parameter_transporter<default_algebra>,
-                        interaction_register<interactor_t>, interactor_t,
-                        detray::momentum_aborter<scalar>, ckf_aborter>>;
 using bfield_t = covfie::field<traccc::const_bfield_backend_t<scalar>>::view_t;
+using propagator_t =
+    traccc::details::ckf_propagator_t<default_detector::device, bfield_t>;
 
 template void propagate_to_next_surface<propagator_t, bfield_t>(
     const dim3& grid_size, const dim3& block_size, std::size_t shared_mem_size,
