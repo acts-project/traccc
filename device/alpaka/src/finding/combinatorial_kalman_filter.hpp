@@ -18,6 +18,7 @@
 #include "traccc/finding/actors/ckf_aborter.hpp"
 #include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/finding/candidate_link.hpp"
+#include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
 #include "traccc/finding/device/apply_interaction.hpp"
 #include "traccc/finding/device/build_tracks.hpp"
 #include "traccc/finding/device/fill_sort_keys.hpp"
@@ -152,8 +153,8 @@ struct build_tracks {
 /// specializations, to find tracks on top of a specific detector type, magnetic
 /// field type, and track finding configuration.
 ///
-/// @tparam stepper_t The stepper type used for the track propagation
-/// @tparam navigator_t The navigator type used for the track navigation
+/// @tparam detector_t The (device) detector type to use
+/// @tparam bfield_t   The magnetic field type to use
 ///
 /// @param det               A view of the detector object
 /// @param field             The magnetic field object
@@ -167,10 +168,10 @@ struct build_tracks {
 ///
 /// @return A buffer of the found track candidates
 ///
-template <typename stepper_t, typename navigator_t>
-edm::track_candidate_collection<default_algebra>::buffer find_tracks(
-    const typename navigator_t::detector_type::view_type& det,
-    const typename stepper_t::magnetic_field_type& field,
+template <typename detector_t, typename bfield_t>
+edm::track_candidate_collection<default_algebra>::buffer
+combinatorial_kalman_filter(
+    const typename detector_t::view_type& det, const bfield_t& field,
     const measurement_collection_types::const_view& measurements,
     const bound_track_parameters_collection_types::const_view& seeds,
     const finding_config& config, const memory_resource& mr, vecmem::copy& copy,
@@ -294,12 +295,9 @@ edm::track_candidate_collection<default_algebra>::buffer find_tracks(
             auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
             ::alpaka::exec<Acc>(
-                queue, workDiv,
-                kernels::apply_interaction<
-                    typename navigator_t::detector_type>{},
+                queue, workDiv, kernels::apply_interaction<detector_t>{},
                 config,
-                device::apply_interaction_payload<
-                    typename navigator_t::detector_type>{
+                device::apply_interaction_payload<detector_t>{
                     det, n_in_params, in_params_buffer, param_liveness_buffer});
             ::alpaka::wait(queue);
         }
@@ -359,8 +357,7 @@ edm::track_candidate_collection<default_algebra>::buffer find_tracks(
             copy.setup(tmp_params_buffer)->ignore();
 
             // Allocate the kernel's payload in host memory.
-            using payload_t = device::find_tracks_payload<
-                typename navigator_t::detector_type>;
+            using payload_t = device::find_tracks_payload<detector_t>;
             const payload_t host_payload{
                 .det_data = det,
                 .measurements_view = measurements,
@@ -395,10 +392,9 @@ edm::track_candidate_collection<default_algebra>::buffer find_tracks(
                 makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
             // Submit the kernel to the queue.
-            ::alpaka::exec<Acc>(
-                queue, workDiv,
-                kernels::find_tracks<typename navigator_t::detector_type>{},
-                config, device_payload.ptr());
+            ::alpaka::exec<Acc>(queue, workDiv,
+                                kernels::find_tracks<detector_t>{}, config,
+                                device_payload.ptr());
             ::alpaka::wait(queue);
 
             std::swap(in_params_buffer, updated_params_buffer);
@@ -452,24 +448,10 @@ edm::track_candidate_collection<default_algebra>::buffer find_tracks(
              *****************************************************************/
 
             {
-                /// Actor types
-                using algebra_type =
-                    typename navigator_t::detector_type::algebra_type;
-                using scalar_type =
-                    typename navigator_t::detector_type::scalar_type;
-                using interactor_type =
-                    detray::pointwise_material_interactor<algebra_type>;
-                using actor_type = detray::actor_chain<
-                    detray::pathlimit_aborter<scalar_type>,
-                    detray::parameter_transporter<algebra_type>,
-                    interaction_register<interactor_type>, interactor_type,
-                    detray::momentum_aborter<scalar_type>, ckf_aborter>;
-                using propagator_type =
-                    detray::propagator<stepper_t, navigator_t, actor_type>;
-
                 // Allocate the kernel's payload in host memory.
                 using payload_t = device::propagate_to_next_surface_payload<
-                    propagator_type, typename stepper_t::magnetic_field_type>;
+                    traccc::details::ckf_propagator_t<detector_t, bfield_t>,
+                    bfield_t>;
                 const payload_t host_payload{
                     .det_data = det,
                     .field_data = field,
@@ -502,8 +484,8 @@ edm::track_candidate_collection<default_algebra>::buffer find_tracks(
                 ::alpaka::exec<Acc>(
                     queue, workDiv,
                     kernels::propagate_to_next_surface<
-                        propagator_type,
-                        typename stepper_t::magnetic_field_type>{},
+                        traccc::details::ckf_propagator_t<detector_t, bfield_t>,
+                        bfield_t>{},
                     config, device_payload.ptr());
                 ::alpaka::wait(queue);
             }

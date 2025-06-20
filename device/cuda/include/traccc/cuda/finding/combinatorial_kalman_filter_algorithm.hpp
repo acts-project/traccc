@@ -18,7 +18,6 @@
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/bfield.hpp"
-#include "traccc/utils/detector_type_utils.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
 

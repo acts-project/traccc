@@ -23,9 +23,8 @@
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate_collection.hpp"
-#include "traccc/finding/actors/ckf_aborter.hpp"
-#include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/finding/candidate_link.hpp"
+#include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/utils/logging.hpp"
 #include "traccc/utils/memory_resource.hpp"
@@ -51,8 +50,8 @@ namespace traccc::cuda::details {
 /// specializations, to find tracks on top of a specific detector type, magnetic
 /// field type, and track finding configuration.
 ///
-/// @tparam stepper_t The stepper type used for the track propagation
-/// @tparam navigator_t The navigator type used for the track navigation
+/// @tparam detector_t The (device) detector type to use
+/// @tparam bfield_t   The magnetic field type to use
 ///
 /// @param det               A view of the detector object
 /// @param field             The magnetic field object
@@ -68,11 +67,10 @@ namespace traccc::cuda::details {
 ///
 /// @return A buffer of the found track candidates
 ///
-template <typename stepper_t, typename navigator_t>
+template <typename detector_t, typename bfield_t>
 edm::track_candidate_collection<default_algebra>::buffer
 combinatorial_kalman_filter(
-    const typename navigator_t::detector_type::view_type& det,
-    const typename stepper_t::magnetic_field_type& field,
+    const typename detector_t::view_type& det, const bfield_t& field,
     const measurement_collection_types::const_view& measurements,
     const bound_track_parameters_collection_types::const_view& seeds,
     const finding_config& config, const memory_resource& mr, vecmem::copy& copy,
@@ -95,9 +93,6 @@ combinatorial_kalman_filter(
     auto thrust_policy =
         thrust::cuda::par_nosync(std::pmr::polymorphic_allocator(&(mr.main)))
             .on(stream);
-
-    // Convenience detector type.
-    using detector_type = std::decay_t<typename navigator_t::detector_type>;
 
     /*****************************************************************
      * Measurement Operations
@@ -202,9 +197,9 @@ combinatorial_kalman_filter(
             const unsigned int nBlocks =
                 (n_in_params + nThreads - 1) / nThreads;
 
-            apply_interaction<detector_type>(
+            apply_interaction<detector_t>(
                 nBlocks, nThreads, 0, stream, config,
-                device::apply_interaction_payload<detector_type>{
+                device::apply_interaction_payload<detector_t>{
                     .det_data = det,
                     .n_params = n_in_params,
                     .params_view = in_params_buffer,
@@ -267,7 +262,7 @@ combinatorial_kalman_filter(
             copy.setup(tmp_params_buffer)->ignore();
 
             // Allocate the kernel's payload in host memory.
-            using payload_t = device::find_tracks_payload<detector_type>;
+            using payload_t = device::find_tracks_payload<detector_t>;
             const payload_t host_payload{
                 .det_data = det,
                 .measurements_view = measurements,
@@ -298,8 +293,8 @@ combinatorial_kalman_filter(
                 2 * nThreads * sizeof(std::pair<unsigned int, unsigned int>);
 
             // Run the kernel.
-            find_tracks<detector_type>(nBlocks, nThreads, shared_size, stream,
-                                       config, host_payload);
+            find_tracks<detector_t>(nBlocks, nThreads, shared_size, stream,
+                                    config, host_payload);
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
             std::swap(in_params_buffer, updated_params_buffer);
@@ -357,24 +352,10 @@ combinatorial_kalman_filter(
              *****************************************************************/
 
             {
-                /// Actor types
-                using algebra_type =
-                    typename navigator_t::detector_type::algebra_type;
-                using scalar_type =
-                    typename navigator_t::detector_type::scalar_type;
-                using interactor_type =
-                    detray::pointwise_material_interactor<algebra_type>;
-                using actor_type = detray::actor_chain<
-                    detray::pathlimit_aborter<scalar_type>,
-                    detray::parameter_transporter<algebra_type>,
-                    interaction_register<interactor_type>, interactor_type,
-                    detray::momentum_aborter<scalar_type>, ckf_aborter>;
-                using propagator_type =
-                    detray::propagator<stepper_t, navigator_t, actor_type>;
-
                 // Allocate the kernel's payload in host memory.
                 using payload_t = device::propagate_to_next_surface_payload<
-                    propagator_type, typename stepper_t::magnetic_field_type>;
+                    traccc::details::ckf_propagator_t<detector_t, bfield_t>,
+                    bfield_t>;
                 const payload_t host_payload{
                     .det_data = det,
                     .field_data = field,
@@ -392,8 +373,9 @@ combinatorial_kalman_filter(
                 const unsigned int nBlocks =
                     (n_candidates + nThreads - 1) / nThreads;
                 propagate_to_next_surface<
-                    propagator_type, typename stepper_t::magnetic_field_type>(
-                    nBlocks, nThreads, 0, stream, config, host_payload);
+                    traccc::details::ckf_propagator_t<detector_t, bfield_t>,
+                    bfield_t>(nBlocks, nThreads, 0, stream, config,
+                              host_payload);
                 TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
                 str.synchronize();
