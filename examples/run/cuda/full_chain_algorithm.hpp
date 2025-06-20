@@ -12,18 +12,16 @@
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/cuda/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
-#include "traccc/cuda/fitting/fitting_algorithm.hpp"
+#include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/track_state.hpp"
-#include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
-#include "traccc/utils/detector_type_utils.hpp"
 #include "traccc/utils/messaging.hpp"
 #include "traccc/utils/propagation.hpp"
 
@@ -62,13 +60,6 @@ class full_chain_algorithm
     using bfield_type =
         covfie::field<traccc::const_bfield_backend_t<traccc::scalar>>;
 
-    /// Stepper type used by the track finding and fitting algorithms
-    using stepper_type =
-        detray::rk_stepper<bfield_type::view_t,
-                           device_detector_type::algebra_type,
-                           detray::constrained_step<scalar_type>>;
-    /// Navigator type used by the track finding and fitting algorithms
-    using navigator_type = detray::navigator<const device_detector_type>;
     /// Spacepoint formation algorithm type
     using spacepoint_formation_algorithm =
         traccc::cuda::spacepoint_formation_algorithm<
@@ -79,8 +70,7 @@ class full_chain_algorithm
     using finding_algorithm =
         traccc::cuda::combinatorial_kalman_filter_algorithm;
     /// Track fitting algorithm type
-    using fitting_algorithm = traccc::cuda::fitting_algorithm<
-        traccc::kalman_fitter<stepper_type, navigator_type>>;
+    using fitting_algorithm = traccc::cuda::kalman_fitting_algorithm;
 
     /// @}
 
