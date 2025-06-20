@@ -6,7 +6,7 @@
  */
 
 // Project include(s).
-#include "traccc/cuda/finding/finding_algorithm.hpp"
+#include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/io/read_measurements.hpp"
@@ -133,25 +133,25 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
     seed_generator<host_detector_type> sg(host_det, stddevs);
 
     // Finding algorithm configuration
-    typename traccc::cuda::finding_algorithm<
-        rk_stepper_type, device_navigator_type>::config_type cfg_no_limit;
+    typename traccc::cuda::combinatorial_kalman_filter_algorithm::config_type
+        cfg_no_limit;
     cfg_no_limit.ptc_hypothesis = ptc;
     cfg_no_limit.max_num_branches_per_seed = 100000;
     cfg_no_limit.chi2_max = 30.f;
     cfg_no_limit.max_num_branches_per_surface = 10;
 
-    typename traccc::cuda::finding_algorithm<
-        rk_stepper_type, device_navigator_type>::config_type cfg_limit;
+    typename traccc::cuda::combinatorial_kalman_filter_algorithm::config_type
+        cfg_limit;
     cfg_limit.ptc_hypothesis = ptc;
     cfg_limit.max_num_branches_per_seed = 500;
     cfg_limit.chi2_max = 30.f;
     cfg_limit.max_num_branches_per_surface = 10;
 
     // Finding algorithm object
-    traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
-        device_finding(cfg_no_limit, mr, copy, stream);
-    traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
-        device_finding_limit(cfg_limit, mr, copy, stream);
+    traccc::cuda::combinatorial_kalman_filter_algorithm device_finding(
+        cfg_no_limit, mr, copy, stream);
+    traccc::cuda::combinatorial_kalman_filter_algorithm device_finding_limit(
+        cfg_limit, mr, copy, stream);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {

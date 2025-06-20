@@ -6,7 +6,7 @@
  */
 
 // Project include(s).
-#include "traccc/cuda/fitting/fitting_algorithm.hpp"
+#include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/edm/track_state.hpp"
@@ -142,11 +142,10 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     seed_generator<host_detector_type> sg(host_det, stddevs);
 
     // Fitting algorithm object
-    typename traccc::cuda::fitting_algorithm<device_fitter_type>::config_type
-        fit_cfg;
+    traccc::cuda::kalman_fitting_algorithm::config_type fit_cfg;
     fit_cfg.ptc_hypothesis = ptc;
-    traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
-        fit_cfg, mr, copy, stream);
+    traccc::cuda::kalman_fitting_algorithm device_fitting(fit_cfg, mr, copy,
+                                                          stream);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {

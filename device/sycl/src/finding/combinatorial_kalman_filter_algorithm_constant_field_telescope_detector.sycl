@@ -7,7 +7,7 @@
 
 // Local include(s).
 #include "../utils/get_queue.hpp"
-#include "find_tracks.hpp"
+#include "combinatorial_kalman_filter.hpp"
 #include "traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/utils/bfield.hpp"
 #include "traccc/utils/propagation.hpp"
@@ -25,18 +25,11 @@ combinatorial_kalman_filter_algorithm::operator()(
     const measurement_collection_types::const_view& measurements,
     const bound_track_parameters_collection_types::const_view& seeds) const {
 
-    using scalar_type = telescope_detector::device::scalar_type;
-
     // Perform the track finding using the templated implementation.
-    return details::find_tracks<
-        detray::rk_stepper<
-            covfie::field<traccc::const_bfield_backend_t<scalar_type>>::view_t,
-            telescope_detector::device::algebra_type,
-            detray::constrained_step<scalar_type>>,
-        detray::navigator<const telescope_detector::device>,
-        kernels::ckf_constant_field_telescope_detector>(
-        det, field, measurements, seeds, m_config, m_mr, m_copy,
-        details::get_queue(m_queue));
+    return details::combinatorial_kalman_filter<
+        kernels::ckf_constant_field_telescope_detector,
+        telescope_detector::device>(det, field, measurements, seeds, m_config,
+                                    m_mr, m_copy, details::get_queue(m_queue));
 }
 
 }  // namespace traccc::sycl

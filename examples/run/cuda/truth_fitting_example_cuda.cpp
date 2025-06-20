@@ -6,13 +6,12 @@
  */
 
 // Project include(s).
-#include "traccc/cuda/fitting/fitting_algorithm.hpp"
+#include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
-#include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/io/read_geometry.hpp"
@@ -75,17 +74,6 @@ int main(int argc, char* argv[]) {
 
     /// Type declarations
     using host_detector_type = traccc::default_detector::host;
-    using device_detector_type = traccc::default_detector::device;
-
-    using scalar_type = device_detector_type::scalar_type;
-    using b_field_t =
-        covfie::field<traccc::const_bfield_backend_t<scalar_type>>;
-    using rk_stepper_type =
-        detray::rk_stepper<b_field_t::view_t, traccc::default_algebra,
-                           detray::constrained_step<scalar_type>>;
-    using device_navigator_type = detray::navigator<const device_detector_type>;
-    using device_fitter_type =
-        traccc::kalman_fitter<rk_stepper_type, device_navigator_type>;
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
@@ -159,7 +147,7 @@ int main(int argc, char* argv[]) {
 
     traccc::host::kalman_fitting_algorithm host_fitting(
         fit_cfg, host_mr, host_copy, logger().clone("HostFittingAlg"));
-    traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
+    traccc::cuda::kalman_fitting_algorithm device_fitting(
         fit_cfg, mr, async_copy, stream, logger().clone("CudaFittingAlg"));
 
     // Seed generator

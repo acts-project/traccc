@@ -12,9 +12,9 @@
 
 namespace traccc::cuda {
 using fitter = traccc::details::kalman_fitter_t<
-    default_detector::device,
+    telescope_detector::device,
     covfie::field<traccc::const_bfield_backend_t<
-        default_detector::device::scalar_type>>::view_t>;
+        telescope_detector::device::scalar_type>>::view_t>;
 
 template void fit_forward<fitter>(const dim3& grid_size, const dim3& block_size,
                                   std::size_t shared_mem_size,

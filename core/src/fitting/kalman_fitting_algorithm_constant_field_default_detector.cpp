@@ -6,35 +6,29 @@
  */
 
 // Project include(s).
-#include "traccc/fitting/details/fit_tracks.hpp"
-#include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
+#include "traccc/fitting/details/kalman_fitting.hpp"
+#include "traccc/fitting/details/kalman_fitting_types.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
-#include "traccc/utils/bfield.hpp"
-#include "traccc/utils/propagation.hpp"
-
-namespace {
-using detector_type = traccc::default_detector;
-using scalar_type = detector_type::host::scalar_type;
-using bfield_type = covfie::field<traccc::const_bfield_backend_t<scalar_type>>;
-}  // namespace
 
 namespace traccc::host {
 
 kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
-    const detector_type::host& det, const bfield_type::view_t& field,
+    const default_detector::host& det,
+    const covfie::field<traccc::const_bfield_backend_t<
+        default_detector::host::scalar_type>>::view_t& field,
     const edm::track_candidate_container<default_algebra>::const_view&
         track_candidates) const {
 
     // Create the fitter object.
-    kalman_fitter<detray::rk_stepper<bfield_type::view_t,
-                                     detector_type::host::algebra_type,
-                                     detray::constrained_step<scalar_type>>,
-                  detray::navigator<const detector_type::host>>
+    traccc::details::kalman_fitter_t<
+        default_detector::host,
+        covfie::field<traccc::const_bfield_backend_t<
+            default_detector::host::scalar_type>>::view_t>
         fitter{det, field, m_config};
 
     // Perform the track fitting using a common, templated function.
-    return details::fit_tracks<default_algebra>(fitter, track_candidates,
-                                                m_mr.get(), m_copy.get());
+    return details::kalman_fitting(fitter, track_candidates, m_mr.get(),
+                                   m_copy.get());
 }
 
 }  // namespace traccc::host

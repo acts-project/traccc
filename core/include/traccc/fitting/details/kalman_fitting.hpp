@@ -29,7 +29,6 @@ namespace traccc::host::details {
 ///       jagged vector are created using the default memory resource.
 ///
 /// @tparam fitter_t The fitter type used for the track fitting
-/// @tparam algebra_t The algebra type used for the track fitting
 ///
 /// @param[in] fitter           The fitter object to use on the track candidates
 /// @param[in] track_container  All track candidates to fit
@@ -37,25 +36,26 @@ namespace traccc::host::details {
 ///
 /// @return A container of the fitted track states
 ///
-template <typename algebra_t, typename fitter_t>
-track_state_container_types::host fit_tracks(
+template <typename fitter_t>
+track_state_container_types::host kalman_fitting(
     fitter_t& fitter,
-    const typename edm::track_candidate_container<algebra_t>::const_view&
-        track_container,
+    const typename edm::track_candidate_container<
+        typename fitter_t::algebra_type>::const_view& track_container,
     vecmem::memory_resource& mr, vecmem::copy& copy) {
 
     // Create the input container(s).
     const measurement_collection_types::const_device measurements{
         track_container.measurements};
-    const typename edm::track_candidate_collection<algebra_t>::const_device
-        track_candidates{track_container.tracks};
+    const typename edm::track_candidate_collection<
+        typename fitter_t::algebra_type>::const_device track_candidates{
+        track_container.tracks};
 
     // Create the output container.
     track_state_container_types::host result{&mr};
 
     // Iterate over the tracks,
     for (typename edm::track_candidate_collection<
-             algebra_t>::const_device::size_type i = 0;
+             typename fitter_t::algebra_type>::const_device::size_type i = 0;
          i < track_candidates.size(); ++i) {
 
         // Make a vector of track states for this track.

@@ -6,15 +6,14 @@
  */
 
 // Local include(s).
-#include "apply_interaction_src.cuh"
+#include "find_tracks_src.cuh"
 
 // Project include(s).
 #include "traccc/geometry/detector.hpp"
 
 namespace traccc::cuda {
-
-template void apply_interaction<traccc::default_detector::device>(
+template void find_tracks<traccc::telescope_detector::device>(
     const dim3& grid_size, const dim3& block_size, std::size_t shared_mem_size,
-    const cudaStream_t& stream, const finding_config,
-    device::apply_interaction_payload<traccc::default_detector::device>);
-}
+    const cudaStream_t& stream, const finding_config cfg,
+    device::find_tracks_payload<traccc::telescope_detector::device> payload);
+}  // namespace traccc::cuda

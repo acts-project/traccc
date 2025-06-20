@@ -14,6 +14,7 @@
 #include "traccc/edm/device/sort_key.hpp"
 #include "traccc/edm/track_candidate_container.hpp"
 #include "traccc/edm/track_state.hpp"
+#include "traccc/fitting/details/kalman_fitting_types.hpp"
 #include "traccc/fitting/device/fill_sort_keys.hpp"
 #include "traccc/fitting/device/fit.hpp"
 #include "traccc/fitting/device/fit_backward.hpp"
@@ -98,12 +99,26 @@ struct fit_backward {
 
 }  // namespace kernels
 
-template <typename fitter_t>
-track_state_container_types::buffer fit_tracks(
-    const typename fitter_t::detector_type::view_type& det_view,
-    const typename fitter_t::bfield_type& field_view,
-    const edm::track_candidate_container<default_algebra>::const_view&
-        track_candidates_view,
+/// Templated implementation of the Alpaka track fitting algorithm.
+///
+/// @tparam detector_t The (device) detector type to use
+/// @tparam bfield_t   The magnetic field type to use
+///
+/// @param[in] det_view     A view of the detector geometry
+/// @param[in] field_view   A view of the magnetic field
+/// @param[in] track_candidates_view All track candidates to fit
+/// @param[in] config       The fitting configuration
+/// @param[in] mr           Memory resource(s) to use
+/// @param[in] copy         The copy object to use for memory transfers
+/// @param[in] queue        The Alpaka queue to use for execution
+///
+/// @return A container of the fitted track states
+///
+template <typename detector_t, typename bfield_t>
+track_state_container_types::buffer kalman_fitting(
+    const typename detector_t::view_type& det_view, const bfield_t& field_view,
+    const typename edm::track_candidate_container<
+        typename detector_t::algebra_type>::const_view& track_candidates_view,
     const fitting_config& config, const memory_resource& mr, vecmem::copy& copy,
     Queue& queue) {
 
@@ -198,6 +213,7 @@ track_state_container_types::buffer fit_tracks(
     ::alpaka::wait(queue);
 
     // Allocate the fitting kernels's payload in host memory.
+    using fitter_t = traccc::details::kalman_fitter_t<detector_t, bfield_t>;
     device::fit_payload<fitter_t> host_payload{
         .det_data = det_view,
         .field_data = field_view,
