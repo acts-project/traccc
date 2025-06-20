@@ -62,7 +62,7 @@ traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   "src/fitting/kalman_fitting_algorithm.cpp"
   "src/fitting/kalman_fitting_algorithm_constant_field_default_detector.cpp"
   "src/fitting/kalman_fitting_algorithm_constant_field_telescope_detector.cpp"
-  "src/fitting/fit_tracks.hpp"
+  "src/fitting/kalman_fitting.hpp"
 )
 
 # Set up Thrust specifically for the traccc::alpaka library.
