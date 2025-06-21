@@ -295,7 +295,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     // Whether track id is updated after an iteration
     vecmem::data::vector_buffer<int> is_updated_buffer{n_tracks, m_mr.main};
-    m_copy.get().setup(inverted_ids_buffer)->ignore();
+    m_copy.get().setup(is_updated_buffer)->ignore();
 
     // Prefix sum buffer
     vecmem::data::vector_buffer<int> prefix_sums_buffer{n_tracks, m_mr.main};
@@ -364,9 +364,10 @@ greedy_ambiguity_resolution_algorithm::operator()(
     m_copy.get().setup(block_offsets_buffer)->ignore();
     vecmem::data::vector_buffer<int> scanned_block_offsets_buffer{nBlocks_scan,
                                                                   m_mr.main};
-    m_copy.get().setup(block_offsets_buffer)->ignore();
+    m_copy.get().setup(scanned_block_offsets_buffer)->ignore();
 
-    while (!terminate && n_accepted > 0) {
+    unsigned int iter = 0;
+    while (!terminate && n_accepted > 0 && iter < m_config.max_iterations) {
         nBlocks_adaptive = (n_accepted + 1023) / 1024;
         nBlocks_warp = (n_accepted + nThreads_warp - 1) / nThreads_warp;
         nBlocks_scan = (n_accepted + 1023) / 1024;
@@ -542,19 +543,19 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
         // TODO: Make n_it adaptive based on the average track length, bound
         // value in count_removable_tracks, etc.
-        const unsigned int n_it = 100;
-        for (unsigned int iter = 0; iter < n_it; iter++) {
-            cudaGraphLaunch(graphExec, stream);
-        }
+        cudaGraphLaunch(graphExec, stream);
 
         cudaMemcpyAsync(&terminate, terminate_device.get(), sizeof(int),
                         cudaMemcpyDeviceToHost, stream);
         cudaMemcpyAsync(&n_accepted, n_accepted_device.get(),
                         sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
+        m_stream.get().synchronize();
+        ++iter;
     }
 
     cudaMemcpyAsync(&n_accepted, n_accepted_device.get(), sizeof(unsigned int),
                     cudaMemcpyDeviceToHost, stream);
+    m_stream.get().synchronize();
 
     auto max_it =
         std::max_element(candidate_sizes.begin(), candidate_sizes.end());
