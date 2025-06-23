@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2024 CERN for the benefit of the ACTS project
+# (c) 2021-2025 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -14,6 +14,7 @@ find_package( OpenMP COMPONENTS CXX )
 traccc_add_library( traccc_io io TYPE SHARED
   # Public headers
   "include/traccc/io/digitization_config.hpp"
+  "include/traccc/io/read_bfield.hpp"
   "include/traccc/io/read_cells.hpp"
   "include/traccc/io/read_detector.hpp"
   "include/traccc/io/read_detector_description.hpp"
@@ -40,6 +41,7 @@ traccc_add_library( traccc_io io TYPE SHARED
   "include/traccc/io/csv/make_surface_reader.hpp"
   # Implementation
   "src/data_format.cpp"
+  "src/read_bfield.cpp"
   "src/read_cells.cpp"
   "src/read_detector.cpp"
   "src/read_detector_description.cpp"
