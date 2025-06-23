@@ -37,13 +37,13 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "src/finding/combinatorial_kalman_filter_algorithm.cpp"
   "src/finding/combinatorial_kalman_filter_algorithm_constant_field_default_detector.sycl"
   "src/finding/combinatorial_kalman_filter_algorithm_constant_field_telescope_detector.sycl"
-  "src/finding/find_tracks.hpp"
+  "src/finding/combinatorial_kalman_filter.hpp"
   # Track fitting algorithm(s).
   "include/traccc/sycl/fitting/kalman_fitting_algorithm.hpp"
   "src/fitting/kalman_fitting_algorithm.cpp"
   "src/fitting/kalman_fitting_algorithm_constant_field_default_detector.sycl"
   "src/fitting/kalman_fitting_algorithm_constant_field_telescope_detector.sycl"
-  "src/fitting/fit_tracks.hpp"
+  "src/fitting/kalman_fitting.hpp"
   # Utilities.
   "include/traccc/sycl/utils/make_prefix_sum_buff.hpp"
   "src/utils/make_prefix_sum_buff.sycl"

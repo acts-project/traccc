@@ -6,11 +6,10 @@
  */
 
 // Local include(s).
-#include "../utils/get_queue.hpp"
-#include "kalman_fitting.hpp"
-#include "traccc/alpaka/fitting/kalman_fitting_algorithm.hpp"
+#include "kalman_fitting.cuh"
+#include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
 
-namespace traccc::alpaka {
+namespace traccc::cuda {
 
 kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
     const default_detector::view& det,
@@ -21,8 +20,8 @@ kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
 
     // Run the track fitting.
     return details::kalman_fitting<default_detector::device>(
-        det, field, track_candidates, m_config, m_mr, m_copy.get(),
-        details::get_queue(m_queue.get()));
+        det, field, track_candidates, m_config, m_mr, m_copy.get(), m_stream,
+        m_warp_size);
 }
 
-}  // namespace traccc::alpaka
+}  // namespace traccc::cuda

@@ -6,8 +6,8 @@
  */
 
 // Project include(s).
-#include "traccc/cuda/finding/finding_algorithm.hpp"
-#include "traccc/cuda/fitting/fitting_algorithm.hpp"
+#include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
+#include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
@@ -15,7 +15,6 @@
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/efficiency/finding_performance_writer.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
-#include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/io/read_detector.hpp"
@@ -64,18 +63,6 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
             const traccc::opts::truth_finding& truth_finding_opts,
             std::unique_ptr<const traccc::Logger> ilogger) {
     TRACCC_LOCAL_LOGGER(std::move(ilogger));
-
-    /// Type declarations
-    using scalar_type = traccc::default_detector::device::scalar_type;
-    using b_field_t =
-        covfie::field<traccc::const_bfield_backend_t<scalar_type>>;
-    using rk_stepper_type =
-        detray::rk_stepper<b_field_t::view_t, traccc::default_algebra,
-                           detray::constrained_step<scalar_type>>;
-    using device_navigator_type =
-        detray::navigator<const traccc::default_detector::device>;
-    using device_fitter_type =
-        traccc::kalman_fitter<rk_stepper_type, device_navigator_type>;
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
@@ -151,9 +138,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     // Finding algorithm object
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(
         cfg, host_mr, logger().clone("HostFindingAlg"));
-    traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
-        device_finding(cfg, mr, async_copy, stream,
-                       logger().clone("CudaFindingAlg"));
+    traccc::cuda::combinatorial_kalman_filter_algorithm device_finding(
+        cfg, mr, async_copy, stream, logger().clone("CudaFindingAlg"));
 
     // Fitting algorithm object
     traccc::fitting_config fit_cfg(fitting_opts);
@@ -161,7 +147,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
     traccc::host::kalman_fitting_algorithm host_fitting(
         fit_cfg, host_mr, host_copy, logger().clone("HostFittingAlg"));
-    traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
+    traccc::cuda::kalman_fitting_algorithm device_fitting(
         fit_cfg, mr, async_copy, stream, logger().clone("CudaFittingAlg"));
 
     traccc::performance::timing_info elapsedTimes;

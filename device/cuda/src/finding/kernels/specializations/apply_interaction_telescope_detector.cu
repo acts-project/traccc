@@ -13,8 +13,8 @@
 
 namespace traccc::cuda {
 
-template void apply_interaction<traccc::default_detector::device>(
+template void apply_interaction<traccc::telescope_detector::device>(
     const dim3& grid_size, const dim3& block_size, std::size_t shared_mem_size,
     const cudaStream_t& stream, const finding_config,
-    device::apply_interaction_payload<traccc::default_detector::device>);
+    device::apply_interaction_payload<traccc::telescope_detector::device>);
 }

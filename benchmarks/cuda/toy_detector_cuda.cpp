@@ -6,8 +6,8 @@
  */
 
 // Project include(s).
-#include "traccc/cuda/finding/finding_algorithm.hpp"
-#include "traccc/cuda/fitting/fitting_algorithm.hpp"
+#include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
+#include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
@@ -37,16 +37,6 @@
 
 BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
 
-    // Type declarations
-    using rk_stepper_type = detray::rk_stepper<
-        b_field_t::view_t, typename detector_type::algebra_type,
-        detray::constrained_step<typename detector_type::scalar_type>>;
-    using host_detector_type = traccc::default_detector::host;
-    using device_detector_type = traccc::default_detector::device;
-    using device_navigator_type = detray::navigator<const device_detector_type>;
-    using device_fitter_type =
-        traccc::kalman_fitter<rk_stepper_type, device_navigator_type>;
-
     // Memory resources used by the application.
     vecmem::cuda::host_memory_resource cuda_host_mr;
     vecmem::cuda::device_memory_resource device_mr;
@@ -59,24 +49,24 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
     vecmem::cuda::async_copy async_copy{stream.cudaStream()};
 
     // Read back detector file
-    host_detector_type det{cuda_host_mr};
+    traccc::default_detector::host det{cuda_host_mr};
     traccc::io::read_detector(
         det, cuda_host_mr, sim_dir + "toy_detector_geometry.json",
         sim_dir + "toy_detector_homogeneous_material.json",
         sim_dir + "toy_detector_surface_grids.json");
 
     // B field
-    b_field_t field =
-        traccc::construct_const_bfield<host_detector_type::scalar_type>(B);
+    b_field_t field = traccc::construct_const_bfield<
+        traccc::default_detector::host::scalar_type>(B);
 
     // Algorithms
     traccc::cuda::seeding_algorithm sa_cuda(seeding_cfg, grid_cfg, filter_cfg,
                                             mr, async_copy, stream);
     traccc::cuda::track_params_estimation tp_cuda(mr, async_copy, stream);
-    traccc::cuda::finding_algorithm<rk_stepper_type, device_navigator_type>
-        device_finding(finding_cfg, mr, async_copy, stream);
-    traccc::cuda::fitting_algorithm<device_fitter_type> device_fitting(
-        fitting_cfg, mr, async_copy, stream);
+    traccc::cuda::combinatorial_kalman_filter_algorithm device_finding(
+        finding_cfg, mr, async_copy, stream);
+    traccc::cuda::kalman_fitting_algorithm device_fitting(fitting_cfg, mr,
+                                                          async_copy, stream);
 
     // Copy detector to device
     auto det_buffer = detray::get_buffer(det, device_mr, copy);
