@@ -35,7 +35,7 @@ void fill_sort_keys(const dim3& grid_size, const dim3& block_size,
                     vecmem::data::vector_view<device::sort_key> keys_view,
                     vecmem::data::vector_view<unsigned int> ids_view) {
 
-    kernels::fill_sort_keys<<<block_size, grid_size, 0, stream>>>(
+    kernels::fill_sort_keys<<<grid_size, block_size, 0, stream>>>(
         track_candidates_view, keys_view, ids_view);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 }
