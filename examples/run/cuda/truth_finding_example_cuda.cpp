@@ -92,10 +92,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     // B field value and its type
     // @TODO: Set B field as argument
     const traccc::vector3 B{0, 0, 2 * traccc::unit<traccc::scalar>::T};
-    const traccc::bfield host_field{
+    const traccc::bfield field{
         traccc::construct_const_bfield<traccc::scalar>(B)};
-    const covfie::field<traccc::const_bfield_backend_t<traccc::scalar>> field =
-        traccc::construct_const_bfield<traccc::scalar>(B);
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host detector{mng_mr};
@@ -246,10 +244,9 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                                              elapsedTimes);
 
                 // Run finding
-                track_candidates =
-                    host_finding(detector, host_field,
-                                 vecmem::get_data(measurements_per_event),
-                                 vecmem::get_data(seeds));
+                track_candidates = host_finding(
+                    detector, field, vecmem::get_data(measurements_per_event),
+                    vecmem::get_data(seeds));
             }
 
             {
@@ -258,7 +255,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
                 // Run fitting
                 track_states =
-                    host_fitting(detector, host_field,
+                    host_fitting(detector, field,
                                  {vecmem::get_data(track_candidates),
                                   vecmem::get_data(measurements_per_event)});
             }
