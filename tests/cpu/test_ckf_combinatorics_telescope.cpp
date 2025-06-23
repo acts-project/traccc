@@ -67,6 +67,8 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
     const covfie::field<traccc::const_bfield_backend_t<traccc::scalar>> field =
         traccc::construct_const_bfield<traccc::scalar>(
             std::get<13>(GetParam()));
+    const traccc::bfield b_field{traccc::construct_const_bfield<traccc::scalar>(
+        std::get<13>(GetParam()))};
 
     /***************************
      * Generate simulation data
@@ -159,10 +161,10 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
 
         // Run finding
         auto track_candidates =
-            host_finding(host_det, field, measurements_view, seeds_view);
+            host_finding(host_det, b_field, measurements_view, seeds_view);
 
-        auto track_candidates_limit =
-            host_finding_limit(host_det, field, measurements_view, seeds_view);
+        auto track_candidates_limit = host_finding_limit(
+            host_det, b_field, measurements_view, seeds_view);
 
         // Make sure that the number of found tracks = n_track ^ (n_planes + 1)
         ASSERT_TRUE(track_candidates.size() > track_candidates_limit.size());

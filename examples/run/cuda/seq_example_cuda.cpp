@@ -158,6 +158,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
     // Constant B field for the track finding and fitting
     const traccc::vector3 field_vec = {0.f, 0.f,
                                        seeding_opts.seedfinder.bFieldInZ};
+    const traccc::bfield host_field{
+        traccc::construct_const_bfield<traccc::scalar>(field_vec)};
     const covfie::field<traccc::const_bfield_backend_t<traccc::scalar>> field =
         traccc::construct_const_bfield<traccc::scalar>(field_vec);
 
@@ -351,7 +353,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                     traccc::performance::timer timer{"Track finding (cpu)",
                                                      elapsedTimes};
                     track_candidates =
-                        finding_alg(host_detector, field,
+                        finding_alg(host_detector, host_field,
                                     vecmem::get_data(measurements_per_event),
                                     vecmem::get_data(params));
                 }
@@ -388,7 +390,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                     traccc::performance::timer timer{"Track fitting (cpu)",
                                                      elapsedTimes};
                     track_states =
-                        fitting_alg(host_detector, field,
+                        fitting_alg(host_detector, host_field,
                                     {vecmem::get_data(res_track_candidates),
                                      vecmem::get_data(measurements_per_event)});
                 }

@@ -117,6 +117,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     // B field value and its type
     // @TODO: Set B field as argument
     const traccc::vector3 B{0, 0, 2 * traccc::unit<traccc::scalar>::T};
+    const traccc::bfield host_field{
+        traccc::construct_const_bfield<traccc::scalar>(B)};
     const b_field_t field = traccc::construct_const_bfield<traccc::scalar>(B);
 
     // Construct a Detray detector object, if supported by the configuration.
@@ -303,9 +305,10 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             if (accelerator_opts.compare_with_cpu) {
                 traccc::performance::timer t("Track finding with CKF (cpu)",
                                              elapsedTimes);
-                track_candidates = host_finding(
-                    host_det, field, vecmem::get_data(measurements_per_event),
-                    vecmem::get_data(params));
+                track_candidates =
+                    host_finding(host_det, host_field,
+                                 vecmem::get_data(measurements_per_event),
+                                 vecmem::get_data(params));
             }
 
             /*------------------------
@@ -325,7 +328,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 traccc::performance::timer t("Track fitting with KF (cpu)",
                                              elapsedTimes);
                 track_states =
-                    host_fitting(host_det, field,
+                    host_fitting(host_det, host_field,
                                  {vecmem::get_data(track_candidates),
                                   vecmem::get_data(measurements_per_event)});
             }
