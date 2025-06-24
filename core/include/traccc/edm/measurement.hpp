@@ -44,7 +44,7 @@ struct measurement {
     scalar time = 0.f;
 
     // Unique measurement ID
-    std::size_t measurement_id = 0;
+    measurement_id_type measurement_id = 0;
 
     /// Measurement dimension
     unsigned int meas_dim = 2u;

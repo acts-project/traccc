@@ -83,7 +83,7 @@ struct event_data {
         float pt_cut = 0.f);
 
     // Measurement map
-    std::map<measurement_id, measurement> m_measurement_map;
+    std::map<measurement_id_type, measurement> m_measurement_map;
     // Particle map
     std::map<particle_id, particle> m_particle_map;
     // Measurement to the contributing particle map

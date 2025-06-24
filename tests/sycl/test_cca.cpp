@@ -24,49 +24,55 @@
 namespace {
 
 cca_function_t get_f_with(traccc::clustering_config cfg) {
-    return [cfg](const traccc::edm::silicon_cell_collection::host& cells,
-                 const traccc::silicon_detector_description::host& dd) {
-        std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
-            result;
+    return
+        [cfg](const traccc::edm::silicon_cell_collection::host& cells,
+              const traccc::silicon_detector_description::host& dd)
+            -> std::pair<
+                std::map<traccc::geometry_id,
+                         vecmem::vector<traccc::measurement>>,
+                std::optional<traccc::edm::silicon_cluster_collection::host>> {
+            std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
+                result;
 
-        vecmem::sycl::queue_wrapper vecmem_queue;
-        traccc::sycl::queue_wrapper traccc_queue{vecmem_queue.queue()};
-        vecmem::host_memory_resource host_mr;
-        vecmem::sycl::device_memory_resource device_mr{vecmem_queue};
-        vecmem::sycl::async_copy copy{vecmem_queue};
+            vecmem::sycl::queue_wrapper vecmem_queue;
+            traccc::sycl::queue_wrapper traccc_queue{vecmem_queue.queue()};
+            vecmem::host_memory_resource host_mr;
+            vecmem::sycl::device_memory_resource device_mr{vecmem_queue};
+            vecmem::sycl::async_copy copy{vecmem_queue};
 
-        traccc::sycl::clusterization_algorithm cc({device_mr, &host_mr}, copy,
-                                                  traccc_queue, cfg);
+            traccc::sycl::clusterization_algorithm cc({device_mr, &host_mr},
+                                                      copy, traccc_queue, cfg);
 
-        traccc::silicon_detector_description::buffer dd_buffer{
-            static_cast<
-                traccc::silicon_detector_description::buffer::size_type>(
-                dd.size()),
-            device_mr};
-        copy.setup(dd_buffer)->ignore();
-        copy(vecmem::get_data(dd), dd_buffer,
-             vecmem::copy::type::host_to_device)
-            ->wait();
+            traccc::silicon_detector_description::buffer dd_buffer{
+                static_cast<
+                    traccc::silicon_detector_description::buffer::size_type>(
+                    dd.size()),
+                device_mr};
+            copy.setup(dd_buffer)->ignore();
+            copy(vecmem::get_data(dd), dd_buffer,
+                 vecmem::copy::type::host_to_device)
+                ->wait();
 
-        traccc::edm::silicon_cell_collection::buffer cells_buffer{
-            static_cast<
-                traccc::edm::silicon_cell_collection::buffer::size_type>(
-                cells.size()),
-            device_mr};
-        copy.setup(cells_buffer)->wait();
-        copy(vecmem::get_data(cells), cells_buffer)->wait();
+            traccc::edm::silicon_cell_collection::buffer cells_buffer{
+                static_cast<
+                    traccc::edm::silicon_cell_collection::buffer::size_type>(
+                    cells.size()),
+                device_mr};
+            copy.setup(cells_buffer)->wait();
+            copy(vecmem::get_data(cells), cells_buffer)->wait();
 
-        auto measurements_buffer = cc(cells_buffer, dd_buffer);
-        traccc::measurement_collection_types::host measurements{&host_mr};
-        copy(measurements_buffer, measurements)->wait();
+            auto measurements_buffer = cc(cells_buffer, dd_buffer);
+            traccc::measurement_collection_types::host measurements{&host_mr};
+            copy(measurements_buffer, measurements)->wait();
 
-        for (std::size_t i = 0; i < measurements.size(); i++) {
-            result[measurements.at(i).surface_link.value()].push_back(
-                measurements.at(i));
-        }
+            for (std::size_t i = 0; i < measurements.size(); i++) {
+                result[measurements.at(i).surface_link.value()].push_back(
+                    measurements.at(i));
+            }
 
-        return result;
-    };
+            // TODO: Output a real disjoint set here.
+            return {result, std::nullopt};
+        };
 }
 }  // namespace
 

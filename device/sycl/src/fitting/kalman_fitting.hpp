@@ -10,11 +10,13 @@
 // Local include(s).
 #include "../utils/calculate1DimNdRange.hpp"
 #include "../utils/global_index.hpp"
+#include "../utils/oneDPL.hpp"
 
 // Project include(s).
 #include "traccc/edm/device/sort_key.hpp"
 #include "traccc/edm/track_candidate_container.hpp"
 #include "traccc/edm/track_state.hpp"
+#include "traccc/fitting/details/kalman_fitting_types.hpp"
 #include "traccc/fitting/device/fill_sort_keys.hpp"
 #include "traccc/fitting/device/fit.hpp"
 #include "traccc/fitting/device/fit_backward.hpp"
@@ -25,19 +27,6 @@
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
-
-// oneDPL include(s).
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wshadow"
-#pragma clang diagnostic ignored "-Wunused-parameter"
-#pragma clang diagnostic ignored "-Wshorten-64-to-32"
-#pragma clang diagnostic ignored "-Wsign-conversion"
-#pragma clang diagnostic ignored "-Wimplicit-int-conversion"
-#pragma clang diagnostic ignored "-Wimplicit-int-float-conversion"
-#pragma clang diagnostic ignored "-Wsign-compare"
-#include <oneapi/dpl/algorithm>
-#include <oneapi/dpl/execution>
-#pragma clang diagnostic pop
 
 // SYCL include(s).
 #include <sycl/sycl.hpp>
@@ -52,12 +41,27 @@ struct fill_sort_keys;
 
 namespace details {
 
-template <typename fitter_t, typename fit_kernel_t>
-track_state_container_types::buffer fit_tracks(
-    const typename fitter_t::detector_type::view_type& det_view,
-    const typename fitter_t::bfield_type& field_view,
-    const edm::track_candidate_container<default_algebra>::const_view&
-        track_candidates_view,
+/// Templated implementation of the SYCL track fitting algorithm.
+///
+/// @tparam kernel_t   Structure to generate unique kernel names with
+/// @tparam detector_t The (device) detector type to use
+/// @tparam bfield_t   The magnetic field type to use
+///
+/// @param[in] det_view     A view of the detector geometry
+/// @param[in] field_view   A view of the magnetic field
+/// @param[in] track_candidates_view All track candidates to fit
+/// @param[in] config       The fitting configuration
+/// @param[in] mr           Memory resource(s) to use
+/// @param[in] copy         The copy object to use for memory transfers
+/// @param[in] queue        The SYCL queue to use for execution
+///
+/// @return A container of the fitted track states
+///
+template <typename kernel_t, typename detector_t, typename bfield_t>
+track_state_container_types::buffer kalman_fitting(
+    const typename detector_t::view_type& det_view, const bfield_t& field_view,
+    const typename edm::track_candidate_container<
+        typename detector_t::algebra_type>::const_view& track_candidates_view,
     const fitting_config& config, const memory_resource& mr, vecmem::copy& copy,
     ::sycl::queue& queue) {
 
@@ -157,6 +161,7 @@ track_state_container_types::buffer fit_tracks(
         })
         .wait_and_throw();
 
+    using fitter_t = traccc::details::kalman_fitter_t<detector_t, bfield_t>;
     device::fit_payload<fitter_t> payload{
         .det_data = det_view,
         .field_data = field_view,

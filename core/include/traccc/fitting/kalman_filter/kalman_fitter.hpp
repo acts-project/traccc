@@ -351,6 +351,7 @@ class kalman_fitter {
         for (const auto& st : track_states) {
             if (st.is_smoothed) {
                 fit_res.fit_params = st.smoothed();
+                break;
             }
         }
 
@@ -358,8 +359,7 @@ class kalman_fitter {
 
             const detray::tracking_surface sf{m_detector,
                                               trk_state.surface_link()};
-            sf.template visit_mask<statistics_updater<algebra_type>>(fit_res,
-                                                                     trk_state);
+            statistics_updater<algebra_type>{}(fit_res, trk_state);
         }
 
         // Track quality

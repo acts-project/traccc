@@ -7,7 +7,9 @@
 
 // Local include(s).
 #include "apply_interaction_src.cuh"
-#include "types.hpp"
+
+// Project include(s).
+#include "traccc/geometry/detector.hpp"
 
 namespace traccc::cuda {
 

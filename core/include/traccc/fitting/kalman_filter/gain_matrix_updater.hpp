@@ -13,9 +13,6 @@
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/status_codes.hpp"
 
-// Detray inlcude(s)
-#include <detray/geometry/shapes/line.hpp>
-
 namespace traccc {
 
 /// Type unrolling functor for Kalman updating
@@ -40,37 +37,26 @@ struct gain_matrix_updater {
     /// @param bound_params bound parameter
     ///
     /// @return true if the update succeeds
-    template <typename mask_group_t, typename index_t>
     [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status operator()(
-        const mask_group_t& /*mask_group*/, const index_t& /*index*/,
         track_state<algebra_t>& trk_state,
-        const bound_track_parameters<algebra_t>& bound_params) const {
-
-        using shape_type = typename mask_group_t::value_type::shape;
+        const bound_track_parameters<algebra_t>& bound_params,
+        const bool is_line) const {
 
         const auto D = trk_state.get_measurement().meas_dim;
+
         assert(D == 1u || D == 2u);
-        kalman_fitter_status result = kalman_fitter_status::ERROR_OTHER;
-        switch (D) {
-            case 1u:
-                result = update<1u, shape_type>(trk_state, bound_params);
-                break;
-            case 2u:
-                result = update<2u, shape_type>(trk_state, bound_params);
-                break;
-            default:
-                __builtin_unreachable();
-        }
-        return result;
+
+        return update(trk_state, bound_params, D, is_line);
     }
 
-    template <size_type D, typename shape_t>
     [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status update(
         track_state<algebra_t>& trk_state,
-        const bound_track_parameters<algebra_t>& bound_params) const {
+        const bound_track_parameters<algebra_t>& bound_params,
+        const unsigned int dim, const bool is_line) const {
 
-        static_assert(((D == 1u) || (D == 2u)),
-                      "The measurement dimension should be 1 or 2");
+        static constexpr unsigned int D = 2;
+
+        assert(dim == 1u || dim == 2u);
 
         assert(!bound_params.is_invalid());
         assert(!bound_params.surface_link().is_invalid());
@@ -82,11 +68,11 @@ struct gain_matrix_updater {
         const auto I66 = matrix::identity<bound_matrix_type>();
         const auto I_m = matrix::identity<matrix_type<D, D>>();
 
-        matrix_type<D, e_bound_size> H = meas.subs.template projector<D>();
-
         // Measurement data on surface
         const matrix_type<D, 1> meas_local =
             trk_state.template measurement_local<D>();
+
+        assert((dim > 1) || (getter::element(meas_local, 1u, 0u) == 0.f));
 
         // Predicted vector of bound track parameters
         const bound_vector_type& predicted_vec = bound_params.vector();
@@ -94,19 +80,25 @@ struct gain_matrix_updater {
         // Predicted covaraince of bound track parameters
         const bound_matrix_type& predicted_cov = bound_params.covariance();
 
+        matrix_type<D, e_bound_size> H = meas.subs.template projector<D>();
+
         // Flip the sign of projector matrix element in case the first element
         // of line measurement is negative
-        if constexpr (std::is_same_v<shape_t, detray::line<true>> ||
-                      std::is_same_v<shape_t, detray::line<false>>) {
+        if (is_line && getter::element(predicted_vec, e_bound_loc0, 0u) < 0) {
+            getter::element(H, 0u, e_bound_loc0) = -1;
+        }
 
-            if (getter::element(predicted_vec, e_bound_loc0, 0u) < 0) {
-                getter::element(H, 0u, e_bound_loc0) = -1;
-            }
+        if (dim == 1) {
+            getter::element(H, 1u, 0u) = 0.f;
+            getter::element(H, 1u, 1u) = 0.f;
         }
 
         // Spatial resolution (Measurement covariance)
-        const matrix_type<D, D> V =
-            trk_state.template measurement_covariance<D>();
+        matrix_type<D, D> V = trk_state.template measurement_covariance<D>();
+
+        if (dim == 1) {
+            getter::element(V, 1u, 1u) = 1.f;
+        }
 
         const matrix_type<D, D> M =
             H * predicted_cov * matrix::transpose(H) + V;

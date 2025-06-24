@@ -14,25 +14,29 @@
 
 #include "tests/cca_test.hpp"
 #include "traccc/clusterization/clustering_config.hpp"
+#include "traccc/clusterization/device/tags.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 
 namespace {
+vecmem::host_memory_resource host_mr;
 
 cca_function_t get_f_with(traccc::clustering_config cfg) {
     return [cfg](const traccc::edm::silicon_cell_collection::host& cells,
-                 const traccc::silicon_detector_description::host& dd) {
+                 const traccc::silicon_detector_description::host& dd)
+               -> std::pair<std::map<traccc::geometry_id,
+                                     vecmem::vector<traccc::measurement>>,
+                            traccc::edm::silicon_cluster_collection::host> {
         std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
-            result;
+            geom_to_meas_map;
 
-        vecmem::host_memory_resource host_mr;
         traccc::cuda::stream stream;
         vecmem::cuda::device_memory_resource device_mr;
         vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-        traccc::cuda::clusterization_algorithm cc({device_mr}, copy, stream,
-                                                  cfg);
+        traccc::cuda::clusterization_algorithm cc({device_mr, &host_mr}, copy,
+                                                  stream, cfg);
 
         traccc::silicon_detector_description::buffer dd_buffer{
             static_cast<
@@ -52,16 +56,21 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
         copy.setup(cells_buffer)->wait();
         copy(vecmem::get_data(cells), cells_buffer)->wait();
 
-        auto measurements_buffer = cc(cells_buffer, dd_buffer);
+        auto [measurements_buffer, cluster_buffer] =
+            cc(cells_buffer, dd_buffer,
+               traccc::device::clustering_keep_disjoint_set{});
         traccc::measurement_collection_types::host measurements{&host_mr};
         copy(measurements_buffer, measurements)->wait();
 
+        traccc::edm::silicon_cluster_collection::host clusters{host_mr};
+        copy(cluster_buffer, clusters)->wait();
+
         for (std::size_t i = 0; i < measurements.size(); i++) {
-            result[measurements.at(i).surface_link.value()].push_back(
+            geom_to_meas_map[measurements.at(i).surface_link.value()].push_back(
                 measurements.at(i));
         }
 
-        return result;
+        return {std::move(geom_to_meas_map), std::move(clusters)};
     };
 }
 }  // namespace
