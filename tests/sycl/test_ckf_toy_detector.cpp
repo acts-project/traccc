@@ -194,7 +194,7 @@ TEST_P(CkfToyDetectorTests, Run) {
         // Run device finding
         traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
             track_candidates_sycl_buffer = device_finding(
-                det_view, field, measurements_buffer, seeds_buffer);
+                det_view, b_field, measurements_buffer, seeds_buffer);
 
         traccc::edm::track_candidate_collection<traccc::default_algebra>::host
             track_candidates_sycl{host_mr};
