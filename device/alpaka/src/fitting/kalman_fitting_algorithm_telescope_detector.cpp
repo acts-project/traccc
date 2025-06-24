@@ -13,16 +13,20 @@
 namespace traccc::alpaka {
 
 kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
-    const telescope_detector::view& det,
-    const covfie::field<traccc::const_bfield_backend_t<
-        telescope_detector::device::scalar_type>>::view_t& field,
+    const telescope_detector::view& det, const bfield& field,
     const edm::track_candidate_container<default_algebra>::const_view&
         track_candidates) const {
 
     // Run the track fitting.
-    return details::kalman_fitting<telescope_detector::device>(
-        det, field, track_candidates, m_config, m_mr, m_copy.get(),
-        details::get_queue(m_queue.get()));
+    if (field.is<const_bfield_backend_t<scalar>>()) {
+        return details::kalman_fitting<telescope_detector::device>(
+            det, field.as<const_bfield_backend_t<scalar>>(), track_candidates,
+            m_config, m_mr, m_copy.get(), details::get_queue(m_queue.get()));
+    } else {
+        throw std::invalid_argument(
+            "Unsupported b-field type received in "
+            "traccc::alpaka::kalman_fitting_algorithm");
+    }
 }
 
 }  // namespace traccc::alpaka
