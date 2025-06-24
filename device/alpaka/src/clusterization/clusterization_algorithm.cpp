@@ -163,8 +163,9 @@ struct BlockSharedMemDynSizeBytes<traccc::alpaka::CCLKernel, TAcc> {
         TVec const& /* blockThreadExtent */, TVec const& /* threadElemExtent */,
         const traccc::clustering_config config, TArgs const&... /* args */
         ) -> std::size_t {
-        return static_cast<std::size_t>(2 * config.max_partition_size() *
-                                        sizeof(unsigned short));
+        return static_cast<std::size_t>(
+            2 * config.max_partition_size() *
+            sizeof(traccc::device::details::index_t));
     }
 };
 

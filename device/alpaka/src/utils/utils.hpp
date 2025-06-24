@@ -34,8 +34,16 @@ using Acc = ::alpaka::AccCpuThreads<Dim, Idx>;
 #error "No supported backend selected." //we definitely want to fail the build if no matching accelerator is found
 #endif
 
+// Set the queue type to blocking for CPU based accelerators, due to the
+// synchronous nature of vecmem there.
+#if defined(ALPAKA_ACC_CPU_B_SEQ_T_THREADS_ENABLED)
+using QueueType = ::alpaka::Blocking;
+#else
+using QueueType = ::alpaka::NonBlocking;
+#endif
+
 using Host = ::alpaka::DevCpu;
-using Queue = ::alpaka::Queue<Acc, ::alpaka::NonBlocking>;
+using Queue = ::alpaka::Queue<Acc, QueueType>;
 
 template <typename TAcc>
 consteval Idx getWarpSize() {

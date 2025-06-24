@@ -40,9 +40,10 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
 
             vecmem::memory_resource& host_mr = vo.host_mr();
             vecmem::memory_resource& device_mr = vo.device_mr();
-            vecmem::copy& copy = vo.copy();
+            vecmem::copy& copy = vo.async_copy();
 
-            traccc::alpaka::clusterization_algorithm cc({device_mr}, copy, cfg);
+            traccc::alpaka::clusterization_algorithm cc({device_mr}, copy,
+                                                        queue, cfg);
 
             traccc::silicon_detector_description::buffer dd_buffer{
                 static_cast<
@@ -63,6 +64,7 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
             copy(vecmem::get_data(cells), cells_buffer)->wait();
 
             auto measurements_buffer = cc(cells_buffer, dd_buffer);
+            queue.synchronize();
             traccc::measurement_collection_types::host measurements{&host_mr};
             copy(measurements_buffer, measurements)->wait();
 
