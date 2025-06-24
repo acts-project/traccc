@@ -35,20 +35,23 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   # Track finding algorithm(s).
   "include/traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
   "src/finding/combinatorial_kalman_filter_algorithm.cpp"
-  "src/finding/combinatorial_kalman_filter_algorithm_constant_field_default_detector.sycl"
-  "src/finding/combinatorial_kalman_filter_algorithm_constant_field_telescope_detector.sycl"
+  "src/finding/combinatorial_kalman_filter_algorithm_default_detector.sycl"
+  "src/finding/combinatorial_kalman_filter_algorithm_telescope_detector.sycl"
   "src/finding/combinatorial_kalman_filter.hpp"
   # Track fitting algorithm(s).
   "include/traccc/sycl/fitting/kalman_fitting_algorithm.hpp"
   "src/fitting/kalman_fitting_algorithm.cpp"
-  "src/fitting/kalman_fitting_algorithm_constant_field_default_detector.sycl"
-  "src/fitting/kalman_fitting_algorithm_constant_field_telescope_detector.sycl"
+  "src/fitting/kalman_fitting_algorithm_default_detector.sycl"
+  "src/fitting/kalman_fitting_algorithm_telescope_detector.sycl"
   "src/fitting/kalman_fitting.hpp"
   # Utilities.
   "include/traccc/sycl/utils/make_prefix_sum_buff.hpp"
   "src/utils/make_prefix_sum_buff.sycl"
   "include/traccc/sycl/utils/queue_wrapper.hpp"
   "src/utils/queue_wrapper.cpp"
+  "include/traccc/sycl/utils/make_bfield.hpp"
+  "src/utils/make_bfield.sycl"
+  "src/utils/bfield.hpp"
   "src/utils/barrier.hpp"
   "src/utils/calculate1DimNdRange.hpp"
   "src/utils/calculate1DimNdRange.sycl"
@@ -60,9 +63,9 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "src/sanity/ordered_on.hpp"
 )
 target_link_libraries( traccc_sycl
-  PUBLIC detray::core vecmem::core covfie::core
+  PUBLIC detray::core vecmem::core
          traccc::core traccc::device_common
-  PRIVATE vecmem::sycl oneDPL )
+  PRIVATE vecmem::sycl covfie::sycl oneDPL )
 
 # Set up Thrust specifically for the traccc::sycl library.
 thrust_create_target( traccc::sycl_thrust
