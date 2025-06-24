@@ -72,10 +72,146 @@ bool TRACCC_HOST_DEVICE doublet_finding_helper::isCompatible(
         // actually zOrigin * deltaR to avoid division by 0 statements
         zOrigin = sp1.z() * deltaR - sp1.radius() * cotTheta;
     }
-    return ((deltaR < config.deltaRMax) && (deltaR > config.deltaRMin) &&
-            (math::fabs(cotTheta) < config.cotThetaMax * deltaR) &&
-            (zOrigin > config.collisionRegionMin * deltaR) &&
-            (zOrigin < config.collisionRegionMax * deltaR));
+
+    if ((deltaR >= config.deltaRMax) || (deltaR <= config.deltaRMin) ||
+        (math::fabs(cotTheta) >= config.cotThetaMax * deltaR) ||
+        (zOrigin <= config.collisionRegionMin * deltaR) ||
+        (zOrigin >= config.collisionRegionMax * deltaR)) {
+        return false;
+    }
+
+    /*
+     * The following cut is capable of discriminating some doublets on the
+     * basis that it is impossible to find a third spacepoint for the doublet
+     * that will keep the resulting triplet inside the helix radius bound.
+     * This explanation is enhanced with Geogebra commands with can be entered
+     * into the application directly to provide a visual "proof" of why this
+     * cut works.
+     *
+     * We will start by creating two spacepoints at arbitrary locations (they
+     * can be moved as desired):
+     *
+     * ```
+     * A = (2, 4)
+     * B = (3, 12)
+     * ```
+     *
+     * We will also define a radius $R$:
+     *
+     * ```
+     * R = 10
+     * ```
+     *
+     * Next, we consider the fact that two points and a radius define exactly
+     * two circles through those points and with that radius. This makes sense
+     * because three points (six degrees of freedom) precisely define a single
+     * circle, and two points and a radius (five DoFs) define two circles. We
+     * will construct those circles now, with the radius being the minimum
+     * helix radius from the configuration.
+     *
+     * To find the midpoints of these circles, we will first find the
+     * perpendicular bisector of points $A$ and $B$:
+     *
+     * ```
+     * M = 0.5 * (A + B)
+     * ```
+     */
+    scalar midX = 0.5f * (sp1.x() + sp2.x());
+    scalar midY = 0.5f * (sp1.y() + sp2.y());
+
+    /*
+     * Then we will compute the slope of the perpendicular bisector:
+     *
+     * ```
+     * s = (y(B) - y(A)) / (x(B) - x(A))
+     * ```
+     */
+    scalar slope = (sp2.y() - sp1.y()) / (sp2.x() - sp1.x());
+
+    /*
+     * Next, we can simply place circle midpoints on our perpendicular
+     * bisector, but we cannot simply use the radius $R$ as the distance from
+     * the midpoint of $A$ and $B$, we have account for the length of the
+     * sagitta:
+     *
+     * ```
+     * dX = x(B) - x(A)
+     * dY = y(B) - y(A)
+     * dXY2 = dX * dX + dY * dY
+     * q = sqrt(R * R - dXY2 / 4)
+     * ```
+     */
+    scalar deltaX = sp2.x() - sp1.x();
+    scalar deltaY = sp2.y() - sp1.y();
+    scalar deltaXY2 = deltaX * deltaX + deltaY * deltaY;
+    scalar sagittaLength = math::sqrt(
+        config.minHelixRadius * config.minHelixRadius - deltaXY2 / 4.f);
+
+    /*
+     * We then compute the central angle between the points $A$, $B$, and the
+     * midpoints of the circles we want to construct. Naively, this can be
+     * done using the trigonomic functions:
+     *
+     * ```
+     * theta = atan(1 / slope)
+     * ```
+     *
+     * After which we can compute the delta between the midpoint of $A$ and
+     * $B$ and the midpoints of our circles:
+     *
+     * ```
+     * mdX = (R - q) * cos(theta)
+     * mdY = (R - q) * sin(theta)
+     * ```
+     *
+     * However, some trigonomy allows us to reduce this:
+     *
+     * ```
+     * denom = sqrt((s * s + 1) / (s * s))
+     * cosTheta = 1 / denom
+     * sinTheta = -1 / (s * denom)
+     * mdX = q * cosTheta
+     * mdY = q * sinTheta
+     * ```
+     */
+    scalar denom = math::sqrt((slope * slope + 1) / (slope * slope));
+    scalar cosCentralAngle = 1.f / denom;
+    scalar sinCentralAngle = -1.f / (slope * denom);
+
+    scalar mpDeltaX = sagittaLength * cosCentralAngle;
+    scalar mpDeltaY = sagittaLength * sinCentralAngle;
+
+    /*
+     * We now easily find the midpoints of the required circles:
+     *
+     * ```
+     * V = (x(M) + mdX, y(M) + mdY)
+     * W = (x(M) - mdX, y(M) - mdY)
+     * ```
+     */
+    scalar mp1X = midX + mpDeltaX;
+    scalar mp2X = midX - mpDeltaX;
+    scalar mp1Y = midY + mpDeltaY;
+    scalar mp2Y = midY - mpDeltaY;
+
+    /*
+     * Finally, we compute the radii of the circles. The crucial intuition
+     * here is that if either of the newly constructed circles _completely_
+     * contain a circle of radius $R$ around the origin, then we can never
+     * find a third spacepoint to complete the triplet. Thus, we compute the
+     * radii. We leave them squared in the C++ code to avoid an unnecessary
+     * square root.
+     */
+    scalar mp1R2 = mp1X * mp1X + mp1Y * mp1Y;
+    scalar mp2R2 = mp2X * mp2X + mp2Y * mp2Y;
+
+    if (math::min(mp1R2, mp2R2) <=
+        ((config.minHelixRadius - config.impactMax) *
+         (config.minHelixRadius - config.impactMax))) {
+        return false;
+    }
+
+    return true;
 }
 
 template <details::spacepoint_type otherSpType, typename T1, typename T2>
