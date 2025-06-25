@@ -32,6 +32,8 @@
 #include "traccc/utils/propagation.hpp"
 
 // VecMem include(s).
+#include <cmath>
+#include <limits>
 #include <vecmem/utils/copy.hpp>
 
 // Thrust include(s).
@@ -41,6 +43,150 @@
 #include <thrust/scan.h>
 #include <thrust/sort.h>
 #include <thrust/unique.h>
+
+namespace traccc::cuda::kernels {
+
+__global__ inline void fill_duplicate_removal_sort_keys(
+    vecmem::data::vector_view<const candidate_link> links_view,
+    const unsigned int curr_links_idx,
+    vecmem::data::vector_view<const unsigned int> param_liveness_view,
+    const unsigned int n_links,
+    vecmem::data::vector_view<unsigned int> link_last_measurement_view,
+    vecmem::data::vector_view<unsigned int> param_ids_view,
+    const unsigned int n_measurements) {
+    unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    const vecmem::device_vector<const candidate_link> links(links_view);
+    const vecmem::device_vector<const unsigned int> param_liveness(
+        param_liveness_view);
+    vecmem::device_vector<unsigned int> link_last_measurement(
+        link_last_measurement_view);
+    vecmem::device_vector<unsigned int> param_ids(param_ids_view);
+
+    if (tid < n_links) {
+        param_ids.at(tid) = tid;
+
+        if (param_liveness.at(tid) == 0u) {
+            link_last_measurement.at(tid) =
+                std::numeric_limits<unsigned int>::max();
+        } else {
+            auto L = links.at(curr_links_idx + tid);
+
+            while (L.meas_idx >= n_measurements && L.step != 0u) {
+                L = links.at(L.previous_candidate_idx);
+            }
+
+            link_last_measurement.at(tid) = L.meas_idx;
+        }
+    }
+}
+
+__global__ inline void remove_duplicates(
+    vecmem::data::vector_view<const candidate_link> links_view,
+    const unsigned int curr_links_idx,
+    vecmem::data::vector_view<unsigned int> param_liveness_view,
+    const unsigned int n_links, const unsigned int n_measurements,
+    const unsigned int step,
+    const vecmem::data::vector_view<const unsigned int>
+        link_last_measurement_view,
+    const vecmem::data::vector_view<const unsigned int> param_ids_view) {
+
+    const vecmem::device_vector<const candidate_link> links(links_view);
+    vecmem::device_vector<unsigned int> param_liveness(param_liveness_view);
+    const vecmem::device_vector<const unsigned int> link_last_measurement(
+        link_last_measurement_view);
+    const vecmem::device_vector<const unsigned int> param_ids(param_ids_view);
+
+    const unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (tid >= param_ids_view.size()) {
+        return;
+    }
+
+    const unsigned int this_param_id = param_ids.at(tid);
+
+    if (param_liveness.at(this_param_id) == 0u) {
+        return;
+    }
+
+    const unsigned int last_measurement = link_last_measurement.at(tid);
+
+    unsigned int min_tid = tid;
+    unsigned int max_tid = tid;
+
+    while (min_tid > 0 &&
+           link_last_measurement.at(min_tid - 1) == last_measurement) {
+        min_tid--;
+    }
+
+    while (max_tid < link_last_measurement.size() - 1 &&
+           link_last_measurement.at(max_tid + 1) == last_measurement) {
+        max_tid++;
+    }
+
+    const auto& Lthisbase = links.at(curr_links_idx + param_ids.at(tid));
+
+    if (step + 1 - Lthisbase.n_skipped <= 3 || Lthisbase.ndf_sum <= 5) {
+        return;
+    }
+
+    for (unsigned int i = min_tid; i <= max_tid; ++i) {
+        if (i == tid)
+            continue;
+
+        bool this_is_dominated = true;
+
+        auto Lthis = Lthisbase;
+        auto Lthat = links.at(curr_links_idx + param_ids.at(i));
+
+        if (step + 1 - Lthat.n_skipped <= 3 || Lthis.ndf_sum <= 5 ||
+            Lthat.ndf_sum <= 5) {
+            continue;
+        }
+
+        scalar chi2_per_dof_this =
+            Lthis.chi2_sum / static_cast<scalar>(Lthis.ndf_sum - 5);
+        scalar chi2_per_dof_that =
+            Lthat.chi2_sum / static_cast<scalar>(Lthat.ndf_sum - 5);
+
+        while (true) {
+            while (Lthis.meas_idx >= n_measurements && Lthis.step != 0u) {
+                Lthis = links.at(Lthis.previous_candidate_idx);
+            }
+
+            while (Lthat.meas_idx >= n_measurements && Lthat.step != 0u) {
+                Lthat = links.at(Lthat.previous_candidate_idx);
+            }
+
+            if (Lthis.meas_idx == Lthat.meas_idx) {
+                if (Lthis.step == 0) {
+                    break;
+                } else if (Lthat.step == 0) {
+                    this_is_dominated = false;
+                    break;
+                } else {
+                    Lthis = links.at(Lthis.previous_candidate_idx);
+                    Lthat = links.at(Lthat.previous_candidate_idx);
+                }
+            } else {
+                this_is_dominated = false;
+                break;
+            }
+        }
+
+        if (chi2_per_dof_this != chi2_per_dof_that) {
+            this_is_dominated &= chi2_per_dof_that < chi2_per_dof_this;
+        } else {
+            this_is_dominated &= param_ids.at(i) < param_ids.at(tid);
+        }
+
+        if (this_is_dominated) {
+            param_liveness.at(param_ids.at(tid)) = 0u;
+            break;
+        }
+    }
+}
+}  // namespace traccc::cuda::kernels
 
 namespace traccc::cuda::details {
 
@@ -307,6 +453,42 @@ combinatorial_kalman_filter(
                 step_to_link_idx_map[step + 1] - step_to_link_idx_map[step];
         }
 
+        if (n_candidates > 0 && step >= 3) {
+            vecmem::data::vector_buffer<unsigned int>
+                link_last_measurement_buffer(n_candidates, mr.main);
+            vecmem::data::vector_buffer<unsigned int> param_ids_buffer(
+                n_candidates, mr.main);
+
+            kernels::fill_duplicate_removal_sort_keys<<<
+                (n_candidates + 256) - 1 / 256, 256, 0, stream>>>(
+                links_buffer, step_to_link_idx_map[step], param_liveness_buffer,
+                n_candidates, link_last_measurement_buffer, param_ids_buffer,
+                n_measurements);
+
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+            vecmem::device_vector<unsigned int> keys_device(
+                link_last_measurement_buffer);
+            vecmem::device_vector<unsigned int> param_ids_device(
+                param_ids_buffer);
+            thrust::sort_by_key(thrust_policy, keys_device.begin(),
+                                keys_device.end(), param_ids_device.begin());
+
+            str.synchronize();
+
+            const unsigned int nThreads = 256;
+            const unsigned int nBlocks =
+                (n_candidates + nThreads - 1) / nThreads;
+
+            kernels::remove_duplicates<<<nBlocks, nThreads, 0, stream>>>(
+                links_buffer, step_to_link_idx_map[step], param_liveness_buffer,
+                n_candidates, n_measurements, step,
+                link_last_measurement_buffer, param_ids_buffer);
+
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+            str.synchronize();
+        }
+
         // If no more CKF step is expected, the tips and links are populated,
         // and any further time-consuming action is avoided
         if (step == config.max_track_candidates_per_track - 1) {
@@ -332,6 +514,7 @@ combinatorial_kalman_filter(
                     (n_candidates + nThreads - 1) / nThreads;
                 kernels::fill_sort_keys<<<nBlocks, nThreads, 0, stream>>>(
                     {.params_view = in_params_buffer,
+                     .param_liveness_view = param_liveness_buffer,
                      .keys_view = keys_buffer,
                      .ids_view = param_ids_buffer});
                 TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
