@@ -434,7 +434,8 @@ combinatorial_kalman_filter(
                     queue, workDiv,
                     kernels::fill_finding_propagation_sort_keys{},
                     device::fill_finding_propagation_sort_keys_payload{
-                        in_params_buffer, keys_buffer, param_ids_buffer});
+                        in_params_buffer, param_liveness_buffer, keys_buffer,
+                        param_ids_buffer});
                 ::alpaka::wait(queue);
 
                 // Sort the key and values

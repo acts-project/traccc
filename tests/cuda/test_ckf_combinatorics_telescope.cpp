@@ -141,6 +141,7 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
     cfg_no_limit.max_num_branches_per_seed = 100000;
     cfg_no_limit.chi2_max = 30.f;
     cfg_no_limit.max_num_branches_per_surface = 10;
+    cfg_no_limit.duplicate_removal_minimum_length = 100u;
 
     typename traccc::cuda::combinatorial_kalman_filter_algorithm::config_type
         cfg_limit;
@@ -148,6 +149,7 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
     cfg_limit.max_num_branches_per_seed = 500;
     cfg_limit.chi2_max = 30.f;
     cfg_limit.max_num_branches_per_surface = 10;
+    cfg_limit.duplicate_removal_minimum_length = 100u;
 
     // Finding algorithm object
     traccc::cuda::combinatorial_kalman_filter_algorithm device_finding(

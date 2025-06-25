@@ -28,6 +28,12 @@ struct fill_finding_propagation_sort_keys_payload {
     bound_track_parameters_collection_types::const_view params_view;
 
     /**
+     * @brief View object to the vector of boolean-like integers describing the
+     * liveness of each parameter
+     */
+    vecmem::data::vector_view<const unsigned int> param_liveness_view;
+
+    /**
      * @brief View object to the vector of sort keys
      */
     vecmem::data::vector_view<device::sort_key> keys_view;

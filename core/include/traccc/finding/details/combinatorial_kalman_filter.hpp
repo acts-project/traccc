@@ -340,12 +340,134 @@ combinatorial_kalman_filter(
             }
         }
 
+        /*
+         * Track deduplication.
+         *
+         * For documentation, see the device version.
+         */
+        const std::size_t n_links = links[step].size();
+        std::vector<unsigned int> param_liveness;
+        param_liveness.resize(n_links);
+
+        for (std::size_t i = 0; i < param_liveness.size(); ++i) {
+            param_liveness.at(i) = 1u;
+        }
+
+        if (step >= config.duplicate_removal_minimum_length) {
+            std::map<std::size_t, std::vector<std::size_t>>
+                last_meas_to_tracks_map;
+
+            for (std::size_t i = 0; i < n_links; ++i) {
+                auto L = links.at(step).at(i);
+
+                while (L.meas_idx >= n_meas && L.step != 0u) {
+                    const auto link_pos = param_to_link.at(L.step - 1u)
+                                              .at(L.previous_candidate_idx);
+                    L = links.at(L.step - 1u).at(link_pos);
+                }
+
+                last_meas_to_tracks_map[L.meas_idx].push_back(i);
+            }
+
+            for (const auto& it : last_meas_to_tracks_map) {
+                const auto& tracks = it.second;
+
+                for (std::size_t i = 0; i < tracks.size(); ++i) {
+                    const auto& Lthisbase = links.at(step).at(tracks.at(i));
+                    const scalar prob_this =
+                        prob(Lthisbase.chi2_sum,
+                             static_cast<scalar>(Lthisbase.ndf_sum - 5));
+
+                    if (step + 1 - Lthisbase.n_skipped <=
+                            config.duplicate_removal_minimum_length ||
+                        Lthisbase.ndf_sum <= 5) {
+                        continue;
+                    }
+
+                    for (std::size_t j = 0; j < tracks.size(); ++j) {
+                        if (i == j) {
+                            continue;
+                        }
+
+                        auto Lthis = Lthisbase;
+                        auto Lthat = links.at(step).at(tracks.at(j));
+
+                        if (step + 1 - Lthat.n_skipped <=
+                                config.duplicate_removal_minimum_length ||
+                            Lthisbase.ndf_sum <= 5) {
+                            continue;
+                        }
+
+                        bool this_is_dominated = true;
+
+                        const scalar prob_that =
+                            prob(Lthat.chi2_sum,
+                                 static_cast<scalar>(Lthat.ndf_sum - 5));
+
+                        while (true) {
+                            while (Lthis.meas_idx >= n_meas &&
+                                   Lthis.step != 0u) {
+                                const auto link_pos =
+                                    param_to_link.at(Lthis.step - 1u)
+                                        .at(Lthis.previous_candidate_idx);
+
+                                Lthis = links.at(Lthis.step - 1u).at(link_pos);
+                            }
+                            while (Lthat.meas_idx >= n_meas &&
+                                   Lthat.step != 0u) {
+                                const auto link_pos =
+                                    param_to_link.at(Lthat.step - 1u)
+                                        .at(Lthat.previous_candidate_idx);
+
+                                Lthat = links.at(Lthat.step - 1u).at(link_pos);
+                            }
+
+                            if (Lthis.meas_idx == Lthat.meas_idx) {
+                                if (Lthis.step == 0) {
+                                    break;
+                                } else if (Lthat.step == 0) {
+                                    this_is_dominated = false;
+                                    break;
+                                } else {
+                                    const auto link_pos_this =
+                                        param_to_link.at(Lthis.step - 1u)
+                                            .at(Lthis.previous_candidate_idx);
+                                    Lthis = links.at(Lthis.step - 1u)
+                                                .at(link_pos_this);
+                                    const auto link_pos_that =
+                                        param_to_link.at(Lthat.step - 1u)
+                                            .at(Lthat.previous_candidate_idx);
+                                    Lthat = links.at(Lthat.step - 1u)
+                                                .at(link_pos_that);
+                                }
+                            } else {
+                                this_is_dominated = false;
+                                break;
+                            }
+                        }
+
+                        if (prob_this != prob_that) {
+                            this_is_dominated &= prob_that >= prob_this;
+                        } else {
+                            this_is_dominated &= tracks.at(j) < tracks.at(i);
+                        }
+
+                        if (this_is_dominated) {
+                            param_liveness.at(tracks.at(i)) = 0u;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
         /*********************************
          * Propagate to the next surface
          *********************************/
-
-        const std::size_t n_links = links[step].size();
         for (unsigned int link_id = 0; link_id < n_links; link_id++) {
+            if (param_liveness.at(link_id) == 0u) {
+                continue;
+            }
 
             const unsigned int seed_idx = links.at(step).at(link_id).seed_idx;
             n_trks_per_seed[seed_idx]++;

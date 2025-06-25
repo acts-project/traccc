@@ -15,10 +15,12 @@
 #include "../utils/utils.hpp"
 #include "./kernels/apply_interaction.hpp"
 #include "./kernels/build_tracks.cuh"
+#include "./kernels/fill_finding_duplicate_removal_sort_keys.cuh"
 #include "./kernels/fill_finding_propagation_sort_keys.cuh"
 #include "./kernels/find_tracks.cuh"
 #include "./kernels/make_barcode_sequence.cuh"
 #include "./kernels/propagate_to_next_surface.hpp"
+#include "./kernels/remove_duplicates.cuh"
 
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
@@ -307,6 +309,69 @@ combinatorial_kalman_filter(
                 step_to_link_idx_map[step + 1] - step_to_link_idx_map[step];
         }
 
+        /*
+         * On later steps, we can duplicate removal which will attempt to find
+         * tracks that are propagated multiple times and deduplicate them.
+         */
+        if (n_candidates > 0 &&
+            step >= config.duplicate_removal_minimum_length) {
+            vecmem::data::vector_buffer<unsigned int>
+                link_last_measurement_buffer(n_candidates, mr.main);
+            vecmem::data::vector_buffer<unsigned int> param_ids_buffer(
+                n_candidates, mr.main);
+
+            /*
+             * First, we sort the tracks by the index of their final
+             * measurement which is critical to ensure good performance.
+             */
+            {
+                const unsigned int nThreads = 256;
+                const unsigned int nBlocks =
+                    (n_candidates + nThreads - 1) / nThreads;
+
+                kernels::fill_finding_duplicate_removal_sort_keys<<<
+                    nBlocks, nThreads, 0, stream>>>(
+                    {.links_view = links_buffer,
+                     .param_liveness_view = param_liveness_buffer,
+                     .link_last_measurement_view = link_last_measurement_buffer,
+                     .param_ids_view = param_ids_buffer,
+                     .n_links = n_candidates,
+                     .curr_links_idx = step_to_link_idx_map[step],
+                     .n_measurements = n_measurements});
+
+                TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+            }
+
+            vecmem::device_vector<unsigned int> keys_device(
+                link_last_measurement_buffer);
+            vecmem::device_vector<unsigned int> param_ids_device(
+                param_ids_buffer);
+            thrust::sort_by_key(thrust_policy, keys_device.begin(),
+                                keys_device.end(), param_ids_device.begin());
+
+            /*
+             * Then, we run the actual duplicate removal kernel.
+             */
+            {
+                const unsigned int nThreads = 256;
+                const unsigned int nBlocks =
+                    (n_candidates + nThreads - 1) / nThreads;
+
+                kernels::remove_duplicates<<<nBlocks, nThreads, 0, stream>>>(
+                    config,
+                    {.links_view = links_buffer,
+                     .link_last_measurement_view = link_last_measurement_buffer,
+                     .param_ids_view = param_ids_buffer,
+                     .param_liveness_view = param_liveness_buffer,
+                     .n_links = n_candidates,
+                     .curr_links_idx = step_to_link_idx_map[step],
+                     .n_measurements = n_measurements,
+                     .step = step});
+            }
+
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+        }
+
         // If no more CKF step is expected, the tips and links are populated,
         // and any further time-consuming action is avoided
         if (step == config.max_track_candidates_per_track - 1) {
@@ -333,6 +398,7 @@ combinatorial_kalman_filter(
                 kernels::fill_finding_propagation_sort_keys<<<nBlocks, nThreads,
                                                               0, stream>>>(
                     {.params_view = in_params_buffer,
+                     .param_liveness_view = param_liveness_buffer,
                      .keys_view = keys_buffer,
                      .ids_view = param_ids_buffer});
                 TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
