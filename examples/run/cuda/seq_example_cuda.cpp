@@ -6,6 +6,7 @@
  */
 
 // Project include(s).
+#include "../common/make_magnetic_field.hpp"
 #include "traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
@@ -16,6 +17,7 @@
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
+#include "traccc/cuda/utils/make_bfield.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
@@ -30,6 +32,7 @@
 #include "traccc/options/clusterization.hpp"
 #include "traccc/options/detector.hpp"
 #include "traccc/options/input_data.hpp"
+#include "traccc/options/magnetic_field.hpp"
 #include "traccc/options/performance.hpp"
 #include "traccc/options/program_options.hpp"
 #include "traccc/options/track_finding.hpp"
@@ -59,6 +62,7 @@
 #include <memory>
 
 int seq_run(const traccc::opts::detector& detector_opts,
+            const traccc::opts::magnetic_field& bfield_opts,
             const traccc::opts::input_data& input_opts,
             const traccc::opts::clusterization& clusterization_opts,
             const traccc::opts::track_seeding& seeding_opts,
@@ -158,8 +162,9 @@ int seq_run(const traccc::opts::detector& detector_opts,
     // Constant B field for the track finding and fitting
     const traccc::vector3 field_vec = {0.f, 0.f,
                                        seeding_opts.seedfinder.bFieldInZ};
-    const traccc::bfield field{
-        traccc::construct_const_bfield<traccc::scalar>(field_vec)};
+    const traccc::bfield host_field =
+        traccc::details::make_magnetic_field(bfield_opts);
+    const traccc::bfield device_field = traccc::cuda::make_bfield(host_field);
 
     traccc::host::clusterization_algorithm ca(
         host_mr, logger().clone("HostClusteringAlg"));
@@ -342,8 +347,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
                     traccc::performance::timer timer{"Track finding (cuda)",
                                                      elapsedTimes};
                     track_candidates_buffer = finding_alg_cuda(
-                        device_detector_view, field, measurements_cuda_buffer,
-                        params_cuda_buffer);
+                        device_detector_view, device_field,
+                        measurements_cuda_buffer, params_cuda_buffer);
                 }
 
                 // CPU
@@ -351,7 +356,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                     traccc::performance::timer timer{"Track finding (cpu)",
                                                      elapsedTimes};
                     track_candidates =
-                        finding_alg(host_detector, field,
+                        finding_alg(host_detector, host_field,
                                     vecmem::get_data(measurements_per_event),
                                     vecmem::get_data(params));
                 }
@@ -378,7 +383,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                     traccc::performance::timer timer{"Track fitting (cuda)",
                                                      elapsedTimes};
                     track_states_buffer =
-                        fitting_alg_cuda(device_detector_view, field,
+                        fitting_alg_cuda(device_detector_view, device_field,
                                          {res_track_candidates_buffer,
                                           measurements_cuda_buffer});
                 }
@@ -388,7 +393,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                     traccc::performance::timer timer{"Track fitting (cpu)",
                                                      elapsedTimes};
                     track_states =
-                        fitting_alg(host_detector, field,
+                        fitting_alg(host_detector, host_field,
                                     {vecmem::get_data(res_track_candidates),
                                      vecmem::get_data(measurements_per_event)});
                 }
@@ -550,6 +555,7 @@ int main(int argc, char* argv[]) {
 
     // Program options.
     traccc::opts::detector detector_opts;
+    traccc::opts::magnetic_field bfield_opts;
     traccc::opts::input_data input_opts;
     traccc::opts::clusterization clusterization_opts;
     traccc::opts::track_seeding seeding_opts;
@@ -561,16 +567,16 @@ int main(int argc, char* argv[]) {
     traccc::opts::accelerator accelerator_opts;
     traccc::opts::program_options program_opts{
         "Full Tracking Chain Using CUDA",
-        {detector_opts, input_opts, clusterization_opts, seeding_opts,
-         finding_opts, propagation_opts, resolution_opts, performance_opts,
-         fitting_opts, accelerator_opts},
+        {detector_opts, bfield_opts, input_opts, clusterization_opts,
+         seeding_opts, finding_opts, propagation_opts, resolution_opts,
+         performance_opts, fitting_opts, accelerator_opts},
         argc,
         argv,
         logger->cloneWithSuffix("Options")};
 
     // Run the application.
-    return seq_run(detector_opts, input_opts, clusterization_opts, seeding_opts,
-                   finding_opts, propagation_opts, resolution_opts,
-                   fitting_opts, performance_opts, accelerator_opts,
-                   logger->clone());
+    return seq_run(detector_opts, bfield_opts, input_opts, clusterization_opts,
+                   seeding_opts, finding_opts, propagation_opts,
+                   resolution_opts, fitting_opts, performance_opts,
+                   accelerator_opts, logger->clone());
 }

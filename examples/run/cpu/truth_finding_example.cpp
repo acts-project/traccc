@@ -6,6 +6,7 @@
  */
 
 // Project include(s).
+#include "../common/make_magnetic_field.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/efficiency/finding_performance_writer.hpp"
@@ -18,6 +19,7 @@
 #include "traccc/io/utils.hpp"
 #include "traccc/options/detector.hpp"
 #include "traccc/options/input_data.hpp"
+#include "traccc/options/magnetic_field.hpp"
 #include "traccc/options/performance.hpp"
 #include "traccc/options/program_options.hpp"
 #include "traccc/options/track_finding.hpp"
@@ -46,6 +48,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
             const traccc::opts::track_fitting& fitting_opts,
             const traccc::opts::input_data& input_opts,
             const traccc::opts::detector& detector_opts,
+            const traccc::opts::magnetic_field& bfield_opts,
             const traccc::opts::performance& performance_opts,
             const traccc::opts::truth_finding& truth_finding_opts,
             std::unique_ptr<const traccc::Logger> ilogger) {
@@ -68,11 +71,9 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
      * Build a geometry
      *****************************/
 
-    // B field value and its type
-    // @TODO: Set B field as argument
-    const traccc::vector3 B{0, 0, 2 * traccc::unit<traccc::scalar>::T};
-    const traccc::bfield field{
-        traccc::construct_const_bfield<traccc::scalar>(B)};
+    // B field value
+    const traccc::bfield field =
+        traccc::details::make_magnetic_field(bfield_opts);
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host detector{host_mr};
@@ -195,6 +196,7 @@ int main(int argc, char* argv[]) {
 
     // Program options.
     traccc::opts::detector detector_opts;
+    traccc::opts::magnetic_field bfield_opts;
     traccc::opts::input_data input_opts;
     traccc::opts::track_finding finding_opts;
     traccc::opts::track_propagation propagation_opts;
@@ -203,7 +205,7 @@ int main(int argc, char* argv[]) {
     traccc::opts::truth_finding truth_finding_config;
     traccc::opts::program_options program_opts{
         "Truth Track Finding on the Host",
-        {detector_opts, input_opts, finding_opts, propagation_opts,
+        {detector_opts, bfield_opts, input_opts, finding_opts, propagation_opts,
          fitting_opts, performance_opts, truth_finding_config},
         argc,
         argv,
@@ -211,6 +213,6 @@ int main(int argc, char* argv[]) {
 
     // Run the application.
     return seq_run(finding_opts, propagation_opts, fitting_opts, input_opts,
-                   detector_opts, performance_opts, truth_finding_config,
-                   logger->clone());
+                   detector_opts, bfield_opts, performance_opts,
+                   truth_finding_config, logger->clone());
 }

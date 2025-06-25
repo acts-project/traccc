@@ -6,6 +6,7 @@
  */
 
 // Project include(s).
+#include "../common/make_magnetic_field.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
@@ -14,6 +15,7 @@
 #include "traccc/io/utils.hpp"
 #include "traccc/options/detector.hpp"
 #include "traccc/options/input_data.hpp"
+#include "traccc/options/magnetic_field.hpp"
 #include "traccc/options/performance.hpp"
 #include "traccc/options/program_options.hpp"
 #include "traccc/options/track_fitting.hpp"
@@ -48,13 +50,14 @@ int main(int argc, char* argv[]) {
 
     // Program options.
     traccc::opts::detector detector_opts;
+    traccc::opts::magnetic_field bfield_opts;
     traccc::opts::input_data input_opts;
     traccc::opts::track_propagation propagation_opts;
     traccc::opts::track_fitting fitting_opts;
     traccc::opts::performance performance_opts;
     traccc::opts::program_options program_opts{
         "Truth Track Fitting on the Host",
-        {detector_opts, input_opts, propagation_opts, fitting_opts,
+        {detector_opts, bfield_opts, input_opts, propagation_opts, fitting_opts,
          performance_opts},
         argc,
         argv,
@@ -77,11 +80,9 @@ int main(int argc, char* argv[]) {
      * Build a geometry
      *****************************/
 
-    // B field value and its type
-    // @TODO: Set B field as argument
-    const traccc::vector3 B{0, 0, 2 * traccc::unit<traccc::scalar>::T};
-    const traccc::bfield field{
-        traccc::construct_const_bfield<traccc::scalar>(B)};
+    // B field value
+    const traccc::bfield field =
+        traccc::details::make_magnetic_field(bfield_opts);
 
     // Read the detector
     detray::io::detector_reader_config reader_cfg{};

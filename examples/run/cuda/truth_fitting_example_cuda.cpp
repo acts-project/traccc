@@ -6,7 +6,9 @@
  */
 
 // Project include(s).
+#include "../common/make_magnetic_field.hpp"
 #include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
+#include "traccc/cuda/utils/make_bfield.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
@@ -20,6 +22,7 @@
 #include "traccc/options/accelerator.hpp"
 #include "traccc/options/detector.hpp"
 #include "traccc/options/input_data.hpp"
+#include "traccc/options/magnetic_field.hpp"
 #include "traccc/options/performance.hpp"
 #include "traccc/options/program_options.hpp"
 #include "traccc/options/track_fitting.hpp"
@@ -59,6 +62,7 @@ int main(int argc, char* argv[]) {
 
     // Program options.
     traccc::opts::detector detector_opts;
+    traccc::opts::magnetic_field bfield_opts;
     traccc::opts::input_data input_opts;
     traccc::opts::track_propagation propagation_opts;
     traccc::opts::track_fitting fitting_opts;
@@ -66,8 +70,8 @@ int main(int argc, char* argv[]) {
     traccc::opts::accelerator accelerator_opts;
     traccc::opts::program_options program_opts{
         "Truth Track Fitting Using CUDA",
-        {detector_opts, input_opts, propagation_opts, performance_opts,
-         accelerator_opts},
+        {detector_opts, bfield_opts, input_opts, propagation_opts,
+         performance_opts, accelerator_opts},
         argc,
         argv,
         logger().cloneWithSuffix("Options")};
@@ -95,11 +99,10 @@ int main(int argc, char* argv[]) {
      * Build a geometry
      *****************************/
 
-    // B field value and its type
-    // @TODO: Set B field as argument
-    const traccc::vector3 B{0, 0, 2 * traccc::unit<traccc::scalar>::T};
-    const traccc::bfield field{
-        traccc::construct_const_bfield<traccc::scalar>(B)};
+    // B field value
+    const traccc::bfield host_field =
+        traccc::details::make_magnetic_field(bfield_opts);
+    const traccc::bfield device_field = traccc::cuda::make_bfield(host_field);
 
     // Read the detector
     detray::io::detector_reader_config reader_cfg{};
@@ -188,7 +191,7 @@ int main(int argc, char* argv[]) {
 
             // Run fitting
             track_states_cuda_buffer =
-                device_fitting(det_view, field,
+                device_fitting(det_view, device_field,
                                {truth_track_candidates_buffer.tracks,
                                 truth_track_candidates_buffer.measurements});
         }
@@ -207,7 +210,7 @@ int main(int argc, char* argv[]) {
 
                 // Run fitting
                 track_states = host_fitting(
-                    host_det, field,
+                    host_det, host_field,
                     {vecmem::get_data(truth_track_candidates.tracks),
                      vecmem::get_data(truth_track_candidates.measurements)});
             }
