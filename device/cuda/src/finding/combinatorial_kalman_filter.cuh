@@ -369,7 +369,7 @@ combinatorial_kalman_filter(
                     .tips_view = tips_buffer,
                     .tip_lengths_view = tip_length_buffer};
 
-                const unsigned int nThreads = warp_size * 2;
+                const unsigned int nThreads = warp_size * 4;
                 const unsigned int nBlocks =
                     (n_candidates + nThreads - 1) / nThreads;
                 propagate_to_next_surface<

@@ -109,7 +109,7 @@ track_state_container_types::buffer kalman_fitting(
     param_liveness_setup_event->ignore();
 
     // Launch parameters for all the kernels.
-    const unsigned int nThreads = warp_size * 2;
+    const unsigned int nThreads = warp_size * 4;
     const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
 
     // Fill the keys and param_ids buffers.
