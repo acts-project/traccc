@@ -454,6 +454,11 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                     const unsigned int seed_idx =
                         payload.step > 0 ? links.at(prev_link_idx).seed_idx
                                          : owner_global_thread_id;
+                    const scalar prev_chi2_sum =
+                        payload.step > 0 ? links.at(prev_link_idx).chi2_sum
+                                         : 0.f;
+                    const unsigned int prev_ndf_sum =
+                        payload.step > 0 ? links.at(prev_link_idx).ndf_sum : 0;
 
                     tmp_links.at(p_offset + l_pos) = {
                         .step = payload.step,
@@ -461,7 +466,11 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                         .meas_idx = meas_idx,
                         .seed_idx = seed_idx,
                         .n_skipped = n_skipped,
-                        .chi2 = chi2};
+                        .chi2 = chi2,
+                        .chi2_sum = prev_chi2_sum + chi2,
+                        .ndf_sum =
+                            prev_ndf_sum +
+                            std::get<0>(*result).get_measurement().meas_dim};
 
                     tmp_params.at(p_offset + l_pos) =
                         std::get<0>(*result).filtered();
@@ -525,6 +534,8 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     unsigned int prev_link_idx = std::numeric_limits<unsigned int>::max();
     unsigned int seed_idx = std::numeric_limits<unsigned int>::max();
     unsigned int n_skipped = std::numeric_limits<unsigned int>::max();
+    unsigned int prev_ndf_sum = 0u;
+    scalar prev_chi2_sum = 0.f;
 
     unsigned int local_out_offset = 0;
     unsigned int local_num_params = 0;
@@ -542,6 +553,9 @@ TRACCC_HOST_DEVICE inline void find_tracks(
         n_skipped = payload.step == 0 ? 0 : links.at(prev_link_idx).n_skipped;
         in_param_can_create_hole =
             (n_skipped <= cfg.max_num_skipping_per_cand) && (!last_step);
+        prev_ndf_sum = payload.step == 0 ? 0 : links.at(prev_link_idx).ndf_sum;
+        prev_chi2_sum =
+            payload.step == 0 ? 0.f : links.at(prev_link_idx).chi2_sum;
     }
 
     /*
@@ -613,7 +627,9 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                     .meas_idx = std::numeric_limits<unsigned int>::max(),
                     .seed_idx = seed_idx,
                     .n_skipped = n_skipped + 1,
-                    .chi2 = std::numeric_limits<traccc::scalar>::max()};
+                    .chi2 = std::numeric_limits<traccc::scalar>::max(),
+                    .chi2_sum = prev_chi2_sum,
+                    .ndf_sum = prev_ndf_sum};
 
                 unsigned int param_pos = out_offset - payload.curr_links_idx;
 
