@@ -289,7 +289,7 @@ combinatorial_kalman_filter(
             const unsigned int nBlocks =
                 (n_in_params + nThreads - 1) / nThreads;
             const std::size_t shared_size =
-                nThreads * sizeof(unsigned int) +
+                nThreads * sizeof(unsigned long long int) +
                 2 * nThreads * sizeof(std::pair<unsigned int, unsigned int>);
 
             // Run the kernel.
