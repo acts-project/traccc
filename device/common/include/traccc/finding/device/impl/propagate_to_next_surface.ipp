@@ -95,7 +95,7 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     }
 
     // Propagate to the next surface
-    propagator.propagate_sync(propagation, detray::tie(s0, s2, s3, s4, s5));
+    propagator.propagate(propagation, detray::tie(s0, s2, s3, s4, s5));
 
     // If a surface found, add the parameter for the next step
     if (s5.success) {

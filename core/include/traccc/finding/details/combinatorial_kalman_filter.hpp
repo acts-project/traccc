@@ -374,8 +374,7 @@ combinatorial_kalman_filter(
             }
 
             // Propagate to the next surface
-            propagator.propagate_sync(propagation,
-                                      detray::tie(s0, s1, s2, s3, s4));
+            propagator.propagate(propagation, detray::tie(s0, s1, s2, s3, s4));
 
             // If a surface found, add the parameter for the next
             // step
