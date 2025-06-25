@@ -31,14 +31,10 @@ namespace traccc::sycl {
 /// Kalman filter based track fitting algorithm
 class kalman_fitting_algorithm
     : public algorithm<track_state_container_types::buffer(
-          const default_detector::view&,
-          const covfie::field<const_bfield_backend_t<
-              default_detector::device::scalar_type>>::view_t&,
+          const default_detector::view&, const bfield&,
           const edm::track_candidate_container<default_algebra>::const_view&)>,
       public algorithm<track_state_container_types::buffer(
-          const telescope_detector::view&,
-          const covfie::field<const_bfield_backend_t<
-              telescope_detector::device::scalar_type>>::view_t&,
+          const telescope_detector::view&, const bfield&,
           const edm::track_candidate_container<default_algebra>::const_view&)>,
       public messaging {
 
@@ -60,30 +56,26 @@ class kalman_fitting_algorithm
     /// Execute the algorithm
     ///
     /// @param det             The (default) detector object
-    /// @param field           The (constant) magnetic field object
+    /// @param field           The magnetic field object
     /// @param track_candidates All track candidates to fit
     ///
     /// @return A container of the fitted track states
     ///
     output_type operator()(
-        const default_detector::view& det,
-        const covfie::field<traccc::const_bfield_backend_t<
-            default_detector::device::scalar_type>>::view_t& field,
+        const default_detector::view& det, const bfield& field,
         const edm::track_candidate_container<default_algebra>::const_view&
             track_candidates) const override;
 
     /// Execute the algorithm
     ///
     /// @param det             The (telescope) detector object
-    /// @param field           The (constant) magnetic field object
+    /// @param field           The magnetic field object
     /// @param track_candidates All track candidates to fit
     ///
     /// @return A container of the fitted track states
     ///
     output_type operator()(
-        const telescope_detector::view& det,
-        const covfie::field<traccc::const_bfield_backend_t<
-            telescope_detector::device::scalar_type>>::view_t& field,
+        const telescope_detector::view& det, const bfield& field,
         const edm::track_candidate_container<default_algebra>::const_view&
             track_candidates) const override;
 

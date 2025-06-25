@@ -71,8 +71,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     // B field value and its type
     // @TODO: Set B field as argument
     const traccc::vector3 B{0, 0, 2 * traccc::unit<traccc::scalar>::T};
-    const covfie::field<traccc::const_bfield_backend_t<traccc::scalar>> field =
-        traccc::construct_const_bfield<traccc::scalar>(B);
+    const traccc::bfield field{
+        traccc::construct_const_bfield<traccc::scalar>(B)};
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host detector{host_mr};

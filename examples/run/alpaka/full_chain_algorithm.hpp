@@ -56,9 +56,6 @@ class full_chain_algorithm
     /// (Device) Detector type used during track finding and fitting
     using device_detector_type = traccc::default_detector::device;
 
-    using bfield_type =
-        covfie::field<traccc::const_bfield_backend_t<traccc::scalar>>;
-
     /// Spacepoint formation algorithm type
     using spacepoint_formation_algorithm =
         traccc::alpaka::spacepoint_formation_algorithm<
@@ -124,7 +121,7 @@ class full_chain_algorithm
     /// Constant B field for the (seed) track parameter estimation
     traccc::vector3 m_field_vec;
     /// Constant B field for the track finding and fitting
-    bfield_type m_field;
+    bfield m_field;
 
     /// Detector description
     std::reference_wrapper<const silicon_detector_description::host>

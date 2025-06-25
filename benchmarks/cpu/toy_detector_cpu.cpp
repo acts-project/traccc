@@ -49,7 +49,7 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
         sim_dir + "toy_detector_surface_grids.json");
 
     // B field
-    auto field = traccc::construct_const_bfield<scalar_type>(B);
+    const traccc::bfield field{traccc::construct_const_bfield<scalar_type>(B)};
 
     // Algorithms
     traccc::host::seeding_algorithm sa(seeding_cfg, grid_cfg, filter_cfg,

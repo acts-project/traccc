@@ -56,8 +56,8 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
         sim_dir + "toy_detector_surface_grids.json");
 
     // B field
-    b_field_t field = traccc::construct_const_bfield<
-        traccc::default_detector::host::scalar_type>(B);
+    const traccc::bfield field{traccc::construct_const_bfield<
+        traccc::default_detector::host::scalar_type>(B)};
 
     // Algorithms
     traccc::cuda::seeding_algorithm sa_cuda(seeding_cfg, grid_cfg, filter_cfg,

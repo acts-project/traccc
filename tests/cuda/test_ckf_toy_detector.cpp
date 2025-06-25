@@ -72,6 +72,8 @@ TEST_P(CkfToyDetectorTests, Run) {
 
     auto field =
         traccc::construct_const_bfield<host_detector_type::scalar_type>(B);
+    const traccc::bfield b_field{
+        traccc::construct_const_bfield<traccc::scalar>(B)};
 
     // Detector view object
     auto det_view = detray::get_data(host_det);
@@ -184,13 +186,13 @@ TEST_P(CkfToyDetectorTests, Run) {
 
         // Run host finding
         auto track_candidates = host_finding(
-            host_det, field, vecmem::get_data(measurements_per_event),
+            host_det, b_field, vecmem::get_data(measurements_per_event),
             vecmem::get_data(seeds));
 
         // Run device finding
         traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
             track_candidates_cuda_buffer = device_finding(
-                det_view, field, measurements_buffer, seeds_buffer);
+                det_view, b_field, measurements_buffer, seeds_buffer);
 
         traccc::edm::track_candidate_collection<traccc::default_algebra>::host
             track_candidates_cuda{host_mr};

@@ -12,6 +12,10 @@ stages:
 # Base job template.
 .base_template: &base_job
   before_script:
+    - apt install -y zstd
+    - curl --retry 5 --retry-delay 10 --output deps.tar.zst https://acts.web.cern.ch/ACTS/ci/ubuntu-24.04/deps.v6.tar.zst
+    - tar -xf deps.tar.zst -C /usr/local --strip-components=1
+    - rm deps.tar.zst
     - git clone $CLONE_URL src
     - git -C src checkout $HEAD_SHA
     - source ./src/.github/ci_setup.sh ${TRACCC_BUILD_TYPE}
@@ -54,7 +58,7 @@ stages:
 # CUDA build job.
 build:cuda:
   <<: *build_job
-  image: ghcr.io/acts-project/ubuntu2204_cuda:56
+  image: ghcr.io/acts-project/ubuntu2404_cuda:69
   variables:
     TRACCC_BUILD_TYPE: CUDA
     TRACCC_BUILD_PRESET: cuda-fp32
@@ -62,7 +66,7 @@ build:cuda:
 # CUDA test job.
 test:cuda:
   <<: *nvidia_test_job
-  image: ghcr.io/acts-project/ubuntu2204_cuda:56
+  image: ghcr.io/acts-project/ubuntu2404_cuda:69
   variables:
     TRACCC_BUILD_TYPE: CUDA
   dependencies:
@@ -71,7 +75,7 @@ test:cuda:
 # SYCL build job (with an Intel backend).
 build:sycl_intel:
   <<: *build_job
-  image: ghcr.io/acts-project/ubuntu2404_oneapi:56
+  image: ghcr.io/acts-project/ubuntu2404_oneapi:69
   variables:
     TRACCC_BUILD_TYPE: SYCL
     TRACCC_BUILD_PRESET: sycl-fp32
@@ -81,7 +85,7 @@ build:sycl_intel:
 # SYCL test job (with an Intel backend).
 test:sycl_intel:
   <<: *intel_test_job
-  image: ghcr.io/acts-project/ubuntu2404_oneapi:56
+  image: ghcr.io/acts-project/ubuntu2404_oneapi:69
   variables:
     TRACCC_BUILD_TYPE: SYCL
     ONEAPI_DEVICE_SELECTOR: opencl:*
@@ -91,7 +95,7 @@ test:sycl_intel:
 # SYCL build job (with an NVIDIA backend).
 build:sycl_nvidia:
   <<: *build_job
-  image: ghcr.io/acts-project/ubuntu2204_cuda_oneapi:56
+  image: ghcr.io/acts-project/ubuntu2404_cuda_oneapi:69
   variables:
     TRACCC_BUILD_TYPE: SYCL
     TRACCC_BUILD_PRESET: sycl-fp32
@@ -102,7 +106,7 @@ build:sycl_nvidia:
 # SYCL test job (with an NVIDIA backend).
 test:sycl_nvidia:
   <<: *nvidia_test_job
-  image: ghcr.io/acts-project/ubuntu2204_cuda_oneapi:56
+  image: ghcr.io/acts-project/ubuntu2404_cuda_oneapi:69
   variables:
     TRACCC_BUILD_TYPE: SYCL
     ONEAPI_DEVICE_SELECTOR: cuda:*

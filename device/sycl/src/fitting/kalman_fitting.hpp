@@ -34,8 +34,14 @@
 namespace traccc::sycl {
 namespace kernels {
 
-/// Identifier for the kernel that fills the sorting keys.
+template <typename T>
 struct fill_sort_keys;
+template <typename T>
+struct fit_prelude;
+template <typename T>
+struct fit_forward;
+template <typename T>
+struct fit_backward;
 
 }  // namespace kernels
 
@@ -123,7 +129,7 @@ track_state_container_types::buffer kalman_fitting(
 
     // Fill the keys and param_ids buffers.
     ::sycl::event fill_keys_event = queue.submit([&](::sycl::handler& h) {
-        h.parallel_for<kernels::fill_sort_keys>(
+        h.parallel_for<kernels::fill_sort_keys<kernel_t>>(
             range,
             [track_candidates_view, keys_view = vecmem::get_data(keys_buffer),
              param_ids_view =
@@ -149,7 +155,7 @@ track_state_container_types::buffer kalman_fitting(
 
     queue
         .submit([&](::sycl::handler& h) {
-            h.parallel_for(
+            h.parallel_for<kernels::fit_prelude<kernel_t>>(
                 range, [param_ids_view = vecmem::get_data(param_ids_buffer),
                         track_candidates_view, track_states_view,
                         param_liveness_view = vecmem::get_data(
@@ -173,7 +179,7 @@ track_state_container_types::buffer kalman_fitting(
     for (std::size_t i = 0; i < config.n_iterations; ++i) {
         queue
             .submit([&](::sycl::handler& h) {
-                h.parallel_for(
+                h.parallel_for<kernels::fit_forward<kernel_t>>(
                     range, [config, payload](::sycl::nd_item<1> item) {
                         device::fit_forward<fitter_t>(
                             details::global_index(item), config, payload);
@@ -183,7 +189,7 @@ track_state_container_types::buffer kalman_fitting(
 
         queue
             .submit([&](::sycl::handler& h) {
-                h.parallel_for(
+                h.parallel_for<kernels::fit_backward<kernel_t>>(
                     range, [config, payload](::sycl::nd_item<1> item) {
                         device::fit_backward<fitter_t>(
                             details::global_index(item), config, payload);

@@ -80,8 +80,8 @@ int main(int argc, char* argv[]) {
     // B field value and its type
     // @TODO: Set B field as argument
     const traccc::vector3 B{0, 0, 2 * traccc::unit<traccc::scalar>::T};
-    const covfie::field<traccc::const_bfield_backend_t<traccc::scalar>> field =
-        traccc::construct_const_bfield<traccc::scalar>(B);
+    const traccc::bfield field{
+        traccc::construct_const_bfield<traccc::scalar>(B)};
 
     // Read the detector
     detray::io::detector_reader_config reader_cfg{};

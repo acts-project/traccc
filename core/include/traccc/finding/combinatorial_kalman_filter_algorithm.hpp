@@ -32,15 +32,11 @@ namespace traccc::host {
 ///
 class combinatorial_kalman_filter_algorithm
     : public algorithm<edm::track_candidate_collection<default_algebra>::host(
-          const default_detector::host&,
-          const covfie::field<const_bfield_backend_t<
-              default_detector::host::scalar_type>>::view_t&,
+          const default_detector::host&, const bfield&,
           const measurement_collection_types::const_view&,
           const bound_track_parameters_collection_types::const_view&)>,
       public algorithm<edm::track_candidate_collection<default_algebra>::host(
-          const telescope_detector::host&,
-          const covfie::field<traccc::const_bfield_backend_t<
-              telescope_detector::host::scalar_type>>::view_t&,
+          const telescope_detector::host&, const bfield&,
           const measurement_collection_types::const_view&,
           const bound_track_parameters_collection_types::const_view&)>,
       public messaging {
@@ -59,7 +55,7 @@ class combinatorial_kalman_filter_algorithm
     /// Execute the algorithm
     ///
     /// @param det          The (default) detector object
-    /// @param field        The (constant) magnetic field object
+    /// @param field        The magnetic field object
     /// @param measurements All measurements in an event
     /// @param seeds        All seeds in an event to start the track finding
     ///                     with
@@ -67,9 +63,7 @@ class combinatorial_kalman_filter_algorithm
     /// @return A container of the found track candidates
     ///
     output_type operator()(
-        const default_detector::host& det,
-        const covfie::field<traccc::const_bfield_backend_t<
-            default_detector::host::scalar_type>>::view_t& field,
+        const default_detector::host& det, const bfield& field,
         const measurement_collection_types::const_view& measurements,
         const bound_track_parameters_collection_types::const_view& seeds)
         const override;
@@ -77,7 +71,7 @@ class combinatorial_kalman_filter_algorithm
     /// Execute the algorithm
     ///
     /// @param det          The (telescope) detector object
-    /// @param field        The (constant) magnetic field object
+    /// @param field        The magnetic field object
     /// @param measurements All measurements in an event
     /// @param seeds        All seeds in an event to start the track finding
     ///                     with
@@ -85,9 +79,7 @@ class combinatorial_kalman_filter_algorithm
     /// @return A container of the found track candidates
     ///
     output_type operator()(
-        const telescope_detector::host& det,
-        const covfie::field<traccc::const_bfield_backend_t<
-            telescope_detector::host::scalar_type>>::view_t& field,
+        const telescope_detector::host& det, const bfield& field,
         const measurement_collection_types::const_view& measurements,
         const bound_track_parameters_collection_types::const_view& seeds)
         const override;

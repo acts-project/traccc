@@ -113,8 +113,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
     // Constant B field for the track finding and fitting
     const traccc::vector3 field_vec = {0.f, 0.f,
                                        seeding_opts.seedfinder.bFieldInZ};
-    const covfie::field<traccc::const_bfield_backend_t<traccc::scalar>> field =
-        traccc::construct_const_bfield<traccc::scalar>(field_vec);
+    const traccc::bfield field{
+        traccc::construct_const_bfield<traccc::scalar>(field_vec)};
 
     // Algorithm configuration(s).
     detray::propagation::config propagation_config(propagation_opts);
