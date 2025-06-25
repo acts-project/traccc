@@ -123,14 +123,16 @@ struct two_filters_smoother {
         // Eq (3.39) of "Pattern Recognition, Tracking and Vertex
         // Reconstruction in Particle Detectors"
         const matrix_type<D, D> R_smt =
-            V - H * smoothed_cov * matrix::transpose(H);
+            V - H * algebra::matrix::transposed_product<false, true>(
+                        smoothed_cov, H);
 
         // Eq (3.40) of "Pattern Recognition, Tracking and Vertex
         // Reconstruction in Particle Detectors"
         assert(matrix::determinant(R_smt) != 0.f);
-        const matrix_type<1, 1> chi2_smt = matrix::transpose(residual_smt) *
-                                           matrix::inverse(R_smt) *
-                                           residual_smt;
+        const matrix_type<1, 1> chi2_smt =
+            algebra::matrix::transposed_product<true, false>(
+                residual_smt, matrix::inverse(R_smt)) *
+            residual_smt;
 
         if (getter::element(chi2_smt, 0, 0) < 0.f) {
             return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NEGATIVE;
@@ -156,14 +158,15 @@ struct two_filters_smoother {
             matrix::identity<matrix_type<e_bound_size, e_bound_size>>();
         const auto I_m = matrix::identity<matrix_type<D, D>>();
 
-        const matrix_type<D, D> M =
-            H * predicted_cov * matrix::transpose(H) + V;
+        const matrix_type<e_bound_size, D> projected_cov =
+            algebra::matrix::transposed_product<false, true>(predicted_cov, H);
+
+        const matrix_type<D, D> M = H * projected_cov + V;
 
         // Kalman gain matrix
         assert(matrix::determinant(M) != 0.f);
         assert(std::isfinite(matrix::determinant(M)));
-        const matrix_type<6, D> K =
-            predicted_cov * matrix::transpose(H) * matrix::inverse(M);
+        const matrix_type<6, D> K = projected_cov * matrix::inverse(M);
 
         // Calculate the filtered track parameters
         const matrix_type<6, 1> filtered_vec =
@@ -178,7 +181,9 @@ struct two_filters_smoother {
         // assert(matrix::determinant(R) != 0.f);
         assert(std::isfinite(matrix::determinant(R)));
         const matrix_type<1, 1> chi2 =
-            matrix::transpose(residual) * matrix::inverse(R) * residual;
+            algebra::matrix::transposed_product<true, false>(
+                residual, matrix::inverse(R)) *
+            residual;
 
         // Update the bound track parameters
         bound_params.set_vector(filtered_vec);
