@@ -14,6 +14,7 @@ log = logging.getLogger("traccc_benchmark")
 
 DETERMINISTIC_ORDER_COMMIT = "7e7f17ccd2e2b0db8971655773b351a365ee1cfc"
 BOOLEAN_FLAG_COMMIT = "380fc78ba63a79ed5c8f19d01d57636aa31cf4fd"
+INHOMOGENEOUS_BFIELD_COMMIT = "3654a64d5fe06509e6bf8be332f5aae7b8ff2da9"
 
 
 def run_profile(
@@ -68,6 +69,19 @@ def run_profile(
         )
         profile_args.append("--use-acts-geom-source")
         profile_args.append("--use-detray-detector")
+
+    if git.is_parent_of(commit, INHOMOGENEOUS_BFIELD_COMMIT):
+        log.info(
+            "Commit is a child of (or is) %s; enabling inhomogeneous magnetic field",
+            INHOMOGENEOUS_BFIELD_COMMIT[:8],
+        )
+        profile_args.append("--read-bfield-from-file")
+        profile_args.append("--bfield-file=geometries/odd/odd-bfield.cvf")
+    else:
+        log.info(
+            "Commit is not a child of %s; disabling inhomogeneous magnetic field",
+            INHOMOGENEOUS_BFIELD_COMMIT[:8],
+        )
 
     subprocess.run(
         profile_args,
