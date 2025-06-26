@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2024 CERN for the benefit of the ACTS project
+# (c) 2021-2025 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -17,12 +17,12 @@ enable_language( SYCL )
 traccc_add_executable( seeding_example_sycl "seeding_example_sycl.sycl"
    LINK_LIBRARIES traccc::options vecmem::core vecmem::sycl traccc::io
                   traccc::core traccc::device_common traccc::sycl
-                  traccc::performance )
+                  traccc::performance traccc_examples_common )
 
 traccc_add_executable( seq_example_sycl "seq_example_sycl.sycl"
    LINK_LIBRARIES traccc::options vecmem::core vecmem::sycl traccc::io
                   traccc::core traccc::device_common traccc::sycl
-                  traccc::performance )
+                  traccc::performance traccc_examples_common )
 
 #
 # Set up the "throughput applications".
@@ -32,7 +32,8 @@ add_library( traccc_examples_sycl OBJECT
    "full_chain_algorithm.sycl" )
 target_link_libraries( traccc_examples_sycl
    PUBLIC vecmem::core vecmem::sycl detray::core detray::detectors
-          traccc::core traccc::device_common traccc::sycl )
+          traccc::core traccc::device_common traccc::sycl
+          traccc_examples_common )
 
 traccc_add_executable( throughput_st_sycl "throughput_st.cpp"
    LINK_LIBRARIES indicators::indicators vecmem::core vecmem::sycl
