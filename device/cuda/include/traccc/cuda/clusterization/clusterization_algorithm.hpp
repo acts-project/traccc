@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -13,10 +13,8 @@
 // Project include(s).
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
-#include "traccc/clusterization/device/tags.hpp"
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/device/clusterization_return_type.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
-#include "traccc/edm/silicon_cluster_collection.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
@@ -28,7 +26,6 @@
 
 // System include(s).
 #include <functional>
-#include <optional>
 
 namespace traccc::cuda {
 
@@ -41,19 +38,9 @@ namespace traccc::cuda {
 /// synchronisation statement is required before destroying the buffer.
 ///
 class clusterization_algorithm
-    : public algorithm<measurement_collection_types::buffer(
+    : public algorithm<device::clusterization_return_type(
           const edm::silicon_cell_collection::const_view&,
-          const silicon_detector_description::const_view&)>,
-      public algorithm<measurement_collection_types::buffer(
-          const edm::silicon_cell_collection::const_view&,
-          const silicon_detector_description::const_view&,
-          device::clustering_discard_disjoint_set&&)>,
-      public algorithm<
-          std::pair<measurement_collection_types::buffer,
-                    traccc::edm::silicon_cluster_collection::buffer>(
-              const edm::silicon_cell_collection::const_view&,
-              const silicon_detector_description::const_view&,
-              device::clustering_keep_disjoint_set&&)>,
+          const silicon_detector_description::const_view&, bool)>,
       public messaging {
 
     public:
@@ -67,7 +54,7 @@ class clusterization_algorithm
     ///             and host memory blocks
     /// @param str The CUDA stream to perform the operations in
     /// @param config The clustering configuration
-    /// partition
+    /// @param logger The logger to use for logging messages
     ///
     clusterization_algorithm(
         const traccc::memory_resource& mr, vecmem::copy& copy, stream& str,
@@ -78,33 +65,17 @@ class clusterization_algorithm
     ///
     /// @param cells     All cells in an event
     /// @param det_descr The detector description
+    /// @param reconstruct_clusters Whether or not a cluster collection (buffer)
+    ///                             needs to be returned
     /// @return a measurement collection (buffer)
+    ///         and an optional cluster collection (buffer)
     ///
-    /// @{
-    measurement_collection_types::buffer operator()(
-        const edm::silicon_cell_collection::const_view& cells,
-        const silicon_detector_description::const_view& det_descr)
-        const override;
-
-    measurement_collection_types::buffer operator()(
+    output_type operator()(
         const edm::silicon_cell_collection::const_view& cells,
         const silicon_detector_description::const_view& det_descr,
-        device::clustering_discard_disjoint_set&&) const override;
-
-    std::pair<measurement_collection_types::buffer,
-              traccc::edm::silicon_cluster_collection::buffer>
-    operator()(const edm::silicon_cell_collection::const_view& cells,
-               const silicon_detector_description::const_view& det_descr,
-               device::clustering_keep_disjoint_set&&) const override;
-    /// @}
+        bool reconstruct_clusters = false) const override;
 
     private:
-    std::pair<measurement_collection_types::buffer,
-              std::optional<traccc::edm::silicon_cluster_collection::buffer>>
-    execute_impl(const edm::silicon_cell_collection::const_view& cells,
-                 const silicon_detector_description::const_view& det_descr,
-                 bool keep_disjoint_set) const;
-
     /// The memory resource(s) to use
     traccc::memory_resource m_mr;
     /// The copy object to use
@@ -114,11 +85,13 @@ class clusterization_algorithm
     /// The average number of cells in each partition
     const config_type m_config;
     /// Memory reserved for edge cases
+    /// @{
     vecmem::data::vector_buffer<device::details::index_t> m_f_backup,
         m_gf_backup;
     vecmem::unique_alloc_ptr<unsigned int> m_backup_mutex;
     vecmem::data::vector_buffer<unsigned char> m_adjc_backup;
     vecmem::data::vector_buffer<device::details::index_t> m_adjv_backup;
+    /// @}
 };
 
 }  // namespace traccc::cuda

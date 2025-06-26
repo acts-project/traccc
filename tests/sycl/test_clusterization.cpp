@@ -59,7 +59,7 @@ TEST(SYCLClustering, SingleModule) {
                                                    default_ccl_test_config());
 
     auto measurements_buffer =
-        ca_sycl(vecmem::get_data(cells), vecmem::get_data(dd));
+        ca_sycl(vecmem::get_data(cells), vecmem::get_data(dd)).measurements;
 
     measurement_collection_types::device measurements(measurements_buffer);
 
