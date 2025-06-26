@@ -7,6 +7,9 @@
 
 #pragma once
 
+// Local include(s).
+#include "make_magnetic_field.hpp"
+
 // Project include(s)
 #include "traccc/geometry/detector.hpp"
 
@@ -14,6 +17,7 @@
 #include "traccc/options/clusterization.hpp"
 #include "traccc/options/detector.hpp"
 #include "traccc/options/input_data.hpp"
+#include "traccc/options/magnetic_field.hpp"
 #include "traccc/options/program_options.hpp"
 #include "traccc/options/throughput.hpp"
 #include "traccc/options/track_finding.hpp"
@@ -54,6 +58,7 @@ int throughput_st(std::string_view description, int argc, char* argv[],
 
     // Program options.
     opts::detector detector_opts;
+    opts::magnetic_field bfield_opts;
     opts::input_data input_opts;
     opts::clusterization clusterization_opts;
     opts::track_seeding seeding_opts;
@@ -63,8 +68,9 @@ int throughput_st(std::string_view description, int argc, char* argv[],
     opts::throughput throughput_opts;
     opts::program_options program_opts{
         description,
-        {detector_opts, input_opts, clusterization_opts, seeding_opts,
-         finding_opts, propagation_opts, fitting_opts, throughput_opts},
+        {detector_opts, bfield_opts, input_opts, clusterization_opts,
+         seeding_opts, finding_opts, propagation_opts, fitting_opts,
+         throughput_opts},
         argc,
         argv,
         logger->cloneWithSuffix("Options")};
@@ -91,6 +97,9 @@ int throughput_st(std::string_view description, int argc, char* argv[],
             detector, uncached_host_mr, detector_opts.detector_file,
             detector_opts.material_file, detector_opts.grid_file);
     }
+
+    // Construct the magnetic field object.
+    traccc::bfield field{details::make_magnetic_field(bfield_opts)};
 
     vecmem::memory_resource& alg_host_mr =
         use_host_caching
@@ -131,7 +140,7 @@ int throughput_st(std::string_view description, int argc, char* argv[],
     std::unique_ptr<FULL_CHAIN_ALG> alg = std::make_unique<FULL_CHAIN_ALG>(
         alg_host_mr, clustering_cfg, seeding_opts.seedfinder,
         spacepoint_grid_config{seeding_opts.seedfinder},
-        seeding_opts.seedfilter, finding_cfg, fitting_cfg, det_descr,
+        seeding_opts.seedfilter, finding_cfg, fitting_cfg, det_descr, field,
         (detector_opts.use_detray_detector ? &detector : nullptr),
         logger->clone("FullChainAlg"));
 

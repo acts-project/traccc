@@ -8,6 +8,9 @@
 // Local include(s).
 #include "full_chain_algorithm.hpp"
 
+// Project include(s).
+#include "traccc/cuda/utils/make_bfield.hpp"
+
 // CUDA include(s).
 #include <cuda_runtime_api.h>
 
@@ -35,7 +38,7 @@ full_chain_algorithm::full_chain_algorithm(
     const seedfilter_config& filter_config,
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
-    const silicon_detector_description::host& det_descr,
+    const silicon_detector_description::host& det_descr, const bfield& field,
     host_detector_type* detector, std::unique_ptr<const traccc::Logger> logger)
     : messaging(logger->clone()),
       m_host_mr(host_mr),
@@ -45,8 +48,7 @@ full_chain_algorithm::full_chain_algorithm(
           std::make_unique<vecmem::binary_page_memory_resource>(m_device_mr)),
       m_copy(m_stream.cudaStream()),
       m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
-      m_field(traccc::construct_const_bfield<host_detector_type::scalar_type>(
-          m_field_vec)),
+      m_field(make_bfield(field)),
       m_det_descr(det_descr),
       m_device_det_descr(
           static_cast<silicon_detector_description::buffer::size_type>(
