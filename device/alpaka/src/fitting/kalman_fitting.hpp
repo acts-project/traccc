@@ -8,6 +8,7 @@
 #pragma once
 
 // Local include(s).
+#include "../utils/parallel_algorithms.hpp"
 #include "../utils/utils.hpp"
 
 // Project include(s).
@@ -25,10 +26,6 @@
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
-
-// Thrust include(s).
-#include <thrust/execution_policy.h>
-#include <thrust/sort.h>
 
 namespace traccc::alpaka::details {
 namespace kernels {
@@ -122,13 +119,6 @@ track_state_container_types::buffer kalman_fitting(
     const fitting_config& config, const memory_resource& mr, vecmem::copy& copy,
     Queue& queue) {
 
-    /// Thrust policy to use.
-#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_GPU_HIP_ENABLED)
-    auto thrustExecPolicy = thrust::device;
-#else
-    auto thrustExecPolicy = thrust::host;
-#endif
-
     // Number of threads per block to use.
     const Idx threadsPerBlock = getWarpSize<Acc>() * 2;
 
@@ -199,8 +189,8 @@ track_state_container_types::buffer kalman_fitting(
     // Sort the key to get the sorted parameter ids
     vecmem::device_vector<device::sort_key> keys_device(keys_buffer);
     vecmem::device_vector<unsigned int> param_ids_device(param_ids_buffer);
-    thrust::sort_by_key(thrustExecPolicy, keys_device.begin(),
-                        keys_device.end(), param_ids_device.begin());
+    details::sort_by_key(queue, mr, keys_device.begin(), keys_device.end(),
+                         param_ids_device.begin());
 
     // Run the fitting, using the sorted parameter IDs.
     track_state_container_types::view track_states_view = track_states_buffer;
