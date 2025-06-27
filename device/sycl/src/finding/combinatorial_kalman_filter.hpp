@@ -24,7 +24,7 @@
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
 #include "traccc/finding/device/apply_interaction.hpp"
 #include "traccc/finding/device/build_tracks.hpp"
-#include "traccc/finding/device/fill_sort_keys.hpp"
+#include "traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
 #include "traccc/finding/device/find_tracks.hpp"
 #include "traccc/finding/device/make_barcode_sequence.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
@@ -49,7 +49,7 @@ struct apply_interaction {};
 template <typename T>
 struct find_tracks {};
 template <typename T>
-struct fill_sort_keys {};
+struct fill_finding_propagation_sort_keys {};
 template <typename T>
 struct propagate_to_next_surface {};
 template <typename T>
@@ -354,13 +354,15 @@ combinatorial_kalman_filter(
 
                 queue
                     .submit([&](::sycl::handler& h) {
-                        h.parallel_for<kernels::fill_sort_keys<kernel_t>>(
+                        h.parallel_for<
+                            kernels::fill_finding_propagation_sort_keys<
+                                kernel_t>>(
                             calculate1DimNdRange(n_candidates, 256),
                             [in_params = vecmem::get_data(in_params_buffer),
                              keys = vecmem::get_data(keys_buffer),
                              param_ids = vecmem::get_data(param_ids_buffer)](
                                 ::sycl::nd_item<1> item) {
-                                device::fill_sort_keys(
+                                device::fill_finding_propagation_sort_keys(
                                     details::global_index(item),
                                     {in_params, keys, param_ids});
                             });

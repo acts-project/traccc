@@ -15,7 +15,7 @@
 #include "traccc/edm/track_candidate_container.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/details/kalman_fitting_types.hpp"
-#include "traccc/fitting/device/fill_sort_keys.hpp"
+#include "traccc/fitting/device/fill_fitting_sort_keys.hpp"
 #include "traccc/fitting/device/fit.hpp"
 #include "traccc/fitting/device/fit_backward.hpp"
 #include "traccc/fitting/device/fit_forward.hpp"
@@ -33,8 +33,8 @@
 namespace traccc::alpaka::details {
 namespace kernels {
 
-/// Alpaka kernel functor for @c traccc::device::fill_sort_keys
-struct fill_sort_keys {
+/// Alpaka kernel functor for @c traccc::device::fill_fitting_sort_keys
+struct fill_fitting_sort_keys {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc,
@@ -45,8 +45,8 @@ struct fill_sort_keys {
 
         const device::global_index_t globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
-        device::fill_sort_keys(globalThreadIdx, track_candidates_view,
-                               keys_view, ids_view);
+        device::fill_fitting_sort_keys(globalThreadIdx, track_candidates_view,
+                                       keys_view, ids_view);
     }
 };
 
@@ -190,9 +190,10 @@ track_state_container_types::buffer kalman_fitting(
     const auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
     // Fill the keys and param_ids buffers.
-    ::alpaka::exec<Acc>(
-        queue, workDiv, kernels::fill_sort_keys{}, track_candidates_view.tracks,
-        vecmem::get_data(keys_buffer), vecmem::get_data(param_ids_buffer));
+    ::alpaka::exec<Acc>(queue, workDiv, kernels::fill_fitting_sort_keys{},
+                        track_candidates_view.tracks,
+                        vecmem::get_data(keys_buffer),
+                        vecmem::get_data(param_ids_buffer));
     ::alpaka::wait(queue);
 
     // Sort the key to get the sorted parameter ids

@@ -23,7 +23,7 @@ namespace traccc::device {
 /// @param[out] keys_view    The key values
 /// @param[out] ids_view     The param ids
 ///
-TRACCC_HOST_DEVICE inline void fill_sort_keys(
+TRACCC_HOST_DEVICE inline void fill_fitting_sort_keys(
     global_index_t globalIndex,
     const edm::track_candidate_collection<default_algebra>::const_view&
         track_candidates_view,
@@ -33,4 +33,4 @@ TRACCC_HOST_DEVICE inline void fill_sort_keys(
 }  // namespace traccc::device
 
 // Include the implementation.
-#include "traccc/fitting/device/impl/fill_sort_keys.ipp"
+#include "traccc/fitting/device/impl/fill_fitting_sort_keys.ipp"
