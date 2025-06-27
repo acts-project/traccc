@@ -11,6 +11,9 @@
 // Local include(s).
 #include "utils.hpp"
 
+// Project include(s).
+#include "traccc/utils/memory_resource.hpp"
+
 // Thrust include(s).
 #include <thrust/binary_search.h>
 #include <thrust/copy.h>
@@ -29,6 +32,7 @@
 #pragma clang diagnostic ignored "-Wsign-conversion"
 #pragma clang diagnostic ignored "-Wimplicit-int-conversion"
 #pragma clang diagnostic ignored "-Wsign-compare"
+#pragma clang diagnostic ignored "-Wold-style-cast"
 #include <oneapi/dpl/algorithm>
 #include <oneapi/dpl/execution>
 #pragma clang diagnostic pop
@@ -36,7 +40,8 @@
 
 namespace traccc::alpaka::details {
 
-inline auto getExecutionPolicy(Queue &q, const memory_resource &mr) {
+inline auto getExecutionPolicy([[maybe_unused]] Queue &q,
+                               [[maybe_unused]] const memory_resource &mr) {
 #if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
     auto stream = ::alpaka::getNativeHandle(q);
     return thrust::cuda::par_nosync(std::pmr::polymorphic_allocator(&(mr.main)))
