@@ -21,7 +21,7 @@
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
 #include "traccc/finding/device/apply_interaction.hpp"
 #include "traccc/finding/device/build_tracks.hpp"
-#include "traccc/finding/device/fill_sort_keys.hpp"
+#include "traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
 #include "traccc/finding/device/find_tracks.hpp"
 #include "traccc/finding/device/make_barcode_sequence.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
@@ -105,15 +105,18 @@ struct find_tracks {
     }
 };
 
-/// Alpaka kernel functor for @c traccc::device::fill_sort_keys
-struct fill_sort_keys {
+/// Alpaka kernel functor for @c
+/// traccc::device::fill_finding_propagation_sort_keys
+struct fill_finding_propagation_sort_keys {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        TAcc const& acc, const device::fill_sort_keys_payload payload) const {
+        TAcc const& acc,
+        const device::fill_finding_propagation_sort_keys_payload payload)
+        const {
 
         const device::global_index_t globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
-        device::fill_sort_keys(globalThreadIdx, payload);
+        device::fill_finding_propagation_sort_keys(globalThreadIdx, payload);
     }
 };
 
@@ -428,8 +431,9 @@ combinatorial_kalman_filter(
                 auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
                 ::alpaka::exec<Acc>(
-                    queue, workDiv, kernels::fill_sort_keys{},
-                    device::fill_sort_keys_payload{
+                    queue, workDiv,
+                    kernels::fill_finding_propagation_sort_keys{},
+                    device::fill_finding_propagation_sort_keys_payload{
                         in_params_buffer, keys_buffer, param_ids_buffer});
                 ::alpaka::wait(queue);
 

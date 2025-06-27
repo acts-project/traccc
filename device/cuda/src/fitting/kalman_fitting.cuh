@@ -11,7 +11,7 @@
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/global_index.hpp"
 #include "../utils/utils.hpp"
-#include "./kernels/fill_sort_keys.hpp"
+#include "./kernels/fill_fitting_sort_keys.hpp"
 #include "./kernels/fit_backward.hpp"
 #include "./kernels/fit_forward.hpp"
 #include "./kernels/fit_prelude.hpp"
@@ -21,7 +21,7 @@
 #include "traccc/edm/track_candidate_container.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/details/kalman_fitting_types.hpp"
-#include "traccc/fitting/device/fill_sort_keys.hpp"
+#include "traccc/fitting/device/fill_fitting_sort_keys.hpp"
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/utils/memory_resource.hpp"
 
@@ -113,8 +113,9 @@ track_state_container_types::buffer kalman_fitting(
     const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
 
     // Fill the keys and param_ids buffers.
-    fill_sort_keys(nBlocks, nThreads, stream, track_candidates_view.tracks,
-                   keys_buffer, param_ids_buffer);
+    fill_fitting_sort_keys(nBlocks, nThreads, stream,
+                           track_candidates_view.tracks, keys_buffer,
+                           param_ids_buffer);
 
     // Sort the key to get the sorted parameter ids
     vecmem::device_vector<device::sort_key> keys_device(keys_buffer);

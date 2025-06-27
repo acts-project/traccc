@@ -19,8 +19,9 @@
 
 namespace traccc::device {
 
-/// (Event Data) Payload for the @c traccc::device::fill_sort_keys function
-struct fill_sort_keys_payload {
+/// (Event Data) Payload for the @c
+/// traccc::device::fill_finding_propagation_sort_keys function
+struct fill_finding_propagation_sort_keys_payload {
     /**
      * @brief View object to the vector of bound track parameters
      */
@@ -43,10 +44,11 @@ struct fill_sort_keys_payload {
 /// @param[in] globalIndex   The index of the current thread
 /// @param[inout] payload      The function call payload
 ///
-TRACCC_HOST_DEVICE inline void fill_sort_keys(
-    global_index_t globalIndex, const fill_sort_keys_payload& payload);
+TRACCC_HOST_DEVICE inline void fill_finding_propagation_sort_keys(
+    global_index_t globalIndex,
+    const fill_finding_propagation_sort_keys_payload& payload);
 
 }  // namespace traccc::device
 
 // Include the implementation.
-#include "./impl/fill_sort_keys.ipp"
+#include "./impl/fill_finding_propagation_sort_keys.ipp"

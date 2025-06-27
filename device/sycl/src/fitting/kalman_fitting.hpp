@@ -17,7 +17,7 @@
 #include "traccc/edm/track_candidate_container.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/details/kalman_fitting_types.hpp"
-#include "traccc/fitting/device/fill_sort_keys.hpp"
+#include "traccc/fitting/device/fill_fitting_sort_keys.hpp"
 #include "traccc/fitting/device/fit.hpp"
 #include "traccc/fitting/device/fit_backward.hpp"
 #include "traccc/fitting/device/fit_forward.hpp"
@@ -35,7 +35,7 @@ namespace traccc::sycl {
 namespace kernels {
 
 template <typename T>
-struct fill_sort_keys;
+struct fill_fitting_sort_keys;
 template <typename T>
 struct fit_prelude;
 template <typename T>
@@ -129,14 +129,14 @@ track_state_container_types::buffer kalman_fitting(
 
     // Fill the keys and param_ids buffers.
     ::sycl::event fill_keys_event = queue.submit([&](::sycl::handler& h) {
-        h.parallel_for<kernels::fill_sort_keys<kernel_t>>(
+        h.parallel_for<kernels::fill_fitting_sort_keys<kernel_t>>(
             range,
             [track_candidates_view, keys_view = vecmem::get_data(keys_buffer),
              param_ids_view =
                  vecmem::get_data(param_ids_buffer)](::sycl::nd_item<1> item) {
-                device::fill_sort_keys(details::global_index(item),
-                                       track_candidates_view.tracks, keys_view,
-                                       param_ids_view);
+                device::fill_fitting_sort_keys(details::global_index(item),
+                                               track_candidates_view.tracks,
+                                               keys_view, param_ids_view);
             });
     });
 

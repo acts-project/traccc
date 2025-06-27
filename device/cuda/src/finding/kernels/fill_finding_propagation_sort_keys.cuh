@@ -8,10 +8,11 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/finding/device/fill_sort_keys.hpp"
+#include "traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
 
 namespace traccc::cuda::kernels {
 
-__global__ void fill_sort_keys(device::fill_sort_keys_payload payload);
+__global__ void fill_finding_propagation_sort_keys(
+    device::fill_finding_propagation_sort_keys_payload payload);
 
 }
