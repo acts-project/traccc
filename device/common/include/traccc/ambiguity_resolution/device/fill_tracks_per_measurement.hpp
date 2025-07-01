@@ -34,9 +34,9 @@ struct fill_tracks_per_measurement_payload {
     vecmem::data::jagged_vector_view<const measurement_id_type> meas_ids_view;
 
     /**
-     * @brief View object to the unique measurement ids
+     * @brief View object to the meas id to unique id map
      */
-    vecmem::data::vector_view<const measurement_id_type> unique_meas_view;
+    vecmem::data::vector_view<const unsigned int> meas_id_to_unique_id_view;
 
     /**
      * @brief View object to the tracks per measurement

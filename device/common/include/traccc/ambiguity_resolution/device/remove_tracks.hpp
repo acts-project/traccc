@@ -42,9 +42,9 @@ struct remove_tracks_payload {
     vecmem::data::vector_view<const unsigned int> n_meas_view;
 
     /**
-     * @brief View object to the unique measurement ids
+     * @brief View object to the meas id to unique id map
      */
-    vecmem::data::vector_view<const measurement_id_type> unique_meas_view;
+    vecmem::data::vector_view<const unsigned int> meas_id_to_unique_id_view;
 
     /**
      * @brief View object to the tracks per measurement

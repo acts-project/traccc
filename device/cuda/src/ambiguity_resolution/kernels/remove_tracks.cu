@@ -45,8 +45,8 @@ __global__ void remove_tracks(device::remove_tracks_payload payload) {
     vecmem::jagged_device_vector<const measurement_id_type> meas_ids(
         payload.meas_ids_view);
     vecmem::device_vector<const unsigned int> n_meas(payload.n_meas_view);
-    vecmem::device_vector<const measurement_id_type> unique_meas(
-        payload.unique_meas_view);
+    vecmem::device_vector<const unsigned int> meas_id_to_unique_id(
+        payload.meas_id_to_unique_id_view);
     vecmem::jagged_device_vector<const unsigned int> tracks_per_measurement(
         payload.tracks_per_measurement_view);
     vecmem::jagged_device_vector<int> track_status_per_measurement(
@@ -87,10 +87,7 @@ __global__ void remove_tracks(device::remove_tracks_payload payload) {
         return;
     }
 
-    const std::size_t unique_meas_idx =
-        thrust::lower_bound(thrust::seq, unique_meas.begin(), unique_meas.end(),
-                            id) -
-        unique_meas.begin();
+    const auto unique_meas_idx = meas_id_to_unique_id.at(id);
 
     // If there is only one track associated with measurement, the
     // number of shared measurement can be reduced by one
