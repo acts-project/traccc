@@ -35,7 +35,8 @@ void read_bfield(covfie::field<inhom_bfield_backend_t<traccc::scalar>>& field,
 
     // Construct/fill the magnetic field from the file.
     TRACCC_INFO("Reading magnetic field from file: " << filename);
-    field = covfie::field<inhom_bfield_backend_t<traccc::scalar>>(ifile);
+    field = covfie::field<inhom_bfield_backend_t<traccc::scalar>>(
+        covfie::field<inhom_io_bfield_backend_t<traccc::scalar>>(ifile));
 }
 
 }  // namespace binary
