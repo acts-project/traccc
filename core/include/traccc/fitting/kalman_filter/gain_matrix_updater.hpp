@@ -135,7 +135,10 @@ struct gain_matrix_updater {
         // Calculate the filtered track parameters
         const matrix_type<6, 1> filtered_vec =
             predicted_vec + K * (meas_local - H * predicted_vec);
-        const matrix_type<6, 6> filtered_cov = (I66 - K * H) * predicted_cov;
+        const matrix_type<6, 6> i_minus_kh = I66 - K * H;
+        const matrix_type<6, 6> filtered_cov =
+            i_minus_kh * predicted_cov * matrix::transpose(i_minus_kh) +
+            K * V * matrix::transpose(K);
 
         TRACCC_DEBUG_HOST("Filtered param:\n" << filtered_vec);
         TRACCC_DEBUG_HOST("Filtered cov:\n" << filtered_cov);
@@ -191,6 +194,15 @@ struct gain_matrix_updater {
         trk_state.filtered_params().set_vector(filtered_vec);
         trk_state.filtered_params().set_covariance(filtered_cov);
         trk_state.filtered_chi2() = chi2_val;
+
+        if (math::fmod(trk_state.filtered_params().theta(),
+                       2.f * constant<traccc::scalar>::pi) == 0.f) {
+            TRACCC_ERROR_HOST_DEVICE(
+                "Hit theta pole after filtering : %f (unrecoverable error "
+                "pre-normalization)",
+                theta);
+            return kalman_fitter_status::ERROR_THETA_POLE;
+        }
 
         // Wrap the phi and theta angles in their valid ranges
         normalize_angles(trk_state.filtered_params());
