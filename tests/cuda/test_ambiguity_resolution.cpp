@@ -29,6 +29,17 @@
 
 using namespace traccc;
 
+void fill_measurements(
+    edm::track_candidate_container<default_algebra>::host& track_candidates,
+    const measurement_id_type max_meas_id) {
+
+    track_candidates.measurements.reserve(max_meas_id + 1);
+    for (measurement_id_type i = 0; i <= max_meas_id; i++) {
+        track_candidates.measurements.emplace_back();
+        track_candidates.measurements.back().measurement_id = i;
+    }
+}
+
 void fill_pattern(
     edm::track_candidate_container<default_algebra>::host& track_candidates,
     const traccc::scalar pval,
@@ -38,11 +49,17 @@ void fill_pattern(
     track_candidates.tracks.pval().back() = pval;
 
     for (const auto& meas_id : pattern) {
-        track_candidates.measurements.emplace_back();
-        track_candidates.measurements.back().measurement_id = meas_id;
+        const auto meas_iter = std::lower_bound(
+            track_candidates.measurements.begin(),
+            track_candidates.measurements.end(), meas_id,
+            [](const measurement& m, const measurement_id_type id) {
+                return m.measurement_id < id;
+            });
+
+        const auto meas_idx =
+            std::distance(track_candidates.measurements.begin(), meas_iter);
         track_candidates.tracks.measurement_indices().back().push_back(
-            static_cast<unsigned int>(track_candidates.measurements.size() -
-                                      1));
+            static_cast<measurement_id_type>(meas_idx));
     }
 }
 
@@ -94,6 +111,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest0) {
 
     edm::track_candidate_container<default_algebra>::host trk_cands{mng_mr};
 
+    fill_measurements(trk_cands, 100);
     fill_pattern(trk_cands, 0.23f, {5, 1, 11, 3});
     fill_pattern(trk_cands, 0.85f, {12, 10, 9, 8, 7, 6});
     fill_pattern(trk_cands, 0.42f, {4, 2, 13});
@@ -153,6 +171,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest1) {
 
     edm::track_candidate_container<default_algebra>::host trk_cands{mng_mr};
 
+    fill_measurements(trk_cands, 100);
     fill_pattern(trk_cands, 0.12f, {5, 14, 1, 11, 18, 16, 3});
     fill_pattern(trk_cands, 0.53f, {3, 6, 5, 13});
 
@@ -194,6 +213,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest2) {
 
     edm::track_candidate_container<default_algebra>::host trk_cands{mng_mr};
 
+    fill_measurements(trk_cands, 100);
     fill_pattern(trk_cands, 0.8f, {1, 3, 5, 11});
     fill_pattern(trk_cands, 0.9f, {3, 5, 6, 13});
 
@@ -231,6 +251,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest3) {
 
     edm::track_candidate_container<default_algebra>::host trk_cands{mng_mr};
 
+    fill_measurements(trk_cands, 100);
     fill_pattern(trk_cands, 0.2f, {5, 1, 11, 3});
     fill_pattern(trk_cands, 0.5f, {6, 2});
     fill_pattern(trk_cands, 0.4f, {3, 21, 12, 6, 19, 14});
@@ -272,6 +293,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest5) {
 
     edm::track_candidate_container<default_algebra>::host trk_cands{mng_mr};
 
+    fill_measurements(trk_cands, 100);
     fill_pattern(trk_cands, 0.2f, {1, 2, 1, 1});
     fill_pattern(trk_cands, 0.5f, {3, 2, 1});
     fill_pattern(trk_cands, 0.4f, {2, 4, 5, 7, 2});
@@ -309,6 +331,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest6) {
 
     edm::track_candidate_container<default_algebra>::host trk_cands{mng_mr};
 
+    fill_measurements(trk_cands, 100);
     fill_pattern(trk_cands, 0.2f, {7, 3, 5, 7, 7, 7, 2});
     fill_pattern(trk_cands, 0.5f, {2});
     fill_pattern(trk_cands, 0.4f, {8, 9, 7, 2, 3, 4, 3, 7});
@@ -349,6 +372,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest7) {
 
     edm::track_candidate_container<default_algebra>::host trk_cands{mng_mr};
 
+    fill_measurements(trk_cands, 100);
     fill_pattern(trk_cands, 0.173853f, {10, 3, 6, 8});
     fill_pattern(trk_cands, 0.548019f, {3, 3, 1});
     fill_pattern(trk_cands, 0.276757f, {2, 8, 5, 4});
@@ -384,6 +408,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest8) {
 
     edm::track_candidate_container<default_algebra>::host trk_cands{mng_mr};
 
+    fill_measurements(trk_cands, 100);
     fill_pattern(trk_cands, 0.0623132f, {10, 4});
     fill_pattern(trk_cands, 0.207417f, {6, 7, 5});
     fill_pattern(trk_cands, 0.325736f, {8, 2, 2});
@@ -423,6 +448,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest9) {
 
     edm::track_candidate_container<default_algebra>::host trk_cands{mng_mr};
 
+    fill_measurements(trk_cands, 100);
     fill_pattern(trk_cands, 0.542984f, {0, 4, 8, 1, 1});
     fill_pattern(trk_cands, 0.583695f, {10, 6, 8, 7});
     fill_pattern(trk_cands, 0.280232f, {4, 1, 8, 10});
@@ -459,6 +485,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest10) {
 
     edm::track_candidate_container<default_algebra>::host trk_cands{mng_mr};
 
+    fill_measurements(trk_cands, 100);
     fill_pattern(trk_cands, 0.399106f, {14, 51});
     fill_pattern(trk_cands, 0.43899f, {80, 35, 41, 55});
     fill_pattern(trk_cands, 0.0954247f, {73, 63, 49, 89});
@@ -501,6 +528,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest11) {
 
     edm::track_candidate_container<default_algebra>::host trk_cands{mng_mr};
 
+    fill_measurements(trk_cands, 100);
     fill_pattern(trk_cands, 0.95f, {56, 87});
     fill_pattern(trk_cands, 0.894f, {64, 63});
     fill_pattern(trk_cands, 0.824f, {70, 17});
@@ -534,6 +562,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest12) {
 
     edm::track_candidate_container<default_algebra>::host trk_cands{mng_mr};
 
+    fill_measurements(trk_cands, 100);
     fill_pattern(trk_cands, 0.948f, {17, 6, 1, 69, 78});  // 69
     fill_pattern(trk_cands, 0.609f, {17});
     fill_pattern(trk_cands, 0.453f, {84, 45, 81, 69});      // 84, 69
@@ -574,6 +603,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest13) {
 
     edm::track_candidate_container<default_algebra>::host trk_cands{mng_mr};
 
+    fill_measurements(trk_cands, 100);
     fill_pattern(trk_cands, 0.211f, {46, 92, 74, 58});
     fill_pattern(trk_cands, 0.694f, {15, 78, 9});
     fill_pattern(trk_cands, 0.432f, {15, 4, 58, 68});
@@ -619,6 +649,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest14) {
 
     edm::track_candidate_container<default_algebra>::host trk_cands{mng_mr};
 
+    fill_measurements(trk_cands, 100);
     fill_pattern(trk_cands, 0.932f, {8, 4, 3});
     fill_pattern(trk_cands, 0.263f, {1, 1, 9, 3});
     fill_pattern(trk_cands, 0.876f, {1, 2, 5});
@@ -656,6 +687,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest15) {
 
     edm::track_candidate_container<default_algebra>::host trk_cands{mng_mr};
 
+    fill_measurements(trk_cands, 100);
     fill_pattern(trk_cands, 0.293f, {2, 0, 4});
     fill_pattern(trk_cands, 0.362f, {8, 4, 9, 3});
     fill_pattern(trk_cands, 0.011f, {9, 4, 8, 4});
@@ -693,6 +725,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest16) {
 
     edm::track_candidate_container<default_algebra>::host trk_cands{mng_mr};
 
+    fill_measurements(trk_cands, 100);
     fill_pattern(trk_cands, 0.622598f, {95, 24, 62, 83, 67});
     fill_pattern(trk_cands, 0.541774f, {6, 52, 57, 87, 75});
     fill_pattern(trk_cands, 0.361033f, {14, 52, 29, 79, 89});
@@ -736,6 +769,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest17) {
 
     edm::track_candidate_container<default_algebra>::host trk_cands{mng_mr};
 
+    fill_measurements(trk_cands, 100);
     fill_pattern(trk_cands, 0.17975f, {7, 4, 10, 3, 0});
     fill_pattern(trk_cands, 0.924326f, {0, 0, 9});
     fill_pattern(trk_cands, 0.0832954f, {0, 2, 0});
@@ -796,6 +830,8 @@ TEST_P(GreedyResolutionCompareToCPU, Comparison) {
 
         edm::track_candidate_container<default_algebra>::host trk_cands{
             host_mr};
+
+        fill_measurements(trk_cands, max_meas_id);
 
         for (std::size_t i = 0; i < n_tracks; i++) {
 
