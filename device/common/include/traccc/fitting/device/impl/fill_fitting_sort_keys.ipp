@@ -9,7 +9,7 @@
 
 namespace traccc::device {
 
-TRACCC_HOST_DEVICE inline void fill_sort_keys(
+TRACCC_HOST_DEVICE inline void fill_fitting_sort_keys(
     const global_index_t globalIndex,
     const edm::track_candidate_collection<default_algebra>::const_view&
         track_candidates_view,

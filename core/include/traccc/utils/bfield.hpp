@@ -13,6 +13,7 @@
 // Covfie include(s).
 #include <covfie/core/backend/primitive/constant.hpp>
 #include <covfie/core/backend/transformer/affine.hpp>
+#include <covfie/core/backend/transformer/clamp.hpp>
 #include <covfie/core/backend/transformer/linear.hpp>
 #include <covfie/core/backend/transformer/strided.hpp>
 #include <covfie/core/field.hpp>
@@ -93,12 +94,19 @@ using const_bfield_backend_t =
     ::covfie::backend::constant<::covfie::vector::vector_d<scalar_t, 3>,
                                 ::covfie::vector::vector_d<scalar_t, 3>>;
 
-/// Inhomogeneous magnetic field backend type
+/// Inhomogeneous magnetic field used for IO
 template <typename scalar_t>
-using inhom_bfield_backend_t =
+using inhom_io_bfield_backend_t =
     covfie::backend::affine<covfie::backend::linear<covfie::backend::strided<
         covfie::vector::vector_d<std::size_t, 3>,
         covfie::backend::array<covfie::vector::vector_d<scalar_t, 3>>>>>;
+
+/// Inhomogeneous magnetic field backend type
+template <typename scalar_t>
+using inhom_bfield_backend_t = covfie::backend::affine<
+    covfie::backend::linear<covfie::backend::clamp<covfie::backend::strided<
+        covfie::vector::vector_d<std::size_t, 3>,
+        covfie::backend::array<covfie::vector::vector_d<scalar_t, 3>>>>>>;
 
 /// Construct a constant magnetic field object
 template <typename scalar_t>
