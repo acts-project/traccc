@@ -445,9 +445,9 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .is_updated_view = is_updated_buffer});
 
         kernels::count_removable_tracks<<<
-            1, 1024,
-            sizeof(int) * 1024 + sizeof(measurement_id_type) * 1024 +
-                sizeof(unsigned int) * 1024 + sizeof(unsigned int) * 6 +
+            1, 512,
+            sizeof(int) * 512 + sizeof(measurement_id_type) * 512 +
+                sizeof(unsigned int) * 512 + sizeof(unsigned int) * 6 +
                 sizeof(bool),
             stream>>>(device::count_removable_tracks_payload{
             .terminate = terminate_device.get(),
