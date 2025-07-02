@@ -57,6 +57,11 @@ struct count_removable_tracks_payload {
     vecmem::data::vector_view<const measurement_id_type> unique_meas_view;
 
     /**
+     * @brief View object to the meas id to unique id map
+     */
+    vecmem::data::vector_view<const unsigned int> meas_id_to_unique_id_view;
+
+    /**
      * @brief View object to the number of accepted tracks per measurement
      */
     vecmem::data::vector_view<const unsigned int>

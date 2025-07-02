@@ -97,6 +97,8 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/ambiguity_resolution/kernels/fill_inverted_ids.cuh"
   "src/ambiguity_resolution/kernels/fill_tracks_per_measurement.cu"
   "src/ambiguity_resolution/kernels/fill_tracks_per_measurement.cuh"
+  "src/ambiguity_resolution/kernels/fill_unique_meas_id_map.cu"
+  "src/ambiguity_resolution/kernels/fill_unique_meas_id_map.cuh"
   "src/ambiguity_resolution/kernels/fill_track_candidates.cu"
   "src/ambiguity_resolution/kernels/fill_track_candidates.cuh"
   "src/ambiguity_resolution/kernels/fill_vectors.cu"
