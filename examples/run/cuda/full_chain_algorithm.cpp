@@ -177,12 +177,13 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
                                          m_seeding(spacepoints), m_field_vec);
 
         // Run the track finding (asynchronously).
-        const finding_algorithm::output_type track_candidates = m_finding(
-            m_device_detector_view, m_field, measurements, track_params);
+        finding_algorithm::fitted_output_type ckf_track_states =
+            m_finding(m_device_detector_view, m_field, measurements,
+                      track_params, traccc::device::finding_return_fitted{});
 
         // Run the track fitting (asynchronously).
-        const fitting_algorithm::output_type track_states = m_fitting(
-            m_device_detector_view, m_field, {track_candidates, measurements});
+        const auto track_states = m_fitting(m_device_detector_view, m_field,
+                                            std::move(ckf_track_states));
 
         // Copy a limited amount of result data back to the host.
         output_type result{&m_host_mr};

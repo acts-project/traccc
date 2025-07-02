@@ -7,19 +7,20 @@
 
 // Local include(s).
 #include "../../utils/global_index.hpp"
-#include "build_tracks.cuh"
+#include "build_fitted_tracks.cuh"
 
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/candidate_link.hpp"
-#include "traccc/finding/device/build_tracks.hpp"
+#include "traccc/finding/device/build_fitted_tracks.hpp"
 #include "traccc/finding/finding_config.hpp"
 
 namespace traccc::cuda::kernels {
 
-__global__ void build_tracks(device::build_tracks_payload payload) {
+__global__ void build_fitted_tracks(
+    device::build_fitted_tracks_payload payload) {
 
-    device::build_tracks(details::global_index1(), payload);
+    device::build_fitted_tracks(details::global_index1(), payload);
 }
 }  // namespace traccc::cuda::kernels

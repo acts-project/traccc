@@ -14,7 +14,8 @@
 #include "../utils/thread_id.hpp"
 #include "../utils/utils.hpp"
 #include "./kernels/apply_interaction.hpp"
-#include "./kernels/build_tracks.cuh"
+#include "./kernels/build_fitted_tracks.cuh"
+#include "./kernels/build_unfitted_tracks.cuh"
 #include "./kernels/fill_finding_propagation_sort_keys.cuh"
 #include "./kernels/find_tracks.cuh"
 #include "./kernels/make_barcode_sequence.cuh"
@@ -25,6 +26,7 @@
 #include "traccc/edm/track_candidate_collection.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
+#include "traccc/finding/device/tags.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/utils/logging.hpp"
 #include "traccc/utils/memory_resource.hpp"
@@ -32,6 +34,7 @@
 #include "traccc/utils/propagation.hpp"
 
 // VecMem include(s).
+#include <type_traits>
 #include <vecmem/utils/copy.hpp>
 
 // Thrust include(s).
@@ -67,14 +70,17 @@ namespace traccc::cuda::details {
 ///
 /// @return A buffer of the found track candidates
 ///
-template <typename detector_t, typename bfield_t>
-edm::track_candidate_collection<default_algebra>::buffer
+template <typename detector_t, typename bfield_t, typename return_type_tag>
+std::conditional_t<
+    std::is_same_v<return_type_tag, device::finding_return_fitted>,
+    track_state_container_types::buffer,
+    edm::track_candidate_collection<default_algebra>::buffer>
 combinatorial_kalman_filter(
     const typename detector_t::view_type& det, const bfield_t& field,
     const measurement_collection_types::const_view& measurements,
     const bound_track_parameters_collection_types::const_view& seeds,
     const finding_config& config, const memory_resource& mr, vecmem::copy& copy,
-    const Logger& log, stream& str, unsigned int warp_size) {
+    const Logger& log, stream& str, unsigned int warp_size, return_type_tag&&) {
 
     assert(config.min_step_length_for_next_surface >
                math::fabs(config.propagation.navigation.overstep_tolerance) &&
@@ -165,11 +171,27 @@ combinatorial_kalman_filter(
                                                                        mr.main);
     copy.setup(n_tracks_per_seed_buffer)->ignore();
 
+    constexpr bool making_fitted_params =
+        std::is_same_v<return_type_tag, device::finding_return_fitted>;
+
     // Create a buffer for links
     unsigned int link_buffer_capacity = config.initial_links_per_seed * n_seeds;
     vecmem::data::vector_buffer<candidate_link> links_buffer(
         link_buffer_capacity, mr.main, vecmem::data::buffer_type::resizable);
     copy.setup(links_buffer)->ignore();
+
+    // Create a buffer for track parameters, if we want to output making fitted
+    // tracks.
+    bound_track_parameters_collection_types::buffer persistent_track_parameters;
+    if (making_fitted_params) {
+        persistent_track_parameters =
+            bound_track_parameters_collection_types::buffer(
+                link_buffer_capacity, mr.main);
+    } else {
+        persistent_track_parameters =
+            bound_track_parameters_collection_types::buffer(0u, mr.main);
+    }
+    copy.setup(persistent_track_parameters)->ignore();
 
     // Create a buffer of tip links
     vecmem::data::vector_buffer<unsigned int> tips_buffer{
@@ -251,6 +273,19 @@ combinatorial_kalman_filter(
             copy(links_buffer, new_links_buffer)->wait();
 
             links_buffer = std::move(new_links_buffer);
+
+            if (making_fitted_params) {
+                bound_track_parameters_collection_types::buffer
+                    new_persistent_track_parameters(link_buffer_capacity,
+                                                    mr.main);
+                copy.setup(new_persistent_track_parameters)->ignore();
+                copy(persistent_track_parameters,
+                     new_persistent_track_parameters)
+                    ->wait();
+
+                persistent_track_parameters =
+                    std::move(new_persistent_track_parameters);
+            }
         }
 
         {
@@ -282,7 +317,9 @@ combinatorial_kalman_filter(
                 .tip_lengths_view = tip_length_buffer,
                 .n_tracks_per_seed_view = n_tracks_per_seed_buffer,
                 .tmp_params_view = tmp_params_buffer,
-                .tmp_links_view = tmp_links_buffer};
+                .tmp_links_view = tmp_links_buffer,
+                .persistent_parameters_view = persistent_track_parameters,
+                .count_holes = making_fitted_params};
 
             // The number of threads, blocks and shared memory to use.
             const unsigned int nThreads = warp_size * 2;
@@ -368,7 +405,8 @@ combinatorial_kalman_filter(
                     .step = step,
                     .n_in_params = n_candidates,
                     .tips_view = tips_buffer,
-                    .tip_lengths_view = tip_length_buffer};
+                    .tip_lengths_view = tip_length_buffer,
+                    .count_holes = making_fitted_params};
 
                 const unsigned int nThreads = warp_size * 4;
                 const unsigned int nBlocks =
@@ -407,28 +445,57 @@ combinatorial_kalman_filter(
         tips_length_host.resize(n_tips_total);
     }
 
-    // Create track candidate buffer
-    edm::track_candidate_collection<default_algebra>::buffer
-        track_candidates_buffer{tips_length_host, mr.main, mr.host};
-    copy.setup(track_candidates_buffer)->ignore();
+    if constexpr (std::is_same_v<return_type_tag,
+                                 device::finding_return_unfitted>) {
+        // Create track candidate buffer
+        edm::track_candidate_collection<default_algebra>::buffer
+            track_candidates_buffer{tips_length_host, mr.main, mr.host};
+        copy.setup(track_candidates_buffer)->ignore();
 
-    // @Note: nBlocks can be zero in case there is no tip. This happens when
-    // chi2_max config is set tightly and no tips are found
-    if (n_tips_total > 0) {
-        const unsigned int nThreads = warp_size * 2;
-        const unsigned int nBlocks = (n_tips_total + nThreads - 1) / nThreads;
+        // @Note: nBlocks can be zero in case there is no tip. This happens when
+        // chi2_max config is set tightly and no tips are found
+        if (n_tips_total > 0) {
+            const unsigned int nThreads = warp_size * 2;
+            const unsigned int nBlocks =
+                (n_tips_total + nThreads - 1) / nThreads;
 
-        kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(
-            {.seeds_view = seeds,
-             .links_view = links_buffer,
-             .tips_view = tips_buffer,
-             .track_candidates_view = {track_candidates_buffer, measurements}});
-        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+            kernels::build_unfitted_tracks<<<nBlocks, nThreads, 0, stream>>>(
+                {.seeds_view = seeds,
+                 .links_view = links_buffer,
+                 .tips_view = tips_buffer,
+                 .track_candidates_view = {track_candidates_buffer,
+                                           measurements}});
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-        str.synchronize();
+            str.synchronize();
+        }
+
+        return track_candidates_buffer;
+    } else {
+        track_state_container_types::buffer track_states_buffer{
+            {n_tips_total, mr.main}, {tips_length_host, mr.main, mr.host}};
+        copy.setup(track_states_buffer.headers)->ignore();
+        copy.setup(track_states_buffer.items)->ignore();
+
+        if (n_tips_total > 0) {
+            const unsigned int nThreads = warp_size * 2;
+            const unsigned int nBlocks =
+                (n_tips_total + nThreads - 1) / nThreads;
+
+            kernels::build_fitted_tracks<<<nBlocks, nThreads, 0, stream>>>(
+                {.measurements_view = measurements,
+                 .seeds_view = seeds,
+                 .track_param_view = persistent_track_parameters,
+                 .links_view = links_buffer,
+                 .tips_view = tips_buffer,
+                 .track_states_view = track_states_buffer});
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+            str.synchronize();
+        }
+
+        return track_states_buffer;
     }
-
-    return track_candidates_buffer;
 }
 
 }  // namespace traccc::cuda::details

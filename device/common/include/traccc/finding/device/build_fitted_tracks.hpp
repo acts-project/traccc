@@ -14,6 +14,7 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/track_candidate_container.hpp"
 #include "traccc/edm/track_parameters.hpp"
+#include "traccc/edm/track_state.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/finding_config.hpp"
 
@@ -24,11 +25,21 @@
 namespace traccc::device {
 
 /// (Event Data) Payload for the @c traccc::device::build_tracks function
-struct build_tracks_payload {
+struct build_fitted_tracks_payload {
     /**
-     * @brief View object to the vector of measurements
+     * @brief View objects to the vector of measurements
+     */
+    const measurement_collection_types::const_view measurements_view;
+
+    /**
+     * @brief View object to the vector of seeds
      */
     bound_track_parameters_collection_types::const_view seeds_view;
+
+    /**
+     * @brief View object to the track parameters
+     */
+    bound_track_parameters_collection_types::const_view track_param_view;
 
     /**
      * @brief View object to the vector of candidate links
@@ -43,7 +54,7 @@ struct build_tracks_payload {
     /**
      * @brief View object to the vector of track candidates
      */
-    edm::track_candidate_container<default_algebra>::view track_candidates_view;
+    track_state_container_types::view track_states_view;
 };
 
 /// Function for building full tracks from the link container:
@@ -55,10 +66,10 @@ struct build_tracks_payload {
 /// @param[in] cfg                    Track finding config object
 /// @param[inout] payload      The function call payload
 ///
-TRACCC_HOST_DEVICE inline void build_tracks(
-    global_index_t globalIndex, const build_tracks_payload& payload);
+TRACCC_HOST_DEVICE inline void build_fitted_tracks(
+    global_index_t globalIndex, const build_fitted_tracks_payload& payload);
 
 }  // namespace traccc::device
 
 // Include the implementation.
-#include "./impl/build_tracks.ipp"
+#include "./impl/build_fitted_tracks.ipp"

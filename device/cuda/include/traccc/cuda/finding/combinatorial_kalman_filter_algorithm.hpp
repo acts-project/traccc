@@ -14,6 +14,8 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate_collection.hpp"
 #include "traccc/edm/track_parameters.hpp"
+#include "traccc/edm/track_state.hpp"
+#include "traccc/finding/device/tags.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/algorithm.hpp"
@@ -39,14 +41,37 @@ class combinatorial_kalman_filter_algorithm
           const telescope_detector::view&, const bfield&,
           const measurement_collection_types::const_view&,
           const bound_track_parameters_collection_types::const_view&)>,
+
+      public algorithm<track_state_container_types::buffer(
+          const default_detector::view&, const bfield&,
+          const measurement_collection_types::const_view&,
+          const bound_track_parameters_collection_types::const_view&,
+          device::finding_return_fitted&&)>,
+      public algorithm<track_state_container_types::buffer(
+          const telescope_detector::view&, const bfield&,
+          const measurement_collection_types::const_view&,
+          const bound_track_parameters_collection_types::const_view&,
+          device::finding_return_fitted&&)>,
+
+      public algorithm<edm::track_candidate_collection<default_algebra>::buffer(
+          const default_detector::view&, const bfield&,
+          const measurement_collection_types::const_view&,
+          const bound_track_parameters_collection_types::const_view&,
+          device::finding_return_unfitted&&)>,
+      public algorithm<edm::track_candidate_collection<default_algebra>::buffer(
+          const telescope_detector::view&, const bfield&,
+          const measurement_collection_types::const_view&,
+          const bound_track_parameters_collection_types::const_view&,
+          device::finding_return_unfitted&&)>,
       public messaging {
 
     public:
     /// Configuration type
     using config_type = finding_config;
-    /// Output type
-    using output_type =
+    /// Output types
+    using unfitted_output_type =
         edm::track_candidate_collection<default_algebra>::buffer;
+    using fitted_output_type = track_state_container_types::buffer;
 
     /// Constructor with the algorithm's configuration
     combinatorial_kalman_filter_algorithm(
@@ -56,35 +81,50 @@ class combinatorial_kalman_filter_algorithm
 
     /// Execute the algorithm
     ///
-    /// @param det          The (default) detector object
+    /// @param det          The detector object
     /// @param field        The magnetic field object
     /// @param measurements All measurements in an event
     /// @param seeds        All seeds in an event to start the track finding
     ///                     with
     ///
-    /// @return A container of the found track candidates
-    ///
-    output_type operator()(
+    /// @{
+    unfitted_output_type operator()(
         const default_detector::view& det, const bfield& field,
         const measurement_collection_types::const_view& measurements,
         const bound_track_parameters_collection_types::const_view& seeds)
-        const override;
-
-    /// Execute the algorithm
-    ///
-    /// @param det          The (telescope) detector object
-    /// @param field        The magnetic field object
-    /// @param measurements All measurements in an event
-    /// @param seeds        All seeds in an event to start the track finding
-    ///                     with
-    ///
-    /// @return A container of the found track candidates
-    ///
-    output_type operator()(
+        const override {
+        return this->operator()(det, field, measurements, seeds,
+                                device::finding_return_unfitted{});
+    }
+    unfitted_output_type operator()(
         const telescope_detector::view& det, const bfield& field,
         const measurement_collection_types::const_view& measurements,
         const bound_track_parameters_collection_types::const_view& seeds)
-        const override;
+        const override {
+        return this->operator()(det, field, measurements, seeds,
+                                device::finding_return_unfitted{});
+    }
+    fitted_output_type operator()(
+        const default_detector::view& det, const bfield& field,
+        const measurement_collection_types::const_view& measurements,
+        const bound_track_parameters_collection_types::const_view& seeds,
+        device::finding_return_fitted&&) const override;
+    fitted_output_type operator()(
+        const telescope_detector::view& det, const bfield& field,
+        const measurement_collection_types::const_view& measurements,
+        const bound_track_parameters_collection_types::const_view& seeds,
+        device::finding_return_fitted&&) const override;
+    unfitted_output_type operator()(
+        const default_detector::view& det, const bfield& field,
+        const measurement_collection_types::const_view& measurements,
+        const bound_track_parameters_collection_types::const_view& seeds,
+        device::finding_return_unfitted&&) const override;
+    unfitted_output_type operator()(
+        const telescope_detector::view& det, const bfield& field,
+        const measurement_collection_types::const_view& measurements,
+        const bound_track_parameters_collection_types::const_view& seeds,
+        device::finding_return_unfitted&&) const override;
+    /// @}
 
     private:
     /// Algorithm configuration

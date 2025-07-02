@@ -88,6 +88,8 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     vecmem::device_vector<candidate_link> tmp_links(payload.tmp_links_view);
     bound_track_parameters_collection_types::device tmp_params(
         payload.tmp_params_view);
+    bound_track_parameters_collection_types::device persistent_params(
+        payload.persistent_parameters_view);
     vecmem::device_vector<const detray::geometry::barcode> barcodes(
         payload.barcodes_view);
     vecmem::device_vector<const unsigned int> upper_bounds(
@@ -630,6 +632,10 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                     .chi2 = std::numeric_limits<traccc::scalar>::max(),
                     .chi2_sum = prev_chi2_sum,
                     .ndf_sum = prev_ndf_sum};
+                if (persistent_params.capacity() > 0) {
+                    persistent_params.at(out_offset) =
+                        in_params.at(in_param_id);
+                }
 
                 unsigned int param_pos = out_offset - payload.curr_links_idx;
 
@@ -641,7 +647,12 @@ TRACCC_HOST_DEVICE inline void find_tracks(
 
                 if (n_cands >= cfg.min_track_candidates_per_track) {
                     auto tip_pos = tips.push_back(prev_link_idx);
-                    tip_lengths.at(tip_pos) = n_cands;
+
+                    if (payload.count_holes) {
+                        tip_lengths.at(tip_pos) = payload.step + 1u;
+                    } else {
+                        tip_lengths.at(tip_pos) = n_cands;
+                    }
                 }
             }
         } else {
@@ -659,13 +670,21 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                 out_params_liveness.at(param_pos) =
                     static_cast<unsigned int>(!last_step);
                 links.at(out_offset) = tmp_links.at(in_offset);
+                if (persistent_params.capacity() > 0) {
+                    persistent_params.at(out_offset) = tmp_params.at(in_offset);
+                }
 
                 const unsigned int n_cands = payload.step + 1 - n_skipped;
 
                 if (last_step &&
                     n_cands >= cfg.min_track_candidates_per_track) {
                     auto tip_pos = tips.push_back(param_pos);
-                    tip_lengths.at(tip_pos) = n_cands;
+
+                    if (payload.count_holes) {
+                        tip_lengths.at(tip_pos) = payload.step + 1u;
+                    } else {
+                        tip_lengths.at(tip_pos) = n_cands;
+                    }
                 }
             }
         }
