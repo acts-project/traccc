@@ -41,7 +41,6 @@
 // System include(s).
 #include <cstdlib>
 #include <ctime>
-#include <iostream>
 #include <memory>
 
 namespace traccc {
@@ -49,8 +48,9 @@ namespace traccc {
 template <typename FULL_CHAIN_ALG, typename HOST_MR>
 int throughput_st(std::string_view description, int argc, char* argv[],
                   bool use_host_caching) {
-    std::unique_ptr<const traccc::Logger> logger = traccc::getDefaultLogger(
+    std::unique_ptr<const traccc::Logger> iLogger = traccc::getDefaultLogger(
         "ThroughputExample", traccc::Logging::Level::INFO);
+    TRACCC_LOCAL_LOGGER(std::move(iLogger));
 
     // Program options.
     opts::detector detector_opts;
@@ -67,7 +67,7 @@ int throughput_st(std::string_view description, int argc, char* argv[],
          finding_opts, propagation_opts, fitting_opts, throughput_opts},
         argc,
         argv,
-        logger->cloneWithSuffix("Options")};
+        logger().cloneWithSuffix("Options")};
 
     // Set up the timing info holder.
     performance::timing_info times;
@@ -108,8 +108,9 @@ int throughput_st(std::string_view description, int argc, char* argv[],
             input.emplace_back(uncached_host_mr);
             static constexpr bool DEDUPLICATE = true;
             io::read_cells(input.back(), i, input_opts.directory,
-                           logger->clone(), &det_descr, input_opts.format,
-                           DEDUPLICATE, input_opts.use_acts_geom_source);
+                           logger().clone("io::read_cells"), &det_descr,
+                           input_opts.format, DEDUPLICATE,
+                           input_opts.use_acts_geom_source);
         }
     }
 
@@ -133,7 +134,7 @@ int throughput_st(std::string_view description, int argc, char* argv[],
         spacepoint_grid_config{seeding_opts.seedfinder},
         seeding_opts.seedfilter, finding_cfg, fitting_cfg, det_descr,
         (detector_opts.use_detray_detector ? &detector : nullptr),
-        logger->clone("FullChainAlg"));
+        logger().clone("FullChainAlg"));
 
     // Seed the random number generator.
     if (throughput_opts.random_seed == 0) {
@@ -212,17 +213,15 @@ int throughput_st(std::string_view description, int argc, char* argv[],
     cached_host_mr.reset();
 
     // Print some results.
-    std::cout << "Reconstructed track parameters: " << rec_track_params
-              << std::endl;
-    std::cout << "Time totals:" << std::endl;
-    std::cout << times << std::endl;
-    std::cout << "Throughput:" << std::endl;
-    std::cout << performance::throughput{throughput_opts.cold_run_events, times,
-                                         "Warm-up processing"}
-              << "\n"
-              << performance::throughput{throughput_opts.processed_events,
-                                         times, "Event processing"}
-              << std::endl;
+    TRACCC_INFO("Reconstructed track parameters: " << rec_track_params);
+    TRACCC_INFO("Time totals:\n" << times);
+
+    performance::throughput throughput_wu{throughput_opts.cold_run_events,
+                                          times, "Warm-up processing"};
+    performance::throughput throughput_pr{throughput_opts.processed_events,
+                                          times, "Event processing"};
+
+    TRACCC_INFO("Throughput:\n" << throughput_wu << "\n" << throughput_pr);
 
     // Return gracefully.
     return 0;
