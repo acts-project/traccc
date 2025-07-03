@@ -21,6 +21,7 @@ full_chain_algorithm::full_chain_algorithm(
     const spacepoint_grid_config& grid_config,
     const seedfilter_config& filter_config,
     const finding_algorithm::config_type& finding_config,
+    [[maybe_unused]] const ambiguity_resolution_config& resolution_config,
     const fitting_algorithm::config_type& fitting_config,
     const silicon_detector_description::host& det_descr, const bfield& field,
     host_detector_type* detector, std::unique_ptr<const traccc::Logger> logger)
