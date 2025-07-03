@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,12 +8,12 @@
 #pragma once
 
 // SYCL library include(s).
-#include "traccc/clusterization/clustering_config.hpp"
-#include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
 #include "traccc/sycl/utils/queue_wrapper.hpp"
 
 // Project include(s).
-#include "traccc/edm/measurement.hpp"
+#include "traccc/clusterization/clustering_config.hpp"
+#include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
+#include "traccc/edm/device/clusterization_return_type.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
@@ -21,6 +21,7 @@
 #include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
+#include <vecmem/memory/unique_ptr.hpp>
 #include <vecmem/utils/copy.hpp>
 
 // System include(s).
@@ -37,9 +38,9 @@ namespace traccc::sycl {
 /// synchronisation statement is required before destroying the buffer.
 ///
 class clusterization_algorithm
-    : public algorithm<measurement_collection_types::buffer(
+    : public algorithm<device::clusterization_return_type(
           const edm::silicon_cell_collection::const_view&,
-          const silicon_detector_description::const_view&)>,
+          const silicon_detector_description::const_view&, bool)>,
       public messaging {
 
     public:
@@ -54,6 +55,8 @@ class clusterization_algorithm
     /// @param queue is a wrapper for the for the sycl queue for kernel
     ///              invocation
     /// @param config the clustering configuration
+    /// @param logger The logger to use for logging messages
+    ///
     clusterization_algorithm(
         const traccc::memory_resource& mr, vecmem::copy& copy,
         queue_wrapper& queue, const config_type& config,
@@ -63,12 +66,15 @@ class clusterization_algorithm
     ///
     /// @param cells     All cells in an event
     /// @param det_descr The detector description
+    /// @param reconstruct_clusters Whether or not a cluster collection (buffer)
+    ///                             needs to be returned
     /// @return a measurement collection (buffer)
+    ///         and an optional cluster collection (buffer)
     ///
     output_type operator()(
         const edm::silicon_cell_collection::const_view& cells,
-        const silicon_detector_description::const_view& det_descr)
-        const override;
+        const silicon_detector_description::const_view& det_descr,
+        bool reconstruct_clusters = false) const override;
 
     private:
     /// Memory resource(s) to use in the algorithm
@@ -80,10 +86,13 @@ class clusterization_algorithm
     /// The average number of cells in each partition
     const config_type m_config;
     /// Memory reserved for edge cases
+    /// @{
     vecmem::data::vector_buffer<device::details::index_t> m_f_backup,
         m_gf_backup;
     vecmem::data::vector_buffer<unsigned char> m_adjc_backup;
     vecmem::data::vector_buffer<device::details::index_t> m_adjv_backup;
     vecmem::unique_alloc_ptr<unsigned int> m_backup_mutex;
-};  // class clusterization_algorithm
+    /// @}
+};
+
 }  // namespace traccc::sycl
