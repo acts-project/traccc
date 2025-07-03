@@ -11,6 +11,7 @@ include( FetchContent )
 # Tell the user what's happening.
 message( STATUS "Fetching covfie as part of the traccc project" )
 
+# TEST
 # Declare where to get covfie from.
 set( TRACCC_COVFIE_SOURCE
    "URL;https://github.com/acts-project/covfie/archive/refs/tags/v0.15.1.tar.gz;URL_MD5;aa54f7e7e1a83edd02660e2778d29109"
