@@ -1,0 +1,50 @@
+/** TRACCC library, part of the ACTS project (R&D line)
+ *
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
+#pragma once
+
+// Local include(s).
+#include "traccc/device/global_index.hpp"
+#include "traccc/edm/device/sort_key.hpp"
+
+// Project include(s).
+#include "traccc/edm/track_state.hpp"
+
+namespace traccc::device {
+
+/// Function used to fill key container
+///
+/// @param[in] globalIndex   The index of the current thread
+/// @param[in] track_candidates_view The input track states
+/// @param[out] keys_view    The key values
+/// @param[out] ids_view     The param ids
+///
+TRACCC_HOST_DEVICE inline void fill_fitting_state_sort_keys(
+    global_index_t globalIndex,
+    track_state_container_types::const_view& track_states_view,
+    vecmem::data::vector_view<device::sort_key> keys_view,
+    vecmem::data::vector_view<unsigned int> ids_view) {
+    const track_state_container_types::const_device track_states(
+        track_states_view);
+
+    // Keys
+    vecmem::device_vector<device::sort_key> keys_device(keys_view);
+
+    // Param id
+    vecmem::device_vector<unsigned int> ids_device(ids_view);
+
+    if (globalIndex >= keys_device.size()) {
+        return;
+    }
+
+    // Key = The number of measurements
+    keys_device.at(globalIndex) =
+        static_cast<traccc::scalar>(track_states.at(globalIndex).items.size());
+    ids_device.at(globalIndex) = globalIndex;
+}
+
+}  // namespace traccc::device

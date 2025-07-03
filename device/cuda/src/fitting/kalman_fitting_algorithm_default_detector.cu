@@ -19,14 +19,38 @@ kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
 
     // Run the track fitting.
     if (field.is<const_bfield_backend_t<scalar>>()) {
-        return details::kalman_fitting<default_detector::device>(
+        return details::kalman_fitting_from_candidates<
+            default_detector::device>(
             det, field.as<const_bfield_backend_t<scalar>>(), track_candidates,
             m_config, m_mr, m_copy.get(), m_stream, m_warp_size);
     } else if (field.is<cuda::inhom_bfield_backend_t<scalar>>()) {
-        return details::kalman_fitting<default_detector::device>(
+        return details::kalman_fitting_from_candidates<
+            default_detector::device>(
             det, field.as<cuda::inhom_bfield_backend_t<scalar>>(),
             track_candidates, m_config, m_mr, m_copy.get(), m_stream,
             m_warp_size);
+    } else {
+        throw std::invalid_argument(
+            "Unsupported b-field type received in "
+            "traccc::cuda::kalman_fitting_algorithm");
+    }
+}
+
+kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
+    const default_detector::view& det, const bfield& field,
+    track_state_container_types::buffer&& track_states) const {
+
+    // Run the track fitting.
+    if (field.is<const_bfield_backend_t<scalar>>()) {
+        return details::kalman_fitting_from_states<default_detector::device>(
+            det, field.as<const_bfield_backend_t<scalar>>(),
+            std::move(track_states), m_config, m_mr, m_copy.get(), m_stream,
+            m_warp_size, true);
+    } else if (field.is<cuda::inhom_bfield_backend_t<scalar>>()) {
+        return details::kalman_fitting_from_states<default_detector::device>(
+            det, field.as<cuda::inhom_bfield_backend_t<scalar>>(),
+            std::move(track_states), m_config, m_mr, m_copy.get(), m_stream,
+            m_warp_size, true);
     } else {
         throw std::invalid_argument(
             "Unsupported b-field type received in "
