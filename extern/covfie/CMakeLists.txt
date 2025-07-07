@@ -13,7 +13,7 @@ message( STATUS "Fetching covfie as part of the traccc project" )
 
 # Declare where to get covfie from.
 set( TRACCC_COVFIE_SOURCE
-   "URL;https://github.com/acts-project/covfie/archive/refs/tags/v0.15.1.tar.gz;URL_MD5;aa54f7e7e1a83edd02660e2778d29109"
+   "URL;https://github.com/acts-project/covfie/archive/refs/tags/v0.15.2.tar.gz;URL_MD5;f17d9365abed550845e8b6b3708d39fb"
    CACHE STRING "Source for covfie, when built as part of this project" )
 mark_as_advanced( TRACCC_COVFIE_SOURCE )
 FetchContent_Declare( covfie SYSTEM ${TRACCC_COVFIE_SOURCE} )
