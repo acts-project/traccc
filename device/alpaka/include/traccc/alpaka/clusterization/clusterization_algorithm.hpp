@@ -7,10 +7,13 @@
 
 #pragma once
 
+// Local include(s).
+#include "traccc/alpaka/utils/queue.hpp"
+
 // Project include(s).
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/device/clusterization_return_type.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
@@ -18,10 +21,11 @@
 #include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
+#include <vecmem/memory/unique_ptr.hpp>
 #include <vecmem/utils/copy.hpp>
 
-// System includes
-#include <mutex>
+// System include(s).
+#include <functional>
 
 namespace traccc::alpaka {
 
@@ -34,9 +38,9 @@ namespace traccc::alpaka {
 /// synchronisation statement is required before destroying this buffer.
 ///
 class clusterization_algorithm
-    : public algorithm<measurement_collection_types::buffer(
+    : public algorithm<device::clusterization_return_type(
           const edm::silicon_cell_collection::const_view&,
-          const silicon_detector_description::const_view&)>,
+          const silicon_detector_description::const_view&, bool)>,
       public messaging {
 
     public:
@@ -48,10 +52,12 @@ class clusterization_algorithm
     /// @param mr The memory resource(s) to use in the algorithm
     /// @param copy The copy object to use for copying data between device
     ///             and host memory blocks
+    /// @param q The Alpaka queue to perform the operations in
     /// @param config The clustering configuration
+    /// @param logger The logger to use for logging messages
     ///
     clusterization_algorithm(
-        const traccc::memory_resource& mr, vecmem::copy& copy,
+        const traccc::memory_resource& mr, vecmem::copy& copy, queue& q,
         const config_type& config,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
@@ -59,12 +65,15 @@ class clusterization_algorithm
     ///
     /// @param cells     All cells in an event
     /// @param det_descr The detector description
+    /// @param reconstruct_clusters Whether or not a cluster collection (buffer)
+    ///                             needs to be returned
     /// @return a measurement collection (buffer)
+    ///         and an optional cluster collection (buffer)
     ///
     output_type operator()(
         const edm::silicon_cell_collection::const_view& cells,
-        const silicon_detector_description::const_view& det_descr)
-        const override;
+        const silicon_detector_description::const_view& det_descr,
+        bool reconstruct_clusters = false) const override;
 
     private:
     /// The average number of cells in each partition
@@ -73,13 +82,16 @@ class clusterization_algorithm
     traccc::memory_resource m_mr;
     /// The copy object to use
     std::reference_wrapper<vecmem::copy> m_copy;
+    /// The Alpaka queue to use
+    std::reference_wrapper<queue> m_queue;
     /// Memory reserved for edge cases
+    /// @{
     vecmem::data::vector_buffer<device::details::index_t> m_f_backup,
         m_gf_backup;
     vecmem::data::vector_buffer<unsigned char> m_adjc_backup;
     vecmem::data::vector_buffer<device::details::index_t> m_adjv_backup;
     vecmem::unique_alloc_ptr<unsigned int> m_backup_mutex;
-    mutable std::once_flag m_setup_once;
+    /// @}
 };
 
 }  // namespace traccc::alpaka

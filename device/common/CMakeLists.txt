@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2022-2023 CERN for the benefit of the ACTS project
+# (c) 2022-2025 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -19,6 +19,7 @@ traccc_add_library( traccc_device_common device_common TYPE INTERFACE
    "include/traccc/device/container_d2h_copy_alg.hpp"
    "include/traccc/device/impl/container_d2h_copy_alg.ipp"
    # EDM class(es).
+   "include/traccc/edm/device/clusterization_return_type.hpp"
    "include/traccc/edm/device/seeding_global_counter.hpp"
    "include/traccc/edm/device/doublet_counter.hpp"
    "include/traccc/edm/device/triplet_counter.hpp"
