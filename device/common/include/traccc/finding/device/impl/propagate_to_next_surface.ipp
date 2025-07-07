@@ -107,7 +107,9 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     } else {
         params_liveness[param_id] = 0u;
 
-        if (n_cands >= cfg.min_track_candidates_per_track) {
+        if (n_cands >= cfg.min_track_candidates_per_track &&
+            link.n_1d >= cfg.min_1d_track_candidates_per_track &&
+            link.n_2d >= cfg.min_2d_track_candidates_per_track) {
             auto tip_pos = tips.push_back(link_idx);
             tip_lengths.at(tip_pos) = n_cands;
         }

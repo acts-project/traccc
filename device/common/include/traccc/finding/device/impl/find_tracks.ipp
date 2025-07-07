@@ -246,6 +246,16 @@ TRACCC_HOST_DEVICE inline void find_tracks(
             if (use_measurement) {
                 const auto& meas = measurements.at(meas_idx);
 
+                if (cfg.strict_1d_after_2d_ordering && meas.meas_dim == 1 &&
+                    links.at(prev_link_idx).n_2d <
+                        cfg.min_2d_track_candidates_per_track) {
+                    use_measurement = false;
+                }
+            }
+
+            if (use_measurement) {
+                const auto& meas = measurements.at(meas_idx);
+
                 track_state<typename detector_t::algebra_type> trk_state(meas);
                 const detray::tracking_surface sf{det, in_par.surface_link()};
 
@@ -459,6 +469,13 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                                          : 0.f;
                     const unsigned int prev_ndf_sum =
                         payload.step > 0 ? links.at(prev_link_idx).ndf_sum : 0;
+                    const unsigned short prev_n_1d =
+                        payload.step > 0 ? links.at(prev_link_idx).n_1d : 0;
+                    const unsigned short prev_n_2d =
+                        payload.step > 0 ? links.at(prev_link_idx).n_2d : 0;
+
+                    const auto& measurement =
+                        std::get<0>(*result).get_measurement();
 
                     tmp_links.at(p_offset + l_pos) = {
                         .step = payload.step,
@@ -466,11 +483,13 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                         .meas_idx = meas_idx,
                         .seed_idx = seed_idx,
                         .n_skipped = n_skipped,
+                        .n_1d = static_cast<unsigned short>(
+                            prev_n_1d + (measurement.meas_dim == 1 ? 1 : 0)),
+                        .n_2d = static_cast<unsigned short>(
+                            prev_n_2d + (measurement.meas_dim == 2 ? 1 : 0)),
                         .chi2 = chi2,
                         .chi2_sum = prev_chi2_sum + chi2,
-                        .ndf_sum =
-                            prev_ndf_sum +
-                            std::get<0>(*result).get_measurement().meas_dim};
+                        .ndf_sum = prev_ndf_sum + measurement.meas_dim};
 
                     tmp_params.at(p_offset + l_pos) =
                         std::get<0>(*result).filtered();
@@ -536,6 +555,8 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     unsigned int n_skipped = std::numeric_limits<unsigned int>::max();
     unsigned int prev_ndf_sum = 0u;
     scalar prev_chi2_sum = 0.f;
+    unsigned char prev_n_1d = 0u;
+    unsigned char prev_n_2d = 0u;
 
     unsigned int local_out_offset = 0;
     unsigned int local_num_params = 0;
@@ -556,6 +577,8 @@ TRACCC_HOST_DEVICE inline void find_tracks(
         prev_ndf_sum = payload.step == 0 ? 0 : links.at(prev_link_idx).ndf_sum;
         prev_chi2_sum =
             payload.step == 0 ? 0.f : links.at(prev_link_idx).chi2_sum;
+        prev_n_1d = payload.step == 0 ? 0 : links.at(prev_link_idx).n_1d;
+        prev_n_2d = payload.step == 0 ? 0 : links.at(prev_link_idx).n_2d;
     }
 
     /*
@@ -627,6 +650,8 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                     .meas_idx = std::numeric_limits<unsigned int>::max(),
                     .seed_idx = seed_idx,
                     .n_skipped = n_skipped + 1,
+                    .n_1d = prev_n_1d,
+                    .n_2d = prev_n_2d,
                     .chi2 = std::numeric_limits<traccc::scalar>::max(),
                     .chi2_sum = prev_chi2_sum,
                     .ndf_sum = prev_ndf_sum};
@@ -639,7 +664,9 @@ TRACCC_HOST_DEVICE inline void find_tracks(
             } else {
                 const unsigned int n_cands = payload.step - n_skipped;
 
-                if (n_cands >= cfg.min_track_candidates_per_track) {
+                if (n_cands >= cfg.min_track_candidates_per_track &&
+                    prev_n_1d >= cfg.min_1d_track_candidates_per_track &&
+                    prev_n_2d >= cfg.min_2d_track_candidates_per_track) {
                     auto tip_pos = tips.push_back(prev_link_idx);
                     tip_lengths.at(tip_pos) = n_cands;
                 }
@@ -663,7 +690,9 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                 const unsigned int n_cands = payload.step + 1 - n_skipped;
 
                 if (last_step &&
-                    n_cands >= cfg.min_track_candidates_per_track) {
+                    n_cands >= cfg.min_track_candidates_per_track &&
+                    prev_n_1d >= cfg.min_1d_track_candidates_per_track &&
+                    prev_n_2d >= cfg.min_2d_track_candidates_per_track) {
                     auto tip_pos = tips.push_back(param_pos);
                     tip_lengths.at(tip_pos) = n_cands;
                 }

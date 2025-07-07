@@ -31,6 +31,10 @@ struct candidate_link {
     // How many times it skipped a surface
     unsigned int n_skipped;
 
+    // How many measurements of given dimensionalities have been found
+    unsigned short n_1d;
+    unsigned short n_2d;
+
     // chi2
     traccc::scalar chi2;
 

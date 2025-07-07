@@ -196,6 +196,16 @@ combinatorial_kalman_filter(
                      ? 0
                      : links[step - 1][param_to_link[step - 1][in_param_id]]
                            .ndf_sum);
+            const unsigned short prev_n_1d =
+                (step == 0
+                     ? 0
+                     : links[step - 1][param_to_link[step - 1][in_param_id]]
+                           .n_1d);
+            const unsigned short prev_n_2d =
+                (step == 0
+                     ? 0
+                     : links[step - 1][param_to_link[step - 1][in_param_id]]
+                           .n_2d);
 
             TRACCC_VERBOSE("Processing input parameter "
                            << in_param_id + 1 << " / " << n_in_params << ": "
@@ -283,6 +293,16 @@ combinatorial_kalman_filter(
                           .meas_idx = item_id,
                           .seed_idx = orig_param_id,
                           .n_skipped = skip_counter,
+                          .n_1d = static_cast<unsigned short>(
+                              prev_n_1d +
+                              (trk_state.get_measurement().meas_dim == 1u
+                                   ? 1u
+                                   : 0u)),
+                          .n_2d = static_cast<unsigned short>(
+                              prev_n_2d +
+                              (trk_state.get_measurement().meas_dim == 2u
+                                   ? 1u
+                                   : 0u)),
                           .chi2 = chi2,
                           .chi2_sum = prev_chi2_sum + chi2,
                           .ndf_sum = prev_ndf_sum +
@@ -329,6 +349,8 @@ combinatorial_kalman_filter(
                      .meas_idx = std::numeric_limits<unsigned int>::max(),
                      .seed_idx = orig_param_id,
                      .n_skipped = skip_counter + 1,
+                     .n_1d = prev_n_1d,
+                     .n_2d = prev_n_2d,
                      .chi2 = std::numeric_limits<traccc::scalar>::max(),
                      .chi2_sum = prev_chi2_sum,
                      .ndf_sum = prev_ndf_sum});

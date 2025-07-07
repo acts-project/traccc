@@ -29,6 +29,15 @@ struct finding_config {
     unsigned int min_track_candidates_per_track = 3;
     unsigned int max_track_candidates_per_track = 100;
 
+    /// Min number of track candidates of a specific dimensionality
+    unsigned int min_1d_track_candidates_per_track = 0u;
+    unsigned int min_2d_track_candidates_per_track = 3u;
+
+    /// Enable strict ordering of 1D measurements after 2D measurements, i.e.
+    /// if this is set to true, the algorithm will assume that if it finds a
+    /// 1D measurement, it can never again find another 2D measurement.
+    bool strict_1d_after_2d_ordering = true;
+
     /// Maximum allowed number of skipped steps per candidate
     unsigned int max_num_skipping_per_cand = 3;
 
