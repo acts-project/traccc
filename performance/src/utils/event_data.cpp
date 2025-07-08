@@ -24,6 +24,7 @@
 // System include(s).
 #include <algorithm>
 #include <filesystem>
+#include <unordered_set>
 
 namespace traccc {
 
@@ -76,11 +77,13 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
          std::filesystem::path(io::get_event_filename(m_event_id, "-hits.csv")))
             .native());
 
+    std::unordered_set<uint64_t> particle_ids_seen;
     auto hreader = io::csv::make_hit_reader(io_hits_file);
     {
         io::csv::hit iohit;
         while (hreader.read(iohit)) {
             csv_hits.push_back(iohit);
+            particle_ids_seen.insert(iohit.particle_id);
         }
     }
 
@@ -123,10 +126,13 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
                                   .native());
 
     auto preader = io::csv::make_particle_reader(io_particles_file);
+    csv_particles.reserve(particle_ids_seen.size());
     {
         io::csv::particle ioptc;
         while (preader.read(ioptc)) {
-            csv_particles.push_back(ioptc);
+            if (particle_ids_seen.contains(ioptc.particle_id)) {
+                csv_particles.push_back(ioptc);
+            }
         }
     }
 
