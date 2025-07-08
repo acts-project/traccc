@@ -16,6 +16,7 @@
 #include "./kernels/fill_inverted_ids.cuh"
 #include "./kernels/fill_track_candidates.cuh"
 #include "./kernels/fill_tracks_per_measurement.cuh"
+#include "./kernels/fill_unique_meas_id_map.cuh"
 #include "./kernels/fill_vectors.cuh"
 #include "./kernels/find_max_shared.cuh"
 #include "./kernels/gather_tracks.cuh"
@@ -28,6 +29,7 @@
 
 // Thrust include(s).
 #include <thrust/execution_policy.h>
+#include <thrust/extrema.h>
 #include <thrust/fill.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/constant_iterator.h>
@@ -62,6 +64,13 @@ struct track_comparator {
     }
 };
 
+struct measurement_id_comparator {
+    TRACCC_HOST_DEVICE bool operator()(const measurement& a,
+                                       const measurement& b) const {
+        return a.measurement_id < b.measurement_id;
+    }
+};
+
 greedy_ambiguity_resolution_algorithm::greedy_ambiguity_resolution_algorithm(
     const config_type& cfg, const traccc::memory_resource& mr,
     vecmem::copy& copy, stream& str, std::unique_ptr<const Logger> logger)
@@ -76,6 +85,30 @@ greedy_ambiguity_resolution_algorithm::output_type
 greedy_ambiguity_resolution_algorithm::operator()(
     const edm::track_candidate_container<default_algebra>::const_view&
         track_candidates_view) const {
+
+    measurement_collection_types::const_device measurements(
+        track_candidates_view.measurements);
+
+    auto n_meas_total =
+        m_copy.get().get_size(track_candidates_view.measurements);
+
+    // Make sure that max_measurement_id = number_of_measurement -1
+    // @TODO: More robust way is to assert that measurement id ranges from 0, 1,
+    // ..., number_of_measurement - 1
+    [[maybe_unused]] auto max_meas_it = thrust::max_element(
+        thrust::device, track_candidates_view.measurements.ptr(),
+        track_candidates_view.measurements.ptr() + n_meas_total,
+        measurement_id_comparator{});
+
+    measurement max_meas;
+    cudaMemcpy(&max_meas, thrust::raw_pointer_cast(&(*max_meas_it)),
+               sizeof(measurement), cudaMemcpyDeviceToHost);
+
+    if (max_meas.measurement_id != n_meas_total - 1) {
+        throw std::runtime_error(
+            "max measurement id should be equal to (the number of measurements "
+            "- 1)");
+    }
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
@@ -199,6 +232,24 @@ greedy_ambiguity_resolution_algorithm::operator()(
                         unique_meas_buffer.ptr() + meas_count,
                         unique_meas_counts_buffer.ptr());
 
+    // Unique measurement ids
+    vecmem::data::vector_buffer<measurement_id_type>
+        meas_id_to_unique_id_buffer{max_meas.measurement_id, m_mr.main};
+
+    // Make meas_id to meas vector
+    {
+        const unsigned int nThreads = m_warp_size * 2;
+        const unsigned int nBlocks = (meas_count + nThreads - 1) / nThreads;
+
+        kernels::fill_unique_meas_id_map<<<nBlocks, nThreads, 0, stream>>>(
+            device::fill_unique_meas_id_map_payload{
+                .unique_meas_view = unique_meas_buffer,
+                .meas_id_to_unique_id_view = meas_id_to_unique_id_buffer});
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+        m_stream.get().synchronize();
+    }
+
     // Retreive the counting vector to host
     std::vector<std::size_t> unique_meas_counts;
     m_copy
@@ -235,7 +286,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
             device::fill_tracks_per_measurement_payload{
                 .accepted_ids_view = pre_accepted_ids_buffer,
                 .meas_ids_view = meas_ids_buffer,
-                .unique_meas_view = unique_meas_buffer,
+                .meas_id_to_unique_id_view = meas_id_to_unique_id_buffer,
                 .tracks_per_measurement_view = tracks_per_measurement_buffer,
                 .track_status_per_measurement_view =
                     track_status_per_measurement_buffer,
@@ -262,7 +313,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
             device::count_shared_measurements_payload{
                 .accepted_ids_view = pre_accepted_ids_buffer,
                 .meas_ids_view = meas_ids_buffer,
-                .unique_meas_view = unique_meas_buffer,
+                .meas_id_to_unique_id_view = meas_id_to_unique_id_buffer,
                 .n_accepted_tracks_per_measurement_view =
                     n_accepted_tracks_per_measurement_buffer,
                 .n_shared_view = n_shared_buffer});
@@ -405,7 +456,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
             .n_accepted = n_accepted_device.get(),
             .meas_ids_view = meas_ids_buffer,
             .n_meas_view = n_meas_buffer,
-            .unique_meas_view = unique_meas_buffer,
+            .meas_id_to_unique_id_view = meas_id_to_unique_id_buffer,
             .n_accepted_tracks_per_measurement_view =
                 n_accepted_tracks_per_measurement_buffer,
             .n_removable_tracks = n_removable_tracks_device.get(),
@@ -432,7 +483,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
             .n_accepted = n_accepted_device.get(),
             .meas_ids_view = meas_ids_buffer,
             .n_meas_view = n_meas_buffer,
-            .unique_meas_view = unique_meas_buffer,
+            .meas_id_to_unique_id_view = meas_id_to_unique_id_buffer,
             .tracks_per_measurement_view = tracks_per_measurement_buffer,
             .track_status_per_measurement_view =
                 track_status_per_measurement_buffer,

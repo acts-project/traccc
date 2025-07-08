@@ -83,6 +83,8 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
     auto field =
         traccc::construct_const_bfield<host_detector_type::scalar_type>(
             std::get<13>(GetParam()));
+    const traccc::bfield b_field{traccc::construct_const_bfield<traccc::scalar>(
+        std::get<13>(GetParam()))};
 
     // Detector view object
     auto det_view = detray::get_data(host_det);
@@ -193,12 +195,12 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
             ->wait();
 
         // Run device finding
-        auto track_candidates_buffer =
-            device_finding(det_view, field, measurements_buffer, seeds_buffer);
+        auto track_candidates_buffer = device_finding(
+            det_view, b_field, measurements_buffer, seeds_buffer);
 
         // Run device finding (Limit)
         auto track_candidates_limit_buffer = device_finding_limit(
-            det_view, field, measurements_buffer, seeds_buffer);
+            det_view, b_field, measurements_buffer, seeds_buffer);
 
         traccc::edm::track_candidate_collection<traccc::default_algebra>::host
             track_candidates{host_mr},

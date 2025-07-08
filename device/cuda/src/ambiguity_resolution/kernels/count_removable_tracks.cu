@@ -85,10 +85,10 @@ __global__ void count_removable_tracks(
     vecmem::device_vector<measurement_id_type> meas_to_remove(
         payload.meas_to_remove_view);
     vecmem::device_vector<unsigned int> threads(payload.threads_view);
-    vecmem::device_vector<const measurement_id_type> unique_meas(
-        payload.unique_meas_view);
     vecmem::device_vector<const unsigned int> n_accepted_tracks_per_measurement(
         payload.n_accepted_tracks_per_measurement_view);
+    vecmem::device_vector<const unsigned int> meas_id_to_unique_id(
+        payload.meas_id_to_unique_id_view);
 
     auto threadIndex = threadIdx.x;
 
@@ -193,10 +193,7 @@ __global__ void count_removable_tracks(
         auto mid = sh_meas_ids[threadIndex];
         bool is_start =
             (threadIndex == 0) || (sh_meas_ids[threadIndex - 1] != mid);
-        const std::size_t unique_meas_idx =
-            thrust::lower_bound(thrust::seq, unique_meas.begin(),
-                                unique_meas.end(), mid) -
-            unique_meas.begin();
+        const auto unique_meas_idx = meas_id_to_unique_id.at(mid);
 
         if (is_start) {
 

@@ -24,7 +24,7 @@
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
 #include "traccc/finding/device/apply_interaction.hpp"
 #include "traccc/finding/device/build_tracks.hpp"
-#include "traccc/finding/device/fill_sort_keys.hpp"
+#include "traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
 #include "traccc/finding/device/find_tracks.hpp"
 #include "traccc/finding/device/make_barcode_sequence.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
@@ -42,14 +42,17 @@
 
 namespace traccc::sycl::details {
 namespace kernels {
+template <typename T>
 struct make_barcode_sequence {};
 template <typename T>
 struct apply_interaction {};
 template <typename T>
 struct find_tracks {};
-struct fill_sort_keys {};
+template <typename T>
+struct fill_finding_propagation_sort_keys {};
 template <typename T>
 struct propagate_to_next_surface {};
+template <typename T>
 struct build_tracks {};
 }  // namespace kernels
 
@@ -138,7 +141,7 @@ combinatorial_kalman_filter(
 
     queue
         .submit([&](::sycl::handler& h) {
-            h.parallel_for<kernels::make_barcode_sequence>(
+            h.parallel_for<kernels::make_barcode_sequence<kernel_t>>(
                 calculate1DimNdRange(n_modules, 64),
                 [uniques_view = vecmem::get_data(uniques_buffer),
                  barcodes_view = vecmem::get_data(barcodes_buffer)](
@@ -351,13 +354,15 @@ combinatorial_kalman_filter(
 
                 queue
                     .submit([&](::sycl::handler& h) {
-                        h.parallel_for<kernels::fill_sort_keys>(
+                        h.parallel_for<
+                            kernels::fill_finding_propagation_sort_keys<
+                                kernel_t>>(
                             calculate1DimNdRange(n_candidates, 256),
                             [in_params = vecmem::get_data(in_params_buffer),
                              keys = vecmem::get_data(keys_buffer),
                              param_ids = vecmem::get_data(param_ids_buffer)](
                                 ::sycl::nd_item<1> item) {
-                                device::fill_sort_keys(
+                                device::fill_finding_propagation_sort_keys(
                                     details::global_index(item),
                                     {in_params, keys, param_ids});
                             });
@@ -434,7 +439,7 @@ combinatorial_kalman_filter(
     if (n_tips_total > 0) {
         queue
             .submit([&](::sycl::handler& h) {
-                h.parallel_for<kernels::build_tracks>(
+                h.parallel_for<kernels::build_tracks<kernel_t>>(
                     calculate1DimNdRange(n_tips_total, 64),
                     [measurements, seeds,
                      links = vecmem::get_data(links_buffer),

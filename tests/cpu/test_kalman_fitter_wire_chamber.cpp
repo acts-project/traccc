@@ -72,6 +72,8 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
         detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
     const covfie::field<traccc::const_bfield_backend_t<traccc::scalar>> field =
         traccc::construct_const_bfield<traccc::scalar>(B);
+    const traccc::bfield b_field{
+        traccc::construct_const_bfield<traccc::scalar>(B)};
 
     /***************************
      * Generate simulation data
@@ -143,7 +145,7 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
 
         // Run fitting
         auto track_states =
-            fitting(host_det, field,
+            fitting(host_det, b_field,
                     {vecmem::get_data(track_candidates.tracks),
                      vecmem::get_data(track_candidates.measurements)});
 

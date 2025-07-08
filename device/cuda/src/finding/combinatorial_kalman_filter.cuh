@@ -15,7 +15,7 @@
 #include "../utils/utils.hpp"
 #include "./kernels/apply_interaction.hpp"
 #include "./kernels/build_tracks.cuh"
-#include "./kernels/fill_sort_keys.cuh"
+#include "./kernels/fill_finding_propagation_sort_keys.cuh"
 #include "./kernels/find_tracks.cuh"
 #include "./kernels/make_barcode_sequence.cuh"
 #include "./kernels/propagate_to_next_surface.hpp"
@@ -330,7 +330,8 @@ combinatorial_kalman_filter(
                 const unsigned int nThreads = warp_size * 2;
                 const unsigned int nBlocks =
                     (n_candidates + nThreads - 1) / nThreads;
-                kernels::fill_sort_keys<<<nBlocks, nThreads, 0, stream>>>(
+                kernels::fill_finding_propagation_sort_keys<<<nBlocks, nThreads,
+                                                              0, stream>>>(
                     {.params_view = in_params_buffer,
                      .keys_view = keys_buffer,
                      .ids_view = param_ids_buffer});
@@ -369,7 +370,7 @@ combinatorial_kalman_filter(
                     .tips_view = tips_buffer,
                     .tip_lengths_view = tip_length_buffer};
 
-                const unsigned int nThreads = warp_size * 2;
+                const unsigned int nThreads = warp_size * 4;
                 const unsigned int nBlocks =
                     (n_candidates + nThreads - 1) / nThreads;
                 propagate_to_next_surface<

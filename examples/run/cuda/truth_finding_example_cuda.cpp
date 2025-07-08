@@ -6,8 +6,10 @@
  */
 
 // Project include(s).
+#include "../common/make_magnetic_field.hpp"
 #include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
+#include "traccc/cuda/utils/make_bfield.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
@@ -24,6 +26,7 @@
 #include "traccc/options/accelerator.hpp"
 #include "traccc/options/detector.hpp"
 #include "traccc/options/input_data.hpp"
+#include "traccc/options/magnetic_field.hpp"
 #include "traccc/options/performance.hpp"
 #include "traccc/options/program_options.hpp"
 #include "traccc/options/track_finding.hpp"
@@ -58,6 +61,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
             const traccc::opts::track_fitting& fitting_opts,
             const traccc::opts::input_data& input_opts,
             const traccc::opts::detector& detector_opts,
+            const traccc::opts::magnetic_field& bfield_opts,
             const traccc::opts::performance& performance_opts,
             const traccc::opts::accelerator& accelerator_opts,
             const traccc::opts::truth_finding& truth_finding_opts,
@@ -89,11 +93,10 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
      * Build a geometry
      *****************************/
 
-    // B field value and its type
-    // @TODO: Set B field as argument
-    const traccc::vector3 B{0, 0, 2 * traccc::unit<traccc::scalar>::T};
-    const covfie::field<traccc::const_bfield_backend_t<traccc::scalar>> field =
-        traccc::construct_const_bfield<traccc::scalar>(B);
+    // B field value
+    const traccc::bfield host_field =
+        traccc::details::make_magnetic_field(bfield_opts);
+    const traccc::bfield device_field = traccc::cuda::make_bfield(host_field);
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host detector{mng_mr};
@@ -208,7 +211,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
             // Run finding
             track_candidates_cuda_buffer = device_finding(
-                det_view, field, measurements_cuda_buffer, seeds_buffer);
+                det_view, device_field, measurements_cuda_buffer, seeds_buffer);
         }
 
         traccc::edm::track_candidate_collection<traccc::default_algebra>::host
@@ -226,7 +229,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
             // Run fitting
             track_states_cuda_buffer = device_fitting(
-                det_view, field,
+                det_view, device_field,
                 {track_candidates_cuda_buffer, measurements_cuda_buffer});
         }
         traccc::track_state_container_types::host track_states_cuda =
@@ -244,9 +247,10 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                                              elapsedTimes);
 
                 // Run finding
-                track_candidates = host_finding(
-                    detector, field, vecmem::get_data(measurements_per_event),
-                    vecmem::get_data(seeds));
+                track_candidates =
+                    host_finding(detector, host_field,
+                                 vecmem::get_data(measurements_per_event),
+                                 vecmem::get_data(seeds));
             }
 
             {
@@ -255,7 +259,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
                 // Run fitting
                 track_states =
-                    host_fitting(detector, field,
+                    host_fitting(detector, host_field,
                                  {vecmem::get_data(track_candidates),
                                   vecmem::get_data(measurements_per_event)});
             }
@@ -328,6 +332,7 @@ int main(int argc, char* argv[]) {
 
     // Program options.
     traccc::opts::detector detector_opts;
+    traccc::opts::magnetic_field bfield_opts;
     traccc::opts::input_data input_opts;
     traccc::opts::track_finding finding_opts;
     traccc::opts::track_propagation propagation_opts;
@@ -337,7 +342,7 @@ int main(int argc, char* argv[]) {
     traccc::opts::truth_finding truth_finding_config;
     traccc::opts::program_options program_opts{
         "Truth Track Finding Using CUDA",
-        {detector_opts, input_opts, finding_opts, propagation_opts,
+        {detector_opts, bfield_opts, input_opts, finding_opts, propagation_opts,
          fitting_opts, performance_opts, accelerator_opts,
          truth_finding_config},
         argc,
@@ -346,6 +351,6 @@ int main(int argc, char* argv[]) {
 
     // Run the application.
     return seq_run(finding_opts, propagation_opts, fitting_opts, input_opts,
-                   detector_opts, performance_opts, accelerator_opts,
-                   truth_finding_config, logger->clone());
+                   detector_opts, bfield_opts, performance_opts,
+                   accelerator_opts, truth_finding_config, logger->clone());
 }

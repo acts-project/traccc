@@ -7,6 +7,9 @@
 
 #pragma once
 
+// Local include(s).
+#include "make_magnetic_field.hpp"
+
 // Project include(s)
 #include "traccc/geometry/detector.hpp"
 
@@ -14,6 +17,7 @@
 #include "traccc/options/clusterization.hpp"
 #include "traccc/options/detector.hpp"
 #include "traccc/options/input_data.hpp"
+#include "traccc/options/magnetic_field.hpp"
 #include "traccc/options/program_options.hpp"
 #include "traccc/options/threading.hpp"
 #include "traccc/options/throughput.hpp"
@@ -65,6 +69,7 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
 
     // Program options.
     opts::detector detector_opts;
+    opts::magnetic_field bfield_opts;
     opts::input_data input_opts;
     opts::clusterization clusterization_opts;
     opts::track_seeding seeding_opts;
@@ -75,9 +80,9 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     opts::threading threading_opts;
     opts::program_options program_opts{
         description,
-        {detector_opts, input_opts, clusterization_opts, seeding_opts,
-         finding_opts, propagation_opts, fitting_opts, throughput_opts,
-         threading_opts},
+        {detector_opts, bfield_opts, input_opts, clusterization_opts,
+         seeding_opts, finding_opts, propagation_opts, fitting_opts,
+         throughput_opts, threading_opts},
         argc,
         argv,
         logger().cloneWithSuffix("Options")};
@@ -102,6 +107,9 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
             detector, uncached_host_mr, detector_opts.detector_file,
             detector_opts.material_file, detector_opts.grid_file);
     }
+
+    // Construct the magnetic field object.
+    traccc::bfield field{details::make_magnetic_field(bfield_opts)};
 
     // Read in all input events into memory.
     vecmem::vector<edm::silicon_cell_collection::host> input{&uncached_host_mr};
@@ -174,6 +182,7 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
              finding_cfg,
              fitting_cfg,
              det_descr,
+             field,
              (detector_opts.use_detray_detector ? &detector : nullptr),
              logger().clone()});
     }

@@ -88,6 +88,9 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     auto field =
         traccc::construct_const_bfield<host_detector_type::scalar_type>(
             std::get<13>(GetParam()));
+    const traccc::bfield b_field{
+        traccc::construct_const_bfield<host_detector_type::scalar_type>(
+            std::get<13>(GetParam()))};
 
     /***************************
      * Generate simulation data
@@ -170,7 +173,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
 
         // Run fitting
         traccc::track_state_container_types::buffer track_states_cuda_buffer =
-            device_fitting(det_view, field,
+            device_fitting(det_view, b_field,
                            {track_candidates_buffer.tracks,
                             track_candidates_buffer.measurements});
 

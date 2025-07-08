@@ -26,6 +26,17 @@ namespace {
 vecmem::host_memory_resource host_mr;
 }  // namespace
 
+void fill_measurements(
+    edm::track_candidate_container<default_algebra>::host& track_candidates,
+    const measurement_id_type max_meas_id) {
+
+    track_candidates.measurements.reserve(max_meas_id + 1);
+    for (measurement_id_type i = 0; i <= max_meas_id; i++) {
+        track_candidates.measurements.emplace_back();
+        track_candidates.measurements.back().measurement_id = i;
+    }
+}
+
 void fill_pattern(
     edm::track_candidate_container<default_algebra>::host& track_candidates,
     const traccc::scalar pval,
@@ -35,11 +46,17 @@ void fill_pattern(
     track_candidates.tracks.pval().back() = pval;
 
     for (const auto& meas_id : pattern) {
-        track_candidates.measurements.emplace_back();
-        track_candidates.measurements.back().measurement_id = meas_id;
+        const auto meas_iter = std::lower_bound(
+            track_candidates.measurements.begin(),
+            track_candidates.measurements.end(), meas_id,
+            [](const measurement& m, const measurement_id_type id) {
+                return m.measurement_id < id;
+            });
+
+        const auto meas_idx =
+            std::distance(track_candidates.measurements.begin(), meas_iter);
         track_candidates.tracks.measurement_indices().back().push_back(
-            static_cast<unsigned int>(track_candidates.measurements.size() -
-                                      1));
+            static_cast<measurement_id_type>(meas_idx));
     }
 }
 
@@ -63,6 +80,7 @@ TEST(AmbiguitySolverTests, GreedyResolverTest0) {
 
     edm::track_candidate_container<default_algebra>::host trk_cands{host_mr};
 
+    fill_measurements(trk_cands, 100);
     fill_pattern(trk_cands, 0.23f, {5, 1, 11, 3});
     fill_pattern(trk_cands, 0.85f, {12, 10, 9, 8, 7, 6});
     fill_pattern(trk_cands, 0.42f, {4, 2, 13});
@@ -137,6 +155,7 @@ TEST(AmbiguitySolverTests, GreedyResolverTest1) {
 
     edm::track_candidate_container<default_algebra>::host trk_cands{host_mr};
 
+    fill_measurements(trk_cands, 100);
     fill_pattern(trk_cands, 0.12f, {5, 14, 1, 11, 18, 16, 3});
     fill_pattern(trk_cands, 0.53f, {3, 6, 5, 13});
 
@@ -182,6 +201,7 @@ TEST(AmbiguitySolverTests, GreedyResolverTest2) {
 
     edm::track_candidate_container<default_algebra>::host trk_cands{host_mr};
 
+    fill_measurements(trk_cands, 100);
     fill_pattern(trk_cands, 0.8f, {1, 3, 5, 11});
     fill_pattern(trk_cands, 0.9f, {3, 5, 6, 13});
 
@@ -206,6 +226,7 @@ TEST(AmbiguitySolverTests, GreedyResolverTest3) {
 
     edm::track_candidate_container<default_algebra>::host trk_cands{host_mr};
 
+    fill_measurements(trk_cands, 100);
     fill_pattern(trk_cands, 0.2f, {5, 1, 11, 3});
     fill_pattern(trk_cands, 0.5f, {6, 2});
     fill_pattern(trk_cands, 0.4f, {3, 21, 12, 6, 19, 14});
@@ -253,11 +274,13 @@ TEST(AmbiguitySolverTests, GreedyResolverTest4) {
 
     std::mt19937 gen(42);
 
+    const measurement_id_type max_meas_id = 10000;
+    fill_measurements(trk_cands, max_meas_id);
     for (std::size_t i = 0; i < 10000u; i++) {
 
         std::uniform_int_distribution<std::size_t> track_length_dist(1, 20);
-        std::uniform_int_distribution<measurement_id_type> meas_id_dist(0,
-                                                                        10000);
+        std::uniform_int_distribution<measurement_id_type> meas_id_dist(
+            0, max_meas_id);
         std::uniform_real_distribution<traccc::scalar> pval_dist(0.0f, 1.0f);
 
         const std::size_t track_length = track_length_dist(gen);
@@ -330,6 +353,7 @@ TEST(AmbiguitySolverTests, GreedyResolverTest5) {
 
     edm::track_candidate_container<default_algebra>::host trk_cands{host_mr};
 
+    fill_measurements(trk_cands, 100);
     fill_pattern(trk_cands, 0.2f, {1, 2, 1, 1});
     fill_pattern(trk_cands, 0.5f, {3, 2, 1});
     fill_pattern(trk_cands, 0.4f, {2, 4, 5, 7, 2});
@@ -357,6 +381,7 @@ TEST(AmbiguitySolverTests, GreedyResolverTest6) {
 
     edm::track_candidate_container<default_algebra>::host trk_cands{host_mr};
 
+    fill_measurements(trk_cands, 100);
     fill_pattern(trk_cands, 0.2f, {7, 3, 5, 7, 7, 7, 2});
     fill_pattern(trk_cands, 0.5f, {2});
     fill_pattern(trk_cands, 0.4f, {8, 9, 7, 2, 3, 4, 3, 7});

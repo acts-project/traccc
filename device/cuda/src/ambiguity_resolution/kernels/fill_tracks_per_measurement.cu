@@ -33,8 +33,8 @@ __global__ void fill_tracks_per_measurement(
 
     vecmem::jagged_device_vector<const measurement_id_type> meas_ids(
         payload.meas_ids_view);
-    vecmem::device_vector<const measurement_id_type> unique_meas(
-        payload.unique_meas_view);
+    vecmem::device_vector<const unsigned int> meas_id_to_unique_id(
+        payload.meas_id_to_unique_id_view);
     vecmem::jagged_device_vector<unsigned int> tracks_per_measurement(
         payload.tracks_per_measurement_view);
     vecmem::jagged_device_vector<int> track_status_per_measurement(
@@ -53,10 +53,7 @@ __global__ void fill_tracks_per_measurement(
             continue;
         }
 
-        const auto it = thrust::lower_bound(thrust::seq, unique_meas.begin(),
-                                            unique_meas.end(), meas_id);
-        const std::size_t unique_meas_idx =
-            static_cast<std::size_t>(thrust::distance(unique_meas.begin(), it));
+        const auto unique_meas_idx = meas_id_to_unique_id.at(meas_id);
 
         auto tracks = tracks_per_measurement.at(unique_meas_idx);
 

@@ -76,6 +76,8 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
     auto field =
         traccc::construct_const_bfield<host_detector_type::scalar_type>(
             std::get<13>(GetParam()));
+    const traccc::bfield b_field{traccc::construct_const_bfield<traccc::scalar>(
+        std::get<13>(GetParam()))};
 
     // Detector view object
     auto det_view = detray::get_data(host_det);
@@ -155,7 +157,6 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
-
         // Truth Track Candidates
         traccc::event_data evt_data(path, i_evt, host_mr);
 
@@ -193,12 +194,12 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
         // Run device finding
         traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
             track_candidates_cuda_buffer = device_finding(
-                det_view, field, measurements_buffer, seeds_buffer);
+                det_view, b_field, measurements_buffer, seeds_buffer);
 
         // Run device finding (Limit)
         traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
             track_candidates_limit_cuda_buffer = device_finding_limit(
-                det_view, field, measurements_buffer, seeds_buffer);
+                det_view, b_field, measurements_buffer, seeds_buffer);
 
         traccc::edm::track_candidate_collection<traccc::default_algebra>::host
             track_candidates_cuda{host_mr},
@@ -210,7 +211,8 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
              vecmem::copy::type::device_to_host)
             ->wait();
 
-        // Make sure that the number of found tracks = n_track ^ (n_planes + 1)
+        // Make sure that the number of found tracks = n_track ^ (n_planes +
+        // 1)
         ASSERT_GT(track_candidates_cuda.size(),
                   track_candidates_limit_cuda.size());
         ASSERT_EQ(track_candidates_cuda.size(),

@@ -78,6 +78,8 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     auto field =
         traccc::construct_const_bfield<host_detector_type::scalar_type>(
             std::get<13>(GetParam()));
+    const traccc::bfield b_field{traccc::construct_const_bfield<traccc::scalar>(
+        std::get<13>(GetParam()))};
 
     /***************************
      * Generate simulation data
@@ -163,7 +165,7 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
 
         // Run finding
         auto track_candidates = host_finding(
-            host_det, field, vecmem::get_data(measurements_per_event),
+            host_det, b_field, vecmem::get_data(measurements_per_event),
             vecmem::get_data(seeds));
 
         ASSERT_EQ(track_candidates.size(), n_truth_tracks);
@@ -177,7 +179,7 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
 
         // Run fitting
         auto track_states =
-            host_fitting(host_det, field,
+            host_fitting(host_det, b_field,
                          {vecmem::get_data(track_candidates),
                           vecmem::get_data(measurements_per_event)});
         const std::size_t n_fitted_tracks =

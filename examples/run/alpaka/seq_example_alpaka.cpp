@@ -146,8 +146,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
     // Constant B field for the track finding and fitting
     const traccc::vector3 field_vec = {0.f, 0.f,
                                        seeding_opts.seedfinder.bFieldInZ};
-    const covfie::field<traccc::const_bfield_backend_t<traccc::scalar>> field =
-        traccc::construct_const_bfield<traccc::scalar>(field_vec);
+    const traccc::bfield field{
+        traccc::construct_const_bfield<traccc::scalar>(field_vec)};
 
     traccc::host::clusterization_algorithm ca(
         host_mr, logger().clone("HostClusteringAlg"));

@@ -186,6 +186,16 @@ combinatorial_kalman_filter(
                      ? 0
                      : links[step - 1][param_to_link[step - 1][in_param_id]]
                            .n_skipped);
+            const scalar prev_chi2_sum =
+                (step == 0
+                     ? 0.f
+                     : links[step - 1][param_to_link[step - 1][in_param_id]]
+                           .chi2_sum);
+            const unsigned int prev_ndf_sum =
+                (step == 0
+                     ? 0
+                     : links[step - 1][param_to_link[step - 1][in_param_id]]
+                           .ndf_sum);
 
             TRACCC_VERBOSE("Processing input parameter "
                            << in_param_id + 1 << " / " << n_in_params << ": "
@@ -273,7 +283,10 @@ combinatorial_kalman_filter(
                           .meas_idx = item_id,
                           .seed_idx = orig_param_id,
                           .n_skipped = skip_counter,
-                          .chi2 = chi2},
+                          .chi2 = chi2,
+                          .chi2_sum = prev_chi2_sum + chi2,
+                          .ndf_sum = prev_ndf_sum +
+                                     trk_state.get_measurement().meas_dim},
                          trk_state});
                 }
             }
@@ -316,7 +329,9 @@ combinatorial_kalman_filter(
                      .meas_idx = std::numeric_limits<unsigned int>::max(),
                      .seed_idx = orig_param_id,
                      .n_skipped = skip_counter + 1,
-                     .chi2 = std::numeric_limits<traccc::scalar>::max()});
+                     .chi2 = std::numeric_limits<traccc::scalar>::max(),
+                     .chi2_sum = prev_chi2_sum,
+                     .ndf_sum = prev_ndf_sum});
 
                 updated_params.push_back(in_param);
                 TRACCC_VERBOSE("updated_params["
@@ -374,8 +389,7 @@ combinatorial_kalman_filter(
             }
 
             // Propagate to the next surface
-            propagator.propagate_sync(propagation,
-                                      detray::tie(s0, s1, s2, s3, s4));
+            propagator.propagate(propagation, detray::tie(s0, s1, s2, s3, s4));
 
             // If a surface found, add the parameter for the next
             // step

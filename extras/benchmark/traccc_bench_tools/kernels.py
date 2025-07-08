@@ -38,6 +38,9 @@ def map_name(name):
         "DeviceMergeSortBlockSortKernel",
         "DeviceMergeSortMergeKernel",
         "DeviceMergeSortPartitionKernel",
+        "DeviceRadixSortHistogramKernel",
+        "DeviceRadixSortOnesweepKernel",
+        "DeviceRadixSortExclusiveSumKernel",
     ]:
         return "Thrust::sort"
     elif name in ["_kernel_agent", "static_kernel"]:

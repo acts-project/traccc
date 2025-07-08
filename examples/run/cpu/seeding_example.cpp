@@ -6,6 +6,7 @@
  */
 
 // Project include(s).
+#include "../common/make_magnetic_field.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/geometry/detector.hpp"
@@ -34,6 +35,7 @@
 // options
 #include "traccc/options/detector.hpp"
 #include "traccc/options/input_data.hpp"
+#include "traccc/options/magnetic_field.hpp"
 #include "traccc/options/performance.hpp"
 #include "traccc/options/program_options.hpp"
 #include "traccc/options/track_finding.hpp"
@@ -60,6 +62,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::track_fitting& fitting_opts,
             const traccc::opts::input_data& input_opts,
             const traccc::opts::detector& detector_opts,
+            const traccc::opts::magnetic_field& bfield_opts,
             const traccc::opts::performance& performance_opts,
             std::unique_ptr<const traccc::Logger> ilogger) {
     TRACCC_LOCAL_LOGGER(std::move(ilogger));
@@ -98,11 +101,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
      * Build a geometry
      *****************************/
 
-    // B field value and its type
-    // @TODO: Set B field as argument
-    const traccc::vector3 B{0, 0, 2 * traccc::unit<traccc::scalar>::T};
-    const covfie::field<traccc::const_bfield_backend_t<traccc::scalar>> field =
-        traccc::construct_const_bfield<traccc::scalar>(B);
+    // B field value
+    const traccc::bfield field =
+        traccc::details::make_magnetic_field(bfield_opts);
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host detector{host_mr};
@@ -274,6 +275,7 @@ int main(int argc, char* argv[]) {
 
     // Program options.
     traccc::opts::detector detector_opts;
+    traccc::opts::magnetic_field bfield_opts;
     traccc::opts::input_data input_opts;
     traccc::opts::track_seeding seeding_opts;
     traccc::opts::track_finding finding_opts;
@@ -283,7 +285,7 @@ int main(int argc, char* argv[]) {
     traccc::opts::performance performance_opts;
     traccc::opts::program_options program_opts{
         "Full Tracking Chain on the Host (without clusterization)",
-        {detector_opts, input_opts, seeding_opts, finding_opts,
+        {detector_opts, bfield_opts, input_opts, seeding_opts, finding_opts,
          propagation_opts, resolution_opts, fitting_opts, performance_opts},
         argc,
         argv,
@@ -292,5 +294,5 @@ int main(int argc, char* argv[]) {
     // Run the application.
     return seq_run(seeding_opts, finding_opts, propagation_opts,
                    resolution_opts, fitting_opts, input_opts, detector_opts,
-                   performance_opts, logger->clone());
+                   bfield_opts, performance_opts, logger->clone());
 }

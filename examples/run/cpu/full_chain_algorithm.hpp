@@ -59,9 +59,6 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
     /// Track fitting algorithm type
     using fitting_algorithm = traccc::host::kalman_fitting_algorithm;
 
-    using bfield_type =
-        covfie::field<traccc::const_bfield_backend_t<traccc::scalar>>;
-
     /// @}
 
     /// Algorithm constructor
@@ -79,7 +76,7 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
                          const finding_algorithm::config_type& finding_config,
                          const fitting_algorithm::config_type& fitting_config,
                          const silicon_detector_description::host& det_descr,
-                         detector_type* detector,
+                         const bfield& field, detector_type* detector,
                          std::unique_ptr<const traccc::Logger> logger);
 
     /// Reconstruct track parameters in the entire detector
@@ -96,7 +93,7 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
     /// Constant B field for the (seed) track parameter estimation
     traccc::vector3 m_field_vec;
     /// Constant B field for the track finding and fitting
-    bfield_type m_field;
+    bfield m_field;
 
     /// Detector description
     std::reference_wrapper<const silicon_detector_description::host>

@@ -91,6 +91,7 @@ struct seedfinder_config {
     float maxScatteringAngle2 = 0;
     float pTPerHelixRadius = 0;
     float minHelixDiameter2 = 0;
+    float minHelixRadius = 0;
     float pT2perRadius = 0;
 
     // Multiplicator for the number of phi-bins. The minimum number of phi-bins
@@ -126,6 +127,7 @@ struct seedfinder_config {
 
         pTPerHelixRadius = bFieldInZ;
         minHelixDiameter2 = std::pow(minPt * 2.f / pTPerHelixRadius, 2.f);
+        minHelixRadius = std::sqrt(minHelixDiameter2) / 2.f;
 
         // @TODO: This is definitely a bug because highland / pTPerHelixRadius
         // is in length unit
