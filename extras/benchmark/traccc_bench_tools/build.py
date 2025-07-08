@@ -15,6 +15,8 @@ log = logging.getLogger("traccc_benchmark")
 
 
 SPACK_LIBS_COMMIT = "069cc80b845c16bf36430fdc90130f0306b47f3e"
+COVFIE_V0_15_1_HASH_MISMATCH_BEGIN = "2757ac69fc61bf21fb7959d6fb30d003d6128e44"
+COVFIE_V0_15_1_HASH_MISMATCH_END = "00f027941a40157bed2c3f94beecd82df2b34544"
 
 
 def configure(
@@ -47,6 +49,18 @@ def configure(
         )
         config_args.append("-DTRACCC_USE_SYSTEM_ACTS=ON")
         config_args.append("-DTRACCC_USE_SYSTEM_TBB=ON")
+
+    if git.is_parent_of(
+        commit, COVFIE_V0_15_1_HASH_MISMATCH_BEGIN
+    ) and not git.is_parent_of(commit, COVFIE_V0_15_1_HASH_MISMATCH_END):
+        log.info(
+            "Commit is a child of (or is) %s but not %s; removing covfie v0.15.1 hash",
+            COVFIE_V0_15_1_HASH_MISMATCH_BEGIN[:8],
+            COVFIE_V0_15_1_HASH_MISMATCH_END[:8],
+        )
+        config_args.append(
+            "-DTRACCC_COVFIE_SOURCE='URL;https://github.com/acts-project/covfie/archive/refs/tags/v0.15.1.tar.gz'"
+        )
 
     subprocess.run(
         config_args,
