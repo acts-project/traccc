@@ -49,5 +49,10 @@ using inhom_bfield_backend_t = covfie::backend::affine<
 static_assert(covfie::concepts::field_backend<inhom_bfield_backend_t<float>>,
               "inhom_bfield_backend_t is not a valid field backend type");
 
+/// @brief The standard list of host bfield types to support
+template <typename scalar_t>
+using bfield_type_list = std::tuple<const_bfield_backend_t<scalar_t>,
+                                    inhom_bfield_backend_t<scalar_t>>;
+
 }  // namespace host
 }  // namespace traccc
