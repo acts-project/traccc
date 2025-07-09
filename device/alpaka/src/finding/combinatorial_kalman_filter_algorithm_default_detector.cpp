@@ -7,6 +7,7 @@
 
 // Local include(s).
 #include "../utils/get_queue.hpp"
+#include "../utils/magnetic_field_types.hpp"
 #include "combinatorial_kalman_filter.hpp"
 #include "traccc/alpaka/finding/combinatorial_kalman_filter_algorithm.hpp"
 
@@ -22,16 +23,13 @@ combinatorial_kalman_filter_algorithm::operator()(
     const bound_track_parameters_collection_types::const_view& seeds) const {
 
     // Perform the track finding using the templated implementation.
-    if (bfield.is<const_bfield_backend_t<scalar>>()) {
-        return details::combinatorial_kalman_filter<default_detector::device>(
-            det, bfield.as_view<const_bfield_backend_t<scalar>>(), measurements,
-            seeds, m_config, m_mr, m_copy, logger(),
-            details::get_queue(m_queue.get()));
-    } else {
-        throw std::invalid_argument(
-            "Unsupported b-field type received in "
-            "traccc::alpaka::combinatorial_kalman_filter_algorithm");
-    }
+    return magnetic_field_visitor<alpaka::bfield_type_list<scalar>>(
+        bfield, [&]<typename bfield_view_t>(const bfield_view_t& bfield_view) {
+            return details::combinatorial_kalman_filter<
+                default_detector::device>(det, bfield_view, measurements, seeds,
+                                          m_config, m_mr, m_copy, logger(),
+                                          details::get_queue(m_queue.get()));
+        });
 }
 
 }  // namespace traccc::alpaka
