@@ -20,6 +20,11 @@ from traccc_bench_tools import parse_profile, types, build, profile, benchmark
 log = logging.getLogger("traccc_benchmark")
 
 
+KNOWN_BROKEN_COMMITS = [
+    "9444f505d62d1213da7b3a502da3a233d524d264",
+]
+
+
 def main():
     parser = argparse.ArgumentParser()
 
@@ -203,6 +208,10 @@ def main():
 
         if str(x) in commits_to_skip:
             log.info("Commit %s is marked for skipping", x)
+            continue
+
+        if str(x) in KNOWN_BROKEN_COMMITS:
+            log.info("Commit %s is known to be broken; skipping", x)
             continue
 
         try:
