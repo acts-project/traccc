@@ -14,6 +14,7 @@
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/read_measurements.hpp"
@@ -80,10 +81,13 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     const auto field = traccc::details::make_magnetic_field(bfield_opts);
 
     // Construct a Detray detector object, if supported by the configuration.
-    traccc::default_detector::host detector{host_mr};
-    traccc::io::read_detector(detector, host_mr, detector_opts.detector_file,
-                              detector_opts.material_file,
-                              detector_opts.grid_file);
+    traccc::host_detector polymorphic_detector;
+    traccc::io::read_detector(
+        polymorphic_detector, host_mr, detector_opts.detector_file,
+        detector_opts.material_file, detector_opts.grid_file);
+
+    const traccc::default_detector::host& detector =
+        polymorphic_detector.as<traccc::default_detector>();
 
     /*****************************
      * Do the reconstruction
@@ -126,8 +130,9 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
         // Truth Track Candidates
         traccc::event_data evt_data(input_opts.directory, event, host_mr,
-                                    input_opts.use_acts_geom_source, &detector,
-                                    input_opts.format, false);
+                                    input_opts.use_acts_geom_source,
+                                    &polymorphic_detector, input_opts.format,
+                                    false);
 
         traccc::edm::track_candidate_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
@@ -146,7 +151,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
             &host_mr};
         traccc::io::read_measurements(
             measurements_per_event, event, input_opts.directory,
-            (input_opts.use_acts_geom_source ? &detector : nullptr),
+            (input_opts.use_acts_geom_source ? &polymorphic_detector : nullptr),
             input_opts.format);
 
         // Run finding

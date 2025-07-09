@@ -53,11 +53,16 @@ TEST(CUDASpacepointFormation, cuda) {
     tel_cfg.pilot_track(traj);
 
     // Create telescope geometry
-    const auto [det, name_map] = build_telescope_detector(mng_mr, tel_cfg);
-    using device_detector_type = traccc::telescope_detector::device;
+    auto [det, name_map] = build_telescope_detector(mng_mr, tel_cfg);
+
+    traccc::host_detector host_det;
+    host_det.set<traccc::telescope_detector>(std::move(det));
 
     // Surface lookup
-    auto surfaces = det.surfaces();
+    auto surfaces = host_det.as<traccc::telescope_detector>().surfaces();
+
+    const traccc::detector_buffer device_det =
+        traccc::buffer_from_host_detector(host_det, mng_mr, copy);
 
     // Prepare measurement collection
     measurement_collection_types::host measurements{&mng_mr};
@@ -69,10 +74,9 @@ TEST(CUDASpacepointFormation, cuda) {
     measurements.push_back({{10.f, 15.f}, {0.f, 0.f}, surfaces[8u].barcode()});
 
     // Run spacepoint formation
-    traccc::cuda::spacepoint_formation_algorithm<device_detector_type>
-        sp_formation(mr, copy, stream);
+    traccc::cuda::spacepoint_formation_algorithm sp_formation(mr, copy, stream);
     auto spacepoints_buffer =
-        sp_formation(detray::get_data(det), vecmem::get_data(measurements));
+        sp_formation(device_det, vecmem::get_data(measurements));
 
     edm::spacepoint_collection::device spacepoints(spacepoints_buffer);
 

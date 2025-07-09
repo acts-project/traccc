@@ -10,6 +10,7 @@
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/propagation.hpp"
 
@@ -116,7 +117,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     const traccc::vector3 field_vec(seeding_opts);
 
     // Construct a Detray detector object, if supported by the configuration.
-    traccc::default_detector::host detector{host_mr};
+    traccc::host_detector detector;
     traccc::io::read_detector(detector, host_mr, detector_opts.detector_file,
                               detector_opts.material_file,
                               detector_opts.grid_file);
@@ -197,8 +198,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
           ------------------------*/
 
         track_candidates = host_finding(
-            detector, field, vecmem::get_data(measurements_per_event),
-            vecmem::get_data(params));
+            detector.as<traccc::default_detector>(), field,
+            vecmem::get_data(measurements_per_event), vecmem::get_data(params));
         n_found_tracks += track_candidates.size();
 
         /*-----------------------------------------
@@ -214,9 +215,10 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
            Track Fitting with KF
           ------------------------*/
 
-        track_states = host_fitting(detector, field,
-                                    {vecmem::get_data(track_candidates_ar),
-                                     vecmem::get_data(measurements_per_event)});
+        track_states =
+            host_fitting(detector.as<traccc::default_detector>(), field,
+                         {vecmem::get_data(track_candidates_ar),
+                          vecmem::get_data(measurements_per_event)});
         n_fitted_tracks += track_states.tracks.size();
 
         /*------------
@@ -254,7 +256,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             for (unsigned int i = 0; i < track_states.tracks.size(); i++) {
                 fit_performance_writer.write(
                     track_states.tracks.at(i), track_states.states,
-                    measurements_per_event, detector, evt_data);
+                    measurements_per_event,
+                    detector.as<traccc::default_detector>(), evt_data);
             }
         }
     }

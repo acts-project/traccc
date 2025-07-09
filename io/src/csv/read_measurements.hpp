@@ -11,6 +11,7 @@
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/host_detector.hpp"
 
 // System include(s).
 #include <string_view>
@@ -27,7 +28,6 @@ namespace traccc::io::csv {
 ///
 std::vector<measurement_id_type> read_measurements(
     measurement_collection_types::host& measurements, std::string_view filename,
-    const traccc::default_detector::host* detector = nullptr,
-    const bool do_sort = true);
+    const traccc::host_detector* detector = nullptr, const bool do_sort = true);
 
 }  // namespace traccc::io::csv

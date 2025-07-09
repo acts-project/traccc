@@ -14,6 +14,7 @@
 #include "traccc/edm/silicon_cluster_collection.hpp"
 #include "traccc/edm/track_candidate_container.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/io/csv/cell.hpp"
 #include "traccc/io/csv/hit.hpp"
@@ -35,9 +36,6 @@ namespace traccc {
 struct event_data {
 
     public:
-    // Type definitions
-    using detector_type = traccc::default_detector::host;
-
     event_data() = delete;
 
     /// Event data constructor
@@ -54,7 +52,7 @@ struct event_data {
     event_data(const std::string& event_dir, const std::size_t event_id,
                vecmem::memory_resource& resource,
                bool use_acts_geom_source = false,
-               const detector_type* det = nullptr,
+               const host_detector* det = nullptr,
                data_format format = data_format::csv,
                bool include_silicon_cells = false);
 
@@ -77,10 +75,46 @@ struct event_data {
     /// @param[in] sg Seed generator for fitting
     /// @param[in] resource vecmem memory resource
     ///
+    template <typename detector_type>
     void generate_truth_candidates(
         edm::track_candidate_container<default_algebra>::host& truth_candidates,
         seed_generator<detector_type>& sg, vecmem::memory_resource& resource,
-        float pt_cut = 0.f);
+        float pt_cut = 0.f) {
+        for (auto const& [ptc, measurements] : m_ptc_to_meas_map) {
+
+            const auto& param = m_meas_to_param_map.at(measurements[0]);
+            const free_track_parameters<> free_param(param.first, 0.f,
+                                                     param.second, ptc.charge);
+
+            auto ptc_particle =
+                detail::particle_from_pdg_number<scalar>(ptc.particle_type);
+
+            if (ptc_particle.pdg_num() == 0) {
+                // TODO: Add some debug logging here.
+                continue;
+            } else if (free_param.pT(ptc_particle.charge()) <= pt_cut) {
+                continue;
+            }
+
+            auto seed_params =
+                sg(measurements[0].surface_link, free_param, ptc_particle);
+
+            // Record the measurements, and remember their indices.
+            vecmem::vector<unsigned int> meas_indices{&resource};
+            truth_candidates.measurements.reserve(
+                truth_candidates.measurements.size() + measurements.size());
+            meas_indices.reserve(measurements.size());
+            for (const auto& meas : measurements) {
+                meas_indices.push_back(static_cast<unsigned int>(
+                    truth_candidates.measurements.size()));
+                truth_candidates.measurements.push_back(meas);
+            }
+
+            // Record the truth track candidate.
+            truth_candidates.tracks.push_back(
+                {seed_params, 0.f, 0.f, 0.f, 0u, meas_indices});
+        }
+    }
 
     // Measurement map
     std::map<measurement_id_type, measurement> m_measurement_map;
@@ -106,7 +140,7 @@ struct event_data {
     std::reference_wrapper<vecmem::memory_resource> m_mr;
 
     private:
-    void setup_csv(bool use_acts_geom_source, const detector_type* det,
+    void setup_csv(bool use_acts_geom_source, const host_detector* det,
                    bool include_silicon_cells);
 };
 

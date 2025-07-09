@@ -14,6 +14,7 @@
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/edm/track_candidate_collection.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/io/data_format.hpp"
 #include "traccc/io/digitization_config.hpp"
@@ -88,7 +89,7 @@ void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
            edm::track_candidate_collection<default_algebra>::const_view tracks,
            measurement_collection_types::const_view measurements,
-           const traccc::default_detector::host& detector);
+           const traccc::host_detector& detector);
 
 /// Write a digitization configuration to a file
 ///

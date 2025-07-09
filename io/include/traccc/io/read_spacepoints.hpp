@@ -14,6 +14,7 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/host_detector.hpp"
 
 // System include(s).
 #include <cstddef>
@@ -36,7 +37,7 @@ namespace traccc::io {
 void read_spacepoints(edm::spacepoint_collection::host& spacepoints,
                       measurement_collection_types::host& measurements,
                       std::size_t event, std::string_view directory,
-                      const traccc::default_detector::host* detector = nullptr,
+                      const traccc::host_detector* detector = nullptr,
                       data_format format = data_format::csv);
 
 /// Read spacepoint data into memory
@@ -57,7 +58,7 @@ void read_spacepoints(edm::spacepoint_collection::host& spacepoints,
                       std::string_view hit_filename,
                       std::string_view meas_filename,
                       std::string_view meas_hit_map_filename,
-                      const traccc::default_detector::host* detector = nullptr,
+                      const traccc::host_detector* detector = nullptr,
                       data_format format = data_format::csv);
 
 }  // namespace traccc::io

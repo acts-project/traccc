@@ -45,7 +45,7 @@ TEST_P(SurfaceBinningTests, Run) {
         vecmem::get_data(dd);
 
     // Read the detector
-    traccc::default_detector::host detector{host_mr};
+    traccc::host_detector detector;
     traccc::io::read_detector(detector, host_mr, detector_file);
 
     // Algorithms
@@ -59,7 +59,8 @@ TEST_P(SurfaceBinningTests, Run) {
 
     // Get Reconstructed Spacepoints
     auto measurements_recon = ca(vecmem::get_data(cells_truth), dd_data);
-    auto spacepoints_recon = sf(detector, vecmem::get_data(measurements_recon));
+    auto spacepoints_recon = sf(detector.as<traccc::default_detector>(),
+                                vecmem::get_data(measurements_recon));
 
     // Read the hits from the relevant event file
     traccc::edm::spacepoint_collection::host spacepoints_truth{host_mr};

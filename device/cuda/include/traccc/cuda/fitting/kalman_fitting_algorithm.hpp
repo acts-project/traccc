@@ -16,6 +16,7 @@
 #include "traccc/edm/track_fit_container.hpp"
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/detector_buffer.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
@@ -31,10 +32,7 @@ namespace traccc::cuda {
 /// Kalman filter based track fitting algorithm
 class kalman_fitting_algorithm
     : public algorithm<edm::track_fit_container<default_algebra>::buffer(
-          const default_detector::view&, const magnetic_field&,
-          const edm::track_candidate_container<default_algebra>::const_view&)>,
-      public algorithm<edm::track_fit_container<default_algebra>::buffer(
-          const telescope_detector::view&, const magnetic_field&,
+          const detector_buffer&, const magnetic_field&,
           const edm::track_candidate_container<default_algebra>::const_view&)>,
       public messaging {
 
@@ -59,27 +57,14 @@ class kalman_fitting_algorithm
 
     /// Execute the algorithm
     ///
-    /// @param det             The (default) detector object
-    /// @param bfield          The magnetic field object
+    /// @param det             The detector object
+    /// @param field           The magnetic field object
     /// @param track_candidates All track candidates to fit
     ///
     /// @return A container of the fitted track states
     ///
     output_type operator()(
-        const default_detector::view& det, const magnetic_field& bfield,
-        const edm::track_candidate_container<default_algebra>::const_view&
-            track_candidates) const override;
-
-    /// Execute the algorithm
-    ///
-    /// @param det             The (telescope) detector object
-    /// @param bfield          The magnetic field object
-    /// @param track_candidates All track candidates to fit
-    ///
-    /// @return A container of the fitted track states
-    ///
-    output_type operator()(
-        const telescope_detector::view& det, const magnetic_field& bfield,
+        const detector_buffer& det, const magnetic_field& field,
         const edm::track_candidate_container<default_algebra>::const_view&
             track_candidates) const override;
 

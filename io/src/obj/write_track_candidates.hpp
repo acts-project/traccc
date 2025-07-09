@@ -11,6 +11,7 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate_collection.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/host_detector.hpp"
 
 // System include(s).
 #include <string_view>
@@ -28,6 +29,6 @@ void write_track_candidates(
     std::string_view filename,
     edm::track_candidate_collection<default_algebra>::const_view tracks,
     measurement_collection_types::const_view measurements,
-    const traccc::default_detector::host& detector);
+    const traccc::host_detector& detector);
 
 }  // namespace traccc::io::obj
