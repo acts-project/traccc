@@ -16,11 +16,13 @@
 #include <covfie/core/backend/transformer/clamp.hpp>
 #include <covfie/core/backend/transformer/linear.hpp>
 #include <covfie/core/backend/transformer/strided.hpp>
+#include <covfie/core/concepts.hpp>
 #include <covfie/core/field.hpp>
 #include <covfie/core/vector.hpp>
 
 // System include(s).
 #include <any>
+#include <sstream>
 
 namespace traccc {
 
@@ -37,7 +39,8 @@ class bfield {
     /// @param obj The b-field object to construct from
     ///
     template <typename bfield_backend_t>
-    explicit bfield(covfie::field<bfield_backend_t>&& obj)
+    explicit bfield(covfie::field<bfield_backend_t>&& obj) requires(
+        covfie::concepts::field_backend<bfield_backend_t>)
         : m_field(std::move(obj)) {}
 
     /// Set a specific b-field object
@@ -46,7 +49,8 @@ class bfield {
     /// @param obj The b-field object to set
     ///
     template <typename bfield_backend_t>
-    void set(covfie::field<bfield_backend_t>&& obj) {
+    void set(covfie::field<bfield_backend_t>&& obj) requires(
+        covfie::concepts::field_backend<bfield_backend_t>) {
         m_field = std::move(obj);
     }
 
@@ -57,9 +61,13 @@ class bfield {
     ///         @c false otherwise
     ///
     template <typename bfield_backend_t>
-    bool is() const {
+    bool is() const
+        requires(covfie::concepts::field_backend<bfield_backend_t>) {
         return (m_field.type() == typeid(covfie::field<bfield_backend_t>));
     }
+
+    /// @brief Return type information about the contained magnetic field.
+    const std::type_info& type() const { return m_field.type(); }
 
     /// Get a b-field view object as a specific type
     ///
@@ -67,7 +75,8 @@ class bfield {
     /// @return The b-field view object of the specified type
     ///
     template <typename bfield_backend_t>
-    typename covfie::field<bfield_backend_t>::view_t as() const {
+    typename covfie::field<bfield_backend_t>::view_t as() const
+        requires(covfie::concepts::field_backend<bfield_backend_t>) {
         return typename covfie::field<bfield_backend_t>::view_t{
             std::any_cast<const covfie::field<bfield_backend_t>&>(m_field)};
     }
@@ -78,7 +87,8 @@ class bfield {
     /// @return The b-field object cast to the specified type
     ///
     template <typename bfield_backend_t>
-    const covfie::field<bfield_backend_t>& get_covfie_field() const {
+    const covfie::field<bfield_backend_t>& get_covfie_field() const
+        requires(covfie::concepts::field_backend<bfield_backend_t>) {
         return std::any_cast<const covfie::field<bfield_backend_t>&>(m_field);
     }
 
@@ -123,5 +133,49 @@ template <typename scalar_t>
 ::covfie::field<const_bfield_backend_t<scalar_t>> construct_const_bfield(
     const vector3& v) {
     return construct_const_bfield(v[0], v[1], v[2]);
+}
+
+/// @brief The standard list of host bfield types to support
+template <typename scalar_t>
+using host_bfield_type_list = std::tuple<const_bfield_backend_t<scalar_t>,
+                                         inhom_bfield_backend_t<scalar_t>>;
+
+/// @brief Helper function for `bfield_visitor`
+template <typename callable_t, typename bfield_t, typename... bfield_ts>
+auto bfield_visitor_helper(
+    const bfield& bfield, callable_t&& callable,
+    std::tuple<
+        bfield_t,
+        bfield_ts...>*) requires(covfie::concepts::field_backend<bfield_t> &&
+                                 (covfie::concepts::field_backend<bfield_ts> &&
+                                  ...)) {
+    if (bfield.is<bfield_t>()) {
+        return callable(bfield.as<bfield_t>());
+    } else {
+        if constexpr (sizeof...(bfield_ts) > 0) {
+            return bfield_visitor_helper(
+                bfield, std::forward<callable_t>(callable),
+                static_cast<std::tuple<bfield_ts...>*>(nullptr));
+        } else {
+            std::stringstream exception_message;
+
+            exception_message
+                << "Invalid B-field type (" << bfield.type().name()
+                << ") received, but this type is not supported" << std::endl;
+
+            throw std::invalid_argument(exception_message.str());
+        }
+    }
+}
+
+/// @brief Visitor for polymorphic magnetic field types
+///
+/// This function takes a list of supported magnetic field types and checks
+/// if the provided field is one of them. If it is, it will call the provided
+/// callable on a view of it and otherwise it will throw an exception.
+template <typename bfield_list_t, typename callable_t>
+auto bfield_visitor(const bfield& bfield, callable_t&& callable) {
+    return bfield_visitor_helper(bfield, std::forward<callable_t>(callable),
+                                 static_cast<bfield_list_t*>(nullptr));
 }
 }  // namespace traccc
