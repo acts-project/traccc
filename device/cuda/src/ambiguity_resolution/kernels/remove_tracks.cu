@@ -6,6 +6,7 @@
  */
 
 // Project include(s).
+#include "traccc/definitions/math.hpp"
 #include "traccc/utils/pair.hpp"
 
 // Local include(s).
@@ -433,8 +434,9 @@ __launch_bounds__(512) __global__
             updated_tracks[pos2] = tid;
             is_updated[tid] = 1;
 
-            rel_shared.at(tid) = static_cast<traccc::scalar>(n_shared.at(tid)) /
-                                 static_cast<traccc::scalar>(n_meas.at(tid));
+            rel_shared.at(tid) =
+                math::div_ieee754(static_cast<traccc::scalar>(n_shared.at(tid)),
+                                  static_cast<traccc::scalar>(n_meas.at(tid)));
         }
     }
 }

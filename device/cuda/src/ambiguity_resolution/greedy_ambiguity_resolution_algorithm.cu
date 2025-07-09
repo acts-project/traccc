@@ -25,6 +25,7 @@
 #include "./kernels/sort_tracks_per_measurement.cuh"
 #include "./kernels/sort_updated_tracks.cuh"
 #include "traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
+#include "traccc/definitions/math.hpp"
 
 // Thrust include(s).
 #include <thrust/execution_policy.h>
@@ -42,7 +43,8 @@ namespace traccc::cuda {
 struct devide_op {
     TRACCC_HOST_DEVICE
     traccc::scalar operator()(unsigned int a, unsigned int b) const {
-        return static_cast<traccc::scalar>(a) / static_cast<traccc::scalar>(b);
+        return math::div_ieee754(static_cast<traccc::scalar>(a),
+                                 static_cast<traccc::scalar>(b));
     }
 };
 
