@@ -21,7 +21,7 @@ void write_track_candidates(
     std::string_view filename,
     edm::track_candidate_collection<default_algebra>::const_view tracks_view,
     measurement_collection_types::const_view measurements_view,
-    const traccc::default_detector::host& detector) {
+    const traccc::host_detector& detector) {
 
     // Open the output file.
     std::ofstream file{filename.data()};
@@ -58,10 +58,12 @@ void write_track_candidates(
             const measurement& m = measurements.at(midx);
 
             // Find the detector surface that this measurement sits on.
-            const detray::tracking_surface surface{detector, m.surface_link};
-
-            // Calculate a position for this measurement in global 3D space.
-            const auto global = surface.local_to_global({}, m.local, {});
+            const auto global = host_detector_visitor<detector_type_list>(
+                detector, [&m]<typename detector_traits_t>(
+                              const typename detector_traits_t::host& d) {
+                    detray::tracking_surface surface{d, m.surface_link};
+                    return surface.local_to_global({}, m.local, {});
+                });
 
             // Write the 3D coordinates of the measurement / spacepoint.
             assert(global.size() == 3);
@@ -70,8 +72,8 @@ void write_track_candidates(
         }
     }
 
-    // Now loop over the track candidates again, and creates lines for each of
-    // them using the measurements / spacepoints written out earlier.
+    // Now loop over the track candidates again, and creates lines for each
+    // of them using the measurements / spacepoints written out earlier.
     file << "# Track candidates\n";
     std::size_t vertex_counter = 1;
     for (size_type i = 0; i < tracks.size(); ++i) {

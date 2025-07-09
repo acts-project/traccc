@@ -18,7 +18,7 @@ namespace traccc::io::csv {
 
 std::vector<measurement_id_type> read_measurements(
     measurement_collection_types::host& measurements, std::string_view filename,
-    const traccc::default_detector::host* detector, const bool do_sort) {
+    const traccc::host_detector* detector, const bool do_sort) {
 
     // Construct the measurement reader object.
     auto reader = make_measurement_reader(filename);
@@ -27,10 +27,13 @@ std::vector<measurement_id_type> read_measurements(
     std::map<geometry_id, geometry_id> acts_to_detray_id;
 
     if (detector) {
-        for (const auto& surface_desc : detector->surfaces()) {
-            acts_to_detray_id[surface_desc.source] =
-                surface_desc.barcode().value();
-        }
+        host_detector_visitor<detector_type_list>(
+            *detector, [&]<typename detector_t>(const detector_t::host& det) {
+                for (const auto& surface_desc : det.surfaces()) {
+                    acts_to_detray_id[surface_desc.source] =
+                        surface_desc.barcode().value();
+                }
+            });
     }
 
     // Read the measurements from the input file.

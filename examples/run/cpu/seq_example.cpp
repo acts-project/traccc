@@ -7,6 +7,7 @@
 
 // core
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/propagation.hpp"
 
@@ -96,10 +97,10 @@ int seq_run(const traccc::opts::input_data& input_opts,
         vecmem::get_data(det_descr)};
 
     // Construct a Detray detector object, if supported by the configuration.
-    traccc::default_detector::host detector{host_mr};
-    traccc::io::read_detector(detector, host_mr, detector_opts.detector_file,
-                              detector_opts.material_file,
-                              detector_opts.grid_file);
+    traccc::host_detector polymorphic_detector;
+    traccc::io::read_detector(
+        polymorphic_detector, host_mr, detector_opts.detector_file,
+        detector_opts.material_file, detector_opts.grid_file);
 
     // Output stats
     uint64_t n_cells = 0;
@@ -235,7 +236,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
                 traccc::performance::timer timer{"Spacepoint formation",
                                                  elapsedTimes};
                 spacepoints_per_event =
-                    sf(detector, vecmem::get_data(measurements_per_event));
+                    sf(polymorphic_detector,
+                       vecmem::get_data(measurements_per_event));
             }
             if (output_opts.directory != "") {
                 traccc::io::write(event, output_opts.directory,
@@ -247,7 +249,6 @@ int seq_run(const traccc::opts::input_data& input_opts,
             /*-----------------------
               Seeding algorithm
               -----------------------*/
-
             {
                 traccc::performance::timer timer{"Seeding", elapsedTimes};
                 seeds = sa(vecmem::get_data(spacepoints_per_event));
@@ -272,15 +273,17 @@ int seq_run(const traccc::opts::input_data& input_opts,
 
             {
                 traccc::performance::timer timer{"Track finding", elapsedTimes};
-                track_candidates = finding_alg(
-                    detector, field, vecmem::get_data(measurements_per_event),
-                    vecmem::get_data(params));
+                track_candidates =
+                    finding_alg(polymorphic_detector, field,
+                                vecmem::get_data(measurements_per_event),
+                                vecmem::get_data(params));
             }
             if (output_opts.directory != "") {
-                traccc::io::write(
-                    event, output_opts.directory, output_opts.format,
-                    vecmem::get_data(track_candidates),
-                    vecmem::get_data(measurements_per_event), detector);
+                traccc::io::write(event, output_opts.directory,
+                                  output_opts.format,
+                                  vecmem::get_data(track_candidates),
+                                  vecmem::get_data(measurements_per_event),
+                                  polymorphic_detector);
             }
 
             {
@@ -295,7 +298,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
             {
                 traccc::performance::timer timer{"Track fitting", elapsedTimes};
                 track_states =
-                    fitting_alg(detector, field,
+                    fitting_alg(polymorphic_detector, field,
                                 {vecmem::get_data(resolved_track_candidates),
                                  vecmem::get_data(measurements_per_event)});
             }
@@ -322,7 +325,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
 
             traccc::event_data evt_data(input_opts.directory, event, host_mr,
                                         input_opts.use_acts_geom_source,
-                                        &detector, input_opts.format, true);
+                                        &polymorphic_detector,
+                                        input_opts.format, true);
             evt_data.fill_cca_result(cells_per_event, clusters_per_event,
                                      measurements_per_event, det_descr);
 
@@ -340,9 +344,14 @@ int seq_run(const traccc::opts::input_data& input_opts,
                 evt_data);
 
             for (unsigned int i = 0; i < track_states.tracks.size(); i++) {
-                fit_performance_writer.write(
-                    track_states.tracks.at(i), track_states.states,
-                    measurements_per_event, detector, evt_data);
+                host_detector_visitor<traccc::detector_type_list>(
+                    polymorphic_detector,
+                    [&]<typename detector_traits_t>(
+                        const typename detector_traits_t::host& det) {
+                        fit_performance_writer.write(
+                            track_states.tracks.at(i), track_states.states,
+                            measurements_per_event, det, evt_data);
+                    });
             }
         }
     }

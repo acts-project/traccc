@@ -96,7 +96,7 @@ TEST_F(io, csv_read_odd_single_muon) {
     // Memory resource used by the test.
     vecmem::host_memory_resource mr;
 
-    traccc::default_detector::host detector{mr};
+    traccc::host_detector detector;
     traccc::io::read_detector(detector, mr,
                               "geometries/odd/odd-detray_geometry_detray.json");
 

@@ -10,6 +10,7 @@
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/propagation.hpp"
 
@@ -116,7 +117,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     const traccc::vector3 field_vec(seeding_opts);
 
     // Construct a Detray detector object, if supported by the configuration.
-    traccc::default_detector::host detector{host_mr};
+    traccc::host_detector detector;
     traccc::io::read_detector(detector, host_mr, detector_opts.detector_file,
                               detector_opts.material_file,
                               detector_opts.grid_file);
@@ -252,9 +253,13 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 evt_data);
 
             for (unsigned int i = 0; i < track_states.tracks.size(); i++) {
-                fit_performance_writer.write(
-                    track_states.tracks.at(i), track_states.states,
-                    measurements_per_event, detector, evt_data);
+                host_detector_visitor<detector_type_list>(
+                    detector, [&]<typename detector_traits_t>(
+                                  const typename detector_traits_t::host& det) {
+                        fit_performance_writer.write(
+                            track_states.tracks.at(i), track_states.states,
+                            measurements_per_event, det, evt_data);
+                    });
             }
         }
     }

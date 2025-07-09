@@ -22,7 +22,7 @@ template <typename detector_t>
 struct FormSpacepointsKernel {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        TAcc const& acc, typename detector_t::const_view_type det_view,
+        TAcc const& acc, typename detector_t::view det_view,
         measurement_collection_types::const_view measurements_view,
         edm::spacepoint_collection::view spacepoints_view) const {
 
@@ -34,16 +34,13 @@ struct FormSpacepointsKernel {
     }
 };
 
-template <typename detector_t>
-spacepoint_formation_algorithm<detector_t>::spacepoint_formation_algorithm(
+spacepoint_formation_algorithm::spacepoint_formation_algorithm(
     const traccc::memory_resource& mr, vecmem::copy& copy, queue& q,
     std::unique_ptr<const Logger> logger)
     : messaging(std::move(logger)), m_mr(mr), m_copy(copy), m_queue(q) {}
 
-template <typename detector_t>
-edm::spacepoint_collection::buffer
-spacepoint_formation_algorithm<detector_t>::operator()(
-    const typename detector_t::const_view_type& det_view,
+edm::spacepoint_collection::buffer spacepoint_formation_algorithm::operator()(
+    const detector_buffer& det,
     const measurement_collection_types::const_view& measurements_view) const {
 
     // Get a convenience variable for the queue that we'll be using.
@@ -69,14 +66,17 @@ spacepoint_formation_algorithm<detector_t>::operator()(
     const unsigned int nBlocks = (num_measurements + blockSize - 1) / blockSize;
     auto workDiv = makeWorkDiv<Acc>(blockSize, nBlocks);
 
-    // Launch the spacepoint formation kernel.
-    ::alpaka::exec<Acc>(queue, workDiv, FormSpacepointsKernel<detector_t>{},
-                        det_view, measurements_view, spacepoints_view);
+    detector_buffer_visitor<detector_type_list>(
+        det, [&]<typename detector_traits_t>(
+                 const typename detector_traits_t::view& det_view) {
+            // Launch the spacepoint formation kernel.
+            ::alpaka::exec<Acc>(queue, workDiv,
+                                FormSpacepointsKernel<detector_traits_t>{},
+                                det_view, measurements_view, spacepoints_view);
+        });
 
     // Return the reconstructed spacepoints.
     return spacepoints;
 }
-// Explicit template instantiation
-template class spacepoint_formation_algorithm<default_detector::device>;
 
 }  // namespace traccc::alpaka

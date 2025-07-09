@@ -8,6 +8,7 @@
 // Library include(s).
 #include "traccc/io/read_detector_description.hpp"
 
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/utils.hpp"
@@ -41,21 +42,20 @@ void fill_digi_info(traccc::silicon_detector_description::host& dd,
     dd.dimensions().back() = data.dimensions;
 }
 
-void read_json_dd(traccc::silicon_detector_description::host& dd,
-                  std::string_view geometry_file,
-                  const traccc::digitization_config& digi) {
-
-    // Construct a (temporary) Detray detector object from the geometry
-    // configuration file.
-    vecmem::host_memory_resource mr;
-    traccc::default_detector::host detector{mr};
-    traccc::io::read_detector(detector, mr, geometry_file);
+template <typename detector_traits_t>
+void read_json_dd_impl(traccc::silicon_detector_description::host& dd,
+                       const traccc::host_detector& detector,
+                       const traccc::digitization_config& digi)
+    requires(traccc::is_detector_traits<detector_traits_t>)
+{
+    const traccc::default_detector::host& detector_host =
+        detector.as<traccc::default_detector>();
 
     // Iterate over the surfaces of the detector.
-    const traccc::default_detector::host::surface_lookup_container& surfaces =
-        detector.surfaces();
+    const typename detector_traits_t::host::surface_lookup_container& surfaces =
+        detector_host.surfaces();
     dd.reserve(surfaces.size());
-    for (const auto& surface_desc : detector.surfaces()) {
+    for (const auto& surface_desc : detector_host.surfaces()) {
 
         // Acts geometry identifier(s) for the surface.
         const traccc::geometry_id geom_id{surface_desc.source};
@@ -71,7 +71,7 @@ void read_json_dd(traccc::silicon_detector_description::host& dd,
         dd.resize(dd.size() + 1);
 
         // Construct a Detray surface object.
-        const detray::tracking_surface surface{detector, surface_desc};
+        const detray::tracking_surface surface{detector_host, surface_desc};
 
         // Fill the new element with the geometry ID and the transformation of
         // the surface in question.
@@ -83,8 +83,7 @@ void read_json_dd(traccc::silicon_detector_description::host& dd,
         using annulus_t =
             detray::mask<detray::annulus2D, traccc::default_algebra>;
         if (surface_desc.mask().id() ==
-            traccc::default_detector::host::masks::template get_id<
-                annulus_t>()) {
+            detector_traits_t::host::masks::template get_id<annulus_t>()) {
             dd.subspace().back() = {1, 0};
         }
 
@@ -102,6 +101,20 @@ void read_json_dd(traccc::silicon_detector_description::host& dd,
         // surface.
         fill_digi_info(dd, *digi_it);
     }
+}
+
+void read_json_dd(traccc::silicon_detector_description::host& dd,
+                  std::string_view geometry_file,
+                  const traccc::digitization_config& digi) {
+
+    // Construct a (temporary) Detray detector object from the geometry
+    // configuration file.
+    vecmem::host_memory_resource mr;
+    traccc::host_detector detector;
+    traccc::io::read_detector(detector, mr, geometry_file);
+
+    read_json_dd_impl<traccc::default_detector>(dd, detector, digi);
+    // detector_buffer_visitor
 }
 
 }  // namespace
