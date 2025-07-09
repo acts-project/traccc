@@ -49,7 +49,7 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
     vecmem::cuda::async_copy async_copy{stream.cudaStream()};
 
     // Read back detector file
-    traccc::default_detector::host det{cuda_host_mr};
+    traccc::host_detector det;
     traccc::io::read_detector(
         det, cuda_host_mr, sim_dir + "toy_detector_geometry.json",
         sim_dir + "toy_detector_homogeneous_material.json",
@@ -69,9 +69,12 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
                                                           async_copy, stream);
 
     // Copy detector to device
-    auto det_buffer = detray::get_buffer(det, device_mr, copy);
+    traccc::detector_buffer det_buffer;
+    det_buffer.set<traccc::default_detector>(detray::get_buffer(
+        det.as<traccc::default_detector>(), device_mr, copy));
+
     // Detector view object
-    auto det_view = detray::get_data(det_buffer);
+    auto det_view = detray::get_data(det_buffer.as<traccc::default_detector>());
 
     // D2H copy object
     traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
@@ -131,7 +134,7 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
             // Run track fitting
             traccc::track_state_container_types::buffer
                 track_states_cuda_buffer = device_fitting(
-                    det_view, field,
+                    det_buffer, field,
                     {track_candidates_cuda_buffer, measurements_cuda_buffer});
 
             // Create a temporary buffer that will receive the device memory.

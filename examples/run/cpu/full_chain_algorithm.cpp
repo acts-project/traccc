@@ -8,6 +8,8 @@
 // Local include(s).
 #include "full_chain_algorithm.hpp"
 
+#include "traccc/geometry/host_detector.hpp"
+
 namespace traccc {
 
 full_chain_algorithm::full_chain_algorithm(
@@ -18,7 +20,7 @@ full_chain_algorithm::full_chain_algorithm(
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
     const silicon_detector_description::host& det_descr, const bfield& field,
-    detector_type* detector, std::unique_ptr<const traccc::Logger> logger)
+    host_detector* detector, std::unique_ptr<const traccc::Logger> logger)
     : messaging(logger->clone()),
       m_copy{std::make_unique<vecmem::copy>()},
       m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
@@ -59,7 +61,8 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
         const measurement_collection_types::const_view measurements_view =
             vecmem::get_data(measurements);
         const spacepoint_formation_algorithm::output_type spacepoints =
-            m_spacepoint_formation(*m_detector, measurements_view);
+            m_spacepoint_formation(m_detector->as<traccc::default_detector>(),
+                                   measurements_view);
         const edm::spacepoint_collection::const_data spacepoints_data =
             vecmem::get_data(spacepoints);
         const host::seeding_algorithm::output_type seeds =
@@ -73,12 +76,13 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
             track_params_view = vecmem::get_data(track_params);
 
         // Run the track finding.
-        const finding_algorithm::output_type track_candidates = m_finding(
-            *m_detector, m_field, measurements_view, track_params_view);
+        const finding_algorithm::output_type track_candidates =
+            m_finding(m_detector->as<traccc::default_detector>(), m_field,
+                      measurements_view, track_params_view);
 
         // Run the track fitting, and return its results.
         return m_fitting(
-            *m_detector, m_field,
+            m_detector->as<traccc::default_detector>(), m_field,
             {vecmem::get_data(track_candidates), measurements_view});
     }
     // If not, just return an empty object.

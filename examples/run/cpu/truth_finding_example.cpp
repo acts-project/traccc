@@ -13,6 +13,7 @@
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/read_measurements.hpp"
@@ -76,11 +77,14 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
         traccc::details::make_magnetic_field(bfield_opts);
 
     // Construct a Detray detector object, if supported by the configuration.
-    traccc::default_detector::host detector{host_mr};
+    traccc::host_detector polymorphic_detector;
     assert(detector_opts.use_detray_detector == true);
-    traccc::io::read_detector(detector, host_mr, detector_opts.detector_file,
-                              detector_opts.material_file,
-                              detector_opts.grid_file);
+    traccc::io::read_detector(
+        polymorphic_detector, host_mr, detector_opts.detector_file,
+        detector_opts.material_file, detector_opts.grid_file);
+
+    traccc::default_detector::host& detector =
+        polymorphic_detector.as<traccc::default_detector>();
 
     /*****************************
      * Do the reconstruction

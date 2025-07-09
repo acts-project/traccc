@@ -135,14 +135,15 @@ TEST_F(io, csv_read_odd_single_muon) {
     // Memory resource used by the test.
     vecmem::host_memory_resource mr;
 
-    traccc::default_detector::host detector{mr};
+    traccc::host_detector detector;
     traccc::io::read_detector(detector, mr,
                               "geometries/odd/odd-detray_geometry_detray.json");
 
     // Read the truth particles for the first event.
     traccc::particle_container_types::host particles{&mr};
     traccc::io::read_particles(particles, 0u, "odd/geant4_1muon_1GeV/",
-                               &detector, traccc::data_format::csv);
+                               &detector.as<traccc::default_detector>(),
+                               traccc::data_format::csv);
 
     // Look at the read container.
     ASSERT_EQ(particles.size(), 265u);

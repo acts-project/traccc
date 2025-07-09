@@ -9,6 +9,7 @@
 #include "traccc/io/read_detector_description.hpp"
 
 #include "csv/read_surfaces.hpp"
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/utils.hpp"
@@ -98,14 +99,17 @@ void read_json_dd(traccc::silicon_detector_description::host& dd,
     // Construct a (temporary) Detray detector object from the geometry
     // configuration file.
     vecmem::host_memory_resource mr;
-    traccc::default_detector::host detector{mr};
+    traccc::host_detector detector;
     traccc::io::read_detector(detector, mr, geometry_file);
+
+    traccc::default_detector::host& detector_host =
+        detector.as<traccc::default_detector>();
 
     // Iterate over the surfaces of the detector.
     const traccc::default_detector::host::surface_lookup_container& surfaces =
-        detector.surfaces();
+        detector_host.surfaces();
     dd.reserve(surfaces.size());
-    for (const auto& surface_desc : detector.surfaces()) {
+    for (const auto& surface_desc : detector_host.surfaces()) {
 
         // Acts geometry identifier(s) for the surface.
         const traccc::geometry_id geom_id{surface_desc.source};
@@ -121,7 +125,7 @@ void read_json_dd(traccc::silicon_detector_description::host& dd,
         dd.resize(dd.size() + 1);
 
         // Construct a Detray surface object.
-        const detray::tracking_surface surface{detector, surface_desc};
+        const detray::tracking_surface surface{detector_host, surface_desc};
 
         // Fill the new element with the geometry ID and the transformation of
         // the surface in question.

@@ -22,6 +22,7 @@
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/read_measurements.hpp"
@@ -120,17 +121,22 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     const traccc::bfield device_field = traccc::cuda::make_bfield(host_field);
 
     // Construct a Detray detector object, if supported by the configuration.
-    traccc::default_detector::host host_det{mng_mr};
+    traccc::host_detector host_det;
     traccc::io::read_detector(host_det, mng_mr, detector_opts.detector_file,
                               detector_opts.material_file,
                               detector_opts.grid_file);
 
     // Detector view object
-    traccc::default_detector::view det_view = detray::get_data(host_det);
+    traccc::default_detector::view det_view =
+        detray::get_data(host_det.as<traccc::default_detector>());
 
     // Copy objects
     vecmem::copy host_copy;
     vecmem::cuda::copy copy;
+
+    traccc::detector_buffer detector_buffer;
+    detector_buffer.set<traccc::default_detector>(detray::get_buffer(
+        host_det.as<traccc::default_detector>(), mng_mr, host_copy));
 
     traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
         track_state_d2h{mr, copy, logger().clone("TrackStateD2HCopyAlg")};
@@ -217,7 +223,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 traccc::io::read_spacepoints(
                     spacepoints_per_event, measurements_per_event, event,
                     input_opts.directory,
-                    (input_opts.use_acts_geom_source ? &host_det : nullptr),
+                    (input_opts.use_acts_geom_source
+                         ? &host_det.as<traccc::default_detector>()
+                         : nullptr),
                     input_opts.format);
 
             }  // stop measuring hit reading timer
@@ -303,10 +311,10 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             if (accelerator_opts.compare_with_cpu) {
                 traccc::performance::timer t("Track finding with CKF (cpu)",
                                              elapsedTimes);
-                track_candidates =
-                    host_finding(host_det, host_field,
-                                 vecmem::get_data(measurements_per_event),
-                                 vecmem::get_data(params));
+                track_candidates = host_finding(
+                    host_det.as<traccc::default_detector>(), host_field,
+                    vecmem::get_data(measurements_per_event),
+                    vecmem::get_data(params));
             }
 
             /*------------------------
@@ -318,17 +326,17 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                                              elapsedTimes);
 
                 track_states_cuda_buffer = device_fitting(
-                    det_view, device_field,
+                    detector_buffer, device_field,
                     {track_candidates_cuda_buffer, measurements_cuda_buffer});
             }
 
             if (accelerator_opts.compare_with_cpu) {
                 traccc::performance::timer t("Track fitting with KF (cpu)",
                                              elapsedTimes);
-                track_states =
-                    host_fitting(host_det, host_field,
-                                 {vecmem::get_data(track_candidates),
-                                  vecmem::get_data(measurements_per_event)});
+                track_states = host_fitting(
+                    host_det.as<traccc::default_detector>(), host_field,
+                    {vecmem::get_data(track_candidates),
+                     vecmem::get_data(measurements_per_event)});
             }
 
         }  // Stop measuring wall time
@@ -406,9 +414,11 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
         if (performance_opts.run) {
 
-            traccc::event_data evt_data(input_opts.directory, event, host_mr,
-                                        input_opts.use_acts_geom_source,
-                                        &host_det, input_opts.format, false);
+            traccc::event_data evt_data(
+                input_opts.directory, event, host_mr,
+                input_opts.use_acts_geom_source,
+                &host_det.as<traccc::default_detector>(), input_opts.format,
+                false);
 
             sd_performance_writer.write(
                 vecmem::get_data(seeds_cuda),
@@ -425,8 +435,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
                 const auto& fit_res = track_states_cuda[i].header;
 
-                fit_performance_writer.write(trk_states_per_track, fit_res,
-                                             host_det, evt_data);
+                fit_performance_writer.write(
+                    trk_states_per_track, fit_res,
+                    host_det.as<traccc::default_detector>(), evt_data);
             }
         }
     }
