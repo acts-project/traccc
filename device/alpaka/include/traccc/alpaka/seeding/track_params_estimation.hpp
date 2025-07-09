@@ -7,9 +7,10 @@
 
 #pragma once
 
-// Project include(s)
-#include <vecmem/utils/copy.hpp>
+// Local include(s).
+#include "traccc/alpaka/utils/queue.hpp"
 
+// Project include(s)
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/seed_collection.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
@@ -17,6 +18,9 @@
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
+
+// VecMem include(s)
+#include <vecmem/utils/copy.hpp>
 
 namespace traccc::alpaka {
 
@@ -35,8 +39,9 @@ struct track_params_estimation
     /// @param mr is the memory resource
     /// @param copy The copy object to use for copying data between device
     ///             and host memory blocks
+    /// @param q The queue to perform the operations in
     track_params_estimation(
-        const traccc::memory_resource& mr, vecmem::copy& copy,
+        const traccc::memory_resource& mr, vecmem::copy& copy, queue& q,
         std::unique_ptr<const Logger> ilogger = getDummyLogger().clone());
 
     /// Callable operator for track_params_estimation
@@ -67,6 +72,8 @@ struct track_params_estimation
     traccc::memory_resource m_mr;
     /// Copy object used by the algorithm
     ::vecmem::copy& m_copy;
+    /// The Alpaka queue to use
+    queue& m_queue;
 };
 
 }  // namespace traccc::alpaka

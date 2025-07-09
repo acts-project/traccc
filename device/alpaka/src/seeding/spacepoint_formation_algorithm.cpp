@@ -9,6 +9,7 @@
 #include "traccc/alpaka/seeding/spacepoint_formation_algorithm.hpp"
 
 #include "../utils/barrier.hpp"
+#include "../utils/get_queue.hpp"
 #include "../utils/utils.hpp"
 
 // Project include(s).
@@ -35,9 +36,9 @@ struct FormSpacepointsKernel {
 
 template <typename detector_t>
 spacepoint_formation_algorithm<detector_t>::spacepoint_formation_algorithm(
-    const traccc::memory_resource& mr, vecmem::copy& copy,
+    const traccc::memory_resource& mr, vecmem::copy& copy, queue& q,
     std::unique_ptr<const Logger> logger)
-    : messaging(std::move(logger)), m_mr(mr), m_copy(copy) {}
+    : messaging(std::move(logger)), m_mr(mr), m_copy(copy), m_queue(q) {}
 
 template <typename detector_t>
 edm::spacepoint_collection::buffer
@@ -45,9 +46,8 @@ spacepoint_formation_algorithm<detector_t>::operator()(
     const typename detector_t::view_type& det_view,
     const measurement_collection_types::const_view& measurements_view) const {
 
-    // Setup alpaka
-    auto devAcc = ::alpaka::getDevByIdx(::alpaka::Platform<Acc>{}, 0u);
-    auto queue = Queue{devAcc};
+    // Get a convenience variable for the queue that we'll be using.
+    auto queue = details::get_queue(m_queue);
 
     // Get the number of measurements.
     const measurement_collection_types::const_view::size_type num_measurements =
@@ -72,7 +72,6 @@ spacepoint_formation_algorithm<detector_t>::operator()(
     // Launch the spacepoint formation kernel.
     ::alpaka::exec<Acc>(queue, workDiv, FormSpacepointsKernel<detector_t>{},
                         det_view, measurements_view, spacepoints_view);
-    ::alpaka::wait(queue);
 
     // Return the reconstructed spacepoints.
     return spacepoints;

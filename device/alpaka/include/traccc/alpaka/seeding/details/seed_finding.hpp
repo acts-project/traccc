@@ -7,6 +7,9 @@
 
 #pragma once
 
+// Local include(s).
+#include "traccc/alpaka/utils/queue.hpp"
+
 // Project include(s).
 #include "traccc/edm/seed_collection.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
@@ -32,9 +35,10 @@ class seed_finding : public messaging {
     /// @param mr vecmem memory resource
     /// @param copy The copy object to use for copying data between device
     ///             and host memory blocks
+    /// @param q The Alpaka queue to perform the operations in
     seed_finding(
         const seedfinder_config& config, const seedfilter_config& filter_config,
-        const traccc::memory_resource& mr, vecmem::copy& copy,
+        const traccc::memory_resource& mr, vecmem::copy& copy, queue& q,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for the seed finding
@@ -52,7 +56,11 @@ class seed_finding : public messaging {
     seedfinder_config m_seedfinder_config;
     seedfilter_config m_seedfilter_config;
     traccc::memory_resource m_mr;
+
+    /// The copy object to use
     vecmem::copy& m_copy;
+    /// The Alpaka queue to use
+    queue& m_queue;
 
 };  // class seed_finding
 

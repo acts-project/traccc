@@ -7,6 +7,9 @@
 
 #pragma once
 
+// Local include(s).
+#include "traccc/alpaka/utils/queue.hpp"
+
 // Project include(s).
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
@@ -48,10 +51,11 @@ class clusterization_algorithm
     /// @param mr The memory resource(s) to use in the algorithm
     /// @param copy The copy object to use for copying data between device
     ///             and host memory blocks
+    /// @param q The Alpaka queue to perform the operations in
     /// @param config The clustering configuration
     ///
     clusterization_algorithm(
-        const traccc::memory_resource& mr, vecmem::copy& copy,
+        const traccc::memory_resource& mr, vecmem::copy& copy, queue& q,
         const config_type& config,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
@@ -67,12 +71,14 @@ class clusterization_algorithm
         const override;
 
     private:
-    /// The average number of cells in each partition
-    config_type m_config;
     /// The memory resource(s) to use
     traccc::memory_resource m_mr;
     /// The copy object to use
     std::reference_wrapper<vecmem::copy> m_copy;
+    /// The Alpaka queue to use
+    std::reference_wrapper<queue> m_queue;
+    /// The average number of cells in each partition
+    const config_type m_config;
     /// Memory reserved for edge cases
     vecmem::data::vector_buffer<device::details::index_t> m_f_backup,
         m_gf_backup;
