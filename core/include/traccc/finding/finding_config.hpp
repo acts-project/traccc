@@ -53,6 +53,13 @@ struct finding_config {
     traccc::pdg_particle<traccc::scalar> ptc_hypothesis =
         traccc::muon<traccc::scalar>();
 
+    /// Minimum track length in order for a track to be a candidate for
+    /// duplicate removal.
+    ///
+    /// @warning This parameter should be greater than or equal to 3 under all
+    /// circumstances!
+    unsigned int duplicate_removal_minimum_length = 5u;
+
     /// @name Performance parameters
     /// These parameters impact only compute performance; any case in which a
     /// change in these parameters effects a change in _physics_ performance

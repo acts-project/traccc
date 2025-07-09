@@ -359,12 +359,15 @@ combinatorial_kalman_filter(
                                 kernel_t>>(
                             calculate1DimNdRange(n_candidates, 256),
                             [in_params = vecmem::get_data(in_params_buffer),
+                             param_liveness =
+                                 vecmem::get_data(param_liveness_buffer),
                              keys = vecmem::get_data(keys_buffer),
                              param_ids = vecmem::get_data(param_ids_buffer)](
                                 ::sycl::nd_item<1> item) {
                                 device::fill_finding_propagation_sort_keys(
                                     details::global_index(item),
-                                    {in_params, keys, param_ids});
+                                    {in_params, param_liveness, keys,
+                                     param_ids});
                             });
                     })
                     .wait_and_throw();
