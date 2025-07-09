@@ -125,6 +125,18 @@ struct find_tracks_payload {
      * @brief View object to the temporary link vector
      */
     vecmem::data::vector_view<candidate_link> tmp_links_view;
+
+    /**
+     * @brief View object to the persistent track parameters, estabilishing
+     * a direct map between links and parameters at the same index.
+     */
+    bound_track_parameters_collection_types::view persistent_parameters_view;
+
+    /**
+     * @brief Flag that, if true, indicates whether holes should be counted
+     * in the length of the tip in the tip length output.
+     */
+    bool count_holes = false;
 };
 
 /// (Shared Event Data) Payload for the @c traccc::device::find_tracks function

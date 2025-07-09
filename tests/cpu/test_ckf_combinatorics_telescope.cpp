@@ -119,11 +119,13 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
         std::numeric_limits<unsigned int>::max();
     cfg_no_limit.max_num_branches_per_surface = 10;
     cfg_no_limit.chi2_max = 30.f;
+    cfg_no_limit.duplicate_removal_minimum_length = 100u;
 
     traccc::finding_config cfg_limit;
     cfg_limit.max_num_branches_per_seed = 500;
     cfg_limit.max_num_branches_per_surface = 10;
     cfg_limit.chi2_max = 30.f;
+    cfg_limit.duplicate_removal_minimum_length = 100u;
 
     // Finding algorithm object
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(
