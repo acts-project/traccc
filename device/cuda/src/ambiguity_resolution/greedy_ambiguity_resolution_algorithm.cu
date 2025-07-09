@@ -392,8 +392,9 @@ greedy_ambiguity_resolution_algorithm::operator()(
         vecmem::make_unique_alloc<unsigned int>(m_mr.main);
 
     // Thread block size
-    unsigned int nThreads_adaptive = 1024;
-    unsigned int nBlocks_adaptive = (n_accepted + 1023) / 1024;
+    unsigned int nThreads_adaptive = m_warp_size * 4;
+    unsigned int nBlocks_adaptive =
+        (n_accepted + nThreads_adaptive - 1) / nThreads_adaptive;
 
     unsigned int nThreads_warp = m_warp_size;
     unsigned int nBlocks_warp =
@@ -418,7 +419,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
     m_copy.get().setup(block_offsets_buffer)->ignore();
 
     while (!terminate && n_accepted > 0) {
-        nBlocks_adaptive = (n_accepted + 1023) / 1024;
+        nBlocks_adaptive =
+            (n_accepted + nThreads_adaptive - 1) / nThreads_adaptive;
         nBlocks_warp = (n_accepted + nThreads_warp - 1) / nThreads_warp;
         nBlocks_scan = (n_accepted + 1023) / 1024;
 
@@ -444,61 +446,52 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .max_shared = max_shared_device.get(),
                 .is_updated_view = is_updated_buffer});
 
-        kernels::count_removable_tracks<<<
-            1, 1024,
-            sizeof(int) * 1024 + sizeof(measurement_id_type) * 1024 +
-                sizeof(unsigned int) * 1024 + sizeof(unsigned int) * 6 +
-                sizeof(bool),
-            stream>>>(device::count_removable_tracks_payload{
-            .terminate = terminate_device.get(),
-            .max_shared = max_shared_device.get(),
-            .sorted_ids_view = sorted_ids_buffer,
-            .n_accepted = n_accepted_device.get(),
-            .meas_ids_view = meas_ids_buffer,
-            .n_meas_view = n_meas_buffer,
-            .meas_id_to_unique_id_view = meas_id_to_unique_id_buffer,
-            .n_accepted_tracks_per_measurement_view =
-                n_accepted_tracks_per_measurement_buffer,
-            .n_removable_tracks = n_removable_tracks_device.get(),
-            .n_meas_to_remove = n_meas_to_remove_device.get(),
-            .meas_to_remove_view = meas_to_remove_buffer,
-            .threads_view = threads_buffer});
+        kernels::count_removable_tracks<<<1, 512, 0, stream>>>(
+            device::count_removable_tracks_payload{
+                .terminate = terminate_device.get(),
+                .max_shared = max_shared_device.get(),
+                .sorted_ids_view = sorted_ids_buffer,
+                .n_accepted = n_accepted_device.get(),
+                .meas_ids_view = meas_ids_buffer,
+                .n_meas_view = n_meas_buffer,
+                .meas_id_to_unique_id_view = meas_id_to_unique_id_buffer,
+                .n_accepted_tracks_per_measurement_view =
+                    n_accepted_tracks_per_measurement_buffer,
+                .n_removable_tracks = n_removable_tracks_device.get(),
+                .n_meas_to_remove = n_meas_to_remove_device.get(),
+                .meas_to_remove_view = meas_to_remove_buffer,
+                .threads_view = threads_buffer});
 
-        kernels::exclusive_scan<<<1, 1024,
-                                  sizeof(int) * 1024 +
-                                      sizeof(measurement_id_type) * 1024 +
-                                      sizeof(unsigned int) * 1024,
-                                  stream>>>(device::exclusive_scan_payload{
-            .terminate = terminate_device.get(),
-            .n_removable_tracks = n_removable_tracks_device.get(),
-            .n_meas_to_remove = n_meas_to_remove_device.get(),
-            .meas_to_remove_view = meas_to_remove_buffer,
-            .threads_view = threads_buffer});
+        kernels::exclusive_scan<<<1, 1024, 0, stream>>>(
+            device::exclusive_scan_payload{
+                .terminate = terminate_device.get(),
+                .n_removable_tracks = n_removable_tracks_device.get(),
+                .n_meas_to_remove = n_meas_to_remove_device.get(),
+                .meas_to_remove_view = meas_to_remove_buffer,
+                .threads_view = threads_buffer});
 
-        kernels::remove_tracks<<<1, 1024,
-                                 1024 * (2 * sizeof(unsigned int) +
-                                         sizeof(measurement_id_type)),
-                                 stream>>>(device::remove_tracks_payload{
-            .sorted_ids_view = sorted_ids_buffer,
-            .n_accepted = n_accepted_device.get(),
-            .meas_ids_view = meas_ids_buffer,
-            .n_meas_view = n_meas_buffer,
-            .meas_id_to_unique_id_view = meas_id_to_unique_id_buffer,
-            .tracks_per_measurement_view = tracks_per_measurement_buffer,
-            .track_status_per_measurement_view =
-                track_status_per_measurement_buffer,
-            .n_accepted_tracks_per_measurement_view =
-                n_accepted_tracks_per_measurement_buffer,
-            .n_shared_view = n_shared_buffer,
-            .rel_shared_view = rel_shared_buffer,
-            .n_removable_tracks = n_removable_tracks_device.get(),
-            .n_meas_to_remove = n_meas_to_remove_device.get(),
-            .meas_to_remove_view = meas_to_remove_buffer,
-            .threads_view = threads_buffer,
-            .terminate = terminate_device.get(),
-            .n_updated_tracks = n_updated_tracks_device.get(),
-            .updated_tracks_view = updated_tracks_buffer,
-            .is_updated_view = is_updated_buffer});
+        kernels::remove_tracks<<<1, 1024, 0, stream>>>(
+            device::remove_tracks_payload{
+                .sorted_ids_view = sorted_ids_buffer,
+                .n_accepted = n_accepted_device.get(),
+                .meas_ids_view = meas_ids_buffer,
+                .n_meas_view = n_meas_buffer,
+                .meas_id_to_unique_id_view = meas_id_to_unique_id_buffer,
+                .tracks_per_measurement_view = tracks_per_measurement_buffer,
+                .track_status_per_measurement_view =
+                    track_status_per_measurement_buffer,
+                .n_accepted_tracks_per_measurement_view =
+                    n_accepted_tracks_per_measurement_buffer,
+                .n_shared_view = n_shared_buffer,
+                .rel_shared_view = rel_shared_buffer,
+                .n_removable_tracks = n_removable_tracks_device.get(),
+                .n_meas_to_remove = n_meas_to_remove_device.get(),
+                .meas_to_remove_view = meas_to_remove_buffer,
+                .threads_view = threads_buffer,
+                .terminate = terminate_device.get(),
+                .n_updated_tracks = n_updated_tracks_device.get(),
+                .updated_tracks_view = updated_tracks_buffer,
+                .is_updated_view = is_updated_buffer});
 
         // The seven kernels below are to keep sorted_ids sorted based on
         // the relative shared measurements and pvalues. This can be reduced
