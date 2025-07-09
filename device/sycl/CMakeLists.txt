@@ -21,8 +21,7 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   # Seeding algorithm(s).
   "include/traccc/sycl/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
   "src/seeding/silicon_pixel_spacepoint_formation_algorithm.cpp"
-  "src/seeding/silicon_pixel_spacepoint_formation_algorithm_default_detector.sycl"
-  "src/seeding/silicon_pixel_spacepoint_formation_algorithm_telescope_detector.sycl"
+  "src/seeding/silicon_pixel_spacepoint_formation_algorithm.sycl"
   "src/seeding/silicon_pixel_spacepoint_formation.hpp"
   "include/traccc/sycl/seeding/details/spacepoint_binning.hpp"
   "src/seeding/spacepoint_binning.sycl"
@@ -35,14 +34,12 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   # Track finding algorithm(s).
   "include/traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
   "src/finding/combinatorial_kalman_filter_algorithm.cpp"
-  "src/finding/combinatorial_kalman_filter_algorithm_default_detector.sycl"
-  "src/finding/combinatorial_kalman_filter_algorithm_telescope_detector.sycl"
+  "src/finding/combinatorial_kalman_filter_algorithm.sycl"
   "src/finding/combinatorial_kalman_filter.hpp"
   # Track fitting algorithm(s).
   "include/traccc/sycl/fitting/kalman_fitting_algorithm.hpp"
   "src/fitting/kalman_fitting_algorithm.cpp"
-  "src/fitting/kalman_fitting_algorithm_default_detector.sycl"
-  "src/fitting/kalman_fitting_algorithm_telescope_detector.sycl"
+  "src/fitting/kalman_fitting_algorithm.sycl"
   "src/fitting/kalman_fitting.hpp"
   # Utilities.
   "include/traccc/sycl/utils/make_prefix_sum_buff.hpp"

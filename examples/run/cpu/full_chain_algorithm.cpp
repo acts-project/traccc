@@ -18,7 +18,7 @@ full_chain_algorithm::full_chain_algorithm(
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
     const silicon_detector_description::host& det_descr,
-    const magnetic_field& field, detector_type* detector,
+    const magnetic_field& field, const host_detector* detector,
     std::unique_ptr<const traccc::Logger> logger)
     : messaging(logger->clone()),
       m_mr(mr),

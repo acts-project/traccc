@@ -6,6 +6,7 @@
  */
 
 // Local include(s).
+#include "../utils/detector_types.hpp"
 #include "../utils/get_queue.hpp"
 #include "../utils/magnetic_field_types.hpp"
 #include "combinatorial_kalman_filter.hpp"
@@ -13,6 +14,7 @@
 
 // Project include(s).
 #include "traccc/bfield/magnetic_field_types.hpp"
+#include "traccc/utils/detector_buffer_bfield_visitor.hpp"
 #include "traccc/utils/propagation.hpp"
 
 // System include(s).
@@ -20,25 +22,29 @@
 
 namespace traccc::sycl {
 namespace kernels {
-template <typename bfield_tag_t>
-struct ckf_telescope_detector;
+template <typename detector_tag_t, typename bfield_tag_t>
+struct combinatorial_kalman_filter;
 }  // namespace kernels
 
 combinatorial_kalman_filter_algorithm::output_type
 combinatorial_kalman_filter_algorithm::operator()(
-    const telescope_detector::view& det, const magnetic_field& bfield,
+    const detector_buffer& detector, const magnetic_field& field,
     const measurement_collection_types::const_view& measurements,
     const bound_track_parameters_collection_types::const_view& seeds) const {
 
     // Perform the track finding using the templated implementation.
-    return magnetic_field_visitor<sycl::bfield_type_list<scalar>>(
-        bfield, [&]<typename bfield_view_t>(const bfield_view_t& bfield_view) {
+    return detector_buffer_magnetic_field_visitor<
+        detector_type_list, sycl::bfield_type_list<scalar>>(
+        detector, field,
+        [&]<typename detector_t, typename bfield_view_t>(
+            const typename detector_t::view& det, const bfield_view_t& bfield) {
             return details::combinatorial_kalman_filter<
-                kernels::ckf_telescope_detector<
+                kernels::combinatorial_kalman_filter<
+                    detector_tag_selector_t<detector_t>,
                     bfield_tag_selector_t<typename bfield_view_t::backend_t>>,
-                telescope_detector::device>(det, bfield_view, measurements,
-                                            seeds, m_config, m_mr, m_copy,
-                                            details::get_queue(m_queue));
+                typename detector_t::device>(det, bfield, measurements, seeds,
+                                             m_config, m_mr, m_copy,
+                                             details::get_queue(m_queue));
         });
 }
 

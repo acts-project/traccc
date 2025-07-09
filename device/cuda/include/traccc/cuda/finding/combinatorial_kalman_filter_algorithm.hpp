@@ -17,6 +17,7 @@
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/detector_buffer.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
@@ -32,11 +33,7 @@ namespace traccc::cuda {
 /// CKF track finding algorithm
 class combinatorial_kalman_filter_algorithm
     : public algorithm<edm::track_candidate_collection<default_algebra>::buffer(
-          const default_detector::view&, const magnetic_field&,
-          const measurement_collection_types::const_view&,
-          const bound_track_parameters_collection_types::const_view&)>,
-      public algorithm<edm::track_candidate_collection<default_algebra>::buffer(
-          const telescope_detector::view&, const magnetic_field&,
+          const detector_buffer&, const magnetic_field&,
           const measurement_collection_types::const_view&,
           const bound_track_parameters_collection_types::const_view&)>,
       public messaging {
@@ -65,23 +62,7 @@ class combinatorial_kalman_filter_algorithm
     /// @return A container of the found track candidates
     ///
     output_type operator()(
-        const default_detector::view& det, const magnetic_field& bfield,
-        const measurement_collection_types::const_view& measurements,
-        const bound_track_parameters_collection_types::const_view& seeds)
-        const override;
-
-    /// Execute the algorithm
-    ///
-    /// @param det          The (telescope) detector object
-    /// @param bfield       The magnetic field object
-    /// @param measurements All measurements in an event
-    /// @param seeds        All seeds in an event to start the track finding
-    ///                     with
-    ///
-    /// @return A container of the found track candidates
-    ///
-    output_type operator()(
-        const telescope_detector::view& det, const magnetic_field& bfield,
+        const detector_buffer& det, const magnetic_field& bfield,
         const measurement_collection_types::const_view& measurements,
         const bound_track_parameters_collection_types::const_view& seeds)
         const override;

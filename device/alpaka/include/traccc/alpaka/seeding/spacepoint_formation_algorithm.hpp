@@ -13,6 +13,7 @@
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
+#include "traccc/geometry/detector_buffer.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
@@ -30,10 +31,9 @@ namespace traccc::alpaka {
 /// This algorithm performs the local-to-global transformation of the 2D
 /// measurements made on every detector module, into 3D spacepoint coordinates.
 ///
-template <typename detector_t>
 class spacepoint_formation_algorithm
     : public algorithm<edm::spacepoint_collection::buffer(
-          const typename detector_t::const_view_type&,
+          const detector_buffer&,
           const measurement_collection_types::const_view&)>,
       public messaging {
 
@@ -57,7 +57,7 @@ class spacepoint_formation_algorithm
     ///         measurement
     ///
     edm::spacepoint_collection::buffer operator()(
-        const typename detector_t::const_view_type& det_view,
+        const detector_buffer& det,
         const measurement_collection_types::const_view& measurements_view)
         const override;
 

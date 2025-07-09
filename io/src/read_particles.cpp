@@ -50,8 +50,8 @@ void read_particles(particle_collection_types::host& particles,
 
 void read_particles(particle_container_types::host& particles,
                     std::size_t event, std::string_view directory,
-                    const traccc::default_detector::host* detector,
-                    data_format format, std::string_view filename_postfix) {
+                    const traccc::host_detector* detector, data_format format,
+                    std::string_view filename_postfix) {
 
     switch (format) {
         case data_format::csv:
@@ -85,8 +85,7 @@ void read_particles(particle_container_types::host& particles,
                     std::string_view particles_file, std::string_view hits_file,
                     std::string_view measurements_file,
                     std::string_view hit_map_file,
-                    const traccc::default_detector::host* detector,
-                    data_format format) {
+                    const traccc::host_detector* detector, data_format format) {
 
     switch (format) {
         case data_format::csv:

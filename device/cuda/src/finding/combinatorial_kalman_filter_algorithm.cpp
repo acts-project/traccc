@@ -8,6 +8,7 @@
 // Local include(s).
 #include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
 
+#include "../utils/magnetic_field_types.hpp"
 #include "../utils/utils.hpp"
 
 namespace traccc::cuda {

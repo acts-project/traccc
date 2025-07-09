@@ -8,18 +8,23 @@
 // Local include(s).
 #include "../utils/get_queue.hpp"
 #include "silicon_pixel_spacepoint_formation.hpp"
+#include "traccc/geometry/detector_buffer.hpp"
 #include "traccc/sycl/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 
 namespace traccc::sycl {
 
 silicon_pixel_spacepoint_formation_algorithm::output_type
 silicon_pixel_spacepoint_formation_algorithm::operator()(
-    const telescope_detector::view& det,
+    const detector_buffer& det,
     const measurement_collection_types::const_view& meas) const {
 
-    return details::silicon_pixel_spacepoint_formation<
-        telescope_detector::device>(det, meas, m_mr.main, m_copy,
-                                    details::get_queue(m_queue));
+    return detector_buffer_visitor<detector_type_list>(
+        det, [&]<typename detector_traits_t>(
+                 const typename detector_traits_t::view& det_view) {
+            return details::silicon_pixel_spacepoint_formation<
+                detector_traits_t>(det_view, meas, m_mr.main, m_copy,
+                                   details::get_queue(m_queue));
+        });
 }
 
 }  // namespace traccc::sycl

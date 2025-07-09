@@ -53,7 +53,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::memory_resource mr{host_mr, &host_mr};
 
     // Construct a Detray detector object, if supported by the configuration.
-    traccc::default_detector::host host_det{host_mr};
+    traccc::host_detector host_det;
     traccc::io::read_detector(host_det, host_mr, detector_opts.detector_file,
                               detector_opts.material_file,
                               detector_opts.grid_file);

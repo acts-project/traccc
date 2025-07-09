@@ -28,7 +28,7 @@ namespace traccc {
 
 event_data::event_data(const std::string& event_dir, const std::size_t event_id,
                        vecmem::memory_resource& resource,
-                       bool use_acts_geom_source, const detector_type* det,
+                       bool use_acts_geom_source, const host_detector* det,
                        data_format format, bool include_silicon_cells)
     : m_event_dir(event_dir), m_event_id(event_id), m_mr(resource) {
 
@@ -39,7 +39,7 @@ event_data::event_data(const std::string& event_dir, const std::size_t event_id,
     }
 }
 
-void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
+void event_data::setup_csv(bool use_acts_geom_source, const host_detector* det,
                            bool include_silicon_cells) {
 
     /********************
@@ -136,10 +136,14 @@ void event_data::setup_csv(bool use_acts_geom_source, const detector_type* det,
     // For Acts data, build a map of acts->detray geometry IDs
     std::map<geometry_id, geometry_id> acts_to_detray_id;
     if (use_acts_geom_source) {
-        for (const auto& surface_desc : det->surfaces()) {
-            acts_to_detray_id[surface_desc.source] =
-                surface_desc.barcode().value();
-        }
+        host_detector_visitor<detector_type_list>(
+            *det, [&acts_to_detray_id]<typename detector_traits_t>(
+                      const typename detector_traits_t::host& d) {
+                for (const auto& surface_desc : d.surfaces()) {
+                    acts_to_detray_id[surface_desc.source] =
+                        surface_desc.barcode().value();
+                }
+            });
     }
 
     /********************
@@ -369,46 +373,4 @@ void event_data::fill_cca_result(
         }
     }
 }
-
-void event_data::generate_truth_candidates(
-    edm::track_candidate_container<default_algebra>::host& truth_candidates,
-    seed_generator<detector_type>& sg, vecmem::memory_resource& resource,
-    float pt_cut) {
-
-    for (auto const& [ptc, measurements] : m_ptc_to_meas_map) {
-
-        const auto& param = m_meas_to_param_map.at(measurements[0]);
-        const free_track_parameters<> free_param(param.first, 0.f, param.second,
-                                                 ptc.charge);
-
-        auto ptc_particle =
-            detail::particle_from_pdg_number<scalar>(ptc.particle_type);
-
-        if (ptc_particle.pdg_num() == 0) {
-            // TODO: Add some debug logging here.
-            continue;
-        } else if (free_param.pT(ptc_particle.charge()) <= pt_cut) {
-            continue;
-        }
-
-        auto seed_params =
-            sg(measurements[0].surface_link, free_param, ptc_particle);
-
-        // Record the measurements, and remember their indices.
-        vecmem::vector<unsigned int> meas_indices{&resource};
-        truth_candidates.measurements.reserve(
-            truth_candidates.measurements.size() + measurements.size());
-        meas_indices.reserve(measurements.size());
-        for (const auto& meas : measurements) {
-            meas_indices.push_back(static_cast<unsigned int>(
-                truth_candidates.measurements.size()));
-            truth_candidates.measurements.push_back(meas);
-        }
-
-        // Record the truth track candidate.
-        truth_candidates.tracks.push_back(
-            {seed_params, 0.f, 0.f, 0.f, 0u, meas_indices});
-    }
-}
-
 }  // namespace traccc

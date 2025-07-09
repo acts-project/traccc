@@ -19,7 +19,7 @@ namespace traccc::io {
 
 std::vector<measurement_id_type> read_measurements(
     measurement_collection_types::host& measurements, std::size_t event,
-    std::string_view directory, const traccc::default_detector::host* detector,
+    std::string_view directory, const traccc::host_detector* detector,
     const bool sort_measurements, data_format format) {
 
     switch (format) {
@@ -49,8 +49,8 @@ std::vector<measurement_id_type> read_measurements(
 
 std::vector<measurement_id_type> read_measurements(
     measurement_collection_types::host& measurements, std::string_view filename,
-    const traccc::default_detector::host* detector,
-    const bool sort_measurements, data_format format) {
+    const traccc::host_detector* detector, const bool sort_measurements,
+    data_format format) {
 
     switch (format) {
         case data_format::csv:

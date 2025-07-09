@@ -13,6 +13,7 @@
 #include "obj/write_seeds.hpp"
 #include "obj/write_spacepoints.hpp"
 #include "obj/write_track_candidates.hpp"
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/io/utils.hpp"
 #include "write_binary.hpp"
 
@@ -125,7 +126,7 @@ void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
            edm::track_candidate_collection<default_algebra>::const_view tracks,
            measurement_collection_types::const_view measurements,
-           const traccc::default_detector::host& detector) {
+           const traccc::host_detector& detector) {
 
     switch (format) {
         case data_format::obj:
