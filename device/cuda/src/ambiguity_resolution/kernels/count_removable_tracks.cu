@@ -52,7 +52,7 @@ __device__ void count_tracks(int tid, int* sh_n_meas, int n_tracks,
     __syncthreads();
 }
 
-__global__ void count_removable_tracks(
+__launch_bounds__(512) __global__ void count_removable_tracks(
     device::count_removable_tracks_payload payload) {
 
     if (threadIdx.x == 0) {
