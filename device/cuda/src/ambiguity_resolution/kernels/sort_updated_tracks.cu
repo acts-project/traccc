@@ -33,13 +33,15 @@ __global__ void sort_updated_tracks(
     const unsigned int tid = threadIdx.x + blockIdx.x * blockDim.x;
     const unsigned int N = *(payload.n_updated_tracks);
 
-    // Load to shared memory
+    // Load updated track indices into shared memory (for sorting)
     if (tid < N) {
         shared_mem_tracks[tid] = updated_tracks[tid];
     }
 
     __syncthreads();
 
+    // odd-even sort
+    // @TODO: Use bitonic sort instead, which is faster
     for (int iter = 0; iter < N; ++iter) {
         bool is_even = (iter % 2 == 0);
         int i = tid;
@@ -71,6 +73,7 @@ __global__ void sort_updated_tracks(
         __syncthreads();
     }
 
+    // Write back the sorted result from shared memory to global memory
     if (tid < N) {
         updated_tracks[tid] = shared_mem_tracks[tid];
     }
