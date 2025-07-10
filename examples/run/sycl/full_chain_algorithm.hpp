@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/ambiguity_resolution/ambiguity_resolution_config.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
@@ -78,6 +79,7 @@ class full_chain_algorithm
                          const spacepoint_grid_config& grid_config,
                          const seedfilter_config& filter_config,
                          const finding_algorithm::config_type& finding_config,
+                         const ambiguity_resolution_config& resolution_config,
                          const fitting_algorithm::config_type& fitting_config,
                          const silicon_detector_description::host& det_descr,
                          const magnetic_field& field,
