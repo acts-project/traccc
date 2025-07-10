@@ -475,7 +475,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
         // Resets some variables and decides whether to terminate
         // the process depending on the max number of shared measurements and
-        // remaining tracks.
+        // the number of remaining tracks.
         kernels::reset_status<<<1, 1, 0, stream>>>(device::reset_status_payload{
             .is_first_iteration = is_first_iteration_device.get(),
             .terminate = terminate_device.get(),
@@ -483,7 +483,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
             .max_shared = max_shared_device.get(),
             .n_updated_tracks = n_updated_tracks_device.get()});
 
-        // Finds the max number of shared measurements
+        // Finds the max number of shared measurements. if it is zero, the
+        // process will be terminated
         kernels::find_max_shared<<<nBlocks_warp, nThreads_warp, 0, stream>>>(
             device::find_max_shared_payload{
                 .sorted_ids_view = sorted_ids_buffer,
@@ -541,6 +542,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .updated_tracks_view = updated_tracks_buffer,
                 .is_updated_view = is_updated_buffer});
 
+        //////////////////////////////////////////////////////////////////////////
         // The seven kernels below are to keep sorted_ids sorted based on
         // the relative shared measurements and pvalues. This can be reduced
         // into thrust::sort():
@@ -556,6 +558,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
         // Advantage: This works for all cases (The below kernels only work
         // when the number of updated tracks <= 1024) and might be faster
         // with large number of updated tracks
+        //////////////////////////////////////////////////////////////////////////
 
         // Sort only the updated tracks (small size vector). This will be used
         // in the insertion sorting later
@@ -581,11 +584,13 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .inverted_ids_view = inverted_ids_buffer,
             });
 
+        ////////////////////////////////////////////////////////////////////////
         // The three kernels (block_inclusive_scan, scan_block_offsets, and
         // add_block_offset) work together to compute the prefix sum of track
         // IDs, with respect to the number of updated tracks, based on the
         // indices of sorted_ids. The kernels are splitted as it is not
         // efficient to calculate this in a single kernel
+        ////////////////////////////////////////////////////////////////////////
 
         // Caculate the prefix sum of the number of updated tracks block-wisely.
         // block_offset is the last element of block-wise prefix sums, which is
