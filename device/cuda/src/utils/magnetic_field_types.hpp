@@ -13,6 +13,7 @@
 #include <covfie/core/backend/transformer/clamp.hpp>
 #include <covfie/core/backend/transformer/linear.hpp>
 #include <covfie/core/backend/transformer/strided.hpp>
+#include <covfie/core/concepts.hpp>
 #include <covfie/core/field.hpp>
 #include <covfie/core/vector.hpp>
 #include <covfie/cuda/backend/primitive/cuda_device_array.hpp>
@@ -26,5 +27,8 @@ using inhom_bfield_backend_t =
         covfie::backend::strided<covfie::vector::vector_d<std::size_t, 3>,
                                  covfie::backend::cuda_device_array<
                                      covfie::vector::vector_d<scalar_t, 3>>>>>>;
+// Test that the type is a valid backend for a field
+static_assert(covfie::concepts::field_backend<inhom_bfield_backend_t<float>>,
+              "cuda::inhom_bfield_backend_t is not a valid field backend type");
 
 }  // namespace traccc::cuda

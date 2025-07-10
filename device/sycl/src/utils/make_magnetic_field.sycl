@@ -6,14 +6,16 @@
  */
 
 // Local include(s).
-#include "bfield.hpp"
 #include "get_queue.hpp"
-#include "traccc/sycl/utils/make_bfield.hpp"
+#include "magnetic_field_types.hpp"
+#include "traccc/sycl/utils/make_magnetic_field.hpp"
 
 // Project include(s).
+#include "traccc/bfield/magnetic_field_types.hpp"
 #include "traccc/definitions/common.hpp"
 
 // Covfie include(s).
+#include <covfie/core/field.hpp>
 #include <covfie/sycl/utility/copy.hpp>
 
 // System include(s).
@@ -21,16 +23,17 @@
 
 namespace traccc::sycl {
 
-bfield make_bfield(const bfield& field, queue_wrapper& queue) {
+magnetic_field make_magnetic_field(const magnetic_field& bfield,
+                                   queue_wrapper& queue) {
 
-    if (field.is<const_bfield_backend_t<scalar>>()) {
-        return bfield{covfie::field<const_bfield_backend_t<scalar>>{
-            field.get_covfie_field<const_bfield_backend_t<scalar>>()}};
-    } else if (field.is<traccc::inhom_bfield_backend_t<scalar>>()) {
+    if (bfield.is<const_bfield_backend_t<scalar>>()) {
+        return magnetic_field{covfie::field<const_bfield_backend_t<scalar>>{
+            bfield.as_field<const_bfield_backend_t<scalar>>()}};
+    } else if (bfield.is<host::inhom_bfield_backend_t<scalar>>()) {
         ::sycl::queue& sycl_queue = details::get_queue(queue);
-        bfield result{covfie::utility::sycl::copy_field_with_queue<
+        magnetic_field result{covfie::utility::sycl::copy_field_with_queue<
             covfie::field<sycl::inhom_bfield_backend_t<scalar>>>(
-            field.get_covfie_field<traccc::inhom_bfield_backend_t<scalar>>(),
+            bfield.as_field<host::inhom_bfield_backend_t<scalar>>(),
             sycl_queue)};
         sycl_queue.wait_and_throw();
         return result;

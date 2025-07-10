@@ -5,10 +5,16 @@
  * Mozilla Public License Version 2.0
  */
 
-#include "../../../utils/bfield.cuh"
+// Local include(s).
+#include "../../../utils/magnetic_field_types.hpp"
 #include "fit_forward_src.cuh"
+
+// Project include(s).
 #include "traccc/fitting/details/kalman_fitting_types.hpp"
 #include "traccc/geometry/detector.hpp"
+
+// Covfie include(s).
+#include <covfie/core/field.hpp>
 
 namespace traccc::cuda {
 using fitter = traccc::details::kalman_fitter_t<

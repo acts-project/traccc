@@ -9,9 +9,12 @@
 #include "propagate_to_next_surface_src.cuh"
 
 // Project include(s).
+#include "traccc/bfield/magnetic_field_types.hpp"
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
 #include "traccc/geometry/detector.hpp"
-#include "traccc/utils/bfield.hpp"
+
+// Covfie include(s).
+#include <covfie/core/field.hpp>
 
 namespace traccc::cuda {
 

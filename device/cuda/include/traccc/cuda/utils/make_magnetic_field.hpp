@@ -8,16 +8,16 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/utils/bfield.hpp"
+#include "traccc/bfield/magnetic_field.hpp"
 
 namespace traccc::cuda {
 
 /// Create a magnetic field usable on the active CUDA device
 ///
-/// @param field The magnetic field to be copied
+/// @param bfield The magnetic field to be copied
 /// @return A copy of the magnetic field that can be used on the active CUDA
 ///         device
 ///
-bfield make_bfield(const bfield& field);
+magnetic_field make_magnetic_field(const magnetic_field& bfield);
 
 }  // namespace traccc::cuda

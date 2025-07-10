@@ -8,12 +8,12 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/bfield/magnetic_field.hpp"
 #include "traccc/edm/track_candidate_container.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/algorithm.hpp"
-#include "traccc/utils/bfield.hpp"
 #include "traccc/utils/messaging.hpp"
 
 // Detray include(s).
@@ -30,10 +30,10 @@ namespace traccc::host {
 /// Kalman filter based track fitting algorithm
 class kalman_fitting_algorithm
     : public algorithm<track_state_container_types::host(
-          const default_detector::host&, const bfield&,
+          const default_detector::host&, const magnetic_field&,
           const edm::track_candidate_container<default_algebra>::const_view&)>,
       public algorithm<track_state_container_types::host(
-          const telescope_detector::host&, const bfield&,
+          const telescope_detector::host&, const magnetic_field&,
           const edm::track_candidate_container<default_algebra>::const_view&)>,
       public messaging {
 
@@ -55,26 +55,26 @@ class kalman_fitting_algorithm
     /// Execute the algorithm
     ///
     /// @param det             The (default) detector object
-    /// @param field           The magnetic field object
+    /// @param bfield          The magnetic field object
     /// @param track_candidates All track candidates to fit
     ///
     /// @return A container of the fitted track states
     ///
     output_type operator()(
-        const default_detector::host& det, const bfield& field,
+        const default_detector::host& det, const magnetic_field& bfield,
         const edm::track_candidate_container<default_algebra>::const_view&
             track_candidates) const override;
 
     /// Execute the algorithm
     ///
     /// @param det             The (telescope) detector object
-    /// @param field           The magnetic field object
+    /// @param bfield          The magnetic field object
     /// @param track_candidates All track candidates to fit
     ///
     /// @return A container of the fitted track states
     ///
     output_type operator()(
-        const telescope_detector::host& det, const bfield& field,
+        const telescope_detector::host& det, const magnetic_field& bfield,
         const edm::track_candidate_container<default_algebra>::const_view&
             track_candidates) const override;
 

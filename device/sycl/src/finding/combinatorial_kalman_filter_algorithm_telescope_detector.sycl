@@ -6,11 +6,13 @@
  */
 
 // Local include(s).
-#include "../utils/bfield.hpp"
 #include "../utils/get_queue.hpp"
+#include "../utils/magnetic_field_types.hpp"
 #include "combinatorial_kalman_filter.hpp"
 #include "traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
-#include "traccc/utils/bfield.hpp"
+
+// Project include(s).
+#include "traccc/bfield/magnetic_field_types.hpp"
 #include "traccc/utils/propagation.hpp"
 
 // System include(s).
@@ -24,23 +26,24 @@ struct ckf_inhomogeneous_field_telescope_detector;
 
 combinatorial_kalman_filter_algorithm::output_type
 combinatorial_kalman_filter_algorithm::operator()(
-    const telescope_detector::view& det, const bfield& field,
+    const telescope_detector::view& det, const magnetic_field& bfield,
     const measurement_collection_types::const_view& measurements,
     const bound_track_parameters_collection_types::const_view& seeds) const {
 
     // Perform the track finding using the templated implementation.
-    if (field.is<const_bfield_backend_t<scalar>>()) {
+    if (bfield.is<const_bfield_backend_t<scalar>>()) {
         return details::combinatorial_kalman_filter<
             kernels::ckf_constant_field_telescope_detector,
             telescope_detector::device>(
-            det, field.as<const_bfield_backend_t<scalar>>(), measurements,
+            det, bfield.as_view<const_bfield_backend_t<scalar>>(), measurements,
             seeds, m_config, m_mr, m_copy, details::get_queue(m_queue));
-    } else if (field.is<sycl::inhom_bfield_backend_t<scalar>>()) {
+    } else if (bfield.is<sycl::inhom_bfield_backend_t<scalar>>()) {
         return details::combinatorial_kalman_filter<
             kernels::ckf_inhomogeneous_field_telescope_detector,
             telescope_detector::device>(
-            det, field.as<sycl::inhom_bfield_backend_t<scalar>>(), measurements,
-            seeds, m_config, m_mr, m_copy, details::get_queue(m_queue));
+            det, bfield.as_view<sycl::inhom_bfield_backend_t<scalar>>(),
+            measurements, seeds, m_config, m_mr, m_copy,
+            details::get_queue(m_queue));
     } else {
         throw std::invalid_argument(
             "Unsupported b-field type received in "
