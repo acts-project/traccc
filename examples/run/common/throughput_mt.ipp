@@ -109,7 +109,7 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     }
 
     // Construct the magnetic field object.
-    traccc::bfield field{details::make_magnetic_field(bfield_opts)};
+    const auto field = details::make_magnetic_field(bfield_opts);
 
     // Read in all input events into memory.
     vecmem::vector<edm::silicon_cell_collection::host> input{&uncached_host_mr};

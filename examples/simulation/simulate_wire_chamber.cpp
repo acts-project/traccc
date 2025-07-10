@@ -6,6 +6,8 @@
  */
 
 // Project include(s).
+#include "traccc/bfield/construct_const_bfield.hpp"
+#include "traccc/bfield/magnetic_field_types.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/geometry/detector.hpp"
@@ -18,7 +20,6 @@
 #include "traccc/simulation/measurement_smearer.hpp"
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/simulation/smearing_writer.hpp"
-#include "traccc/utils/bfield.hpp"
 
 // detray include(s).
 #include <detray/io/frontend/detector_writer.hpp>
@@ -55,7 +56,9 @@ int simulate(const traccc::opts::generation& generation_opts,
     // @TODO: Set B field as argument
     using b_field_t = covfie::field<traccc::const_bfield_backend_t<scalar>>;
     const vector3 B{0, 0, 2 * traccc::unit<scalar>::T};
-    const b_field_t field = traccc::construct_const_bfield<traccc::scalar>(B);
+    const b_field_t field =
+        traccc::construct_const_bfield(B)
+            .as_field<traccc::const_bfield_backend_t<scalar>>();
 
     // Set Configuration
     detray::wire_chamber_config<scalar> wire_chamber_cfg{};

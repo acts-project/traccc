@@ -11,7 +11,7 @@
 #include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
-#include "traccc/cuda/utils/make_bfield.hpp"
+#include "traccc/cuda/utils/make_magnetic_field.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
@@ -43,7 +43,6 @@
 #include "traccc/resolution/fitting_performance_writer.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
-#include "traccc/utils/bfield.hpp"
 #include "traccc/utils/propagation.hpp"
 
 // VecMem include(s).
@@ -115,9 +114,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
      *****************************/
 
     // B field value
-    const traccc::bfield host_field =
-        traccc::details::make_magnetic_field(bfield_opts);
-    const traccc::bfield device_field = traccc::cuda::make_bfield(host_field);
+    const auto host_field = traccc::details::make_magnetic_field(bfield_opts);
+    const auto device_field = traccc::cuda::make_magnetic_field(host_field);
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host host_det{mng_mr};

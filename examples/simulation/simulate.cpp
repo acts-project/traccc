@@ -6,6 +6,8 @@
  */
 
 // Project include(s).
+#include "traccc/bfield/construct_const_bfield.hpp"
+#include "traccc/bfield/magnetic_field_types.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/geometry/detector.hpp"
@@ -19,7 +21,6 @@
 #include "traccc/simulation/measurement_smearer.hpp"
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/simulation/smearing_writer.hpp"
-#include "traccc/utils/bfield.hpp"
 #include "traccc/utils/propagation.hpp"
 
 // Detray include(s).
@@ -65,7 +66,9 @@ int main(int argc, char* argv[]) {
     using b_field_t =
         covfie::field<traccc::const_bfield_backend_t<traccc::scalar>>;
     const traccc::vector3 B{0, 0, 2 * traccc::unit<traccc::scalar>::T};
-    const b_field_t field = traccc::construct_const_bfield<traccc::scalar>(B);
+    const b_field_t field =
+        traccc::construct_const_bfield(B)
+            .as_field<traccc::const_bfield_backend_t<traccc::scalar>>();
 
     // Read the detector
     detray::io::detector_reader_config reader_cfg{};

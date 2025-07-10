@@ -8,8 +8,8 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/bfield/magnetic_field.hpp"
 #include "traccc/options/magnetic_field.hpp"
-#include "traccc/utils/bfield.hpp"
 
 namespace traccc::details {
 
@@ -18,6 +18,6 @@ namespace traccc::details {
 /// @param opts The command line options for the magnetic field
 /// @return A magnetic field object configured according to the options
 ///
-bfield make_magnetic_field(const opts::magnetic_field& opts);
+magnetic_field make_magnetic_field(const opts::magnetic_field& opts);
 
 }  // namespace traccc::details

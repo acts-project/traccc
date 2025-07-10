@@ -17,8 +17,9 @@ full_chain_algorithm::full_chain_algorithm(
     const seedfilter_config& filter_config,
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
-    const silicon_detector_description::host& det_descr, const bfield& field,
-    detector_type* detector, std::unique_ptr<const traccc::Logger> logger)
+    const silicon_detector_description::host& det_descr,
+    const magnetic_field& field, detector_type* detector,
+    std::unique_ptr<const traccc::Logger> logger)
     : messaging(logger->clone()),
       m_copy{std::make_unique<vecmem::copy>()},
       m_field_vec{0.f, 0.f, finder_config.bFieldInZ},

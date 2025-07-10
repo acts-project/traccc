@@ -1,11 +1,13 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Project include(s).
+#include "traccc/bfield/construct_const_bfield.hpp"
+#include "traccc/bfield/magnetic_field_types.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/io/utils.hpp"
@@ -18,7 +20,6 @@
 #include "traccc/simulation/measurement_smearer.hpp"
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/simulation/smearing_writer.hpp"
-#include "traccc/utils/bfield.hpp"
 
 // detray include(s).
 #include <detray/geometry/mask.hpp>
@@ -71,7 +72,8 @@ int simulate(const traccc::opts::generation& generation_opts,
     // B field value and its type
     using b_field_t = covfie::field<traccc::const_bfield_backend_t<scalar>>;
     const vector3 B{0, 0, 2 * traccc::unit<scalar>::T};
-    b_field_t field = traccc::construct_const_bfield<scalar>(B);
+    b_field_t field = traccc::construct_const_bfield(B)
+                          .as_field<traccc::const_bfield_backend_t<scalar>>();
 
     // Set material and thickness
     detray::material<scalar> mat;

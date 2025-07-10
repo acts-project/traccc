@@ -6,6 +6,7 @@
  */
 
 // Project include(s).
+#include "../common/make_magnetic_field.hpp"
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
 #include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/alpaka/finding/combinatorial_kalman_filter_algorithm.hpp"
@@ -52,6 +53,7 @@
 #include <memory>
 
 int seq_run(const traccc::opts::detector& detector_opts,
+            const traccc::opts::magnetic_field& bfield_opts,
             const traccc::opts::input_data& input_opts,
             const traccc::opts::clusterization& clusterization_opts,
             const traccc::opts::track_seeding& seeding_opts,
@@ -146,8 +148,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     // Constant B field for the track finding and fitting
     const traccc::vector3 field_vec = {0.f, 0.f,
                                        seeding_opts.seedfinder.bFieldInZ};
-    const traccc::bfield field{
-        traccc::construct_const_bfield<traccc::scalar>(field_vec)};
+    const auto field = traccc::details::make_magnetic_field(bfield_opts);
 
     traccc::host::clusterization_algorithm ca(
         host_mr, logger().clone("HostClusteringAlg"));
@@ -491,6 +492,7 @@ int main(int argc, char* argv[]) {
 
     // Program options.
     traccc::opts::detector detector_opts;
+    traccc::opts::magnetic_field bfield_opts;
     traccc::opts::input_data input_opts;
     traccc::opts::clusterization clusterization_opts;
     traccc::opts::track_seeding seeding_opts;
@@ -501,15 +503,15 @@ int main(int argc, char* argv[]) {
     traccc::opts::accelerator accelerator_opts;
     traccc::opts::program_options program_opts{
         "Full Tracking Chain Using Alpaka",
-        {detector_opts, input_opts, clusterization_opts, seeding_opts,
-         finding_opts, propagation_opts, performance_opts, fitting_opts,
-         accelerator_opts},
+        {detector_opts, bfield_opts, input_opts, clusterization_opts,
+         seeding_opts, finding_opts, propagation_opts, performance_opts,
+         fitting_opts, accelerator_opts},
         argc,
         argv,
         logger->cloneWithSuffix("Options")};
 
     // Run the application.
-    return seq_run(detector_opts, input_opts, clusterization_opts, seeding_opts,
-                   finding_opts, propagation_opts, fitting_opts,
+    return seq_run(detector_opts, bfield_opts, input_opts, clusterization_opts,
+                   seeding_opts, finding_opts, propagation_opts, fitting_opts,
                    performance_opts, accelerator_opts, logger->clone());
 }

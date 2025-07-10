@@ -9,7 +9,7 @@
 #include "full_chain_algorithm.hpp"
 
 // Project include(s).
-#include "traccc/sycl/utils/make_bfield.hpp"
+#include "traccc/sycl/utils/make_magnetic_field.hpp"
 
 // SYCL include(s).
 #include <sycl/sycl.hpp>
@@ -59,8 +59,9 @@ full_chain_algorithm::full_chain_algorithm(
     const seedfilter_config& filter_config,
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
-    const silicon_detector_description::host& det_descr, const bfield& field,
-    host_detector_type* detector, std::unique_ptr<const traccc::Logger> logger)
+    const silicon_detector_description::host& det_descr,
+    const magnetic_field& field, host_detector_type* detector,
+    std::unique_ptr<const traccc::Logger> logger)
     : messaging(logger->clone()),
       m_data(std::make_unique<details::full_chain_algorithm_data>(
           ::handle_async_error)),
@@ -69,7 +70,7 @@ full_chain_algorithm::full_chain_algorithm(
       m_cached_device_mr{m_device_mr},
       m_copy{&(m_data->m_queue)},
       m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
-      m_field{make_bfield(field, m_data->m_queue_wrapper)},
+      m_field{sycl::make_magnetic_field(field, m_data->m_queue_wrapper)},
       m_det_descr(det_descr),
       m_device_det_descr{
           static_cast<silicon_detector_description::buffer::size_type>(

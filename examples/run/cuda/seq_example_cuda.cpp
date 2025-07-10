@@ -17,7 +17,7 @@
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
-#include "traccc/cuda/utils/make_bfield.hpp"
+#include "traccc/cuda/utils/make_magnetic_field.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
@@ -162,9 +162,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
     // Constant B field for the track finding and fitting
     const traccc::vector3 field_vec = {0.f, 0.f,
                                        seeding_opts.seedfinder.bFieldInZ};
-    const traccc::bfield host_field =
-        traccc::details::make_magnetic_field(bfield_opts);
-    const traccc::bfield device_field = traccc::cuda::make_bfield(host_field);
+    const auto host_field = traccc::details::make_magnetic_field(bfield_opts);
+    const auto device_field = traccc::cuda::make_magnetic_field(host_field);
 
     traccc::host::clusterization_algorithm ca(
         host_mr, logger().clone("HostClusteringAlg"));

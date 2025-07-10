@@ -25,7 +25,6 @@
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
-#include "traccc/utils/bfield.hpp"
 
 // performance
 #include "traccc/efficiency/finding_performance_writer.hpp"
@@ -118,8 +117,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
     // Constant B field for the track finding and fitting
     const traccc::vector3 field_vec = {0.f, 0.f,
                                        seeding_opts.seedfinder.bFieldInZ};
-    const traccc::bfield field =
-        traccc::details::make_magnetic_field(bfield_opts);
+    const auto field = traccc::details::make_magnetic_field(bfield_opts);
 
     // Algorithm configuration(s).
     detray::propagation::config propagation_config(propagation_opts);

@@ -8,7 +8,7 @@
 // Project include(s).
 #include "../common/make_magnetic_field.hpp"
 #include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
-#include "traccc/cuda/utils/make_bfield.hpp"
+#include "traccc/cuda/utils/make_magnetic_field.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
@@ -31,7 +31,6 @@
 #include "traccc/performance/container_comparator.hpp"
 #include "traccc/performance/timer.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
-#include "traccc/utils/bfield.hpp"
 #include "traccc/utils/propagation.hpp"
 #include "traccc/utils/seed_generator.hpp"
 
@@ -100,9 +99,8 @@ int main(int argc, char* argv[]) {
      *****************************/
 
     // B field value
-    const traccc::bfield host_field =
-        traccc::details::make_magnetic_field(bfield_opts);
-    const traccc::bfield device_field = traccc::cuda::make_bfield(host_field);
+    const auto host_field = traccc::details::make_magnetic_field(bfield_opts);
+    const auto device_field = traccc::cuda::make_magnetic_field(host_field);
 
     // Read the detector
     detray::io::detector_reader_config reader_cfg{};

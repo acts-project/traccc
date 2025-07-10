@@ -17,6 +17,7 @@
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
 #include "traccc/alpaka/utils/get_device_info.hpp"
 #include "traccc/alpaka/utils/vecmem_objects.hpp"
+#include "traccc/bfield/magnetic_field.hpp"
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/track_state.hpp"
@@ -24,7 +25,6 @@
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
-#include "traccc/utils/bfield.hpp"
 #include "traccc/utils/messaging.hpp"
 #include "traccc/utils/propagation.hpp"
 
@@ -83,7 +83,8 @@ class full_chain_algorithm
                          const finding_algorithm::config_type& finding_config,
                          const fitting_algorithm::config_type& fitting_config,
                          const silicon_detector_description::host& det_descr,
-                         const bfield& field, host_detector_type* detector,
+                         const magnetic_field& field,
+                         host_detector_type* detector,
                          std::unique_ptr<const traccc::Logger> logger);
 
     /// Copy constructor
@@ -121,7 +122,7 @@ class full_chain_algorithm
     /// Constant B field for the (seed) track parameter estimation
     traccc::vector3 m_field_vec;
     /// Constant B field for the track finding and fitting
-    bfield m_field;
+    magnetic_field m_field;
 
     /// Detector description
     std::reference_wrapper<const silicon_detector_description::host>
