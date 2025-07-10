@@ -6,6 +6,7 @@
  */
 
 // Project include(s).
+#include "../common/make_magnetic_field.hpp"
 #include "traccc/alpaka/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/alpaka/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
@@ -59,6 +60,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::track_fitting& fitting_opts,
             const traccc::opts::input_data& input_opts,
             const traccc::opts::detector& detector_opts,
+            const traccc::opts::magnetic_field& bfield_opts,
             const traccc::opts::performance& performance_opts,
             const traccc::opts::accelerator& accelerator_opts,
             [[maybe_unused]] std::unique_ptr<const traccc::Logger> ilogger) {
@@ -108,10 +110,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
      *****************************/
 
     // B field value and its type
-    // @TODO: Set B field as argument
-    const traccc::vector3 B{0, 0, 2 * traccc::unit<traccc::scalar>::T};
-    const traccc::bfield field{
-        traccc::construct_const_bfield<traccc::scalar>(B)};
+    const auto field = traccc::details::make_magnetic_field(bfield_opts);
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host host_det{mng_mr};
@@ -445,6 +444,7 @@ int main(int argc, char* argv[]) {
 
     // Program options.
     traccc::opts::detector detector_opts;
+    traccc::opts::magnetic_field bfield_opts;
     traccc::opts::input_data input_opts;
     traccc::opts::track_seeding seeding_opts;
     traccc::opts::track_finding finding_opts;
@@ -454,7 +454,7 @@ int main(int argc, char* argv[]) {
     traccc::opts::accelerator accelerator_opts;
     traccc::opts::program_options program_opts{
         "Full Tracking Chain Using Alpaka (without clusterization)",
-        {detector_opts, input_opts, seeding_opts, finding_opts,
+        {detector_opts, bfield_opts, input_opts, seeding_opts, finding_opts,
          propagation_opts, fitting_opts, performance_opts, accelerator_opts},
         argc,
         argv,
@@ -462,6 +462,6 @@ int main(int argc, char* argv[]) {
 
     // Run the application.
     return seq_run(seeding_opts, finding_opts, propagation_opts, fitting_opts,
-                   input_opts, detector_opts, performance_opts,
+                   input_opts, detector_opts, bfield_opts, performance_opts,
                    accelerator_opts, logger->clone());
 }

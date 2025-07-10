@@ -33,9 +33,9 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/utils/utils.cpp"
   "src/sanity/contiguous_on.cuh"
   "src/sanity/ordered_on.cuh"
-  "include/traccc/cuda/utils/make_bfield.hpp"
-  "src/utils/make_bfield.cu"
-  "src/utils/bfield.cuh"
+  "include/traccc/cuda/utils/make_magnetic_field.hpp"
+  "src/utils/make_magnetic_field.cpp"
+  "src/utils/magnetic_field_types.hpp"
   # Seed finding code.
   "include/traccc/cuda/seeding/track_params_estimation.hpp"
   "src/seeding/track_params_estimation.cu"

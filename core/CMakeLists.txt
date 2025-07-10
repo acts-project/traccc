@@ -35,6 +35,13 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/edm/track_candidate_collection.hpp"
   "include/traccc/edm/impl/track_candidate_collection.ipp"
   "include/traccc/edm/track_candidate_container.hpp"
+  # Magnetic field description.
+  "include/traccc/bfield/magnetic_field_types.hpp"
+  "include/traccc/bfield/magnetic_field.hpp"
+  "include/traccc/bfield/impl/magnetic_field.ipp"
+  "include/traccc/bfield/construct_const_bfield.hpp"
+  "include/traccc/bfield/impl/construct_const_bfield.ipp"
+  "src/bfield/construct_const_bfield.cpp"
   # Geometry description.
   "include/traccc/geometry/detector.hpp"
   "include/traccc/geometry/module_map.hpp"

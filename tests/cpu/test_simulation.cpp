@@ -7,6 +7,7 @@
 
 // Project include(s).
 #include "tests/test_detectors.hpp"
+#include "traccc/bfield/construct_const_bfield.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/io/csv/make_hit_reader.hpp"
 #include "traccc/io/csv/make_measurement_hit_id_reader.hpp"
@@ -14,7 +15,6 @@
 #include "traccc/io/csv/make_particle_reader.hpp"
 #include "traccc/simulation/event_generators.hpp"
 #include "traccc/simulation/simulator.hpp"
-#include "traccc/utils/bfield.hpp"
 
 // Detray include(s).
 #include <detray/geometry/mask.hpp>
@@ -70,7 +70,9 @@ GTEST_TEST(traccc_simulation, toy_detector_simulation) {
     // Create B field
     using b_field_t = covfie::field<traccc::const_bfield_backend_t<scalar>>;
     const vector3 B{0.f, 0.f, 2.f * traccc::unit<scalar>::T};
-    b_field_t field = traccc::construct_const_bfield<scalar>(B);
+    b_field_t field =
+        traccc::construct_const_bfield(B)
+            .as_field<traccc::const_bfield_backend_t<traccc::scalar>>();
 
     // Create geometry
     detray::toy_det_config<scalar> toy_cfg{};
@@ -224,7 +226,9 @@ TEST_P(TelescopeDetectorSimulation, telescope_detector_simulation) {
     // Field
     using b_field_t = covfie::field<traccc::const_bfield_backend_t<scalar>>;
     const vector3 B{0.f, 0.f, 2.f * traccc::unit<scalar>::T};
-    b_field_t field = traccc::construct_const_bfield<scalar>(B);
+    b_field_t field =
+        traccc::construct_const_bfield(B)
+            .as_field<traccc::const_bfield_backend_t<traccc::scalar>>();
 
     // Momentum
     const scalar mom = std::get<1>(GetParam());

@@ -6,6 +6,7 @@
  */
 
 // Project include(s).
+#include "traccc/bfield/magnetic_field_types.hpp"
 #include "traccc/fitting/details/kalman_fitting.hpp"
 #include "traccc/fitting/details/kalman_fitting_types.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
@@ -16,23 +17,25 @@
 namespace traccc::host {
 
 kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
-    const telescope_detector::host& det, const bfield& field,
+    const telescope_detector::host& det, const magnetic_field& bfield,
     const edm::track_candidate_container<default_algebra>::const_view&
         track_candidates) const {
 
     // Perform the track finding using the appropriate templated implementation.
-    if (field.is<const_bfield_backend_t<scalar>>()) {
+    if (bfield.is<const_bfield_backend_t<scalar>>()) {
         traccc::details::kalman_fitter_t<
             telescope_detector::host,
             covfie::field<const_bfield_backend_t<scalar>>::view_t>
-            fitter{det, field.as<const_bfield_backend_t<scalar>>(), m_config};
+            fitter{det, bfield.as_view<const_bfield_backend_t<scalar>>(),
+                   m_config};
         return details::kalman_fitting(fitter, track_candidates, m_mr.get(),
                                        m_copy.get());
-    } else if (field.is<inhom_bfield_backend_t<scalar>>()) {
+    } else if (bfield.is<host::inhom_bfield_backend_t<scalar>>()) {
         traccc::details::kalman_fitter_t<
             telescope_detector::host,
-            covfie::field<inhom_bfield_backend_t<scalar>>::view_t>
-            fitter{det, field.as<inhom_bfield_backend_t<scalar>>(), m_config};
+            covfie::field<host::inhom_bfield_backend_t<scalar>>::view_t>
+            fitter{det, bfield.as_view<host::inhom_bfield_backend_t<scalar>>(),
+                   m_config};
         return details::kalman_fitting(fitter, track_candidates, m_mr.get(),
                                        m_copy.get());
     } else {

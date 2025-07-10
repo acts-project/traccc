@@ -81,8 +81,7 @@ int main(int argc, char* argv[]) {
      *****************************/
 
     // B field value
-    const traccc::bfield field =
-        traccc::details::make_magnetic_field(bfield_opts);
+    const auto field = traccc::details::make_magnetic_field(bfield_opts);
 
     // Read the detector
     detray::io::detector_reader_config reader_cfg{};

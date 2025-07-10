@@ -20,7 +20,7 @@ endif()
 
 set(LIBRARIES vecmem::core traccc::io traccc::performance
     traccc::core traccc::device_common traccc::alpaka
-    traccc::options ${EXTRA_LIBS})
+    traccc::options traccc_examples_common ${EXTRA_LIBS})
 set(DETRAY detray::io detray::detectors)
 
 traccc_add_executable( seq_example_alpaka "seq_example_alpaka.cpp"

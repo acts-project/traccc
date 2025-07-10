@@ -6,25 +6,29 @@
  */
 
 // Local include(s).
-#include "../utils/bfield.cuh"
+#include "../utils/magnetic_field_types.hpp"
 #include "kalman_fitting.cuh"
 #include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
+
+// Project include(s).
+#include "traccc/bfield/magnetic_field_types.hpp"
 
 namespace traccc::cuda {
 
 kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
-    const default_detector::view& det, const bfield& field,
+    const default_detector::view& det, const magnetic_field& bfield,
     const edm::track_candidate_container<default_algebra>::const_view&
         track_candidates) const {
 
     // Run the track fitting.
-    if (field.is<const_bfield_backend_t<scalar>>()) {
+    if (bfield.is<const_bfield_backend_t<scalar>>()) {
         return details::kalman_fitting<default_detector::device>(
-            det, field.as<const_bfield_backend_t<scalar>>(), track_candidates,
-            m_config, m_mr, m_copy.get(), m_stream, m_warp_size);
-    } else if (field.is<cuda::inhom_bfield_backend_t<scalar>>()) {
+            det, bfield.as_view<const_bfield_backend_t<scalar>>(),
+            track_candidates, m_config, m_mr, m_copy.get(), m_stream,
+            m_warp_size);
+    } else if (bfield.is<cuda::inhom_bfield_backend_t<scalar>>()) {
         return details::kalman_fitting<default_detector::device>(
-            det, field.as<cuda::inhom_bfield_backend_t<scalar>>(),
+            det, bfield.as_view<cuda::inhom_bfield_backend_t<scalar>>(),
             track_candidates, m_config, m_mr, m_copy.get(), m_stream,
             m_warp_size);
     } else {

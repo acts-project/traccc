@@ -9,7 +9,7 @@
 #include "full_chain_algorithm.hpp"
 
 // Project include(s).
-#include "traccc/cuda/utils/make_bfield.hpp"
+#include "traccc/cuda/utils/make_magnetic_field.hpp"
 
 // CUDA include(s).
 #include <cuda_runtime_api.h>
@@ -38,8 +38,9 @@ full_chain_algorithm::full_chain_algorithm(
     const seedfilter_config& filter_config,
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
-    const silicon_detector_description::host& det_descr, const bfield& field,
-    host_detector_type* detector, std::unique_ptr<const traccc::Logger> logger)
+    const silicon_detector_description::host& det_descr,
+    const magnetic_field& field, host_detector_type* detector,
+    std::unique_ptr<const traccc::Logger> logger)
     : messaging(logger->clone()),
       m_host_mr(host_mr),
       m_stream(),
@@ -48,7 +49,7 @@ full_chain_algorithm::full_chain_algorithm(
           std::make_unique<vecmem::binary_page_memory_resource>(m_device_mr)),
       m_copy(m_stream.cudaStream()),
       m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
-      m_field(make_bfield(field)),
+      m_field(make_magnetic_field(field)),
       m_det_descr(det_descr),
       m_device_det_descr(
           static_cast<silicon_detector_description::buffer::size_type>(

@@ -8,14 +8,17 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/bfield/magnetic_field_types.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate_collection.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/simulation/event_generators.hpp"
-#include "traccc/utils/bfield.hpp"
 #include "traccc/utils/propagation.hpp"
+
+// Covfie include(s).
+#include <covfie/core/field.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>

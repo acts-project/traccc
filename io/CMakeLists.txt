@@ -14,12 +14,12 @@ find_package( OpenMP COMPONENTS CXX )
 traccc_add_library( traccc_io io TYPE SHARED
   # Public headers
   "include/traccc/io/digitization_config.hpp"
-  "include/traccc/io/read_bfield.hpp"
   "include/traccc/io/read_cells.hpp"
   "include/traccc/io/read_detector.hpp"
   "include/traccc/io/read_detector_description.hpp"
   "include/traccc/io/read_digitization_config.hpp"
   "include/traccc/io/read_geometry.hpp"
+  "include/traccc/io/read_magnetic_field.hpp"
   "include/traccc/io/read_measurements.hpp"
   "include/traccc/io/read_particles.hpp"
   "include/traccc/io/read_spacepoints.hpp"
@@ -41,12 +41,12 @@ traccc_add_library( traccc_io io TYPE SHARED
   "include/traccc/io/csv/make_surface_reader.hpp"
   # Implementation
   "src/data_format.cpp"
-  "src/read_bfield.cpp"
   "src/read_cells.cpp"
   "src/read_detector.cpp"
   "src/read_detector_description.cpp"
   "src/read_digitization_config.cpp"
   "src/read_geometry.cpp"
+  "src/read_magnetic_field.cpp"
   "src/read_measurements.cpp"
   "src/read_particles.cpp"
   "src/read_spacepoints.cpp"

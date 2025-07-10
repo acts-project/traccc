@@ -72,8 +72,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
      *****************************/
 
     // B field value
-    const traccc::bfield field =
-        traccc::details::make_magnetic_field(bfield_opts);
+    const auto field = traccc::details::make_magnetic_field(bfield_opts);
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host detector{host_mr};

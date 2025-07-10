@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/bfield/magnetic_field.hpp"
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/track_state.hpp"
@@ -19,7 +20,6 @@
 #include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 #include "traccc/utils/algorithm.hpp"
-#include "traccc/utils/bfield.hpp"
 #include "traccc/utils/messaging.hpp"
 #include "traccc/utils/propagation.hpp"
 
@@ -76,7 +76,7 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
                          const finding_algorithm::config_type& finding_config,
                          const fitting_algorithm::config_type& fitting_config,
                          const silicon_detector_description::host& det_descr,
-                         const bfield& field, detector_type* detector,
+                         const magnetic_field& field, detector_type* detector,
                          std::unique_ptr<const traccc::Logger> logger);
 
     /// Reconstruct track parameters in the entire detector
@@ -93,7 +93,7 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
     /// Constant B field for the (seed) track parameter estimation
     traccc::vector3 m_field_vec;
     /// Constant B field for the track finding and fitting
-    bfield m_field;
+    magnetic_field m_field;
 
     /// Detector description
     std::reference_wrapper<const silicon_detector_description::host>

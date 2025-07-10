@@ -9,7 +9,7 @@
 #include "../common/make_magnetic_field.hpp"
 #include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
-#include "traccc/cuda/utils/make_bfield.hpp"
+#include "traccc/cuda/utils/make_magnetic_field.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
@@ -38,7 +38,6 @@
 #include "traccc/performance/soa_comparator.hpp"
 #include "traccc/performance/timer.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
-#include "traccc/utils/bfield.hpp"
 #include "traccc/utils/propagation.hpp"
 #include "traccc/utils/seed_generator.hpp"
 
@@ -94,9 +93,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
      *****************************/
 
     // B field value
-    const traccc::bfield host_field =
-        traccc::details::make_magnetic_field(bfield_opts);
-    const traccc::bfield device_field = traccc::cuda::make_bfield(host_field);
+    const auto host_field = traccc::details::make_magnetic_field(bfield_opts);
+    const auto device_field = traccc::cuda::make_magnetic_field(host_field);
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host detector{mng_mr};

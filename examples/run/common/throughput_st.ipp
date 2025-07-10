@@ -99,7 +99,7 @@ int throughput_st(std::string_view description, int argc, char* argv[],
     }
 
     // Construct the magnetic field object.
-    traccc::bfield field{details::make_magnetic_field(bfield_opts)};
+    const auto field = details::make_magnetic_field(bfield_opts);
 
     vecmem::memory_resource& alg_host_mr =
         use_host_caching
