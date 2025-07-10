@@ -22,14 +22,16 @@ TRACCC_DEVICE inline bool find_valid_index(
     const vecmem::device_vector<const unsigned int>& sorted_ids,
     const vecmem::device_vector<const int>& is_updated) {
 
-    for (int i = idx; i <= upper_bound; i++) {
+    const auto initial_idx = idx;
+
+    for (int i = initial_idx; i <= upper_bound; i++) {
         if (!is_updated[sorted_ids[i]]) {
             idx = i;
             return true;
         }
     }
 
-    for (int i = idx; i >= lower_bound; i--) {
+    for (int i = initial_idx - 1; i >= lower_bound; i--) {
         if (!is_updated[sorted_ids[i]]) {
             idx = i;
             return true;
