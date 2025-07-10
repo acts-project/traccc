@@ -612,8 +612,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .block_offsets_view = block_offsets_buffer,
                 .scanned_block_offsets_view = scanned_block_offsets_buffer});
 
-        // Add the scanned block offsets to block-wise prefix sums of the number
-        // of updated tracks
+        // To calculate the real prefix-sum, add the scanned block offsets to
+        // block-wise prefix sums of the number of updated tracks.
         kernels::add_block_offset<<<nBlocks_scan, nThreads_scan, 0, stream>>>(
             device::add_block_offset_payload{
                 .terminate = terminate_device.get(),
