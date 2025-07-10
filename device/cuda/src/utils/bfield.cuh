@@ -17,6 +17,8 @@
 #include <covfie/core/vector.hpp>
 #include <covfie/cuda/backend/primitive/cuda_device_array.hpp>
 
+#include "traccc/utils/bfield.hpp"
+
 namespace traccc::cuda {
 
 /// Inhomogeneous B-field backend type for CUDA
@@ -26,5 +28,10 @@ using inhom_bfield_backend_t =
         covfie::backend::strided<covfie::vector::vector_d<std::size_t, 3>,
                                  covfie::backend::cuda_device_array<
                                      covfie::vector::vector_d<scalar_t, 3>>>>>>;
+
+/// @brief the standard list of CUDA bfield types to support
+template <typename scalar_t>
+using bfield_type_list = std::tuple<const_bfield_backend_t<scalar_t>,
+                                    inhom_bfield_backend_t<scalar_t>>;
 
 }  // namespace traccc::cuda

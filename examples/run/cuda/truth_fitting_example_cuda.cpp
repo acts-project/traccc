@@ -16,6 +16,7 @@
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
@@ -119,8 +120,8 @@ int main(int argc, char* argv[]) {
     auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);
 
-    // Detector view object
-    auto det_view = detray::get_data(host_det);
+    traccc::host_detector polymorphic_detector;
+    polymorphic_detector.set<traccc::default_detector>(std::move(host_det));
 
     /*****************************
      * Do the reconstruction
@@ -132,6 +133,11 @@ int main(int argc, char* argv[]) {
     // Copy object
     vecmem::copy host_copy;
     vecmem::cuda::async_copy async_copy{stream.cudaStream()};
+
+    traccc::detector_buffer detector_buffer;
+    detector_buffer.set<traccc::default_detector>(
+        detray::get_buffer(polymorphic_detector.as<traccc::default_detector>(),
+                           device_mr, async_copy));
 
     traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
         track_state_d2h{mr, async_copy, logger().clone("TrackStateD2HCopyAlg")};
@@ -191,7 +197,7 @@ int main(int argc, char* argv[]) {
 
             // Run fitting
             track_states_cuda_buffer =
-                device_fitting(det_view, device_field,
+                device_fitting(detector_buffer, device_field,
                                {truth_track_candidates_buffer.tracks,
                                 truth_track_candidates_buffer.measurements});
         }

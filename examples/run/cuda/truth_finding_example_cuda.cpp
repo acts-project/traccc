@@ -19,6 +19,7 @@
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/read_measurements.hpp"
@@ -99,14 +100,15 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     const traccc::bfield device_field = traccc::cuda::make_bfield(host_field);
 
     // Construct a Detray detector object, if supported by the configuration.
-    traccc::default_detector::host detector{mng_mr};
+    traccc::host_detector polymorphic_detector;
     assert(detector_opts.use_detray_detector == true);
-    traccc::io::read_detector(detector, mng_mr, detector_opts.detector_file,
-                              detector_opts.material_file,
-                              detector_opts.grid_file);
+    traccc::io::read_detector(
+        polymorphic_detector, mng_mr, detector_opts.detector_file,
+        detector_opts.material_file, detector_opts.grid_file);
 
     // Detector view object
-    traccc::default_detector::view det_view = detray::get_data(detector);
+    traccc::default_detector::view det_view =
+        polymorphic_detector.as_view<traccc::default_detector>();
 
     /*****************************
      * Do the reconstruction
@@ -118,6 +120,11 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     // Copy object
     vecmem::copy host_copy;
     vecmem::cuda::async_copy async_copy{stream.cudaStream()};
+
+    traccc::detector_buffer detector_buffer;
+    detector_buffer.set<traccc::default_detector>(
+        detray::get_buffer(polymorphic_detector.as<traccc::default_detector>(),
+                           device_mr, async_copy));
 
     traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
         track_state_d2h{mr, async_copy, logger().clone("TrackStateD2HCopyAlg")};
@@ -156,17 +163,19 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     traccc::performance::timing_info elapsedTimes;
 
     // Seed generator
-    traccc::seed_generator<traccc::default_detector::host> sg(detector,
-                                                              stddevs);
+    traccc::seed_generator<traccc::default_detector::host> sg(
+        polymorphic_detector.as<traccc::default_detector>(), stddevs);
 
     // Iterate over events
     for (std::size_t event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
 
         // Truth Track Candidates
-        traccc::event_data evt_data(input_opts.directory, event, host_mr,
-                                    input_opts.use_acts_geom_source, &detector,
-                                    input_opts.format, false);
+        traccc::event_data evt_data(
+            input_opts.directory, event, host_mr,
+            input_opts.use_acts_geom_source,
+            &polymorphic_detector.as<traccc::default_detector>(),
+            input_opts.format, false);
 
         traccc::edm::track_candidate_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
@@ -192,7 +201,9 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
             mr.host};
         traccc::io::read_measurements(
             measurements_per_event, event, input_opts.directory,
-            (input_opts.use_acts_geom_source ? &detector : nullptr),
+            (input_opts.use_acts_geom_source
+                 ? &polymorphic_detector.as<traccc::default_detector>()
+                 : nullptr),
             input_opts.format);
 
         traccc::measurement_collection_types::buffer measurements_cuda_buffer(
@@ -229,7 +240,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
             // Run fitting
             track_states_cuda_buffer = device_fitting(
-                det_view, device_field,
+                detector_buffer, device_field,
                 {track_candidates_cuda_buffer, measurements_cuda_buffer});
         }
         traccc::track_state_container_types::host track_states_cuda =
@@ -247,10 +258,10 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                                              elapsedTimes);
 
                 // Run finding
-                track_candidates =
-                    host_finding(detector, host_field,
-                                 vecmem::get_data(measurements_per_event),
-                                 vecmem::get_data(seeds));
+                track_candidates = host_finding(
+                    polymorphic_detector.as<traccc::default_detector>(),
+                    host_field, vecmem::get_data(measurements_per_event),
+                    vecmem::get_data(seeds));
             }
 
             {
@@ -258,10 +269,11 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                                              elapsedTimes);
 
                 // Run fitting
-                track_states =
-                    host_fitting(detector, host_field,
-                                 {vecmem::get_data(track_candidates),
-                                  vecmem::get_data(measurements_per_event)});
+                track_states = host_fitting(
+                    polymorphic_detector.as<traccc::default_detector>(),
+                    host_field,
+                    {vecmem::get_data(track_candidates),
+                     vecmem::get_data(measurements_per_event)});
             }
         }
 
@@ -302,8 +314,10 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
                 const auto& fit_res = track_states_cuda[i].header;
 
-                fit_performance_writer.write(trk_states_per_track, fit_res,
-                                             detector, evt_data);
+                fit_performance_writer.write(
+                    trk_states_per_track, fit_res,
+                    polymorphic_detector.as<traccc::default_detector>(),
+                    evt_data);
             }
         }
     }

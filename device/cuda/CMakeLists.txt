@@ -120,8 +120,7 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   # Track fitting algorithm(s).
   "include/traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
   "src/fitting/kalman_fitting_algorithm.cpp"
-  "src/fitting/kalman_fitting_algorithm_default_detector.cu"
-  "src/fitting/kalman_fitting_algorithm_telescope_detector.cu"
+  "src/fitting/kalman_fitting_algorithm.cu"
   "src/fitting/kalman_fitting.cuh"
   "src/fitting/kernels/fill_fitting_sort_keys.cu"
   "src/fitting/kernels/fit_prelude.cu"

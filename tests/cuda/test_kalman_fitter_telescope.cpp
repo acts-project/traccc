@@ -10,6 +10,7 @@
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/edm/track_state.hpp"
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/performance/details/is_same_object.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
@@ -31,6 +32,7 @@
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
+#include <vecmem/utils/cuda/copy.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>
@@ -82,8 +84,8 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);
 
-    // Detector view object
-    auto det_view = detray::get_data(host_det);
+    traccc::host_detector polymorphic_detector;
+    polymorphic_detector.set<traccc::default_detector>(std::move(host_det));
 
     auto field =
         traccc::construct_const_bfield<host_detector_type::scalar_type>(
@@ -138,6 +140,10 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     // Copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
+    traccc::detector_buffer detector_buffer;
+    detector_buffer.set<traccc::default_detector>(detray::get_buffer(
+        polymorphic_detector.as<traccc::default_detector>(), device_mr, copy));
+
     traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
         track_state_d2h{mr, copy};
 
@@ -173,7 +179,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
 
         // Run fitting
         traccc::track_state_container_types::buffer track_states_cuda_buffer =
-            device_fitting(det_view, b_field,
+            device_fitting(detector_buffer, b_field,
                            {track_candidates_buffer.tracks,
                             track_candidates_buffer.measurements});
 

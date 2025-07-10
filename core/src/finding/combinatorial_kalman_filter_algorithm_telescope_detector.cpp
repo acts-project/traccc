@@ -21,19 +21,12 @@ combinatorial_kalman_filter_algorithm::operator()(
     const bound_track_parameters_collection_types::const_view& seeds) const {
 
     // Perform the track finding using the appropriate templated implementation.
-    if (field.is<const_bfield_backend_t<scalar>>()) {
-        return details::combinatorial_kalman_filter(
-            det, field.as<const_bfield_backend_t<scalar>>(), measurements,
-            seeds, m_config, m_mr.get(), logger());
-    } else if (field.is<inhom_bfield_backend_t<scalar>>()) {
-        return details::combinatorial_kalman_filter(
-            det, field.as<inhom_bfield_backend_t<scalar>>(), measurements,
-            seeds, m_config, m_mr.get(), logger());
-    } else {
-        throw std::invalid_argument(
-            "Unsupported b-field type received in "
-            "traccc::host::combinatorial_kalman_filter_algorithm");
-    }
+    return bfield_visitor<host_bfield_type_list<scalar>>(
+        field, [&]<typename bfield_view_t>(const bfield_view_t& bfield) {
+            return details::combinatorial_kalman_filter(
+                det, bfield, measurements, seeds, m_config, m_mr.get(),
+                logger());
+        });
 }
 
 }  // namespace traccc::host

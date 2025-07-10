@@ -10,6 +10,7 @@
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/propagation.hpp"
 
@@ -106,7 +107,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         traccc::details::make_magnetic_field(bfield_opts);
 
     // Construct a Detray detector object, if supported by the configuration.
-    traccc::default_detector::host detector{host_mr};
+    traccc::host_detector detector;
     assert(detector_opts.use_detray_detector == true);
     traccc::io::read_detector(detector, host_mr, detector_opts.detector_file,
                               detector_opts.material_file,
@@ -153,7 +154,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         traccc::io::read_spacepoints(
             spacepoints_per_event, measurements_per_event, event,
             input_opts.directory,
-            (input_opts.use_acts_geom_source ? &detector : nullptr),
+            (input_opts.use_acts_geom_source
+                 ? &detector.as<traccc::default_detector>()
+                 : nullptr),
             input_opts.format);
         n_measurements += measurements_per_event.size();
         n_spacepoints += spacepoints_per_event.size();
@@ -185,8 +188,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
           ------------------------*/
 
         track_candidates = host_finding(
-            detector, field, vecmem::get_data(measurements_per_event),
-            vecmem::get_data(params));
+            detector.as<traccc::default_detector>(), field,
+            vecmem::get_data(measurements_per_event), vecmem::get_data(params));
         n_found_tracks += track_candidates.size();
 
         /*-----------------------------------------
@@ -202,9 +205,10 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
            Track Fitting with KF
           ------------------------*/
 
-        track_states = host_fitting(detector, field,
-                                    {vecmem::get_data(track_candidates_ar),
-                                     vecmem::get_data(measurements_per_event)});
+        track_states =
+            host_fitting(detector.as<traccc::default_detector>(), field,
+                         {vecmem::get_data(track_candidates_ar),
+                          vecmem::get_data(measurements_per_event)});
         n_fitted_tracks += track_states.size();
 
         /*------------
@@ -220,9 +224,11 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
         if (performance_opts.run) {
 
-            traccc::event_data evt_data(input_opts.directory, event, host_mr,
-                                        input_opts.use_acts_geom_source,
-                                        &detector, input_opts.format, false);
+            traccc::event_data evt_data(
+                input_opts.directory, event, host_mr,
+                input_opts.use_acts_geom_source,
+                &detector.as<traccc::default_detector>(), input_opts.format,
+                false);
 
             sd_performance_writer.write(
                 vecmem::get_data(seeds),
@@ -242,8 +248,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
                 const auto& fit_res = track_states[i].header;
 
-                fit_performance_writer.write(trk_states_per_track, fit_res,
-                                             detector, evt_data);
+                fit_performance_writer.write(
+                    trk_states_per_track, fit_res,
+                    detector.as<traccc::default_detector>(), evt_data);
             }
         }
     }

@@ -12,6 +12,7 @@
 
 // Project include(s)
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/host_detector.hpp"
 
 // Command line option include(s).
 #include "traccc/options/clusterization.hpp"
@@ -91,7 +92,7 @@ int throughput_st(std::string_view description, int argc, char* argv[],
                                            : traccc::data_format::csv));
 
     // Construct a Detray detector object, if supported by the configuration.
-    traccc::default_detector::host detector{uncached_host_mr};
+    traccc::host_detector detector;
     if (detector_opts.use_detray_detector) {
         traccc::io::read_detector(
             detector, uncached_host_mr, detector_opts.detector_file,

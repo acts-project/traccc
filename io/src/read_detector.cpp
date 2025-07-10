@@ -8,6 +8,8 @@
 // Local include(s).
 #include "traccc/io/read_detector.hpp"
 
+#include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/io/utils.hpp"
 
 // Detray include(s).
@@ -21,7 +23,7 @@ namespace {
 
 /// Common implementation for constructing a detector from a set of input files
 template <typename detector_t>
-void read_detector(detector_t& detector, vecmem::memory_resource& mr,
+void read_detector(traccc::host_detector& detector, vecmem::memory_resource& mr,
                    const std::string_view& geometry_file,
                    const std::string_view& material_file,
                    const std::string_view& grid_file) {
@@ -38,20 +40,20 @@ void read_detector(detector_t& detector, vecmem::memory_resource& mr,
 
     // Read the detector.
     auto det = detray::io::read_detector<detector_t>(mr, cfg);
-    detector = std::move(det.first);
+    detector.set<traccc::default_detector>(std::move(det.first));
 }
 
 }  // namespace
 
 namespace traccc::io {
 
-void read_detector(default_detector::host& detector,
-                   vecmem::memory_resource& mr,
+void read_detector(host_detector& detector, vecmem::memory_resource& mr,
                    const std::string_view& geometry_file,
                    const std::string_view& material_file,
                    const std::string_view& grid_file) {
 
-    ::read_detector(detector, mr, geometry_file, material_file, grid_file);
+    ::read_detector<default_detector::host>(detector, mr, geometry_file,
+                                            material_file, grid_file);
 }
 
 }  // namespace traccc::io
