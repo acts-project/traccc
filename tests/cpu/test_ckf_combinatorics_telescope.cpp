@@ -6,13 +6,14 @@
  */
 
 // Project include(s).
+#include "traccc/bfield/construct_const_bfield.hpp"
+#include "traccc/bfield/magnetic_field.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
 #include "traccc/simulation/event_generators.hpp"
 #include "traccc/simulation/simulator.hpp"
-#include "traccc/utils/bfield.hpp"
 #include "traccc/utils/ranges.hpp"
 
 // Test include(s).
@@ -64,11 +65,7 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
     const auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
 
-    const covfie::field<traccc::const_bfield_backend_t<traccc::scalar>> field =
-        traccc::construct_const_bfield<traccc::scalar>(
-            std::get<13>(GetParam()));
-    const traccc::bfield b_field{traccc::construct_const_bfield<traccc::scalar>(
-        std::get<13>(GetParam()))};
+    const auto field = traccc::construct_const_bfield(std::get<13>(GetParam()));
 
     /***************************
      * Generate simulation data
@@ -102,7 +99,8 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
     std::filesystem::create_directories(full_path);
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
                                  writer_type>(
-        std::get<6>(GetParam()), n_events, host_det, field,
+        std::get<6>(GetParam()), n_events, host_det,
+        field.as_field<const_bfield_backend_t<traccc::scalar>>(),
         std::move(generator), std::move(smearer_writer_cfg), full_path);
     sim.run();
 
@@ -163,10 +161,10 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
 
         // Run finding
         auto track_candidates =
-            host_finding(host_det, b_field, measurements_view, seeds_view);
+            host_finding(host_det, field, measurements_view, seeds_view);
 
-        auto track_candidates_limit = host_finding_limit(
-            host_det, b_field, measurements_view, seeds_view);
+        auto track_candidates_limit =
+            host_finding_limit(host_det, field, measurements_view, seeds_view);
 
         // Make sure that the number of found tracks = n_track ^ (n_planes + 1)
         ASSERT_TRUE(track_candidates.size() > track_candidates_limit.size());

@@ -6,6 +6,7 @@
  */
 
 // Traccc core include(s).
+#include "traccc/bfield/construct_const_bfield.hpp"
 #include "traccc/geometry/detector.hpp"
 
 // Traccc algorithm include(s).
@@ -49,7 +50,7 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
         sim_dir + "toy_detector_surface_grids.json");
 
     // B field
-    const traccc::bfield field{traccc::construct_const_bfield<scalar_type>(B)};
+    const auto field = traccc::construct_const_bfield(B);
 
     // Algorithms
     traccc::host::seeding_algorithm sa(seeding_cfg, grid_cfg, filter_cfg,

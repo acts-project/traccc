@@ -6,6 +6,8 @@
  */
 
 // Project include(s).
+#include "traccc/bfield/construct_const_bfield.hpp"
+#include "traccc/bfield/magnetic_field_types.hpp"
 #include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
@@ -15,7 +17,6 @@
 #include "traccc/resolution/fitting_performance_writer.hpp"
 #include "traccc/simulation/event_generators.hpp"
 #include "traccc/simulation/simulator.hpp"
-#include "traccc/utils/bfield.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/ranges.hpp"
 #include "traccc/utils/seed_generator.hpp"
@@ -85,12 +86,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     // Detector view object
     auto det_view = detray::get_data(host_det);
 
-    auto field =
-        traccc::construct_const_bfield<host_detector_type::scalar_type>(
-            std::get<13>(GetParam()));
-    const traccc::bfield b_field{
-        traccc::construct_const_bfield<host_detector_type::scalar_type>(
-            std::get<13>(GetParam()))};
+    const auto field = traccc::construct_const_bfield(std::get<13>(GetParam()));
 
     /***************************
      * Generate simulation data
@@ -124,8 +120,9 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     std::filesystem::create_directories(full_path);
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
                                  writer_type>(
-        ptc, n_events, host_det, field, std::move(generator),
-        std::move(smearer_writer_cfg), full_path);
+        ptc, n_events, host_det,
+        field.as_field<traccc::const_bfield_backend_t<traccc::scalar>>(),
+        std::move(generator), std::move(smearer_writer_cfg), full_path);
     sim.run();
 
     /***************
@@ -173,7 +170,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
 
         // Run fitting
         traccc::track_state_container_types::buffer track_states_cuda_buffer =
-            device_fitting(det_view, b_field,
+            device_fitting(det_view, field,
                            {track_candidates_buffer.tracks,
                             track_candidates_buffer.measurements});
 

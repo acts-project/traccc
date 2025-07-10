@@ -10,6 +10,8 @@
 #include "traccc/utils/seed_generator.hpp"
 
 // Project include(s).
+#include "traccc/bfield/construct_const_bfield.hpp"
+#include "traccc/bfield/magnetic_field_types.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
@@ -20,7 +22,6 @@
 #include "traccc/simulation/event_generators.hpp"
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
-#include "traccc/utils/bfield.hpp"
 #include "traccc/utils/event_data.hpp"
 #include "traccc/utils/ranges.hpp"
 
@@ -77,10 +78,7 @@ TEST_P(CkfToyDetectorTests, Run) {
         (path / "toy_detector_homogeneous_material.json").native(),
         (path / "toy_detector_surface_grids.json").native());
 
-    auto field =
-        traccc::construct_const_bfield<host_detector_type::scalar_type>(B);
-    const traccc::bfield b_field{
-        traccc::construct_const_bfield<traccc::scalar>(B)};
+    const auto field = traccc::construct_const_bfield(B);
 
     // Detector view object
     auto det_view = detray::get_data(host_det);
@@ -116,8 +114,9 @@ TEST_P(CkfToyDetectorTests, Run) {
     // Run simulator
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
                                  writer_type>(
-        ptc, n_events, host_det, field, std::move(generator),
-        std::move(smearer_writer_cfg), path.native());
+        ptc, n_events, host_det,
+        field.as_field<traccc::const_bfield_backend_t<traccc::scalar>>(),
+        std::move(generator), std::move(smearer_writer_cfg), path.native());
     sim.get_config().propagation.navigation.search_window = search_window;
     sim.run();
 
@@ -189,13 +188,13 @@ TEST_P(CkfToyDetectorTests, Run) {
 
         // Run host finding
         auto track_candidates = host_finding(
-            host_det, b_field, vecmem::get_data(measurements_per_event),
+            host_det, field, vecmem::get_data(measurements_per_event),
             vecmem::get_data(seeds));
 
         // Run device finding
         traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
             track_candidates_sycl_buffer = device_finding(
-                det_view, b_field, measurements_buffer, seeds_buffer);
+                det_view, field, measurements_buffer, seeds_buffer);
 
         traccc::edm::track_candidate_collection<traccc::default_algebra>::host
             track_candidates_sycl{host_mr};

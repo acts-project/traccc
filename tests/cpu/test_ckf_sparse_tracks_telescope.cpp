@@ -6,6 +6,7 @@
  */
 
 // Project include(s).
+#include "traccc/bfield/construct_const_bfield.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/io/read_measurements.hpp"
@@ -75,11 +76,7 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     const auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
 
-    auto field =
-        traccc::construct_const_bfield<host_detector_type::scalar_type>(
-            std::get<13>(GetParam()));
-    const traccc::bfield b_field{traccc::construct_const_bfield<traccc::scalar>(
-        std::get<13>(GetParam()))};
+    auto field = traccc::construct_const_bfield(std::get<13>(GetParam()));
 
     /***************************
      * Generate simulation data
@@ -113,8 +110,9 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     std::filesystem::create_directories(full_path);
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
                                  writer_type>(
-        ptc, n_events, host_det, field, std::move(generator),
-        std::move(smearer_writer_cfg), full_path);
+        ptc, n_events, host_det,
+        field.as_field<traccc::const_bfield_backend_t<traccc::scalar>>(),
+        std::move(generator), std::move(smearer_writer_cfg), full_path);
 
     sim.run();
 
@@ -165,7 +163,7 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
 
         // Run finding
         auto track_candidates = host_finding(
-            host_det, b_field, vecmem::get_data(measurements_per_event),
+            host_det, field, vecmem::get_data(measurements_per_event),
             vecmem::get_data(seeds));
 
         ASSERT_EQ(track_candidates.size(), n_truth_tracks);
@@ -179,7 +177,7 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
 
         // Run fitting
         auto track_states =
-            host_fitting(host_det, b_field,
+            host_fitting(host_det, field,
                          {vecmem::get_data(track_candidates),
                           vecmem::get_data(measurements_per_event)});
         const std::size_t n_fitted_tracks =

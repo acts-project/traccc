@@ -10,6 +10,8 @@
 #include "traccc/utils/seed_generator.hpp"
 
 // Project include(s).
+#include "traccc/bfield/construct_const_bfield.hpp"
+#include "traccc/bfield/magnetic_field_types.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/io/read_detector.hpp"
@@ -80,11 +82,7 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
         (path / "telescope_detector_geometry.json").native(),
         (path / "telescope_detector_homogeneous_material.json").native(), "");
 
-    auto field =
-        traccc::construct_const_bfield<host_detector_type::scalar_type>(
-            std::get<13>(GetParam()));
-    const traccc::bfield b_field{traccc::construct_const_bfield<traccc::scalar>(
-        std::get<13>(GetParam()))};
+    auto field = traccc::construct_const_bfield(std::get<13>(GetParam()));
 
     // Detector view object
     auto det_view = detray::get_data(host_det);
@@ -119,8 +117,9 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
     // Run simulator
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
                                  writer_type>(
-        ptc, n_events, host_det, field, std::move(generator),
-        std::move(smearer_writer_cfg), path.native());
+        ptc, n_events, host_det,
+        field.as_field<traccc::const_bfield_backend_t<traccc::scalar>>(),
+        std::move(generator), std::move(smearer_writer_cfg), path.native());
     sim.run();
 
     /*****************************
@@ -197,12 +196,12 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
             ->wait();
 
         // Run device finding
-        auto track_candidates_buffer = device_finding(
-            det_view, b_field, measurements_buffer, seeds_buffer);
+        auto track_candidates_buffer =
+            device_finding(det_view, field, measurements_buffer, seeds_buffer);
 
         // Run device finding (Limit)
         auto track_candidates_limit_buffer = device_finding_limit(
-            det_view, b_field, measurements_buffer, seeds_buffer);
+            det_view, field, measurements_buffer, seeds_buffer);
 
         traccc::edm::track_candidate_collection<traccc::default_algebra>::host
             track_candidates{host_mr},

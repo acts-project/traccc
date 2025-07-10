@@ -6,6 +6,7 @@
  */
 
 // Project include(s).
+#include "traccc/bfield/construct_const_bfield.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/io/utils.hpp"
@@ -70,10 +71,7 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
 
     const auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
-    const covfie::field<traccc::const_bfield_backend_t<traccc::scalar>> field =
-        traccc::construct_const_bfield<traccc::scalar>(B);
-    const traccc::bfield b_field{
-        traccc::construct_const_bfield<traccc::scalar>(B)};
+    const auto field = traccc::construct_const_bfield(B);
 
     /***************************
      * Generate simulation data
@@ -108,8 +106,9 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
     std::filesystem::create_directories(full_path);
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
                                  writer_type>(
-        ptc, n_events, host_det, field, std::move(generator),
-        std::move(smearer_writer_cfg), full_path);
+        ptc, n_events, host_det,
+        field.as_field<traccc::const_bfield_backend_t<traccc::scalar>>(),
+        std::move(generator), std::move(smearer_writer_cfg), full_path);
 
     sim.get_config().propagation.navigation.search_window = search_window;
 
@@ -145,7 +144,7 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
 
         // Run fitting
         auto track_states =
-            fitting(host_det, b_field,
+            fitting(host_det, field,
                     {vecmem::get_data(track_candidates.tracks),
                      vecmem::get_data(track_candidates.measurements)});
 

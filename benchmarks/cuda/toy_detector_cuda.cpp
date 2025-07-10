@@ -6,6 +6,7 @@
  */
 
 // Project include(s).
+#include "traccc/bfield/construct_const_bfield.hpp"
 #include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
@@ -56,8 +57,7 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
         sim_dir + "toy_detector_surface_grids.json");
 
     // B field
-    const traccc::bfield field{traccc::construct_const_bfield<
-        traccc::default_detector::host::scalar_type>(B)};
+    const auto field = traccc::construct_const_bfield(B);
 
     // Algorithms
     traccc::cuda::seeding_algorithm sa_cuda(seeding_cfg, grid_cfg, filter_cfg,

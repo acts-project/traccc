@@ -6,6 +6,7 @@
  */
 
 // Traccc include(s).
+#include "traccc/bfield/construct_const_bfield.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/fitting/fitting_config.hpp"
@@ -17,7 +18,6 @@
 #include "traccc/simulation/measurement_smearer.hpp"
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/simulation/smearing_writer.hpp"
-#include "traccc/utils/bfield.hpp"
 
 // Detray include(s).
 #include <detray/io/frontend/detector_writer.hpp>
@@ -92,7 +92,7 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
             detray::build_toy_detector<algebra_type>(host_mr, get_toy_config());
 
         // B field
-        b_field_t field = traccc::construct_const_bfield<scalar_type>(B);
+        const auto field = traccc::construct_const_bfield(B);
 
         // Origin of particles
         using generator_type = detray::random_track_generator<
@@ -123,7 +123,8 @@ class ToyDetectorBenchmark : public benchmark::Fixture {
 
         auto sim = traccc::simulator<detector_type, b_field_t, generator_type,
                                      writer_type>(
-            traccc::muon<scalar_type>(), n_events, det, field,
+            traccc::muon<scalar_type>(), n_events, det,
+            field.as_field<traccc::const_bfield_backend_t<scalar_type>>(),
             std::move(generator), std::move(smearer_writer_cfg), full_path);
 
         // Same propagation configuration for sim and reco
