@@ -581,6 +581,15 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .inverted_ids_view = inverted_ids_buffer,
             });
 
+        // The three kernels (block_inclusive_scan, scan_block_offsets, and
+        // add_block_offset) work together to compute the prefix sum of track
+        // IDs, with respect to the number of updated tracks, based on the
+        // indices of sorted_ids. The kernels are splitted as it is not
+        // efficient to calculate this in a single kernel
+
+        // Caculate the prefix sum of the number of updated tracks block-wisely.
+        // block_offset is the last element of block-wise prefix sums, which is
+        // used to get the real prefix sum later
         kernels::block_inclusive_scan<<<nBlocks_scan, nThreads_scan,
                                         nThreads_scan * sizeof(int), stream>>>(
             device::block_inclusive_scan_payload{
@@ -592,6 +601,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .block_offsets_view = block_offsets_buffer,
                 .prefix_sums_view = prefix_sums_buffer});
 
+        // Calculate the scanned block offsets which is the prefix sum of block
+        // offsets
         kernels::scan_block_offsets<<<1, nBlocks_scan,
                                       nBlocks_scan * sizeof(int), stream>>>(
             device::scan_block_offsets_payload{
@@ -601,6 +612,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .block_offsets_view = block_offsets_buffer,
                 .scanned_block_offsets_view = scanned_block_offsets_buffer});
 
+        // Add the scanned block offsets to block-wise prefix sums of the number
+        // of updated tracks
         kernels::add_block_offset<<<nBlocks_scan, nThreads_scan, 0, stream>>>(
             device::add_block_offset_payload{
                 .terminate = terminate_device.get(),
@@ -609,8 +622,9 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .block_offsets_view = scanned_block_offsets_buffer,
                 .prefix_sums_view = prefix_sums_buffer});
 
-        // Apply the insertion sort algorithm to sorted_ids_view. The sorted
-        // elements are stored in temp_sorted_ids_view
+        // Apply the insertion sort algorithm to sorted_ids_view using the
+        // sorted updated tracks and prefix sums. The sorted elements are stored
+        // in temp_sorted_ids_view
         kernels::rearrange_tracks<<<nBlocks_adaptive, nThreads_adaptive, 0,
                                     stream>>>(device::rearrange_tracks_payload{
             .sorted_ids_view = sorted_ids_buffer,
