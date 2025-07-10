@@ -17,6 +17,8 @@
 #include <covfie/core/vector.hpp>
 #include <covfie/sycl/backend/primitive/sycl_device_array.hpp>
 
+#include "traccc/utils/bfield.hpp"
+
 namespace traccc::sycl {
 
 /// Inhomogeneous B-field backend type for CUDA
@@ -26,5 +28,50 @@ using inhom_bfield_backend_t =
         covfie::backend::strided<covfie::vector::vector_d<std::size_t, 3>,
                                  covfie::backend::sycl_device_array<
                                      covfie::vector::vector_d<scalar_t, 3>>>>>>;
+
+/// @brief the standard list of SYCL bfield types to support
+template <typename scalar_t>
+using bfield_type_list = std::tuple<const_bfield_backend_t<scalar_t>,
+                                    inhom_bfield_backend_t<scalar_t>>;
+
+/*
+ * SYCL requires a little bit of extra massaging to make the kernel tags
+ * work...
+ */
+struct const_bfield_kernel_tag {};
+struct inhom_bfield_kernel_tag {};
+
+template <typename T>
+struct bfield_tag_selector {};
+
+template <typename scalar_t>
+struct bfield_tag_selector<const_bfield_backend_t<scalar_t>> {
+    using type = const_bfield_kernel_tag;
+};
+
+template <typename scalar_t>
+struct bfield_tag_selector<inhom_bfield_backend_t<scalar_t>> {
+    using type = inhom_bfield_kernel_tag;
+};
+
+template <typename T>
+using bfield_tag_selector_t = typename bfield_tag_selector<T>::type;
+
+template <typename T>
+concept bfield_tag_exists_for_backend = requires {
+    typename bfield_tag_selector_t<T>;
+};
+
+template <typename>
+struct bfield_tag_existance_validator {};
+
+template <typename... Ts>
+struct bfield_tag_existance_validator<std::tuple<Ts...>> {
+    static constexpr bool value = (bfield_tag_exists_for_backend<Ts> && ...);
+};
+
+static_assert(
+    bfield_tag_existance_validator<bfield_type_list<scalar>>::value,
+    "Not all B-field types registered for SYCL have an accompanying tag");
 
 }  // namespace traccc::sycl

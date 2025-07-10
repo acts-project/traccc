@@ -6,6 +6,7 @@
  */
 
 // Local include(s).
+#include "../utils/bfield.hpp"
 #include "../utils/get_queue.hpp"
 #include "kalman_fitting.hpp"
 #include "traccc/alpaka/fitting/kalman_fitting_algorithm.hpp"
@@ -18,15 +19,12 @@ kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
         track_candidates) const {
 
     // Run the track fitting.
-    if (field.is<const_bfield_backend_t<scalar>>()) {
-        return details::kalman_fitting<default_detector::device>(
-            det, field.as<const_bfield_backend_t<scalar>>(), track_candidates,
-            m_config, m_mr, m_copy.get(), details::get_queue(m_queue.get()));
-    } else {
-        throw std::invalid_argument(
-            "Unsupported b-field type received in "
-            "traccc::alpaka::kalman_fitting_algorithm");
-    }
+    return bfield_visitor<alpaka::bfield_type_list<scalar>>(
+        field, [&]<typename bfield_view_t>(const bfield_view_t& bfield) {
+            return details::kalman_fitting<default_detector::device>(
+                det, bfield, track_candidates, m_config, m_mr, m_copy.get(),
+                details::get_queue(m_queue.get()));
+        });
 }
 
 }  // namespace traccc::alpaka

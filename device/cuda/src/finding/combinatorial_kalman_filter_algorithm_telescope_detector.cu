@@ -21,20 +21,14 @@ combinatorial_kalman_filter_algorithm::operator()(
     const measurement_collection_types::const_view& measurements,
     const bound_track_parameters_collection_types::const_view& seeds) const {
 
-    // Perform the track finding using the templated implementation.
-    if (field.is<const_bfield_backend_t<scalar>>()) {
-        return details::combinatorial_kalman_filter<telescope_detector::device>(
-            det, field.as<const_bfield_backend_t<scalar>>(), measurements,
-            seeds, m_config, m_mr, m_copy, logger(), m_stream, m_warp_size);
-    } else if (field.is<cuda::inhom_bfield_backend_t<scalar>>()) {
-        return details::combinatorial_kalman_filter<telescope_detector::device>(
-            det, field.as<cuda::inhom_bfield_backend_t<scalar>>(), measurements,
-            seeds, m_config, m_mr, m_copy, logger(), m_stream, m_warp_size);
-    } else {
-        throw std::invalid_argument(
-            "Unsupported b-field type received in "
-            "traccc::cuda::combinatorial_kalman_filter_algorithm");
-    }
+    // Perform the track finding using the appropriate templated implementation.
+    return bfield_visitor<cuda::bfield_type_list<scalar>>(
+        field, [&]<typename bfield_view_t>(const bfield_view_t& bfield) {
+            return details::combinatorial_kalman_filter<
+                telescope_detector::device>(det, bfield, measurements, seeds,
+                                            m_config, m_mr, m_copy, logger(),
+                                            m_stream, m_warp_size);
+        });
 }
 
 }  // namespace traccc::cuda
