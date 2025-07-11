@@ -115,7 +115,11 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     // B field value
     const auto host_field = traccc::details::make_magnetic_field(bfield_opts);
-    const auto device_field = traccc::cuda::make_magnetic_field(host_field);
+    const auto device_field = traccc::cuda::make_magnetic_field(
+        host_field,
+        (accelerator_opts.use_gpu_texture_memory
+             ? traccc::cuda::magnetic_field_storage::texture_memory
+             : traccc::cuda::magnetic_field_storage::global_memory));
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host host_det{mng_mr};
