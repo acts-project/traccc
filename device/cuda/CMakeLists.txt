@@ -78,8 +78,10 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/finding/kernels/specializations/apply_interaction_telescope_detector.cu"
   "src/finding/kernels/specializations/propagate_to_next_surface_constant_field_default_detector.cu"
   "src/finding/kernels/specializations/propagate_to_next_surface_constant_field_telescope_detector.cu"
-  "src/finding/kernels/specializations/propagate_to_next_surface_inhomogeneous_field_default_detector.cu"
-  "src/finding/kernels/specializations/propagate_to_next_surface_inhomogeneous_field_telescope_detector.cu"
+  "src/finding/kernels/specializations/propagate_to_next_surface_inhomogeneous_global_field_default_detector.cu"
+  "src/finding/kernels/specializations/propagate_to_next_surface_inhomogeneous_global_field_telescope_detector.cu"
+  "src/finding/kernels/specializations/propagate_to_next_surface_inhomogeneous_texture_field_default_detector.cu"
+  "src/finding/kernels/specializations/propagate_to_next_surface_inhomogeneous_texture_field_telescope_detector.cu"
   # Ambiguity resolution
   "include/traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
   "src/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.cu"
@@ -125,12 +127,16 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/fitting/kernels/fit_prelude.cu"
   "src/fitting/kernels/specializations/fit_forward_constant_field_default_detector.cu"
   "src/fitting/kernels/specializations/fit_forward_constant_field_telescope_detector.cu"
-  "src/fitting/kernels/specializations/fit_forward_inhomogeneous_field_default_detector.cu"
-  "src/fitting/kernels/specializations/fit_forward_inhomogeneous_field_telescope_detector.cu"
+  "src/fitting/kernels/specializations/fit_forward_inhomogeneous_global_field_default_detector.cu"
+  "src/fitting/kernels/specializations/fit_forward_inhomogeneous_global_field_telescope_detector.cu"
+  "src/fitting/kernels/specializations/fit_forward_inhomogeneous_texture_field_default_detector.cu"
+  "src/fitting/kernels/specializations/fit_forward_inhomogeneous_texture_field_telescope_detector.cu"
   "src/fitting/kernels/specializations/fit_backward_constant_field_default_detector.cu"
   "src/fitting/kernels/specializations/fit_backward_constant_field_telescope_detector.cu"
-  "src/fitting/kernels/specializations/fit_backward_inhomogeneous_field_default_detector.cu"
-  "src/fitting/kernels/specializations/fit_backward_inhomogeneous_field_telescope_detector.cu"
+  "src/fitting/kernels/specializations/fit_backward_inhomogeneous_global_field_default_detector.cu"
+  "src/fitting/kernels/specializations/fit_backward_inhomogeneous_global_field_telescope_detector.cu"
+  "src/fitting/kernels/specializations/fit_backward_inhomogeneous_texture_field_default_detector.cu"
+  "src/fitting/kernels/specializations/fit_backward_inhomogeneous_texture_field_telescope_detector.cu"
 )
 
 if(TRACCC_ENABLE_NVTX_PROFILING)
