@@ -74,6 +74,7 @@ void read_csv_dd(traccc::silicon_detector_description::host& dd,
         dd.geometry_id().back() = detray::geometry::barcode{geom_id};
         dd.acts_geometry_id().back() = geom_id;
         dd.measurement_translation().back() = {0.f, 0.f};
+        dd.subspace().back() = {0, 1};
 
         // Find the module's digitization configuration.
         const traccc::digitization_config::Iterator digi_it =
@@ -128,6 +129,15 @@ void read_json_dd(traccc::silicon_detector_description::host& dd,
         dd.geometry_id().back() = surface_desc.barcode();
         dd.acts_geometry_id().back() = geom_id;
         dd.measurement_translation().back() = {0.f, 0.f};
+        dd.subspace().back() = {0, 1};
+
+        using annulus_t =
+            detray::mask<detray::annulus2D, traccc::default_algebra>;
+        if (surface_desc.mask().id() ==
+            traccc::default_detector::host::masks::template get_id<
+                annulus_t>()) {
+            dd.subspace().back() = {1, 0};
+        }
 
         // Find the module's digitization configuration.
         const traccc::digitization_config::Iterator digi_it =
