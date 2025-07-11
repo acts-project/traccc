@@ -39,17 +39,21 @@ __global__ void find_max_shared(device::find_max_shared_payload payload) {
     auto tid = sorted_ids[globalIndex];
     auto shared = n_shared[tid];
 
+    // Warp-level reduction to find the maximum 'shared' value and associated
+    // tid
     for (int offset = 16; offset > 0; offset >>= 1) {
         unsigned int other_tid = __shfl_down_sync(0xffffffff, tid, offset);
         unsigned int other_shared =
             __shfl_down_sync(0xffffffff, shared, offset);
 
+        // Keep the tid with the highest shared value
         if (other_shared > shared) {
             tid = other_tid;
             shared = other_shared;
         }
     }
 
+    // First thread in the warp writes the result using atomicMax
     if (threadIdx.x == 0) {
         atomicMax(payload.max_shared, shared);
     }

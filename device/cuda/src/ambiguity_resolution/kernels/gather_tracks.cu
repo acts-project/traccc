@@ -28,7 +28,7 @@ __global__ void gather_tracks(device::gather_tracks_payload payload) {
     auto globalIndex = threadIdx.x + blockIdx.x * blockDim.x;
     const unsigned int n_accepted = *(payload.n_accepted);
 
-    // Reset is_updated vector
+    // Reset is_updated vector for the next iteration
     if (globalIndex < is_updated.size()) {
         is_updated[globalIndex] = 0;
     }
@@ -37,6 +37,7 @@ __global__ void gather_tracks(device::gather_tracks_payload payload) {
         return;
     }
 
+    // Move the elements in temp_sorted_ids to sorted_ids
     sorted_ids[globalIndex] = temp_sorted_ids[globalIndex];
 }
 
