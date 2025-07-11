@@ -21,6 +21,8 @@ class accelerator : public interface {
 
     /// Whether to compare the accelerator code's output with that of the CPU
     bool compare_with_cpu = false;
+    /// Whether GPU texture memory should be used
+    bool use_gpu_texture_memory = false;
 
     /// @}
 

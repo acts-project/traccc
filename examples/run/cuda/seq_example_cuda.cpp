@@ -163,7 +163,11 @@ int seq_run(const traccc::opts::detector& detector_opts,
     const traccc::vector3 field_vec = {0.f, 0.f,
                                        seeding_opts.seedfinder.bFieldInZ};
     const auto host_field = traccc::details::make_magnetic_field(bfield_opts);
-    const auto device_field = traccc::cuda::make_magnetic_field(host_field);
+    const auto device_field = traccc::cuda::make_magnetic_field(
+        host_field,
+        (accelerator_opts.use_gpu_texture_memory
+             ? traccc::cuda::magnetic_field_storage::texture_memory
+             : traccc::cuda::magnetic_field_storage::global_memory));
 
     traccc::host::clusterization_algorithm ca(
         host_mr, logger().clone("HostClusteringAlg"));
