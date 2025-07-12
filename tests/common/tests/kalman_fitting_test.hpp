@@ -30,7 +30,7 @@
 
 namespace traccc {
 
-class KalmanFittingTests : public testing::Test {
+class KalmanFittingTests {
     public:
     /// Type declarations
     using host_detector_type = traccc::default_detector::host;
