@@ -163,8 +163,8 @@ inline void aggregate_cluster(
     out.measurement_id = link;
     // Set the dimensionality of the measurement.
     out.meas_dim = module_descr.dimensions();
-    out.subs =
-        subspace<default_algebra, e_bound_size, 2u>(module_descr.subspace());
+    // Set the measurement's subspace.
+    out.subs = module_descr.subspace();
 
     scalar delta0 = max_channel0 - min_channel0;
     scalar delta1 = max_channel1 - min_channel1;

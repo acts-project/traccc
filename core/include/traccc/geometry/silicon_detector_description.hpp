@@ -210,15 +210,24 @@ class silicon_detector_description_interface : public BASE {
 
     /// The subspace of measurements on the module
     ///
-    /// @return A subspace for this module.
+    /// The "subspace" defines which of the measurement's parameters are
+    /// "sensitive", to be used during the track finding/fitting.
     ///
-    /// @{
+    /// @return A (non-const) vector of @c std::array<uint,2> objects
+    ///
     TRACCC_HOST_DEVICE
     auto& subspace() { return BASE::template get<9>(); }
 
+    /// The subspace of measurements on the module
+    ///
+    /// The "subspace" defines which of the measurement's parameters are
+    /// "sensitive", to be used during the track finding/fitting.
+    ///
+    /// @return A (const) vector of @c std::array<uint,2> objects
+    ///
     TRACCC_HOST_DEVICE
     const auto& subspace() const { return BASE::template get<9>(); }
-    /// @}
+
     /// @}
 
 };  // class silicon_detector_description_interface
