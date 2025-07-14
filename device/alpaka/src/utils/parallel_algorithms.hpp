@@ -49,7 +49,7 @@ inline auto getExecutionPolicy([[maybe_unused]] Queue &q,
 #elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
     auto stream = ::alpaka::getNativeHandle(q);
     return thrust::hip_rocprim::par_nosync(
-               std::pmr::polymorphic_allocator(&(mr.main)))
+               std::pmr::polymorphic_allocator<std::byte>(&(mr.main)))
         .on(stream);
 #elif defined(ALPAKA_ACC_SYCL_ENABLED)
     auto queue = ::alpaka::getNativeHandle(q);
