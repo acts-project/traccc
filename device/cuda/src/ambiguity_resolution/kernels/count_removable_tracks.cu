@@ -70,6 +70,7 @@ __launch_bounds__(512) __global__ void count_removable_tracks(
     __shared__ int shared_n_meas[512];
     __shared__ measurement_id_type sh_meas_ids[512];
     __shared__ unsigned int sh_threads[512];
+    __shared__ int prefix[512];
     __shared__ unsigned int n_meas_total;
     __shared__ unsigned int bound;
     __shared__ unsigned int n_tracks_to_iterate;
@@ -237,6 +238,51 @@ __launch_bounds__(512) __global__ void count_removable_tracks(
     if (threadIndex == 0) {
         *(payload.n_meas_to_remove) = n_meas_total;
     }
+
+    __syncthreads();
+
+    auto n_meas_to_remove_temp = *(payload.n_meas_to_remove);
+
+    if (threadIndex == 0) {
+        *(payload.n_meas_to_remove) = 0;
+    }
+
+    __syncthreads();
+
+    int is_valid =
+        (threads[threadIndex] < *(payload.n_removable_tracks)) ? 1 : 0;
+
+    // TODO: Use better reduction algorithm
+    if (is_valid) {
+        atomicAdd(payload.n_meas_to_remove, 1);
+    }
+
+    __syncthreads();
+
+    // Exclusive scan (Hillis-Steele)
+    prefix[threadIndex] = is_valid;  // copy input
+    __syncthreads();
+
+    for (int offset = 1; offset < n_meas_to_remove_temp; offset <<= 1) {
+        int val = 0;
+        if (threadIndex >= offset) {
+            val = prefix[threadIndex - offset];
+        }
+        __syncthreads();
+        prefix[threadIndex] += val;
+        __syncthreads();
+    }
+
+    if (is_valid) {
+        prefix[threadIndex] -= 1;
+        sh_meas_ids[prefix[threadIndex]] = meas_to_remove[threadIndex];
+        sh_threads[prefix[threadIndex]] = threads[threadIndex];
+    }
+
+    __syncthreads();
+
+    meas_to_remove[threadIndex] = sh_meas_ids[threadIndex];
+    threads[threadIndex] = sh_threads[threadIndex];
 }
 
 }  // namespace traccc::cuda::kernels
