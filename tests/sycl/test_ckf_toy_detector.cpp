@@ -138,7 +138,6 @@ TEST_P(CkfToyDetectorTests, Run) {
     cfg.ptc_hypothesis = ptc;
     cfg.max_num_branches_per_seed = 500;
     cfg.propagation.navigation.search_window = search_window;
-    cfg.duplicate_removal_minimum_length = 100u;
 
     // Finding algorithm object
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(cfg,
