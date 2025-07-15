@@ -91,8 +91,6 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/ambiguity_resolution/kernels/count_removable_tracks.cuh"
   "src/ambiguity_resolution/kernels/count_shared_measurements.cu"
   "src/ambiguity_resolution/kernels/count_shared_measurements.cuh"
-  "src/ambiguity_resolution/kernels/exclusive_scan.cu"
-  "src/ambiguity_resolution/kernels/exclusive_scan.cuh"
   "src/ambiguity_resolution/kernels/find_max_shared.cu"
   "src/ambiguity_resolution/kernels/find_max_shared.cuh"
   "src/ambiguity_resolution/kernels/fill_inverted_ids.cu"
