@@ -167,6 +167,8 @@ void finding_performance_writer::write_common(
     // Iterate over the tracks.
     const std::size_t n_tracks = tracks.size();
 
+    std::size_t total_fake_tracks = 0;
+
     for (std::size_t i = 0; i < n_tracks; i++) {
 
         const std::vector<measurement>& found_measurements = tracks[i];
@@ -206,14 +208,15 @@ void finding_performance_writer::write_common(
         const bool reco_matched =
             static_cast<double>(n_major_hits) /
                 static_cast<double>(found_measurements.size()) >
-            m_cfg.matching_ratio;
+            m_cfg.truth_config.matching_ratio;
         const bool truth_matched =
             static_cast<double>(n_major_hits) /
                 static_cast<double>(truth_measurements.size()) >
-            m_cfg.matching_ratio;
+            m_cfg.truth_config.matching_ratio;
 
-        if ((!m_cfg.double_matching && reco_matched) ||
-            (m_cfg.double_matching && reco_matched && truth_matched)) {
+        if ((!m_cfg.truth_config.double_matching && reco_matched) ||
+            (m_cfg.truth_config.double_matching && reco_matched &&
+             truth_matched)) {
             const auto pid = major_ptc.particle_id;
             match_counter[pid]++;
         } else {
@@ -221,18 +224,37 @@ void finding_performance_writer::write_common(
                 const auto pid = phc.ptc.particle_id;
                 fake_counter[pid]++;
             }
+            total_fake_tracks++;
         }
     }
 
+    std::size_t total_truth_particles = 0;
+    std::size_t total_matched_truth_particles = 0;
+    std::size_t total_duplicate_tracks = 0;
+
     // For each truth particle...
     for (auto const& [pid, ptc] : evt_data.m_particle_map) {
+        std::size_t num_measurements = 0;
 
-        // Count only charged particles which satisfy pT_cut
-        if (ptc.charge == 0 || vector::perp(ptc.momentum) < m_cfg.pT_cut ||
-            ptc.vertex[2] < m_cfg.z_min || ptc.vertex[2] > m_cfg.z_max ||
-            vector::perp(ptc.vertex) > m_cfg.r_max) {
+        // Find the number of measurements belonging to this track
+        if (auto it = evt_data.m_ptc_to_meas_map.find(ptc);
+            it != evt_data.m_ptc_to_meas_map.end()) {
+            num_measurements = it->second.size();
+        } else {
             continue;
         }
+
+        // Count only charged particles which satisfy pT_cut and vertex cut
+        if (ptc.charge == 0 ||
+            vector::perp(ptc.momentum) < m_cfg.truth_config.pT_min ||
+            ptc.vertex[2] < m_cfg.truth_config.z_min ||
+            ptc.vertex[2] > m_cfg.truth_config.z_max ||
+            vector::perp(ptc.vertex) > m_cfg.truth_config.r_max ||
+            num_measurements < m_cfg.truth_config.min_track_candidates) {
+            continue;
+        }
+
+        total_truth_particles++;
 
         // Finds how many tracks were made solely by hits from the current truth
         // particle
@@ -241,7 +263,9 @@ void finding_performance_writer::write_common(
         auto it = match_counter.find(pid);
         if (it != match_counter.end()) {
             is_matched = true;
+            total_matched_truth_particles++;
             n_matched_seeds_for_particle = it->second;
+            total_duplicate_tracks += n_matched_seeds_for_particle - 1;
         }
 
         // Finds how many (fake) tracks were made with at least one hit from the
@@ -259,6 +283,25 @@ void finding_performance_writer::write_common(
         m_data->m_fake_tracks_plot_tool.fill(m_data->m_fake_tracks_plot_cache,
                                              ptc, fake_count);
     }
+
+    TRACCC_INFO("Total number of truth particles was "
+                << total_truth_particles);
+    TRACCC_INFO("Total number of found tracks was " << n_tracks);
+    TRACCC_INFO("Total number of matched particles was "
+                << total_matched_truth_particles);
+    TRACCC_INFO("Total number of duplicated tracks was "
+                << total_duplicate_tracks);
+    TRACCC_INFO("Total number of fake tracks was " << total_fake_tracks);
+    TRACCC_INFO("Total efficiency was "
+                << (100. * static_cast<double>(total_matched_truth_particles) /
+                    static_cast<double>(total_truth_particles))
+                << "%");
+    TRACCC_INFO("Total duplicate rate was "
+                << (static_cast<double>(total_duplicate_tracks) /
+                    static_cast<double>(total_matched_truth_particles)));
+    TRACCC_INFO("Total fake rate was "
+                << (static_cast<double>(total_fake_tracks) /
+                    static_cast<double>(total_truth_particles)));
 }
 
 /// For track finding
