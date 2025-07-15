@@ -17,8 +17,6 @@ namespace traccc::cuda::kernels {
 
 __global__ void find_max_shared(device::find_max_shared_payload payload) {
 
-    auto globalIndex = details::global_index1();
-
     if (*(payload.terminate) == 1) {
         return;
     }
@@ -28,6 +26,7 @@ __global__ void find_max_shared(device::find_max_shared_payload payload) {
     vecmem::device_vector<const unsigned int> n_shared(payload.n_shared_view);
     vecmem::device_vector<int> is_updated(payload.is_updated_view);
 
+    auto globalIndex = details::global_index1();
     if (globalIndex < is_updated.size()) {
         is_updated[globalIndex] = 0;
     }
@@ -40,12 +39,10 @@ __global__ void find_max_shared(device::find_max_shared_payload payload) {
     auto shared = n_shared[tid];
 
     for (int offset = 16; offset > 0; offset >>= 1) {
-        unsigned int other_tid = __shfl_down_sync(0xffffffff, tid, offset);
         unsigned int other_shared =
             __shfl_down_sync(0xffffffff, shared, offset);
 
         if (other_shared > shared) {
-            tid = other_tid;
             shared = other_shared;
         }
     }
