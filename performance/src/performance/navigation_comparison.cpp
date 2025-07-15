@@ -37,6 +37,7 @@ int navigation_comparison(
     const detray::propagation::config& prop_cfg, const std::string& input_dir,
     const unsigned int n_events, std::unique_ptr<const traccc::Logger> ilogger,
     const bool do_multiple_scattering, const bool do_energy_loss,
+    const bool use_acts_geoid,
     const traccc::pdg_particle<traccc::scalar> ptc_type,
     const std::array<traccc::scalar, traccc::e_bound_size>& stddevs,
     const traccc::vector3& B) {
@@ -53,7 +54,7 @@ int navigation_comparison(
         covfie::field<traccc::const_bfield_backend_t<traccc::scalar>>;
     using stepper_t =
         detray::rk_stepper<b_field_t::view_t, algebra_t,
-                           detray::unconstrained_step<traccc::scalar>,
+                           detray::constrained_step<traccc::scalar>,
                            detray::stepper_rk_policy<traccc::scalar>,
                            detray::stepping::print_inspector>;
 
@@ -85,8 +86,8 @@ int navigation_comparison(
 
     // Read the truth data in
     for (std::size_t i_event = 0u; i_event < n_events; ++i_event) {
-        traccc::event_data evt_data(input_dir, i_event, host_mr, false, &det,
-                                    data_format::csv);
+        traccc::event_data evt_data(input_dir, i_event, host_mr, use_acts_geoid,
+                                    &det, data_format::csv);
 
         assert(!evt_data.m_particle_map.empty());
         assert(!evt_data.m_ptc_to_meas_map.empty());
@@ -152,6 +153,12 @@ int navigation_comparison(
     // Initial state smearing
     vecmem::vector<std::array<scalar, e_bound_size>> stddevs_per_track{};
 
+    // Prepare the fitter state for every track
+    for (std::size_t i = 0u; i < tracks.size(); ++i) {
+        // @TODO: Adjust to track momentum
+        stddevs_per_track.push_back(stddevs);
+    }
+
     // Reusable actor states
     perigee_stopper::state stopper_state{};
     interactor::state interactor_state{};
@@ -177,7 +184,7 @@ int navigation_comparison(
             detray::navigation_validator::compare_to_navigation<
                 stepper_t, transporter, interactor, resetter>(
                 test_cfg, host_mr, det, names, ctx, field_view, prop_cfg,
-                truth_traces_fw, tracks, state_ref_tuples);
+                truth_traces_fw, tracks, state_ref_tuples, stddevs_per_track);
 
         std::cout << "BACKWARD - No KF" << std::endl
                   << "-----------------------------------\n";
@@ -196,7 +203,8 @@ int navigation_comparison(
             detray::navigation_validator::compare_to_navigation<
                 stepper_t, transporter, interactor, resetter, perigee_stopper>(
                 test_cfg, host_mr, det, names, ctx, field_view, prop_cfg,
-                truth_traces_bw, tracks, bw_state_ref_tuples);
+                truth_traces_bw, tracks, bw_state_ref_tuples,
+                stddevs_per_track);
 
         // Make sure some data was collected
         assert(trk_stats_fw.n_tracks > 0u);
@@ -318,8 +326,6 @@ int navigation_comparison(
             state_tuple.push_back(
                 detray::make_tuple(interactor_state, fit_actor_state));
             state_ref_tuple.push_back(setup_actor_states(state_tuple.back()));
-            // @TODO: Adjust to track momentum
-            stddevs_per_track.push_back(stddevs);
         }
 
         // Forward filter

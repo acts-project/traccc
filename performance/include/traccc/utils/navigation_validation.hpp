@@ -44,6 +44,7 @@ auto transcribe_to_trace(const typename detector_t::geometry_context ctx,
                          const traccc::io::csv::particle& particle,
                          const std::vector<traccc::io::csv::hit>& hits,
                          const scalar min_p = 50.f * traccc::unit<scalar>::MeV,
+                         const scalar max_rad = 20.f * traccc::unit<scalar>::mm,
                          const std::size_t n_hits_for_particle = 10u) {
     using intersection_t =
         typename candidate_type<detector_t>::intersection_type;
@@ -86,6 +87,11 @@ auto transcribe_to_trace(const typename detector_t::geometry_context ctx,
         candidates.emplace_back(pos, dir, intr, q, vector::norm(mom));
     }
 
+    // Remove secondaries
+    if (vector::perp(candidates.front().pos) > max_rad) {
+        return detray::dvector<candidate_type<detector_t>>{};
+    }
+
     return candidates;
 }
 
@@ -105,6 +111,7 @@ auto transcribe_to_trace(
     const std::map<traccc::particle, std::vector<traccc::measurement>>&
         ptc_to_meas_map,
     const scalar min_p = 50.f * traccc::unit<scalar>::MeV,
+    const scalar max_rad = 50.f * traccc::unit<scalar>::mm,
     const std::size_t n_meas_for_particle = 10u) {
 
     using intersection_t =
@@ -133,6 +140,7 @@ auto transcribe_to_trace(
         // TODO: Use correct track direction at measurement for line sf.
         const vector3 dir{vector::normalize(ptc.momentum)};
         const point3 glob_pos{sf.local_to_global(ctx, meas.local, dir)};
+
         // Rough estimate of intersection distance from origin
         const scalar path{vector::norm(glob_pos)};
 
@@ -144,6 +152,11 @@ auto transcribe_to_trace(
 
         // TODO: Don't use intial particle momentum
         candidates.emplace_back(glob_pos, dir, intr, q, p);
+    }
+
+    // Remove secondaries
+    if (vector::perp(candidates.front().pos) > max_rad) {
+        return detray::dvector<candidate_type<detector_t>>{};
     }
 
     return candidates;
