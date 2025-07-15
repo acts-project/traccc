@@ -41,6 +41,7 @@ int navigation_comparison(
     const detray::propagation::config& prop_cfg, const std::string& input_dir,
     const unsigned int n_events, std::unique_ptr<const traccc::Logger> ilogger,
     const bool do_multiple_scattering = true, const bool do_energy_loss = true,
+    const bool use_acts_geoid = false,
     const traccc::pdg_particle<traccc::scalar> ptc_type =
         traccc::muon<traccc::scalar>(),
     const std::array<traccc::scalar, traccc::e_bound_size>& stddevs =

@@ -59,6 +59,9 @@ generation::generation() : interface("Particle Generation Options") {
     m_desc.add_options()("particle-type",
                          po::value(&pdg_number)->default_value(pdg_number),
                          "PDG number for the particle type");
+    m_desc.add_options()("no-multiple-scattering",
+                         "Do not inlcude multiple scattering");
+    m_desc.add_options()("no-energy-loss", "Do not include energy loss");
 }
 
 void generation::read(const po::variables_map &vm) {
@@ -78,6 +81,12 @@ void generation::read(const po::variables_map &vm) {
     } else if (vm.count("gen-theta") && !vm["gen-theta"].defaulted()) {
         theta_range *= traccc::unit<float>::degree;
         eta_range = theta_to_eta_range(theta_range);
+    }
+    if (vm.count("no-multiple-scattering")) {
+        do_multiple_scattering = false;
+    }
+    if (vm.count("no-energy-loss")) {
+        do_energy_loss = false;
     }
 
     ptc_type = detail::particle_from_pdg_number<traccc::scalar>(pdg_number);
@@ -116,6 +125,14 @@ std::unique_ptr<configuration_printable> generation::as_printable() const {
         "Theta range", theta_range_ss.str()));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "PGD number", std::to_string(pdg_number)));
+    std::ostringstream multiple_scattering_ss;
+    multiple_scattering_ss << std::boolalpha << do_multiple_scattering;
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Include multiple scattering", multiple_scattering_ss.str()));
+    std::ostringstream energy_loss_ss;
+    energy_loss_ss << std::boolalpha << do_energy_loss;
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Include energy loss", energy_loss_ss.str()));
 
     return cat;
 }
