@@ -67,10 +67,10 @@ __launch_bounds__(512) __global__ void count_removable_tracks(
         return;
     }
 
-    __shared__ int shared_n_meas[512];
-    __shared__ measurement_id_type sh_meas_ids[512];
-    __shared__ unsigned int sh_threads[512];
-    __shared__ int prefix[512];
+    __shared__ int shared_n_meas[1024];
+    __shared__ measurement_id_type sh_meas_ids[1024];
+    __shared__ unsigned int sh_threads[1024];
+    __shared__ int prefix[1024];
     __shared__ unsigned int n_meas_total;
     __shared__ unsigned int bound;
     __shared__ unsigned int n_tracks_to_iterate;
