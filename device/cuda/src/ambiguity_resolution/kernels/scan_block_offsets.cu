@@ -41,7 +41,8 @@ __global__ void scan_block_offsets(device::scan_block_offsets_payload payload) {
     shared_temp[threadIndex] = value;
     __syncthreads();
 
-    // 2. Inclusive scan (Hillis-Steele style)
+    // 2. Inclusive scan to caculated the scanned blpck offset which is the
+    // prefix sum of block offsets
     for (int offset = 1; offset < n_blocks; offset *= 2) {
         int temp = 0;
         if (threadIndex >= offset) {
