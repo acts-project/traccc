@@ -76,7 +76,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
     // Performance writer
     traccc::finding_performance_writer find_performance_writer(
-        traccc::finding_performance_writer::config{},
+        traccc::finding_performance_writer::config{.truth_config =
+                                                       truth_finding_opts},
         logger().clone("FindingPerformanceWriter"));
     traccc::fitting_performance_writer fit_performance_writer(
         traccc::fitting_performance_writer::config{},
@@ -169,7 +170,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
         traccc::edm::track_candidate_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
         evt_data.generate_truth_candidates(truth_track_candidates, sg, host_mr,
-                                           truth_finding_opts.m_min_pt);
+                                           truth_finding_opts.m_pT_min);
 
         // Prepare truth seeds
         traccc::bound_track_parameters_collection_types::host seeds(mr.host);
