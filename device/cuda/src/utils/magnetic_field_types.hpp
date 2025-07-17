@@ -34,13 +34,12 @@ static_assert(
     "cuda::inhom_global_bfield_backend_t is not a valid field backend type");
 
 /// Inhomogeneous B-field backend type using CUDA texture memory
-template <typename scalar_t>
 using inhom_texture_bfield_backend_t = covfie::backend::affine<
-    covfie::backend::cuda_texture<covfie::vector::vector_d<scalar_t, 3>,
-                                  covfie::vector::vector_d<scalar_t, 3>>>;
+    covfie::backend::cuda_texture<covfie::vector::vector_d<float, 3>,
+                                  covfie::vector::vector_d<float, 3>>>;
 // Test that the type is a valid backend for a field
 static_assert(
-    covfie::concepts::field_backend<inhom_texture_bfield_backend_t<float>>,
+    covfie::concepts::field_backend<inhom_texture_bfield_backend_t>,
     "cuda::inhom_texture_bfield_backend_t is not a valid field backend type");
 
 }  // namespace traccc::cuda

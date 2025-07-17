@@ -38,7 +38,7 @@ magnetic_field make_magnetic_field(const magnetic_field& bfield,
                     in_field)};
         } else if (storage == magnetic_field_storage::texture_memory) {
             return magnetic_field{
-                covfie::field<cuda::inhom_texture_bfield_backend_t<float>>(
+                covfie::field<cuda::inhom_texture_bfield_backend_t>(
                     covfie::make_parameter_pack(
                         in_field.backend().get_configuration(),
                         in_field.backend()

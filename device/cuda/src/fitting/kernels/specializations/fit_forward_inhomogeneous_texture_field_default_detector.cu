@@ -19,7 +19,7 @@
 namespace traccc::cuda {
 using fitter = traccc::details::kalman_fitter_t<
     default_detector::device,
-    covfie::field<traccc::cuda::inhom_texture_bfield_backend_t<float>>::view_t>;
+    covfie::field<traccc::cuda::inhom_texture_bfield_backend_t>::view_t>;
 
 template void fit_forward<fitter>(const dim3& grid_size, const dim3& block_size,
                                   std::size_t shared_mem_size,

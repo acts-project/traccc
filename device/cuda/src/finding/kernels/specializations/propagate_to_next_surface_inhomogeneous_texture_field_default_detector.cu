@@ -18,8 +18,7 @@
 
 namespace traccc::cuda {
 
-using bfield_t =
-    covfie::field<cuda::inhom_texture_bfield_backend_t<float>>::view_t;
+using bfield_t = covfie::field<cuda::inhom_texture_bfield_backend_t>::view_t;
 using propagator_t =
     traccc::details::ckf_propagator_t<default_detector::device, bfield_t>;
 
