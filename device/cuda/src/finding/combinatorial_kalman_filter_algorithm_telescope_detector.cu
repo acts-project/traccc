@@ -29,9 +29,14 @@ combinatorial_kalman_filter_algorithm::operator()(
         return details::combinatorial_kalman_filter<telescope_detector::device>(
             det, bfield.as_view<const_bfield_backend_t<scalar>>(), measurements,
             seeds, m_config, m_mr, m_copy, logger(), m_stream, m_warp_size);
-    } else if (bfield.is<cuda::inhom_bfield_backend_t<scalar>>()) {
+    } else if (bfield.is<cuda::inhom_global_bfield_backend_t<scalar>>()) {
         return details::combinatorial_kalman_filter<telescope_detector::device>(
-            det, bfield.as_view<cuda::inhom_bfield_backend_t<scalar>>(),
+            det, bfield.as_view<cuda::inhom_global_bfield_backend_t<scalar>>(),
+            measurements, seeds, m_config, m_mr, m_copy, logger(), m_stream,
+            m_warp_size);
+    } else if (bfield.is<cuda::inhom_texture_bfield_backend_t>()) {
+        return details::combinatorial_kalman_filter<telescope_detector::device>(
+            det, bfield.as_view<cuda::inhom_texture_bfield_backend_t>(),
             measurements, seeds, m_config, m_mr, m_copy, logger(), m_stream,
             m_warp_size);
     } else {
