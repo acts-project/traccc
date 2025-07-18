@@ -24,6 +24,7 @@
 #include "traccc/options/track_finding.hpp"
 #include "traccc/options/track_fitting.hpp"
 #include "traccc/options/track_propagation.hpp"
+#include "traccc/options/track_resolution.hpp"
 #include "traccc/options/track_seeding.hpp"
 
 // I/O include(s).
@@ -75,6 +76,7 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
     opts::track_seeding seeding_opts;
     opts::track_finding finding_opts;
     opts::track_propagation propagation_opts;
+    opts::track_resolution resolution_opts;
     opts::track_fitting fitting_opts;
     opts::throughput throughput_opts;
     opts::threading threading_opts;
@@ -159,6 +161,8 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
         finding_opts);
     finding_cfg.propagation = propagation_config;
 
+    ambiguity_resolution_config resolution_cfg(resolution_opts);
+
     typename FULL_CHAIN_ALG::fitting_algorithm::config_type fitting_cfg(
         fitting_opts);
     fitting_cfg.propagation = propagation_config;
@@ -180,6 +184,7 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
              {seeding_opts.seedfinder},
              seeding_opts.seedfilter,
              finding_cfg,
+             resolution_cfg,
              fitting_cfg,
              det_descr,
              field,
