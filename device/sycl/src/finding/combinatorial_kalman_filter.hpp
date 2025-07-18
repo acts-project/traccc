@@ -24,10 +24,12 @@
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
 #include "traccc/finding/device/apply_interaction.hpp"
 #include "traccc/finding/device/build_tracks.hpp"
+#include "traccc/finding/device/fill_finding_duplicate_removal_sort_keys.hpp"
 #include "traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
 #include "traccc/finding/device/find_tracks.hpp"
 #include "traccc/finding/device/make_barcode_sequence.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
+#include "traccc/finding/device/remove_duplicates.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/projections.hpp"
@@ -48,6 +50,10 @@ template <typename T>
 struct apply_interaction {};
 template <typename T>
 struct find_tracks {};
+template <typename T>
+struct fill_finding_duplicate_removal_sort_keys {};
+template <typename T>
+struct remove_duplicates {};
 template <typename T>
 struct fill_finding_propagation_sort_keys {};
 template <typename T>
@@ -332,6 +338,91 @@ combinatorial_kalman_filter(
             step_to_link_idx_map[step + 1] = copy.get_size(links_buffer);
             n_candidates =
                 step_to_link_idx_map[step + 1] - step_to_link_idx_map[step];
+        }
+
+        /*
+         * On later steps, we can duplicate removal which will attempt to find
+         * tracks that are propagated multiple times and deduplicate them.
+         */
+        if (n_candidates > 0 &&
+            step >= config.duplicate_removal_minimum_length) {
+            vecmem::data::vector_buffer<unsigned int>
+                link_last_measurement_buffer(n_candidates, mr.main);
+            vecmem::data::vector_buffer<unsigned int> param_ids_buffer(
+                n_candidates, mr.main);
+
+            /*
+             * First, we sort the tracks by the index of their final
+             * measurement which is critical to ensure good performance.
+             */
+            queue
+                .submit([&](::sycl::handler& h) {
+                    h.parallel_for<
+                        kernels::fill_finding_duplicate_removal_sort_keys<
+                            kernel_t>>(
+                        calculate1DimNdRange(n_candidates, 256),
+                        [links_view = vecmem::get_data(links_buffer),
+                         param_liveness_view =
+                             vecmem::get_data(param_liveness_buffer),
+                         link_last_measurement_view =
+                             vecmem::get_data(link_last_measurement_buffer),
+                         param_ids_view = vecmem::get_data(param_ids_buffer),
+                         n_candidates,
+                         curr_links_idx = step_to_link_idx_map[step],
+                         n_measurements](::sycl::nd_item<1> item) {
+                            device::fill_finding_duplicate_removal_sort_keys(
+                                details::global_index(item),
+                                {.links_view = links_view,
+                                 .param_liveness_view = param_liveness_view,
+                                 .link_last_measurement_view =
+                                     link_last_measurement_view,
+                                 .param_ids_view = param_ids_view,
+                                 .n_links = n_candidates,
+                                 .curr_links_idx = curr_links_idx,
+                                 .n_measurements = n_measurements});
+                        });
+                })
+                .wait_and_throw();
+
+            vecmem::device_vector<unsigned int> keys_device(
+                link_last_measurement_buffer);
+            vecmem::device_vector<unsigned int> param_ids_device(
+                param_ids_buffer);
+            oneapi::dpl::sort_by_key(policy, keys_device.begin(),
+                                     keys_device.end(),
+                                     param_ids_device.begin());
+            queue.wait_and_throw();
+
+            /*
+             * Then, we run the actual duplicate removal kernel.
+             */
+            queue
+                .submit([&](::sycl::handler& h) {
+                    h.parallel_for<kernels::remove_duplicates<kernel_t>>(
+                        calculate1DimNdRange(n_candidates, 256),
+                        [config, links_view = vecmem::get_data(links_buffer),
+                         link_last_measurement_view =
+                             vecmem::get_data(link_last_measurement_buffer),
+                         param_ids_view = vecmem::get_data(param_ids_buffer),
+                         param_liveness_view =
+                             vecmem::get_data(param_liveness_buffer),
+                         n_candidates,
+                         curr_links_idx = step_to_link_idx_map[step],
+                         n_measurements, step](::sycl::nd_item<1> item) {
+                            device::remove_duplicates(
+                                details::global_index(item), config,
+                                {.links_view = links_view,
+                                 .link_last_measurement_view =
+                                     link_last_measurement_view,
+                                 .param_ids_view = param_ids_view,
+                                 .param_liveness_view = param_liveness_view,
+                                 .n_links = n_candidates,
+                                 .curr_links_idx = curr_links_idx,
+                                 .n_measurements = n_measurements,
+                                 .step = step});
+                        });
+                })
+                .wait_and_throw();
         }
 
         if (step == config.max_track_candidates_per_track - 1) {

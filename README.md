@@ -4,17 +4,17 @@ Demonstrator tracking chain for accelerators.
 
 ## Features
 
-| Category           | Algorithms             | CPU | CUDA | SYCL | Alpaka | Kokkos | Futhark |
-| ------------------ | ---------------------- | --- | ---- | ---- | ------ | ------ | ------- |
-| **Clusterization** | CCL / FastSv / etc.    | ✅  | ✅   | ✅   | 🟡     | ⚪     | ✅      |
-|                    | Measurement creation   | ✅  | ✅   | ✅   | 🟡     | ⚪     | ✅      |
-| **Seeding**        | Spacepoint formation   | ✅  | ✅   | ✅   | 🟡     | ⚪     | ⚪      |
-|                    | Spacepoint binning     | ✅  | ✅   | ✅   | ✅     | ✅     | ⚪      |
-|                    | Seed finding           | ✅  | ✅   | ✅   | ✅     | ⚪     | ⚪      |
-|                    | Track param estimation | ✅  | ✅   | ✅   | ✅     | ⚪     | ⚪      |
-| **Track finding**  | Combinatorial KF       | ✅  | ✅   | ✅   | 🟡     | ⚪     | ⚪      |
-| **Ambiguity resolution**  | Greedy resolver   | ✅  | 🟡   |  ⚪  | ⚪     | ⚪     | ⚪      |
-| **Track fitting**  | KF                     | ✅  | ✅   | 🟡   | ⚪     | ⚪     | ⚪      |
+| Category                  | Algorithms             | CPU | CUDA | SYCL | Alpaka | Kokkos | Futhark |
+| ------------------------- | ---------------------- | --- | ---- | ---- | ------ | ------ | ------- |
+| **Clusterization**        | CCL / FastSv / etc.    | ✅  | ✅   | ✅   | ✅     | ⚪     | ✅      |
+|                           | Measurement creation   | ✅  | ✅   | ✅   | ✅     | ⚪     | ✅      |
+| **Seeding**               | Spacepoint formation   | ✅  | ✅   | ✅   | ✅     | ⚪     | ⚪      |
+|                           | Spacepoint binning     | ✅  | ✅   | ✅   | ✅     | ✅     | ⚪      |
+|                           | Seed finding           | ✅  | ✅   | ✅   | ✅     | ⚪     | ⚪      |
+|                           | Track param estimation | ✅  | ✅   | ✅   | ✅     | ⚪     | ⚪      |
+| **Track finding**         | Combinatorial KF       | ✅  | ✅   | ✅   | ✅     | ⚪     | ⚪      |
+| **Ambiguity resolution**  | Greedy resolver        | ✅  | 🟡   | ⚪   | ⚪     | ⚪     | ⚪      |
+| **Track fitting**         | KF                     | ✅  | ✅   | 🟡   | ✅     | ⚪     | ⚪      |
 
 ✅: exists, 🟡: work started, ⚪: work not started yet
 

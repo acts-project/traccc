@@ -146,6 +146,9 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
 
     // Set the measurement dimensionality.
     m.meas_dim = module_dd.dimensions();
+
+    // Set the measurement's subspace.
+    m.subs = module_dd.subspace();
 }
 
 }  // namespace traccc::details

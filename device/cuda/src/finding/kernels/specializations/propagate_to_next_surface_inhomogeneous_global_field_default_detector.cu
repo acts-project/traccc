@@ -18,9 +18,10 @@
 
 namespace traccc::cuda {
 
-using bfield_t = covfie::field<cuda::inhom_bfield_backend_t<scalar>>::view_t;
+using bfield_t =
+    covfie::field<cuda::inhom_global_bfield_backend_t<scalar>>::view_t;
 using propagator_t =
-    traccc::details::ckf_propagator_t<telescope_detector::device, bfield_t>;
+    traccc::details::ckf_propagator_t<default_detector::device, bfield_t>;
 
 template void propagate_to_next_surface<propagator_t, bfield_t>(
     const dim3& grid_size, const dim3& block_size, std::size_t shared_mem_size,

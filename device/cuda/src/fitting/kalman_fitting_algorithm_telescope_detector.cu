@@ -26,9 +26,14 @@ kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
             det, bfield.as_view<const_bfield_backend_t<scalar>>(),
             track_candidates, m_config, m_mr, m_copy.get(), m_stream,
             m_warp_size);
-    } else if (bfield.is<cuda::inhom_bfield_backend_t<scalar>>()) {
+    } else if (bfield.is<cuda::inhom_global_bfield_backend_t<scalar>>()) {
         return details::kalman_fitting<telescope_detector::device>(
-            det, bfield.as_view<cuda::inhom_bfield_backend_t<scalar>>(),
+            det, bfield.as_view<cuda::inhom_global_bfield_backend_t<scalar>>(),
+            track_candidates, m_config, m_mr, m_copy.get(), m_stream,
+            m_warp_size);
+    } else if (bfield.is<cuda::inhom_texture_bfield_backend_t>()) {
+        return details::kalman_fitting<telescope_detector::device>(
+            det, bfield.as_view<cuda::inhom_texture_bfield_backend_t>(),
             track_candidates, m_config, m_mr, m_copy.get(), m_stream,
             m_warp_size);
     } else {

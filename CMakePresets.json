@@ -90,6 +90,42 @@
          }
       },
       {
+         "name" : "alpaka-fp32-cuda",
+         "displayName" : "Alpaka CUDA FP32 Code Development",
+         "inherits": ["alpaka-fp32", "cuda-fp32"],
+         "cacheVariables": {
+            "alpaka_ACC_GPU_CUDA_ENABLE" : "TRUE"
+         }
+      },
+      {
+         "name" : "alpaka-fp64-cuda",
+         "displayName" : "Alpaka CUDA FP64 Code Development",
+         "inherits": ["alpaka-fp64", "cuda-fp64"],
+         "cacheVariables": {
+            "alpaka_ACC_GPU_CUDA_ENABLE" : "TRUE"
+         }
+      },
+      {
+         "name": "alpaka-fp32-hip",
+         "displayName": "Alpaka HIP FP32 Code Development",
+         "inherits": ["alpaka-fp32"],
+         "cacheVariables": {
+            "alpaka_ACC_GPU_HIP_ENABLE" : "TRUE",
+            "TRACCC_BUILD_HIP": "ON",
+            "TRACCC_SETUP_ROCTHRUST": "ON"
+         }
+      },
+      {
+         "name": "alpaka-fp64-hip",
+         "displayName": "Alpaka HIP FP64 Code Development",
+         "inherits": ["alpaka-fp64"],
+         "cacheVariables": {
+            "alpaka_ACC_GPU_HIP_ENABLE" : "TRUE",
+            "TRACCC_BUILD_HIP": "ON",
+            "TRACCC_SETUP_ROCTHRUST": "ON"
+         }
+      },
+      {
          "name" : "kokkos-fp32",
          "displayName" : "Kokkos FP32 Code Development",
          "inherits": ["base-fp32"],
