@@ -27,6 +27,10 @@ traccc_add_executable( truth_fitting_example_cuda "truth_fitting_example_cuda.cp
    LINK_LIBRARIES vecmem::core vecmem::cuda traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::cuda
                   traccc::options traccc_examples_common )
+traccc_add_executable( misaligned_truth_fitting_example_cuda "misaligned_truth_fitting_example_cuda.cpp"
+   LINK_LIBRARIES vecmem::core vecmem::cuda traccc::io traccc::performance
+                  traccc::core traccc::device_common traccc::cuda
+                  traccc::options traccc_examples_common )
 #
 # Set up the "throughput applications".
 #
