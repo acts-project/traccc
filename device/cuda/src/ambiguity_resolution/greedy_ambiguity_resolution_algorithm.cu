@@ -233,7 +233,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     // Unique measurement ids
     vecmem::data::vector_buffer<measurement_id_type>
-        meas_id_to_unique_id_buffer{max_meas.measurement_id, m_mr.main};
+        meas_id_to_unique_id_buffer{max_meas.measurement_id + 1, m_mr.main};
 
     // Make meas_id to meas vector
     {
