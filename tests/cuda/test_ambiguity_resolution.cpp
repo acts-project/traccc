@@ -938,7 +938,7 @@ TEST_P(CUDAGreedyResolutionCompareToCPU, Comparison) {
 };
 
 INSTANTIATE_TEST_SUITE_P(
-    Standard, CUDAGreedyResolutionCompareToCPU,
+    CUDAStandard, CUDAGreedyResolutionCompareToCPU,
     ::testing::Values(std::make_tuple(5u, 50000u,
                                       std::array<std::size_t, 2u>{1u, 10u},
                                       20000u, true),
@@ -947,7 +947,7 @@ INSTANTIATE_TEST_SUITE_P(
                                       20000u, false)));
 
 INSTANTIATE_TEST_SUITE_P(
-    Sparse, CUDAGreedyResolutionCompareToCPU,
+    CUDASparse, CUDAGreedyResolutionCompareToCPU,
     ::testing::Values(std::make_tuple(3u, 5000u,
                                       std::array<std::size_t, 2u>{3u, 10u},
                                       1000000u, true),
@@ -956,7 +956,7 @@ INSTANTIATE_TEST_SUITE_P(
                                       1000000u, false)));
 
 INSTANTIATE_TEST_SUITE_P(
-    Dense, CUDAGreedyResolutionCompareToCPU,
+    CUDADense, CUDAGreedyResolutionCompareToCPU,
     ::testing::Values(std::make_tuple(3u, 5000u,
                                       std::array<std::size_t, 2u>{3u, 10u},
                                       100u, true),
@@ -965,7 +965,7 @@ INSTANTIATE_TEST_SUITE_P(
                                       100u, false)));
 
 INSTANTIATE_TEST_SUITE_P(
-    Long, CUDAGreedyResolutionCompareToCPU,
+    CUDALong, CUDAGreedyResolutionCompareToCPU,
     ::testing::Values(std::make_tuple(3u, 10000u,
                                       std::array<std::size_t, 2u>{3u, 500u},
                                       10000u, true),
@@ -974,7 +974,7 @@ INSTANTIATE_TEST_SUITE_P(
                                       10000u, false)));
 
 INSTANTIATE_TEST_SUITE_P(
-    Simple, CUDAGreedyResolutionCompareToCPU,
+    CUDASimple, CUDAGreedyResolutionCompareToCPU,
     ::testing::Values(
         std::make_tuple(3u, 5u, std::array<std::size_t, 2u>{3u, 5u}, 10u, true),
         std::make_tuple(3u, 5u, std::array<std::size_t, 2u>{3u, 5u}, 10u,
