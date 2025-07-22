@@ -35,12 +35,10 @@ __global__ void remove_tracks(device::remove_tracks_payload payload) {
     __shared__ unsigned int shared_tids[1024];
     __shared__ measurement_id_type sh_meas_ids[1024];
     __shared__ unsigned int sh_threads[1024];
-    __shared__ unsigned int n_accepted_prev;
 
     auto threadIndex = threadIdx.x;
 
-    bool active = false;
-    bool active2 = false;
+    bool is_valid_thread = false;
     bool is_duplicate = true;
 
     shared_tids[threadIndex] = std::numeric_limits<unsigned int>::max();
@@ -67,22 +65,23 @@ __global__ void remove_tracks(device::remove_tracks_payload payload) {
         payload.meas_to_remove_view);
     vecmem::device_vector<unsigned int> threads(payload.threads_view);
 
-    if (threadIndex == 0) {
-        n_accepted_prev = *(payload.n_accepted);
-        (*payload.n_accepted) -= *(payload.n_removable_tracks);
-    }
+    const unsigned n_accepted_prev = *(payload.n_accepted);
 
     __syncthreads();
+
+    if (threadIndex == 0) {
+        (*payload.n_accepted) -= *(payload.n_removable_tracks);
+    }
 
     if (threadIndex < *(payload.n_meas_to_remove)) {
         sh_meas_ids[threadIndex] = meas_to_remove[threadIndex];
         sh_threads[threadIndex] = threads[threadIndex];
-        active2 = true;
+        is_valid_thread = true;
     }
 
     __syncthreads();
 
-    if (active2) {
+    if (is_valid_thread) {
 
         const auto id = sh_meas_ids[threadIndex];
         is_duplicate = false;
@@ -95,7 +94,9 @@ __global__ void remove_tracks(device::remove_tracks_payload payload) {
         }
     }
 
-    if (!is_duplicate && active2) {
+    bool active = false;
+
+    if (!is_duplicate && is_valid_thread) {
 
         const auto id = sh_meas_ids[threadIndex];
         const auto unique_meas_idx = meas_id_to_unique_id.at(id);
