@@ -17,6 +17,8 @@ namespace traccc::device {
 /// Triplets of bottom, middle and top spacepoints
 struct device_triplet {
     // top spacepoint location in internal spacepoint container
+    sp_location spB;
+    sp_location spM;
     sp_location spT;
 
     using link_type = device::triplet_counter_collection_types::host::size_type;

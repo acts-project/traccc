@@ -37,6 +37,7 @@
 #include "traccc/options/track_fitting.hpp"
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/options/track_seeding.hpp"
+#include "traccc/options/truth_finding.hpp"
 #include "traccc/performance/collection_comparator.hpp"
 #include "traccc/performance/soa_comparator.hpp"
 #include "traccc/performance/timer.hpp"
@@ -69,6 +70,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::magnetic_field& bfield_opts,
             const traccc::opts::performance& performance_opts,
             const traccc::opts::accelerator& accelerator_opts,
+            const traccc::opts::truth_finding& truth_finding_opts,
             std::unique_ptr<const traccc::Logger> ilogger) {
     TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
@@ -84,7 +86,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         traccc::seeding_performance_writer::config{},
         logger().clone("SeedingPerformanceWriter"));
     traccc::finding_performance_writer find_performance_writer(
-        traccc::finding_performance_writer::config{},
+        traccc::finding_performance_writer::config{.truth_config =
+                                                       truth_finding_opts},
         logger().clone("FindingPerformanceWriter"));
     traccc::fitting_performance_writer fit_performance_writer(
         traccc::fitting_performance_writer::config{},
@@ -474,10 +477,12 @@ int main(int argc, char* argv[]) {
     traccc::opts::track_fitting fitting_opts;
     traccc::opts::performance performance_opts;
     traccc::opts::accelerator accelerator_opts;
+    traccc::opts::truth_finding truth_finding_opts;
     traccc::opts::program_options program_opts{
         "Full Tracking Chain Using CUDA (without clusterization)",
         {detector_opts, bfield_opts, input_opts, seeding_opts, finding_opts,
-         propagation_opts, fitting_opts, performance_opts, accelerator_opts},
+         propagation_opts, fitting_opts, performance_opts, accelerator_opts,
+         truth_finding_opts},
         argc,
         argv,
         logger->cloneWithSuffix("Options")};
@@ -485,5 +490,5 @@ int main(int argc, char* argv[]) {
     // Run the application.
     return seq_run(seeding_opts, finding_opts, propagation_opts, fitting_opts,
                    input_opts, detector_opts, bfield_opts, performance_opts,
-                   accelerator_opts, logger->clone());
+                   accelerator_opts, truth_finding_opts, logger->clone());
 }

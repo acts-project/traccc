@@ -110,8 +110,13 @@ inline void find_triplets(
 
             // Add triplet to jagged vector
             triplets.at(posTriplets++) = device_triplet(
-                {spT_loc, globalIndex, curvature,
-                 -impact_parameter * filter_config.impactWeightFactor,
+                {spB_loc, spM_loc, spT_loc, globalIndex, curvature,
+                 -impact_parameter * filter_config.impactWeightFactor -
+                     std::abs(lb.Zo()) * filter_config.zOriginWeightFactor -
+                     std::abs(lb.Zo() - lt.Zo()) *
+                         filter_config.zOriginDeltaWeightFactor +
+                     1000.f * std::abs(curvature) -
+                     std::abs(lb.cotTheta() - lt.cotTheta()),
                  lb.Zo()});
         }
     }
