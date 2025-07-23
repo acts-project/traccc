@@ -23,6 +23,8 @@
 #include "traccc/seeding/device/count_triplets.hpp"
 #include "traccc/seeding/device/find_doublets.hpp"
 #include "traccc/seeding/device/find_triplets.hpp"
+#include "traccc/seeding/device/make_mid_bot_lincircles.hpp"
+#include "traccc/seeding/device/make_mid_top_lincircles.hpp"
 #include "traccc/seeding/device/reduce_triplet_counts.hpp"
 #include "traccc/seeding/device/select_seeds.hpp"
 #include "traccc/seeding/device/update_triplet_weights.hpp"
@@ -41,6 +43,14 @@ class count_doublets;
 
 /// Class identifying the kernel running @c traccc::device::find_doublets
 class find_doublets;
+
+/// Class identifying the kernel running @c
+/// traccc::device::make_mid_bot_lincircles
+class make_mid_bot_lincircles;
+
+/// Class identifying the kernel running @c
+/// traccc::device::make_mid_top_lincircles
+class make_mid_top_lincircles;
 
 /// Class identifying the kernel running @c traccc::device::count_triplets
 class count_triplets;
@@ -181,6 +191,55 @@ edm::seed_collection::buffer seed_finding::operator()(
                 });
         });
 
+    // Wait here for the find_doublets kernel to finish
+    find_doublets_kernel.wait_and_throw();
+
+    // Create buffers to compute lin circles into
+    vecmem::data::vector_buffer<lin_circle> midBotLinCircles{
+        globalCounter_host->m_nMidBot, m_mr.main};
+    m_copy.setup(midBotLinCircles)->wait();
+    vecmem::data::vector_buffer<lin_circle> midTopLinCircles{
+        globalCounter_host->m_nMidTop, m_mr.main};
+    m_copy.setup(midBotLinCircles)->wait();
+
+    ::sycl::event makeMidBotLinCirclesKernel, makeMidTopLinCirclesKernel;
+
+    {
+        const unsigned int nThreads = 128;
+        const auto midBotRange = details::calculate1DimNdRange(
+            globalCounter_host->m_nMidBot, nThreads);
+        const auto midTopRange = details::calculate1DimNdRange(
+            globalCounter_host->m_nMidBot, nThreads);
+
+        makeMidBotLinCirclesKernel =
+            details::get_queue(m_queue).submit([&](::sycl::handler& h) {
+                h.parallel_for<kernels::make_mid_bot_lincircles>(
+                    midBotRange,
+                    [spacepoints_view, g2_view, doublet_counter_view, mb_view,
+                     mid_bot_circles_view = vecmem::get_data(midBotLinCircles)](
+                        ::sycl::nd_item<1> item) {
+                        device::make_mid_bot_lincircles(
+                            details::global_index(item), mb_view,
+                            doublet_counter_view, spacepoints_view, g2_view,
+                            mid_bot_circles_view);
+                    });
+            });
+
+        makeMidTopLinCirclesKernel =
+            details::get_queue(m_queue).submit([&](::sycl::handler& h) {
+                h.parallel_for<kernels::make_mid_top_lincircles>(
+                    midTopRange,
+                    [spacepoints_view, g2_view, doublet_counter_view, mt_view,
+                     mid_top_circles_view = vecmem::get_data(midTopLinCircles)](
+                        ::sycl::nd_item<1> item) {
+                        device::make_mid_bot_lincircles(
+                            details::global_index(item), mt_view,
+                            doublet_counter_view, spacepoints_view, g2_view,
+                            mid_top_circles_view);
+                    });
+            });
+    }
+
     // Set up the triplet counter buffers and their views
     device::triplet_counter_spM_collection_types::buffer
         triplet_counter_spM_buffer = {doublet_counter_buffer_size, m_mr.main};
@@ -202,8 +261,8 @@ edm::seed_collection::buffer seed_finding::operator()(
     const auto tripletCountRange = details::calculate1DimNdRange(
         globalCounter_host->m_nMidBot, tripletCountLocalSize);
 
-    // Wait here for the find_doublets kernel to finish
-    find_doublets_kernel.wait_and_throw();
+    makeMidBotLinCirclesKernel.wait_and_throw();
+    makeMidTopLinCirclesKernel.wait_and_throw();
 
     // Count the number of triplets that we need to produce.
     auto count_triplets_kernel =
@@ -212,12 +271,15 @@ edm::seed_collection::buffer seed_finding::operator()(
                 tripletCountRange,
                 [config = m_seedfinder_config, spacepoints_view, g2_view,
                  doublet_counter_view, mb_view, mt_view,
-                 triplet_counter_spM_view,
-                 triplet_counter_midBot_view](::sycl::nd_item<1> item) {
+                 triplet_counter_spM_view, triplet_counter_midBot_view,
+                 mid_bot_circles_view = vecmem::get_data(midBotLinCircles),
+                 mid_top_circles_view = vecmem::get_data(midTopLinCircles)](
+                    ::sycl::nd_item<1> item) {
                     device::count_triplets(
                         details::global_index(item), config, spacepoints_view,
                         g2_view, doublet_counter_view, mb_view, mt_view,
-                        triplet_counter_spM_view, triplet_counter_midBot_view);
+                        triplet_counter_spM_view, triplet_counter_midBot_view,
+                        mid_bot_circles_view, mid_top_circles_view);
                 });
         });
 
@@ -272,13 +334,16 @@ edm::seed_collection::buffer seed_finding::operator()(
                 [config = m_seedfinder_config,
                  filter_config = m_seedfilter_config, spacepoints_view, g2_view,
                  doublet_counter_view, mt_view, triplet_counter_spM_view,
-                 triplet_counter_midBot_view,
-                 triplet_view](::sycl::nd_item<1> item) {
+                 triplet_counter_midBot_view, triplet_view,
+                 mid_bot_circles_view = vecmem::get_data(midBotLinCircles),
+                 mid_top_circles_view = vecmem::get_data(midTopLinCircles)](
+                    ::sycl::nd_item<1> item) {
                     device::find_triplets(
                         details::global_index(item), config, filter_config,
                         spacepoints_view, g2_view, doublet_counter_view,
                         mt_view, triplet_counter_spM_view,
-                        triplet_counter_midBot_view, triplet_view);
+                        triplet_counter_midBot_view, mid_bot_circles_view,
+                        mid_top_circles_view, triplet_view);
                 });
         });
 
