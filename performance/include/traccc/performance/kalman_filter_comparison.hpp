@@ -35,7 +35,7 @@
 /// @param ptc_type the particle hypothesis to use
 /// @param stddevs the initial track parameters smearing (TODO: Adjust to qop)
 /// @param B constant magnetic field vector
-int navigation_comparison(
+int kalman_filter_comparison(
     const traccc::default_detector::host& det,
     const traccc::default_detector::host::name_map& names,
     const detray::propagation::config& prop_cfg, const std::string& input_dir,

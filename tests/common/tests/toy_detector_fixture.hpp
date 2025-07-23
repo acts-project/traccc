@@ -39,7 +39,7 @@ class ToyDetectorFixture : public testing::Test {
 
     /// Measurement smearing parameters
     static constexpr std::array<scalar, 2u> smearing{
-        10.f * traccc::unit<scalar>::um, 25.f * traccc::unit<scalar>::um};
+        1.f * traccc::unit<scalar>::um, 1.f * traccc::unit<scalar>::um};
 
     // Grid search window
     static const inline std::array<detray::dindex, 2> search_window{3u, 3u};
