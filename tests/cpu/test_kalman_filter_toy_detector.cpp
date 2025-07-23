@@ -9,7 +9,7 @@
 #include "traccc/bfield/construct_const_bfield.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/geometry/detector.hpp"
-#include "traccc/performance/navigation_comparison.hpp"
+#include "traccc/performance/kalman_filter_comparison.hpp"
 #include "traccc/simulation/event_generators.hpp"
 #include "traccc/simulation/simulator.hpp"
 
@@ -25,18 +25,18 @@
 
 using namespace traccc;
 
-constexpr std::size_t n_events{5u};
+constexpr std::size_t n_events{10u};
 constexpr std::size_t n_tracks{1000u};
 constexpr detray::pdg_particle ptc_type{detray::muon<scalar>()};
 
 /// Test suite for navigation tests for the CKF
-class CKF_navigation_test
+class KF_intergration_test_toy_detector
     : public ToyDetectorFixture,
       public ::testing::WithParamInterface<std::tuple<
           float, float, float, float, std::size_t, bool, bool, bool>> {};
 
 /// Test the detray navigation on simulated tracks
-TEST_P(CKF_navigation_test, toy_detector) {
+TEST_P(KF_intergration_test_toy_detector, toy_detector) {
 
     using algebra_t = traccc::default_algebra;
     using detector_t = traccc::default_detector::host;
@@ -50,7 +50,8 @@ TEST_P(CKF_navigation_test, toy_detector) {
     vecmem::host_memory_resource host_mr;
 
     std::unique_ptr<const traccc::Logger> logger = traccc::getDefaultLogger(
-        "CKF_navigation_test_toy_detector", traccc::Logging::Level::INFO);
+        "KF_intergration_test_toy_detector_toy_detector",
+        traccc::Logging::Level::INFO);
 
     detray::io::detector_reader_config reader_cfg{};
     reader_cfg.add_file("toy_detector_geometry.json")
@@ -101,7 +102,7 @@ TEST_P(CKF_navigation_test, toy_detector) {
     prop_cfg.navigation.max_mask_tolerance =
         std::get<1>(GetParam()) + 3.f * traccc::unit<float>::mm;
 
-    const int success = navigation_comparison(
+    const int success = kalman_filter_comparison(
         det, names, prop_cfg, "detray_simulation/toy_detector", n_events,
         logger->clone(), std::get<6>(GetParam()), std::get<7>(GetParam()),
         false, ptc_type, stddevs, B);
@@ -121,74 +122,74 @@ TEST_P(CKF_navigation_test, toy_detector) {
 
 // No material - navigation should work
 INSTANTIATE_TEST_SUITE_P(
-    pT_100GeV_no_mat, CKF_navigation_test,
+    pT_100GeV_no_mat, KF_intergration_test_toy_detector,
     ::testing::Values(std::make_tuple(100.f * traccc::unit<scalar>::GeV,
                                       1e-5f * traccc::unit<float>::mm, 0.001f,
                                       0.001f, 1u, false, false, false)));
 
 INSTANTIATE_TEST_SUITE_P(
-    pT_10GeV_no_mat, CKF_navigation_test,
+    pT_10GeV_no_mat, KF_intergration_test_toy_detector,
     ::testing::Values(std::make_tuple(10.f * traccc::unit<scalar>::GeV,
                                       1e-5f * traccc::unit<float>::mm, 0.001f,
                                       0.001f, 1u, false, false, false)));
 
 INSTANTIATE_TEST_SUITE_P(
-    pT_05GeV_no_mat, CKF_navigation_test,
+    pT_05GeV_no_mat, KF_intergration_test_toy_detector,
     ::testing::Values(std::make_tuple(0.5f * traccc::unit<scalar>::GeV,
                                       1e-5f * traccc::unit<float>::mm, 0.001f,
                                       0.001f, 1u, false, false, false)));
 
 // No scattering - navigation should work (material interactor models e-loss)
 INSTANTIATE_TEST_SUITE_P(
-    pT_100GeV_only_eloss, CKF_navigation_test,
+    pT_100GeV_only_eloss, KF_intergration_test_toy_detector,
     ::testing::Values(std::make_tuple(100.f * traccc::unit<scalar>::GeV,
-                                      1e-5f * traccc::unit<float>::mm, 0.001f,
+                                      1e-3f * traccc::unit<float>::mm, 0.001f,
                                       0.005f, 4u, true, false, true)));
 INSTANTIATE_TEST_SUITE_P(
-    pT_10GeV_only_eloss, CKF_navigation_test,
+    pT_10GeV_only_eloss, KF_intergration_test_toy_detector,
     ::testing::Values(std::make_tuple(10.f * traccc::unit<scalar>::GeV,
-                                      1e-5f * traccc::unit<float>::mm, 0.001f,
+                                      1e-3f * traccc::unit<float>::mm, 0.001f,
                                       0.005f, 4u, true, false, true)));
 
 INSTANTIATE_TEST_SUITE_P(
-    pT_05GeV_only_eloss, CKF_navigation_test,
+    pT_05GeV_only_eloss, KF_intergration_test_toy_detector,
     ::testing::Values(std::make_tuple(0.5f * traccc::unit<scalar>::GeV,
-                                      1e-5f * traccc::unit<float>::mm, 0.005f,
+                                      1e-3f * traccc::unit<float>::mm, 0.005f,
                                       0.005f, 4u, true, false, true)));
 
 // No energy loss - navigation has to compensate the scattering angle
 // (turn off the material in the detector to prevent bethe-bloch corrections)
 INSTANTIATE_TEST_SUITE_P(
-    pT_100GeV_only_scatt, CKF_navigation_test,
+    pT_100GeV_only_scatt, KF_intergration_test_toy_detector,
     ::testing::Values(std::make_tuple(100.f * traccc::unit<scalar>::GeV,
-                                      1e-5f * traccc::unit<float>::mm, 0.001f,
+                                      1e-2f * traccc::unit<float>::mm, 0.001f,
                                       0.005f, 4u, true, true, false)));
 
 INSTANTIATE_TEST_SUITE_P(
-    pT_10GeV_only_scatt, CKF_navigation_test,
+    pT_10GeV_only_scatt, KF_intergration_test_toy_detector,
     ::testing::Values(std::make_tuple(10.f * traccc::unit<scalar>::GeV,
-                                      1e-5f * traccc::unit<float>::mm, 0.001f,
+                                      1e-2f * traccc::unit<float>::mm, 0.001f,
                                       0.005f, 4u, true, true, false)));
 INSTANTIATE_TEST_SUITE_P(
-    pT_05GeV_only_scatt, CKF_navigation_test,
+    pT_05GeV_only_scatt, KF_intergration_test_toy_detector,
     ::testing::Values(std::make_tuple(0.5f * traccc::unit<scalar>::GeV,
-                                      1e-5f * traccc::unit<float>::mm, 0.005f,
+                                      1e-2f * traccc::unit<float>::mm, 0.005f,
                                       0.005f, 4u, true, true, false)));
 
 // Nominal (e-loss + scattering)
 INSTANTIATE_TEST_SUITE_P(
-    pT_100GeV_nominal, CKF_navigation_test,
+    pT_100GeV_nominal, KF_intergration_test_toy_detector,
     ::testing::Values(std::make_tuple(100.f * traccc::unit<scalar>::GeV,
-                                      1e-5f * traccc::unit<float>::mm, 0.01f,
+                                      1e-2f * traccc::unit<float>::mm, 0.01f,
                                       0.15f, 1u, true, true, true)));
 INSTANTIATE_TEST_SUITE_P(
-    pT_10GeV_nominal, CKF_navigation_test,
+    pT_10GeV_nominal, KF_intergration_test_toy_detector,
     ::testing::Values(std::make_tuple(10.f * traccc::unit<scalar>::GeV,
-                                      1e-5f * traccc::unit<float>::mm, 0.01f,
+                                      1e-2f * traccc::unit<float>::mm, 0.01f,
                                       0.15f, 1u, true, true, true)));
 
 INSTANTIATE_TEST_SUITE_P(
-    pT_05GeV_nominal, CKF_navigation_test,
+    pT_05GeV_nominal, KF_intergration_test_toy_detector,
     ::testing::Values(std::make_tuple(0.5f * traccc::unit<scalar>::GeV,
-                                      1e-5f * traccc::unit<float>::mm, 0.01f,
+                                      1e-2f * traccc::unit<float>::mm, 0.01f,
                                       0.5f, 3u, true, true, true)));

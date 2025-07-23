@@ -18,7 +18,7 @@ traccc_add_test(cpu
     "test_kalman_fitter_momentum_resolution.cpp"
     "test_kalman_fitter_telescope.cpp"
     "test_kalman_fitter_wire_chamber.cpp"
-    "test_navigation.cpp"
+    "test_kalman_filter_toy_detector.cpp"
     "test_ranges.cpp"
     "test_seeding.cpp"
     "test_simulation.cpp"
