@@ -15,8 +15,8 @@
 #include "traccc/utils/propagation.hpp"
 
 // Performance include(s).
-#include "traccc/performance/navigation_comparison.hpp"
-#include "traccc/utils/navigation_validation.hpp"
+#include "traccc/performance/kalman_filter_comparison.hpp"
+#include "traccc/utils/transcribe_to_trace.hpp"
 
 // Detray test include(s)
 #include <detray/test/utils/perigee_stopper.hpp>
@@ -31,7 +31,7 @@
 #include <memory>
 #include <string>
 
-int navigation_comparison(
+int kalman_filter_comparison(
     const traccc::default_detector::host& det,
     const traccc::default_detector::host::name_map& names,
     const detray::propagation::config& prop_cfg, const std::string& input_dir,
@@ -69,7 +69,7 @@ int navigation_comparison(
                           .as_field<traccc::const_bfield_backend_t<scalar_t>>();
     b_field_t::view_t field_view = field;
 
-    constexpr double rel_mat_error{0.01};
+    // constexpr double rel_mat_error{0.01};
 
     // Collect data for comparison
 
@@ -93,6 +93,12 @@ int navigation_comparison(
         assert(!evt_data.m_ptc_to_meas_map.empty());
 
         for (const auto& [ptc_id, ptc] : evt_data.m_particle_map) {
+            // Minimum momentum
+            if (!evt_data.m_ptc_to_meas_map.contains(ptc) ||
+                vector::norm(ptc.momentum) < 50.f * traccc::unit<scalar>::MeV) {
+                continue;
+            }
+
             // Make a trace of detray-understandable intersections
             auto truth_trace_fw =
                 traccc::navigation_validator::transcribe_to_trace(
@@ -104,32 +110,31 @@ int navigation_comparison(
             std::ranges::reverse_copy(truth_trace_fw, truth_trace_bw.begin());
 
             if (!truth_trace_fw.empty()) {
+                assert(!truth_trace_bw.empty());
                 // Construct initial track parameters
                 // @TODO: Need volume grid in case of large vertex smearing
                 tracks.emplace_back(ptc.vertex, 0.f, ptc.momentum, ptc.charge);
 
                 truth_traces_fw.push_back(std::move(truth_trace_fw));
                 truth_traces_bw.push_back(std::move(truth_trace_bw));
-            }
 
-            // Transcribe measurements to track states for the KF
-            if (!evt_data.m_ptc_to_meas_map.contains(ptc) ||
-                vector::norm(ptc.momentum) < 50.f * traccc::unit<scalar>::MeV) {
-                continue;
-            }
-            const auto& measurements = evt_data.m_ptc_to_meas_map.at(ptc);
-            vecmem::vector<track_state<algebra_t>> track_states{};
-            track_states.reserve(measurements.size());
+                // Transcribe measurements to track states for the KF
+                const auto& measurements = evt_data.m_ptc_to_meas_map.at(ptc);
+                assert(!measurements.empty());
 
-            for (const auto& meas : measurements) {
-                track_states.emplace_back(meas);
-            }
+                vecmem::vector<track_state<algebra_t>> track_states{};
+                track_states.reserve(measurements.size());
 
-            track_state_coll.push_back(std::move(track_states));
+                for (const auto& meas : measurements) {
+                    track_states.emplace_back(meas);
+                }
+
+                track_state_coll.push_back(std::move(track_states));
+            }
         }
     }
 
-    using perigee_stopper = detray::perigee_stopper<algebra_t>;
+    // using perigee_stopper = detray::perigee_stopper<algebra_t>;
     using transporter = detray::parameter_transporter<algebra_t>;
     using interactor = detray::pointwise_material_interactor<algebra_t>;
     using resetter = detray::parameter_resetter<algebra_t>;
@@ -160,7 +165,7 @@ int navigation_comparison(
     }
 
     // Reusable actor states
-    perigee_stopper::state stopper_state{};
+    // perigee_stopper::state stopper_state{};
     interactor::state interactor_state{};
     interactor_state.do_multiple_scattering = do_multiple_scattering;
     interactor_state.do_energy_loss = do_energy_loss;
@@ -171,7 +176,7 @@ int navigation_comparison(
                   << "-----------------------------------\n";
 
         // Prepare actor states
-        auto state_tuple = detray::make_tuple(interactor_state);
+        /*auto state_tuple = detray::make_tuple(interactor_state);
         auto state_ref_tuple = setup_actor_states(state_tuple);
         auto state_ref_tuples =
             vecmem::vector<decltype(state_ref_tuple)>{state_ref_tuple};
@@ -271,7 +276,7 @@ int navigation_comparison(
         std::cout << "No. identical tracks with diff. material: " << n_diff_mat
                   << " (" << 100. * static_cast<double>(n_diff_mat) / n_tracks
                   << "%)" << std::endl;
-        std::cout << "-----------------------------------\n" << std::endl;
+        std::cout << "-----------------------------------\n" << std::endl;*/
 
         /*EXPECT_EQ(n_diff_mat, 0u);
 
@@ -339,22 +344,37 @@ int navigation_comparison(
                 truth_traces_fw_KF, tracks, state_ref_tuple, stddevs_per_track);
 
         // Check, how many holes the KF found
-        auto n_tracks{static_cast<double>(trk_stats_fw.n_tracks)};
+        // auto n_tracks{static_cast<double>(trk_stats_fw.n_tracks)};
         std::size_t n_holes_fw{0u};
+        std::size_t n_trk_holes_fw{0u};
         for (std::size_t i = 0u; i < tracks.size(); ++i) {
+            // std::cout << "TRACK " << i  << ":"<< std::endl;
             const auto& actor_states = state_tuple[i];
             auto fitter_state = detray::get<fit_actor_fw::state>(actor_states);
 
+            bool has_holes{false};
             for (const auto& trk_state : fitter_state.m_track_states) {
                 if (trk_state.is_hole) {
+                    // std::cout << "COMP: Hole: " << trk_state.surface_link()
+                    // << std::endl;
                     n_holes_fw++;
+                    has_holes = true;
+                } else {
+                    // std::cout << "Good: " << trk_state.surface_link() <<
+                    // std::endl;
                 }
+            }
+
+            if (has_holes) {
+                n_trk_holes_fw++;
             }
         }
         std::cout << "No. holes found by fw KF: " << n_holes_fw << std::endl;
+        std::cout << "No. tracks with holes found by fw KF: " << n_trk_holes_fw
+                  << std::endl;
         std::cout << "-----------------------------------" << std::endl;
 
-        std::cout << "BACKWARD - With KF" << std::endl
+        /*std::cout << "BACKWARD - With KF" << std::endl
                   << "-----------------------------------\n";
         using fit_actor_bd =
             traccc::kalman_actor<algebra_t,
@@ -423,7 +443,7 @@ int navigation_comparison(
                   << 100. * static_cast<double>(n_not_smoothed_correctly) /
                          n_tracks
                   << "%)" << std::endl;
-        std::cout << "-----------------------------------" << std::endl;
+        std::cout << "-----------------------------------" << std::endl;*/
     }
 
     return EXIT_SUCCESS;

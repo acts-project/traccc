@@ -28,7 +28,7 @@
 #include "traccc/options/track_propagation.hpp"
 
 // Performance include(s).
-#include "traccc/performance/navigation_comparison.hpp"
+#include "traccc/performance/kalman_filter_comparison.hpp"
 
 // Detray include(s)
 #include <detray/io/frontend/detector_reader.hpp>
@@ -164,7 +164,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Run the application.
-    return navigation_comparison(
+    return kalman_filter_comparison(
         det, names, propagation_opts, input_opts.directory,
         static_cast<unsigned int>(input_opts.events), logger().clone(),
         generation_opts.do_multiple_scattering, generation_opts.do_energy_loss,
