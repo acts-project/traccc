@@ -25,6 +25,8 @@ inline void find_triplets(
     const device_doublet_collection_types::const_view& mid_top_doublet_view,
     const triplet_counter_spM_collection_types::const_view& spM_tc_view,
     const triplet_counter_collection_types::const_view& tc_view,
+    vecmem::data::vector_view<const lin_circle> mid_bot_circle_view,
+    vecmem::data::vector_view<const lin_circle> mid_top_circle_view,
     device_triplet_collection_types::view triplet_view) {
 
     // Check if anything needs to be done.
@@ -44,6 +46,10 @@ inline void find_triplets(
     const traccc::details::spacepoint_grid_types::const_device sp_grid(sp_view);
     const triplet_counter_spM_collection_types::const_device triplet_counts_spM(
         spM_tc_view);
+    const vecmem::device_vector<const lin_circle> mid_bot_circles(
+        mid_bot_circle_view);
+    const vecmem::device_vector<const lin_circle> mid_top_circles(
+        mid_top_circle_view);
 
     // Get the current work item information
     const triplet_counter mid_bot_counter = triplet_counts.at(globalIndex);
@@ -53,22 +59,17 @@ inline void find_triplets(
         doublet_counts.at(mid_bot_counter.spM_counter_link);
 
     const sp_location spM_loc = spM_counter.spM;
-    const sp_location spB_loc = mid_bot_counter.spB;
 
     // middle spacepoint
     const edm::spacepoint_collection::const_device::const_proxy_type spM =
         spacepoints.at(sp_grid.bin(spM_loc.bin_idx)[spM_loc.sp_idx]);
 
-    // bottom spacepoint
-    const edm::spacepoint_collection::const_device::const_proxy_type spB =
-        spacepoints.at(sp_grid.bin(spB_loc.bin_idx)[spB_loc.sp_idx]);
-
     // Set up the device result collection
     device_triplet_collection_types::device triplets(triplet_view);
 
     // Apply the conformal transformation to middle-bot doublet
-    const traccc::lin_circle lb = doublet_finding_helper::transform_coordinates<
-        details::spacepoint_type::bottom>(spM, spB);
+    const traccc::lin_circle lb =
+        mid_bot_circles.at(mid_bot_counter.m_botMidIdx);
 
     // Calculate some physical quantities required for triplet compatibility
     // check
@@ -76,10 +77,6 @@ inline void find_triplets(
     const scalar scatteringInRegion2 = config.maxScatteringAngle2 * iSinTheta2 *
                                        config.sigmaScattering *
                                        config.sigmaScattering;
-
-    // These two quantities are used as output parameters in
-    // triplet_finding_helper::isCompatible but their values are irrelevant
-    scalar curvature, impact_parameter;
 
     // find the reference (start) index of the mid-top doublet collection
     // item vector, where the doublets are recorded
@@ -93,24 +90,18 @@ inline void find_triplets(
 
     // iterate over mid-top doublets
     for (unsigned int i = mt_start_idx; i < mt_end_idx; ++i) {
-        const sp_location spT_loc = mid_top_doublet_device[i].sp2;
-
-        const edm::spacepoint_collection::const_device::const_proxy_type spT =
-            spacepoints.at(sp_grid.bin(spT_loc.bin_idx)[spT_loc.sp_idx]);
-
         // Apply the conformal transformation to middle-top doublet
-        const traccc::lin_circle lt =
-            doublet_finding_helper::transform_coordinates<
-                details::spacepoint_type::top>(spM, spT);
+        const traccc::lin_circle& lt = mid_top_circles.at(i);
 
         // Check if mid-bot and mid-top doublets can form a triplet
+        scalar curvature, impact_parameter;
         if (triplet_finding_helper::isCompatible(
                 spM, lb, lt, config, iSinTheta2, scatteringInRegion2, curvature,
                 impact_parameter)) {
 
             // Add triplet to jagged vector
             triplets.at(posTriplets++) = device_triplet(
-                {spT_loc, globalIndex, curvature,
+                {mid_top_doublet_device[i].sp2, globalIndex, curvature,
                  -impact_parameter * filter_config.impactWeightFactor,
                  lb.Zo()});
         }
