@@ -18,8 +18,16 @@ namespace traccc::opts {
 /// Convenience namespace shorthand
 namespace po = boost::program_options;
 
+/// Type alias for the reconstruction stage enumeration
+using stage_type = std::string;
+/// Name of the reconstruction stage option
+static const char* stage_option = "reco-stage";
+
 throughput::throughput() : interface("Throughput Measurement Options") {
 
+    m_desc.add_options()(
+        stage_option, po::value<stage_type>()->default_value("full"),
+        "Reconstruction stage to run (\"seeding\" or \"full\")");
     m_desc.add_options()(
         "processed-events",
         po::value(&processed_events)->default_value(processed_events),
@@ -40,9 +48,38 @@ throughput::throughput() : interface("Throughput Measurement Options") {
         "File where result logs will be printed (in append mode).");
 }
 
+void throughput::read(const po::variables_map& vm) {
+
+    // Decode the input data format.
+    if (vm.count(stage_option)) {
+        const std::string stage_string = vm[stage_option].as<stage_type>();
+        if (stage_string == "full") {
+            reco_stage = stage::full;
+        } else if (stage_string == "seeding") {
+            reco_stage = stage::seeding;
+        } else {
+            throw std::invalid_argument("Unknown reconstruction stage");
+        }
+    }
+}
+
 std::unique_ptr<configuration_printable> throughput::as_printable() const {
     auto cat = std::make_unique<configuration_category>(m_description);
 
+    std::string reco_stage_string;
+    switch (reco_stage) {
+        case stage::seeding:
+            reco_stage_string = "seeding";
+            break;
+        case stage::full:
+            reco_stage_string = "full";
+            break;
+        default:
+            reco_stage_string = "unknown";
+            break;
+    }
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Reconstruction stage", reco_stage_string));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Cold run events", std::to_string(cold_run_events)));
     cat->add_child(std::make_unique<configuration_kv_pair>(

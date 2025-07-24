@@ -23,6 +23,14 @@ class throughput : public interface {
     /// @name Options
     /// @{
 
+    /// "Reconstruction stage" to run
+    enum class stage {
+        seeding,  ///< Run until the end of seeding
+        full      ///< Run the full chain of reconstruction
+    };
+    /// The reconstruction stage to run
+    stage reco_stage = stage::full;
+
     /// The number of events to process during the job
     std::size_t processed_events = 100;
     /// The number of events to run "cold", i.e. run without accounting for
@@ -43,6 +51,13 @@ class throughput : public interface {
     throughput();
 
     std::unique_ptr<configuration_printable> as_printable() const override;
+
+    /// Read/process the command line options
+    ///
+    /// @param vm The command line options to interpret/read
+    ///
+    void read(const boost::program_options::variables_map& vm) override;
+
 };  // class throughput
 
 }  // namespace traccc::opts
