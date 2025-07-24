@@ -29,7 +29,8 @@ class seed_filtering : public messaging {
     public:
     /// Constructor with the seed filter configuration
     seed_filtering(
-        const seedfilter_config& config, vecmem::memory_resource& mr,
+        const seedfinder_config& finding_config,
+        const seedfilter_config& filter_config, vecmem::memory_resource& mr,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Callable operator for the seed filtering
@@ -46,6 +47,8 @@ class seed_filtering : public messaging {
                     edm::seed_collection::host& seeds) const;
 
     private:
+    /// Seed finder configuration
+    seedfinder_config m_finder_config;
     /// Seed filter configuration
     seedfilter_config m_filter_config;
     /// The memory resource to use

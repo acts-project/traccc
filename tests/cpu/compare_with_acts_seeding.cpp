@@ -164,7 +164,6 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     // Start creating Seed filter object
     Acts::SeedFilterConfig sfconf;
-    sfconf.maxSeedsPerSpM = traccc::seedfilter_config().maxSeedsPerSpM;
     // there are a lot more variables here tbh
 
     // We also need some atlas-specific cut
