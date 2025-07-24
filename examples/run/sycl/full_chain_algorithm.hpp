@@ -9,6 +9,7 @@
 
 // Project include(s).
 #include "traccc/edm/silicon_cell_collection.hpp"
+#include "traccc/edm/track_parameters.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
@@ -104,6 +105,14 @@ class full_chain_algorithm
     ///
     output_type operator()(
         const edm::silicon_cell_collection::host& cells) const override;
+
+    /// Reconstruct track seeds in the entire detector
+    ///
+    /// @param cells The cells for every detector module in the event
+    /// @return The track seeds reconstructed
+    ///
+    bound_track_parameters_collection_types::host seeding(
+        const edm::silicon_cell_collection::host& cells) const;
 
     private:
     /// Private data object
