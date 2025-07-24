@@ -175,15 +175,8 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
                       *(cached_host_mrs.at(i)))
                 : static_cast<vecmem::memory_resource&>(uncached_host_mr);
         algs.push_back(
-            {alg_host_mr,
-             clustering_cfg,
-             seeding_opts.seedfinder,
-             {seeding_opts.seedfinder},
-             seeding_opts.seedfilter,
-             finding_cfg,
-             fitting_cfg,
-             det_descr,
-             field,
+            {alg_host_mr, clustering_cfg, seeding_opts, seeding_opts,
+             seeding_opts, finding_cfg, fitting_cfg, det_descr, field,
              (detector_opts.use_detray_detector ? &detector : nullptr),
              logger().clone()});
     }

@@ -157,8 +157,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     uint64_t n_found_tracks_sycl = 0;
 
     // Constant B field for the track finding and fitting
-    const traccc::vector3 field_vec = {0.f, 0.f,
-                                       seeding_opts.seedfinder.bFieldInZ};
+    const traccc::vector3 field_vec = seeding_opts;
     const auto host_field = traccc::details::make_magnetic_field(bfield_opts);
     const auto device_field =
         traccc::sycl::make_magnetic_field(host_field, queue);
@@ -174,9 +173,9 @@ int seq_run(const traccc::opts::detector& detector_opts,
         host_mr, logger().clone("HostClusteringAlg"));
     traccc::host::silicon_pixel_spacepoint_formation_algorithm sf(
         host_mr, logger().clone("HostSpFormationAlg"));
-    traccc::host::seeding_algorithm sa(
-        seeding_opts.seedfinder, {seeding_opts.seedfinder},
-        seeding_opts.seedfilter, host_mr, logger().clone("HostSeedingAlg"));
+    traccc::host::seeding_algorithm sa(seeding_opts, seeding_opts, seeding_opts,
+                                       host_mr,
+                                       logger().clone("HostSeedingAlg"));
     traccc::host::track_params_estimation tp(
         host_mr, logger().clone("HostTrackParEstAlg"));
     traccc::host::combinatorial_kalman_filter_algorithm finding_alg{
@@ -189,10 +188,9 @@ int seq_run(const traccc::opts::detector& detector_opts,
         mr, copy, queue, logger().clone("SyclMeasSortingAlg"));
     traccc::sycl::silicon_pixel_spacepoint_formation_algorithm sf_sycl(
         mr, copy, queue, logger().clone("SyclSpFormationAlg"));
-    traccc::sycl::seeding_algorithm sa_sycl(
-        seeding_opts.seedfinder, {seeding_opts.seedfinder},
-        seeding_opts.seedfilter, mr, copy, &q,
-        logger().clone("SyclSeedingAlg"));
+    traccc::sycl::seeding_algorithm sa_sycl(seeding_opts, seeding_opts,
+                                            seeding_opts, mr, copy, &q,
+                                            logger().clone("SyclSeedingAlg"));
     traccc::sycl::track_params_estimation tp_sycl(
         mr, copy, &q, logger().clone("SyclTrackParEstAlg"));
     traccc::sycl::combinatorial_kalman_filter_algorithm finding_alg_sycl{

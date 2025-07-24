@@ -141,9 +141,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         track_state_d2h{mr, copy, logger().clone("TrackStateD2HCopyAlg")};
 
     // Seeding algorithm
-    traccc::host::seeding_algorithm sa(
-        seeding_opts.seedfinder, {seeding_opts.seedfinder},
-        seeding_opts.seedfilter, host_mr, logger().clone("HostSeedingAlg"));
+    traccc::host::seeding_algorithm sa(seeding_opts, seeding_opts, seeding_opts,
+                                       host_mr,
+                                       logger().clone("HostSeedingAlg"));
     traccc::host::track_params_estimation tp(
         host_mr, logger().clone("HostTrackParEstAlg"));
 
@@ -151,9 +151,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     vecmem::cuda::async_copy async_copy{stream.cudaStream()};
 
-    traccc::cuda::seeding_algorithm sa_cuda{seeding_opts.seedfinder,
-                                            {seeding_opts.seedfinder},
-                                            seeding_opts.seedfilter,
+    traccc::cuda::seeding_algorithm sa_cuda{seeding_opts,
+                                            seeding_opts,
+                                            seeding_opts,
                                             mr,
                                             async_copy,
                                             stream,
@@ -278,8 +278,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                                              elapsedTimes);
                 params_cuda_buffer =
                     tp_cuda(measurements_cuda_buffer, spacepoints_cuda_buffer,
-                            seeds_cuda_buffer,
-                            {0.f, 0.f, seeding_opts.seedfinder.bFieldInZ});
+                            seeds_cuda_buffer, seeding_opts);
                 stream.synchronize();
             }  // stop measuring track params cuda timer
 
@@ -289,8 +288,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                                              elapsedTimes);
                 params = tp(vecmem::get_data(measurements_per_event),
                             vecmem::get_data(spacepoints_per_event),
-                            vecmem::get_data(seeds),
-                            {0.f, 0.f, seeding_opts.seedfinder.bFieldInZ});
+                            vecmem::get_data(seeds), seeding_opts);
             }  // stop measuring track params cpu timer
 
             /*------------------------

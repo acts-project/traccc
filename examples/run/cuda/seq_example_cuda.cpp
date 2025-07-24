@@ -160,8 +160,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     fitting_cfg.propagation = propagation_config;
 
     // Constant B field for the track finding and fitting
-    const traccc::vector3 field_vec = {0.f, 0.f,
-                                       seeding_opts.seedfinder.bFieldInZ};
+    const traccc::vector3 field_vec = seeding_opts;
     const auto host_field = traccc::details::make_magnetic_field(bfield_opts);
     const auto device_field = traccc::cuda::make_magnetic_field(
         host_field,
@@ -173,9 +172,9 @@ int seq_run(const traccc::opts::detector& detector_opts,
         host_mr, logger().clone("HostClusteringAlg"));
     host_spacepoint_formation_algorithm sf(
         host_mr, logger().clone("HostSpFormationAlg"));
-    traccc::host::seeding_algorithm sa(
-        seeding_opts.seedfinder, {seeding_opts.seedfinder},
-        seeding_opts.seedfilter, host_mr, logger().clone("HostSeedingAlg"));
+    traccc::host::seeding_algorithm sa(seeding_opts, seeding_opts, seeding_opts,
+                                       host_mr,
+                                       logger().clone("HostSeedingAlg"));
     traccc::host::track_params_estimation tp(
         host_mr, logger().clone("HostTrackParEstAlg"));
     host_finding_algorithm finding_alg(finding_cfg, host_mr,
@@ -193,10 +192,9 @@ int seq_run(const traccc::opts::detector& detector_opts,
         mr, copy, stream, logger().clone("CudaMeasSortingAlg"));
     device_spacepoint_formation_algorithm sf_cuda(
         mr, copy, stream, logger().clone("CudaSpFormationAlg"));
-    traccc::cuda::seeding_algorithm sa_cuda(
-        seeding_opts.seedfinder, {seeding_opts.seedfinder},
-        seeding_opts.seedfilter, mr, copy, stream,
-        logger().clone("CudaSeedingAlg"));
+    traccc::cuda::seeding_algorithm sa_cuda(seeding_opts, seeding_opts,
+                                            seeding_opts, mr, copy, stream,
+                                            logger().clone("CudaSeedingAlg"));
     traccc::cuda::track_params_estimation tp_cuda(
         mr, copy, stream, logger().clone("CudaTrackParEstAlg"));
     device_finding_algorithm finding_alg_cuda(finding_cfg, mr, copy, stream,

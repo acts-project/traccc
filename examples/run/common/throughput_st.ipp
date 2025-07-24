@@ -139,9 +139,8 @@ int throughput_st(std::string_view description, int argc, char* argv[],
 
     // Set up the full-chain algorithm.
     std::unique_ptr<FULL_CHAIN_ALG> alg = std::make_unique<FULL_CHAIN_ALG>(
-        alg_host_mr, clustering_cfg, seeding_opts.seedfinder,
-        spacepoint_grid_config{seeding_opts.seedfinder},
-        seeding_opts.seedfilter, finding_cfg, fitting_cfg, det_descr, field,
+        alg_host_mr, clustering_cfg, seeding_opts, seeding_opts, seeding_opts,
+        finding_cfg, fitting_cfg, det_descr, field,
         (detector_opts.use_detray_detector ? &detector : nullptr),
         logger->clone("FullChainAlg"));
 

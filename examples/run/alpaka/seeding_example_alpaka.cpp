@@ -133,17 +133,17 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         track_state_d2h{mr, copy, logger().clone("TrackStateD2HCopyAlg")};
 
     // Seeding algorithms
-    traccc::host::seeding_algorithm sa(
-        seeding_opts.seedfinder, {seeding_opts.seedfinder},
-        seeding_opts.seedfilter, host_mr, logger().clone("HostSeedingAlg"));
+    traccc::host::seeding_algorithm sa(seeding_opts, seeding_opts, seeding_opts,
+                                       host_mr,
+                                       logger().clone("HostSeedingAlg"));
     traccc::host::track_params_estimation tp(
         host_mr, logger().clone("HostTrackParEstAlg"));
 
     // Alpaka Algorithms
     traccc::alpaka::seeding_algorithm sa_alpaka{
-        seeding_opts.seedfinder,
-        {seeding_opts.seedfinder},
-        seeding_opts.seedfilter,
+        seeding_opts,
+        seeding_opts,
+        seeding_opts,
         mr,
         async_copy,
         queue,
@@ -266,10 +266,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             {
                 traccc::performance::timer t("Track params (alpaka)",
                                              elapsedTimes);
-                params_alpaka_buffer =
-                    tp_alpaka(measurements_alpaka_buffer,
-                              spacepoints_alpaka_buffer, seeds_alpaka_buffer,
-                              {0.f, 0.f, seeding_opts.seedfinder.bFieldInZ});
+                params_alpaka_buffer = tp_alpaka(
+                    measurements_alpaka_buffer, spacepoints_alpaka_buffer,
+                    seeds_alpaka_buffer, seeding_opts);
                 queue.synchronize();
             }  // stop measuring track params alpaka timer
 
@@ -279,8 +278,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                                              elapsedTimes);
                 params = tp(vecmem::get_data(measurements_per_event),
                             vecmem::get_data(spacepoints_per_event),
-                            vecmem::get_data(seeds),
-                            {0.f, 0.f, seeding_opts.seedfinder.bFieldInZ});
+                            vecmem::get_data(seeds), seeding_opts);
             }  // stop measuring track params cpu timer
 
             /*------------------------

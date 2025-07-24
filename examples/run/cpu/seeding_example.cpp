@@ -115,9 +115,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                               detector_opts.grid_file);
 
     // Seeding algorithm
-    traccc::host::seeding_algorithm sa(
-        seeding_opts.seedfinder, {seeding_opts.seedfinder},
-        seeding_opts.seedfilter, host_mr, logger().clone("SeedingAlg"));
+    traccc::host::seeding_algorithm sa(seeding_opts, seeding_opts, seeding_opts,
+                                       host_mr, logger().clone("SeedingAlg"));
     traccc::host::track_params_estimation tp(host_mr,
                                              logger().clone("TrackParEstAlg"));
 
@@ -170,10 +169,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
            Track Parameter Estimation
           ----------------------------*/
 
-        auto params =
-            tp(vecmem::get_data(measurements_per_event),
-               vecmem::get_data(spacepoints_per_event), vecmem::get_data(seeds),
-               {0.f, 0.f, seeding_opts.seedfinder.bFieldInZ});
+        auto params = tp(vecmem::get_data(measurements_per_event),
+                         vecmem::get_data(spacepoints_per_event),
+                         vecmem::get_data(seeds), seeding_opts);
 
         // Run CKF and KF if we are using a detray geometry
         traccc::edm::track_candidate_collection<traccc::default_algebra>::host

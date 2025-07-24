@@ -146,17 +146,16 @@ int seq_run(const traccc::opts::detector& detector_opts,
     fitting_cfg.propagation = propagation_config;
 
     // Constant B field for the track finding and fitting
-    const traccc::vector3 field_vec = {0.f, 0.f,
-                                       seeding_opts.seedfinder.bFieldInZ};
+    const traccc::vector3 field_vec = seeding_opts;
     const auto field = traccc::details::make_magnetic_field(bfield_opts);
 
     traccc::host::clusterization_algorithm ca(
         host_mr, logger().clone("HostClusteringAlg"));
     host_spacepoint_formation_algorithm sf(
         host_mr, logger().clone("HostSpFormationAlg"));
-    traccc::host::seeding_algorithm sa(
-        seeding_opts.seedfinder, {seeding_opts.seedfinder},
-        seeding_opts.seedfilter, host_mr, logger().clone("HostSeedingAlg"));
+    traccc::host::seeding_algorithm sa(seeding_opts, seeding_opts, seeding_opts,
+                                       host_mr,
+                                       logger().clone("HostSeedingAlg"));
     traccc::host::track_params_estimation tp(
         host_mr, logger().clone("HostTrackParEstAlg"));
     host_finding_algorithm finding_alg(finding_cfg, host_mr,
@@ -172,8 +171,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     device_spacepoint_formation_algorithm sf_alpaka(
         mr, copy, queue, logger().clone("AlpakaSpFormationAlg"));
     traccc::alpaka::seeding_algorithm sa_alpaka(
-        seeding_opts.seedfinder, {seeding_opts.seedfinder},
-        seeding_opts.seedfilter, mr, copy, queue,
+        seeding_opts, seeding_opts, seeding_opts, mr, copy, queue,
         logger().clone("AlpakaSeedingAlg"));
     traccc::alpaka::track_params_estimation tp_alpaka(
         mr, copy, queue, logger().clone("AlpakaTrackParEstAlg"));
