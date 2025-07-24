@@ -54,6 +54,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -187,6 +188,27 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
              logger().clone()});
     }
 
+    // Set up a lambda that calls the correct function on the algorithms.
+    std::function<std::size_t(int, const edm::silicon_cell_collection::host&)>
+        process_event;
+    if (throughput_opts.reco_stage == opts::throughput::stage::seeding) {
+        process_event = [&](int thread,
+                            const edm::silicon_cell_collection::host& cells)
+            -> std::size_t {
+            return algs.at(static_cast<std::size_t>(thread))
+                .seeding(cells)
+                .size();
+        };
+    } else if (throughput_opts.reco_stage == opts::throughput::stage::full) {
+        process_event = [&](int thread,
+                            const edm::silicon_cell_collection::host& cells)
+            -> std::size_t {
+            return algs.at(static_cast<std::size_t>(thread))(cells).size();
+        };
+    } else {
+        throw std::invalid_argument("Unknown reconstruction stage");
+    }
+
     // Set up the TBB arena and thread group. From here on out TBB is only
     // allowed to use the specified number of threads.
     tbb::global_control global_thread_limit(
@@ -233,10 +255,9 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
             // Launch the processing of the event.
             arena.execute([&, event]() {
                 group.run([&, event]() {
-                    rec_track_params.fetch_add(algs.at(static_cast<std::size_t>(
-                        tbb::this_task_arena::current_thread_index()))(
-                                                       input[event])
-                                                   .size());
+                    rec_track_params.fetch_add(process_event(
+                        tbb::this_task_arena::current_thread_index(),
+                        input[event]));
                     progress_bar.tick();
                 });
             });

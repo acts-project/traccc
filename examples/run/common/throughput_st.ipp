@@ -45,6 +45,7 @@
 // System include(s).
 #include <cstdlib>
 #include <ctime>
+#include <functional>
 #include <iostream>
 #include <memory>
 
@@ -151,6 +152,19 @@ int throughput_st(std::string_view description, int argc, char* argv[],
         std::srand(throughput_opts.random_seed);
     }
 
+    // Set up a lambda that calls the correct function on the algorithm.
+    std::function<std::size_t(const edm::silicon_cell_collection::host&)>
+        process_event;
+    if (throughput_opts.reco_stage == opts::throughput::stage::seeding) {
+        process_event = [&](const edm::silicon_cell_collection::host& cells)
+            -> std::size_t { return alg->seeding(cells).size(); };
+    } else if (throughput_opts.reco_stage == opts::throughput::stage::full) {
+        process_event = [&](const edm::silicon_cell_collection::host& cells)
+            -> std::size_t { return (*alg)(cells).size(); };
+    } else {
+        throw std::invalid_argument("Unknown reconstruction stage");
+    }
+
     // Dummy count uses output of tp algorithm to ensure the compiler
     // optimisations don't skip any step
     std::size_t rec_track_params = 0;
@@ -180,7 +194,7 @@ int throughput_st(std::string_view description, int argc, char* argv[],
                 input_opts.events;
 
             // Process one event.
-            rec_track_params += (*alg)(input[event]).size();
+            rec_track_params += process_event(input[event]);
             progress_bar.tick();
         }
     }
