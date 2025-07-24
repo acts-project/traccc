@@ -338,7 +338,7 @@ edm::seed_collection::buffer seed_finding::operator()(
     update_weights_kernel.wait_and_throw();
 
     // Check if device is capable of allocating sufficient local memory
-    assert(sizeof(triplet) * m_seedfilter_config.max_triplets_per_spM *
+    assert(sizeof(triplet) * m_seedfinder_config.maxSeedsPerSpM *
                seedSelectingLocalSize <
            details::get_queue(m_queue)
                .get_device()
@@ -350,25 +350,23 @@ edm::seed_collection::buffer seed_finding::operator()(
             // Array for temporary storage of triplets for comparing within
             // kernel
             vecmem::sycl::local_accessor<triplet> local_mem(
-                m_seedfilter_config.max_triplets_per_spM *
-                    seedSelectingLocalSize,
-                h);
+                m_seedfinder_config.maxSeedsPerSpM * seedSelectingLocalSize, h);
 
             h.parallel_for<kernels::select_seeds>(
                 seedSelectingRange,
-                [filter_config = m_seedfilter_config, spacepoints_view, g2_view,
+                [finder_config = m_seedfinder_config,
+                 filter_config = m_seedfilter_config, spacepoints_view, g2_view,
                  triplet_counter_spM_view, triplet_counter_midBot_view,
                  triplet_view, local_mem, seed_view](::sycl::nd_item<1> item) {
                     // Each thread uses compatSeedLimit elements of the array
-                    triplet* dataPos =
-                        &local_mem[item.get_local_id() *
-                                   filter_config.max_triplets_per_spM];
+                    triplet* dataPos = &local_mem[item.get_local_id() *
+                                                  finder_config.maxSeedsPerSpM];
 
-                    device::select_seeds(details::global_index(item),
-                                         filter_config, spacepoints_view,
-                                         g2_view, triplet_counter_spM_view,
-                                         triplet_counter_midBot_view,
-                                         triplet_view, dataPos, seed_view);
+                    device::select_seeds(
+                        details::global_index(item), finder_config,
+                        filter_config, spacepoints_view, g2_view,
+                        triplet_counter_spM_view, triplet_counter_midBot_view,
+                        triplet_view, dataPos, seed_view);
                 });
         })
         .wait_and_throw();

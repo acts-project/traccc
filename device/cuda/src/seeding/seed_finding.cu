@@ -129,7 +129,7 @@ __global__ void update_triplet_weights(
 
 /// CUDA kernel for running @c traccc::device::select_seeds
 __global__ void select_seeds(
-    seedfilter_config filter_config,
+    seedfinder_config finder_config, seedfilter_config filter_config,
     edm::spacepoint_collection::const_view spacepoints,
     traccc::details::spacepoint_grid_types::const_view sp_view,
     device::triplet_counter_spM_collection_types::const_view spM_tc,
@@ -140,12 +140,12 @@ __global__ void select_seeds(
     // Array for temporary storage of triplets for comparing within seed
     // selecting kernel
     extern __shared__ triplet data2[];
-    // Each thread uses max_triplets_per_spM elements of the array
-    triplet* dataPos = &data2[threadIdx.x * filter_config.max_triplets_per_spM];
+    // Each thread uses maxSeedsPerSpM elements of the array
+    triplet* dataPos = &data2[threadIdx.x * finder_config.maxSeedsPerSpM];
 
-    device::select_seeds(details::global_index1(), filter_config, spacepoints,
-                         sp_view, spM_tc, midBot_tc, triplet_view, dataPos,
-                         seed_view);
+    device::select_seeds(details::global_index1(), finder_config, filter_config,
+                         spacepoints, sp_view, spM_tc, midBot_tc, triplet_view,
+                         dataPos, seed_view);
 }
 
 }  // namespace kernels
@@ -355,14 +355,14 @@ edm::seed_collection::buffer seed_finding::operator()(
         nSeedSelectingThreads;
 
     // Create seeds out of selected triplets
-    kernels::select_seeds<<<nSeedSelectingBlocks, nSeedSelectingThreads,
-                            sizeof(triplet) *
-                                m_seedfilter_config.max_triplets_per_spM *
-                                nSeedSelectingThreads,
-                            stream>>>(m_seedfilter_config, spacepoints_view,
-                                      g2_view, triplet_counter_spM_buffer,
-                                      triplet_counter_midBot_buffer,
-                                      triplet_buffer, seed_buffer);
+    kernels::
+        select_seeds<<<nSeedSelectingBlocks, nSeedSelectingThreads,
+                       sizeof(triplet) * m_seedfinder_config.maxSeedsPerSpM *
+                           nSeedSelectingThreads,
+                       stream>>>(
+            m_seedfinder_config, m_seedfilter_config, spacepoints_view, g2_view,
+            triplet_counter_spM_buffer, triplet_counter_midBot_buffer,
+            triplet_buffer, seed_buffer);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     return seed_buffer;
