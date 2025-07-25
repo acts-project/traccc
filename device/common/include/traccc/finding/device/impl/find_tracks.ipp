@@ -572,15 +572,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
          * measurements.
          */
         if (local_num_params > 0 || in_param_can_create_hole) {
-            unsigned int desired_params_to_add = std::max(1u, local_num_params);
-
-            vecmem::device_atomic_ref<unsigned int> num_tracks_per_seed(
-                n_tracks_per_seed.at(seed_idx));
-            params_to_add = std::min(desired_params_to_add,
-                                     cfg.max_num_branches_per_seed -
-                                         std::min(cfg.max_num_branches_per_seed,
-                                                  num_tracks_per_seed.fetch_add(
-                                                      desired_params_to_add)));
+            params_to_add = std::max(1u, local_num_params);
 
             local_out_offset =
                 vecmem::device_atomic_ref<unsigned int,
@@ -615,9 +607,9 @@ TRACCC_HOST_DEVICE inline void find_tracks(
         assert(n_skipped != std::numeric_limits<unsigned int>::max());
 
         if (local_num_params == 0) {
-            assert(params_to_add <= 1);
+            assert(params_to_add == 1);
 
-            if (in_param_can_create_hole && params_to_add == 1) {
+            if (in_param_can_create_hole) {
                 const unsigned int out_offset =
                     shared_payload.shared_out_offset + local_out_offset;
 
@@ -640,8 +632,15 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                 const unsigned int n_cands = payload.step - n_skipped;
 
                 if (n_cands >= cfg.min_track_candidates_per_track) {
-                    auto tip_pos = tips.push_back(prev_link_idx);
-                    tip_lengths.at(tip_pos) = n_cands;
+                    vecmem::device_atomic_ref<unsigned int> num_tracks_per_seed(
+                        n_tracks_per_seed.at(seed_idx));
+
+                    auto pos = num_tracks_per_seed.fetch_add(1u);
+
+                    if (pos < cfg.max_num_branches_per_seed) {
+                        auto tip_pos = tips.push_back(prev_link_idx);
+                        tip_lengths.at(tip_pos) = n_cands;
+                    }
                 }
             }
         } else {
@@ -664,8 +663,15 @@ TRACCC_HOST_DEVICE inline void find_tracks(
 
                 if (last_step &&
                     n_cands >= cfg.min_track_candidates_per_track) {
-                    auto tip_pos = tips.push_back(param_pos);
-                    tip_lengths.at(tip_pos) = n_cands;
+                    vecmem::device_atomic_ref<unsigned int> num_tracks_per_seed(
+                        n_tracks_per_seed.at(seed_idx));
+
+                    auto pos = num_tracks_per_seed.fetch_add(1u);
+
+                    if (pos < cfg.max_num_branches_per_seed) {
+                        auto tip_pos = tips.push_back(param_pos);
+                        tip_lengths.at(tip_pos) = n_cands;
+                    }
                 }
             }
         }

@@ -29,6 +29,8 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
 
     // Theta id
     vecmem::device_vector<const unsigned int> param_ids(payload.param_ids_view);
+    vecmem::device_vector<unsigned int> n_tracks_per_seed(
+        payload.n_tracks_per_seed_view);
 
     const unsigned int param_id = param_ids.at(globalIndex);
 
@@ -55,6 +57,11 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     bound_track_parameters_collection_types::device params(payload.params_view);
 
     if (params_liveness.at(param_id) == 0u) {
+        return;
+    }
+
+    if (n_tracks_per_seed.at(link.seed_idx) >= cfg.max_num_branches_per_seed) {
+        params_liveness.at(param_id) = 0;
         return;
     }
 
@@ -108,8 +115,15 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
         params_liveness[param_id] = 0u;
 
         if (n_cands >= cfg.min_track_candidates_per_track) {
-            auto tip_pos = tips.push_back(link_idx);
-            tip_lengths.at(tip_pos) = n_cands;
+            vecmem::device_atomic_ref<unsigned int> num_tracks_per_seed(
+                n_tracks_per_seed.at(link.seed_idx));
+
+            unsigned int pos = num_tracks_per_seed.fetch_add(1u);
+
+            if (pos < cfg.max_num_branches_per_seed) {
+                auto tip_pos = tips.push_back(link_idx);
+                tip_lengths.at(tip_pos) = n_cands;
+            }
         }
     }
 }
