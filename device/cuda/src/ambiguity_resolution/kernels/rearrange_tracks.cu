@@ -145,8 +145,6 @@ __global__ void rearrange_tracks(device::rearrange_tracks_payload payload) {
         for (int i = 0; i < N; i++) {
 
             auto id = updated_tracks[i];
-            auto rel_sh = rel_shared[id];
-            auto pval = pvals[id];
 
             if (inverted_ids[id] < gid) {
                 shifted_idx--;

@@ -18,6 +18,7 @@
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
+#include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
@@ -108,6 +109,14 @@ class full_chain_algorithm
     ///
     output_type operator()(
         const edm::silicon_cell_collection::host& cells) const override;
+
+    /// Reconstruct track seeds in the entire detector
+    ///
+    /// @param cells The cells for every detector module in the event
+    /// @return The track seeds reconstructed
+    ///
+    bound_track_parameters_collection_types::host seeding(
+        const edm::silicon_cell_collection::host& cells) const;
 
     private:
     /// Host memory resource

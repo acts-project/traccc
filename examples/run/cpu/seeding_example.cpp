@@ -106,6 +106,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     // B field value
     const auto field = traccc::details::make_magnetic_field(bfield_opts);
+    const traccc::vector3 field_vec(seeding_opts);
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host detector{host_mr};
@@ -115,9 +116,12 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                               detector_opts.grid_file);
 
     // Seeding algorithm
+    const traccc::seedfinder_config seedfinder_config(seeding_opts);
+    const traccc::seedfilter_config seedfilter_config(seeding_opts);
+    const traccc::spacepoint_grid_config spacepoint_grid_config(seeding_opts);
     traccc::host::seeding_algorithm sa(
-        seeding_opts.seedfinder, {seeding_opts.seedfinder},
-        seeding_opts.seedfilter, host_mr, logger().clone("SeedingAlg"));
+        seedfinder_config, spacepoint_grid_config, seedfilter_config, host_mr,
+        logger().clone("SeedingAlg"));
     traccc::host::track_params_estimation tp(host_mr,
                                              logger().clone("TrackParEstAlg"));
 
@@ -170,10 +174,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
            Track Parameter Estimation
           ----------------------------*/
 
-        auto params =
-            tp(vecmem::get_data(measurements_per_event),
-               vecmem::get_data(spacepoints_per_event), vecmem::get_data(seeds),
-               {0.f, 0.f, seeding_opts.seedfinder.bFieldInZ});
+        auto params = tp(vecmem::get_data(measurements_per_event),
+                         vecmem::get_data(spacepoints_per_event),
+                         vecmem::get_data(seeds), field_vec);
 
         // Run CKF and KF if we are using a detray geometry
         traccc::edm::track_candidate_collection<traccc::default_algebra>::host
