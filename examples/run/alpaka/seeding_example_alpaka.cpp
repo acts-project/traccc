@@ -114,6 +114,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     // B field value and its type
     const auto field = traccc::details::make_magnetic_field(bfield_opts);
+    const traccc::vector3 field_vec(seeding_opts);
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host host_det{mng_mr};
@@ -133,17 +134,20 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         track_state_d2h{mr, copy, logger().clone("TrackStateD2HCopyAlg")};
 
     // Seeding algorithms
-    traccc::host::seeding_algorithm sa(seeding_opts, seeding_opts, seeding_opts,
-                                       host_mr,
-                                       logger().clone("HostSeedingAlg"));
+    const traccc::seedfinder_config seedfinder_config(seeding_opts);
+    const traccc::seedfilter_config seedfilter_config(seeding_opts);
+    const traccc::spacepoint_grid_config spacepoint_grid_config(seeding_opts);
+    traccc::host::seeding_algorithm sa(
+        seedfinder_config, spacepoint_grid_config, seedfilter_config, host_mr,
+        logger().clone("HostSeedingAlg"));
     traccc::host::track_params_estimation tp(
         host_mr, logger().clone("HostTrackParEstAlg"));
 
     // Alpaka Algorithms
     traccc::alpaka::seeding_algorithm sa_alpaka{
-        seeding_opts,
-        seeding_opts,
-        seeding_opts,
+        seedfinder_config,
+        spacepoint_grid_config,
+        seedfilter_config,
         mr,
         async_copy,
         queue,
@@ -268,7 +272,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                                              elapsedTimes);
                 params_alpaka_buffer = tp_alpaka(
                     measurements_alpaka_buffer, spacepoints_alpaka_buffer,
-                    seeds_alpaka_buffer, seeding_opts);
+                    seeds_alpaka_buffer, field_vec);
                 queue.synchronize();
             }  // stop measuring track params alpaka timer
 
@@ -278,7 +282,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                                              elapsedTimes);
                 params = tp(vecmem::get_data(measurements_per_event),
                             vecmem::get_data(spacepoints_per_event),
-                            vecmem::get_data(seeds), seeding_opts);
+                            vecmem::get_data(seeds), field_vec);
             }  // stop measuring track params cpu timer
 
             /*------------------------

@@ -30,13 +30,13 @@ class track_seeding : public interface,
     /// @{
 
     /// Configuration provider for the seed-finder
-    operator seedfinder_config() const override;
+    explicit operator seedfinder_config() const override;
     /// Configuration provider for the seed-filter
-    operator seedfilter_config() const override;
+    explicit operator seedfilter_config() const override;
     /// Configuration provider for the spacepoint grid
-    operator spacepoint_grid_config() const override;
+    explicit operator spacepoint_grid_config() const override;
     /// Configuration provider for the constant magnetic field assumed
-    operator vector3() const override;
+    explicit operator vector3() const override;
 
     /// @}
 
