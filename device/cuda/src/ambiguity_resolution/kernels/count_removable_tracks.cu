@@ -36,8 +36,9 @@ __device__ void count_tracks(int tid, int* sh_n_meas, int n_tracks,
                 offset = sh_n_meas[count];
                 add = stride * 2;
             }
-            __syncthreads();
         }
+
+        __syncthreads();
     }
 
     if (tid == 0) {

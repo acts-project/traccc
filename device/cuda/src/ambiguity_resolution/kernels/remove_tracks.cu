@@ -38,6 +38,9 @@ __global__ void remove_tracks(device::remove_tracks_payload payload) {
 
     auto threadIndex = threadIdx.x;
 
+    bool is_valid_thread = false;
+    bool is_duplicate = true;
+
     shared_tids[threadIndex] = std::numeric_limits<unsigned int>::max();
 
     vecmem::device_vector<const unsigned int> sorted_ids(
@@ -62,7 +65,10 @@ __global__ void remove_tracks(device::remove_tracks_payload payload) {
         payload.meas_to_remove_view);
     vecmem::device_vector<unsigned int> threads(payload.threads_view);
 
-    auto n_accepted_prev = (*payload.n_accepted);
+    const unsigned n_accepted_prev = *(payload.n_accepted);
+
+    __syncthreads();
+
     if (threadIndex == 0) {
         (*payload.n_accepted) -= *(payload.n_removable_tracks);
     }
@@ -70,104 +76,117 @@ __global__ void remove_tracks(device::remove_tracks_payload payload) {
     if (threadIndex < *(payload.n_meas_to_remove)) {
         sh_meas_ids[threadIndex] = meas_to_remove[threadIndex];
         sh_threads[threadIndex] = threads[threadIndex];
-    } else {
-        return;
+        is_valid_thread = true;
     }
-
-    const auto id = sh_meas_ids[threadIndex];
-
-    bool is_duplicate = false;
-    for (unsigned int i = 0; i < threadIndex; ++i) {
-        if (sh_meas_ids[i] == id) {
-            is_duplicate = true;
-            break;
-        }
-    }
-    if (is_duplicate) {
-        return;
-    }
-
-    const auto unique_meas_idx = meas_id_to_unique_id.at(id);
-
-    // If there is only one track associated with measurement, the
-    // number of shared measurement can be reduced by one
-    const auto& tracks = tracks_per_measurement[unique_meas_idx];
-    auto track_status = track_status_per_measurement[unique_meas_idx];
-
-    auto trk_id = sorted_ids[n_accepted_prev - 1 - sh_threads[threadIndex]];
-
-    unsigned int worst_idx =
-        thrust::find(thrust::seq, tracks.begin(), tracks.end(), trk_id) -
-        tracks.begin();
-
-    track_status[worst_idx] = 0;
-
-    int n_sharing_tracks = 1;
-    for (unsigned int i = threadIndex + 1; i < *(payload.n_meas_to_remove);
-         ++i) {
-
-        if (sh_meas_ids[i] == id && sh_threads[i] != sh_threads[i - 1]) {
-            n_sharing_tracks++;
-
-            trk_id = sorted_ids[n_accepted_prev - 1 - sh_threads[i]];
-
-            worst_idx = thrust::find(thrust::seq, tracks.begin(), tracks.end(),
-                                     trk_id) -
-                        tracks.begin();
-
-            track_status[worst_idx] = 0;
-
-        } else if (sh_meas_ids[i] != id) {
-            break;
-        }
-    }
-
-    vecmem::device_atomic_ref<unsigned int> n_accepted_per_meas(
-        n_accepted_tracks_per_measurement.at(
-            static_cast<unsigned int>(unique_meas_idx)));
-    const unsigned int N_A = n_accepted_per_meas.fetch_sub(n_sharing_tracks);
-
-    if (N_A != 1 + n_sharing_tracks) {
-        return;
-    }
-
-    const unsigned int alive_idx =
-        thrust::find(thrust::seq, track_status.begin(), track_status.end(), 1) -
-        track_status.begin();
-
-    shared_tids[threadIndex] = static_cast<unsigned int>(tracks[alive_idx]);
-
-    auto tid = shared_tids[threadIndex];
-
-    const auto m_count = static_cast<unsigned int>(thrust::count(
-        thrust::seq, meas_ids[tid].begin(), meas_ids[tid].end(), id));
-
-    const unsigned int N_S =
-        vecmem::device_atomic_ref<unsigned int>(n_shared.at(tid))
-            .fetch_sub(m_count);
 
     __syncthreads();
 
-    bool already_pushed = false;
-    for (unsigned int i = 0; i < threadIndex; ++i) {
-        if (shared_tids[i] == tid) {
-            already_pushed = true;
-            break;
+    if (is_valid_thread) {
+
+        const auto id = sh_meas_ids[threadIndex];
+        is_duplicate = false;
+
+        for (unsigned int i = 0; i < threadIndex; ++i) {
+            if (sh_meas_ids[i] == id) {
+                is_duplicate = true;
+                break;
+            }
         }
     }
-    if (!already_pushed) {
 
-        // Write updated track IDs
-        vecmem::device_atomic_ref<unsigned int> num_updated_tracks(
-            *(payload.n_updated_tracks));
+    bool active = false;
 
-        const unsigned int pos = num_updated_tracks.fetch_add(1);
+    if (!is_duplicate && is_valid_thread) {
 
-        updated_tracks[pos] = tid;
-        is_updated[tid] = 1;
+        const auto id = sh_meas_ids[threadIndex];
+        const auto unique_meas_idx = meas_id_to_unique_id.at(id);
 
-        rel_shared.at(tid) = static_cast<traccc::scalar>(n_shared.at(tid)) /
-                             static_cast<traccc::scalar>(n_meas.at(tid));
+        // If there is only one track associated with measurement, the
+        // number of shared measurement can be reduced by one
+        const auto& tracks = tracks_per_measurement[unique_meas_idx];
+        auto track_status = track_status_per_measurement[unique_meas_idx];
+
+        auto trk_id =
+            sorted_ids.at(n_accepted_prev - 1 - sh_threads[threadIndex]);
+
+        unsigned int worst_idx =
+            thrust::find(thrust::seq, tracks.begin(), tracks.end(), trk_id) -
+            tracks.begin();
+
+        track_status[worst_idx] = 0;
+
+        int n_sharing_tracks = 1;
+        for (unsigned int i = threadIndex + 1; i < *(payload.n_meas_to_remove);
+             ++i) {
+
+            if (sh_meas_ids[i] == id && sh_threads[i] != sh_threads[i - 1]) {
+                n_sharing_tracks++;
+
+                trk_id = sorted_ids[n_accepted_prev - 1 - sh_threads[i]];
+
+                worst_idx = thrust::find(thrust::seq, tracks.begin(),
+                                         tracks.end(), trk_id) -
+                            tracks.begin();
+
+                track_status[worst_idx] = 0;
+
+            } else if (sh_meas_ids[i] != id) {
+                break;
+            }
+        }
+
+        vecmem::device_atomic_ref<unsigned int> n_accepted_per_meas(
+            n_accepted_tracks_per_measurement.at(
+                static_cast<unsigned int>(unique_meas_idx)));
+        const unsigned int N_A =
+            n_accepted_per_meas.fetch_sub(n_sharing_tracks);
+
+        if (N_A == 1 + n_sharing_tracks) {
+            active = true;
+            const unsigned int alive_idx =
+                thrust::find(thrust::seq, track_status.begin(),
+                             track_status.end(), 1) -
+                track_status.begin();
+
+            shared_tids[threadIndex] =
+                static_cast<unsigned int>(tracks[alive_idx]);
+
+            auto tid = shared_tids[threadIndex];
+
+            const auto m_count = static_cast<unsigned int>(thrust::count(
+                thrust::seq, meas_ids[tid].begin(), meas_ids[tid].end(), id));
+
+            const unsigned int N_S =
+                vecmem::device_atomic_ref<unsigned int>(n_shared.at(tid))
+                    .fetch_sub(m_count);
+        }
+    }
+
+    __syncthreads();
+
+    if (active) {
+        auto tid = shared_tids[threadIndex];
+        bool already_pushed = false;
+        for (unsigned int i = 0; i < threadIndex; ++i) {
+            if (shared_tids[i] == tid) {
+                already_pushed = true;
+                break;
+            }
+        }
+        if (!already_pushed) {
+
+            // Write updated track IDs
+            vecmem::device_atomic_ref<unsigned int> num_updated_tracks(
+                *(payload.n_updated_tracks));
+
+            const unsigned int pos = num_updated_tracks.fetch_add(1);
+
+            updated_tracks[pos] = tid;
+            is_updated[tid] = 1;
+
+            rel_shared.at(tid) = static_cast<traccc::scalar>(n_shared.at(tid)) /
+                                 static_cast<traccc::scalar>(n_meas.at(tid));
+        }
     }
 }
 
