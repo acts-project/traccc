@@ -102,6 +102,7 @@ __launch_bounds__(512) __global__ void count_removable_tracks(
     if (threadIndex == 0) {
         *(payload.n_removable_tracks) = 0;
         *(payload.n_meas_to_remove) = 0;
+        *(payload.n_valid_threads) = 0;
         n_meas_total = 0;
         bound = 512;
         N = 1;
@@ -242,20 +243,12 @@ __launch_bounds__(512) __global__ void count_removable_tracks(
 
     __syncthreads();
 
-    auto n_meas_to_remove_temp = *(payload.n_meas_to_remove);
-
-    if (threadIndex == 0) {
-        *(payload.n_meas_to_remove) = 0;
-    }
-
-    __syncthreads();
-
     int is_valid =
         (threads[threadIndex] < *(payload.n_removable_tracks)) ? 1 : 0;
 
     // TODO: Use better reduction algorithm
     if (is_valid) {
-        atomicAdd(payload.n_meas_to_remove, 1);
+        atomicAdd(payload.n_valid_threads, 1);
     }
 
     __syncthreads();
@@ -264,7 +257,7 @@ __launch_bounds__(512) __global__ void count_removable_tracks(
     prefix[threadIndex] = is_valid;  // copy input
     __syncthreads();
 
-    for (int offset = 1; offset < n_meas_to_remove_temp; offset <<= 1) {
+    for (int offset = 1; offset < *(payload.n_meas_to_remove); offset <<= 1) {
         int val = 0;
         if (threadIndex >= offset) {
             val = prefix[threadIndex - offset];

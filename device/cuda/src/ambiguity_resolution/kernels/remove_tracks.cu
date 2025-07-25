@@ -26,15 +26,16 @@
 
 namespace traccc::cuda::kernels {
 
-__global__ void remove_tracks(device::remove_tracks_payload payload) {
+__launch_bounds__(512) __global__
+    void remove_tracks(device::remove_tracks_payload payload) {
 
     if (*(payload.terminate) == 1) {
         return;
     }
 
-    __shared__ unsigned int shared_tids[1024];
-    __shared__ measurement_id_type sh_meas_ids[1024];
-    __shared__ unsigned int sh_threads[1024];
+    __shared__ unsigned int shared_tids[512];
+    __shared__ measurement_id_type sh_meas_ids[512];
+    __shared__ unsigned int sh_threads[512];
 
     auto threadIndex = threadIdx.x;
 
@@ -73,7 +74,7 @@ __global__ void remove_tracks(device::remove_tracks_payload payload) {
         (*payload.n_accepted) -= *(payload.n_removable_tracks);
     }
 
-    if (threadIndex < *(payload.n_meas_to_remove)) {
+    if (threadIndex < *(payload.n_valid_threads)) {
         sh_meas_ids[threadIndex] = meas_to_remove[threadIndex];
         sh_threads[threadIndex] = threads[threadIndex];
         is_valid_thread = true;
@@ -82,16 +83,8 @@ __global__ void remove_tracks(device::remove_tracks_payload payload) {
     __syncthreads();
 
     if (is_valid_thread) {
-
         const auto id = sh_meas_ids[threadIndex];
-        is_duplicate = false;
-
-        for (unsigned int i = 0; i < threadIndex; ++i) {
-            if (sh_meas_ids[i] == id) {
-                is_duplicate = true;
-                break;
-            }
-        }
+        is_duplicate = (threadIndex > 0 && sh_meas_ids[threadIndex - 1] == id);
     }
 
     bool active = false;
@@ -116,7 +109,7 @@ __global__ void remove_tracks(device::remove_tracks_payload payload) {
         track_status[worst_idx] = 0;
 
         int n_sharing_tracks = 1;
-        for (unsigned int i = threadIndex + 1; i < *(payload.n_meas_to_remove);
+        for (unsigned int i = threadIndex + 1; i < *(payload.n_valid_threads);
              ++i) {
 
             if (sh_meas_ids[i] == id && sh_threads[i] != sh_threads[i - 1]) {
