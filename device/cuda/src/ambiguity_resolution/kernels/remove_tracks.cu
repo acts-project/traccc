@@ -106,7 +106,8 @@ __global__ void remove_tracks(device::remove_tracks_payload payload) {
         const auto& tracks = tracks_per_measurement[unique_meas_idx];
         auto track_status = track_status_per_measurement[unique_meas_idx];
 
-        auto trk_id = sorted_ids[n_accepted_prev - 1 - sh_threads[threadIndex]];
+        auto trk_id =
+            sorted_ids.at(n_accepted_prev - 1 - sh_threads[threadIndex]);
 
         unsigned int worst_idx =
             thrust::find(thrust::seq, tracks.begin(), tracks.end(), trk_id) -
