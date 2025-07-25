@@ -117,12 +117,15 @@ int seq_run(const traccc::opts::input_data& input_opts,
     using fitting_algorithm = traccc::host::kalman_fitting_algorithm;
 
     // Constant B field for the track finding and fitting
-    const traccc::vector3 field_vec = {0.f, 0.f,
-                                       seeding_opts.seedfinder.bFieldInZ};
+    const traccc::vector3 field_vec(seeding_opts);
     const auto field = traccc::details::make_magnetic_field(bfield_opts);
 
     // Algorithm configuration(s).
     detray::propagation::config propagation_config(propagation_opts);
+
+    const traccc::seedfinder_config seedfinder_config(seeding_opts);
+    const traccc::seedfilter_config seedfilter_config(seeding_opts);
+    const traccc::spacepoint_grid_config spacepoint_grid_config(seeding_opts);
 
     finding_algorithm::config_type finding_cfg(finding_opts);
     finding_cfg.propagation = propagation_config;
@@ -141,8 +144,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
     spacepoint_formation_algorithm sf(host_mr,
                                       logger().clone("SpFormationAlg"));
     traccc::host::seeding_algorithm sa(
-        seeding_opts.seedfinder, {seeding_opts.seedfinder},
-        seeding_opts.seedfilter, host_mr, logger().clone("SeedingAlg"));
+        seedfinder_config, spacepoint_grid_config, seedfilter_config, host_mr,
+        logger().clone("SeedingAlg"));
     traccc::host::track_params_estimation tp(host_mr,
                                              logger().clone("TrackParEstAlg"));
 

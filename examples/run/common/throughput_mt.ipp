@@ -151,10 +151,12 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
         }
     }
 
+    // Algorithm configuration(s).
     typename FULL_CHAIN_ALG::clustering_algorithm::config_type clustering_cfg(
         clusterization_opts);
-
-    // Algorithm configuration(s).
+    const traccc::seedfinder_config seedfinder_config(seeding_opts);
+    const traccc::seedfilter_config seedfilter_config(seeding_opts);
+    const traccc::spacepoint_grid_config spacepoint_grid_config(seeding_opts);
     detray::propagation::config propagation_config(propagation_opts);
     typename FULL_CHAIN_ALG::finding_algorithm::config_type finding_cfg(
         finding_opts);
@@ -175,15 +177,9 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
                       *(cached_host_mrs.at(i)))
                 : static_cast<vecmem::memory_resource&>(uncached_host_mr);
         algs.push_back(
-            {alg_host_mr,
-             clustering_cfg,
-             seeding_opts.seedfinder,
-             {seeding_opts.seedfinder},
-             seeding_opts.seedfilter,
-             finding_cfg,
-             fitting_cfg,
-             det_descr,
-             field,
+            {alg_host_mr, clustering_cfg, seedfinder_config,
+             spacepoint_grid_config, seedfilter_config, finding_cfg,
+             fitting_cfg, det_descr, field,
              (detector_opts.use_detray_detector ? &detector : nullptr),
              logger().clone()});
     }
