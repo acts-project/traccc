@@ -57,7 +57,7 @@ track_propagation::track_propagation()
                              ->default_value(m_config.stepping.rk_error_tol /
                                              traccc::unit<float>::mm),
                          "The Runge-Kutta stepper tolerance [mm]");
-    m_desc.add_options()("min-step-size-mm",
+    m_desc.add_options()("stepping-min-stepsize",
                          po::value(&(m_config.stepping.min_stepsize))
                              ->default_value(m_config.stepping.min_stepsize /
                                              traccc::unit<float>::mm),
@@ -67,7 +67,7 @@ track_propagation::track_propagation()
                              ->default_value(m_config.stepping.path_limit /
                                              traccc::unit<float>::m),
                          "The maximum path length for the stepper [m]");
-    m_desc.add_options()("max-rk-updates",
+    m_desc.add_options()("stepping-max-rk-updates",
                          po::value(&(m_config.stepping.max_rk_updates))
                              ->default_value(m_config.stepping.max_rk_updates),
                          "The maximum number of Runge-Kutta updates");
