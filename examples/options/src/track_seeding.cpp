@@ -110,6 +110,8 @@ void track_seeding::read(const po::variables_map&) {
     m_seedfinder.impactMax *= unit<float>::mm;
     m_seedfinder.maxPtScattering *= unit<float>::GeV;
     m_seedfinder.bFieldInZ *= unit<float>::T;
+
+    m_seedfinder.setup();
 }
 
 std::unique_ptr<configuration_printable> track_seeding::as_printable() const {
