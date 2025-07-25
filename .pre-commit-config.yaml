@@ -29,3 +29,11 @@ repos:
         name: Check taboo code patterns
         language: system
         entry: .github/check_taboos.sh
+
+  - repo: local
+    hooks:
+      - id: check_duplicate_cu_files
+        name: Check duplicate .cu file names
+        language: system
+        entry: .github/check_duplicate_cu_files.sh
+        pass_filenames: false
