@@ -45,6 +45,8 @@ __global__ void count_shared_measurements(
 
         const auto unique_meas_idx = meas_id_to_unique_id.at(meas_id);
 
+        // If the number of associated tracks is larger than 1, then increase
+        // the number of shared measurements
         if (n_accepted_tracks_per_measurement.at(unique_meas_idx) > 1) {
             vecmem::device_atomic_ref<unsigned int>(n_shared.at(id))
                 .fetch_add(1u);
