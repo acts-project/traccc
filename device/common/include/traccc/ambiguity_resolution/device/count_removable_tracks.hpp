@@ -86,6 +86,11 @@ struct count_removable_tracks_payload {
      * @brief View object to thread id of measurements to remove
      */
     vecmem::data::vector_view<unsigned int> threads_view;
+
+    /**
+     * @brief The number of threads that can remove its corresponding track
+     */
+    unsigned int* n_valid_threads;
 };
 
 }  // namespace traccc::device
