@@ -38,8 +38,8 @@ inline std::pair<detray::axis2::circular<>, detray::axis2::regular<>> get_axes(
         }
         scalar maxR2 = grid_config.rMax * grid_config.rMax;
         scalar xOuter = maxR2 / (2 * minHelixRadius);
-        scalar yOuter = std::sqrt(maxR2 - xOuter * xOuter);
-        scalar outerAngle = std::atan(xOuter / yOuter);
+        scalar yOuter = math::fast::sqrt(maxR2 - xOuter * xOuter);
+        scalar outerAngle = math::fast::atan(xOuter / yOuter);
 
         // intersection of helix and max detector radius minus maximum R
         // distance from middle SP to top SP
@@ -50,15 +50,15 @@ inline std::pair<detray::axis2::circular<>, detray::axis2::regular<>> get_axes(
             scalar innerCircleR2 = (grid_config.rMax - grid_config.deltaRMax) *
                                    (grid_config.rMax - grid_config.deltaRMax);
             scalar xInner = innerCircleR2 / (2 * minHelixRadius);
-            scalar yInner = std::sqrt(innerCircleR2 - xInner * xInner);
-            innerAngle = std::atan(xInner / yInner);
+            scalar yInner = math::fast::sqrt(innerCircleR2 - xInner * xInner);
+            innerAngle = math::fast::atan(xInner / yInner);
         }
 
         // evaluating the azimutal deflection including the maximum impact
         // parameter
-        scalar deltaAngleWithMaxD0 =
-            math::fabs(std::asin(grid_config.impactMax / (rMin)) -
-                       std::asin(grid_config.impactMax / grid_config.rMax));
+        scalar deltaAngleWithMaxD0 = math::fabs(
+            math::fast::asin(grid_config.impactMax / (rMin)) -
+            math::fast::asin(grid_config.impactMax / grid_config.rMax));
 
         // evaluating delta Phi based on the inner and outer angle, and the
         // azimutal deflection including the maximum impact parameter Divide by
@@ -117,7 +117,7 @@ inline TRACCC_HOST_DEVICE bool is_valid_sp(const seedfinder_config& config,
     if (sp.z() > config.zMax || sp.z() < config.zMin) {
         return false;
     }
-    scalar spPhi = algebra::math::atan2(sp.y(), sp.x());
+    scalar spPhi = math::fast::atan2(sp.y(), sp.x());
     if (spPhi > config.phiMax || spPhi < config.phiMin) {
         return false;
     }

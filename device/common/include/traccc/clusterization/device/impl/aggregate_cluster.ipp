@@ -178,7 +178,7 @@ inline void aggregate_cluster(
         out.diameter = std::max(delta0, delta1);
     } else if (cfg.diameter_strategy ==
                clustering_diameter_strategy::DIAGONAL) {
-        out.diameter = math::sqrt(delta0 * delta0 + delta1 * delta1);
+        out.diameter = math::fast::sqrt(delta0 * delta0 + delta1 * delta1);
     }
 }
 

@@ -143,3 +143,7 @@ target_compile_definitions( traccc_core
 # Set the algebra-plugins plugin to use.
 message(STATUS "Building with plugin type: " ${TRACCC_ALGEBRA_PLUGINS})
 target_compile_definitions(traccc_core PUBLIC ALGEBRA_PLUGINS_INCLUDE_${TRACCC_ALGEBRA_PLUGINS})
+
+if(TRACCC_FORCE_SLOW_MATH)
+  target_compile_definitions(traccc_core PUBLIC TRACCC_FORCE_SLOW_MATH)
+endif()

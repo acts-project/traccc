@@ -64,7 +64,7 @@ bool TRACCC_HOST_DEVICE triplet_finding_helper::isCompatible(
     if (deltaCotTheta2 - error2 > 0) {
         deltaCotTheta = math::fabs(deltaCotTheta);
         // if deltaTheta larger than the scattering for the lower pT cut, skip
-        error = std::sqrt(error2);
+        error = math::fast::sqrt(error2);
         dCotThetaMinusError2 = deltaCotTheta2 + error2 -
                                static_cast<scalar>(2.) * deltaCotTheta * error;
         // avoid taking root of scatteringInRegion
@@ -101,8 +101,8 @@ bool TRACCC_HOST_DEVICE triplet_finding_helper::isCompatible(
         static_cast<scalar>(4.) * iHelixDiameter2 * config.pT2perRadius;
     // if pT > maxPtScattering, calculate allowed scattering angle using
     // maxPtScattering instead of pt.
-    scalar pT =
-        config.pTPerHelixRadius * std::sqrt(S2 / B2) / static_cast<scalar>(2.);
+    scalar pT = config.pTPerHelixRadius * math::fast::sqrt(S2 / B2) /
+                static_cast<scalar>(2.);
     if (pT > config.maxPtScattering) {
         scalar pTscatter = config.highland / config.maxPtScattering;
         pT2scatter = pTscatter * pTscatter;
@@ -118,7 +118,7 @@ bool TRACCC_HOST_DEVICE triplet_finding_helper::isCompatible(
     }
 
     // calculate curvature
-    curvature = B / std::sqrt(S2);
+    curvature = B / math::fast::sqrt(S2);
 
     // A and B allow calculation of impact params in U/V plane with linear
     // function

@@ -67,6 +67,9 @@ option( TRACCC_BUILD_TESTING "Build the (unit) tests of traccc" TRUE )
 option( TRACCC_BUILD_BENCHMARKS "Build the benchmarks of traccc" TRUE )
 option( TRACCC_BUILD_EXAMPLES "Build the examples of traccc" TRUE )
 
+# Flags controlling aspects of the traccc build
+option( TRACCC_FORCE_SLOW_MATH "Enforce slow math functions" FALSE )
+
 # Flags controlling what traccc should use.
 option( TRACCC_USE_SYSTEM_LIBS "Use system libraries be default" FALSE )
 option( TRACCC_USE_SPACK_LIBS "Use Spack libraries by default" FALSE )

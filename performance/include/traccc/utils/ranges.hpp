@@ -18,7 +18,7 @@ namespace traccc {
 
 template <typename scalar_t>
 TRACCC_HOST_DEVICE inline scalar_t eta_to_theta(const scalar_t eta) {
-    return 2.f * math::atan(std::exp(-eta));
+    return 2.f * math::atan(math::exp(-eta));
 }
 
 template <typename scalar_t>

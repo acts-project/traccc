@@ -9,6 +9,7 @@
 
 // Project include(s).
 #include "traccc/definitions/common.hpp"
+#include "traccc/definitions/math.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 
@@ -119,19 +120,19 @@ struct seedfinder_config {
     TRACCC_HOST_DEVICE
     void setup() {
         highland = 13.6f * traccc::unit<float>::MeV *
-                   std::sqrt(radLengthPerSeed) *
-                   (1.f + 0.038f * std::log(radLengthPerSeed));
+                   math::sqrt(radLengthPerSeed) *
+                   (1.f + 0.038f * math::log(radLengthPerSeed));
 
         float maxScatteringAngle = highland / minPt;
         maxScatteringAngle2 = maxScatteringAngle * maxScatteringAngle;
 
         pTPerHelixRadius = bFieldInZ;
-        minHelixDiameter2 = std::pow(minPt * 2.f / pTPerHelixRadius, 2.f);
-        minHelixRadius = std::sqrt(minHelixDiameter2) / 2.f;
+        minHelixDiameter2 = math::pow(minPt * 2.f / pTPerHelixRadius, 2.f);
+        minHelixRadius = math::sqrt(minHelixDiameter2) / 2.f;
 
         // @TODO: This is definitely a bug because highland / pTPerHelixRadius
         // is in length unit
-        pT2perRadius = std::pow(highland / pTPerHelixRadius, 2.f);
+        pT2perRadius = math::pow(highland / pTPerHelixRadius, 2.f);
     }
 };
 

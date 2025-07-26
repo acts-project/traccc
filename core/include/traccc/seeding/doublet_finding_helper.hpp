@@ -144,7 +144,7 @@ bool TRACCC_HOST_DEVICE doublet_finding_helper::isCompatible(
     scalar deltaX = sp2.x() - sp1.x();
     scalar deltaY = sp2.y() - sp1.y();
     scalar deltaXY2 = deltaX * deltaX + deltaY * deltaY;
-    scalar sagittaLength = math::sqrt(
+    scalar sagittaLength = math::fast::sqrt(
         config.minHelixRadius * config.minHelixRadius - deltaXY2 / 4.f);
 
     /*
@@ -174,7 +174,7 @@ bool TRACCC_HOST_DEVICE doublet_finding_helper::isCompatible(
      * mdY = q * sinTheta
      * ```
      */
-    scalar denom = math::sqrt((slope * slope + 1) / (slope * slope));
+    scalar denom = math::fast::sqrt((slope * slope + 1) / (slope * slope));
     scalar cosCentralAngle = 1.f / denom;
     scalar sinCentralAngle = -1.f / (slope * denom);
 
