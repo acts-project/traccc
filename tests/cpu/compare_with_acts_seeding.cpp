@@ -109,6 +109,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     traccc_config.deltaRMin = 1.f * traccc::unit<float>::mm;
     traccc_config.deltaRMax = 60.f * traccc::unit<float>::mm;
     traccc_config.sigmaScattering = 1.0f;
+    traccc_config.deltaZMax = 1000000.f * traccc::unit<float>::mm;
 
     traccc::spacepoint_grid_config grid_config(traccc_config);
 
