@@ -36,6 +36,7 @@ __launch_bounds__(512) __global__
     __shared__ unsigned int shared_tids[512];
     __shared__ measurement_id_type sh_meas_ids[512];
     __shared__ unsigned int sh_threads[512];
+    __shared__ unsigned int n_updating_threads;
 
     auto threadIndex = threadIdx.x;
 
@@ -72,6 +73,7 @@ __launch_bounds__(512) __global__
 
     if (threadIndex == 0) {
         (*payload.n_accepted) -= *(payload.n_removable_tracks);
+        n_updating_threads = 0;
     }
 
     if (threadIndex < *(payload.n_valid_threads)) {
@@ -88,6 +90,7 @@ __launch_bounds__(512) __global__
     }
 
     bool active = false;
+    unsigned int pos1;
 
     if (!is_duplicate && is_valid_thread) {
 
@@ -141,10 +144,11 @@ __launch_bounds__(512) __global__
                              track_status.end(), 1) -
                 track_status.begin();
 
-            shared_tids[threadIndex] =
-                static_cast<unsigned int>(tracks[alive_idx]);
+            pos1 = atomicAdd(&n_updating_threads, 1);
 
-            auto tid = shared_tids[threadIndex];
+            shared_tids[pos1] = static_cast<unsigned int>(tracks[alive_idx]);
+
+            auto tid = shared_tids[pos1];
 
             const auto m_count = static_cast<unsigned int>(thrust::count(
                 thrust::seq, meas_ids[tid].begin(), meas_ids[tid].end(), id));
@@ -158,23 +162,24 @@ __launch_bounds__(512) __global__
     __syncthreads();
 
     if (active) {
-        auto tid = shared_tids[threadIndex];
+        auto tid = shared_tids[pos1];
         bool already_pushed = false;
-        for (unsigned int i = 0; i < threadIndex; ++i) {
+        for (unsigned int i = 0; i < pos1; ++i) {
             if (shared_tids[i] == tid) {
                 already_pushed = true;
                 break;
             }
         }
+
         if (!already_pushed) {
 
             // Write updated track IDs
             vecmem::device_atomic_ref<unsigned int> num_updated_tracks(
                 *(payload.n_updated_tracks));
 
-            const unsigned int pos = num_updated_tracks.fetch_add(1);
+            const unsigned int pos2 = num_updated_tracks.fetch_add(1);
 
-            updated_tracks[pos] = tid;
+            updated_tracks[pos2] = tid;
             is_updated[tid] = 1;
 
             rel_shared.at(tid) = static_cast<traccc::scalar>(n_shared.at(tid)) /
