@@ -49,6 +49,12 @@ track_propagation::track_propagation()
                             traccc::unit<float>::mm),
         "The maximum mask tolerance [mm]");
     m_desc.add_options()(
+        "mask-tolerance-scaling",
+        po::value(&(m_config.navigation.mask_tolerance_scalor))
+            ->default_value(m_config.navigation.mask_tolerance_scalor),
+        "Scale factor between min. and max. mask tolerance with surface "
+        "distance");
+    m_desc.add_options()(
         "search-window",
         po::value(&m_search_window)->default_value(m_search_window),
         "Size of the grid surface search window");
@@ -125,7 +131,7 @@ std::unique_ptr<configuration_printable> track_propagation::as_printable()
                        traccc::unit<float>::mm) +
             " mm"));
     cat_nav->add_child(std::make_unique<configuration_kv_pair>(
-        "Mask tolerance scalar",
+        "Mask tolerance scaling",
         std::to_string(m_config.navigation.mask_tolerance_scalor)));
     cat_nav->add_child(std::make_unique<configuration_kv_pair>(
         "Path tolerance", std::to_string(m_config.navigation.path_tolerance /

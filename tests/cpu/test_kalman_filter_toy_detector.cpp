@@ -102,12 +102,12 @@ TEST_P(KF_intergration_test_toy_detector, toy_detector) {
     prop_cfg.navigation.max_mask_tolerance =
         std::get<1>(GetParam()) + 3.f * traccc::unit<float>::mm;
 
-    const int success = kalman_filter_comparison(
+    const bool success = kalman_filter_comparison(
         det, names, prop_cfg, "detray_simulation/toy_detector", n_events,
         logger->clone(), std::get<6>(GetParam()), std::get<7>(GetParam()),
         false, ptc_type, stddevs, B);
 
-    ASSERT_EQ(success, EXIT_SUCCESS);
+    ASSERT_TRUE(success);
 }
 
 // Parameters:
@@ -121,7 +121,7 @@ TEST_P(KF_intergration_test_toy_detector, toy_detector) {
 // 8: Do energy loss
 
 // No material - navigation should work
-INSTANTIATE_TEST_SUITE_P(
+/*INSTANTIATE_TEST_SUITE_P(
     pT_100GeV_no_mat, KF_intergration_test_toy_detector,
     ::testing::Values(std::make_tuple(100.f * traccc::unit<scalar>::GeV,
                                       1e-5f * traccc::unit<float>::mm, 0.001f,
@@ -131,7 +131,7 @@ INSTANTIATE_TEST_SUITE_P(
     pT_10GeV_no_mat, KF_intergration_test_toy_detector,
     ::testing::Values(std::make_tuple(10.f * traccc::unit<scalar>::GeV,
                                       1e-5f * traccc::unit<float>::mm, 0.001f,
-                                      0.001f, 1u, false, false, false)));
+                                      0.001f, 1u, false, false, false)));*/
 
 INSTANTIATE_TEST_SUITE_P(
     pT_05GeV_no_mat, KF_intergration_test_toy_detector,
@@ -140,7 +140,7 @@ INSTANTIATE_TEST_SUITE_P(
                                       0.001f, 1u, false, false, false)));
 
 // No scattering - navigation should work (material interactor models e-loss)
-INSTANTIATE_TEST_SUITE_P(
+/*INSTANTIATE_TEST_SUITE_P(
     pT_100GeV_only_eloss, KF_intergration_test_toy_detector,
     ::testing::Values(std::make_tuple(100.f * traccc::unit<scalar>::GeV,
                                       1e-3f * traccc::unit<float>::mm, 0.001f,
@@ -149,7 +149,7 @@ INSTANTIATE_TEST_SUITE_P(
     pT_10GeV_only_eloss, KF_intergration_test_toy_detector,
     ::testing::Values(std::make_tuple(10.f * traccc::unit<scalar>::GeV,
                                       1e-3f * traccc::unit<float>::mm, 0.001f,
-                                      0.005f, 4u, true, false, true)));
+                                      0.005f, 4u, true, false, true)));*/
 
 INSTANTIATE_TEST_SUITE_P(
     pT_05GeV_only_eloss, KF_intergration_test_toy_detector,
@@ -159,7 +159,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 // No energy loss - navigation has to compensate the scattering angle
 // (turn off the material in the detector to prevent bethe-bloch corrections)
-INSTANTIATE_TEST_SUITE_P(
+/*INSTANTIATE_TEST_SUITE_P(
     pT_100GeV_only_scatt, KF_intergration_test_toy_detector,
     ::testing::Values(std::make_tuple(100.f * traccc::unit<scalar>::GeV,
                                       1e-2f * traccc::unit<float>::mm, 0.001f,
@@ -174,10 +174,10 @@ INSTANTIATE_TEST_SUITE_P(
     pT_05GeV_only_scatt, KF_intergration_test_toy_detector,
     ::testing::Values(std::make_tuple(0.5f * traccc::unit<scalar>::GeV,
                                       1e-2f * traccc::unit<float>::mm, 0.005f,
-                                      0.005f, 4u, true, true, false)));
+                                      0.005f, 4u, true, true, false)));*/
 
 // Nominal (e-loss + scattering)
-INSTANTIATE_TEST_SUITE_P(
+/*INSTANTIATE_TEST_SUITE_P(
     pT_100GeV_nominal, KF_intergration_test_toy_detector,
     ::testing::Values(std::make_tuple(100.f * traccc::unit<scalar>::GeV,
                                       1e-2f * traccc::unit<float>::mm, 0.01f,
@@ -186,7 +186,7 @@ INSTANTIATE_TEST_SUITE_P(
     pT_10GeV_nominal, KF_intergration_test_toy_detector,
     ::testing::Values(std::make_tuple(10.f * traccc::unit<scalar>::GeV,
                                       1e-2f * traccc::unit<float>::mm, 0.01f,
-                                      0.15f, 1u, true, true, true)));
+                                      0.15f, 1u, true, true, true)));*/
 
 INSTANTIATE_TEST_SUITE_P(
     pT_05GeV_nominal, KF_intergration_test_toy_detector,

@@ -371,7 +371,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
         if (accelerator_opts.compare_with_cpu) {
 
             // Show which event we are currently presenting the results for.
-            ("===>>> Event " << event << " <<<===");
+            TRACCC_INFO("===>>> Event " << event << " <<<===");
 
             // Compare the measurements made on the host and on the device.
             traccc::collection_comparator<traccc::measurement>
@@ -461,20 +461,22 @@ int seq_run(const traccc::opts::detector& detector_opts,
         sd_performance_writer.finalize();
     }
 
-    ("==> Statistics ... ");
-    ("- read    " << n_cells << " cells");
-    ("- created (cpu)  " << n_measurements << " measurements     ");
-    ("- created (alpaka)  " << n_measurements_alpaka << " measurements     ");
-    ("- created (cpu)  " << n_spacepoints << " spacepoints     ");
-    ("- created (alpaka) " << n_spacepoints_alpaka << " spacepoints     ");
+    TRACCC_INFO("==> Statistics ... ");
+    TRACCC_INFO("- read    " << n_cells << " cells");
+    TRACCC_INFO("- created (cpu)  " << n_measurements << " measurements     ");
+    TRACCC_INFO("- created (alpaka)  " << n_measurements_alpaka
+                                       << " measurements     ");
+    TRACCC_INFO("- created (cpu)  " << n_spacepoints << " spacepoints     ");
+    TRACCC_INFO("- created (alpaka) " << n_spacepoints_alpaka
+                                      << " spacepoints     ");
 
-    ("- created  (cpu) " << n_seeds << " seeds");
-    ("- created (alpaka) " << n_seeds_alpaka << " seeds");
-    ("- found (cpu)    " << n_found_tracks << " tracks");
-    ("- found (alpaka)   " << n_found_tracks_alpaka << " tracks");
-    ("- fitted (cpu)   " << n_fitted_tracks << " tracks");
-    ("- fitted (alpaka)  " << n_fitted_tracks_alpaka << " tracks");
-    ("==>Elapsed times... " << elapsedTimes);
+    TRACCC_INFO("- created  (cpu) " << n_seeds << " seeds");
+    TRACCC_INFO("- created (alpaka) " << n_seeds_alpaka << " seeds");
+    TRACCC_INFO("- found (cpu)    " << n_found_tracks << " tracks");
+    TRACCC_INFO("- found (alpaka)   " << n_found_tracks_alpaka << " tracks");
+    TRACCC_INFO("- fitted (cpu)   " << n_fitted_tracks << " tracks");
+    TRACCC_INFO("- fitted (alpaka)  " << n_fitted_tracks_alpaka << " tracks");
+    TRACCC_INFO("==>Elapsed times... " << elapsedTimes);
 
     return 0;
 }

@@ -70,10 +70,10 @@ int main(int argc, char* argv[]) {
     detray::io::detector_reader_config reader_cfg;
     reader_cfg.add_file(
         traccc::io::get_absolute_path(detector_opts.detector_file));
-    /*if (!detector_opts.material_file.empty()) {
+    if (!detector_opts.material_file.empty()) {
         reader_cfg.add_file(
             traccc::io::get_absolute_path(detector_opts.material_file));
-    }*/
+    }
     if (!detector_opts.grid_file.empty()) {
         reader_cfg.add_file(
             traccc::io::get_absolute_path(detector_opts.grid_file));
@@ -82,6 +82,24 @@ int main(int argc, char* argv[]) {
     // Read the detector.
     auto [det, names] =
         detray::io::read_detector<detector_t>(host_mr, reader_cfg);
+
+    // Vector for the constant magnetic field
+    constexpr vector3_t B{0.f, 0.f, 2.f * traccc::unit<traccc::scalar>::T};
+
+    /// Measurement smearing parameters
+    // TODO: Add options to make this configurable
+    static constexpr std::array<traccc::scalar, 2u> smearing{
+        10.f * traccc::unit<traccc::scalar>::um,
+        25.f * traccc::unit<traccc::scalar>::um};
+
+    /// Standard deviations for seed track parameters
+    static constexpr std::array<traccc::scalar, traccc::e_bound_size> stddevs =
+        {smearing[0],
+         smearing[1],
+         1.f * traccc::unit<traccc::scalar>::degree,
+         1.f * traccc::unit<traccc::scalar>::degree,
+         0.01f / traccc::unit<traccc::scalar>::GeV,
+         1000.f * traccc::unit<traccc::scalar>::ns};
 
     // Check input dir
     std::string data_prefix{"../data/"};  //< Implicit data directory prefix
@@ -106,16 +124,9 @@ int main(int argc, char* argv[]) {
         /// B field value and its type
         using b_field_t =
             covfie::field<traccc::const_bfield_backend_t<traccc::scalar>>;
-        constexpr vector3_t B{0.f, 0.f, 2.f * traccc::unit<traccc::scalar>::T};
         b_field_t field =
             traccc::construct_const_bfield(B)
                 .as_field<traccc::const_bfield_backend_t<traccc::scalar>>();
-
-        /// Measurement smearing parameters
-        // TODO: Add options to make this configurable
-        static constexpr std::array<traccc::scalar, 2u> smearing{
-            10.f * traccc::unit<traccc::scalar>::um,
-            25.f * traccc::unit<traccc::scalar>::um};
 
         // Origin of particles
         using generator_t =
@@ -164,9 +175,13 @@ int main(int argc, char* argv[]) {
     }
 
     // Run the application.
-    return kalman_filter_comparison(
+    const bool success = kalman_filter_comparison(
         det, names, propagation_opts, input_opts.directory,
         static_cast<unsigned int>(input_opts.events), logger().clone(),
         generation_opts.do_multiple_scattering, generation_opts.do_energy_loss,
-        input_opts.use_acts_geom_source);
+        input_opts.use_acts_geom_source, generation_opts.ptc_type, stddevs, B);
+
+    if (!success) {
+        TRACCC_ERROR("Validation failed for: " << det.name(names));
+    }
 }

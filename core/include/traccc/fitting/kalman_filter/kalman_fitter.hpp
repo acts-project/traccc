@@ -370,7 +370,7 @@ class kalman_fitter {
         fit_res.pval() = prob(fit_res.chi2(), fit_res.ndf());
 
         // The number of holes
-        fit_res.nholes() = fitter_state.m_fit_actor_state.count_holes();
+        fit_res.nholes() = fitter_state.m_fit_actor_state.n_holes;
     }
 
     TRACCC_HOST_DEVICE
