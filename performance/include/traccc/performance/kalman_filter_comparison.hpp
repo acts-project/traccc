@@ -35,7 +35,9 @@
 /// @param ptc_type the particle hypothesis to use
 /// @param stddevs the initial track parameters smearing (TODO: Adjust to qop)
 /// @param B constant magnetic field vector
-int kalman_filter_comparison(
+///
+/// @returns whether the validation was successful
+bool kalman_filter_comparison(
     const traccc::default_detector::host& det,
     const traccc::default_detector::host::name_map& names,
     const detray::propagation::config& prop_cfg, const std::string& input_dir,
@@ -45,9 +47,11 @@ int kalman_filter_comparison(
     const traccc::pdg_particle<traccc::scalar> ptc_type =
         traccc::muon<traccc::scalar>(),
     const std::array<traccc::scalar, traccc::e_bound_size>& stddevs =
-        {0.001f * traccc::unit<traccc::scalar>::mm,
-         0.001f * traccc::unit<traccc::scalar>::mm, 0.001f, 0.001f,
-         0.001f / traccc::unit<traccc::scalar>::GeV,
-         0.01f * traccc::unit<traccc::scalar>::ns},
+        {15.f * traccc::unit<traccc::scalar>::um,
+         15.f * traccc::unit<traccc::scalar>::um,
+         1.f * traccc::unit<traccc::scalar>::degree,
+         1.f * traccc::unit<traccc::scalar>::degree,
+         0.01f / traccc::unit<traccc::scalar>::GeV,
+         1000.f * traccc::unit<traccc::scalar>::ns},
     const traccc::vector3& B = {0.f, 0.f,
                                 2.f * traccc::unit<traccc::scalar>::T});

@@ -39,19 +39,19 @@ class ToyDetectorFixture : public testing::Test {
 
     /// Measurement smearing parameters
     static constexpr std::array<scalar, 2u> smearing{
-        1.f * traccc::unit<scalar>::um, 1.f * traccc::unit<scalar>::um};
+        10.f * traccc::unit<scalar>::um, 25.f * traccc::unit<scalar>::um};
 
     // Grid search window
     static const inline std::array<detray::dindex, 2> search_window{3u, 3u};
 
     /// Standard deviations for seed track parameters
     static constexpr std::array<scalar, e_bound_size> stddevs = {
-        0.001f * traccc::unit<scalar>::mm,
-        0.001f * traccc::unit<scalar>::mm,
-        0.001f,
-        0.001f,
-        0.001f / traccc::unit<scalar>::GeV,
-        0.01f * traccc::unit<scalar>::ns};
+        smearing[0],
+        smearing[1],
+        1.f * traccc::unit<scalar>::degree,
+        1.f * traccc::unit<scalar>::degree,
+        0.01f / traccc::unit<scalar>::GeV,
+        1000.f * traccc::unit<scalar>::ns};
 
     protected:
     virtual void SetUp() override {

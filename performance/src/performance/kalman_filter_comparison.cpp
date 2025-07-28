@@ -31,7 +31,7 @@
 #include <memory>
 #include <string>
 
-int kalman_filter_comparison(
+bool kalman_filter_comparison(
     const traccc::default_detector::host& det,
     const traccc::default_detector::host::name_map& names,
     const detray::propagation::config& prop_cfg, const std::string& input_dir,
@@ -44,6 +44,8 @@ int kalman_filter_comparison(
     using namespace traccc;
 
     TRACCC_LOCAL_LOGGER(std::move(ilogger));
+    // 'false' if any failures were detected
+    bool test_successful{true};
 
     using algebra_t = traccc::default_algebra;
     using scalar_t = detray::dscalar<algebra_t>;
@@ -69,7 +71,7 @@ int kalman_filter_comparison(
                           .as_field<traccc::const_bfield_backend_t<scalar_t>>();
     b_field_t::view_t field_view = field;
 
-    // constexpr double rel_mat_error{0.01};
+    constexpr double rel_mat_error{0.01};
 
     // Collect data for comparison
 
@@ -176,7 +178,7 @@ int kalman_filter_comparison(
                   << "-----------------------------------\n";
 
         // Prepare actor states
-        /*auto state_tuple = detray::make_tuple(interactor_state);
+        auto state_tuple = detray::make_tuple(interactor_state);
         auto state_ref_tuple = setup_actor_states(state_tuple);
         auto state_ref_tuples =
             vecmem::vector<decltype(state_ref_tuple)>{state_ref_tuple};
@@ -276,9 +278,14 @@ int kalman_filter_comparison(
         std::cout << "No. identical tracks with diff. material: " << n_diff_mat
                   << " (" << 100. * static_cast<double>(n_diff_mat) / n_tracks
                   << "%)" << std::endl;
-        std::cout << "-----------------------------------\n" << std::endl;*/
+        std::cout << "-----------------------------------\n" << std::endl;
 
-        /*EXPECT_EQ(n_diff_mat, 0u);
+        // Trigger test failures
+        if (n_diff_mat != 0) {
+            TRACCC_ERROR("" << n_diff_mat << " tracks have differing material");
+            test_successful = false;
+        }
+        /*
 
         // Check stats
         EXPECT_TRUE(static_cast<double>(trk_stats_fw.n_tracks_w_holes) /
@@ -344,37 +351,62 @@ int kalman_filter_comparison(
                 truth_traces_fw_KF, tracks, state_ref_tuple, stddevs_per_track);
 
         // Check, how many holes the KF found
-        auto n_tracks{static_cast<double>(trk_stats_fw.n_tracks)};
+        std::size_t n_missed_fw{0u};
+        std::size_t n_trk_missing_fw{0u};
         std::size_t n_holes_fw{0u};
-        std::size_t n_holes_actor_fw{0u};
         std::size_t n_trk_holes_fw{0u};
         for (std::size_t i = 0u; i < tracks.size(); ++i) {
-            // std::cout << "TRACK " << i  << ":"<< std::endl;
             const auto& actor_states = state_tuple[i];
             auto fitter_state = detray::get<fit_actor_fw::state>(actor_states);
 
             // What the actor counted
-            n_holes_actor_fw += fitter_state.count_holes();
+            n_missed_fw += fitter_state.count_missed();
+            n_holes_fw += fitter_state.n_holes;
 
-            bool has_holes{false};
-            for (const auto& trk_state : fitter_state.m_track_states) {
-                if (trk_state.is_hole || trk_state.filtered().is_invalid()) {
-                    // std::cout  << trk_state.surface_link() << std::endl;
-                    n_holes_fw++;
-                    has_holes = true;
-                }
+            if (fitter_state.count_missed() > 0u) {
+                n_trk_missing_fw++;
             }
-
-            if (has_holes) {
+            if (fitter_state.n_holes > 0u) {
                 n_trk_holes_fw++;
             }
         }
-        std::cout << "No. holes found by fw KF: " << n_holes_fw
-                  << " (actor: " << n_holes_actor_fw << ")" << std::endl;
-        std::cout << "No. tracks with holes found by fw KF: " << n_trk_holes_fw
+        std::cout << "No. skipped states in fw KF: " << n_missed_fw
                   << std::endl;
-        std::cout << "-----------------------------------" << std::endl;
+        std::cout << "No. tracks with skipped states in fw KF: "
+                  << n_trk_missing_fw << std::endl;
+        std::cout << "No. holes found by fw KF: " << n_holes_fw << std::endl;
+        std::cout << "No. tracks with holes in fw KF: " << n_trk_holes_fw
+                  << std::endl;
 
+        // Trigger failures
+        if (n_miss_nav_fw.n_total() != n_missed_fw) {
+            TRACCC_ERROR(
+                "Forward filter number of missed states incorrect: was "
+                << n_missed_fw << ", should be " << n_miss_nav_fw.n_total());
+            test_successful = false;
+        }
+        if (n_trk_missing_fw != trk_stats_fw.n_tracks_w_holes) {
+            TRACCC_ERROR(
+                "Forward filter number of faulty tracks incorrect: was "
+                << n_trk_missing_fw << ", should be "
+                << trk_stats_fw.n_tracks_w_holes);
+            test_successful = false;
+        }
+        if (n_miss_truth_fw.n_total() != n_holes_fw) {
+            TRACCC_ERROR("Forward filter hole counting incorrect: was "
+                         << n_holes_fw << ", should be "
+                         << n_miss_truth_fw.n_total());
+            test_successful = false;
+        }
+        if (n_trk_holes_fw < trk_stats_fw.n_tracks_w_extra) {
+            TRACCC_ERROR(
+                "Forward filter number of tracks with holes incorrect: was "
+                << n_trk_holes_fw << ", should be "
+                << trk_stats_fw.n_tracks_w_extra);
+            test_successful = false;
+        }
+
+        std::cout << "-----------------------------------" << std::endl;
         std::cout << "BACKWARD - With KF" << std::endl
                   << "-----------------------------------\n";
         using fit_actor_bd =
@@ -394,6 +426,10 @@ int kalman_filter_comparison(
         for (std::size_t i = 0u; i < tracks.size(); ++i) {
             auto& track_states = track_states_coll_bw[i];
             // Prepare actor states
+
+            // Using a view here guarantees that the forward pass fits the
+            // states and only the holes counter etc. gets reset when the
+            // backward state is constructed
             auto trk_states_view = vecmem::get_data(track_states);
             fit_actor_bd::state fit_actor_state{
                 vecmem::device_vector<track_state<algebra_t>>(trk_states_view)};
@@ -417,34 +453,24 @@ int kalman_filter_comparison(
                                  state_ref_tuple_bw, stddevs_per_track);
 
         // Check, how many tracks were smoothed correctly
-        n_tracks = static_cast<double>(trk_stats_bw.n_tracks);
+        const auto n_tracks = static_cast<double>(trk_stats_bw.n_tracks);
+        std::size_t n_missed_bw{0u};
         std::size_t n_holes_bw{0u};
-        std::size_t n_holes_actor_bw{0u};
         std::size_t n_trk_holes_bw{0u};
+        std::size_t n_trk_missing_bw{0u};
         std::size_t n_not_smoothed_correctly{0u};
         for (std::size_t i = 0u; i < tracks.size(); ++i) {
             const auto& actor_states = state_tuple_bw[i];
-            auto fitter_state = detray::get<fit_actor_bd::state>(actor_states);
+            auto fitter_state = detray::get<fit_actor_fw::state>(actor_states);
 
             // What the actor counted
-            n_holes_actor_bw += fitter_state.count_holes();
+            n_missed_bw += fitter_state.count_missed();
+            n_holes_bw += fitter_state.n_holes;
 
-            bool has_holes{false};
-            for (const auto& trk_state : fitter_state.m_track_states) {
-                if (trk_state
-                        .is_hole /*|| trk_state.filtered().is_invalid()*/) {
-                    // std::cout  << trk_state.surface_link() << std::endl;
-                    n_holes_bw++;
-                    has_holes = true;
-                }
+            if (fitter_state.count_missed() > 0u) {
+                n_trk_missing_bw++;
             }
-            // std::cout  << "TRACK: " << i << std::endl;
-            // for (const auto& trk_state : fitter_state.m_track_states) {
-            // std::cout  << trk_state.surface_link() << ", hole: " <<
-            // std::boolalpha << trk_state.is_hole << std::endl;
-            //}
-
-            if (has_holes) {
+            if (fitter_state.n_holes > 0u) {
                 n_trk_holes_bw++;
             }
 
@@ -455,9 +481,13 @@ int kalman_filter_comparison(
                 }
             }
         }
-        std::cout << "No. holes found by bw KF: " << n_holes_bw
-                  << " (actor: " << n_holes_actor_bw << ")" << std::endl;
-        std::cout << "No. tracks with holes found by bw KF: " << n_trk_holes_bw
+        std::cout << "RUNS ON MISSED STATES BY FW KF PASS:\n" << std::endl;
+        std::cout << "No. skipped states in bw KF: " << n_missed_bw
+                  << std::endl;
+        std::cout << "No. tracks with skipped states in bw KF: "
+                  << n_trk_missing_bw << std::endl;
+        std::cout << "No. holes found by bw KF: " << n_holes_bw << std::endl;
+        std::cout << "No. tracks with holes in bw KF: " << n_trk_holes_bw
                   << std::endl;
         std::cout << "No. tracks that were not smoothed correctly: "
                   << n_not_smoothed_correctly << " ("
@@ -465,7 +495,36 @@ int kalman_filter_comparison(
                          n_tracks
                   << "%)" << std::endl;
         std::cout << "-----------------------------------" << std::endl;
+
+        // Trigger failures
+        if (n_missed_bw < n_miss_nav_bw.n_total()) {
+            TRACCC_ERROR(
+                "Backward filter number of missed states incorrect: was "
+                << n_missed_bw << ", should be greater equal "
+                << n_miss_nav_bw.n_total());
+            test_successful = false;
+        }
+        if (n_trk_missing_bw < trk_stats_bw.n_tracks_w_holes) {
+            TRACCC_ERROR(
+                "Backward filter number of faulty tracks incorrect: was "
+                << n_trk_missing_bw << ", should be greater equal "
+                << trk_stats_bw.n_tracks_w_holes);
+            test_successful = false;
+        }
+        if (n_miss_truth_bw.n_total() != n_holes_bw) {
+            TRACCC_ERROR("Backward filter hole counting incorrect: was "
+                         << n_holes_bw << ", should be "
+                         << n_miss_truth_bw.n_total());
+            test_successful = false;
+        }
+        if (n_trk_holes_bw < trk_stats_bw.n_tracks_w_extra) {
+            TRACCC_ERROR(
+                "Backward filter number of tracks with holes incorrect: was "
+                << n_trk_holes_bw << ", should be "
+                << trk_stats_bw.n_tracks_w_extra);
+            test_successful = false;
+        }
     }
 
-    return EXIT_SUCCESS;
+    return test_successful;
 }

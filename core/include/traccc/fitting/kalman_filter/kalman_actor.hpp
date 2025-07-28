@@ -19,6 +19,7 @@
 #include "traccc/utils/particle.hpp"
 
 // detray include(s).
+#include <detray/navigation/direct_navigator.hpp>
 #include <detray/navigation/navigator.hpp>
 #include <detray/propagator/base_actor.hpp>
 
@@ -49,10 +50,7 @@ struct kalman_actor_state {
         const measurement_collection_types::const_device& measurements)
         : m_track{track},
           m_track_states{track_states},
-          m_measurements{measurements} {
-
-	reset();
-    }
+          m_measurements{measurements} {}
 
     /// @return the reference of track state pointed by the iterator
     TRACCC_HOST_DEVICE
@@ -74,7 +72,7 @@ struct kalman_actor_state {
         /*for (auto& trk_state : m_track_states) {
             trk_state.is_hole = true;
         }*/
-        // n_holes = 0u;
+        n_holes = 0u;
     }
 
     /// Advance the iterator
@@ -96,16 +94,24 @@ struct kalman_actor_state {
 
     /// @returns the current number of holes in this state
     TRACCC_HOST_DEVICE
-    unsigned int count_holes() const {
-        unsigned int n_holes{0u};
+    unsigned int count_missed() const {
+        unsigned int n_missed{0u};
 
-        for (const auto& trk_state : m_track_states) {
-            if (trk_state.is_hole) {
-                ++n_holes;
+        if (backward_mode) {
+            for (const auto& trk_state : m_track_states) {
+                if (trk_state.smoothed().is_invalid()) {
+                    ++n_missed;
+                }
+            }
+        } else {
+            for (const auto& trk_state : m_track_states) {
+                if (trk_state.filtered().is_invalid()) {
+                    ++n_missed;
+                }
             }
         }
 
-        return n_holes;
+        return n_missed;
     }
 
     /// @return true if the iterator reaches the end of vector
@@ -119,87 +125,47 @@ struct kalman_actor_state {
 
         // Surface was found, continue with KF algorithm
         if (navigation.barcode() == trk_state.surface_link()) {
-            if (backward_mode) {
-
-                // for (auto& trk_state2 : m_track_states) {
-                // std::cout  << "CONSTR " << trk_state2.surface_link() << ",
-                // hole: " << std::boolalpha << trk_state2.is_hole << std::endl;
-
-                //}
-                // std::cout  << "In KF: Matched " << trk_state.surface_link()
-                // << std::endl;
-            }
-            trk_state.is_hole = false;
-            if (backward_mode) {
-                // Continue with KF
-                // std::cout  << "Next candidate: " << m_it_rev->surface_link()
-                // <<
-                // std::endl;
-            }
-            return true;
-        } else {
-
-            if (backward_mode) {
-                // std::cout  << navigation.barcode() << "\nvs.\n" <<
-                // trk_state.surface_link() << std::endl;
-            }
+            // If track finding did not find measurement on this surface: skip
+            return !trk_state.is_hole;
         }
 
-        // If the current navigation surface can be found at a later
-        // track state, then the current track state was skipped:
-        // Advance the iterator to keep up with the navigation
-        int i{1};
-        const auto next_sf{std::as_const(navigation).target().sf_desc};
-        if (backward_mode) {
-            // std::cout  << "Next: " << next_sf.barcode() << std::endl;
-        }
-        // Additional surfaces: no holes
-
-        // Test if an additional surface was found in the previous step, where
-        // the navigation target was not the next surface yet
-        if (backward_mode) {
-            if (m_it_rev != m_track_states.rbegin()) {
-                // std::cout  << "In correct additional " << std::endl;
-                for (auto itr = m_it_rev - 1; itr != m_track_states.rbegin();
-                     --itr) {
-                    // std::cout  << "Correcting additional " <<
-                    // itr->surface_link() << std::endl;
+        // Skipped surfaces: adjust iterator and remove counted hole
+        // (only relevant if using non-direct navigation, e.g. forward truth
+        // fitting or different prop. config between CKF asnd KF)
+        // TODO: Remove again
+        using detector_t = typename propagation_state_t::detector_type;
+        using nav_state_t = typename propagation_state_t::navigator_state_type;
+        if constexpr (!std::same_as<nav_state_t,
+                                    typename detray::direct_navigator<
+                                        detector_t>::state>) {
+            int i{1};
+            if (backward_mode) {
+                // If we are on the last state and the navigation surface does
+                // not match, it must be an additional surface
+                // -> continue navigation until matched
+                if (m_it_rev + 1 == m_track_states.rend()) {
+                    ++n_holes;
+                    return false;
+                }
+                // Check if the current navigation surfaces can be found on a
+                // later track state. That means the current track state was
+                // skipped by the navigator: Advance the internal iterator
+                for (auto itr = m_it_rev + 1; itr != m_track_states.rend();
+                     ++itr) {
                     if (itr->surface_link() == navigation.barcode()) {
-                        for (int j = 1; j <= i; ++j) {
-                            // std::cout  << "was not hole "  << (m_it_rev -
-                            // j)->surface_link() << std::endl;
-                            (m_it_rev - j)->is_hole = false;
-                        }
-                        m_it_rev -= i;
-                        // std::cout  << "Next candidate: " <<
-                        // m_it_rev->surface_link() << std::endl;
+                        m_it_rev += i;
                         return true;
                     }
                     ++i;
                 }
-            } else if (m_it_rev->surface_link() == navigation.barcode()) {
-                // std::cout  << "Last state was not hole" << std::endl;
-                m_it_rev->is_hole = false;
-                return true;
-            }
-        } else {
-            if (m_it != m_track_states.begin()) {
-                // std::cout << "In correct additional " << std::endl;
-                for (auto itr = m_it - 1;
-                     detray::ranges::distance(m_track_states.begin(), itr) >= 0;
-                     --itr) {
-                    // std::cout << "Correcting additional " <<
-                    // itr->surface_link() << std::endl;
+            } else {
+                if (m_it + 1 == m_track_states.end()) {
+                    ++n_holes;
+                    return false;
+                }
+                for (auto itr = m_it + 1; itr != m_track_states.end(); ++itr) {
                     if (itr->surface_link() == navigation.barcode()) {
-                        for (int j = 1; j <= i; ++j) {
-                            // std::cout << "was not hole "  << (m_it -
-                            // j)->surface_link() << std::endl;
-                            (m_it - j)->is_hole = false;
-                        }
-                        m_it -= i;
-                        // n_holes -= i;
-                        // std::cout << "Next candidate: " <<
-                        // m_it->surface_link() << std::endl;
+                        m_it += i;
                         return true;
                     }
                     ++i;
@@ -207,112 +173,10 @@ struct kalman_actor_state {
             }
         }
 
-        // Navigation found additional surface - not a hole
-        if (trk_state.surface_link() == next_sf.barcode()) {
+        // Mismatch was not from missed state: Is a hole
+        ++n_holes;
 
-            // std::cout << "Additional sf "<< std::endl;
-            // std::cout << "Next candidate: " << m_it->surface_link() <<
-            // std::endl;
-            return false;
-        }
-
-        // Skipped surfaces: flag hole(s)
-        i = 1;
-        if (backward_mode) {
-            if (m_it_rev + 1 == m_track_states.rend()) {
-                ////std::cout  << "Testing last" << std::endl;
-                if (trk_state.surface_link() != next_sf.barcode()) {
-                    // std::cout  << "is hole: Could not find last state: " <<
-                    // trk_state.surface_link() << std::endl;
-                    trk_state.is_hole = true;
-                }
-                // std::cout  << "Next candidate: " << m_it_rev->surface_link()
-                // << std::endl;
-                return false;
-            }
-            for (auto itr = m_it_rev + 1; itr != m_track_states.rend(); ++itr) {
-
-                // std::cout  << "Testing: " << itr->surface_link()<< std::endl;
-                if (itr->surface_link() == navigation.barcode()) {
-
-                    // std::cout  << "Found" << std::endl;
-                    for (int j = 0; j < i; ++j) {
-                        // std::cout  << "is hole" <<(m_it_rev +
-                        // j)->surface_link()
-                        //<< std::endl;
-                        (m_it_rev + j)->is_hole = true;
-                    }
-                    m_it_rev += i;
-                    // The matching candidate is not a hole
-                    m_it_rev->is_hole = false;
-
-                    // std::cout  << "Next candidate: " <<
-                    // m_it_rev->surface_link()
-                    //<< std::endl;
-                    return true;
-                }
-                ++i;
-            }
-            // If the next surface is a portal/passive, the next sensitive
-            // might still be correct
-            if (next_sf.is_sensitive()) {
-                // std::cout  << "is hole " << trk_state.surface_link() <<
-                // std::endl;
-                trk_state.is_hole = true;
-                ++m_it_rev;
-            } else {
-                // std::cout  << "Next sf may be in next volume. staying on " <<
-                // m_it_rev->surface_link() << std::endl;
-            }
-        } else {
-            if (m_it + 1 == m_track_states.end()) {
-                // //std::cout  << "Testing last" << std::endl;
-                if (trk_state.surface_link() != next_sf.barcode() &&
-                    detray::detail::is_invalid_value(
-                        std::as_const(navigation).target().volume_link)) {
-                    // std::cout << "is hole: Could not find last state: " <<
-                    // trk_state.surface_link() << std::endl;
-                    trk_state.is_hole = true;
-                }
-                // std::cout << "Next candidate: " << m_it->surface_link() <<
-                // std::endl;
-                return false;
-            }
-            for (auto itr = m_it + 1; itr != m_track_states.end(); ++itr) {
-
-                // std::cout << "Testing: " << itr->surface_link()<< std::endl;
-                if (itr->surface_link() == navigation.barcode()) {
-
-                    // std::cout << "Found" << std::endl;
-                    for (int j = 0; j < i; ++j) {
-                        // std::cout << "is hole" <<(m_it + j)->surface_link()
-                        // << std::endl;
-                        (m_it + j)->is_hole = true;
-                    }
-                    m_it += i;
-                    // The matching candidate is not a hole
-                    m_it->is_hole = false;
-
-                    // std::cout << "Next candidate: " << m_it->surface_link()
-                    // << std::endl;
-                    return true;
-                }
-                ++i;
-            }
-            // If the next surface is a portal/passive, the next sensitive
-            // might still be correct
-            if (next_sf.is_sensitive()) {
-                // std::cout << "is hole " << trk_state.surface_link() <<
-                // std::endl;
-                trk_state.is_hole = true;
-                ++m_it;
-            } else {
-                // std::cout << "Next sf may be in next volume. staying on " <<
-                // m_it->surface_link() << std::endl;
-            }
-        }
-        // Default case
-        // std::cout << "Next candidate: " << m_it->surface_link() << std::endl;
+        // After additional surface, keep navigating until match is found
         return false;
     }
 
@@ -332,9 +196,8 @@ struct kalman_actor_state {
     /// Index of the current track state
     unsigned int m_idx;
 
-    // The number of holes (The number of sensitive surfaces which do not
-    // have a measurement for the track pattern)
-    // unsigned int n_holes{0u};
+    // Count the number of encountered surfaces without measurement
+    unsigned int n_holes{0u};
 
     // Run back filtering for smoothing, if true
     bool backward_mode = false;
@@ -358,25 +221,21 @@ struct kalman_actor : detray::actor {
         auto& stepping = propagation._stepping;
         auto& navigation = propagation._navigation;
 
-        // If the iterator reaches the end, terminate the propagation
-        if (actor_state.is_complete()) {
-            propagation._heartbeat &= navigation.exit();
-            return;
-        }
-
         // triggered only for sensitive surfaces
         if (navigation.is_on_sensitive()) {
+            // If the iterator reaches the end, additional surfaces are holes
+            if (actor_state.is_complete()) {
+                actor_state.n_holes++;
+                return;
+            }
+
             // Did the navigation switch direction?
             actor_state.backward_mode =
                 navigation.direction() ==
                 detray::navigation::direction::e_backward;
 
-            if (actor_state.is_init()) {
-                // std::cout  << "RESET" << std::endl;
-                actor_state.reset();
-            }
-
-            // Increase the hole counts if the propagator fails to find the next
+            // Increase the hole count if the propagator stops at an additional
+            // surface and wait for the next sensitive surface to match
             if (!actor_state.check_matching_surface(propagation)) {
                 return;
             }
@@ -414,14 +273,12 @@ struct kalman_actor : detray::actor {
 
                     // Forward filter did not find this state: skip
                     if (trk_state.filtered().is_invalid()) {
-                        // trk_state.is_hole = true;
                         actor_state.next();
                         return;
-                    } else {
-                        // Backward filter for smoothing
-                        res = two_filters_smoother<algebra_t>{}(
-                            trk_state, actor_state.m_measurements, bound_param, is_line);
                     }
+                    // Backward filter for smoothing
+                    res = two_filters_smoother<algebra_t>{}(
+                        trk_state, actor_state.m_measurements, bound_param, is_line);
                 } else {
                     assert(false);
                 }
