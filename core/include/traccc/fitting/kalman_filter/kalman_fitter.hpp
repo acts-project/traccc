@@ -370,7 +370,7 @@ class kalman_fitter {
         trk_quality.pval = prob(trk_quality.chi2, trk_quality.ndf);
 
         // The number of holes
-        trk_quality.n_holes = fitter_state.m_fit_actor_state.count_holes();
+        trk_quality.n_holes = fitter_state.m_fit_actor_state.n_holes;
     }
 
     TRACCC_HOST_DEVICE
