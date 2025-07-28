@@ -15,6 +15,7 @@
 #include "traccc/utils/memory_resource.hpp"
 
 // Thrust include(s).
+#if !defined(ALPAKA_ACC_SYCL_ENABLED)
 #include <thrust/binary_search.h>
 #include <thrust/copy.h>
 #include <thrust/execution_policy.h>
@@ -22,20 +23,13 @@
 #include <thrust/scan.h>
 #include <thrust/sort.h>
 #include <thrust/unique.h>
+#endif
 
-// OneDPL include(s).
+// OneDPL include.
+//
+// This is left to a separate file to turn off warnings from oneDPL.
 #if defined(ALPAKA_ACC_SYCL_ENABLED)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wshadow"
-#pragma clang diagnostic ignored "-Wunused-parameter"
-#pragma clang diagnostic ignored "-Wshorten-64-to-32"
-#pragma clang diagnostic ignored "-Wsign-conversion"
-#pragma clang diagnostic ignored "-Wimplicit-int-conversion"
-#pragma clang diagnostic ignored "-Wsign-compare"
-#pragma clang diagnostic ignored "-Wold-style-cast"
-#include <oneapi/dpl/algorithm>
-#include <oneapi/dpl/execution>
-#pragma clang diagnostic pop
+#include "oneDPL.hpp"
 #endif
 
 namespace traccc::alpaka::details {
