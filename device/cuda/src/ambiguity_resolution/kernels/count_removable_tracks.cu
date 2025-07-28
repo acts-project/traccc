@@ -113,8 +113,12 @@ __launch_bounds__(512) __global__ void count_removable_tracks(
 
     __syncthreads();
 
+    unsigned int trk_id = 0;
+    unsigned int n_m = 0;
     if (gid >= 0) {
-        shared_n_meas[threadIndex] = n_meas[sorted_ids[gid]];
+        trk_id = sorted_ids[gid];
+        n_m = n_meas[trk_id];
+        shared_n_meas[threadIndex] = n_m;
     }
 
     __syncthreads();
@@ -148,11 +152,12 @@ __launch_bounds__(512) __global__ void count_removable_tracks(
 
     // @TODO: Improve the logic
     if (threadIndex < n_tracks_to_iterate && gid >= 0) {
-        const auto& mids = meas_ids[sorted_ids[gid]];
-        for (const auto& id : mids) {
-            const unsigned int pos = atomicAdd(&n_meas_total, 1);
-            sh_meas_ids[pos] = id;
-            sh_threads[pos] = threadIndex;
+        const unsigned int pos = atomicAdd(&n_meas_total, n_m);
+
+        const auto& mids = meas_ids[trk_id];
+        for (int i = 0; i < n_m; i++) {
+            sh_meas_ids[pos + i] = mids[i];
+            sh_threads[pos + i] = threadIndex;
         }
     }
 
@@ -197,6 +202,8 @@ __launch_bounds__(512) __global__ void count_removable_tracks(
         bool is_start =
             (threadIndex == 0) || (sh_meas_ids[threadIndex - 1] != mid);
         const auto unique_meas_idx = meas_id_to_unique_id.at(mid);
+        const auto its_accepted_tracks =
+            n_accepted_tracks_per_measurement.at(unique_meas_idx);
 
         if (is_start) {
 
@@ -207,8 +214,7 @@ __launch_bounds__(512) __global__ void count_removable_tracks(
                 if (sh_threads[i] != sh_threads[i - 1]) {
                     n_sharing_tracks++;
 
-                    if (n_sharing_tracks ==
-                        n_accepted_tracks_per_measurement.at(unique_meas_idx)) {
+                    if (n_sharing_tracks == its_accepted_tracks) {
                         atomicMin(&min_thread, sh_threads[i - 1]);
                         break;
                     }
