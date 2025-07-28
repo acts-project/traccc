@@ -206,4 +206,46 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     }
 }
 
+bound_track_parameters_collection_types::host full_chain_algorithm::seeding(
+    const edm::silicon_cell_collection::host& cells) const {
+
+    // Create device copy of input collections
+    edm::silicon_cell_collection::buffer cells_buffer(
+        static_cast<unsigned int>(cells.size()), *m_cached_device_mr);
+    m_copy(vecmem::get_data(cells), cells_buffer)->ignore();
+
+    // Run the clusterization (asynchronously).
+    const measurement_collection_types::buffer measurements =
+        m_clusterization(cells_buffer, m_device_det_descr);
+    m_measurement_sorting(measurements);
+
+    // If we have a Detray detector, run the seeding, track finding and fitting.
+    if (m_detector != nullptr) {
+
+        // Run the seed-finding (asynchronously).
+        const spacepoint_formation_algorithm::output_type spacepoints =
+            m_spacepoint_formation(m_device_detector_view, measurements);
+        const track_params_estimation::output_type track_params =
+            m_track_parameter_estimation(measurements, spacepoints,
+                                         m_seeding(spacepoints), m_field_vec);
+
+        // Copy a limited amount of result data back to the host.
+        bound_track_parameters_collection_types::host result{&m_host_mr};
+        m_copy(track_params, result)->wait();
+        return result;
+
+    }
+    // If not, copy the measurements back to the host, and return a dummy
+    // object.
+    else {
+
+        // Copy the measurements back to the host.
+        measurement_collection_types::host measurements_host(&m_host_mr);
+        m_copy(measurements, measurements_host)->wait();
+
+        // Return an empty object.
+        return {};
+    }
+}
+
 }  // namespace traccc::cuda

@@ -20,6 +20,7 @@
 #include "traccc/bfield/magnetic_field.hpp"
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
+#include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/geometry/detector.hpp"
@@ -107,6 +108,14 @@ class full_chain_algorithm
     ///
     output_type operator()(
         const edm::silicon_cell_collection::host& cells) const override;
+
+    /// Reconstruct track seeds in the entire detector
+    ///
+    /// @param cells The cells for every detector module in the event
+    /// @return The track seeds reconstructed
+    ///
+    bound_track_parameters_collection_types::host seeding(
+        const edm::silicon_cell_collection::host& cells) const;
 
     private:
     /// Alpaka Queue

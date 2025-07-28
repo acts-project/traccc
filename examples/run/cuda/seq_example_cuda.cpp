@@ -150,6 +150,10 @@ int seq_run(const traccc::opts::detector& detector_opts,
     // Algorithm configuration(s).
     detray::propagation::config propagation_config(propagation_opts);
 
+    const traccc::seedfinder_config seedfinder_config(seeding_opts);
+    const traccc::seedfilter_config seedfilter_config(seeding_opts);
+    const traccc::spacepoint_grid_config spacepoint_grid_config(seeding_opts);
+
     traccc::finding_config finding_cfg(finding_opts);
     finding_cfg.propagation = propagation_config;
 
@@ -160,18 +164,21 @@ int seq_run(const traccc::opts::detector& detector_opts,
     fitting_cfg.propagation = propagation_config;
 
     // Constant B field for the track finding and fitting
-    const traccc::vector3 field_vec = {0.f, 0.f,
-                                       seeding_opts.seedfinder.bFieldInZ};
+    const traccc::vector3 field_vec(seeding_opts);
     const auto host_field = traccc::details::make_magnetic_field(bfield_opts);
-    const auto device_field = traccc::cuda::make_magnetic_field(host_field);
+    const auto device_field = traccc::cuda::make_magnetic_field(
+        host_field,
+        (accelerator_opts.use_gpu_texture_memory
+             ? traccc::cuda::magnetic_field_storage::texture_memory
+             : traccc::cuda::magnetic_field_storage::global_memory));
 
     traccc::host::clusterization_algorithm ca(
         host_mr, logger().clone("HostClusteringAlg"));
     host_spacepoint_formation_algorithm sf(
         host_mr, logger().clone("HostSpFormationAlg"));
     traccc::host::seeding_algorithm sa(
-        seeding_opts.seedfinder, {seeding_opts.seedfinder},
-        seeding_opts.seedfilter, host_mr, logger().clone("HostSeedingAlg"));
+        seedfinder_config, spacepoint_grid_config, seedfilter_config, host_mr,
+        logger().clone("HostSeedingAlg"));
     traccc::host::track_params_estimation tp(
         host_mr, logger().clone("HostTrackParEstAlg"));
     host_finding_algorithm finding_alg(finding_cfg, host_mr,
@@ -190,9 +197,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
     device_spacepoint_formation_algorithm sf_cuda(
         mr, copy, stream, logger().clone("CudaSpFormationAlg"));
     traccc::cuda::seeding_algorithm sa_cuda(
-        seeding_opts.seedfinder, {seeding_opts.seedfinder},
-        seeding_opts.seedfilter, mr, copy, stream,
-        logger().clone("CudaSeedingAlg"));
+        seedfinder_config, spacepoint_grid_config, seedfilter_config, mr, copy,
+        stream, logger().clone("CudaSeedingAlg"));
     traccc::cuda::track_params_estimation tp_cuda(
         mr, copy, stream, logger().clone("CudaTrackParEstAlg"));
     device_finding_algorithm finding_alg_cuda(finding_cfg, mr, copy, stream,

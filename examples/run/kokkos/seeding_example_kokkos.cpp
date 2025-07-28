@@ -59,9 +59,14 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                               detector_opts.material_file,
                               detector_opts.grid_file);
 
+    const traccc::vector3 field_vec(seeding_opts);
+
+    const traccc::seedfinder_config seedfinder_config(seeding_opts);
+    const traccc::seedfilter_config seedfilter_config(seeding_opts);
+    const traccc::spacepoint_grid_config spacepoint_grid_config(seeding_opts);
     traccc::host::seeding_algorithm sa(
-        seeding_opts.seedfinder, {seeding_opts.seedfinder},
-        seeding_opts.seedfilter, host_mr, logger().clone("HostSeedingAlg"));
+        seedfinder_config, spacepoint_grid_config, seedfilter_config, host_mr,
+        logger().clone("HostSeedingAlg"));
     traccc::host::track_params_estimation tp(
         host_mr, logger().clone("HostTrackParEstAlg"));
 
@@ -72,7 +77,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     // KOKKOS Spacepoint Binning
     traccc::kokkos::details::spacepoint_binning m_spacepoint_binning(
-        seeding_opts.seedfinder, {seeding_opts.seedfinder}, mr,
+        seedfinder_config, spacepoint_grid_config, mr,
         logger().clone("KokkosBinningAlg"));
 
     // performance writer
@@ -137,8 +142,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                                              elapsedTimes);
                 params = tp(vecmem::get_data(measurements_per_event),
                             vecmem::get_data(spacepoints_per_event),
-                            vecmem::get_data(seeds),
-                            {0.f, 0.f, seeding_opts.seedfinder.bFieldInZ});
+                            vecmem::get_data(seeds), field_vec);
             }  // stop measuring track params cpu timer
 
         }  // Stop measuring wall time

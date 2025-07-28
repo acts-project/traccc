@@ -98,7 +98,7 @@ std::vector<measurement_id_type> get_pattern(
     return ret;
 }
 
-TEST(CudaAmbiguitySolverTests, GreedyResolverTest0) {
+TEST(CUDAAmbiguitySolverTests, GreedyResolverTest0) {
 
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;
@@ -158,7 +158,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest0) {
     }
 }
 
-TEST(CudaAmbiguitySolverTests, GreedyResolverTest1) {
+TEST(CUDAAmbiguitySolverTests, GreedyResolverTest1) {
 
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;
@@ -200,7 +200,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest1) {
                              {5, 14, 1, 11, 18, 16, 3}));
 }
 
-TEST(CudaAmbiguitySolverTests, GreedyResolverTest2) {
+TEST(CUDAAmbiguitySolverTests, GreedyResolverTest2) {
 
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;
@@ -238,7 +238,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest2) {
         find_pattern(res_trk_cands, measurements_device, {3, 5, 6, 13}));
 }
 
-TEST(CudaAmbiguitySolverTests, GreedyResolverTest3) {
+TEST(CUDAAmbiguitySolverTests, GreedyResolverTest3) {
 
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;
@@ -280,7 +280,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest3) {
         find_pattern(res_trk_cands, measurements_device, {13, 16, 2, 7, 11}));
 }
 
-TEST(CudaAmbiguitySolverTests, GreedyResolverTest5) {
+TEST(CUDAAmbiguitySolverTests, GreedyResolverTest5) {
 
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;
@@ -318,7 +318,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest5) {
     ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device, {6, 6, 6, 6}));
 }
 
-TEST(CudaAmbiguitySolverTests, GreedyResolverTest6) {
+TEST(CUDAAmbiguitySolverTests, GreedyResolverTest6) {
 
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;
@@ -359,7 +359,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest6) {
                              {8, 9, 0, 8, 1, 4, 6}));
 }
 
-TEST(CudaAmbiguitySolverTests, GreedyResolverTest7) {
+TEST(CUDAAmbiguitySolverTests, GreedyResolverTest7) {
 
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;
@@ -395,7 +395,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest7) {
     ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device, {2, 8, 5, 4}));
 }
 
-TEST(CudaAmbiguitySolverTests, GreedyResolverTest8) {
+TEST(CUDAAmbiguitySolverTests, GreedyResolverTest8) {
 
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;
@@ -435,7 +435,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest8) {
     ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device, {1, 9, 3, 0}));
 }
 
-TEST(CudaAmbiguitySolverTests, GreedyResolverTest9) {
+TEST(CUDAAmbiguitySolverTests, GreedyResolverTest9) {
 
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;
@@ -472,7 +472,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest9) {
         find_pattern(res_trk_cands, measurements_device, {0, 4, 8, 1, 1}));
 }
 
-TEST(CudaAmbiguitySolverTests, GreedyResolverTest10) {
+TEST(CUDAAmbiguitySolverTests, GreedyResolverTest10) {
 
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;
@@ -515,7 +515,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest10) {
         find_pattern(res_trk_cands, measurements_device, {81, 22, 58, 54, 91}));
 }
 
-TEST(CudaAmbiguitySolverTests, GreedyResolverTest11) {
+TEST(CUDAAmbiguitySolverTests, GreedyResolverTest11) {
 
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;
@@ -549,7 +549,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest11) {
     ASSERT_EQ(res_trk_cands.size(), 0u);
 }
 
-TEST(CudaAmbiguitySolverTests, GreedyResolverTest12) {
+TEST(CUDAAmbiguitySolverTests, GreedyResolverTest12) {
 
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;
@@ -590,7 +590,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest12) {
         find_pattern(res_trk_cands, measurements_device, {54, 64, 49, 96, 40}));
 }
 
-TEST(CudaAmbiguitySolverTests, GreedyResolverTest13) {
+TEST(CUDAAmbiguitySolverTests, GreedyResolverTest13) {
 
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;
@@ -636,7 +636,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest13) {
         find_pattern(res_trk_cands, measurements_device, {4, 85, 65, 14}));
 }
 
-TEST(CudaAmbiguitySolverTests, GreedyResolverTest14) {
+TEST(CUDAAmbiguitySolverTests, GreedyResolverTest14) {
 
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;
@@ -674,7 +674,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest14) {
     ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device, {1, 2, 5}));
 }
 
-TEST(CudaAmbiguitySolverTests, GreedyResolverTest15) {
+TEST(CUDAAmbiguitySolverTests, GreedyResolverTest15) {
 
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;
@@ -712,7 +712,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest15) {
     ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device, {8, 7, 1}));
 }
 
-TEST(CudaAmbiguitySolverTests, GreedyResolverTest16) {
+TEST(CUDAAmbiguitySolverTests, GreedyResolverTest16) {
 
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;
@@ -756,7 +756,7 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest16) {
     ASSERT_TRUE(find_pattern(res_trk_cands, measurements_device, {80, 45, 94}));
 }
 
-TEST(CudaAmbiguitySolverTests, GreedyResolverTest17) {
+TEST(CUDAAmbiguitySolverTests, GreedyResolverTest17) {
 
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;
@@ -797,12 +797,12 @@ TEST(CudaAmbiguitySolverTests, GreedyResolverTest17) {
 // Test class for the ambiguity resolution comparison with CPU implementation
 // Input tuple: < n_event, n_tracks, track_length_range , max_meas_id,
 // allow_duplicate >
-class GreedyResolutionCompareToCPU
+class CUDAGreedyResolutionCompareToCPU
     : public ::testing::TestWithParam<
           std::tuple<std::size_t, std::size_t, std::array<std::size_t, 2u>,
                      measurement_id_type, bool>> {};
 
-TEST_P(GreedyResolutionCompareToCPU, Comparison) {
+TEST_P(CUDAGreedyResolutionCompareToCPU, Comparison) {
 
     const std::size_t n_events = std::get<0>(GetParam());
     const std::size_t n_tracks = std::get<1>(GetParam());
@@ -938,7 +938,7 @@ TEST_P(GreedyResolutionCompareToCPU, Comparison) {
 };
 
 INSTANTIATE_TEST_SUITE_P(
-    Standard, GreedyResolutionCompareToCPU,
+    CUDAStandard, CUDAGreedyResolutionCompareToCPU,
     ::testing::Values(std::make_tuple(5u, 50000u,
                                       std::array<std::size_t, 2u>{1u, 10u},
                                       20000u, true),
@@ -947,7 +947,7 @@ INSTANTIATE_TEST_SUITE_P(
                                       20000u, false)));
 
 INSTANTIATE_TEST_SUITE_P(
-    Sparse, GreedyResolutionCompareToCPU,
+    CUDASparse, CUDAGreedyResolutionCompareToCPU,
     ::testing::Values(std::make_tuple(3u, 5000u,
                                       std::array<std::size_t, 2u>{3u, 10u},
                                       1000000u, true),
@@ -956,7 +956,7 @@ INSTANTIATE_TEST_SUITE_P(
                                       1000000u, false)));
 
 INSTANTIATE_TEST_SUITE_P(
-    Dense, GreedyResolutionCompareToCPU,
+    CUDADense, CUDAGreedyResolutionCompareToCPU,
     ::testing::Values(std::make_tuple(3u, 5000u,
                                       std::array<std::size_t, 2u>{3u, 10u},
                                       100u, true),
@@ -965,7 +965,7 @@ INSTANTIATE_TEST_SUITE_P(
                                       100u, false)));
 
 INSTANTIATE_TEST_SUITE_P(
-    Long, GreedyResolutionCompareToCPU,
+    CUDALong, CUDAGreedyResolutionCompareToCPU,
     ::testing::Values(std::make_tuple(3u, 10000u,
                                       std::array<std::size_t, 2u>{3u, 500u},
                                       10000u, true),
@@ -974,7 +974,7 @@ INSTANTIATE_TEST_SUITE_P(
                                       10000u, false)));
 
 INSTANTIATE_TEST_SUITE_P(
-    Simple, GreedyResolutionCompareToCPU,
+    CUDASimple, CUDAGreedyResolutionCompareToCPU,
     ::testing::Values(
         std::make_tuple(3u, 5u, std::array<std::size_t, 2u>{3u, 5u}, 10u, true),
         std::make_tuple(3u, 5u, std::array<std::size_t, 2u>{3u, 5u}, 10u,

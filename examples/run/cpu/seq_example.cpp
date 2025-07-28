@@ -45,6 +45,7 @@
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/options/track_resolution.hpp"
 #include "traccc/options/track_seeding.hpp"
+#include "traccc/options/truth_finding.hpp"
 
 // examples
 #include "../common/make_magnetic_field.hpp"
@@ -72,6 +73,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
             const traccc::opts::track_resolution& resolution_opts,
             const traccc::opts::track_fitting& fitting_opts,
             const traccc::opts::performance& performance_opts,
+            const traccc::opts::truth_finding& truth_finding_opts,
             std::unique_ptr<const traccc::Logger> ilogger) {
     TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
@@ -115,12 +117,15 @@ int seq_run(const traccc::opts::input_data& input_opts,
     using fitting_algorithm = traccc::host::kalman_fitting_algorithm;
 
     // Constant B field for the track finding and fitting
-    const traccc::vector3 field_vec = {0.f, 0.f,
-                                       seeding_opts.seedfinder.bFieldInZ};
+    const traccc::vector3 field_vec(seeding_opts);
     const auto field = traccc::details::make_magnetic_field(bfield_opts);
 
     // Algorithm configuration(s).
     detray::propagation::config propagation_config(propagation_opts);
+
+    const traccc::seedfinder_config seedfinder_config(seeding_opts);
+    const traccc::seedfilter_config seedfilter_config(seeding_opts);
+    const traccc::spacepoint_grid_config spacepoint_grid_config(seeding_opts);
 
     finding_algorithm::config_type finding_cfg(finding_opts);
     finding_cfg.propagation = propagation_config;
@@ -139,8 +144,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
     spacepoint_formation_algorithm sf(host_mr,
                                       logger().clone("SpFormationAlg"));
     traccc::host::seeding_algorithm sa(
-        seeding_opts.seedfinder, {seeding_opts.seedfinder},
-        seeding_opts.seedfilter, host_mr, logger().clone("SeedingAlg"));
+        seedfinder_config, spacepoint_grid_config, seedfilter_config, host_mr,
+        logger().clone("SeedingAlg"));
     traccc::host::track_params_estimation tp(host_mr,
                                              logger().clone("TrackParEstAlg"));
 
@@ -156,7 +161,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
         traccc::seeding_performance_writer::config{},
         logger().clone("SeedingPerformanceWriter"));
     traccc::finding_performance_writer find_performance_writer(
-        traccc::finding_performance_writer::config{},
+        traccc::finding_performance_writer::config{.truth_config =
+                                                       truth_finding_opts},
         logger().clone("FindingPerformanceWriter"));
     traccc::finding_performance_writer::config ar_writer_cfg;
     ar_writer_cfg.file_path = "performance_track_ambiguity_resolution.root";
@@ -386,11 +392,12 @@ int main(int argc, char* argv[]) {
     traccc::opts::track_resolution resolution_opts;
     traccc::opts::track_fitting fitting_opts;
     traccc::opts::performance performance_opts;
+    traccc::opts::truth_finding truth_finding_opts;
     traccc::opts::program_options program_opts{
         "Full Tracking Chain on the Host",
         {detector_opts, bfield_opts, input_opts, output_opts,
          clusterization_opts, seeding_opts, finding_opts, resolution_opts,
-         fitting_opts, propagation_opts, performance_opts},
+         fitting_opts, propagation_opts, performance_opts, truth_finding_opts},
         argc,
         argv,
         logger->cloneWithSuffix("Options")};
@@ -399,5 +406,5 @@ int main(int argc, char* argv[]) {
     return seq_run(input_opts, output_opts, detector_opts, bfield_opts,
                    clusterization_opts, seeding_opts, finding_opts,
                    propagation_opts, resolution_opts, fitting_opts,
-                   performance_opts, logger->clone());
+                   performance_opts, truth_finding_opts, logger->clone());
 }

@@ -137,6 +137,10 @@ int seq_run(const traccc::opts::detector& detector_opts,
     using device_fitting_algorithm = traccc::alpaka::kalman_fitting_algorithm;
 
     // Algorithm configuration(s).
+    const traccc::seedfinder_config seedfinder_config(seeding_opts);
+    const traccc::seedfilter_config seedfilter_config(seeding_opts);
+    const traccc::spacepoint_grid_config spacepoint_grid_config(seeding_opts);
+
     detray::propagation::config propagation_config(propagation_opts);
 
     traccc::finding_config finding_cfg(finding_opts);
@@ -146,8 +150,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     fitting_cfg.propagation = propagation_config;
 
     // Constant B field for the track finding and fitting
-    const traccc::vector3 field_vec = {0.f, 0.f,
-                                       seeding_opts.seedfinder.bFieldInZ};
+    const traccc::vector3 field_vec(seeding_opts);
     const auto field = traccc::details::make_magnetic_field(bfield_opts);
 
     traccc::host::clusterization_algorithm ca(
@@ -155,8 +158,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
     host_spacepoint_formation_algorithm sf(
         host_mr, logger().clone("HostSpFormationAlg"));
     traccc::host::seeding_algorithm sa(
-        seeding_opts.seedfinder, {seeding_opts.seedfinder},
-        seeding_opts.seedfilter, host_mr, logger().clone("HostSeedingAlg"));
+        seedfinder_config, spacepoint_grid_config, seedfilter_config, host_mr,
+        logger().clone("HostSeedingAlg"));
     traccc::host::track_params_estimation tp(
         host_mr, logger().clone("HostTrackParEstAlg"));
     host_finding_algorithm finding_alg(finding_cfg, host_mr,
@@ -172,9 +175,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
     device_spacepoint_formation_algorithm sf_alpaka(
         mr, copy, queue, logger().clone("AlpakaSpFormationAlg"));
     traccc::alpaka::seeding_algorithm sa_alpaka(
-        seeding_opts.seedfinder, {seeding_opts.seedfinder},
-        seeding_opts.seedfilter, mr, copy, queue,
-        logger().clone("AlpakaSeedingAlg"));
+        seedfinder_config, spacepoint_grid_config, seedfilter_config, mr, copy,
+        queue, logger().clone("AlpakaSeedingAlg"));
     traccc::alpaka::track_params_estimation tp_alpaka(
         mr, copy, queue, logger().clone("AlpakaTrackParEstAlg"));
     device_finding_algorithm finding_alg_alpaka(

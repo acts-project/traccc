@@ -52,11 +52,45 @@ track_propagation::track_propagation()
         "search-window",
         po::value(&m_search_window)->default_value(m_search_window),
         "Size of the grid surface search window");
-    m_desc.add_options()("rk-tolerance-mm [mm]",
+    m_desc.add_options()("rk-tolerance-mm",
                          po::value(&(m_config.stepping.rk_error_tol))
                              ->default_value(m_config.stepping.rk_error_tol /
                                              traccc::unit<float>::mm),
-                         "The Runge-Kutta stepper tolerance");
+                         "The Runge-Kutta stepper tolerance [mm]");
+    m_desc.add_options()("stepping-min-stepsize",
+                         po::value(&(m_config.stepping.min_stepsize))
+                             ->default_value(m_config.stepping.min_stepsize /
+                                             traccc::unit<float>::mm),
+                         "The minimum step size [mm]");
+    m_desc.add_options()("stepping-path-limit",
+                         po::value(&(m_config.stepping.path_limit))
+                             ->default_value(m_config.stepping.path_limit /
+                                             traccc::unit<float>::m),
+                         "The maximum path length for the stepper [m]");
+    m_desc.add_options()("stepping-max-rk-updates",
+                         po::value(&(m_config.stepping.max_rk_updates))
+                             ->default_value(m_config.stepping.max_rk_updates),
+                         "The maximum number of Runge-Kutta updates");
+    m_desc.add_options()("stepping-use-mean-loss",
+                         po::value(&(m_config.stepping.use_mean_loss))
+                             ->default_value(m_config.stepping.use_mean_loss),
+                         "Enable the Bethe energy loss model");
+
+    m_desc.add_options()(
+        "stepping-do-covariance-transport",
+        po::value(&(m_config.stepping.do_covariance_transport))
+            ->default_value(m_config.stepping.do_covariance_transport),
+        "Enable covariance transport in the stepper");
+    m_desc.add_options()(
+        "stepping-use-eloss-gradient",
+        po::value(&(m_config.stepping.use_eloss_gradient))
+            ->default_value(m_config.stepping.use_eloss_gradient),
+        "Enable the energy loss gradient in covariance transport");
+    m_desc.add_options()(
+        "stepping-use-field-gradient",
+        po::value(&(m_config.stepping.use_field_gradient))
+            ->default_value(m_config.stepping.use_field_gradient),
+        "Enable the B-field gradient in covariance transport");
 }
 
 void track_propagation::read(const po::variables_map &) {
@@ -67,6 +101,9 @@ void track_propagation::read(const po::variables_map &) {
     m_config.navigation.min_mask_tolerance *= traccc::unit<float>::mm;
     m_config.navigation.max_mask_tolerance *= traccc::unit<float>::mm;
     m_config.navigation.search_window = m_search_window;
+
+    m_config.stepping.min_stepsize *= traccc::unit<float>::mm;
+    m_config.stepping.path_limit *= traccc::unit<float>::m;
 }
 
 track_propagation::operator detray::propagation::config() const {
@@ -125,10 +162,6 @@ std::unique_ptr<configuration_printable> track_propagation::as_printable()
         "Path limit",
         std::to_string(m_config.stepping.path_limit / traccc::unit<float>::m) +
             " m"));
-    cat_tsp->add_child(std::make_unique<configuration_kv_pair>(
-        "Min step size", std::to_string(m_config.stepping.min_stepsize /
-                                        traccc::unit<float>::mm) +
-                             " mm"));
     cat_tsp->add_child(std::make_unique<configuration_kv_pair>(
         "Enable Bethe energy loss",
         std::format("{}", m_config.stepping.use_mean_loss)));

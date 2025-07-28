@@ -80,11 +80,6 @@ struct remove_tracks_payload {
     unsigned int* n_removable_tracks;
 
     /**
-     * @brief The number of measurements to remove
-     */
-    unsigned int* n_meas_to_remove;
-
-    /**
      * @brief View object to measurements to remove
      */
     vecmem::data::vector_view<measurement_id_type> meas_to_remove_view;
@@ -113,6 +108,11 @@ struct remove_tracks_payload {
      * @brief View object to the whether track id is updated
      */
     vecmem::data::vector_view<int> is_updated_view;
+
+    /**
+     * @brief The number of threads that can remove its corresponding track
+     */
+    unsigned int* n_valid_threads;
 };
 
 }  // namespace traccc::device

@@ -35,7 +35,8 @@ namespace traccc::device {
 ///
 TRACCC_HOST_DEVICE
 inline void select_seeds(
-    global_index_t globalIndex, const seedfilter_config& filter_config,
+    global_index_t globalIndex, const seedfinder_config& finder_config,
+    const seedfilter_config& filter_config,
     const edm::spacepoint_collection::const_view& spacepoints_view,
     const traccc::details::spacepoint_grid_types::const_view& sp_grid_view,
     const triplet_counter_spM_collection_types::const_view& spM_tc_view,

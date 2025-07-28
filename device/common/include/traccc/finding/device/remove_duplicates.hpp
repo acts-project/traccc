@@ -94,7 +94,7 @@ struct remove_duplicates_payload {
  * increasingly less likely that they will diverge afterwards.
  */
 TRACCC_HOST_DEVICE inline void remove_duplicates(
-    global_index_t gid, const finding_config& cfg,
+    global_index_t tid, const finding_config& cfg,
     const remove_duplicates_payload& payload) {
 
     const vecmem::device_vector<const candidate_link> links(payload.links_view);
@@ -104,8 +104,6 @@ TRACCC_HOST_DEVICE inline void remove_duplicates(
         payload.link_last_measurement_view);
     const vecmem::device_vector<const unsigned int> param_ids(
         payload.param_ids_view);
-
-    const unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     /*
      * As is standard fare, we ignore tracks that are out of bounds or that

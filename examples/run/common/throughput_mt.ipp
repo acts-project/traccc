@@ -54,6 +54,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -150,10 +151,12 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
         }
     }
 
+    // Algorithm configuration(s).
     typename FULL_CHAIN_ALG::clustering_algorithm::config_type clustering_cfg(
         clusterization_opts);
-
-    // Algorithm configuration(s).
+    const traccc::seedfinder_config seedfinder_config(seeding_opts);
+    const traccc::seedfilter_config seedfilter_config(seeding_opts);
+    const traccc::spacepoint_grid_config spacepoint_grid_config(seeding_opts);
     detray::propagation::config propagation_config(propagation_opts);
     typename FULL_CHAIN_ALG::finding_algorithm::config_type finding_cfg(
         finding_opts);
@@ -174,17 +177,32 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
                       *(cached_host_mrs.at(i)))
                 : static_cast<vecmem::memory_resource&>(uncached_host_mr);
         algs.push_back(
-            {alg_host_mr,
-             clustering_cfg,
-             seeding_opts.seedfinder,
-             {seeding_opts.seedfinder},
-             seeding_opts.seedfilter,
-             finding_cfg,
-             fitting_cfg,
-             det_descr,
-             field,
+            {alg_host_mr, clustering_cfg, seedfinder_config,
+             spacepoint_grid_config, seedfilter_config, finding_cfg,
+             fitting_cfg, det_descr, field,
              (detector_opts.use_detray_detector ? &detector : nullptr),
              logger().clone()});
+    }
+
+    // Set up a lambda that calls the correct function on the algorithms.
+    std::function<std::size_t(int, const edm::silicon_cell_collection::host&)>
+        process_event;
+    if (throughput_opts.reco_stage == opts::throughput::stage::seeding) {
+        process_event = [&](int thread,
+                            const edm::silicon_cell_collection::host& cells)
+            -> std::size_t {
+            return algs.at(static_cast<std::size_t>(thread))
+                .seeding(cells)
+                .size();
+        };
+    } else if (throughput_opts.reco_stage == opts::throughput::stage::full) {
+        process_event = [&](int thread,
+                            const edm::silicon_cell_collection::host& cells)
+            -> std::size_t {
+            return algs.at(static_cast<std::size_t>(thread))(cells).size();
+        };
+    } else {
+        throw std::invalid_argument("Unknown reconstruction stage");
     }
 
     // Set up the TBB arena and thread group. From here on out TBB is only
@@ -233,10 +251,9 @@ int throughput_mt(std::string_view description, int argc, char* argv[],
             // Launch the processing of the event.
             arena.execute([&, event]() {
                 group.run([&, event]() {
-                    rec_track_params.fetch_add(algs.at(static_cast<std::size_t>(
-                        tbb::this_task_arena::current_thread_index()))(
-                                                       input[event])
-                                                   .size());
+                    rec_track_params.fetch_add(process_event(
+                        tbb::this_task_arena::current_thread_index(),
+                        input[event]));
                     progress_bar.tick();
                 });
             });

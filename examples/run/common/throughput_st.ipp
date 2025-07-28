@@ -45,6 +45,7 @@
 // System include(s).
 #include <cstdlib>
 #include <ctime>
+#include <functional>
 #include <iostream>
 #include <memory>
 
@@ -128,6 +129,10 @@ int throughput_st(std::string_view description, int argc, char* argv[],
     typename FULL_CHAIN_ALG::clustering_algorithm::config_type clustering_cfg(
         clusterization_opts);
 
+    const traccc::seedfinder_config seedfinder_config(seeding_opts);
+    const traccc::seedfilter_config seedfilter_config(seeding_opts);
+    const traccc::spacepoint_grid_config spacepoint_grid_config(seeding_opts);
+
     typename FULL_CHAIN_ALG::finding_algorithm::config_type finding_cfg(
         finding_opts);
     finding_cfg.propagation = propagation_config;
@@ -138,9 +143,8 @@ int throughput_st(std::string_view description, int argc, char* argv[],
 
     // Set up the full-chain algorithm.
     std::unique_ptr<FULL_CHAIN_ALG> alg = std::make_unique<FULL_CHAIN_ALG>(
-        alg_host_mr, clustering_cfg, seeding_opts.seedfinder,
-        spacepoint_grid_config{seeding_opts.seedfinder},
-        seeding_opts.seedfilter, finding_cfg, fitting_cfg, det_descr, field,
+        alg_host_mr, clustering_cfg, seedfinder_config, spacepoint_grid_config,
+        seedfilter_config, finding_cfg, fitting_cfg, det_descr, field,
         (detector_opts.use_detray_detector ? &detector : nullptr),
         logger->clone("FullChainAlg"));
 
@@ -149,6 +153,19 @@ int throughput_st(std::string_view description, int argc, char* argv[],
         std::srand(static_cast<unsigned int>(std::time(0)));
     } else {
         std::srand(throughput_opts.random_seed);
+    }
+
+    // Set up a lambda that calls the correct function on the algorithm.
+    std::function<std::size_t(const edm::silicon_cell_collection::host&)>
+        process_event;
+    if (throughput_opts.reco_stage == opts::throughput::stage::seeding) {
+        process_event = [&](const edm::silicon_cell_collection::host& cells)
+            -> std::size_t { return alg->seeding(cells).size(); };
+    } else if (throughput_opts.reco_stage == opts::throughput::stage::full) {
+        process_event = [&](const edm::silicon_cell_collection::host& cells)
+            -> std::size_t { return (*alg)(cells).size(); };
+    } else {
+        throw std::invalid_argument("Unknown reconstruction stage");
     }
 
     // Dummy count uses output of tp algorithm to ensure the compiler
@@ -180,7 +197,7 @@ int throughput_st(std::string_view description, int argc, char* argv[],
                 input_opts.events;
 
             // Process one event.
-            rec_track_params += (*alg)(input[event]).size();
+            rec_track_params += process_event(input[event]);
             progress_bar.tick();
         }
     }
