@@ -23,10 +23,10 @@
 #include "traccc/seeding/device/count_doublets.hpp"
 #include "traccc/seeding/device/count_triplets.hpp"
 #include "traccc/seeding/device/find_doublets.hpp"
+#include "traccc/seeding/device/find_triplet_confirmations.hpp"
 #include "traccc/seeding/device/find_triplets.hpp"
 #include "traccc/seeding/device/reduce_triplet_counts.hpp"
 #include "traccc/seeding/device/select_seeds.hpp"
-#include "traccc/seeding/device/update_triplet_weights.hpp"
 
 // VecMem include(s).
 #include <vecmem/utils/cuda/copy.hpp>
@@ -108,12 +108,13 @@ __global__ void find_triplets(
 }
 
 /// CUDA kernel for running @c traccc::device::update_triplet_weights
-__global__ void update_triplet_weights(
+__global__ void find_triplet_confirmations(
     seedfilter_config filter_config,
     edm::spacepoint_collection::const_view spacepoints,
     device::triplet_counter_spM_collection_types::const_view spM_tc,
     device::triplet_counter_collection_types::const_view midBot_tc,
-    device::device_triplet_collection_types::view triplet_view) {
+    device::device_triplet_collection_types::view triplet_view,
+    vecmem::data::vector_view<unsigned int> num_confirmations_view) {
 
     // Array for temporary storage of quality parameters for comparing triplets
     // within weight updating kernel
@@ -121,9 +122,9 @@ __global__ void update_triplet_weights(
     // Each thread uses compatSeedLimit elements of the array
     scalar* dataPos = &data[threadIdx.x * filter_config.compatSeedLimit];
 
-    device::update_triplet_weights(details::global_index1(), filter_config,
-                                   spacepoints, spM_tc, midBot_tc, dataPos,
-                                   triplet_view);
+    device::find_triplet_confirmations(details::global_index1(), filter_config,
+                                       spacepoints, spM_tc, midBot_tc, dataPos,
+                                       triplet_view, num_confirmations_view);
 }
 
 /// CUDA kernel for running @c traccc::device::select_seeds
@@ -134,6 +135,7 @@ __global__ void select_seeds(
     device::triplet_counter_spM_collection_types::const_view spM_tc,
     device::triplet_counter_collection_types::const_view midBot_tc,
     device::device_triplet_collection_types::view triplet_view,
+    const vecmem::data::vector_view<const unsigned int> num_confirmations_view,
     edm::seed_collection::view seed_view) {
 
     // Array for temporary storage of triplets for comparing within seed
@@ -145,7 +147,7 @@ __global__ void select_seeds(
 
     device::select_seeds(details::global_index1(), finder_config, filter_config,
                          spacepoints, sp_view, spM_tc, midBot_tc, triplet_view,
-                         dataPos, seed_view);
+                         num_confirmations_view, dataPos, seed_view);
 }
 
 }  // namespace kernels
@@ -324,6 +326,11 @@ edm::seed_collection::buffer seed_finding::operator()(
             triplet_buffer);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
+    vecmem::data::vector_buffer<unsigned int> num_confirmations_buffer(
+        globalCounter_host->m_nTriplets, m_mr.main);
+    m_copy.setup(num_confirmations_buffer)->wait();
+    m_copy.memset(num_confirmations_buffer, 0)->wait();
+
     // Calculate the number of threads and thread blocks to run the weight
     // updating kernel for.
     const unsigned int nWeightUpdatingThreads = m_warp_size * 2;
@@ -332,13 +339,13 @@ edm::seed_collection::buffer seed_finding::operator()(
         nWeightUpdatingThreads;
 
     // Update the weights of all spacepoint triplets.
-    kernels::update_triplet_weights<<<
+    kernels::find_triplet_confirmations<<<
         nWeightUpdatingBlocks, nWeightUpdatingThreads,
         sizeof(scalar) * m_seedfilter_config.compatSeedLimit *
             nWeightUpdatingThreads,
         stream>>>(m_seedfilter_config, spacepoints_view,
                   triplet_counter_spM_buffer, triplet_counter_midBot_buffer,
-                  triplet_buffer);
+                  triplet_buffer, num_confirmations_buffer);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     // Create result object: collection of seeds
@@ -362,7 +369,7 @@ edm::seed_collection::buffer seed_finding::operator()(
                             stream>>>(
         m_seedfinder_config, m_seedfilter_config, spacepoints_view, g2_view,
         triplet_counter_spM_buffer, triplet_counter_midBot_buffer,
-        triplet_buffer, seed_buffer);
+        triplet_buffer, num_confirmations_buffer, seed_buffer);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     return seed_buffer;

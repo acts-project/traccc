@@ -98,11 +98,15 @@ void seed_filtering::operator()(
             const traccc::details::spacepoint_grid_types::const_device
                 sp_grid_accessor(sp_grid_data);
             const auto& this_seed = triplets_passing_single_seed_cuts[i].get();
-            if (seed_selecting_helper::cut_per_middle_sp(
-                    m_filter_config,
-                    spacepoints.at(sp_grid_accessor.bin(
-                        this_seed.sp1.bin_idx)[this_seed.sp1.sp_idx]),
-                    this_seed.weight)) {
+
+            const scalar spB_radius =
+                spacepoints
+                    .at(sp_grid_accessor.bin(
+                        this_seed.sp1.bin_idx)[this_seed.sp1.sp_idx])
+                    .radius();
+
+            if (this_seed.weight > 200.f ||
+                spB_radius > m_filter_config.spB_min_radius) {
                 triplets_passing_final_cuts.push_back(
                     triplets_passing_single_seed_cuts[i]);
             }

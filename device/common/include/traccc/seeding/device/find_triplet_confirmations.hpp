@@ -34,14 +34,15 @@ namespace traccc::device {
 /// @param[inout] triplet_view Collection of triplets
 ///
 TRACCC_HOST_DEVICE
-inline void update_triplet_weights(
+inline void find_triplet_confirmations(
     global_index_t globalIndex, const seedfilter_config& filter_config,
     const edm::spacepoint_collection::const_view& spacepoints,
     const triplet_counter_spM_collection_types::const_view& spM_tc_view,
     const triplet_counter_collection_types::const_view& tc_view, scalar* data,
-    device_triplet_collection_types::view triplet_view);
+    const device_triplet_collection_types::const_view triplet_view,
+    vecmem::data::vector_view<unsigned int> num_confirmations_view);
 
 }  // namespace traccc::device
 
 // Include the implementation.
-#include "traccc/seeding/device/impl/update_triplet_weights.ipp"
+#include "traccc/seeding/device/impl/find_triplet_confirmations.ipp"
