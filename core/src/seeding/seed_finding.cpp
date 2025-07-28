@@ -25,7 +25,7 @@ struct seed_finding::impl {
                            logger->cloneWithSuffix("MidTopAlg")),
           m_triplet_finding(finder_config, filter_config, mr,
                             logger->cloneWithSuffix("TripletAlg")),
-          m_seed_filtering(filter_config, mr,
+          m_seed_filtering(finder_config, filter_config, mr,
                            logger->cloneWithSuffix("FilterAlg")),
           m_mr{mr} {}
 

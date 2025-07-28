@@ -60,7 +60,8 @@ TRACCC_HOST_DEVICE void insertionSort(triplet* arr,
 // Select seeds kernel
 TRACCC_HOST_DEVICE
 inline void select_seeds(
-    const global_index_t globalIndex, const seedfilter_config& filter_config,
+    const global_index_t globalIndex, const seedfinder_config& finder_config,
+    const seedfilter_config& filter_config,
     const edm::spacepoint_collection::const_view& spacepoints_view,
     const traccc::details::spacepoint_grid_types::const_view& sp_view,
     const triplet_counter_spM_collection_types::const_view& spM_tc_view,
@@ -123,10 +124,10 @@ inline void select_seeds(
 
         // if the number of good triplets is larger than the threshold,
         // the triplet with the lowest weight is removed
-        if (n_triplets_per_spM >= filter_config.max_triplets_per_spM) {
+        if (n_triplets_per_spM >= finder_config.maxSeedsPerSpM) {
 
             const std::size_t min_index =
-                details::min_elem(data, 0, filter_config.max_triplets_per_spM,
+                details::min_elem(data, 0, finder_config.maxSeedsPerSpM,
                                   [](const triplet lhs, const triplet rhs) {
                                       return lhs.weight > rhs.weight;
                                   });
@@ -142,7 +143,7 @@ inline void select_seeds(
 
         // if the number of good triplets is below the threshold, add
         // the current triplet to the array
-        else if (n_triplets_per_spM < filter_config.max_triplets_per_spM) {
+        else if (n_triplets_per_spM < finder_config.maxSeedsPerSpM) {
             data[n_triplets_per_spM] = {spB_loc,         spM_loc,
                                         spT_loc,         aTriplet.curvature,
                                         aTriplet.weight, aTriplet.z_vertex};
@@ -165,7 +166,7 @@ inline void select_seeds(
         const sp_location& spT_loc = aTriplet.sp3;
 
         // if the number of seeds reaches the threshold, break
-        if (n_seeds_per_spM >= filter_config.maxSeedsPerSpM + 1) {
+        if (n_seeds_per_spM >= finder_config.maxSeedsPerSpM + 1) {
             break;
         }
 
