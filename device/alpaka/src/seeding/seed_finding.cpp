@@ -134,7 +134,6 @@ struct UpdateTripletWeights {
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, seedfilter_config filter_config,
         edm::spacepoint_collection::const_view spacepoints,
-        traccc::details::spacepoint_grid_types::const_view sp_grid,
         device::triplet_counter_spM_collection_types::const_view spM_tc,
         device::triplet_counter_collection_types::const_view midBot_tc,
         device::device_triplet_collection_types::view triplet_view) const {
@@ -151,8 +150,8 @@ struct UpdateTripletWeights {
         scalar* dataPos = &data[localThreadIdx * filter_config.compatSeedLimit];
 
         device::update_triplet_weights(globalThreadIdx, filter_config,
-                                       spacepoints, sp_grid, spM_tc, midBot_tc,
-                                       dataPos, triplet_view);
+                                       spacepoints, spM_tc, midBot_tc, dataPos,
+                                       triplet_view);
     }
 };
 
@@ -175,10 +174,12 @@ struct SelectSeeds {
 
         // Array for temporary storage of quality parameters for comparing
         // triplets within weight updating kernel
-        triplet* const data = ::alpaka::getDynSharedMem<triplet>(acc);
+        device::device_triplet* const data =
+            ::alpaka::getDynSharedMem<device::device_triplet>(acc);
 
-        // Each thread uses maxSeedsPerSpM elements of the array
-        triplet* dataPos = &data[localThreadIdx * finder_config.maxSeedsPerSpM];
+        // Each thread uses max_triplets_per_spM elements of the array
+        device::device_triplet* dataPos =
+            &data[localThreadIdx * finder_config.maxSeedsPerSpM];
 
         device::select_seeds(globalThreadIdx, finder_config, filter_config,
                              spacepoints, sp_view, spM_tc, midBot_tc,
@@ -360,7 +361,7 @@ edm::seed_collection::buffer seed_finding::operator()(
 
     // Update the weights of all spacepoint triplets.
     ::alpaka::exec<Acc>(queue, workDiv, kernels::UpdateTripletWeights{},
-                        m_seedfilter_config, spacepoints_view, g2_view,
+                        m_seedfilter_config, spacepoints_view,
                         vecmem::get_data(triplet_counter_spM_buffer),
                         vecmem::get_data(triplet_counter_midBot_buffer),
                         vecmem::get_data(triplet_buffer));
@@ -419,7 +420,7 @@ struct BlockSharedMemDynSizeBytes<traccc::alpaka::kernels::SelectSeeds, TAcc> {
         ) -> std::size_t {
         return static_cast<std::size_t>(finder_config.maxSeedsPerSpM *
                                         blockThreadExtent.prod()) *
-               sizeof(traccc::triplet);
+               sizeof(traccc::device::device_triplet);
     }
 };
 
