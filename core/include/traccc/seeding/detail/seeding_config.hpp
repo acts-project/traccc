@@ -203,6 +203,13 @@ struct seedfilter_config {
     // how often do you want to increase the weight of a seed for finding a
     // compatible seed?
     size_t compatSeedLimit = 2;
+    // Number of consituents spacepoints for which a seed must be the best
+    // seed, where "best" is defined by the weight. Valid range is
+    // [0, 1, 2, 3] where 0 disables the cut.
+    unsigned int minNumTimesWeightCompatible = 1;
+    // The minimum relative weight for a seed to be considered compatible with
+    // one of its spacepoints.
+    float minWeightCompatibilityFraction = 0.6f;
 
     // seed weight increase
     float good_spB_min_radius = 150.f * unit<float>::mm;
