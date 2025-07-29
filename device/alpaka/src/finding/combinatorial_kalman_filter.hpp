@@ -465,8 +465,8 @@ combinatorial_kalman_filter(
                 link_last_measurement_buffer);
             vecmem::device_vector<unsigned int> param_ids_device(
                 param_ids_buffer);
-            thrust::sort_by_key(thrustExecPolicy, keys_device.begin(),
-                                keys_device.end(), param_ids_device.begin());
+            details::sort_by_key(queue, mr, keys_device.begin(),
+                                 keys_device.end(), param_ids_device.begin());
 
             /*
              * Then, we run the actual duplicate removal kernel.
