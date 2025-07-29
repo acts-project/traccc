@@ -63,18 +63,28 @@ class eff_plot_tool {
         (void)cache;
 
 #ifdef TRACCC_HAVE_ROOT
+        std::string header;
+
+        if (name == "finding") {
+            header = "Track finding efficiency";
+        } else if (name == "seeding") {
+            header = "Seed finding efficiency";
+        } else {
+            header = "Tracking efficiency";
+        }
+
         // efficiency vs pT
         cache.track_eff_vs_pT = plot_helpers::book_eff(
             TString(name) + "_trackeff_vs_pT",
-            "Tracking efficiency;Truth pT [GeV/c];Efficiency", b_pt);
+            header + ";Truth pT [GeV/c];Efficiency", b_pt);
         // efficiency vs eta
-        cache.track_eff_vs_eta = plot_helpers::book_eff(
-            TString(name) + "_trackeff_vs_eta",
-            "Tracking efficiency;Truth #eta;Efficiency", b_eta);
+        cache.track_eff_vs_eta =
+            plot_helpers::book_eff(TString(name) + "_trackeff_vs_eta",
+                                   header + ";Truth #eta;Efficiency", b_eta);
         // efficiency vs phi
-        cache.track_eff_vs_phi = plot_helpers::book_eff(
-            TString(name) + "_trackeff_vs_phi",
-            "Tracking efficiency;Truth #phi;Efficiency", b_phi);
+        cache.track_eff_vs_phi =
+            plot_helpers::book_eff(TString(name) + "_trackeff_vs_phi",
+                                   header + ";Truth #phi;Efficiency", b_phi);
 #endif  // TRACCC_HAVE_ROOT
     }
 
