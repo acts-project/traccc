@@ -77,6 +77,10 @@ void seeding_performance_writer::write(
     const measurement_collection_types::const_device measurements(
         measurements_view);
 
+    const std::size_t n_seeds = seeds.size();
+
+    std::size_t total_fake_seeds = 0;
+
     // Iterate over the seeds.
     for (edm::seed_collection::const_device::size_type i = 0u; i < seeds.size();
          ++i) {
@@ -143,20 +147,40 @@ void seeding_performance_writer::write(
         assert(seed_measurements.size() > 0u);
         if (static_cast<double>(particle_hit_counts.at(0).hit_counts) /
                 static_cast<double>(seed_measurements.size()) >
-            m_cfg.matching_ratio) {
+            m_cfg.truth_config.matching_ratio) {
             auto pid = particle_hit_counts.at(0).ptc.particle_id;
             match_counter[pid]++;
+        } else {
+            total_fake_seeds++;
         }
     }
 
-    for (auto const& [pid, ptc] : evt_data.m_particle_map) {
+    std::size_t total_truth_particles = 0;
+    std::size_t total_matched_truth_particles = 0;
+    std::size_t total_duplicate_seeds = 0;
 
-        // Count only charged particles which satisfiy pT_cut
-        if (ptc.charge == 0 || vector::perp(ptc.momentum) < m_cfg.pT_cut ||
-            ptc.vertex[2] < m_cfg.z_min || ptc.vertex[2] > m_cfg.z_max ||
-            vector::perp(ptc.vertex) > m_cfg.r_max) {
+    for (auto const& [pid, ptc] : evt_data.m_particle_map) {
+        std::size_t num_measurements = 0;
+
+        // Find the number of measurements belonging to this track
+        if (auto it = evt_data.m_ptc_to_meas_map.find(ptc);
+            it != evt_data.m_ptc_to_meas_map.end()) {
+            num_measurements = it->second.size();
+        } else {
             continue;
         }
+
+        // Count only charged particles which satisfiy pT_cut
+        if (ptc.charge == 0 ||
+            vector::perp(ptc.momentum) < m_cfg.truth_config.pT_min ||
+            ptc.vertex[2] < m_cfg.truth_config.z_min ||
+            ptc.vertex[2] > m_cfg.truth_config.z_max ||
+            vector::perp(ptc.vertex) > m_cfg.truth_config.r_max ||
+            num_measurements < m_cfg.truth_config.min_track_candidates) {
+            continue;
+        }
+
+        total_truth_particles++;
 
         bool is_matched = false;
         std::size_t n_matched_seeds_for_particle = 0;
@@ -164,6 +188,8 @@ void seeding_performance_writer::write(
         if (it != match_counter.end()) {
             is_matched = true;
             n_matched_seeds_for_particle = it->second;
+            total_matched_truth_particles++;
+            total_duplicate_seeds += n_matched_seeds_for_particle - 1;
         }
 
         m_data->m_eff_plot_tool.fill(m_data->m_eff_plot_cache, ptc, is_matched);
@@ -171,6 +197,25 @@ void seeding_performance_writer::write(
                                              ptc,
                                              n_matched_seeds_for_particle - 1);
     }
+
+    TRACCC_INFO("Total number of truth particles was "
+                << total_truth_particles);
+    TRACCC_INFO("Total number of found seeds was " << n_seeds);
+    TRACCC_INFO("Total number of seed-matched particles was "
+                << total_matched_truth_particles);
+    TRACCC_INFO("Total number of duplicate seeds was "
+                << total_duplicate_seeds);
+    TRACCC_INFO("Total number of fake seeds was " << total_fake_seeds);
+    TRACCC_INFO("Total seed efficiency was "
+                << (100. * static_cast<double>(total_matched_truth_particles) /
+                    static_cast<double>(total_truth_particles))
+                << "%");
+    TRACCC_INFO("Total seed duplicate rate was "
+                << (static_cast<double>(total_duplicate_seeds) /
+                    static_cast<double>(total_matched_truth_particles)));
+    TRACCC_INFO("Total seed fake rate was "
+                << (static_cast<double>(total_fake_seeds) /
+                    static_cast<double>(total_truth_particles)));
 }
 
 void seeding_performance_writer::finalize() {
