@@ -73,6 +73,7 @@ class fitting_performance_writer : public messaging {
             track_states_per_track.begin(), track_states_per_track.end(),
             [](const auto& st) { return st.is_smoothed; });
         assert(!trk_state.is_hole);
+        assert(!trk_state.filtered().is_invalid());
         assert(trk_state.is_smoothed);
 
         bool use_found = !evt_data.m_found_meas_to_ptc_map.empty();
