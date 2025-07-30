@@ -15,14 +15,15 @@
 
 namespace traccc::cuda::kernels {
 
-__global__ void sort_updated_tracks(
+__launch_bounds__(512) __global__ void sort_updated_tracks(
     device::sort_updated_tracks_payload payload) {
 
     if (*(payload.terminate) == 1 || *(payload.n_updated_tracks) == 0) {
         return;
     }
 
-    extern __shared__ unsigned int shared_mem_tracks[];
+    __shared__ unsigned int shared_mem_tracks[512];
+    //__shared__ unsigned int N;
 
     vecmem::device_vector<const traccc::scalar> rel_shared(
         payload.rel_shared_view);
