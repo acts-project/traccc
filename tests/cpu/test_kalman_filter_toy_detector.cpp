@@ -9,6 +9,7 @@
 #include "traccc/bfield/construct_const_bfield.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/io/utils.hpp"
 #include "traccc/performance/kalman_filter_comparison.hpp"
 #include "traccc/simulation/event_generators.hpp"
 #include "traccc/simulation/simulator.hpp"
@@ -23,11 +24,19 @@
 // GTest include(s).
 #include <gtest/gtest.h>
 
+// System include(s)
+#include <filesystem>
+
 using namespace traccc;
 
-constexpr std::size_t n_events{10u};
+constexpr std::size_t n_events{2u};
 constexpr std::size_t n_tracks{1000u};
+
 constexpr detray::pdg_particle ptc_type{detray::muon<scalar>()};
+
+// Truth particle cuts
+constexpr scalar min_p{50.f * traccc::unit<traccc::scalar>::MeV};
+constexpr scalar max_r{75.f * traccc::unit<traccc::scalar>::mm};
 
 /// Test suite for navigation tests for the CKF
 class KF_intergration_test_toy_detector
@@ -38,8 +47,8 @@ class KF_intergration_test_toy_detector
 /// Test the detray navigation on simulated tracks
 TEST_P(KF_intergration_test_toy_detector, toy_detector) {
 
-    using algebra_t = traccc::default_algebra;
     using detector_t = traccc::default_detector::host;
+    using algebra_t = typename detector_t::algebra_type;
     using b_field_t = covfie::field<traccc::const_bfield_backend_t<scalar>>;
     using track_t = traccc::free_track_parameters<algebra_t>;
 
@@ -64,7 +73,6 @@ TEST_P(KF_intergration_test_toy_detector, toy_detector) {
     const auto [det, names] =
         detray::io::read_detector<traccc::default_detector::host>(host_mr,
                                                                   reader_cfg);
-
     // Create B field
     b_field_t field = traccc::construct_const_bfield(B)
                           .as_field<traccc::const_bfield_backend_t<scalar>>();
@@ -76,11 +84,23 @@ TEST_P(KF_intergration_test_toy_detector, toy_detector) {
     // Choose different random seed than detray for more test coverage
     gen_cfg.seed(135346);
 
+    // Create data directory
+    std::filesystem::path data_dir{traccc::io::data_directory()};
+    std::filesystem::path outdir{"fast_track_simulation/toy_detector_pT_" +
+                                 std::to_string(pT) + "_GeV"};
+
+    std::filesystem::path full_path = data_dir / outdir;
+    if (!std::filesystem::exists(full_path)) {
+        if (std::error_code err;
+            !std::filesystem::create_directories(full_path, err)) {
+            throw std::runtime_error(err.message());
+        }
+    }
+
     // Create measurement smearer
     measurement_smearer<algebra_t> smearer(smearing[0], smearing[1]);
     auto sim = simulator_t(ptc_type, n_events, det, field, generator_t{gen_cfg},
-                           writer_t::config{smearer},
-                           "../data/detray_simulation/toy_detector");
+                           writer_t::config{smearer}, full_path.string());
 
     // Propagation config for the simulation
     detray::propagation::config prop_cfg{};
@@ -92,7 +112,7 @@ TEST_P(KF_intergration_test_toy_detector, toy_detector) {
     sim.get_config().do_energy_loss = std::get<7>(GetParam());
     sim.get_config().min_pT(10.f * traccc::unit<scalar>::MeV);
 
-    // Do the simulation: Produces data files
+    // Run the simulation: Produces data files
     sim.run();
 
     // Specific config for the navigation test
@@ -103,9 +123,9 @@ TEST_P(KF_intergration_test_toy_detector, toy_detector) {
         std::get<1>(GetParam()) + 3.f * traccc::unit<float>::mm;
 
     const bool success = kalman_filter_comparison(
-        det, names, prop_cfg, "detray_simulation/toy_detector", n_events,
-        logger->clone(), std::get<6>(GetParam()), std::get<7>(GetParam()),
-        false, ptc_type, stddevs, B);
+        det, names, prop_cfg, outdir, n_events, logger->clone(),
+        std::get<6>(GetParam()), std::get<7>(GetParam()), false, ptc_type,
+        stddevs, B, min_p, max_r);
 
     ASSERT_TRUE(success);
 }

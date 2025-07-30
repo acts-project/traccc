@@ -65,7 +65,7 @@ traccc_add_library( traccc_performance performance TYPE SHARED
    "include/traccc/performance/impl/container_comparator.ipp"
    "include/traccc/performance/soa_comparator.hpp"
    "include/traccc/performance/impl/soa_comparator.ipp"
-   # Truth collection comparison
+   # Truth propagation comparison
    "include/traccc/performance/kalman_filter_comparison.hpp"
    "src/performance/kalman_filter_comparison.cpp"
    # Performance time measurement code.
