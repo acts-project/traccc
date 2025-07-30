@@ -95,9 +95,14 @@ void seed_filtering::operator()(
             std::min(triplets_passing_single_seed_cuts.size(),
                      static_cast<std::size_t>(m_finder_config.maxSeedsPerSpM));
         for (std::size_t i = 1; i < itLength; ++i) {
+            const traccc::details::spacepoint_grid_types::const_device
+                sp_grid_accessor(sp_grid_data);
+            const auto& this_seed = triplets_passing_single_seed_cuts[i].get();
             if (seed_selecting_helper::cut_per_middle_sp(
-                    m_filter_config, spacepoints, sp_grid_data,
-                    triplets_passing_single_seed_cuts[i])) {
+                    m_filter_config,
+                    spacepoints.at(sp_grid_accessor.bin(
+                        this_seed.sp1.bin_idx)[this_seed.sp1.sp_idx]),
+                    this_seed.weight)) {
                 triplets_passing_final_cuts.push_back(
                     triplets_passing_single_seed_cuts[i]);
             }
