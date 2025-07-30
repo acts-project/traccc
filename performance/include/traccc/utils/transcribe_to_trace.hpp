@@ -18,7 +18,7 @@
 // Detray test include(s)
 #include <detray/test/utils/inspectors.hpp>  //< candidate_record type
 
-namespace traccc::navigation_validator {
+namespace traccc::propagation_validator {
 
 template <typename detector_t>
 using intersection_type =
@@ -29,11 +29,12 @@ template <typename detector_t>
 using candidate_type =
     detray::navigation::detail::candidate_record<intersection_type<detector_t>>;
 
-/// Transcribe the hits for a particle to a candidate trace that detray requires
+/// Transcribe the hits for a particle to a candidate trace for the detray
+/// propagation validation tools
 ///
 /// @param ctx the geometric context
 /// @param det the detector
-/// @param particle the truth particle
+/// @param ptc the truth particle
 /// @param hits all hits in the event
 /// @param n_hits_for_particle expected number of hits for the particle
 ///
@@ -41,28 +42,18 @@ using candidate_type =
 template <typename detector_t>
 auto transcribe_to_trace(const typename detector_t::geometry_context ctx,
                          const detector_t& det,
-                         const traccc::io::csv::particle& particle,
+                         const traccc::io::csv::particle& ptc,
                          const std::vector<traccc::io::csv::hit>& hits,
-                         const scalar min_p = 50.f * traccc::unit<scalar>::MeV,
-                         const scalar max_rad = 20.f * traccc::unit<scalar>::mm,
                          const std::size_t n_hits_for_particle = 10u) {
     using intersection_t =
         typename candidate_type<detector_t>::intersection_type;
 
     detray::dvector<candidate_type<detector_t>> candidates{};
-
-    // Apply momentum cut to get rid of some secondaries
-    if (vector::norm(vector3{particle.px, particle.py, particle.pz}) < min_p) {
-        return candidates;
-    }
-
-    const scalar q{particle.q};
-
     candidates.reserve(n_hits_for_particle);
 
     // Fill the hits into the candidate trace
     for (const auto& h : hits) {
-        if (h.particle_id != particle.particle_id) {
+        if (h.particle_id != ptc.particle_id) {
             continue;
         }
 
@@ -84,24 +75,20 @@ auto transcribe_to_trace(const typename detector_t::geometry_context ctx,
             sf_desc, path, static_cast<nav_link_t>(bcd.volume()),
             true,    true, loc_pos};
 
-        candidates.emplace_back(pos, dir, intr, q, vector::norm(mom));
-    }
-
-    // Remove secondaries
-    if (vector::perp(candidates.front().pos) > max_rad) {
-        return detray::dvector<candidate_type<detector_t>>{};
+        candidates.emplace_back(pos, dir, intr, ptc.q, vector::norm(mom));
     }
 
     return candidates;
 }
 
-/// Transcribe the hits for a particle to a candidate trace that detray requires
+/// Transcribe the measurements for a particle to a candidate trace for the
+/// detray propagation validation tools
 ///
 /// @param ctx the geometric context
 /// @param det the detector
-/// @param particle the truth particle
-/// @param hits all hits in the event
-/// @param n_hits_for_particle expected number of hits for the particle
+/// @param ptc the truth particle
+/// @param ptc_to_meas_map map the truth particle to its measurements
+/// @param n_meas_for_particle expected number of ,easurements for the particle
 ///
 /// @returns a vector of intersection candidate records
 template <typename detector_t>
@@ -110,25 +97,17 @@ auto transcribe_to_trace(
     const traccc::particle& ptc,
     const std::map<traccc::particle, std::vector<traccc::measurement>>&
         ptc_to_meas_map,
-    const scalar min_p = 50.f * traccc::unit<scalar>::MeV,
-    const scalar max_rad = 50.f * traccc::unit<scalar>::mm,
     const std::size_t n_meas_for_particle = 10u) {
 
     using intersection_t =
         typename candidate_type<detector_t>::intersection_type;
 
     detray::dvector<candidate_type<detector_t>> candidates{};
+    candidates.reserve(n_meas_for_particle);
 
     // TODO: Not accurate for every measurement
     const scalar p{vector::norm(ptc.momentum)};
     const scalar q{ptc.charge};
-
-    // Check if particle produced any hits or has too small momentum
-    if (!ptc_to_meas_map.contains(ptc) || p < min_p) {
-        return candidates;
-    }
-
-    candidates.reserve(n_meas_for_particle);
 
     // Fill the hits into the candidate trace
     for (const auto& meas : ptc_to_meas_map.at(ptc)) {
@@ -154,12 +133,7 @@ auto transcribe_to_trace(
         candidates.emplace_back(glob_pos, dir, intr, q, p);
     }
 
-    // Remove secondaries
-    if (vector::perp(candidates.front().pos) > max_rad) {
-        return detray::dvector<candidate_type<detector_t>>{};
-    }
-
     return candidates;
 }
 
-}  // namespace traccc::navigation_validator
+}  // namespace traccc::propagation_validator

@@ -18,22 +18,25 @@
 #include <memory>
 #include <string>
 
+namespace traccc {
+
 /// Run a detray propagation with and without Kalman filter and compare the
-/// surfaces that were encountered against a reference of truth track read
+/// surfaces that were encountered against a reference of truth tracks read
 /// from file
 ///
 /// @param det the detector
 /// @param names the detector and volume names
 /// @param prop_cfg propagation configuration, e.g. mask tolerances
 /// @param input_dir the truth data path
-/// @param n_event how many events to check
+/// @param n_events how many events to check
 /// @param ilogger logging service
 /// @param do_multiple_scattering adjust covariances due to multiple scattering
 /// during test propagation
 /// @param do_energy_loss adjust covariances and track momentum during test
 /// propagation
+/// @param use_acts_geoid whether to expect ACTS geometry ids in the truth data
 /// @param ptc_type the particle hypothesis to use
-/// @param stddevs the initial track parameters smearing (TODO: Adjust to qop)
+/// @param stddevs the initial track parameters uncertainty
 /// @param B constant magnetic field vector
 ///
 /// @returns whether the validation was successful
@@ -54,4 +57,8 @@ bool kalman_filter_comparison(
          0.01f / traccc::unit<traccc::scalar>::GeV,
          1000.f * traccc::unit<traccc::scalar>::ns},
     const traccc::vector3& B = {0.f, 0.f,
-                                2.f * traccc::unit<traccc::scalar>::T});
+                                2.f * traccc::unit<traccc::scalar>::T},
+    const traccc::scalar min_p = 50.f * traccc::unit<traccc::scalar>::MeV,
+    const traccc::scalar max_rad = 50.f * traccc::unit<traccc::scalar>::mm);
+
+}  // namespace traccc

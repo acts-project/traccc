@@ -39,8 +39,6 @@
 // System include(s)
 #include <filesystem>
 
-// The main routine
-//
 int main(int argc, char* argv[]) {
 
     using detector_t = traccc::default_detector::host;
@@ -66,6 +64,8 @@ int main(int argc, char* argv[]) {
     // Memory resource used by the application.
     vecmem::host_memory_resource host_mr;
 
+    TRACCC_INFO("Reading detector from file");
+
     // Set up the detector reader configuration.
     detray::io::detector_reader_config reader_cfg;
     reader_cfg.add_file(
@@ -86,13 +86,13 @@ int main(int argc, char* argv[]) {
     // Vector for the constant magnetic field
     constexpr vector3_t B{0.f, 0.f, 2.f * traccc::unit<traccc::scalar>::T};
 
-    /// Measurement smearing parameters
+    /// Measurement smearing parameters for the simulation and initial cov.
     // TODO: Add options to make this configurable
     static constexpr std::array<traccc::scalar, 2u> smearing{
         10.f * traccc::unit<traccc::scalar>::um,
         25.f * traccc::unit<traccc::scalar>::um};
 
-    /// Standard deviations for seed track parameters
+    /// Standard deviations for truth seed track parameters
     static constexpr std::array<traccc::scalar, traccc::e_bound_size> stddevs =
         {smearing[0],
          smearing[1],
@@ -101,21 +101,28 @@ int main(int argc, char* argv[]) {
          0.01f / traccc::unit<traccc::scalar>::GeV,
          1000.f * traccc::unit<traccc::scalar>::ns};
 
+    TRACCC_INFO("Preparing input data");
+
     // Check input dir
-    std::string data_prefix{"../data/"};  //< Implicit data directory prefix
-    std::string input_dir{data_prefix + input_opts.directory};
-    const bool input_dir_exists{std::filesystem::exists(input_dir)};
+    std::filesystem::path data_dir{traccc::io::data_directory()};
+    std::filesystem::path input_dir = data_dir / input_opts.directory;
+
+    // Data dir does not exist, create default directory
+    if (!std::filesystem::exists(input_dir)) {
+        input_dir = data_dir / "validation_data";
+
+        TRACCC_INFO("Input directory " << data_dir / input_opts.directory
+                                       << " does not exist: Creating data path "
+                                       << input_dir);
+
+        if (std::error_code err;
+            !std::filesystem::create_directories(input_dir, err)) {
+            throw std::runtime_error(err.message());
+        }
+    }
 
     // No existing truth data: Run fast sim
-    if (!input_dir_exists || std::filesystem::is_empty(input_dir)) {
-        // Data dir does not exist, create default directory
-        if (!input_dir_exists) {
-            input_dir = data_prefix + "validation_data";
-            if (std::error_code err;
-                !std::filesystem::create_directories(input_dir, err)) {
-                throw std::runtime_error(err.message());
-            }
-        }
+    if (std::filesystem::is_empty(input_dir)) {
 
         TRACCC_INFO("Generating fast sim data for "
                     << input_opts.events << " events (" << input_dir << ")\n");
@@ -168,14 +175,14 @@ int main(int argc, char* argv[]) {
         sim.get_config().do_energy_loss = generation_opts.do_energy_loss;
         sim.get_config().min_pT(50.f * traccc::unit<traccc::scalar>::MeV);
 
-        // Do the simulation: Produces data files
+        // Run the simulation: Produces data files
         sim.run();
     } else {
         TRACCC_INFO("Reading truth data in " << input_opts.directory << "\n");
     }
 
     // Run the application.
-    const bool success = kalman_filter_comparison(
+    const bool success = traccc::kalman_filter_comparison(
         det, names, propagation_opts, input_opts.directory,
         static_cast<unsigned int>(input_opts.events), logger().clone(),
         generation_opts.do_multiple_scattering, generation_opts.do_energy_loss,

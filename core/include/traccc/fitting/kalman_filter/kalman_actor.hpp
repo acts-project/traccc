@@ -125,6 +125,10 @@ struct kalman_actor_state {
 
         // Surface was found, continue with KF algorithm
         if (navigation.barcode() == trk_state.surface_link()) {
+            // Count a hole, if track finding did not find a measurement
+            if (trk_state.is_hole) {
+                ++n_holes;
+            }
             // If track finding did not find measurement on this surface: skip
             return !trk_state.is_hole;
         }
@@ -221,13 +225,13 @@ struct kalman_actor : detray::actor {
         auto& stepping = propagation._stepping;
         auto& navigation = propagation._navigation;
 
+        if (actor_state.is_complete()) {
+            propagation._heartbeat &= navigation.exit();
+            return;
+        }
+
         // triggered only for sensitive surfaces
         if (navigation.is_on_sensitive()) {
-            // If the iterator reaches the end, additional surfaces are holes
-            if (actor_state.is_complete()) {
-                actor_state.n_holes++;
-                return;
-            }
 
             // Did the navigation switch direction?
             actor_state.backward_mode =
