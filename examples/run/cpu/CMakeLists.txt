@@ -26,6 +26,11 @@ traccc_add_executable( misaligned_truth_fitting_example "misaligned_truth_fittin
    LINK_LIBRARIES vecmem::core detray::io detray::detectors traccc::core
    traccc::io traccc::performance traccc::options traccc_examples_common )
 
+traccc_add_executable( detector_scan "detector_scan.cpp"
+   LINK_LIBRARIES vecmem::core traccc::core traccc::io
+   traccc::performance traccc::options detray::detectors detray::io
+   traccc_examples_common )
+
 #
 # Set up the "throughput applications".
 #
