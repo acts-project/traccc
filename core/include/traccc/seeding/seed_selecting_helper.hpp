@@ -61,23 +61,6 @@ struct seed_selecting_helper {
         return !(spB.radius() > filter_config.good_spB_min_radius &&
                  triplet_weight < filter_config.good_spB_min_weight);
     }
-
-    /// Cut triplets with criteria
-    ///
-    /// @param filter_config    seed filtering configuration parameters
-    /// @param spacepoints      spacepoint collection
-    /// @param sp_grid          Spacepoint grid
-    /// @param seed             current seed to possibly cut
-    ///
-    /// @return boolean value
-    template <typename spacepoint_type>
-    static TRACCC_HOST_DEVICE bool cut_per_middle_sp(
-        const seedfilter_config& filter_config, const spacepoint_type& spB,
-        const scalar weight) {
-
-        return (weight > filter_config.seed_min_weight ||
-                spB.radius() > filter_config.spB_min_radius);
-    }
 };
 
 }  // namespace traccc
