@@ -196,11 +196,11 @@ TRACCC_HOST_DEVICE inline scalar_t igam_impl(const scalar_t a,
     scalar_t ans, ax, c, r;
 
     /* Compute  x**a * exp(-x) / gamma(a)  */
-    ax = a * math::log(x) - x - lgam(a);
+    ax = a * math::fast::log(x) - x - lgam(a);
     if (ax < -log_gamma<scalar_t>::kMAXLOG)
         return (0.0f);
 
-    ax = std::exp(ax);
+    ax = math::fast::exp(ax);
 
     /* power series */
     r = a;
@@ -242,11 +242,11 @@ TRACCC_HOST_DEVICE inline scalar_t igamc_impl(const scalar_t a,
     scalar_t ans, ax, c, yc, r, t, y, z;
     scalar_t pk, pkm1, pkm2, qk, qkm1, qkm2;
 
-    ax = a * std::log(x) - x - lgam(a);
+    ax = a * math::fast::log(x) - x - lgam(a);
     if (ax < -log_gamma<scalar_t>::kMAXLOG)
         return (0.0f);
 
-    ax = std::exp(ax);
+    ax = math::fast::exp(ax);
 
     /* continued fraction */
     y = 1.0f - a;
@@ -267,7 +267,7 @@ TRACCC_HOST_DEVICE inline scalar_t igamc_impl(const scalar_t a,
         qk = qkm1 * z - qkm2 * yc;
         if (qk != 0.f) {
             r = pk / qk;
-            t = std::abs((ans - r) / r);
+            t = math::abs((ans - r) / r);
             ans = r;
         } else {
             t = 1.0f;
@@ -276,7 +276,7 @@ TRACCC_HOST_DEVICE inline scalar_t igamc_impl(const scalar_t a,
         pkm1 = pk;
         qkm2 = qkm1;
         qkm1 = qk;
-        if (std::abs(pk) > log_gamma<scalar_t>::kBig) {
+        if (math::abs(pk) > log_gamma<scalar_t>::kBig) {
             pkm2 *= log_gamma<scalar_t>::kBiginv;
             pkm1 *= log_gamma<scalar_t>::kBiginv;
             qkm2 *= log_gamma<scalar_t>::kBiginv;
@@ -302,7 +302,7 @@ TRACCC_HOST_DEVICE inline scalar_t lgam(scalar_t x) {
 
         // For x > 34
         w = lgam_impl<scalar_t>(q);
-        p = std::floor(q);
+        p = math::floor(q);
         if (p == q)  //_unur_FP_same(p,q)
             return (std::numeric_limits<scalar_t>::infinity());
         i = static_cast<int>(p);
@@ -315,11 +315,11 @@ TRACCC_HOST_DEVICE inline scalar_t lgam(scalar_t x) {
             p += 1.0f;
             z = p - q;
         }
-        z = q * std::sin(constant<scalar_t>::pi * z);
+        z = q * math::fast::sin(constant<scalar_t>::pi * z);
         if (z == 0)
             return (std::numeric_limits<scalar_t>::infinity());
         /* z = log(ROOT::Math::Pi()) - log( z ) - w;*/
-        z = std::log(constant<scalar_t>::pi) - math::log(z) - w;
+        z = math::fast::log(constant<scalar_t>::pi) - math::fast::log(z) - w;
         return (z);
     }
 
@@ -345,11 +345,11 @@ TRACCC_HOST_DEVICE inline scalar_t lgam(scalar_t x) {
         } else
             sgngam = 1;
         if (u == static_cast<scalar_t>(2.0))
-            return (std::log(z));
+            return (math::fast::log(z));
         p -= 2.0f;
         x = x + p;
         p = x * Polynomialeval_B(x, 5) / Polynomialeval_C(x, 6);
-        return (std::log(z) + p);
+        return (math::fast::log(z) + p);
     }
 
     return lgam_impl<scalar_t>(x);
@@ -363,7 +363,7 @@ TRACCC_HOST_DEVICE inline scalar_t lgam_impl(scalar_t x) {
     if (x > log_gamma<scalar_t>::kMAXLGM)
         return (sgngam * std::numeric_limits<scalar_t>::infinity());
 
-    q = (x - 0.5f) * std::log(x) - x + log_gamma<scalar_t>::LS2PI;
+    q = (x - 0.5f) * math::fast::log(x) - x + log_gamma<scalar_t>::LS2PI;
     if (x > 1.0e8f)
         return (q);
 
