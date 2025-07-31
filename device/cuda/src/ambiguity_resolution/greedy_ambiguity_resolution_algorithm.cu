@@ -404,8 +404,27 @@ greedy_ambiguity_resolution_algorithm::operator()(
     unsigned int nThreads_full = 1024;
     unsigned int nBlocks_full = (n_tracks + 1023) / 1024;
 
-    unsigned int nThreads_scan = 1024;
-    unsigned int nBlocks_scan = (n_accepted + 1023) / 1024;
+    // Compute the threadblock dimension for scanning kernels
+    auto compute_scan_config = [&](unsigned int n_accepted) {
+        unsigned int nThreads_scan = m_warp_size * 4;
+        unsigned int nBlocks_scan =
+            (n_accepted + nThreads_scan - 1) / nThreads_scan;
+
+        while (nThreads_scan <= 1024) {
+            if (nBlocks_scan > 1024) {
+                nThreads_scan *= 2;
+                nBlocks_scan = (n_accepted + nThreads_scan - 1) / nThreads_scan;
+            } else {
+                break;
+            }
+        }
+
+        return std::make_pair(nThreads_scan, nBlocks_scan);
+    };
+
+    auto scan_dim = compute_scan_config(n_accepted);
+    unsigned int nThreads_scan = scan_dim.first;
+    unsigned int nBlocks_scan = scan_dim.second;
 
     assert(nBlocks_scan <= 1024 &&
            "nBlocks_scan larger than 1024 will cause invalid arguments in "
@@ -423,7 +442,10 @@ greedy_ambiguity_resolution_algorithm::operator()(
         nBlocks_adaptive =
             (n_accepted + nThreads_adaptive - 1) / nThreads_adaptive;
         nBlocks_warp = (n_accepted + nThreads_warp - 1) / nThreads_warp;
-        nBlocks_scan = (n_accepted + 1023) / 1024;
+
+        scan_dim = compute_scan_config(n_accepted);
+        nThreads_scan = scan_dim.first;
+        nBlocks_scan = scan_dim.second;
 
         // Make CUDA Graph
         cudaGraph_t graph;
