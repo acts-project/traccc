@@ -27,6 +27,9 @@ endif()
 # not marked with __device__.
 traccc_add_flag( CMAKE_CUDA_FLAGS "--expt-relaxed-constexpr" )
 
+# Enable the flusing of subnormal floating point numbers to zero
+traccc_add_flag( CMAKE_CUDA_FLAGS "--ftz=true" )
+
 # Make CUDA generate debug symbols for the device code as well in a debug
 # build.
 traccc_add_flag( CMAKE_CUDA_FLAGS_DEBUG "-G --keep -src-in-ptx" )
