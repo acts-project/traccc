@@ -287,19 +287,19 @@ void finding_performance_writer::write_common(
     TRACCC_INFO("Total number of truth particles was "
                 << total_truth_particles);
     TRACCC_INFO("Total number of found tracks was " << n_tracks);
-    TRACCC_INFO("Total number of matched particles was "
+    TRACCC_INFO("Total number of track-matched particles was "
                 << total_matched_truth_particles);
     TRACCC_INFO("Total number of duplicated tracks was "
                 << total_duplicate_tracks);
     TRACCC_INFO("Total number of fake tracks was " << total_fake_tracks);
-    TRACCC_INFO("Total efficiency was "
+    TRACCC_INFO("Total track efficiency was "
                 << (100. * static_cast<double>(total_matched_truth_particles) /
                     static_cast<double>(total_truth_particles))
                 << "%");
-    TRACCC_INFO("Total duplicate rate was "
+    TRACCC_INFO("Total track duplicate rate was "
                 << (static_cast<double>(total_duplicate_tracks) /
                     static_cast<double>(total_matched_truth_particles)));
-    TRACCC_INFO("Total fake rate was "
+    TRACCC_INFO("Total track fake rate was "
                 << (static_cast<double>(total_fake_tracks) /
                     static_cast<double>(total_truth_particles)));
 }

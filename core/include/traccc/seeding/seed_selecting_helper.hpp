@@ -70,16 +70,12 @@ struct seed_selecting_helper {
     /// @param seed             current seed to possibly cut
     ///
     /// @return boolean value
+    template <typename spacepoint_type>
     static TRACCC_HOST_DEVICE bool cut_per_middle_sp(
-        const seedfilter_config& filter_config,
-        const edm::spacepoint_collection::const_device& spacepoints,
-        const details::spacepoint_grid_types::const_device& grid,
-        const triplet& seed) {
+        const seedfilter_config& filter_config, const spacepoint_type& spB,
+        const scalar weight) {
 
-        const edm::spacepoint_collection::const_device::const_proxy_type spB =
-            spacepoints.at(grid.bin(seed.sp1.bin_idx)[seed.sp1.sp_idx]);
-
-        return (seed.weight > filter_config.seed_min_weight ||
+        return (weight > filter_config.seed_min_weight ||
                 spB.radius() > filter_config.spB_min_radius);
     }
 };

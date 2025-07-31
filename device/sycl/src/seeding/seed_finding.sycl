@@ -308,7 +308,7 @@ edm::seed_collection::buffer seed_finding::operator()(
 
             h.parallel_for<kernels::update_triplet_weights>(
                 weightUpdatingRange,
-                [filter_config = m_seedfilter_config, spacepoints_view, g2_view,
+                [filter_config = m_seedfilter_config, spacepoints_view,
                  triplet_counter_spM_view, triplet_counter_midBot_view,
                  local_mem, triplet_view](::sycl::nd_item<1> item) {
                     // Each thread uses compatSeedLimit elements of the array
@@ -317,7 +317,7 @@ edm::seed_collection::buffer seed_finding::operator()(
 
                     device::update_triplet_weights(
                         details::global_index(item), filter_config,
-                        spacepoints_view, g2_view, triplet_counter_spM_view,
+                        spacepoints_view, triplet_counter_spM_view,
                         triplet_counter_midBot_view, dataPos, triplet_view);
                 });
         });
@@ -349,7 +349,7 @@ edm::seed_collection::buffer seed_finding::operator()(
         .submit([&](::sycl::handler& h) {
             // Array for temporary storage of triplets for comparing within
             // kernel
-            vecmem::sycl::local_accessor<triplet> local_mem(
+            vecmem::sycl::local_accessor<device::device_triplet> local_mem(
                 m_seedfinder_config.maxSeedsPerSpM * seedSelectingLocalSize, h);
 
             h.parallel_for<kernels::select_seeds>(
@@ -359,8 +359,9 @@ edm::seed_collection::buffer seed_finding::operator()(
                  triplet_counter_spM_view, triplet_counter_midBot_view,
                  triplet_view, local_mem, seed_view](::sycl::nd_item<1> item) {
                     // Each thread uses compatSeedLimit elements of the array
-                    triplet* dataPos = &local_mem[item.get_local_id() *
-                                                  finder_config.maxSeedsPerSpM];
+                    device::device_triplet* dataPos =
+                        &local_mem[item.get_local_id() *
+                                   finder_config.maxSeedsPerSpM];
 
                     device::select_seeds(
                         details::global_index(item), finder_config,

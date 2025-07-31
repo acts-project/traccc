@@ -158,7 +158,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
-        traccc::seeding_performance_writer::config{},
+        traccc::seeding_performance_writer::config{.truth_config =
+                                                       truth_finding_opts},
         logger().clone("SeedingPerformanceWriter"));
     traccc::finding_performance_writer find_performance_writer(
         traccc::finding_performance_writer::config{.truth_config =

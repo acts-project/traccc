@@ -275,19 +275,23 @@ def main():
 
                 stdout = result.stdout.decode("utf-8")
 
-                if match := re.search(r"Total efficiency was (\d+(?:\.\d*)?)%", stdout):
+                if match := re.search(
+                    r"Total track efficiency was (\d+(?:\.\d*)?)%", stdout
+                ):
                     result_efficiency = float(match.group(1)) / 100.0
                 else:
                     raise ValueError("Efficiency could not be parsed from stdout!")
 
                 if match := re.search(
-                    r"Total duplicate rate was (\d+(?:\.\d*)?)", stdout
+                    r"Total track duplicate rate was (\d+(?:\.\d*)?)", stdout
                 ):
                     result_duplicate_rate = float(match.group(1))
                 else:
                     raise ValueError("Dupliacate rate could not be parsed from stdout!")
 
-                if match := re.search(r"Total fake rate was (\d+(?:\.\d*)?)", stdout):
+                if match := re.search(
+                    r"Total track fake rate was (\d+(?:\.\d*)?)", stdout
+                ):
                     result_fake_rate = float(match.group(1))
                 else:
                     raise ValueError("Fake rate could not be parsed from stdout!")

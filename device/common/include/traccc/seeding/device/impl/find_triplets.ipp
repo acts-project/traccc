@@ -56,12 +56,14 @@ inline void find_triplets(
     const sp_location spB_loc = mid_bot_counter.spB;
 
     // middle spacepoint
+    const unsigned int spM_idx = sp_grid.bin(spM_loc.bin_idx)[spM_loc.sp_idx];
     const edm::spacepoint_collection::const_device::const_proxy_type spM =
-        spacepoints.at(sp_grid.bin(spM_loc.bin_idx)[spM_loc.sp_idx]);
+        spacepoints.at(spM_idx);
 
     // bottom spacepoint
+    const unsigned int spB_idx = sp_grid.bin(spB_loc.bin_idx)[spB_loc.sp_idx];
     const edm::spacepoint_collection::const_device::const_proxy_type spB =
-        spacepoints.at(sp_grid.bin(spB_loc.bin_idx)[spB_loc.sp_idx]);
+        spacepoints.at(spB_idx);
 
     // Set up the device result collection
     device_triplet_collection_types::device triplets(triplet_view);
@@ -95,8 +97,10 @@ inline void find_triplets(
     for (unsigned int i = mt_start_idx; i < mt_end_idx; ++i) {
         const sp_location spT_loc = mid_top_doublet_device[i].sp2;
 
+        const unsigned int spT_idx =
+            sp_grid.bin(spT_loc.bin_idx)[spT_loc.sp_idx];
         const edm::spacepoint_collection::const_device::const_proxy_type spT =
-            spacepoints.at(sp_grid.bin(spT_loc.bin_idx)[spT_loc.sp_idx]);
+            spacepoints.at(spT_idx);
 
         // Apply the conformal transformation to middle-top doublet
         const traccc::lin_circle lt =
@@ -110,7 +114,7 @@ inline void find_triplets(
 
             // Add triplet to jagged vector
             triplets.at(posTriplets++) = device_triplet(
-                {spT_loc, globalIndex, curvature,
+                {spB_idx, spM_idx, spT_idx, globalIndex, curvature,
                  -impact_parameter * filter_config.impactWeightFactor,
                  lb.Zo()});
         }
