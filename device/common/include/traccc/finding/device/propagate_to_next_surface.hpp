@@ -79,6 +79,12 @@ struct propagate_to_next_surface_payload {
      * @brief Vector to hold the number of track states per tip
      */
     vecmem::data::vector_view<unsigned int> tip_lengths_view;
+
+    /**
+     * @brief View object to the vector of the number of tracks per initial
+     * input seed
+     */
+    vecmem::data::vector_view<unsigned int> n_tracks_per_seed_view;
 };
 
 /// Function for propagating the kalman-updated tracks to the next surface
