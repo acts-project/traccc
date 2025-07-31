@@ -35,6 +35,8 @@ traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   "src/utils/get_queue.cpp"
   "include/traccc/alpaka/utils/vecmem_objects.hpp"
   "src/utils/vecmem_objects.cpp"
+  "src/utils/oneDPL.hpp"
+  "src/utils/parallel_algorithms.hpp"
   # Clusterization
   "include/traccc/alpaka/clusterization/clusterization_algorithm.hpp"
   "src/clusterization/clusterization_algorithm.cpp"
