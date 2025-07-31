@@ -200,11 +200,19 @@ class kalman_fitter {
             return res;
         }
 
+        // Reset hole count
+        const unsigned int n_holes_fw{fitter_state.m_fit_actor_state.n_holes};
+        fitter_state.m_fit_actor_state.n_holes = 0u;
+
         // Run smoothing
         if (kalman_fitter_status res = smooth(fitter_state);
             res != kalman_fitter_status::SUCCESS) {
             return res;
         }
+
+        // In case the smoother does not apply hole counting
+        fitter_state.m_fit_actor_state.n_holes =
+            math::max(fitter_state.m_fit_actor_state.n_holes, n_holes_fw);
 
         // Update track fitting qualities
         update_statistics(fitter_state);
@@ -270,7 +278,7 @@ class kalman_fitter {
         // considered to be the filtered one, we can reversly iterate the
         // algorithm to obtain the smoothed parameter of other surfaces
         for (auto it = track_states.rbegin(); it != track_states.rend(); ++it) {
-            if (!(*it).is_hole) {
+            if (!(*it).filtered().is_invalid()) {
                 fitter_state.m_fit_actor_state.m_it_rev = it;
                 break;
             }
@@ -383,7 +391,8 @@ class kalman_fitter {
         if (fit_res.trk_quality.ndf > 0) {
             for (const auto& trk_state : track_states) {
                 // Fitting fails if any of non-hole track states is not smoothed
-                if (!trk_state.is_hole && !trk_state.is_smoothed) {
+                if (!trk_state.filtered().is_invalid() &&
+                    !trk_state.is_smoothed) {
                     fit_res.fit_outcome =
                         fitter_outcome::FAILURE_NOT_ALL_SMOOTHED;
                     return;

@@ -30,7 +30,8 @@ struct statistics_updater {
         fitting_result<algebra_t>& fit_res,
         const track_state<algebra_t>& trk_state) {
 
-        if (!trk_state.is_hole) {
+        // Neither missing measurement nor failed track state
+        if (!trk_state.is_hole && !trk_state.filtered().is_invalid()) {
 
             // Measurement dimension
             const unsigned int D = trk_state.get_measurement().meas_dim;
