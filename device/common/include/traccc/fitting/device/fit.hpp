@@ -12,7 +12,7 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/track_state.hpp"
+#include "traccc/edm/track_fit_container.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/jagged_vector_view.hpp>
@@ -44,9 +44,10 @@ struct fit_payload {
     vecmem::data::vector_view<unsigned int> param_liveness_view;
 
     /**
-     * @brief View object to the output track states
+     * @brief View object to the output tracks
      */
-    track_state_container_types::view track_states_view;
+    typename edm::track_fit_container<
+        typename fitter_t::detector_type::algebra_type>::view tracks_view;
 
     /**
      * @brief View object to the output barcode sequence
