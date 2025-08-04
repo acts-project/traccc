@@ -73,10 +73,6 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
     // Detector view object
     auto det_view = detray::get_data(det_buffer);
 
-    // D2H copy object
-    traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
-        track_state_d2h{{device_mr, &host_mr}, copy};
-
     for (auto _ : state) {
 
         state.PauseTiming();
@@ -129,7 +125,7 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
                                params_cuda_buffer);
 
             // Run track fitting
-            traccc::track_state_container_types::buffer
+            traccc::edm::track_fit_container<traccc::default_algebra>::buffer
                 track_states_cuda_buffer = device_fitting(
                     det_view, field,
                     {track_candidates_cuda_buffer, measurements_cuda_buffer});

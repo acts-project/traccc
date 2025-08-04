@@ -57,7 +57,10 @@ class KalmanFittingMomentumResolutionTests
         1.f * traccc::unit<scalar>::ns};
 
     void consistency_tests(
-        const track_state_collection_types::host& track_states_per_track) const;
+        const edm::track_fit_collection<
+            default_algebra>::host::const_proxy_type& track,
+        const edm::track_state_collection<default_algebra>::host& track_states)
+        const;
 
     void momentum_resolution_tests(std::string_view file_name) const;
 

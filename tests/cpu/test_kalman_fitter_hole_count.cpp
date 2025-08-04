@@ -7,7 +7,6 @@
 
 // Project include(s).
 #include "traccc/bfield/construct_const_bfield.hpp"
-#include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
@@ -161,19 +160,19 @@ TEST_P(KalmanFittingHoleCountTests, Run) {
                  vecmem::get_data(track_candidates.measurements)});
 
     // A sanity check
-    const std::size_t n_tracks = track_states.size();
+    const std::size_t n_tracks = track_states.tracks.size();
     ASSERT_EQ(n_tracks, n_truth_tracks);
 
     // Check the number of holes
     // The three holes at the end are not counted as KF aborts once it goes
     // through all track candidates
-    const auto& fit_res = track_states.at(0u).header;
-    ASSERT_EQ(fit_res.trk_quality.n_holes, 5u);
+    const auto track = track_states.tracks.at(0u);
+    ASSERT_EQ(track.nholes(), 5u);
 
     // Some sanity checks
     ASSERT_FLOAT_EQ(
-        static_cast<float>(fit_res.trk_quality.ndf),
-        static_cast<float>(track_states.at(0u).items.size()) * 2.f - 5.f);
+        static_cast<float>(track.ndf()),
+        static_cast<float>(track.state_indices().size()) * 2.f - 5.f);
 }
 
 INSTANTIATE_TEST_SUITE_P(
