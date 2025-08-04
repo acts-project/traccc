@@ -22,9 +22,16 @@ TRACCC_HOST_DEVICE inline void fit_forward(
     vecmem::device_vector<const unsigned int> param_ids(payload.param_ids_view);
     vecmem::device_vector<unsigned int> param_liveness(
         payload.param_liveness_view);
-    track_state_container_types::device track_states(payload.track_states_view);
+    typename edm::track_fit_collection<
+        typename fitter_t::detector_type::algebra_type>::device
+        tracks(payload.tracks_view.tracks);
+    typename edm::track_state_collection<
+        typename fitter_t::detector_type::algebra_type>::device
+        track_states(payload.tracks_view.states);
+    measurement_collection_types::const_device measurements{
+        payload.tracks_view.measurements};
 
-    if (globalIndex >= track_states.size()) {
+    if (globalIndex >= tracks.size()) {
         return;
     }
 
@@ -32,13 +39,14 @@ TRACCC_HOST_DEVICE inline void fit_forward(
 
     fitter_t fitter(det, payload.field_data, cfg);
 
-    auto params = track_states.at(param_id).header.fit_params;
+    auto track = tracks.at(param_id);
+    auto params = track.params();
 
     // TODO: Merge into filter?
     inflate_covariance(params, fitter.config().covariance_inflation_factor);
 
     typename fitter_t::state fitter_state(
-        track_states.at(param_id).items,
+        track, track_states, measurements,
         *(payload.barcodes_view.ptr() + param_id));
 
     kalman_fitter_status fit_status = fitter.filter(params, fitter_state);

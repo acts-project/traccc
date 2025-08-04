@@ -178,8 +178,10 @@ TRACCC_HOST_DEVICE inline void find_tracks(
 
         barrier.blockBarrier();
 
-        std::optional<std::tuple<track_state<typename detector_t::algebra_type>,
-                                 unsigned int, unsigned int>>
+        std::optional<std::tuple<
+            typename edm::track_state_collection<
+                typename detector_t::algebra_type>::device::object_type,
+            unsigned int, unsigned int>>
             result = std::nullopt;
 
         /*
@@ -216,9 +218,13 @@ TRACCC_HOST_DEVICE inline void find_tracks(
             }
 
             if (use_measurement) {
-                const auto& meas = measurements.at(meas_idx);
 
-                track_state<typename detector_t::algebra_type> trk_state(meas);
+                typename edm::track_state_collection<
+                    typename detector_t::algebra_type>::device::object_type
+                    trk_state(0u, 0.f, 0.f, 0.f, {}, {}, meas_idx);
+                trk_state.filtered_params().set_surface_link(
+                    measurements.at(meas_idx).surface_link);
+
                 const detray::tracking_surface sf{det, in_par.surface_link()};
 
                 const bool is_line = sf.template visit_mask<is_line_visitor>();
@@ -226,7 +232,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                 // Run the Kalman update
                 const kalman_fitter_status res =
                     gain_matrix_updater<typename detector_t::algebra_type>{}(
-                        trk_state, in_par, is_line);
+                        trk_state, measurements, in_par, is_line);
 
                 /*
                  * The $\chi^2$ value from the Kalman update should be less than
@@ -246,8 +252,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                 }
 
                 if (use_measurement) {
-                    result.emplace(std::move(trk_state), meas_idx,
-                                   owner_local_thread_id);
+                    result.emplace(trk_state, meas_idx, owner_local_thread_id);
                 }
             }
         }
@@ -441,10 +446,12 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                         .chi2_sum = prev_chi2_sum + chi2,
                         .ndf_sum =
                             prev_ndf_sum +
-                            std::get<0>(*result).get_measurement().meas_dim};
+                            measurements
+                                .at(std::get<0>(*result).measurement_index())
+                                .meas_dim};
 
                     tmp_params.at(p_offset + l_pos) =
-                        std::get<0>(*result).filtered();
+                        std::get<0>(*result).filtered_params();
 
                     /*
                      * Reset the temporary state storage, as this is no longer
