@@ -13,7 +13,7 @@
 // Project include(s).
 #include "traccc/bfield/magnetic_field.hpp"
 #include "traccc/edm/track_candidate_container.hpp"
-#include "traccc/edm/track_state.hpp"
+#include "traccc/edm/track_fit_container.hpp"
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/utils/algorithm.hpp"
@@ -30,10 +30,10 @@ namespace traccc::sycl {
 
 /// Kalman filter based track fitting algorithm
 class kalman_fitting_algorithm
-    : public algorithm<track_state_container_types::buffer(
+    : public algorithm<edm::track_fit_container<default_algebra>::buffer(
           const default_detector::view&, const magnetic_field&,
           const edm::track_candidate_container<default_algebra>::const_view&)>,
-      public algorithm<track_state_container_types::buffer(
+      public algorithm<edm::track_fit_container<default_algebra>::buffer(
           const telescope_detector::view&, const magnetic_field&,
           const edm::track_candidate_container<default_algebra>::const_view&)>,
       public messaging {
@@ -42,7 +42,7 @@ class kalman_fitting_algorithm
     /// Configuration type
     using config_type = fitting_config;
     /// Output type
-    using output_type = track_state_container_types::buffer;
+    using output_type = edm::track_fit_container<default_algebra>::buffer;
 
     /// Constructor with the algorithm's configuration
     ///
