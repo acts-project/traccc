@@ -12,6 +12,8 @@
 #include "traccc/definitions/common.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate_collection.hpp"
+#include "traccc/edm/track_fit_collection.hpp"
+#include "traccc/edm/track_state_collection.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/simulation/event_generators.hpp"
@@ -79,12 +81,23 @@ class KalmanFittingTests : public testing::Test {
 
     /// Validadte the NDF for track fitting output
     ///
-    /// @param fit_res Fitting statistics result of a track
-    /// @param track_states_per_track Track states of a track
+    /// @param track Fitting statistics result of a track
+    /// @param track_states All track states in the event
+    /// @param measurements All measurements in the event
     ///
     void ndf_tests(
-        const fitting_result<traccc::default_algebra>& fit_res,
-        const track_state_collection_types::host& track_states_per_track);
+        const edm::track_fit_collection<
+            default_algebra>::host::const_proxy_type& track,
+        const edm::track_state_collection<default_algebra>::host& track_states,
+        const measurement_collection_types::host& measurements);
+
+    /// Count the number of tracks that were successfully fitted
+    ///
+    /// @param tracks The track fit collection to count on
+    /// @return The number of tracks that were successfully fitted
+    ///
+    std::size_t count_successfully_fitted_tracks(
+        const edm::track_fit_collection<default_algebra>::host& tracks) const;
 
     // The number of tracks successful with KF
     std::size_t n_success{0u};
