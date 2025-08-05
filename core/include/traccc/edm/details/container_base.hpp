@@ -138,10 +138,11 @@ class container_base {
      * @brief Constructor from a pair of "view type" objects
      */
     template <typename header_vector_tp, typename item_vector_tp>
-    requires(std::constructible_from<header_vector, const header_vector_tp&>&&
+        requires(std::constructible_from<header_vector,
+                                         const header_vector_tp&> &&
                  std::constructible_from<item_vector, const item_vector_tp&>)
-        TRACCC_HOST_DEVICE
-        container_base(const header_vector_tp& hv, const item_vector_tp& iv)
+    TRACCC_HOST_DEVICE container_base(const header_vector_tp& hv,
+                                      const item_vector_tp& iv)
         : m_headers(hv), m_items(iv) {
 
         assert(m_headers.size() == m_items.size());

@@ -17,7 +17,8 @@ namespace traccc::sycl::details {
 
 /// A barrier type for SYCL kernels.
 template <std::size_t DIMENSIONS>
-requires(DIMENSIONS >= 1 && DIMENSIONS <= 3) struct barrier {
+    requires(DIMENSIONS >= 1 && DIMENSIONS <= 3)
+struct barrier {
 
     /// Dimensions of the barrier
     static constexpr std::size_t dimensions = DIMENSIONS;
