@@ -11,8 +11,8 @@
 #include "traccc/bfield/magnetic_field.hpp"
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
+#include "traccc/edm/track_fit_collection.hpp"
 #include "traccc/edm/track_parameters.hpp"
-#include "traccc/edm/track_state.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"
@@ -38,9 +38,10 @@ namespace traccc {
 ///
 /// At least as much as is implemented in the project at any given moment.
 ///
-class full_chain_algorithm : public algorithm<track_state_container_types::host(
-                                 const edm::silicon_cell_collection::host&)>,
-                             public messaging {
+class full_chain_algorithm
+    : public algorithm<edm::track_fit_collection<default_algebra>::host(
+          const edm::silicon_cell_collection::host&)>,
+      public messaging {
 
     public:
     /// @name Type declaration(s)
@@ -97,6 +98,8 @@ class full_chain_algorithm : public algorithm<track_state_container_types::host(
         const edm::silicon_cell_collection::host& cells) const;
 
     private:
+    /// Memory resource
+    std::reference_wrapper<vecmem::memory_resource> m_mr;
     /// Vecmem copy object
     std::unique_ptr<vecmem::copy> m_copy;
     /// Constant B field for the (seed) track parameter estimation
