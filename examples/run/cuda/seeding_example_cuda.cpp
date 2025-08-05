@@ -146,9 +146,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     vecmem::copy host_copy;
     vecmem::cuda::copy copy;
 
-    traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
-        track_state_d2h{mr, copy, logger().clone("TrackStateD2HCopyAlg")};
-
     // Seeding algorithm
     const traccc::seedfinder_config seedfinder_config(seeding_opts);
     const traccc::seedfilter_config seedfilter_config(seeding_opts);
@@ -209,7 +206,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         traccc::host::track_params_estimation::output_type params;
         traccc::edm::track_candidate_collection<traccc::default_algebra>::host
             track_candidates{host_mr};
-        traccc::track_state_container_types::host track_states;
+        traccc::edm::track_fit_container<traccc::default_algebra>::host
+            track_states{host_mr};
 
         traccc::edm::seed_collection::buffer seeds_cuda_buffer;
         traccc::bound_track_parameters_collection_types::buffer
@@ -218,8 +216,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
             track_candidates_cuda_buffer;
 
-        traccc::track_state_container_types::buffer track_states_cuda_buffer{
-            {{}, *(mr.host)}, {{}, *(mr.host), mr.host}};
+        traccc::edm::track_fit_container<traccc::default_algebra>::buffer
+            track_states_cuda_buffer;
 
         {  // Start measuring wall time
             traccc::performance::timer wall_t("Wall time", elapsedTimes);
@@ -364,8 +362,12 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         async_copy(track_candidates_cuda_buffer, track_candidates_cuda)->wait();
 
         // Copy track states from device to host
-        traccc::track_state_container_types::host track_states_cuda =
-            track_state_d2h(track_states_cuda_buffer);
+        traccc::edm::track_fit_container<traccc::default_algebra>::host
+            track_states_cuda{host_mr};
+        async_copy(track_states_cuda_buffer.tracks, track_states_cuda.tracks)
+            ->wait();
+        async_copy(track_states_cuda_buffer.states, track_states_cuda.states)
+            ->wait();
 
         if (accelerator_opts.compare_with_cpu) {
             // Show which event we are currently presenting the results for.
@@ -412,8 +414,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         n_seeds += seeds.size();
         n_found_tracks_cuda += track_candidates_cuda.size();
         n_found_tracks += track_candidates.size();
-        n_fitted_tracks_cuda += track_states_cuda.size();
-        n_fitted_tracks += track_states.size();
+        n_fitted_tracks_cuda += track_states_cuda.tracks.size();
+        n_fitted_tracks += track_states.tracks.size();
 
         /*------------
           Writer
@@ -434,14 +436,10 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 vecmem::get_data(track_candidates_cuda),
                 vecmem::get_data(measurements_per_event), evt_data);
 
-            for (unsigned int i = 0; i < track_states_cuda.size(); i++) {
-                const auto& trk_states_per_track =
-                    track_states_cuda.at(i).items;
-
-                const auto& fit_res = track_states_cuda[i].header;
-
-                fit_performance_writer.write(trk_states_per_track, fit_res,
-                                             host_det, evt_data);
+            for (unsigned int i = 0; i < track_states_cuda.tracks.size(); i++) {
+                fit_performance_writer.write(
+                    track_states_cuda.tracks.at(i), track_states_cuda.states,
+                    measurements_per_event, host_det, evt_data);
             }
         }
     }

@@ -190,7 +190,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             track_candidates{host_mr};
         traccc::edm::track_candidate_collection<traccc::default_algebra>::host
             track_candidates_ar{host_mr};
-        traccc::track_state_container_types::host track_states;
+        traccc::edm::track_fit_container<traccc::default_algebra>::host
+            track_states{host_mr};
 
         /*------------------------
            Track Finding with CKF
@@ -217,7 +218,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         track_states = host_fitting(detector, field,
                                     {vecmem::get_data(track_candidates_ar),
                                      vecmem::get_data(measurements_per_event)});
-        n_fitted_tracks += track_states.size();
+        n_fitted_tracks += track_states.tracks.size();
 
         /*------------
            Statistics
@@ -249,13 +250,10 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 vecmem::get_data(track_candidates_ar),
                 vecmem::get_data(measurements_per_event), evt_data);
 
-            for (unsigned int i = 0; i < track_states.size(); i++) {
-                const auto& trk_states_per_track = track_states.at(i).items;
-
-                const auto& fit_res = track_states[i].header;
-
-                fit_performance_writer.write(trk_states_per_track, fit_res,
-                                             detector, evt_data);
+            for (unsigned int i = 0; i < track_states.tracks.size(); i++) {
+                fit_performance_writer.write(
+                    track_states.tracks.at(i), track_states.states,
+                    measurements_per_event, detector, evt_data);
             }
         }
     }
