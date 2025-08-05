@@ -83,8 +83,8 @@ void KalmanFittingTests::pull_value_tests(
 #endif  // TRACCC_HAVE_ROOT
 }
 
-void KalmanFittingTests::p_value_tests([
-    [maybe_unused]] std::string_view file_name) const {
+void KalmanFittingTests::p_value_tests(
+    [[maybe_unused]] std::string_view file_name) const {
 
 #ifdef TRACCC_HAVE_ROOT
     // Open the file with the histograms.

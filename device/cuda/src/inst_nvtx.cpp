@@ -50,8 +50,8 @@ uint32_t __attribute__((no_instrument_function)) djb2(const std::string &str) {
     return hash;
 }
 
-void __attribute__((no_instrument_function))
-nvtxRangePushWrapper(const std::optional<std::string> &name) {
+void __attribute__((no_instrument_function)) nvtxRangePushWrapper(
+    const std::optional<std::string> &name) {
     nvtxEventAttributes_t eventAttrib;
     std::memset(&eventAttrib, 0, sizeof(nvtxEventAttributes_t));
 
@@ -73,8 +73,8 @@ nvtxRangePushWrapper(const std::optional<std::string> &name) {
 }  // namespace
 
 extern "C" {
-void __attribute__((no_instrument_function))
-__cyg_profile_func_enter([[maybe_unused]] void *this_fn, void *) {
+void __attribute__((no_instrument_function)) __cyg_profile_func_enter(
+    [[maybe_unused]] void *this_fn, void *) {
     Dl_info this_fn_info;
 
     if (dladdr(this_fn, &this_fn_info)) {
@@ -97,8 +97,8 @@ __cyg_profile_func_enter([[maybe_unused]] void *this_fn, void *) {
     }
 }
 
-void __attribute__((no_instrument_function))
-__cyg_profile_func_exit(void *, void *) {
+void __attribute__((no_instrument_function)) __cyg_profile_func_exit(void *,
+                                                                     void *) {
     nvtxRangePop();
 }
 }

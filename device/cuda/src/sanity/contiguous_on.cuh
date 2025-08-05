@@ -35,9 +35,10 @@ namespace kernels {
 /// Kernel used in implementing @c traccc::cuda::is_contiguous_on
 template <typename CONTAINER, std::semiregular P, typename VIEW,
           std::equality_comparable S>
-requires std::regular_invocable<P, decltype(std::declval<CONTAINER>().at(0))>
-    __global__ void is_contiguous_on_compress_adjacent(
-        P projection, VIEW _in, vecmem::data::vector_view<S> out_view) {
+    requires std::regular_invocable<P,
+                                    decltype(std::declval<CONTAINER>().at(0))>
+__global__ void is_contiguous_on_compress_adjacent(
+    P projection, VIEW _in, vecmem::data::vector_view<S> out_view) {
 
     const device::global_index_t tid = details::global_index1();
 
@@ -94,10 +95,10 @@ __global__ void is_contiguous_on_all_unique(
  * @return false Otherwise.
  */
 template <typename CONTAINER, std::semiregular P, typename VIEW>
-requires std::regular_invocable<P,
-                                decltype(std::declval<CONTAINER>().at(0))> bool
-is_contiguous_on(P&& projection, vecmem::memory_resource& mr,
-                 vecmem::copy& copy, stream& stream, const VIEW& view) {
+    requires std::regular_invocable<P,
+                                    decltype(std::declval<CONTAINER>().at(0))>
+bool is_contiguous_on(P&& projection, vecmem::memory_resource& mr,
+                      vecmem::copy& copy, stream& stream, const VIEW& view) {
 
     // This should never be a performance-critical step, so we can keep the
     // block size fixed.

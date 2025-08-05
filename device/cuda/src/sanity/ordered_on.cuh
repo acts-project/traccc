@@ -29,9 +29,10 @@
 namespace traccc::cuda {
 namespace kernels {
 template <typename CONTAINER, std::semiregular R, typename VIEW>
-requires std::regular_invocable<R, decltype(std::declval<CONTAINER>().at(0)),
-                                decltype(std::declval<CONTAINER>().at(0))>
-    __global__ void is_ordered_on_kernel(R relation, VIEW _in, bool* out) {
+    requires std::regular_invocable<R,
+                                    decltype(std::declval<CONTAINER>().at(0)),
+                                    decltype(std::declval<CONTAINER>().at(0))>
+__global__ void is_ordered_on_kernel(R relation, VIEW _in, bool* out) {
 
     const device::global_index_t tid = details::global_index1();
 
@@ -70,10 +71,11 @@ requires std::regular_invocable<R, decltype(std::declval<CONTAINER>().at(0)),
  * @return false Otherwise.
  */
 template <typename CONTAINER, std::semiregular R, typename VIEW>
-requires std::regular_invocable<R, decltype(std::declval<CONTAINER>().at(0)),
-                                decltype(std::declval<CONTAINER>().at(0))> bool
-is_ordered_on(R&& relation, vecmem::memory_resource& mr, vecmem::copy& copy,
-              stream& stream, const VIEW& view) {
+    requires std::regular_invocable<R,
+                                    decltype(std::declval<CONTAINER>().at(0)),
+                                    decltype(std::declval<CONTAINER>().at(0))>
+bool is_ordered_on(R&& relation, vecmem::memory_resource& mr,
+                   vecmem::copy& copy, stream& stream, const VIEW& view) {
 
     // This should never be a performance-critical step, so we can keep the
     // block size fixed.

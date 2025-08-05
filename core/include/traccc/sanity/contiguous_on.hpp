@@ -36,9 +36,9 @@ namespace traccc::host {
  * @return false Otherwise.
  */
 template <std::semiregular P, typename CONTAINER>
-requires std::regular_invocable<P,
-                                decltype(std::declval<CONTAINER>().at(0))> bool
-is_contiguous_on(P&& projection, const CONTAINER& in) {
+    requires std::regular_invocable<P,
+                                    decltype(std::declval<CONTAINER>().at(0))>
+bool is_contiguous_on(P&& projection, const CONTAINER& in) {
 
     // Grab the number of elements in our container.
     typename CONTAINER::size_type n = in.size();
