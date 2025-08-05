@@ -34,8 +34,8 @@ void KalmanFittingMomentumResolutionTests::consistency_tests(
     ASSERT_EQ(track_states_per_track.size(), std::get<11>(GetParam()));
 }
 
-void KalmanFittingMomentumResolutionTests::momentum_resolution_tests([
-    [maybe_unused]] std::string_view file_name) const {
+void KalmanFittingMomentumResolutionTests::momentum_resolution_tests(
+    [[maybe_unused]] std::string_view file_name) const {
 
 #ifdef TRACCC_HAVE_ROOT
 
