@@ -113,6 +113,8 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/ambiguity_resolution/kernels/reset_status.cuh"
   "src/ambiguity_resolution/kernels/scan_block_offsets.cu"
   "src/ambiguity_resolution/kernels/scan_block_offsets.cuh"
+  "src/ambiguity_resolution/kernels/sort_tracks_per_measurement.cu"
+  "src/ambiguity_resolution/kernels/sort_tracks_per_measurement.cuh"
   "src/ambiguity_resolution/kernels/sort_updated_tracks.cu"
   "src/ambiguity_resolution/kernels/sort_updated_tracks.cuh"
   "src/ambiguity_resolution/kernels/remove_tracks.cu"

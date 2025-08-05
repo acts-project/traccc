@@ -106,7 +106,8 @@ __launch_bounds__(512) __global__
             sorted_ids.at(n_accepted_prev - 1 - sh_threads[threadIndex]);
 
         unsigned int worst_idx =
-            thrust::find(thrust::seq, tracks.begin(), tracks.end(), trk_id) -
+            thrust::lower_bound(thrust::seq, tracks.begin(), tracks.end(),
+                                trk_id) -
             tracks.begin();
 
         track_status[worst_idx] = 0;
@@ -120,8 +121,8 @@ __launch_bounds__(512) __global__
 
                 trk_id = sorted_ids[n_accepted_prev - 1 - sh_threads[i]];
 
-                worst_idx = thrust::find(thrust::seq, tracks.begin(),
-                                         tracks.end(), trk_id) -
+                worst_idx = thrust::lower_bound(thrust::seq, tracks.begin(),
+                                                tracks.end(), trk_id) -
                             tracks.begin();
 
                 track_status[worst_idx] = 0;
