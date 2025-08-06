@@ -86,10 +86,33 @@ void make_pareto_set(const mapping_t& mapping) {
     mapping_vector_t flat_map;
 
     for (const auto& it1 : mapping) {
-        for (const auto& it2 : it1.second) {
-            flat_map.push_back(it2);
+        for (unsigned int i = 0; i < it1.second.size(); ++i) {
+            bool is_dominated = false;
+
+            for (unsigned int j = 0; j < it1.second.size(); ++j) {
+                if (std::get<0>(it1.second.at(j)) <=
+                        std::get<0>(it1.second.at(i)) &&
+                    std::get<1>(it1.second.at(j)) >=
+                        std::get<1>(it1.second.at(i))) {
+                    if (std::get<0>(it1.second.at(j)) == std::get<0>(it1.second.at(i)) &&
+                        std::get<1>(it1.second.at(j)) == std::get<1>(it1.second.at(i))) {
+                        is_dominated = j < i;
+                    } else {
+                        is_dominated = true;
+                    }
+
+                    if (is_dominated) {
+                    break;}
+                }
+            }
+
+            if (!is_dominated) {
+                flat_map.push_back(it1.second.at(i));
+            }
         }
     }
+
+    std::cout << "Flat map size is " << flat_map.size() << std::endl;
 
     mapping_vector_t out_set;
 
@@ -165,10 +188,11 @@ int run_detector_scan(const traccc::opts::track_seeding& seeding_opts,
 
     TRACCC_INFO("Starting detector scan...");
 
-    for (float phi = 0; phi < 6.283185307f; phi += 8.f) {
-        for (float z0 = -150.f; z0 <= 150.f; z0 += 10.f) {
+    for (float phi = 0; phi < 6.283185307f; phi += 0.1f) {
+        std::cout << std::format("Phi slice {}", phi) << std::endl;
+
+        for (float z0 = -150.f; z0 <= 150.f; z0 += 1.f) {
             for (float theta = 0; theta <= 1.57079633; theta += 0.01f) {
-                std::cout << z0 << ", " << theta << std::endl;
                 float sin_theta = std::sin(theta);
                 detray::dvector3D<detector_t::algebra_type> p{
                     math::cos(phi) * sin_theta, math::sin(phi) * sin_theta,
