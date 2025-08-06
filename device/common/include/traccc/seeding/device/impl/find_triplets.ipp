@@ -112,11 +112,35 @@ inline void find_triplets(
                 spM, lb, lt, config, iSinTheta2, scatteringInRegion2, curvature,
                 impact_parameter)) {
 
+            // Compute the weight attributed by the impact factor as the PDF of
+            // a half-Gaussian distribution, i.e. we compute:
+            //
+            // w' = \frac{\sqrt{2}}{\sigma\sqrt{\pi}}
+            //      \exp\left(\frac{-x^2}{2\sigma^2}\right)
+            //
+            // However, we would like the weight to be normalized to the range
+            // [0, 1], so we divide by the maximum probability density which
+            // is easily found as:
+            //
+            // w_{max} = \frac{\sqrt{2}}{\sigma\sqrt{\pi}}
+            //
+            // Thus normalizing gives:
+            //
+            // w = \frac{w'}{w_{max}} = \exp\left(\frac{-x^2}{2\sigma^2}\right)
+            //
+            // Conveniently, this normalization also reduces the number of
+            // operations to be performed.
+            scalar impactParameterProb = math::exp(
+                -(impact_parameter * impact_parameter) /
+                (2.f * filter_config.impactSigma * filter_config.impactSigma));
+
+            scalar weight =
+                impactParameterProb * filter_config.impactWeightFactor;
+
             // Add triplet to jagged vector
-            triplets.at(posTriplets++) = device_triplet(
-                {spB_idx, spM_idx, spT_idx, globalIndex, curvature,
-                 -impact_parameter * filter_config.impactWeightFactor,
-                 lb.Zo()});
+            triplets.at(posTriplets++) =
+                device_triplet({spB_idx, spM_idx, spT_idx, globalIndex,
+                                curvature, weight, lb.Zo()});
         }
     }
 }

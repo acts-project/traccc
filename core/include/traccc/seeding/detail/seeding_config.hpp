@@ -192,6 +192,9 @@ struct seedfilter_config {
     // the impact parameters (d0) is multiplied by this factor and subtracted
     // from weight
     float impactWeightFactor = 1.f;
+    // assumed variance of the half-Gaussian distribution of the impact
+    // parameter $d_0$ in mm
+    float impactSigma = 5.f;
     // seed weight increased by this value if a compatible seed has been found.
     float compatSeedWeight = 200.f;
     // minimum distance between compatible seeds to be considered for weight
@@ -211,7 +214,7 @@ struct seedfilter_config {
     float good_spB_min_weight = 380.f;
 
     // seed cut
-    float seed_min_weight = 200.f;
+    float seed_min_weight = 400.f;
     float spB_min_radius = 43.f * unit<float>::mm;
 };
 
