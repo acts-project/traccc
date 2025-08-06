@@ -171,6 +171,9 @@ __launch_bounds__(512) __global__ void count_removable_tracks(
 
     const auto tid = threadIndex;
     for (int k = 2; k <= N; k <<= 1) {
+
+        bool ascending = ((tid & k) == 0);
+
         for (int j = k >> 1; j > 0; j >>= 1) {
             int ixj = tid ^ j;
 
@@ -180,7 +183,6 @@ __launch_bounds__(512) __global__ void count_removable_tracks(
                 auto thread_i = sh_threads[tid];
                 auto thread_j = sh_threads[ixj];
 
-                bool ascending = ((tid & k) == 0);
                 bool should_swap =
                     (meas_i > meas_j ||
                      (meas_i == meas_j && thread_i > thread_j)) == ascending;
