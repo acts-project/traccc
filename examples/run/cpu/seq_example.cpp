@@ -40,8 +40,10 @@
 #include "traccc/options/output_data.hpp"
 #include "traccc/options/performance.hpp"
 #include "traccc/options/program_options.hpp"
+#include "traccc/options/seed_matching.hpp"
 #include "traccc/options/track_finding.hpp"
 #include "traccc/options/track_fitting.hpp"
+#include "traccc/options/track_matching.hpp"
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/options/track_resolution.hpp"
 #include "traccc/options/track_seeding.hpp"
@@ -74,6 +76,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
             const traccc::opts::track_fitting& fitting_opts,
             const traccc::opts::performance& performance_opts,
             const traccc::opts::truth_finding& truth_finding_opts,
+            const traccc::opts::seed_matching& seed_matching_opts,
+            const traccc::opts::track_matching& track_matching_opts,
             std::unique_ptr<const traccc::Logger> ilogger) {
     TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
@@ -158,12 +162,14 @@ int seq_run(const traccc::opts::input_data& input_opts,
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
-        traccc::seeding_performance_writer::config{.truth_config =
-                                                       truth_finding_opts},
+        traccc::seeding_performance_writer::config{
+            .truth_config = truth_finding_opts,
+            .seed_truth_config = seed_matching_opts},
         logger().clone("SeedingPerformanceWriter"));
     traccc::finding_performance_writer find_performance_writer(
-        traccc::finding_performance_writer::config{.truth_config =
-                                                       truth_finding_opts},
+        traccc::finding_performance_writer::config{
+            .truth_config = truth_finding_opts,
+            .track_truth_config = track_matching_opts},
         logger().clone("FindingPerformanceWriter"));
     traccc::finding_performance_writer::config ar_writer_cfg;
     ar_writer_cfg.file_path = "performance_track_ambiguity_resolution.root";
@@ -394,11 +400,14 @@ int main(int argc, char* argv[]) {
     traccc::opts::track_fitting fitting_opts;
     traccc::opts::performance performance_opts;
     traccc::opts::truth_finding truth_finding_opts;
+    traccc::opts::seed_matching seed_matching_opts;
+    traccc::opts::track_matching track_matching_opts;
     traccc::opts::program_options program_opts{
         "Full Tracking Chain on the Host",
         {detector_opts, bfield_opts, input_opts, output_opts,
          clusterization_opts, seeding_opts, finding_opts, resolution_opts,
-         fitting_opts, propagation_opts, performance_opts, truth_finding_opts},
+         fitting_opts, propagation_opts, performance_opts, truth_finding_opts,
+         seed_matching_opts, track_matching_opts},
         argc,
         argv,
         logger->cloneWithSuffix("Options")};
@@ -407,5 +416,6 @@ int main(int argc, char* argv[]) {
     return seq_run(input_opts, output_opts, detector_opts, bfield_opts,
                    clusterization_opts, seeding_opts, finding_opts,
                    propagation_opts, resolution_opts, fitting_opts,
-                   performance_opts, truth_finding_opts, logger->clone());
+                   performance_opts, truth_finding_opts, seed_matching_opts,
+                   track_matching_opts, logger->clone());
 }

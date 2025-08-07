@@ -147,7 +147,7 @@ void seeding_performance_writer::write(
         assert(seed_measurements.size() > 0u);
         if (static_cast<double>(particle_hit_counts.at(0).hit_counts) /
                 static_cast<double>(seed_measurements.size()) >
-            m_cfg.truth_config.matching_ratio) {
+            m_cfg.seed_truth_config.matching_ratio) {
             auto pid = particle_hit_counts.at(0).ptc.particle_id;
             match_counter[pid]++;
         } else {

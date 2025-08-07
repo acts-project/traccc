@@ -11,6 +11,7 @@
 #include "traccc/resolution/stat_plot_tool_config.hpp"
 #include "traccc/utils/helpers.hpp"
 #include "traccc/utils/messaging.hpp"
+#include "traccc/utils/track_matching_config.hpp"
 #include "traccc/utils/truth_matching_config.hpp"
 
 // Project include(s).
@@ -54,6 +55,7 @@ class finding_performance_writer : public messaging {
             {"Num", plot_helpers::binning("N", 30, -0.5f, 29.5f)}};
 
         truth_matching_config truth_config;
+        track_matching_config track_truth_config;
 
         stat_plot_tool_config stat_config{};
     };

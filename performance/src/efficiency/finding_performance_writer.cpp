@@ -208,14 +208,14 @@ void finding_performance_writer::write_common(
         const bool reco_matched =
             static_cast<double>(n_major_hits) /
                 static_cast<double>(found_measurements.size()) >
-            m_cfg.truth_config.matching_ratio;
+            m_cfg.track_truth_config.matching_ratio;
         const bool truth_matched =
             static_cast<double>(n_major_hits) /
                 static_cast<double>(truth_measurements.size()) >
-            m_cfg.truth_config.matching_ratio;
+            m_cfg.track_truth_config.matching_ratio;
 
-        if ((!m_cfg.truth_config.double_matching && reco_matched) ||
-            (m_cfg.truth_config.double_matching && reco_matched &&
+        if ((!m_cfg.track_truth_config.double_matching && reco_matched) ||
+            (m_cfg.track_truth_config.double_matching && reco_matched &&
              truth_matched)) {
             const auto pid = major_ptc.particle_id;
             match_counter[pid]++;
