@@ -43,7 +43,7 @@ struct seedfinder_config {
     // minimum distance in mm in r between two measurements within one seed
     float deltaRMin = 20 * unit<float>::mm;
     // maximum distance in mm in r between two measurements within one seed
-    float deltaRMax = 280 * unit<float>::mm;
+    float deltaRMax = 80 * unit<float>::mm;
 
     // FIXME: this is not used yet
     //        float upperPtResolutionPerSeed = 20* Acts::GeV;
