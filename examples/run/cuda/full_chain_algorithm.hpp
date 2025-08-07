@@ -18,8 +18,8 @@
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
+#include "traccc/edm/track_fit_collection.hpp"
 #include "traccc/edm/track_parameters.hpp"
-#include "traccc/edm/track_state.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
@@ -43,7 +43,7 @@ namespace traccc::cuda {
 /// At least as much as is implemented in the project at any given moment.
 ///
 class full_chain_algorithm
-    : public algorithm<vecmem::vector<fitting_result<default_algebra>>(
+    : public algorithm<edm::track_fit_collection<default_algebra>::host(
           const edm::silicon_cell_collection::host&)>,
       public messaging {
 

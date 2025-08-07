@@ -7,7 +7,6 @@
 
 // Project include(s).
 #include "traccc/bfield/construct_const_bfield.hpp"
-#include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
@@ -149,27 +148,27 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
                      vecmem::get_data(track_candidates.measurements)});
 
         // Iterator over tracks
-        const std::size_t n_tracks = track_states.size();
+        const std::size_t n_tracks = track_states.tracks.size();
 
         ASSERT_GE(static_cast<float>(n_tracks),
                   0.98 * static_cast<float>(n_truth_tracks));
 
         const std::size_t n_fitted_tracks =
-            count_successfully_fitted_tracks(track_states);
+            count_successfully_fitted_tracks(track_states.tracks);
         ASSERT_GE(static_cast<float>(n_fitted_tracks),
                   0.95 * static_cast<float>(n_truth_tracks));
 
         for (std::size_t i_trk = 0; i_trk < n_tracks; i_trk++) {
 
-            const auto& fit_res = track_states[i_trk].header;
-            const auto& track_states_per_track = track_states[i_trk].items;
+            consistency_tests(track_states.tracks.at(i_trk),
+                              track_states.states);
 
-            consistency_tests(track_states_per_track);
+            ndf_tests(track_states.tracks.at(i_trk), track_states.states,
+                      track_candidates.measurements);
 
-            ndf_tests(fit_res, track_states_per_track);
-
-            fit_performance_writer.write(track_states_per_track, fit_res,
-                                         host_det, evt_data);
+            fit_performance_writer.write(
+                track_states.tracks.at(i_trk), track_states.states,
+                track_candidates.measurements, host_det, evt_data);
         }
     }
 
