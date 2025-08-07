@@ -80,19 +80,19 @@ struct remove_tracks_payload {
     unsigned int* n_removable_tracks;
 
     /**
-     * @brief View object to measurements to remove
+     * @brief The number of measurements to remove
      */
-    vecmem::data::vector_view<measurement_id_type> meas_to_remove_view;
-
-    /**
-     * @brief View object to thread id of measurements to remove
-     */
-    vecmem::data::vector_view<unsigned int> threads_view;
+    unsigned int* n_meas_to_remove;
 
     /**
      * @brief Whether to terminate the calculation
      */
     int* terminate;
+
+    /**
+     * @brief The number of max shared
+     */
+    unsigned int* max_shared;
 
     /**
      * @brief The number of updated tracks

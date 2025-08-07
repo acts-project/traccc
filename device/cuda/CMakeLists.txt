@@ -89,8 +89,6 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/ambiguity_resolution/kernels/add_block_offset.cuh"
   "src/ambiguity_resolution/kernels/block_inclusive_scan.cu"
   "src/ambiguity_resolution/kernels/block_inclusive_scan.cuh"
-  "src/ambiguity_resolution/kernels/count_removable_tracks.cu"
-  "src/ambiguity_resolution/kernels/count_removable_tracks.cuh"
   "src/ambiguity_resolution/kernels/count_shared_measurements.cu"
   "src/ambiguity_resolution/kernels/count_shared_measurements.cuh"
   "src/ambiguity_resolution/kernels/find_max_shared.cu"
