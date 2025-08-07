@@ -74,11 +74,9 @@ __launch_bounds__(512) __global__
         return;
     }
 
-    __shared__ int shared_n_meas[512];
-    __shared__ unsigned int shared_tids[512];
+    __shared__ int sh_buffer[512];
     __shared__ measurement_id_type sh_meas_ids[512];
     __shared__ unsigned int sh_threads[512];
-    __shared__ int prefix[512];
     __shared__ unsigned int n_meas_total;
     __shared__ unsigned int bound;
     __shared__ unsigned int n_tracks_to_iterate;
@@ -90,10 +88,9 @@ __launch_bounds__(512) __global__
     auto threadIndex = threadIdx.x;
 
     int gid = static_cast<int>(*payload.n_accepted) - 1 - threadIndex;
-    shared_n_meas[threadIndex] = 0;
+    sh_buffer[threadIndex] = 0;
     sh_meas_ids[threadIndex] = std::numeric_limits<measurement_id_type>::max();
     sh_threads[threadIndex] = std::numeric_limits<unsigned int>::max();
-    shared_tids[threadIndex] = std::numeric_limits<unsigned int>::max();
 
     vecmem::device_vector<const unsigned int> sorted_ids(
         payload.sorted_ids_view);
@@ -133,7 +130,9 @@ __launch_bounds__(512) __global__
     if (gid >= 0) {
         trk_id = sorted_ids[gid];
         n_m = n_meas[trk_id];
-        shared_n_meas[threadIndex] = n_m;
+
+        // Buffer for the number of measurement per track
+        sh_buffer[threadIndex] = n_m;
     }
 
     __syncthreads();
@@ -145,7 +144,7 @@ __launch_bounds__(512) __global__
      ****************************************/
 
     // @TODO: Improve the logic
-    count_tracks(threadIdx.x, shared_n_meas, n_tracks_total, bound,
+    count_tracks(threadIdx.x, sh_buffer, n_tracks_total, bound,
                  n_tracks_to_iterate, stop);
     /*
     for (int i = 0; i < 100; i++) {
@@ -280,23 +279,25 @@ __launch_bounds__(512) __global__
     __syncthreads();
 
     // Exclusive scan (Hillis-Steele)
-    prefix[threadIndex] = is_valid;  // copy input
+
+    // Buffer for the prefix
+    sh_buffer[threadIndex] = is_valid;  // copy input
     __syncthreads();
 
     for (int offset = 1; offset < *(payload.n_meas_to_remove); offset <<= 1) {
         int val = 0;
         if (threadIndex >= offset) {
-            val = prefix[threadIndex - offset];
+            val = sh_buffer[threadIndex - offset];
         }
         __syncthreads();
-        prefix[threadIndex] += val;
+        sh_buffer[threadIndex] += val;
         __syncthreads();
     }
 
     if (is_valid) {
-        prefix[threadIndex] -= 1;
-        sh_meas_ids[prefix[threadIndex]] = meas_to_remove_temp;
-        sh_threads[prefix[threadIndex]] = threads_temp;
+        sh_buffer[threadIndex] -= 1;
+        sh_meas_ids[sh_buffer[threadIndex]] = meas_to_remove_temp;
+        sh_threads[sh_buffer[threadIndex]] = threads_temp;
     }
 
     __syncthreads();
@@ -334,6 +335,9 @@ __launch_bounds__(512) __global__
         const auto id = sh_meas_ids[threadIndex];
         is_duplicate = (threadIndex > 0 && sh_meas_ids[threadIndex - 1] == id);
     }
+
+    // Buffer for the track ids
+    sh_buffer[threadIndex] = std::numeric_limits<int>::max();
 
     bool active = false;
     unsigned int pos1;
@@ -393,9 +397,9 @@ __launch_bounds__(512) __global__
 
             pos1 = atomicAdd(&n_updating_threads, 1);
 
-            shared_tids[pos1] = static_cast<unsigned int>(tracks[alive_idx]);
+            sh_buffer[pos1] = static_cast<int>(tracks[alive_idx]);
 
-            auto tid = shared_tids[pos1];
+            auto tid = sh_buffer[pos1];
 
             const auto m_count = static_cast<unsigned int>(thrust::count(
                 thrust::seq, meas_ids[tid].begin(), meas_ids[tid].end(), id));
@@ -409,10 +413,10 @@ __launch_bounds__(512) __global__
     __syncthreads();
 
     if (active) {
-        auto tid = shared_tids[pos1];
+        auto tid = sh_buffer[pos1];
         bool already_pushed = false;
         for (unsigned int i = 0; i < pos1; ++i) {
-            if (shared_tids[i] == tid) {
+            if (sh_buffer[i] == tid) {
                 already_pushed = true;
                 break;
             }
