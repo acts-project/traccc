@@ -113,9 +113,6 @@ __launch_bounds__(512) __global__
     vecmem::device_vector<unsigned int> updated_tracks(
         payload.updated_tracks_view);
     vecmem::device_vector<int> is_updated(payload.is_updated_view);
-    vecmem::device_vector<measurement_id_type> meas_to_remove(
-        payload.meas_to_remove_view);
-    vecmem::device_vector<unsigned int> threads(payload.threads_view);
 
     if (threadIndex == 0) {
         *(payload.n_removable_tracks) = 0;
@@ -262,8 +259,8 @@ __launch_bounds__(512) __global__
 
     __syncthreads();
 
-    meas_to_remove[threadIndex] = sh_meas_ids[threadIndex];
-    threads[threadIndex] = sh_threads[threadIndex];
+    auto meas_to_remove_temp = sh_meas_ids[threadIndex];
+    auto threads_temp = sh_threads[threadIndex];
 
     __syncthreads();
 
@@ -273,8 +270,7 @@ __launch_bounds__(512) __global__
 
     __syncthreads();
 
-    int is_valid =
-        (threads[threadIndex] < *(payload.n_removable_tracks)) ? 1 : 0;
+    int is_valid = (threads_temp < *(payload.n_removable_tracks)) ? 1 : 0;
 
     // TODO: Use better reduction algorithm
     if (is_valid) {
@@ -299,14 +295,14 @@ __launch_bounds__(512) __global__
 
     if (is_valid) {
         prefix[threadIndex] -= 1;
-        sh_meas_ids[prefix[threadIndex]] = meas_to_remove[threadIndex];
-        sh_threads[prefix[threadIndex]] = threads[threadIndex];
+        sh_meas_ids[prefix[threadIndex]] = meas_to_remove_temp;
+        sh_threads[prefix[threadIndex]] = threads_temp;
     }
 
     __syncthreads();
 
-    meas_to_remove[threadIndex] = sh_meas_ids[threadIndex];
-    threads[threadIndex] = sh_threads[threadIndex];
+    meas_to_remove_temp = sh_meas_ids[threadIndex];
+    threads_temp = sh_threads[threadIndex];
 
     /********************
      * Remove tracks
@@ -327,8 +323,8 @@ __launch_bounds__(512) __global__
     }
 
     if (threadIndex < *(payload.n_valid_threads)) {
-        sh_meas_ids[threadIndex] = meas_to_remove[threadIndex];
-        sh_threads[threadIndex] = threads[threadIndex];
+        sh_meas_ids[threadIndex] = meas_to_remove_temp;
+        sh_threads[threadIndex] = threads_temp;
         is_valid_thread = true;
     }
 

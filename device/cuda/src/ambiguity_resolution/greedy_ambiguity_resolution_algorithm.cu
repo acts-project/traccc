@@ -382,11 +382,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                                                                     m_mr.main};
     m_copy.get().setup(updated_tracks_buffer)->ignore();
 
-    // Measurements to remove for each iteration
-    vecmem::data::vector_buffer<measurement_id_type> meas_to_remove_buffer{
-        1024, m_mr.main};
-    vecmem::data::vector_buffer<unsigned int> threads_buffer{1024, m_mr.main};
-
+    // Device objects
     vecmem::unique_alloc_ptr<unsigned int> n_removable_tracks_device =
         vecmem::make_unique_alloc<unsigned int>(m_mr.main);
     vecmem::unique_alloc_ptr<unsigned int> n_meas_to_remove_device =
@@ -394,7 +390,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
     vecmem::unique_alloc_ptr<unsigned int> n_valid_threads_device =
         vecmem::make_unique_alloc<unsigned int>(m_mr.main);
 
-    // Device objects
     int is_first_iteration = 1;
     vecmem::unique_alloc_ptr<int> is_first_iteration_device =
         vecmem::make_unique_alloc<int>(m_mr.main);
@@ -501,8 +496,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .rel_shared_view = rel_shared_buffer,
                 .n_removable_tracks = n_removable_tracks_device.get(),
                 .n_meas_to_remove = n_meas_to_remove_device.get(),
-                .meas_to_remove_view = meas_to_remove_buffer,
-                .threads_view = threads_buffer,
                 .terminate = terminate_device.get(),
                 .max_shared = max_shared_device.get(),
                 .n_updated_tracks = n_updated_tracks_device.get(),
