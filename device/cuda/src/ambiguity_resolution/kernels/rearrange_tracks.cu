@@ -41,13 +41,15 @@ TRACCC_DEVICE inline bool find_valid_index(
     return false;
 }
 
-__global__ void rearrange_tracks(device::rearrange_tracks_payload payload) {
+__launch_bounds__(1024) __global__
+    void rearrange_tracks(device::rearrange_tracks_payload payload) {
 
     if (*(payload.terminate) == 1 || *(payload.n_updated_tracks) == 0) {
         return;
     }
 
-    auto gid = threadIdx.x + blockIdx.x * blockDim.x;
+    auto gid = threadIdx.x / nThreads_per_track +
+               blockIdx.x * (blockDim.x / nThreads_per_track);
     const unsigned int n_accepted = *(payload.n_accepted);
 
     if (gid >= n_accepted) {
@@ -74,6 +76,8 @@ __global__ void rearrange_tracks(device::rearrange_tracks_payload payload) {
     int shifted_idx = static_cast<int>(gid);
     auto N = *(payload.n_updated_tracks);
 
+    //__shared__ unsigned int shifted_idx[32];
+
     if (is_updated[tid]) {
 
         if (gid > 0) {
@@ -82,102 +86,115 @@ __global__ void rearrange_tracks(device::rearrange_tracks_payload payload) {
             unsigned int right = gid;
 
             bool first_iteration = true;
-            while (right > left) {
 
-                const bool find_left =
-                    find_valid_index(left, 0, gid, sorted_ids, is_updated);
+            if (threadIdx.x % nThreads_per_track == 0) {
 
-                if (!find_left) {
-                    break;
-                }
+                while (right > left) {
 
-                const bool find_right =
-                    find_valid_index(right, 0, gid, sorted_ids, is_updated);
+                    const bool find_left =
+                        find_valid_index(left, 0, gid, sorted_ids, is_updated);
 
-                if (!find_right) {
-                    break;
-                }
-
-                if (first_iteration) {
-                    auto rel_sh = rel_shared[sorted_ids[right]];
-                    auto pval = pvals[sorted_ids[right]];
-
-                    if (rel_sh < rel_sh_ref ||
-                        (rel_sh == rel_sh_ref && pval >= pval_ref)) {
-                        left = gid;
+                    if (!find_left) {
                         break;
                     }
-                }
 
-                first_iteration = false;
+                    const bool find_right =
+                        find_valid_index(right, 0, gid, sorted_ids, is_updated);
 
-                unsigned int mid = left + (right - left) / 2;
+                    if (!find_right) {
+                        break;
+                    }
 
-                const bool find_mid = find_valid_index(mid, left, right - 1,
-                                                       sorted_ids, is_updated);
+                    if (first_iteration) {
+                        auto rel_sh = rel_shared[sorted_ids[right]];
+                        auto pval = pvals[sorted_ids[right]];
 
-                if (find_mid) {
+                        if (rel_sh < rel_sh_ref ||
+                            (rel_sh == rel_sh_ref && pval >= pval_ref)) {
+                            left = gid;
+                            break;
+                        }
+                    }
 
-                    auto rel_sh = rel_shared[sorted_ids[mid]];
-                    auto pval = pvals[sorted_ids[mid]];
+                    first_iteration = false;
 
-                    if (rel_sh < rel_sh_ref ||
-                        (rel_sh == rel_sh_ref && pval >= pval_ref)) {
+                    unsigned int mid = left + (right - left) / 2;
 
-                        left = mid + 1;
-                    } else {
-                        right = mid;
+                    const bool find_mid = find_valid_index(
+                        mid, left, right - 1, sorted_ids, is_updated);
+
+                    if (find_mid) {
+
+                        auto rel_sh = rel_shared[sorted_ids[mid]];
+                        auto pval = pvals[sorted_ids[mid]];
+
+                        if (rel_sh < rel_sh_ref ||
+                            (rel_sh == rel_sh_ref && pval >= pval_ref)) {
+
+                            left = mid + 1;
+                        } else {
+                            right = mid;
+                        }
                     }
                 }
-            }
 
-            int delta = 0;
+                int delta = 0;
 
-            if (is_updated[sorted_ids[left]]) {
-                delta = gid - left - (prefix_sums[gid] - prefix_sums[left]);
-            } else {
-                delta = gid - left - (prefix_sums[gid] - prefix_sums[left] - 1);
-            }
+                if (is_updated[sorted_ids[left]]) {
+                    delta = gid - left - (prefix_sums[gid] - prefix_sums[left]);
+                } else {
+                    delta =
+                        gid - left - (prefix_sums[gid] - prefix_sums[left] - 1);
+                }
 
-            shifted_idx -= delta;
-        }
-
-        for (int i = 0; i < N; i++) {
-
-            auto id = updated_tracks[i];
-
-            if (inverted_ids[id] < gid) {
-                shifted_idx--;
+                shifted_idx -= delta;
             }
         }
 
-        int offset = 0;
-        for (int i = 0; i < N; i++) {
-            if (updated_tracks[i] == tid) {
-                offset = i;
-                break;
-            }
-        }
-        shifted_idx += offset;
+        if (threadIdx.x % nThreads_per_track == 0) {
 
+            for (int i = 0; i < N; i++) {
+
+                auto id = updated_tracks[i];
+
+                if (inverted_ids[id] < gid) {
+                    shifted_idx--;
+                }
+            }
+
+            int offset = 0;
+            for (int i = 0; i < N; i++) {
+                if (updated_tracks[i] == tid) {
+                    offset = i;
+                    break;
+                }
+            }
+            shifted_idx += offset;
+        }
     } else {
-        for (int i = 0; i < N; i++) {
 
-            auto id = updated_tracks[i];
-            auto rel_sh = rel_shared[id];
-            auto pval = pvals[id];
+        if (threadIdx.x % nThreads_per_track == 0) {
 
-            if (inverted_ids[id] > gid) {
-                if (rel_sh < rel_sh_ref) {
-                    shifted_idx++;
-                } else if (rel_sh == rel_sh_ref && pval > pval_ref) {
-                    shifted_idx++;
+            for (int i = 0; i < N; i++) {
+
+                auto id = updated_tracks[i];
+                auto rel_sh = rel_shared[id];
+                auto pval = pvals[id];
+
+                if (inverted_ids[id] > gid) {
+                    if (rel_sh < rel_sh_ref) {
+                        shifted_idx++;
+                    } else if (rel_sh == rel_sh_ref && pval > pval_ref) {
+                        shifted_idx++;
+                    }
                 }
             }
         }
     }
 
-    temp_sorted_ids.at(shifted_idx) = tid;
+    if (threadIdx.x % nThreads_per_track == 0) {
+        temp_sorted_ids.at(shifted_idx) = tid;
+    }
 }
 
 }  // namespace traccc::cuda::kernels
