@@ -136,6 +136,8 @@ TEST_P(CkfToyDetectorTests, Run) {
         cfg;
     cfg.ptc_hypothesis = ptc;
     cfg.max_num_branches_per_seed = 500;
+    cfg.max_num_branches_per_surface = 2;
+    cfg.chi2_max = 10.f;
     cfg.propagation.navigation.search_window = search_window;
 
     // Finding algorithm object
