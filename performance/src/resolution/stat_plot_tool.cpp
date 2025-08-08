@@ -26,11 +26,16 @@ void stat_plot_tool::book(stat_plot_cache& cache) const {
     plot_helpers::binning b_reduced_chi2 = m_cfg.var_binning.at("reduced_chi2");
     plot_helpers::binning b_pval = m_cfg.var_binning.at("pval");
     plot_helpers::binning b_chi2_local = m_cfg.var_binning.at("chi2_local");
+    plot_helpers::binning b_purity = m_cfg.var_binning.at("purity");
+    plot_helpers::binning b_completeness = m_cfg.var_binning.at("completeness");
     cache.ndf_hist = plot_helpers::book_histo("ndf", "NDF", b_ndf);
     cache.chi2_hist = plot_helpers::book_histo("chi2", "Chi2", b_chi2);
     cache.reduced_chi2_hist =
         plot_helpers::book_histo("reduced_chi2", "Chi2/NDF", b_reduced_chi2);
     cache.pval_hist = plot_helpers::book_histo("pval", "p value", b_pval);
+    cache.purity_hist = plot_helpers::book_histo("purity", "Ratio", b_purity);
+    cache.completeness_hist =
+        plot_helpers::book_histo("completeness", "Ratio", b_completeness);
     for (unsigned int D = 1u; D <= 2u; D++) {
         cache.chi2_filtered_hist[D] = plot_helpers::book_histo(
             Form("chi2_%dD_filtered", D),
@@ -87,6 +92,20 @@ void stat_plot_tool::fill(
 #endif  // TRACCC_HAVE_ROOT
 }
 
+void stat_plot_tool::fill(stat_plot_cache& cache, double purity,
+                          double completeness) const {
+
+    // Avoid unused variable warnings when building the code without ROOT.
+    (void)cache;
+    (void)purity;
+    (void)completeness;
+
+#ifdef TRACCC_HAVE_ROOT
+    cache.purity_hist->Fill(purity);
+    cache.completeness_hist->Fill(completeness);
+#endif  // TRACCC_HAVE_ROOT
+}
+
 void stat_plot_tool::write(const stat_plot_cache& cache) const {
 
     // Avoid unused variable warnings when building the code without ROOT.
@@ -101,6 +120,8 @@ void stat_plot_tool::write(const stat_plot_cache& cache) const {
     cache.chi2_hist->Write();
     cache.reduced_chi2_hist->Write();
     cache.pval_hist->Write();
+    cache.purity_hist->Write();
+    cache.completeness_hist->Write();
 
     for (const auto& flt : cache.chi2_filtered_hist) {
         flt.second->Write();

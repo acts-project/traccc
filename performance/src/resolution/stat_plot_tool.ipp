@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "traccc/utils/prob.hpp"
+
 namespace traccc {
 
 template <typename T>
@@ -22,8 +24,8 @@ void stat_plot_tool::fill(stat_plot_cache& cache,
     const auto& chi2 = find_res.chi2();
     cache.ndf_hist->Fill(ndf);
     cache.chi2_hist->Fill(chi2);
+    cache.pval_hist->Fill(prob(chi2, ndf));
     cache.reduced_chi2_hist->Fill(chi2 / ndf);
-//    cache.pval_hist->Fill(ROOT::Math::chisquared_cdf_c(chi2, ndf));
 #endif  // TRACCC_HAVE_ROOT
 }
 

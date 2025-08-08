@@ -31,6 +31,10 @@ class stat_plot_tool {
         std::unique_ptr<TH1> reduced_chi2_hist;
         // Histogram for the pvalue
         std::unique_ptr<TH1> pval_hist;
+        // Histogram for the purity
+        std::unique_ptr<TH1> purity_hist;
+        // Histogram for the completeness
+        std::unique_ptr<TH1> completeness_hist;
         // Histogram for chi2 of filtered states
         std::map<unsigned int, std::unique_ptr<TH1>> chi2_filtered_hist;
         // Histogram for chi2 of smoothed states
@@ -73,6 +77,12 @@ class stat_plot_tool {
     /// @param trk_state track state at local measurements
     void fill(stat_plot_cache& cache,
               const track_state<traccc::default_algebra>& trk_state) const;
+
+    /// @brief fill the cache
+    /// @param cache the cache for statistics plots
+    /// @param purity the track purity
+    /// @param completeness the track completeness
+    void fill(stat_plot_cache& cache, double purity, double completeness) const;
 
     /// @brief write the statistics plots into ROOT
     ///

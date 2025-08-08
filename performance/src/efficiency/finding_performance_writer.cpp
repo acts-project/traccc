@@ -205,14 +205,20 @@ void finding_performance_writer::write_common(
         // of the number of measurements
         assert(found_measurements.size() > 0u);
         assert(truth_measurements.size() > 0u);
+
+        const double purity = static_cast<double>(n_major_hits) /
+                              static_cast<double>(found_measurements.size());
+        const double completeness =
+            static_cast<double>(n_major_hits) /
+            static_cast<double>(truth_measurements.size());
+
         const bool reco_matched =
-            static_cast<double>(n_major_hits) /
-                static_cast<double>(found_measurements.size()) >
-            m_cfg.track_truth_config.matching_ratio;
+            purity > m_cfg.track_truth_config.matching_ratio;
         const bool truth_matched =
-            static_cast<double>(n_major_hits) /
-                static_cast<double>(truth_measurements.size()) >
-            m_cfg.track_truth_config.matching_ratio;
+            completeness > m_cfg.track_truth_config.matching_ratio;
+
+        m_data->m_stat_plot_tool.fill(m_data->m_stat_plot_cache, purity,
+                                      completeness);
 
         if ((!m_cfg.track_truth_config.double_matching && reco_matched) ||
             (m_cfg.track_truth_config.double_matching && reco_matched &&
