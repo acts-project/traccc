@@ -179,7 +179,7 @@ struct track_state {
     }
 
     public:
-    bool is_hole{true};
+    bool is_hole{false};
     bool is_smoothed{false};
 
     private:
