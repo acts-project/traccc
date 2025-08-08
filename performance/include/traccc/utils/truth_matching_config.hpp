@@ -19,11 +19,7 @@ struct truth_matching_config {
 
     float r_max = 200.f * traccc::unit<float>::mm;
 
-    float matching_ratio = 0.5f;
-
     unsigned int min_track_candidates = 3;
-
-    bool double_matching = true;
 };
 
 }  // namespace traccc

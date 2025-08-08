@@ -10,6 +10,7 @@
 // Local include(s).
 #include "traccc/utils/helpers.hpp"
 #include "traccc/utils/messaging.hpp"
+#include "traccc/utils/seed_matching_config.hpp"
 #include "traccc/utils/truth_matching_config.hpp"
 
 // Project include(s).
@@ -53,6 +54,7 @@ class seeding_performance_writer : public messaging {
 
         /// Cut values
         truth_matching_config truth_config;
+        seed_matching_config seed_truth_config;
     };
 
     /// Construct from configuration and log level.

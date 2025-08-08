@@ -33,8 +33,10 @@
 #include "traccc/options/magnetic_field.hpp"
 #include "traccc/options/performance.hpp"
 #include "traccc/options/program_options.hpp"
+#include "traccc/options/seed_matching.hpp"
 #include "traccc/options/track_finding.hpp"
 #include "traccc/options/track_fitting.hpp"
+#include "traccc/options/track_matching.hpp"
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/options/track_seeding.hpp"
 #include "traccc/options/truth_finding.hpp"
@@ -71,6 +73,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::performance& performance_opts,
             const traccc::opts::accelerator& accelerator_opts,
             const traccc::opts::truth_finding& truth_finding_opts,
+            const traccc::opts::seed_matching& seed_matching_opts,
+            const traccc::opts::track_matching& track_matching_opts,
             std::unique_ptr<const traccc::Logger> ilogger) {
     TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
@@ -83,12 +87,14 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     // Performance writer
     traccc::seeding_performance_writer sd_performance_writer(
-        traccc::seeding_performance_writer::config{.truth_config =
-                                                       truth_finding_opts},
+        traccc::seeding_performance_writer::config{
+            .truth_config = truth_finding_opts,
+            .seed_truth_config = seed_matching_opts},
         logger().clone("SeedingPerformanceWriter"));
     traccc::finding_performance_writer find_performance_writer(
-        traccc::finding_performance_writer::config{.truth_config =
-                                                       truth_finding_opts},
+        traccc::finding_performance_writer::config{
+            .truth_config = truth_finding_opts,
+            .track_truth_config = track_matching_opts},
         logger().clone("FindingPerformanceWriter"));
     traccc::fitting_performance_writer fit_performance_writer(
         traccc::fitting_performance_writer::config{},
@@ -481,11 +487,13 @@ int main(int argc, char* argv[]) {
     traccc::opts::performance performance_opts;
     traccc::opts::accelerator accelerator_opts;
     traccc::opts::truth_finding truth_finding_opts;
+    traccc::opts::seed_matching seed_matching_opts;
+    traccc::opts::track_matching track_matching_opts;
     traccc::opts::program_options program_opts{
         "Full Tracking Chain Using CUDA (without clusterization)",
         {detector_opts, bfield_opts, input_opts, seeding_opts, finding_opts,
          propagation_opts, fitting_opts, performance_opts, accelerator_opts,
-         truth_finding_opts},
+         truth_finding_opts, seed_matching_opts, track_matching_opts},
         argc,
         argv,
         logger->cloneWithSuffix("Options")};
@@ -493,5 +501,6 @@ int main(int argc, char* argv[]) {
     // Run the application.
     return seq_run(seeding_opts, finding_opts, propagation_opts, fitting_opts,
                    input_opts, detector_opts, bfield_opts, performance_opts,
-                   accelerator_opts, truth_finding_opts, logger->clone());
+                   accelerator_opts, truth_finding_opts, seed_matching_opts,
+                   track_matching_opts, logger->clone());
 }

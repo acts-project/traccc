@@ -24,6 +24,7 @@
 #include "traccc/options/program_options.hpp"
 #include "traccc/options/track_finding.hpp"
 #include "traccc/options/track_fitting.hpp"
+#include "traccc/options/track_matching.hpp"
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/options/truth_finding.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
@@ -51,6 +52,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
             const traccc::opts::magnetic_field& bfield_opts,
             const traccc::opts::performance& performance_opts,
             const traccc::opts::truth_finding& truth_finding_opts,
+            const traccc::opts::track_matching& track_matching_opts,
             std::unique_ptr<const traccc::Logger> ilogger) {
     TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
@@ -61,8 +63,9 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
     // Performance writer
     traccc::finding_performance_writer find_performance_writer(
-        traccc::finding_performance_writer::config{.truth_config =
-                                                       truth_finding_opts},
+        traccc::finding_performance_writer::config{
+            .truth_config = truth_finding_opts,
+            .track_truth_config = track_matching_opts},
         logger().clone("FindingPerformanceWriter"));
     traccc::fitting_performance_writer fit_performance_writer(
         traccc::fitting_performance_writer::config{},
@@ -203,10 +206,12 @@ int main(int argc, char* argv[]) {
     traccc::opts::track_fitting fitting_opts;
     traccc::opts::performance performance_opts;
     traccc::opts::truth_finding truth_finding_config;
+    traccc::opts::track_matching track_matching_opts;
     traccc::opts::program_options program_opts{
         "Truth Track Finding on the Host",
         {detector_opts, bfield_opts, input_opts, finding_opts, propagation_opts,
-         fitting_opts, performance_opts, truth_finding_config},
+         fitting_opts, performance_opts, truth_finding_config,
+         track_matching_opts},
         argc,
         argv,
         logger->cloneWithSuffix("Options")};
@@ -214,5 +219,5 @@ int main(int argc, char* argv[]) {
     // Run the application.
     return seq_run(finding_opts, propagation_opts, fitting_opts, input_opts,
                    detector_opts, bfield_opts, performance_opts,
-                   truth_finding_config, logger->clone());
+                   truth_finding_config, track_matching_opts, logger->clone());
 }
