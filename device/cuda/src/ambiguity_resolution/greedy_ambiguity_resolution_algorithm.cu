@@ -450,160 +450,236 @@ greedy_ambiguity_resolution_algorithm::operator()(
     m_copy.get().setup(block_offsets_buffer)->ignore();
 
     while (!terminate && n_accepted > 0) {
+        // Compute kernel launch dimensions
         nBlocks_adaptive =
             (n_accepted + nThreads_adaptive - 1) / nThreads_adaptive;
         nBlocks_warp = (n_accepted + nThreads_warp - 1) / nThreads_warp;
-
-        scan_dim = compute_scan_config(n_accepted);
+        auto scan_dim = compute_scan_config(n_accepted);
         nThreads_scan = scan_dim.first;
         nBlocks_scan = scan_dim.second;
+        nThreads_full = 1024;
+        nBlocks_full = (n_tracks + 1023) / 1024;
 
-        // Make CUDA Graph
+        // === Payload setup ===
+        device::reset_status_payload reset_payload{
+            is_first_iteration_device.get(), terminate_device.get(),
+            n_accepted_device.get(), max_shared_device.get(),
+            n_updated_tracks_device.get()};
+        void* reset_args[] = {&reset_payload};
+
+        device::find_max_shared_payload find_payload{
+            sorted_ids_buffer,      n_accepted_device.get(), n_shared_buffer,
+            terminate_device.get(), max_shared_device.get(), is_updated_buffer};
+        void* find_args[] = {&find_payload};
+
+        device::remove_tracks_payload remove_payload{
+            sorted_ids_buffer,
+            n_accepted_device.get(),
+            meas_ids_buffer,
+            n_meas_buffer,
+            meas_id_to_unique_id_buffer,
+            tracks_per_measurement_buffer,
+            track_status_per_measurement_buffer,
+            n_accepted_tracks_per_measurement_buffer,
+            n_shared_buffer,
+            rel_shared_buffer,
+            n_removable_tracks_device.get(),
+            n_meas_to_remove_device.get(),
+            terminate_device.get(),
+            max_shared_device.get(),
+            n_updated_tracks_device.get(),
+            updated_tracks_buffer,
+            is_updated_buffer,
+            n_valid_threads_device.get()};
+        void* remove_args[] = {&remove_payload};
+
+        device::sort_updated_tracks_payload sort_payload{
+            rel_shared_buffer, pvals_buffer, terminate_device.get(),
+            n_updated_tracks_device.get(), updated_tracks_buffer};
+        void* sort_args[] = {&sort_payload};
+
+        device::fill_inverted_ids_payload fill_payload{
+            sorted_ids_buffer, terminate_device.get(), n_accepted_device.get(),
+            n_updated_tracks_device.get(), inverted_ids_buffer};
+        void* fill_args[] = {&fill_payload};
+
+        device::block_inclusive_scan_payload scan_payload{
+            sorted_ids_buffer,       terminate_device.get(),
+            n_accepted_device.get(), n_updated_tracks_device.get(),
+            is_updated_buffer,       block_offsets_buffer,
+            prefix_sums_buffer};
+        void* scan_args[] = {&scan_payload};
+
+        device::scan_block_offsets_payload scan_block_payload{
+            terminate_device.get(), n_accepted_device.get(),
+            n_updated_tracks_device.get(), block_offsets_buffer,
+            scanned_block_offsets_buffer};
+        void* scan_block_args[] = {&scan_block_payload};
+
+        device::add_block_offset_payload offset_payload{
+            terminate_device.get(), n_accepted_device.get(),
+            n_updated_tracks_device.get(), scanned_block_offsets_buffer,
+            prefix_sums_buffer};
+        void* offset_args[] = {&offset_payload};
+
+        device::rearrange_tracks_payload rearrange_payload{
+            sorted_ids_buffer,
+            inverted_ids_buffer,
+            rel_shared_buffer,
+            pvals_buffer,
+            terminate_device.get(),
+            n_accepted_device.get(),
+            n_updated_tracks_device.get(),
+            updated_tracks_buffer,
+            is_updated_buffer,
+            prefix_sums_buffer,
+            temp_sorted_ids_buffer};
+        void* rearrange_args[] = {&rearrange_payload};
+
+        device::gather_tracks_payload gather_payload{
+            terminate_device.get(),
+            n_accepted_device.get(),
+            n_updated_tracks_device.get(),
+            temp_sorted_ids_buffer,
+            sorted_ids_buffer,
+            is_updated_buffer};
+        void* gather_args[] = {&gather_payload};
+
+        // Create graph and events
         cudaGraph_t graph;
         cudaGraphExec_t graphExec;
+        cudaGraphCreate(&graph, 0);
 
-        cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal);
+        cudaEvent_t ev_removal, ev_main, ev_fill, ev_scan;
+        cudaEventCreate(&ev_removal);
+        cudaEventCreate(&ev_main);
+        cudaEventCreate(&ev_fill);
+        cudaEventCreate(&ev_scan);
 
-        kernels::reset_status<<<1, 1, 0, stream>>>(device::reset_status_payload{
-            .is_first_iteration = is_first_iteration_device.get(),
-            .terminate = terminate_device.get(),
-            .n_accepted = n_accepted_device.get(),
-            .max_shared = max_shared_device.get(),
-            .n_updated_tracks = n_updated_tracks_device.get()});
+        cudaGraphNode_t n_reset, n_find, n_remove, n_sort, n_fill, n_scan1,
+            n_scan2, n_scan3, n_rearr, n_gather;
+        cudaGraphNode_t e_removal, e_main, e_fill, e_scan;
+        cudaGraphNode_t w_fill, w_scan, w_main, w_fill2, w_scan2;
 
-        kernels::find_max_shared<<<nBlocks_warp, nThreads_warp, 0, stream>>>(
-            device::find_max_shared_payload{
-                .sorted_ids_view = sorted_ids_buffer,
-                .n_accepted = n_accepted_device.get(),
-                .n_shared_view = n_shared_buffer,
-                .terminate = terminate_device.get(),
-                .max_shared = max_shared_device.get(),
-                .is_updated_view = is_updated_buffer});
+        // reset_status
+        cudaKernelNodeParams p_reset = {(void*)kernels::reset_status,
+                                        dim3(1),
+                                        dim3(1),
+                                        0,
+                                        reset_args,
+                                        nullptr};
+        cudaGraphAddKernelNode(&n_reset, graph, nullptr, 0, &p_reset);
 
-        kernels::remove_tracks<<<1, 512, 0, stream>>>(
-            device::remove_tracks_payload{
-                .sorted_ids_view = sorted_ids_buffer,
-                .n_accepted = n_accepted_device.get(),
-                .meas_ids_view = meas_ids_buffer,
-                .n_meas_view = n_meas_buffer,
-                .meas_id_to_unique_id_view = meas_id_to_unique_id_buffer,
-                .tracks_per_measurement_view = tracks_per_measurement_buffer,
-                .track_status_per_measurement_view =
-                    track_status_per_measurement_buffer,
-                .n_accepted_tracks_per_measurement_view =
-                    n_accepted_tracks_per_measurement_buffer,
-                .n_shared_view = n_shared_buffer,
-                .rel_shared_view = rel_shared_buffer,
-                .n_removable_tracks = n_removable_tracks_device.get(),
-                .n_meas_to_remove = n_meas_to_remove_device.get(),
-                .terminate = terminate_device.get(),
-                .max_shared = max_shared_device.get(),
-                .n_updated_tracks = n_updated_tracks_device.get(),
-                .updated_tracks_view = updated_tracks_buffer,
-                .is_updated_view = is_updated_buffer,
-                .n_valid_threads = n_valid_threads_device.get()});
+        // find_max_shared
+        cudaKernelNodeParams p_find = {(void*)kernels::find_max_shared,
+                                       dim3(nBlocks_warp),
+                                       dim3(nThreads_warp),
+                                       0,
+                                       find_args,
+                                       nullptr};
+        cudaGraphAddKernelNode(&n_find, graph, &n_reset, 1, &p_find);
 
-        // The seven kernels below are to keep sorted_ids sorted based on
-        // the relative shared measurements and pvalues. This can be reduced
-        // into thrust::sort():
-        /*
-        cudaMemcpyAsync(&n_accepted, n_accepted_device.get(),
-                        sizeof(unsigned int), cudaMemcpyDeviceToHost,
-        stream); thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
-                     sorted_ids_buffer.ptr() + n_accepted,
-                     trk_comp);
-        */
-        // Disadvantage: we need to do device-host copy which has large
-        // overhead and CUDA graph is not available anymore
-        // Advantage: This works for all cases (The below kernels only work
-        // when the number of updated tracks <= 1024) and might be faster
-        // with large number of updated tracks
+        // remove_tracks
+        cudaKernelNodeParams p_remove = {(void*)kernels::remove_tracks,
+                                         dim3(1),
+                                         dim3(512),
+                                         0,
+                                         remove_args,
+                                         nullptr};
+        cudaGraphAddKernelNode(&n_remove, graph, &n_find, 1, &p_remove);
 
-        kernels::sort_updated_tracks<<<1, 512, 0, stream>>>(
-            device::sort_updated_tracks_payload{
-                .rel_shared_view = rel_shared_buffer,
-                .pvals_view = pvals_buffer,
-                .terminate = terminate_device.get(),
-                .n_updated_tracks = n_updated_tracks_device.get(),
-                .updated_tracks_view = updated_tracks_buffer,
-            });
+        // event after remove_tracks
+        cudaGraphAddEventRecordNode(&e_removal, graph, &n_remove, 1,
+                                    ev_removal);
+        cudaGraphAddEventWaitNode(&w_fill, graph, &e_removal, 1, ev_removal);
+        cudaGraphAddEventWaitNode(&w_scan, graph, &e_removal, 1, ev_removal);
 
-        kernels::fill_inverted_ids<<<nBlocks_adaptive, nThreads_adaptive, 0,
-                                     stream>>>(
-            device::fill_inverted_ids_payload{
-                .sorted_ids_view = sorted_ids_buffer,
-                .terminate = terminate_device.get(),
-                .n_accepted = n_accepted_device.get(),
-                .n_updated_tracks = n_updated_tracks_device.get(),
-                .inverted_ids_view = inverted_ids_buffer,
-            });
+        // sort_updated_tracks
+        cudaKernelNodeParams p_sort = {(void*)kernels::sort_updated_tracks,
+                                       dim3(1),
+                                       dim3(512),
+                                       0,
+                                       sort_args,
+                                       nullptr};
+        cudaGraphAddKernelNode(&n_sort, graph, &n_remove, 1, &p_sort);
 
-        kernels::block_inclusive_scan<<<nBlocks_scan, nThreads_scan,
-                                        nThreads_scan * sizeof(int), stream>>>(
-            device::block_inclusive_scan_payload{
-                .sorted_ids_view = sorted_ids_buffer,
-                .terminate = terminate_device.get(),
-                .n_accepted = n_accepted_device.get(),
-                .n_updated_tracks = n_updated_tracks_device.get(),
-                .is_updated_view = is_updated_buffer,
-                .block_offsets_view = block_offsets_buffer,
-                .prefix_sums_view = prefix_sums_buffer});
+        // fill_inverted_ids
+        cudaKernelNodeParams p_fill = {(void*)kernels::fill_inverted_ids,
+                                       dim3(nBlocks_adaptive),
+                                       dim3(nThreads_adaptive),
+                                       0,
+                                       fill_args,
+                                       nullptr};
+        cudaGraphAddKernelNode(&n_fill, graph, &w_fill, 1, &p_fill);
 
-        kernels::scan_block_offsets<<<1, nBlocks_scan,
-                                      nBlocks_scan * sizeof(int), stream>>>(
-            device::scan_block_offsets_payload{
-                .terminate = terminate_device.get(),
-                .n_accepted = n_accepted_device.get(),
-                .n_updated_tracks = n_updated_tracks_device.get(),
-                .block_offsets_view = block_offsets_buffer,
-                .scanned_block_offsets_view = scanned_block_offsets_buffer});
+        // block_inclusive_scan
+        cudaKernelNodeParams p_scan1 = {
+            (void*)kernels::block_inclusive_scan,
+            dim3(nBlocks_scan),
+            dim3(nThreads_scan),
+            static_cast<unsigned int>(nThreads_scan * sizeof(int)),
+            scan_args,
+            nullptr};
+        cudaGraphAddKernelNode(&n_scan1, graph, &w_scan, 1, &p_scan1);
 
-        kernels::add_block_offset<<<nBlocks_scan, nThreads_scan, 0, stream>>>(
-            device::add_block_offset_payload{
-                .terminate = terminate_device.get(),
-                .n_accepted = n_accepted_device.get(),
-                .n_updated_tracks = n_updated_tracks_device.get(),
-                .block_offsets_view = scanned_block_offsets_buffer,
-                .prefix_sums_view = prefix_sums_buffer});
+        // scan_block_offsets
+        cudaKernelNodeParams p_scan2 = {
+            (void*)kernels::scan_block_offsets,
+            dim3(1),
+            dim3(nBlocks_scan),
+            static_cast<unsigned int>(nBlocks_scan * sizeof(int)),
+            scan_block_args,
+            nullptr};
+        cudaGraphAddKernelNode(&n_scan2, graph, &n_scan1, 1, &p_scan2);
 
-        kernels::rearrange_tracks<<<nBlocks_adaptive, nThreads_adaptive, 0,
-                                    stream>>>(device::rearrange_tracks_payload{
-            .sorted_ids_view = sorted_ids_buffer,
-            .inverted_ids_view = inverted_ids_buffer,
-            .rel_shared_view = rel_shared_buffer,
-            .pvals_view = pvals_buffer,
-            .terminate = terminate_device.get(),
-            .n_accepted = n_accepted_device.get(),
-            .n_updated_tracks = n_updated_tracks_device.get(),
-            .updated_tracks_view = updated_tracks_buffer,
-            .is_updated_view = is_updated_buffer,
-            .prefix_sums_view = prefix_sums_buffer,
-            .temp_sorted_ids_view = temp_sorted_ids_buffer,
-        });
+        // add_block_offset
+        cudaKernelNodeParams p_scan3 = {(void*)kernels::add_block_offset,
+                                        dim3(nBlocks_scan),
+                                        dim3(nThreads_scan),
+                                        0,
+                                        offset_args,
+                                        nullptr};
+        cudaGraphAddKernelNode(&n_scan3, graph, &n_scan2, 1, &p_scan3);
 
-        kernels::gather_tracks<<<nBlocks_full, nThreads_full, 0, stream>>>(
-            device::gather_tracks_payload{
-                .terminate = terminate_device.get(),
-                .n_accepted = n_accepted_device.get(),
-                .n_updated_tracks = n_updated_tracks_device.get(),
-                .temp_sorted_ids_view = temp_sorted_ids_buffer,
-                .sorted_ids_view = sorted_ids_buffer,
-                .is_updated_view = is_updated_buffer});
+        // event recording
+        cudaGraphAddEventRecordNode(&e_main, graph, &n_sort, 1, ev_main);
+        cudaGraphAddEventRecordNode(&e_fill, graph, &n_fill, 1, ev_fill);
+        cudaGraphAddEventRecordNode(&e_scan, graph, &n_scan3, 1, ev_scan);
 
-        cudaStreamEndCapture(stream, &graph);
+        // wait before rearrange
+        cudaGraphAddEventWaitNode(&w_main, graph, &e_main, 1, ev_main);
+        cudaGraphAddEventWaitNode(&w_fill2, graph, &e_fill, 1, ev_fill);
+        cudaGraphAddEventWaitNode(&w_scan2, graph, &e_scan, 1, ev_scan);
+
+        // rearrange_tracks
+        cudaKernelNodeParams p_rearr = {(void*)kernels::rearrange_tracks,
+                                        dim3(nBlocks_adaptive),
+                                        dim3(nThreads_adaptive),
+                                        0,
+                                        rearrange_args,
+                                        nullptr};
+        cudaGraphNode_t deps[] = {w_main, w_fill2, w_scan2};
+        cudaGraphAddKernelNode(&n_rearr, graph, deps, 3, &p_rearr);
+
+        // gather_tracks
+        cudaKernelNodeParams p_gather = {(void*)kernels::gather_tracks,
+                                         dim3(nBlocks_full),
+                                         dim3(nThreads_full),
+                                         0,
+                                         gather_args,
+                                         nullptr};
+        cudaGraphAddKernelNode(&n_gather, graph, &n_rearr, 1, &p_gather);
+
+        // Launch and synchronize
         cudaGraphInstantiate(&graphExec, graph, nullptr, nullptr, 0);
-
-        // TODO: Make n_it adaptive based on the average track length, bound
-        // value in remove_tracks, etc.
-        const unsigned int n_it = 100;
-        for (unsigned int iter = 0; iter < n_it; iter++) {
+        for (int i = 0; i < 100; ++i) {
             cudaGraphLaunch(graphExec, stream);
         }
 
-        cudaMemcpyAsync(&terminate, terminate_device.get(), sizeof(int),
-                        cudaMemcpyDeviceToHost, stream);
-        cudaMemcpyAsync(&n_accepted, n_accepted_device.get(),
-                        sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
+        cudaMemcpy(&terminate, terminate_device.get(), sizeof(int),
+                   cudaMemcpyDeviceToHost);
+        cudaMemcpy(&n_accepted, n_accepted_device.get(), sizeof(unsigned int),
+                   cudaMemcpyDeviceToHost);
     }
 
     cudaMemcpyAsync(&n_accepted, n_accepted_device.get(), sizeof(unsigned int),
