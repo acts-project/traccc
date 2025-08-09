@@ -73,10 +73,11 @@ __launch_bounds__(1024) __global__
     const auto tid = sorted_ids[gid];
     auto rel_sh_ref = rel_shared[tid];
     auto pval_ref = pvals[tid];
-    int shifted_idx = static_cast<int>(gid);
     auto N = *(payload.n_updated_tracks);
 
-    //__shared__ unsigned int shifted_idx[32];
+    __shared__ int shifted_indices[1024];
+    auto& shifted_idx = shifted_indices[threadIdx.x / nThreads_per_track];
+    shifted_idx = static_cast<int>(gid);
 
     if (is_updated[tid]) {
 
