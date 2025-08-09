@@ -79,6 +79,41 @@ __launch_bounds__(1024) __global__
     auto& shifted_idx = shifted_indices[threadIdx.x / nThreads_per_track];
     shifted_idx = static_cast<int>(gid);
 
+    // int neff_threads = 0;
+
+    int neff_threads = static_cast<int>(
+        std::ceil(static_cast<double>(N) / nThreads_per_track));
+    if (neff_threads > nThreads_per_track) {
+        neff_threads = nThreads_per_track;
+    }
+
+    /*
+    int neff_threads =
+        std::min(static_cast<int>(
+                     std::ceil(static_cast<double>(N) / nThreads_per_track)),
+                 nThreads_per_track);
+    */
+    int stride =
+        static_cast<int>(std::ceil(static_cast<double>(N) / neff_threads));
+
+    int ini_idx = stride * (threadIdx.x % nThreads_per_track);
+    int fin_idx = std::min(ini_idx + stride, static_cast<int>(N));
+
+    if (threadIdx.x % nThreads_per_track >= neff_threads) {
+        return;
+    }
+
+    /*
+    if (fin_idx > N) {
+        printf(
+            "Warning N %d nThreads_per_track %d neff_threads %d stride %d "
+            "ini_idx %d fin_idx %d \n",
+            N, nThreads_per_track, neff_threads, stride, ini_idx, fin_idx);
+    }
+    */
+
+    // printf("%d %d %d %d \n", threadIdx.x, N, ini_idx, fin_idx);
+
     if (is_updated[tid]) {
 
         if (gid > 0) {
@@ -152,16 +187,16 @@ __launch_bounds__(1024) __global__
             }
         }
 
-        if (threadIdx.x % nThreads_per_track == 0) {
+        for (int i = ini_idx; i < fin_idx; i++) {
 
-            for (int i = 0; i < N; i++) {
+            auto id = updated_tracks[i];
 
-                auto id = updated_tracks[i];
-
-                if (inverted_ids[id] < gid) {
-                    shifted_idx--;
-                }
+            if (inverted_ids[id] < gid) {
+                atomicAdd(&shifted_idx, -1);
             }
+        }
+
+        if (threadIdx.x % nThreads_per_track == 0) {
 
             int offset = 0;
             for (int i = 0; i < N; i++) {
@@ -174,23 +209,23 @@ __launch_bounds__(1024) __global__
         }
     } else {
 
-        if (threadIdx.x % nThreads_per_track == 0) {
+        // if (threadIdx.x % nThreads_per_track == 0) {
 
-            for (int i = 0; i < N; i++) {
+        for (int i = ini_idx; i < fin_idx; i++) {
 
-                auto id = updated_tracks[i];
-                auto rel_sh = rel_shared[id];
-                auto pval = pvals[id];
+            auto id = updated_tracks[i];
+            auto rel_sh = rel_shared[id];
+            auto pval = pvals[id];
 
-                if (inverted_ids[id] > gid) {
-                    if (rel_sh < rel_sh_ref) {
-                        shifted_idx++;
-                    } else if (rel_sh == rel_sh_ref && pval > pval_ref) {
-                        shifted_idx++;
-                    }
+            if (inverted_ids[id] > gid) {
+                if (rel_sh < rel_sh_ref) {
+                    atomicAdd(&shifted_idx, 1);
+                } else if (rel_sh == rel_sh_ref && pval > pval_ref) {
+                    atomicAdd(&shifted_idx, 1);
                 }
             }
         }
+        //}
     }
 
     if (threadIdx.x % nThreads_per_track == 0) {
