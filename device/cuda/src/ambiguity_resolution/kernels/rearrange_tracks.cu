@@ -15,6 +15,10 @@
 // VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>
 
+// Thrust include(s).
+#include <thrust/binary_search.h>
+#include <thrust/execution_policy.h>
+
 namespace traccc::cuda::kernels {
 
 TRACCC_DEVICE inline bool find_valid_index(
@@ -87,12 +91,6 @@ __launch_bounds__(1024) __global__
         neff_threads = nThreads_per_track;
     }
 
-    /*
-    int neff_threads =
-        std::min(static_cast<int>(
-                     std::ceil(static_cast<double>(N) / nThreads_per_track)),
-                 nThreads_per_track);
-    */
     int stride =
         static_cast<int>(std::ceil(static_cast<double>(N) / neff_threads));
 
@@ -102,17 +100,6 @@ __launch_bounds__(1024) __global__
     if (threadIdx.x % nThreads_per_track >= neff_threads) {
         return;
     }
-
-    /*
-    if (fin_idx > N) {
-        printf(
-            "Warning N %d nThreads_per_track %d neff_threads %d stride %d "
-            "ini_idx %d fin_idx %d \n",
-            N, nThreads_per_track, neff_threads, stride, ini_idx, fin_idx);
-    }
-    */
-
-    // printf("%d %d %d %d \n", threadIdx.x, N, ini_idx, fin_idx);
 
     if (is_updated[tid]) {
 
@@ -196,20 +183,17 @@ __launch_bounds__(1024) __global__
             }
         }
 
-        if (threadIdx.x % nThreads_per_track == 0) {
-
-            int offset = 0;
-            for (int i = 0; i < N; i++) {
-                if (updated_tracks[i] == tid) {
-                    offset = i;
-                    break;
-                }
+        int offset = 0;
+        for (int i = ini_idx; i < fin_idx; i++) {
+            if (updated_tracks[i] == tid) {
+                offset = i;
+                break;
             }
-            shifted_idx += offset;
+        }
+        if (offset != 0) {
+            atomicAdd(&shifted_idx, offset);
         }
     } else {
-
-        // if (threadIdx.x % nThreads_per_track == 0) {
 
         for (int i = ini_idx; i < fin_idx; i++) {
 
@@ -225,7 +209,6 @@ __launch_bounds__(1024) __global__
                 }
             }
         }
-        //}
     }
 
     if (threadIdx.x % nThreads_per_track == 0) {
