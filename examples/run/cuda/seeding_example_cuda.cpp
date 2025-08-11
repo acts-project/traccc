@@ -433,8 +433,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 vecmem::get_data(measurements_per_event), evt_data);
 
             find_performance_writer.write(
-                vecmem::get_data(track_candidates_cuda),
-                vecmem::get_data(measurements_per_event), evt_data);
+                {vecmem::get_data(track_candidates_cuda),
+                 vecmem::get_data(measurements_per_event)},
+                evt_data);
 
             for (unsigned int i = 0; i < track_states_cuda.tracks.size(); i++) {
                 fit_performance_writer.write(

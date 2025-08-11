@@ -8,6 +8,7 @@
 #pragma once
 
 // Local include(s).
+#include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate_collection.hpp"
 
@@ -69,6 +70,28 @@ struct track_candidate_container {
         track_candidate_collection<ALGEBRA>::const_data tracks;
         /// Measurements referenced by the tracks
         measurement_collection_types::const_view measurements;
+    };
+
+    struct device {
+        /// Constructor from a view
+        TRACCC_HOST_DEVICE
+        explicit device(const view& v)
+            : tracks{v.tracks}, measurements{v.measurements} {}
+        /// The track candidates
+        track_candidate_collection<ALGEBRA>::device tracks;
+        /// Measurements referenced by the tracks
+        measurement_collection_types::const_device measurements;
+    };
+
+    struct const_device {
+        /// Constructor from a view
+        TRACCC_HOST_DEVICE
+        explicit const_device(const const_view& v)
+            : tracks{v.tracks}, measurements{v.measurements} {}
+        /// The track candidates
+        track_candidate_collection<ALGEBRA>::const_device tracks;
+        /// Measurements referenced by the tracks
+        measurement_collection_types::const_device measurements;
     };
 
 };  // struct track_candidate_container
