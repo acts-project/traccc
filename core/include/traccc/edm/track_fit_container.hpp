@@ -8,6 +8,7 @@
 #pragma once
 
 // Local include(s).
+#include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_fit_collection.hpp"
 #include "traccc/edm/track_state_collection.hpp"
@@ -68,6 +69,36 @@ struct track_fit_container {
         track_fit_collection<ALGEBRA>::const_data tracks;
         /// The track states used for the fit
         track_state_collection<ALGEBRA>::const_data states;
+    };
+
+    struct device {
+        /// Constructor from a view
+        TRACCC_HOST_DEVICE
+        explicit device(const view& v)
+            : tracks{v.tracks},
+              states{v.states},
+              measurements{v.measurements} {}
+        /// The fitted tracks
+        track_fit_collection<ALGEBRA>::device tracks;
+        /// The track states used for the fit
+        track_state_collection<ALGEBRA>::device states;
+        /// The measurements used for the fit
+        measurement_collection_types::const_device measurements;
+    };
+
+    struct const_device {
+        /// Constructor from a view
+        TRACCC_HOST_DEVICE
+        explicit const_device(const const_view& v)
+            : tracks{v.tracks},
+              states{v.states},
+              measurements{v.measurements} {}
+        /// The fitted tracks
+        track_fit_collection<ALGEBRA>::const_device tracks;
+        /// The track states used for the fit
+        track_state_collection<ALGEBRA>::const_device states;
+        /// The measurements used for the fit
+        measurement_collection_types::const_device measurements;
     };
 
 };  // struct track_fit_container

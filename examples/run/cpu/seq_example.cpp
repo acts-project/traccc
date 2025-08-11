@@ -341,11 +341,13 @@ int seq_run(const traccc::opts::input_data& input_opts,
                 vecmem::get_data(spacepoints_per_event),
                 vecmem::get_data(measurements_per_event), evt_data);
             find_performance_writer.write(
-                vecmem::get_data(track_candidates),
-                vecmem::get_data(measurements_per_event), evt_data);
+                {vecmem::get_data(track_candidates),
+                 vecmem::get_data(measurements_per_event)},
+                evt_data);
             ar_performance_writer.write(
-                vecmem::get_data(resolved_track_candidates),
-                vecmem::get_data(measurements_per_event), evt_data);
+                {vecmem::get_data(resolved_track_candidates),
+                 vecmem::get_data(measurements_per_event)},
+                evt_data);
 
             for (unsigned int i = 0; i < track_states.tracks.size(); i++) {
                 fit_performance_writer.write(

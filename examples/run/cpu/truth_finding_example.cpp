@@ -169,8 +169,9 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
         if (performance_opts.run) {
             find_performance_writer.write(
-                vecmem::get_data(track_candidates),
-                vecmem::get_data(measurements_per_event), evt_data);
+                {vecmem::get_data(track_candidates),
+                 vecmem::get_data(measurements_per_event)},
+                evt_data);
 
             for (std::size_t i = 0; i < n_fitted_tracks; i++) {
                 fit_performance_writer.write(
