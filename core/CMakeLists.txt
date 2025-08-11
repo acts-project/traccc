@@ -21,6 +21,8 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/edm/details/device_container.hpp"
   "include/traccc/edm/details/host_container.hpp"
   "include/traccc/edm/measurement.hpp"
+  "include/traccc/edm/measurement_helpers.hpp"
+  "include/traccc/edm/impl/measurement_helpers.ipp"
   "include/traccc/edm/particle.hpp"
   "include/traccc/edm/track_parameters.hpp"
   "include/traccc/edm/container.hpp"
@@ -36,6 +38,8 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/edm/track_candidate_container.hpp"
   "include/traccc/edm/track_state_collection.hpp"
   "include/traccc/edm/impl/track_state_collection.ipp"
+  "include/traccc/edm/track_state_helpers.hpp"
+  "include/traccc/edm/impl/track_state_helpers.ipp"
   "include/traccc/edm/track_fit_outcome.hpp"
   "include/traccc/edm/track_fit_collection.hpp"
   # Magnetic field description.

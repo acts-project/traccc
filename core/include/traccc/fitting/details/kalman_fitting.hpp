@@ -13,6 +13,7 @@
 #include "traccc/edm/track_fit_collection.hpp"
 #include "traccc/edm/track_fit_container.hpp"
 #include "traccc/edm/track_state_collection.hpp"
+#include "traccc/edm/track_state_helpers.hpp"
 #include "traccc/fitting/status_codes.hpp"
 
 // VecMem include(s).
@@ -69,15 +70,8 @@ typename edm::track_fit_container<algebra_t>::host kalman_fitting(
              track_candidates.measurement_indices().at(i)) {
             fitted_track.state_indices().push_back(
                 static_cast<unsigned int>(result.states.size()));
-            result.states.push_back(
-                {0u, 0.f, 0.f, 0.f, {}, {}, measurement_index});
-            auto state = result.states.at(result.states.size() - 1);
-            state.set_hole(true);
-            state.set_smoothed(false);
-            state.filtered_params().set_surface_link(
-                measurements.at(measurement_index).surface_link);
-            state.smoothed_params().set_surface_link(
-                measurements.at(measurement_index).surface_link);
+            result.states.push_back(edm::make_track_state<algebra_t>(
+                measurements, measurement_index));
         }
 
         vecmem::data::vector_buffer<detray::geometry::barcode> seqs_buffer{

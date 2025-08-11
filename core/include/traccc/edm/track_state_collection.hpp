@@ -191,42 +191,6 @@ class track_state : public BASE {
     TRACCC_HOST_DEVICE
     void set_smoothed(bool value = true);
 
-    /// Get the local position of the measurement in a matrix
-    ///
-    /// @note This function must only be used on proxy objects, not on
-    ///       containers!
-    ///
-    /// @tparam size_type The type of the matrix size variable
-    /// @tparam ALGEBRA The algebra type used to describe the tracks
-    /// @tparam D The dimension of the matrix
-    ///
-    /// @param measurements All measurements in the event
-    /// @param pos The matrix to fill with the local position of the measurement
-    ///
-    template <detray::concepts::algebra ALGEBRA, std::integral size_type,
-              size_type D>
-    TRACCC_HOST_DEVICE void get_measurement_local(
-        const measurement_collection_types::const_device& measurements,
-        detray::dmatrix<ALGEBRA, D, 1>& pos) const;
-
-    /// Get the covariance of the measurement in a matrix
-    ///
-    /// @note This function must only be used on proxy objects, not on
-    ///       containers!
-    ///
-    /// @tparam size_type The type of the matrix size variable
-    /// @tparam ALGEBRA The algebra type used to describe the tracks
-    /// @tparam D The dimension of the matrix
-    ///
-    /// @param measurements All measurements in the event
-    /// @param cov The matrix to fill with the covariance of the measurement
-    ///
-    template <detray::concepts::algebra ALGEBRA, std::integral size_type,
-              size_type D>
-    TRACCC_HOST_DEVICE void get_measurement_covariance(
-        const measurement_collection_types::const_device& measurements,
-        detray::dmatrix<ALGEBRA, D, D>& cov) const;
-
     /// @}
 
 };  // class track_state

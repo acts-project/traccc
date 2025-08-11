@@ -13,6 +13,7 @@
 // Project include(s).
 #include "traccc/edm/track_candidate_container.hpp"
 #include "traccc/edm/track_fit_container.hpp"
+#include "traccc/edm/track_state_helpers.hpp"
 #include "traccc/fitting/status_codes.hpp"
 
 // VecMem include(s).
@@ -54,14 +55,8 @@ TRACCC_HOST_DEVICE inline void fit_prelude(
     const measurement_collection_types::const_device measurements{
         track_candidates_view.measurements};
     for (unsigned int meas_idx : track_candidate_measurement_indices) {
-        const unsigned int track_state_index =
-            track_states.push_back({0, 0.f, 0.f, 0.f, {}, {}, meas_idx});
-        auto state = track_states.at(track_state_index);
-        state.set_hole(true);
-        state.set_smoothed(false);
-        const auto surface_link = measurements.at(meas_idx).surface_link;
-        state.filtered_params().set_surface_link(surface_link);
-        state.smoothed_params().set_surface_link(surface_link);
+        const unsigned int track_state_index = track_states.push_back(
+            edm::make_track_state<algebra_t>(measurements, meas_idx));
         track.state_indices().push_back(track_state_index);
     }
 

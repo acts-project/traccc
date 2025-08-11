@@ -11,6 +11,7 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/definitions/track_parametrization.hpp"
 #include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_helpers.hpp"
 #include "traccc/edm/track_state_collection.hpp"
 #include "traccc/fitting/status_codes.hpp"
 
@@ -73,8 +74,8 @@ struct gain_matrix_updater {
 
         // Measurement data on surface
         matrix_type<D, 1> meas_local;
-        trk_state.template get_measurement_local<algebra_t>(measurements,
-                                                            meas_local);
+        edm::get_measurement_local<algebra_t>(
+            measurements.at(trk_state.measurement_index()), meas_local);
 
         assert((dim > 1) || (getter::element(meas_local, 1u, 0u) == 0.f));
 
@@ -101,8 +102,8 @@ struct gain_matrix_updater {
 
         // Spatial resolution (Measurement covariance)
         matrix_type<D, D> V;
-        trk_state.template get_measurement_covariance<algebra_t>(measurements,
-                                                                 V);
+        edm::get_measurement_covariance<algebra_t>(
+            measurements.at(trk_state.measurement_index()), V);
 
         if (dim == 1) {
             getter::element(V, 1u, 1u) = 1.f;
