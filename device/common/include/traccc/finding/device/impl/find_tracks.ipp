@@ -22,6 +22,7 @@
 
 // Project include(s).
 #include "traccc/device/array_insertion_mutex.hpp"
+#include "traccc/edm/track_state_helpers.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 #include "traccc/fitting/kalman_filter/is_line_visitor.hpp"
 #include "traccc/fitting/status_codes.hpp"
@@ -219,11 +220,9 @@ TRACCC_HOST_DEVICE inline void find_tracks(
 
             if (use_measurement) {
 
-                typename edm::track_state_collection<
-                    typename detector_t::algebra_type>::device::object_type
-                    trk_state(0u, 0.f, 0.f, 0.f, {}, {}, meas_idx);
-                trk_state.filtered_params().set_surface_link(
-                    measurements.at(meas_idx).surface_link);
+                auto trk_state =
+                    edm::make_track_state<typename detector_t::algebra_type>(
+                        measurements, meas_idx);
 
                 const detray::tracking_surface sf{det, in_par.surface_link()};
 

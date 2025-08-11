@@ -9,6 +9,7 @@
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate_collection.hpp"
+#include "traccc/edm/track_state_helpers.hpp"
 #include "traccc/finding/actors/ckf_aborter.hpp"
 #include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/finding/candidate_link.hpp"
@@ -264,13 +265,8 @@ combinatorial_kalman_filter(
                 const measurement& meas = measurements.at(item_id);
 
                 // Create a standalone track state object.
-                typename edm::track_state_collection<
-                    algebra_type>::host::object_type trk_state(0u, 0.f, 0.f,
-                                                               0.f, {}, {},
-                                                               item_id);
-                trk_state.set_hole(true);
-                trk_state.set_smoothed(false);
-                trk_state.filtered_params().set_surface_link(meas.surface_link);
+                auto trk_state =
+                    edm::make_track_state<algebra_type>(measurements, item_id);
 
                 const bool is_line = sf.template visit_mask<is_line_visitor>();
 
