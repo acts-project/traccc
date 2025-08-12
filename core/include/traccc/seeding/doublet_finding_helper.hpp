@@ -76,7 +76,8 @@ bool TRACCC_HOST_DEVICE doublet_finding_helper::isCompatible(
     if ((deltaR >= config.deltaRMax) || (deltaR <= config.deltaRMin) ||
         (math::fabs(cotTheta) >= config.cotThetaMax * deltaR) ||
         (zOrigin <= config.collisionRegionMin * deltaR) ||
-        (zOrigin >= config.collisionRegionMax * deltaR)) {
+        (zOrigin >= config.collisionRegionMax * deltaR) ||
+        std::abs(cotTheta) >= config.deltaZMax) {
         return false;
     }
 
