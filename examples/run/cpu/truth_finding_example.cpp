@@ -7,6 +7,7 @@
 
 // Project include(s).
 #include "../common/make_magnetic_field.hpp"
+#include "../common/print_fitted_tracks_statistics.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/efficiency/finding_performance_writer.hpp"
@@ -163,7 +164,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                          {vecmem::get_data(track_candidates),
                           vecmem::get_data(measurements_per_event)});
 
-        // print_fitted_tracks_statistics(track_states);
+        details::print_fitted_tracks_statistics(track_states, logger());
 
         const std::size_t n_fitted_tracks = track_states.tracks.size();
 

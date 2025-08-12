@@ -7,6 +7,7 @@
 
 // Project include(s).
 #include "../common/make_magnetic_field.hpp"
+#include "../common/print_fitted_tracks_statistics.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
@@ -140,7 +141,7 @@ int main(int argc, char* argv[]) {
             {vecmem::get_data(truth_track_candidates.tracks),
              vecmem::get_data(truth_track_candidates.measurements)});
 
-        // print_fitted_tracks_statistics(track_states);
+        details::print_fitted_tracks_statistics(track_states, logger());
 
         const std::size_t n_fitted_tracks = track_states.tracks.size();
 
