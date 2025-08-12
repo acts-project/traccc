@@ -477,8 +477,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .n_accepted = n_accepted_device.get(),
                 .n_shared_view = n_shared_buffer,
                 .terminate = terminate_device.get(),
-                .max_shared = max_shared_device.get(),
-                .is_updated_view = is_updated_buffer});
+                .max_shared = max_shared_device.get()});
 
         kernels::remove_tracks<<<1, 512, 0, stream>>>(
             device::remove_tracks_payload{
