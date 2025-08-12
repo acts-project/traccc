@@ -153,6 +153,9 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
 
         for (std::size_t i_trk = 0; i_trk < n_tracks; i_trk++) {
 
+            EXPECT_EQ(track_states.tracks.at(i_trk).fit_outcome(),
+                      traccc::track_fit_outcome::SUCCESS);
+
             consistency_tests(track_states.tracks.at(i_trk),
                               track_states.states);
 

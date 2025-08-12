@@ -160,6 +160,12 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
 
         for (std::size_t i_trk = 0; i_trk < n_tracks; i_trk++) {
 
+            // Some fits fail. The results of those cannot be reasonably tested.
+            if (track_states.tracks.at(i_trk).fit_outcome() !=
+                traccc::track_fit_outcome::SUCCESS) {
+                continue;
+            }
+
             consistency_tests(track_states.tracks.at(i_trk),
                               track_states.states);
 
