@@ -42,6 +42,11 @@ struct gather_tracks_payload {
     vecmem::data::vector_view<unsigned int> sorted_ids_view;
 
     /**
+     * @brief View object to the updated track
+     */
+    vecmem::data::vector_view<unsigned int> updated_tracks_view;
+
+    /**
      * @brief View object to the whether track id is updated
      */
     vecmem::data::vector_view<int> is_updated_view;

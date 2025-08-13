@@ -23,14 +23,16 @@ __global__ void gather_tracks(device::gather_tracks_payload payload) {
     vecmem::device_vector<const unsigned int> temp_sorted_ids(
         payload.temp_sorted_ids_view);
     vecmem::device_vector<unsigned int> sorted_ids(payload.sorted_ids_view);
+    vecmem::device_vector<unsigned int> updated_tracks(
+        payload.updated_tracks_view);
     vecmem::device_vector<int> is_updated(payload.is_updated_view);
 
     auto globalIndex = threadIdx.x + blockIdx.x * blockDim.x;
     const unsigned int n_accepted = *(payload.n_accepted);
 
     // Reset is_updated vector
-    if (globalIndex < is_updated.size()) {
-        is_updated[globalIndex] = 0;
+    if (globalIndex < *(payload.n_updated_tracks)) {
+        is_updated[updated_tracks[globalIndex]] = 0;
     }
 
     if (globalIndex >= n_accepted) {
