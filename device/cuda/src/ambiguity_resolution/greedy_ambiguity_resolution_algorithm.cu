@@ -415,6 +415,11 @@ greedy_ambiguity_resolution_algorithm::operator()(
     unsigned int nThreads_full = 1024;
     unsigned int nBlocks_full = (n_tracks + 1023) / 1024;
 
+    unsigned int nThreads_rearrange = 1024;
+    unsigned int nBlocks_rearrange =
+        (n_accepted + (nThreads_rearrange / kernels::nThreads_per_track) - 1) /
+        (nThreads_rearrange / kernels::nThreads_per_track);
+
     // Compute the threadblock dimension for scanning kernels
     auto compute_scan_config = [&](unsigned int n_accepted) {
         unsigned int nThreads_scan = m_warp_size * 4;
@@ -457,6 +462,10 @@ greedy_ambiguity_resolution_algorithm::operator()(
         scan_dim = compute_scan_config(n_accepted);
         nThreads_scan = scan_dim.first;
         nBlocks_scan = scan_dim.second;
+        nBlocks_rearrange =
+            (n_accepted + (nThreads_rearrange / kernels::nThreads_per_track) -
+             1) /
+            (nThreads_rearrange / kernels::nThreads_per_track);
 
         // Make CUDA Graph
         cudaGraph_t graph;
@@ -565,7 +574,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .block_offsets_view = scanned_block_offsets_buffer,
                 .prefix_sums_view = prefix_sums_buffer});
 
-        kernels::rearrange_tracks<<<nBlocks_adaptive, nThreads_adaptive, 0,
+        kernels::rearrange_tracks<<<nBlocks_rearrange, nThreads_rearrange, 0,
                                     stream>>>(device::rearrange_tracks_payload{
             .sorted_ids_view = sorted_ids_buffer,
             .inverted_ids_view = inverted_ids_buffer,
