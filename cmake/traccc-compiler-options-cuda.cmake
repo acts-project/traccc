@@ -25,7 +25,7 @@ endif()
 
 # Allow to use functions in device code that are constexpr, even if they are
 # not marked with __device__.
-traccc_add_flag( CMAKE_CUDA_FLAGS "--expt-relaxed-constexpr" )
+traccc_add_flag( CMAKE_CUDA_FLAGS "--expt-relaxed-constexpr --use_fast_math" )
 
 # Make CUDA generate debug symbols for the device code as well in a debug
 # build.
