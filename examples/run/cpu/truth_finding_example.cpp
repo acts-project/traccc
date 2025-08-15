@@ -7,6 +7,7 @@
 
 // Project include(s).
 #include "../common/make_magnetic_field.hpp"
+#include "../common/print_fitted_tracks_statistics.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/efficiency/finding_performance_writer.hpp"
@@ -163,22 +164,20 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                          {vecmem::get_data(track_candidates),
                           vecmem::get_data(measurements_per_event)});
 
-        print_fitted_tracks_statistics(track_states);
+        details::print_fitted_tracks_statistics(track_states, logger());
 
-        const std::size_t n_fitted_tracks = track_states.size();
+        const std::size_t n_fitted_tracks = track_states.tracks.size();
 
         if (performance_opts.run) {
             find_performance_writer.write(
-                vecmem::get_data(track_candidates),
-                vecmem::get_data(measurements_per_event), evt_data);
+                {vecmem::get_data(track_candidates),
+                 vecmem::get_data(measurements_per_event)},
+                evt_data);
 
             for (std::size_t i = 0; i < n_fitted_tracks; i++) {
-                const auto& trk_states_per_track = track_states.at(i).items;
-
-                const auto& fit_res = track_states[i].header;
-
-                fit_performance_writer.write(trk_states_per_track, fit_res,
-                                             detector, evt_data);
+                fit_performance_writer.write(
+                    track_states.tracks.at(i), track_states.states,
+                    measurements_per_event, detector, evt_data);
             }
         }
     }

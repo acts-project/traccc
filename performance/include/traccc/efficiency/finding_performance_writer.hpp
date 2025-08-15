@@ -15,8 +15,8 @@
 #include "traccc/utils/truth_matching_config.hpp"
 
 // Project include(s).
-#include "traccc/edm/track_candidate_collection.hpp"
-#include "traccc/edm/track_state.hpp"
+#include "traccc/edm/track_candidate_container.hpp"
+#include "traccc/edm/track_fit_container.hpp"
 #include "traccc/utils/event_data.hpp"
 
 // System include(s).
@@ -69,13 +69,12 @@ class finding_performance_writer : public messaging {
     /// Destructor
     ~finding_performance_writer();
 
-    void write(
-        const edm::track_candidate_collection<default_algebra>::const_view&
-            track_candidates_view,
-        const measurement_collection_types::const_view& measurements_view,
-        const event_data& evt_data);
+    void write(const edm::track_candidate_container<
+                   default_algebra>::const_view& track_candidates_view,
+               const event_data& evt_data);
 
-    void write(const track_state_container_types::const_view& track_states_view,
+    void write(const edm::track_fit_container<default_algebra>::const_view&
+                   track_fit_view,
                const event_data& evt_data);
 
     void finalize();

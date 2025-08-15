@@ -7,6 +7,7 @@
 
 // Project include(s).
 #include "../common/make_magnetic_field.hpp"
+#include "../common/print_fitted_tracks_statistics.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
@@ -140,20 +141,16 @@ int main(int argc, char* argv[]) {
             {vecmem::get_data(truth_track_candidates.tracks),
              vecmem::get_data(truth_track_candidates.measurements)});
 
-        print_fitted_tracks_statistics(track_states);
+        details::print_fitted_tracks_statistics(track_states, logger());
 
-        const decltype(track_states)::size_type n_fitted_tracks =
-            track_states.size();
+        const std::size_t n_fitted_tracks = track_states.tracks.size();
 
         if (performance_opts.run) {
 
             for (unsigned int i = 0; i < n_fitted_tracks; i++) {
-                const auto& trk_states_per_track = track_states.at(i).items;
-
-                const auto& fit_res = track_states[i].header;
-
-                fit_performance_writer.write(trk_states_per_track, fit_res,
-                                             host_det, evt_data);
+                fit_performance_writer.write(
+                    track_states.tracks.at(i), track_states.states,
+                    truth_track_candidates.measurements, host_det, evt_data);
             }
         }
     }

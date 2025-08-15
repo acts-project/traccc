@@ -91,28 +91,25 @@ namespace {
  * with its corresponding measurements.
  */
 std::vector<std::vector<measurement>> prepare_data(
-    const edm::track_candidate_collection<default_algebra>::const_view&
-        track_candidates_view,
-    const measurement_collection_types::const_view& measurements_view) {
+    const edm::track_candidate_container<default_algebra>::const_view&
+        track_candidates_view) {
     std::vector<std::vector<measurement>> result;
 
     // Iterate over the tracks.
-    const edm::track_candidate_collection<default_algebra>::const_device
+    const edm::track_candidate_container<default_algebra>::const_device
         track_candidates(track_candidates_view);
-    const measurement_collection_types::const_device measurements{
-        measurements_view};
 
-    const unsigned int n_tracks = track_candidates.size();
+    const unsigned int n_tracks = track_candidates.tracks.size();
     result.reserve(n_tracks);
 
     for (unsigned int i = 0; i < n_tracks; i++) {
         std::vector<measurement> m;
-        m.reserve(track_candidates.at(i).measurement_indices().size());
+        m.reserve(track_candidates.tracks.at(i).measurement_indices().size());
         const edm::track_candidate_collection<
             default_algebra>::const_device::const_proxy_type track =
-            track_candidates.at(i);
+            track_candidates.tracks.at(i);
         for (unsigned int midx : track.measurement_indices()) {
-            m.push_back(measurements.at(midx));
+            m.push_back(track_candidates.measurements.at(midx));
         }
         result.push_back(std::move(m));
     }
@@ -129,23 +126,27 @@ std::vector<std::vector<measurement>> prepare_data(
  * with its corresponding measurements.
  */
 std::vector<std::vector<measurement>> prepare_data(
-    const track_state_container_types::const_view& track_states_view) {
+    const edm::track_fit_container<default_algebra>::const_view&
+        track_fit_view) {
     std::vector<std::vector<measurement>> result;
 
-    // Iterate over the tracks.
-    track_state_container_types::const_device track_states(track_states_view);
+    // Set up the input containers.
+    const edm::track_fit_container<default_algebra>::const_device track_fits(
+        track_fit_view);
 
-    const unsigned int n_tracks = track_states.size();
+    // Iterate over the tracks.
+    const unsigned int n_tracks = track_fits.tracks.size();
     result.reserve(n_tracks);
 
     for (unsigned int i = 0; i < n_tracks; i++) {
-        auto const& [fit_res, states] = track_states.at(i);
-        std::vector<measurement> measurements;
-        measurements.reserve(states.size());
-        for (const auto& st : states) {
-            measurements.push_back(st.get_measurement());
+        std::vector<measurement> result_measurements;
+        result_measurements.reserve(
+            track_fits.tracks.at(i).state_indices().size());
+        for (unsigned int st_idx : track_fits.tracks.state_indices().at(i)) {
+            result_measurements.push_back(track_fits.measurements.at(
+                track_fits.states.at(st_idx).measurement_index()));
         }
-        result.push_back(std::move(measurements));
+        result.push_back(std::move(result_measurements));
     }
     return result;
 }
@@ -312,14 +313,13 @@ void finding_performance_writer::write_common(
 
 /// For track finding
 void finding_performance_writer::write(
-    const edm::track_candidate_collection<default_algebra>::const_view&
+    const edm::track_candidate_container<default_algebra>::const_view&
         track_candidates_view,
-    const measurement_collection_types::const_view& measurements_view,
     const event_data& evt_data) {
 
     // Set up the input containers.
     const edm::track_candidate_collection<default_algebra>::const_device
-        track_candidates(track_candidates_view);
+        track_candidates(track_candidates_view.tracks);
 
     const unsigned int n_tracks = track_candidates.size();
 
@@ -331,16 +331,16 @@ void finding_performance_writer::write(
     }
 
     std::vector<std::vector<measurement>> tracks =
-        prepare_data(track_candidates_view, measurements_view);
+        prepare_data(track_candidates_view);
     write_common(tracks, evt_data);
 }
 
 /// For ambiguity resolution
 void finding_performance_writer::write(
-    const track_state_container_types::const_view& track_states_view,
+    const edm::track_fit_container<default_algebra>::const_view& track_fit_view,
     const event_data& evt_data) {
-    std::vector<std::vector<measurement>> tracks =
-        prepare_data(track_states_view);
+
+    std::vector<std::vector<measurement>> tracks = prepare_data(track_fit_view);
     write_common(tracks, evt_data);
 }
 

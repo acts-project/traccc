@@ -42,3 +42,4 @@ class comparator_factory {
 // Include the specialised implementation(s).
 #include "traccc/performance/impl/seed_comparator_factory.ipp"
 #include "traccc/performance/impl/track_candidate_comparator_factory.ipp"
+#include "traccc/performance/impl/track_fit_comparator_factory.ipp"
