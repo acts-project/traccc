@@ -59,25 +59,34 @@ class stat_plot_tool {
 
     /// @brief fill the cache
     ///
+    /// @tparam track_candidate_backend_t the backend type for @c find_res
+    ///
     /// @param cache the cache for statistics plots
     /// @param find_res track finding result
-    template <typename T>
-    void fill(stat_plot_cache& cache,
-              const edm::track_candidate<T>& find_res) const;
+    template <typename track_candidate_backend_t>
+    void fill(
+        stat_plot_cache& cache,
+        const edm::track_candidate<track_candidate_backend_t>& find_res) const;
 
     /// @brief fill the cache
+    ///
+    /// @tparam track_fit_backend_t the backend type for @c fit_res
     ///
     /// @param cache the cache for statistics plots
     /// @param fit_res fitting information that contains statistics
-    template <typename T>
-    void fill(stat_plot_cache& cache, const edm::track_fit<T>& fit_res) const;
+    template <typename track_fit_backend_t>
+    void fill(stat_plot_cache& cache,
+              const edm::track_fit<track_fit_backend_t>& fit_res) const;
 
     /// @brief fill the cache
     ///
+    /// @tparam track_state_backend_t the backend type for @c trk_state
+    ///
     /// @param cache the cache for statistics plots
     /// @param trk_state track state at local measurements
-    template <typename T>
-    void fill(stat_plot_cache& cache, const edm::track_state<T>& trk_state,
+    template <typename track_state_backend_t>
+    void fill(stat_plot_cache& cache,
+              const edm::track_state<track_state_backend_t>& trk_state,
               const measurement_collection_types::host& measurements) const;
 
     /// @brief fill the cache

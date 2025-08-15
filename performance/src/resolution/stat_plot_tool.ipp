@@ -12,9 +12,10 @@
 
 namespace traccc {
 
-template <typename T>
-void stat_plot_tool::fill(stat_plot_cache& cache,
-                          const edm::track_candidate<T>& find_res) const {
+template <typename track_candidate_backend_t>
+void stat_plot_tool::fill(
+    stat_plot_cache& cache,
+    const edm::track_candidate<track_candidate_backend_t>& find_res) const {
 
     // Avoid unused variable warnings when building the code without ROOT.
     (void)cache;
@@ -30,9 +31,10 @@ void stat_plot_tool::fill(stat_plot_cache& cache,
 #endif  // TRACCC_HAVE_ROOT
 }
 
-template <typename T>
-void stat_plot_tool::fill(stat_plot_cache& cache,
-                          const edm::track_fit<T>& fit_res) const {
+template <typename track_fit_backend_t>
+void stat_plot_tool::fill(
+    stat_plot_cache& cache,
+    const edm::track_fit<track_fit_backend_t>& fit_res) const {
 
     // Avoid unused variable warnings when building the code without ROOT.
     (void)cache;
@@ -48,9 +50,10 @@ void stat_plot_tool::fill(stat_plot_cache& cache,
 #endif  // TRACCC_HAVE_ROOT
 }
 
-template <typename T>
+template <typename track_state_backend_t>
 void stat_plot_tool::fill(
-    stat_plot_cache& cache, const edm::track_state<T>& trk_state,
+    stat_plot_cache& cache,
+    const edm::track_state<track_state_backend_t>& trk_state,
     const measurement_collection_types::host& measurements) const {
 
     // Avoid unused variable warnings when building the code without ROOT.
