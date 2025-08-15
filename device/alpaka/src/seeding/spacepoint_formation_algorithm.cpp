@@ -22,7 +22,7 @@ template <typename detector_t>
 struct FormSpacepointsKernel {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        TAcc const& acc, typename detector_t::view_type det_view,
+        TAcc const& acc, typename detector_t::const_view_type det_view,
         measurement_collection_types::const_view measurements_view,
         edm::spacepoint_collection::view spacepoints_view) const {
 
@@ -43,7 +43,7 @@ spacepoint_formation_algorithm<detector_t>::spacepoint_formation_algorithm(
 template <typename detector_t>
 edm::spacepoint_collection::buffer
 spacepoint_formation_algorithm<detector_t>::operator()(
-    const typename detector_t::view_type& det_view,
+    const typename detector_t::const_view_type& det_view,
     const measurement_collection_types::const_view& measurements_view) const {
 
     // Get a convenience variable for the queue that we'll be using.
