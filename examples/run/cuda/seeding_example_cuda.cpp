@@ -139,7 +139,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                               detector_opts.grid_file);
 
     // Detector view object
-    traccc::default_detector::view det_view = detray::get_data(host_det);
+    const traccc::default_detector::host& const_host_det = host_det;
+    traccc::default_detector::view det_view = detray::get_data(const_host_det);
 
     // Copy objects
     vecmem::copy host_copy;

@@ -145,7 +145,7 @@ class full_chain_algorithm
     /// Buffer holding the detector's payload on the device
     host_detector_type::buffer_type m_device_detector;
     /// View of the detector's payload on the device
-    host_detector_type::view_type m_device_detector_view;
+    host_detector_type::const_view_type m_device_detector_view;
 
     /// @name Sub-algorithms used by this full-chain algorithm
     /// @{

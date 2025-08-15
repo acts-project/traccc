@@ -82,7 +82,8 @@ full_chain_algorithm::full_chain_algorithm(
         m_device_detector = detray::get_buffer(detray::get_data(*m_detector),
                                                m_vecmem_objects.device_mr(),
                                                m_vecmem_objects.async_copy());
-        m_device_detector_view = detray::get_data(m_device_detector);
+        const auto& const_device_detector = m_device_detector;
+        m_device_detector_view = detray::get_data(const_device_detector);
     }
 }
 
@@ -143,7 +144,8 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
         m_device_detector = detray::get_buffer(detray::get_data(*m_detector),
                                                m_vecmem_objects.device_mr(),
                                                m_vecmem_objects.async_copy());
-        m_device_detector_view = detray::get_data(m_device_detector);
+        const auto& const_device_detector = m_device_detector;
+        m_device_detector_view = detray::get_data(const_device_detector);
     }
 }
 
