@@ -87,23 +87,16 @@ typename edm::track_fit_container<algebra_t>::host kalman_fitting(
         auto result_tracks_view = vecmem::get_data(result.tracks);
         typename edm::track_fit_collection<algebra_t>::device
             result_tracks_device{result_tracks_view};
-        typename edm::track_fit_collection<algebra_t>::device::proxy_type
-            fitted_track_device =
-                result_tracks_device.at(result_tracks_device.size() - 1);
-        auto result_states_view = vecmem::get_data(result.states);
         typename fitter_t::state fitter_state(
-            fitted_track_device,
+            result_tracks_device.at(result_tracks_device.size() - 1),
             typename edm::track_state_collection<algebra_t>::device{
-                result_states_view},
+                vecmem::get_data(result.states)},
             measurements, seqs_buffer);
 
-        // Run the fitter.
-        kalman_fitter_status fit_status =
-            fitter.fit(track_candidates.params().at(i), fitter_state);
-
-        if (fit_status != kalman_fitter_status::SUCCESS) {
-            // TODO: Print a warning here.
-        }
+        // Run the fitter. The status that it returns is not used here. The main
+        // failure modes are saved onto the fitted track itself. Not sure what
+        // we may want to do with the more detailed status codes in the future.
+        (void)fitter.fit(track_candidates.params().at(i), fitter_state);
     }
 
     // Return the fitted track states.
