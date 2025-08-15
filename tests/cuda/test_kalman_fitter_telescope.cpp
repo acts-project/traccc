@@ -80,7 +80,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     detray::io::detector_reader_config reader_cfg{};
     reader_cfg.add_file(path + "telescope_detector_geometry.json")
         .add_file(path + "telescope_detector_homogeneous_material.json");
-    auto [host_det, names] =
+    const auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);
 
     // Detector view object

@@ -81,7 +81,8 @@ TEST_P(CkfToyDetectorTests, Run) {
     const auto field = traccc::construct_const_bfield(B);
 
     // Detector view object
-    auto det_view = detray::get_data(host_det);
+    const host_detector_type& const_host_det = host_det;
+    auto det_view = detray::get_data(const_host_det);
 
     /***************************
      * Generate simulation data

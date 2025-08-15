@@ -69,7 +69,7 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
                                                           async_copy, stream);
 
     // Copy detector to device
-    auto det_buffer = detray::get_buffer(det, device_mr, copy);
+    const auto det_buffer = detray::get_buffer(det, device_mr, copy);
     // Detector view object
     auto det_view = detray::get_data(det_buffer);
 
