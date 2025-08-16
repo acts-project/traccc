@@ -68,7 +68,7 @@ TEST_P(CkfToyDetectorTests, Run) {
         .add_file(path + "toy_detector_homogeneous_material.json")
         .add_file(path + "toy_detector_surface_grids.json");
 
-    auto [host_det, names] =
+    const auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);
 
     const auto field = traccc::construct_const_bfield(B);

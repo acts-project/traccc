@@ -33,7 +33,7 @@ namespace traccc::alpaka {
 template <typename detector_t>
 class spacepoint_formation_algorithm
     : public algorithm<edm::spacepoint_collection::buffer(
-          const typename detector_t::view_type&,
+          const typename detector_t::const_view_type&,
           const measurement_collection_types::const_view&)>,
       public messaging {
 
@@ -57,7 +57,7 @@ class spacepoint_formation_algorithm
     ///         measurement
     ///
     edm::spacepoint_collection::buffer operator()(
-        const typename detector_t::view_type& det_view,
+        const typename detector_t::const_view_type& det_view,
         const measurement_collection_types::const_view& measurements_view)
         const override;
 

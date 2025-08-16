@@ -65,7 +65,8 @@ namespace details {
 ///
 template <typename kernel_t, typename detector_t, typename bfield_t>
 track_state_container_types::buffer kalman_fitting(
-    const typename detector_t::view_type& det_view, const bfield_t& field_view,
+    const typename detector_t::const_view_type& det_view,
+    const bfield_t& field_view,
     const typename edm::track_candidate_container<
         typename detector_t::algebra_type>::const_view& track_candidates_view,
     const fitting_config& config, const memory_resource& mr, vecmem::copy& copy,

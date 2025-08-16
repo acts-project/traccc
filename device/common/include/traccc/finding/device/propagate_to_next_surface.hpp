@@ -28,7 +28,7 @@ struct propagate_to_next_surface_payload {
     /**
      * @brief View object to the tracking detector description
      */
-    typename propagator_t::detector_type::view_type det_data;
+    typename propagator_t::detector_type::const_view_type det_data;
 
     /**
      * @brief View object to the magnetic field

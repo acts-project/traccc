@@ -108,7 +108,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                               detector_opts.grid_file);
 
     // Detector view object
-    traccc::default_detector::view det_view = detray::get_data(detector);
+    const traccc::default_detector::host& const_detector = detector;
+    traccc::default_detector::view det_view = detray::get_data(const_detector);
 
     /*****************************
      * Do the reconstruction

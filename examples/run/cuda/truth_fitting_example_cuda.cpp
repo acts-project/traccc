@@ -114,7 +114,7 @@ int main(int argc, char* argv[]) {
         reader_cfg.add_file(
             traccc::io::get_absolute_path(detector_opts.grid_file));
     }
-    auto [host_det, names] =
+    const auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);
 
     // Detector view object

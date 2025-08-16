@@ -97,7 +97,8 @@ full_chain_algorithm::full_chain_algorithm(
     if (m_detector != nullptr) {
         m_device_detector =
             detray::get_buffer(*m_detector, m_device_mr, m_copy);
-        m_device_detector_view = detray::get_data(m_device_detector);
+        const auto& const_device_detector = m_device_detector;
+        m_device_detector_view = detray::get_data(const_device_detector);
     }
 }
 
@@ -150,7 +151,8 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
     if (m_detector != nullptr) {
         m_device_detector =
             detray::get_buffer(*m_detector, m_device_mr, m_copy);
-        m_device_detector_view = detray::get_data(m_device_detector);
+        const auto& const_device_detector = m_device_detector;
+        m_device_detector_view = detray::get_data(const_device_detector);
     }
 }
 

@@ -93,7 +93,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     reader_cfg.add_file(path + "telescope_detector_geometry.json")
         .add_file(path + "telescope_detector_homogeneous_material.json");
 
-    auto [host_det, names] =
+    const auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(shared_mr, reader_cfg);
     auto det_view = detray::get_data(host_det);
     const auto field = traccc::construct_const_bfield(std::get<13>(GetParam()));

@@ -26,7 +26,7 @@ struct apply_interaction_payload {
     /**
      * @brief View object describing the tracking detector
      */
-    typename detector_t::view_type det_data;
+    typename detector_t::const_view_type det_data;
 
     /**
      * @brief Total number of input parameters (including non-live ones)
