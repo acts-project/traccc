@@ -19,6 +19,8 @@
 #include <covfie/cuda/backend/primitive/cuda_device_array.hpp>
 #include <covfie/cuda/backend/primitive/cuda_texture.hpp>
 
+#include "traccc/bfield/magnetic_field_types.hpp"
+
 namespace traccc::cuda {
 
 /// Inhomogeneous B-field backend type using CUDA global memory
@@ -41,5 +43,11 @@ using inhom_texture_bfield_backend_t = covfie::backend::affine<
 static_assert(
     covfie::concepts::field_backend<inhom_texture_bfield_backend_t>,
     "cuda::inhom_texture_bfield_backend_t is not a valid field backend type");
+
+/// @brief the standard list of CUDA bfield types to support
+template <typename scalar_t>
+using bfield_type_list = std::tuple<const_bfield_backend_t<scalar_t>,
+                                    inhom_global_bfield_backend_t<scalar_t>,
+                                    inhom_texture_bfield_backend_t>;
 
 }  // namespace traccc::cuda
