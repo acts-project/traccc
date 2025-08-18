@@ -13,8 +13,6 @@
 int main(int argc, char* argv[]) {
 
     // Execute the throughput test.
-    static constexpr bool USE_HOST_CACHING = false;
     return traccc::throughput_st<traccc::full_chain_algorithm>(
-        "Single-threaded host-only throughput tests", argc, argv,
-        USE_HOST_CACHING);
+        "Single-threaded host-only throughput tests", argc, argv);
 }
