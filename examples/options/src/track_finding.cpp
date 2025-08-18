@@ -64,13 +64,18 @@ track_finding::track_finding() : interface("Track Finding Options") {
                          po::value(&m_pdg_number)->default_value(m_pdg_number),
                          "PDG number for the particle hypothesis");
     m_desc.add_options()(
-        "min-total-momentum [GeV]",
+        "min-total-momentum",
         po::value(&m_config.min_p_mag)->default_value(m_config.min_p_mag),
-        "Minimum total track momentum");
+        "Minimum total track momentum [GeV]");
     m_desc.add_options()(
-        "min-transverse-momentum [GeV]",
+        "min-transverse-momentum",
         po::value(&m_config.min_p_mag)->default_value(m_config.min_p_mag),
-        "Minimum transverse track momentum");
+        "Minimum transverse track momentum [GeV]");
+    m_desc.add_options()(
+        "duplicate-removal-minimum-length",
+        po::value(&m_config.duplicate_removal_minimum_length)
+            ->default_value(m_config.duplicate_removal_minimum_length),
+        "Minimum track length for deduplication (0 to disable) [cardinal]");
 }
 
 void track_finding::read(const po::variables_map &vm) {
@@ -116,6 +121,9 @@ std::unique_ptr<configuration_printable> track_finding::as_printable() const {
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Max holes per candidate",
         std::to_string(m_config.max_num_skipping_per_cand)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Min track length for deduplication",
+        std::to_string(m_config.duplicate_removal_minimum_length)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "PDG number", std::to_string(m_pdg_number)));
     // How to interpret the minimum track momentum value
