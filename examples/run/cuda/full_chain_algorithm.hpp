@@ -30,6 +30,7 @@
 #include <vecmem/containers/vector.hpp>
 #include <vecmem/memory/binary_page_memory_resource.hpp>
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
+#include <vecmem/memory/cuda/host_memory_resource.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
 
@@ -121,12 +122,16 @@ class full_chain_algorithm
     private:
     /// Host memory resource
     vecmem::memory_resource& m_host_mr;
+    /// Pinned host memory resource
+    vecmem::cuda::host_memory_resource m_pinned_host_mr;
+    /// Cached pinned host memory resource
+    mutable vecmem::binary_page_memory_resource m_cached_pinned_host_mr;
     /// CUDA stream to use
     stream m_stream;
     /// Device memory resource
     vecmem::cuda::device_memory_resource m_device_mr;
     /// Device caching memory resource
-    std::unique_ptr<vecmem::binary_page_memory_resource> m_cached_device_mr;
+    mutable vecmem::binary_page_memory_resource m_cached_device_mr;
     /// (Asynchronous) Memory copy object
     mutable vecmem::cuda::async_copy m_copy;
 
