@@ -184,8 +184,8 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
             m_device_detector_view, m_field, {track_candidates, measurements});
 
         // Copy a limited amount of result data back to the host.
-        output_type result{&m_host_mr};
-        m_vecmem_objects.async_copy()(track_states.headers, result)->wait();
+        output_type result{m_host_mr};
+        m_vecmem_objects.async_copy()(track_states.tracks, result)->wait();
         return result;
 
     }
@@ -198,7 +198,7 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
         m_vecmem_objects.async_copy()(measurements, measurements_host)->wait();
 
         // Return an empty object.
-        return {};
+        return output_type{m_host_mr};
     }
 }
 

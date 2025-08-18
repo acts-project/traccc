@@ -12,8 +12,6 @@
 // Project include(s).
 #include "traccc/bfield/construct_const_bfield.hpp"
 #include "traccc/bfield/magnetic_field_types.hpp"
-#include "traccc/device/container_d2h_copy_alg.hpp"
-#include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_measurements.hpp"
@@ -127,9 +125,6 @@ TEST_P(CkfToyDetectorTests, Run) {
 
     // Copy objects
     vecmem::sycl::async_copy copy{vecmem_queue};
-
-    traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
-        track_state_d2h{mr, copy};
 
     // Seed generator
     seed_generator<host_detector_type> sg(host_det, stddevs);

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2023 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -9,7 +9,9 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/track_state.hpp"
+#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/track_fit_collection.hpp"
+#include "traccc/edm/track_state_collection.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 #include "traccc/fitting/kalman_filter/is_line_visitor.hpp"
 #include "traccc/fitting/kalman_filter/two_filters_smoother.hpp"
@@ -32,31 +34,38 @@ enum class kalman_actor_direction {
 
 template <typename algebra_t>
 struct kalman_actor_state {
-    using track_state_coll = vecmem::device_vector<track_state<algebra_t>>;
 
     /// Constructor with the vector of track states
     TRACCC_HOST_DEVICE
-    explicit kalman_actor_state(track_state_coll track_states)
-        : m_track_states(track_states) {
-        m_it = m_track_states.begin();
-        m_it_rev = m_track_states.rbegin();
+    kalman_actor_state(
+        const typename edm::track_fit_collection<algebra_t>::device::proxy_type&
+            track,
+        const typename edm::track_state_collection<algebra_t>::device&
+            track_states,
+        const measurement_collection_types::const_device& measurements)
+        : m_track{track},
+          m_track_states{track_states},
+          m_measurements{measurements} {
+
+        reset();
     }
 
     /// @return the reference of track state pointed by the iterator
     TRACCC_HOST_DEVICE
-    typename track_state_coll::value_type& operator()() {
+    typename edm::track_state_collection<algebra_t>::device::proxy_type
+    operator()() {
         if (!backward_mode) {
-            return *m_it;
+            return m_track_states.at(*m_it);
         } else {
-            return *m_it_rev;
+            return m_track_states.at(*m_it_rev);
         }
     }
 
     /// Reset the iterator
     TRACCC_HOST_DEVICE
     void reset() {
-        m_it = m_track_states.begin();
-        m_it_rev = m_track_states.rbegin();
+        m_it = m_track.state_indices().begin();
+        m_it_rev = m_track.state_indices().rbegin();
     }
 
     /// Advance the iterator
@@ -72,22 +81,27 @@ struct kalman_actor_state {
     /// @return true if the iterator reaches the end of vector
     TRACCC_HOST_DEVICE
     bool is_complete() {
-        if (!backward_mode && m_it == m_track_states.end()) {
+        if (!backward_mode && m_it == m_track.state_indices().end()) {
             return true;
-        } else if (backward_mode && m_it_rev == m_track_states.rend()) {
+        } else if (backward_mode &&
+                   m_it_rev == m_track.state_indices().rend()) {
             return true;
         }
         return false;
     }
 
-    // vector of track states
-    track_state_coll m_track_states;
+    /// Object describing the track fit
+    typename edm::track_fit_collection<algebra_t>::device::proxy_type m_track;
+    /// All track states in the event
+    typename edm::track_state_collection<algebra_t>::device m_track_states;
+    /// All measurements in the event
+    measurement_collection_types::const_device m_measurements;
 
-    // iterator for forward filtering
-    typename track_state_coll::iterator m_it;
+    /// Iterator for forward filtering over the track states
+    vecmem::device_vector<unsigned int>::iterator m_it;
 
-    // iterator for backward filtering
-    typename track_state_coll::reverse_iterator m_it_rev;
+    /// Iterator for backward filtering over the track states
+    vecmem::device_vector<unsigned int>::reverse_iterator m_it_rev;
 
     // The number of holes (The number of sensitive surfaces which do not
     // have a measurement for the track pattern)
@@ -100,9 +114,6 @@ struct kalman_actor_state {
 /// Detray actor for Kalman filtering
 template <typename algebra_t, kalman_actor_direction direction_e>
 struct kalman_actor : detray::actor {
-
-    // Type declarations
-    using track_state_coll = vecmem::device_vector<track_state<algebra_t>>;
 
     // Actor state
     using state = kalman_actor_state<algebra_t>;
@@ -127,11 +138,14 @@ struct kalman_actor : detray::actor {
         // triggered only for sensitive surfaces
         if (navigation.is_on_sensitive()) {
 
-            auto& trk_state = actor_state();
+            typename edm::track_state_collection<algebra_t>::device::proxy_type
+                trk_state = actor_state();
 
             // Increase the hole counts if the propagator fails to find the next
             // measurement
-            if (navigation.barcode() != trk_state.surface_link()) {
+            if (navigation.barcode() !=
+                actor_state.m_measurements.at(trk_state.measurement_index())
+                    .surface_link) {
                 if (!actor_state.backward_mode) {
                     actor_state.n_holes++;
                 }
@@ -140,7 +154,7 @@ struct kalman_actor : detray::actor {
 
             // This track state is not a hole
             if (!actor_state.backward_mode) {
-                trk_state.is_hole = false;
+                trk_state.set_hole(false);
             }
 
             // Run Kalman Gain Updater
@@ -157,11 +171,11 @@ struct kalman_actor : detray::actor {
                                   kalman_actor_direction::BIDIRECTIONAL) {
                     // Forward filter
                     res = gain_matrix_updater<algebra_t>{}(
-                        trk_state, propagation._stepping.bound_params(),
-                        is_line);
+                        trk_state, actor_state.m_measurements,
+                        propagation._stepping.bound_params(), is_line);
 
                     // Update the propagation flow
-                    stepping.bound_params() = trk_state.filtered();
+                    stepping.bound_params() = trk_state.filtered_params();
                 } else {
                     assert(false);
                 }
@@ -172,8 +186,8 @@ struct kalman_actor : detray::actor {
                                   kalman_actor_direction::BIDIRECTIONAL) {
                     // Backward filter for smoothing
                     res = two_filters_smoother<algebra_t>{}(
-                        trk_state, propagation._stepping.bound_params(),
-                        is_line);
+                        trk_state, actor_state.m_measurements,
+                        propagation._stepping.bound_params(), is_line);
                 } else {
                     assert(false);
                 }
