@@ -125,8 +125,10 @@ class full_chain_algorithm
 
     /// Host memory resource
     ::vecmem::memory_resource& m_host_mr;
+    /// Cached pinned host memory resource
+    mutable ::vecmem::binary_page_memory_resource m_cached_pinned_host_mr;
     /// Device caching memory resource
-    std::unique_ptr<::vecmem::binary_page_memory_resource> m_cached_device_mr;
+    mutable ::vecmem::binary_page_memory_resource m_cached_device_mr;
 
     /// Constant B field for the (seed) track parameter estimation
     traccc::vector3 m_field_vec;

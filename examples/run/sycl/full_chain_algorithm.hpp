@@ -26,6 +26,7 @@
 #include <vecmem/memory/binary_page_memory_resource.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/memory/sycl/device_memory_resource.hpp>
+#include <vecmem/memory/sycl/host_memory_resource.hpp>
 #include <vecmem/utils/sycl/async_copy.hpp>
 
 // System include(s).
@@ -119,6 +120,10 @@ class full_chain_algorithm
     std::unique_ptr<details::full_chain_algorithm_data> m_data;
     /// Host memory resource
     std::reference_wrapper<vecmem::memory_resource> m_host_mr;
+    /// Pinned host memory resource
+    vecmem::sycl::host_memory_resource m_pinned_host_mr;
+    /// Cached pinned host memory resource
+    mutable vecmem::binary_page_memory_resource m_cached_pinned_host_mr;
     /// Device memory resource
     vecmem::sycl::device_memory_resource m_device_mr;
     /// Device caching memory resource

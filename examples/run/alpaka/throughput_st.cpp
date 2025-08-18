@@ -13,9 +13,6 @@
 int main(int argc, char* argv[]) {
 
     // Execute the throughput test.
-    static const bool use_host_caching = true;
-    return traccc::throughput_st<traccc::alpaka::full_chain_algorithm,
-                                 vecmem::host_memory_resource>(
-        "Single-threaded Alpaka GPU throughput tests", argc, argv,
-        use_host_caching);
+    return traccc::throughput_st<traccc::alpaka::full_chain_algorithm>(
+        "Single-threaded Alpaka GPU throughput tests", argc, argv);
 }

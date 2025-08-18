@@ -66,6 +66,8 @@ full_chain_algorithm::full_chain_algorithm(
       m_data(std::make_unique<details::full_chain_algorithm_data>(
           ::handle_async_error)),
       m_host_mr(host_mr),
+      m_pinned_host_mr(&(m_data->m_queue)),
+      m_cached_pinned_host_mr(m_pinned_host_mr),
       m_device_mr{&(m_data->m_queue)},
       m_cached_device_mr{m_device_mr},
       m_copy{&(m_data->m_queue)},
@@ -78,31 +80,40 @@ full_chain_algorithm::full_chain_algorithm(
           m_device_mr},
       m_detector(detector),
       m_device_detector{},
-      m_clusterization{memory_resource{m_cached_device_mr, &(m_host_mr.get())},
-                       m_copy, m_data->m_queue_wrapper, clustering_config,
+      m_clusterization{{m_cached_device_mr, &m_cached_pinned_host_mr},
+                       m_copy,
+                       m_data->m_queue_wrapper,
+                       clustering_config,
                        logger->clone("ClusteringAlg")},
-      m_measurement_sorting(
-          memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
-          m_data->m_queue_wrapper, logger->clone("MeasSortingAlg")),
-      m_spacepoint_formation{
-          memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
-          m_data->m_queue_wrapper, logger->clone("SpFormationAlg")},
+      m_measurement_sorting({m_cached_device_mr, &m_cached_pinned_host_mr},
+                            m_copy, m_data->m_queue_wrapper,
+                            logger->clone("MeasSortingAlg")),
+      m_spacepoint_formation{{m_cached_device_mr, &m_cached_pinned_host_mr},
+                             m_copy,
+                             m_data->m_queue_wrapper,
+                             logger->clone("SpFormationAlg")},
       m_seeding{finder_config,
                 grid_config,
                 filter_config,
-                memory_resource{m_cached_device_mr, &(m_host_mr.get())},
+                {m_cached_device_mr, &m_cached_pinned_host_mr},
                 m_copy,
                 m_data->m_queue_wrapper,
                 logger->clone("SeedingAlg")},
       m_track_parameter_estimation{
-          memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
-          m_data->m_queue_wrapper, logger->clone("TrackParEstAlg")},
+          {m_cached_device_mr, &m_cached_pinned_host_mr},
+          m_copy,
+          m_data->m_queue_wrapper,
+          logger->clone("TrackParEstAlg")},
       m_finding{finding_config,
-                memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
-                m_data->m_queue_wrapper, logger->clone("TrackFindingAlg")},
+                {m_cached_device_mr, &m_cached_pinned_host_mr},
+                m_copy,
+                m_data->m_queue_wrapper,
+                logger->clone("TrackFindingAlg")},
       m_fitting{fitting_config,
-                memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
-                m_data->m_queue_wrapper, logger->clone("TrackFittingAlg")},
+                {m_cached_device_mr, &m_cached_pinned_host_mr},
+                m_copy,
+                m_data->m_queue_wrapper,
+                logger->clone("TrackFittingAlg")},
       m_clustering_config(clustering_config),
       m_finder_config(finder_config),
       m_grid_config(grid_config),
@@ -131,6 +142,8 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_data(std::make_unique<details::full_chain_algorithm_data>(
           ::handle_async_error)),
       m_host_mr(parent.m_host_mr),
+      m_pinned_host_mr(&(m_data->m_queue)),
+      m_cached_pinned_host_mr(m_pinned_host_mr),
       m_device_mr{&(m_data->m_queue)},
       m_cached_device_mr{m_device_mr},
       m_copy{&(m_data->m_queue)},
@@ -143,32 +156,40 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
           m_device_mr},
       m_detector(parent.m_detector),
       m_device_detector{},
-      m_clusterization{memory_resource{m_cached_device_mr, &(m_host_mr.get())},
-                       m_copy, m_data->m_queue_wrapper,
+      m_clusterization{{m_cached_device_mr, &m_cached_pinned_host_mr},
+                       m_copy,
+                       m_data->m_queue_wrapper,
                        parent.m_clustering_config,
                        parent.logger().clone("ClusteringAlg")},
-      m_measurement_sorting(
-          memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
-          m_data->m_queue_wrapper, parent.logger().clone("MeasSortingAlg")),
-      m_spacepoint_formation{
-          memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
-          m_data->m_queue_wrapper, parent.logger().clone("SpFormationAlg")},
+      m_measurement_sorting({m_cached_device_mr, &m_cached_pinned_host_mr},
+                            m_copy, m_data->m_queue_wrapper,
+                            parent.logger().clone("MeasSortingAlg")),
+      m_spacepoint_formation{{m_cached_device_mr, &m_cached_pinned_host_mr},
+                             m_copy,
+                             m_data->m_queue_wrapper,
+                             parent.logger().clone("SpFormationAlg")},
       m_seeding{parent.m_finder_config,
                 parent.m_grid_config,
                 parent.m_filter_config,
-                memory_resource{m_cached_device_mr, &(m_host_mr.get())},
+                {m_cached_device_mr, &m_cached_pinned_host_mr},
                 m_copy,
                 m_data->m_queue_wrapper,
                 parent.logger().clone("SeedingAlg")},
       m_track_parameter_estimation{
-          memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
-          m_data->m_queue_wrapper, parent.logger().clone("TrackParEstAlg")},
+          {m_cached_device_mr, &m_cached_pinned_host_mr},
+          m_copy,
+          m_data->m_queue_wrapper,
+          parent.logger().clone("TrackParEstAlg")},
       m_finding{parent.m_finding_config,
-                memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
-                m_data->m_queue_wrapper, parent.logger().clone("FindingAlg")},
+                {m_cached_device_mr, &m_cached_pinned_host_mr},
+                m_copy,
+                m_data->m_queue_wrapper,
+                parent.logger().clone("FindingAlg")},
       m_fitting{parent.m_fitting_config,
-                memory_resource{m_cached_device_mr, &(m_host_mr.get())}, m_copy,
-                m_data->m_queue_wrapper, parent.logger().clone("FittingAlg")},
+                {m_cached_device_mr, &m_cached_pinned_host_mr},
+                m_copy,
+                m_data->m_queue_wrapper,
+                parent.logger().clone("FittingAlg")},
       m_clustering_config(parent.m_clustering_config),
       m_finder_config(parent.m_finder_config),
       m_grid_config(parent.m_grid_config),
@@ -222,8 +243,12 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
             m_device_detector_view, m_field, {track_candidates, measurements});
 
         // Copy a limited amount of result data back to the host.
+        const auto host_tracks =
+            m_copy.to(track_states.tracks, m_cached_pinned_host_mr, nullptr,
+                      vecmem::copy::type::device_to_host);
         output_type result{m_host_mr.get()};
-        m_copy(track_states.tracks, result)->wait();
+        vecmem::copy host_copy;
+        host_copy(host_tracks, result)->wait();
         return result;
     }
     // If not, copy the measurements back to the host, and return
@@ -266,9 +291,12 @@ bound_track_parameters_collection_types::host full_chain_algorithm::seeding(
                                          {0.f, 0.f, m_finder_config.bFieldInZ});
 
         // Copy a limited amount of result data back to the host.
+        const auto host_seeds = m_copy.to(track_params, m_cached_pinned_host_mr,
+                                          vecmem::copy::type::device_to_host);
         bound_track_parameters_collection_types::host result{
             &(m_host_mr.get())};
-        m_copy(track_params, result)->wait();
+        vecmem::copy host_copy;
+        host_copy(host_seeds, result)->wait();
         return result;
     }
     // If not, copy the measurements back to the host, and return
