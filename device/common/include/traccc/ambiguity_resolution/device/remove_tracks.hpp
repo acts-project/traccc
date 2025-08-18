@@ -113,6 +113,11 @@ struct remove_tracks_payload {
      * @brief The number of threads that can remove its corresponding track
      */
     unsigned int* n_valid_threads;
+
+    /**
+     * @brief View object to the vector of track count during removal process
+     */
+    vecmem::data::vector_view<int> track_count_view;
 };
 
 }  // namespace traccc::device

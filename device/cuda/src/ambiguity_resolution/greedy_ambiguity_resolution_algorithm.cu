@@ -365,6 +365,11 @@ greedy_ambiguity_resolution_algorithm::operator()(
     vecmem::data::vector_buffer<int> is_updated_buffer{n_tracks, m_mr.main};
     m_copy.get().setup(inverted_ids_buffer)->ignore();
 
+    // Count track id apperance during removal process
+    vecmem::data::vector_buffer<int> track_count_buffer{n_tracks, m_mr.main};
+    m_copy.get().setup(track_count_buffer)->ignore();
+    m_copy.get().memset(track_count_buffer, 0)->ignore();
+
     // Prefix sum buffer
     vecmem::data::vector_buffer<int> prefix_sums_buffer{n_tracks, m_mr.main};
     m_copy.get().setup(prefix_sums_buffer)->ignore();
@@ -511,7 +516,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .n_updated_tracks = n_updated_tracks_device.get(),
                 .updated_tracks_view = updated_tracks_buffer,
                 .is_updated_view = is_updated_buffer,
-                .n_valid_threads = n_valid_threads_device.get()});
+                .n_valid_threads = n_valid_threads_device.get(),
+                .track_count_view = track_count_buffer});
 
         // The seven kernels below are to keep sorted_ids sorted based on
         // the relative shared measurements and pvalues. This can be reduced
