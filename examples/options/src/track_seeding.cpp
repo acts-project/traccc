@@ -47,7 +47,7 @@ track_seeding::track_seeding() : interface("Track Seeding Options") {
     m_desc.add_options()(
         "seedfinder-deltaR-range",
         po::value(&m_delta_r_range)->default_value(m_delta_r_range),
-        "Distance range in radious between measurements within one seed [mm]");
+        "Radial distance between measurements [mm]");
 
     m_desc.add_options()(
         "seedfinder-impactMax",
@@ -62,7 +62,7 @@ track_seeding::track_seeding() : interface("Track Seeding Options") {
         "seedfinder-maxPtScattering",
         po::value(&m_seedfinder.maxPtScattering)
             ->default_value(m_seedfinder.maxPtScattering / unit<float>::GeV),
-        "Upper pt limit for scattering calculation [GeV]");
+        "Upper pT limit for scattering [GeV]");
 
     m_desc.add_options()("seedfinder-maxSeedsPerSpM",
                          po::value(&m_seedfinder.maxSeedsPerSpM)
@@ -73,6 +73,24 @@ track_seeding::track_seeding() : interface("Track Seeding Options") {
         po::value(&m_seedfinder.bFieldInZ)
             ->default_value(m_seedfinder.bFieldInZ / unit<float>::T),
         "B-field in Z direction [T]");
+    m_desc.add_options()(
+        "seedfinder-deltaInvHelixDiameter",
+        po::value(&m_seedfilter.deltaInvHelixDiameter)
+            ->default_value(m_seedfilter.deltaInvHelixDiameter *
+                            unit<float>::mm),
+        "Inverted radius delta for compatible seeds [mm^-1]");
+    m_desc.add_options()("seedfinder-impactWeightFactor",
+                         po::value(&m_seedfilter.impactWeightFactor)
+                             ->default_value(m_seedfilter.impactWeightFactor),
+                         "Weight factor for impact parameter [unitless]");
+    m_desc.add_options()("seedfinder-compatSeedWeight",
+                         po::value(&m_seedfilter.compatSeedWeight)
+                             ->default_value(m_seedfilter.compatSeedWeight),
+                         "Weight per compatible seed [unitless]");
+    m_desc.add_options()("seedfinder-compatSeedLimit",
+                         po::value(&m_seedfilter.compatSeedLimit)
+                             ->default_value(m_seedfilter.compatSeedLimit),
+                         "Maximum weighted compatible seeds [cardinal]");
 }
 
 track_seeding::operator seedfinder_config() const {
@@ -111,6 +129,8 @@ void track_seeding::read(const po::variables_map&) {
     m_seedfinder.maxPtScattering *= unit<float>::GeV;
     m_seedfinder.bFieldInZ *= unit<float>::T;
 
+    m_seedfilter.deltaInvHelixDiameter /= unit<float>::mm;
+
     m_seedfinder.setup();
 }
 
@@ -135,11 +155,15 @@ std::unique_ptr<configuration_printable> track_seeding::as_printable() const {
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Minimum track momentum",
         std::format("{:.2f} GeV", m_seedfinder.minPt / unit<float>::GeV)));
+
+    float theta = std::atan(1.f / m_seedfinder.cotThetaMax);
+    float eta = -std::log(std::tan(theta / 2.f));
+
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Maximum cotangent of theta angle",
-        std::format("{:.4f}", m_seedfinder.cotThetaMax)));
+        std::format("{:.4f} (eta = {:.2f})", m_seedfinder.cotThetaMax, eta)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
-        "Distance range in radious between measurements within one seed",
+        "Radial distance between measurements",
         std::format("[{:.2f} - {:.2f}] mm",
                     m_seedfinder.deltaRMin / unit<float>::mm,
                     m_seedfinder.deltaRMax / unit<float>::mm)));
@@ -150,7 +174,7 @@ std::unique_ptr<configuration_printable> track_seeding::as_printable() const {
         "Scattering angle sigma",
         std::format("{:.2f}", m_seedfinder.sigmaScattering)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
-        "Upper pt limit for scattering calculation",
+        "Upper pT limit for scattering",
         std::format("{:.2f} GeV",
                     m_seedfinder.maxPtScattering / unit<float>::GeV)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
@@ -159,6 +183,19 @@ std::unique_ptr<configuration_printable> track_seeding::as_printable() const {
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "B-field in Z direction",
         std::format("{:.2f} T", m_seedfinder.bFieldInZ / unit<float>::T)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Inverted radius delta for compatible seeds",
+        std::format("{:.5f} mm^-1",
+                    m_seedfilter.deltaInvHelixDiameter * unit<float>::mm)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Weight factor for impact parameter",
+        std::format("{:.2f}", m_seedfilter.impactWeightFactor)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Weight per compatible seed",
+        std::format("{:.2f}", m_seedfilter.compatSeedWeight)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Maximum weighted compatible seed",
+        std::format("{:d}", m_seedfilter.compatSeedLimit)));
 
     return cat;
 }
