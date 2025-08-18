@@ -91,8 +91,10 @@ struct simulator {
         // Update the actor config
         if (m_cfg.m_is_min_pT) {
             m_aborter_state.min_pT(m_cfg.m_min_p);
+            m_aborter_state.min_p(0.f);
         } else {
             m_aborter_state.min_p(m_cfg.m_min_p);
+            m_aborter_state.min_pT(0.f);
         }
         m_scatterer.do_energy_loss = m_cfg.do_energy_loss;
         m_scatterer.do_multiple_scattering = m_cfg.do_multiple_scattering;
