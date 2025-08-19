@@ -127,6 +127,8 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     typename traccc::finding_config cfg;
     cfg.ptc_hypothesis = ptc;
     cfg.chi2_max = 200.f;
+    cfg.min_p = 0;
+    cfg.min_pT = 10.f * unit<float>::MeV;
 
     // Finding algorithm object
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(cfg,

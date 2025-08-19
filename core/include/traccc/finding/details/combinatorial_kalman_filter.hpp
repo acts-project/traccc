@@ -507,11 +507,8 @@ combinatorial_kalman_filter(
             // Update the actor config
             s4.min_step_length = config.min_step_length_for_next_surface;
             s4.max_count = config.max_step_counts_for_next_surface;
-            if (config.is_min_pT) {
-                s3.min_pT(static_cast<scalar_type>(config.min_p_mag));
-            } else {
-                s3.min_p(static_cast<scalar_type>(config.min_p_mag));
-            }
+            s3.min_pT(static_cast<scalar_type>(config.min_pT));
+            s3.min_p(static_cast<scalar_type>(config.min_p));
 
             // Propagate to the next surface
             propagator.propagate(propagation, detray::tie(s0, s1, s2, s3, s4));
