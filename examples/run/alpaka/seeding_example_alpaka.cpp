@@ -130,15 +130,13 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                               detector_opts.grid_file);
 
     // Detector view object
-    traccc::default_detector::view det_view = detray::get_data(host_det);
+    const traccc::default_detector::host& const_host_det = host_det;
+    traccc::default_detector::view det_view = detray::get_data(const_host_det);
 
     // Copy objects
     vecmem::copy host_copy;
     vecmem::copy& copy = vo.copy();
     vecmem::copy& async_copy = vo.async_copy();
-
-    traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
-        track_state_d2h{mr, copy, logger().clone("TrackStateD2HCopyAlg")};
 
     // Seeding algorithms
     const traccc::seedfinder_config seedfinder_config(seeding_opts);
@@ -198,7 +196,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         traccc::host::track_params_estimation::output_type params;
         traccc::edm::track_candidate_collection<traccc::default_algebra>::host
             track_candidates{host_mr};
-        traccc::track_state_container_types::host track_states;
+        traccc::edm::track_fit_container<traccc::default_algebra>::host
+            track_states{host_mr};
 
         traccc::edm::seed_collection::buffer seeds_alpaka_buffer;
         traccc::bound_track_parameters_collection_types::buffer
@@ -207,8 +206,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
             track_candidates_alpaka_buffer;
 
-        traccc::track_state_container_types::buffer track_states_alpaka_buffer{
-            {{}, *(mr.host)}, {{}, *(mr.host), mr.host}};
+        traccc::edm::track_fit_container<traccc::default_algebra>::buffer
+            track_states_alpaka_buffer;
 
         {  // Start measuring wall time
             traccc::performance::timer wall_t("Wall time", elapsedTimes);
@@ -354,8 +353,14 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         copy(track_candidates_alpaka_buffer, track_candidates_alpaka)->wait();
 
         // Copy track states from device to host
-        traccc::track_state_container_types::host track_states_alpaka =
-            track_state_d2h(track_states_alpaka_buffer);
+        traccc::edm::track_fit_container<traccc::default_algebra>::host
+            track_states_alpaka{host_mr};
+        async_copy(track_states_alpaka_buffer.tracks,
+                   track_states_alpaka.tracks)
+            ->wait();
+        async_copy(track_states_alpaka_buffer.states,
+                   track_states_alpaka.states)
+            ->wait();
 
         if (accelerator_opts.compare_with_cpu) {
             // Show which event we are currently presenting the results for.
@@ -402,8 +407,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         n_seeds += seeds.size();
         n_found_tracks_alpaka += track_candidates_alpaka.size();
         n_found_tracks += track_candidates.size();
-        n_fitted_tracks_alpaka += track_states_alpaka.size();
-        n_fitted_tracks += track_states.size();
+        n_fitted_tracks_alpaka += track_states_alpaka.tracks.size();
+        n_fitted_tracks += track_states.tracks.size();
 
         /*------------
           Writer

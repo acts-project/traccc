@@ -19,7 +19,7 @@
 // Project include(s).
 #include "traccc/edm/device/sort_key.hpp"
 #include "traccc/edm/track_candidate_container.hpp"
-#include "traccc/edm/track_state.hpp"
+#include "traccc/edm/track_fit_container.hpp"
 #include "traccc/fitting/details/kalman_fitting_types.hpp"
 #include "traccc/fitting/device/fill_fitting_sort_keys.hpp"
 #include "traccc/fitting/fitting_config.hpp"
@@ -31,6 +31,9 @@
 // Thrust include(s).
 #include <thrust/execution_policy.h>
 #include <thrust/sort.h>
+
+// System include(s).
+#include <numeric>
 
 namespace traccc::cuda::details {
 
@@ -50,8 +53,10 @@ namespace traccc::cuda::details {
 /// @return A container of the fitted track states
 ///
 template <typename detector_t, typename bfield_t>
-track_state_container_types::buffer kalman_fitting(
-    const typename detector_t::view_type& det_view, const bfield_t& field_view,
+typename edm::track_fit_container<typename detector_t::algebra_type>::buffer
+kalman_fitting(
+    const typename detector_t::const_view_type& det_view,
+    const bfield_t& field_view,
     const typename edm::track_candidate_container<
         typename detector_t::algebra_type>::const_view& track_candidates_view,
     const fitting_config& config, const memory_resource& mr, vecmem::copy& copy,
@@ -68,14 +73,17 @@ track_state_container_types::buffer kalman_fitting(
     // Get the sizes of the track candidates in each track.
     const std::vector<unsigned int> candidate_sizes =
         copy.get_sizes(track_candidates_view.tracks);
+    const unsigned int n_states =
+        std::accumulate(candidate_sizes.begin(), candidate_sizes.end(), 0u);
 
     // Create the result buffer.
-    track_state_container_types::buffer track_states_buffer{
-        {n_tracks, mr.main},
-        {candidate_sizes, mr.main, mr.host,
-         vecmem::data::buffer_type::resizable}};
-    copy.setup(track_states_buffer.headers)->ignore();
-    copy.setup(track_states_buffer.items)->ignore();
+    typename edm::track_fit_container<typename detector_t::algebra_type>::buffer
+        track_states_buffer{
+            {candidate_sizes, mr.main, mr.host,
+             vecmem::data::buffer_type::resizable},
+            {n_states, mr.main, vecmem::data::buffer_type::resizable}};
+    copy.setup(track_states_buffer.tracks)->ignore();
+    copy.setup(track_states_buffer.states)->ignore();
 
     // Return early, if there are no tracks.
     if (n_tracks == 0) {
@@ -127,7 +135,9 @@ track_state_container_types::buffer kalman_fitting(
 
     // Run the fitting, using the sorted parameter IDs.
     fit_prelude(nBlocks, nThreads, 0, stream, param_ids_buffer,
-                track_candidates_view, track_states_buffer,
+                track_candidates_view,
+                {track_states_buffer.tracks, track_states_buffer.states,
+                 track_candidates_view.measurements},
                 param_liveness_buffer);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
     str.synchronize();
@@ -139,7 +149,8 @@ track_state_container_types::buffer kalman_fitting(
         .field_data = field_view,
         .param_ids_view = param_ids_buffer,
         .param_liveness_view = param_liveness_buffer,
-        .track_states_view = track_states_buffer,
+        .tracks_view = {track_states_buffer.tracks, track_states_buffer.states,
+                        track_candidates_view.measurements},
         .barcodes_view = seqs_buffer};
 
     for (std::size_t i = 0; i < config.n_iterations; ++i) {

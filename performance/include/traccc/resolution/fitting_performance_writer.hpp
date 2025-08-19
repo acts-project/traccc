@@ -13,9 +13,11 @@
 #include "traccc/utils/messaging.hpp"
 
 // Project include(s).
+#include "traccc/edm/measurement.hpp"
 #include "traccc/edm/particle.hpp"
+#include "traccc/edm/track_fit_collection.hpp"
 #include "traccc/edm/track_parameters.hpp"
-#include "traccc/edm/track_state.hpp"
+#include "traccc/edm/track_state_collection.hpp"
 #include "traccc/utils/event_data.hpp"
 
 // System include(s).
@@ -52,28 +54,36 @@ class fitting_performance_writer : public messaging {
 
     /// Fill the tracking results into the histograms
     ///
-    /// @param track_states_per_track vector of track states of a track
+    /// @param track The fitted track to measure/write the performance of
+    /// @param track_states All reconstructed track states
+    /// @param measurements All reconstructed measurements
     /// @param det detector object
     /// @param evt_map event map to find the truth values
     template <typename detector_t>
-    void write(const track_state_collection_types::host& track_states_per_track,
-               const fitting_result<traccc::default_algebra>& fit_res,
+    void write(const edm::track_fit_collection<
+                   traccc::default_algebra>::host::proxy_type track,
+               const edm::track_state_collection<traccc::default_algebra>::host&
+                   track_states,
+               const measurement_collection_types::host& measurements,
                const detector_t& det, event_data& evt_data,
                const detector_t::geometry_context& ctx = {}) {
 
         static_assert(std::same_as<typename detector_t::algebra_type,
                                    traccc::default_algebra>);
 
-        if (fit_res.fit_outcome != fitter_outcome::SUCCESS) {
+        if (track.fit_outcome() != track_fit_outcome::SUCCESS) {
             return;
         }
 
         // Get the first smoothed track state
-        const auto& trk_state = *std::find_if(
-            track_states_per_track.begin(), track_states_per_track.end(),
-            [](const auto& st) { return st.is_smoothed; });
-        assert(!trk_state.is_hole);
-        assert(trk_state.is_smoothed);
+        const unsigned int trk_state_idx =
+            *std::find_if(track.state_indices().begin(),
+                          track.state_indices().end(), [&](unsigned int idx) {
+                              return track_states.at(idx).is_smoothed();
+                          });
+        const auto trk_state = track_states.at(trk_state_idx);
+        assert(!trk_state.is_hole());
+        assert(trk_state.is_smoothed());
 
         bool use_found = !evt_data.m_found_meas_to_ptc_map.empty();
 
@@ -84,7 +94,7 @@ class fitting_performance_writer : public messaging {
             meas_to_param_map = use_found ? evt_data.m_found_meas_to_param_map
                                           : evt_data.m_meas_to_param_map;
 
-        const measurement meas = trk_state.get_measurement();
+        const measurement meas = measurements.at(trk_state.measurement_index());
 
         // Find the contributing particle
         // @todo: Use identify_contributing_particles function
@@ -111,8 +121,8 @@ class fitting_performance_writer : public messaging {
         truth_param.set_qop(ptc.charge / vector::norm(global_mom));
 
         // For the moment, only fill with the first measurements
-        write_res(truth_param, trk_state.smoothed(), ptc);
-        write_stat(fit_res, track_states_per_track);
+        write_res(truth_param, trk_state.smoothed_params(), ptc);
+        write_stat(track, track_states, measurements);
     }
 
     /// Writing caches into the file
@@ -125,8 +135,12 @@ class fitting_performance_writer : public messaging {
                    const particle& ptc);
 
     /// Non-templated part of the @c write(...) function
-    void write_stat(const fitting_result<traccc::default_algebra>& fit_res,
-                    const track_state_collection_types::host& track_states);
+    void write_stat(
+        const edm::track_fit_collection<
+            traccc::default_algebra>::host::proxy_type track,
+        const edm::track_state_collection<traccc::default_algebra>::host&
+            track_states,
+        const measurement_collection_types::host& measurements);
 
     /// Configuration for the tool
     config m_cfg;

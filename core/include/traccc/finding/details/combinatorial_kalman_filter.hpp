@@ -9,7 +9,7 @@
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate_collection.hpp"
-#include "traccc/edm/track_state.hpp"
+#include "traccc/edm/track_state_helpers.hpp"
 #include "traccc/finding/actors/ckf_aborter.hpp"
 #include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/finding/candidate_link.hpp"
@@ -253,23 +253,27 @@ combinatorial_kalman_filter(
              * Find tracks (CKF)
              *****************************************************************/
 
-            std::vector<std::tuple<candidate_link, track_state<algebra_type>>>
+            std::vector<std::tuple<candidate_link,
+                                   bound_track_parameters<algebra_type>>>
                 best_links;
 
             // Iterate over the measurements
             for (unsigned int item_id = range.first; item_id < range.second;
                  item_id++) {
 
-                const auto& meas = measurements[item_id];
+                // The measurement on surface to handle.
+                const measurement& meas = measurements.at(item_id);
 
-                track_state<algebra_type> trk_state(meas);
+                // Create a standalone track state object.
+                auto trk_state =
+                    edm::make_track_state<algebra_type>(measurements, item_id);
 
                 const bool is_line = sf.template visit_mask<is_line_visitor>();
 
                 // Run the Kalman update on a copy of the track parameters
                 const kalman_fitter_status res =
-                    gain_matrix_updater<algebra_type>{}(trk_state, in_param,
-                                                        is_line);
+                    gain_matrix_updater<algebra_type>{}(trk_state, measurements,
+                                                        in_param, is_line);
 
                 const traccc::scalar chi2 = trk_state.filtered_chi2();
 
@@ -285,9 +289,8 @@ combinatorial_kalman_filter(
                           .n_skipped = skip_counter,
                           .chi2 = chi2,
                           .chi2_sum = prev_chi2_sum + chi2,
-                          .ndf_sum = prev_ndf_sum +
-                                     trk_state.get_measurement().meas_dim},
-                         trk_state});
+                          .ndf_sum = prev_ndf_sum + meas.meas_dim},
+                         trk_state.filtered_params()});
                 }
             }
 
@@ -304,13 +307,13 @@ combinatorial_kalman_filter(
                                     << step << " and input parameter "
                                     << in_param_id);
             for (unsigned int i = 0; i < n_branches; ++i) {
-                const auto& [link, trk_state] = best_links[i];
+                const auto& [link, filtered_params] = best_links[i];
 
                 // Add the link to the links container
                 links[step].push_back(link);
 
                 // Add the updated parameter to the updated parameters
-                updated_params.push_back(trk_state.filtered());
+                updated_params.push_back(filtered_params);
                 TRACCC_VERBOSE("updated_params["
                                << updated_params.size() - 1
                                << "] = " << updated_params.back());
@@ -504,11 +507,8 @@ combinatorial_kalman_filter(
             // Update the actor config
             s4.min_step_length = config.min_step_length_for_next_surface;
             s4.max_count = config.max_step_counts_for_next_surface;
-            if (config.is_min_pT) {
-                s3.min_pT(static_cast<scalar_type>(config.min_p_mag));
-            } else {
-                s3.min_p(static_cast<scalar_type>(config.min_p_mag));
-            }
+            s3.min_pT(static_cast<scalar_type>(config.min_pT));
+            s3.min_p(static_cast<scalar_type>(config.min_p));
 
             // Propagate to the next surface
             propagator.propagate(propagation, detray::tie(s0, s1, s2, s3, s4));

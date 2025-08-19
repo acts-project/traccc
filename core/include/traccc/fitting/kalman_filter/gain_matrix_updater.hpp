@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -10,7 +10,9 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/definitions/track_parametrization.hpp"
-#include "traccc/edm/track_state.hpp"
+#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_helpers.hpp"
+#include "traccc/edm/track_state_collection.hpp"
 #include "traccc/fitting/status_codes.hpp"
 
 namespace traccc {
@@ -37,20 +39,24 @@ struct gain_matrix_updater {
     /// @param bound_params bound parameter
     ///
     /// @return true if the update succeeds
+    template <typename track_state_backend_t>
     [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status operator()(
-        track_state<algebra_t>& trk_state,
+        typename edm::track_state<track_state_backend_t>& trk_state,
+        const measurement_collection_types::const_device& measurements,
         const bound_track_parameters<algebra_t>& bound_params,
         const bool is_line) const {
 
-        const auto D = trk_state.get_measurement().meas_dim;
+        const auto D = measurements.at(trk_state.measurement_index()).meas_dim;
 
         assert(D == 1u || D == 2u);
 
-        return update(trk_state, bound_params, D, is_line);
+        return update(trk_state, measurements, bound_params, D, is_line);
     }
 
+    template <typename track_state_backend_t>
     [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status update(
-        track_state<algebra_t>& trk_state,
+        typename edm::track_state<track_state_backend_t>& trk_state,
+        const measurement_collection_types::const_device& measurements,
         const bound_track_parameters<algebra_t>& bound_params,
         const unsigned int dim, const bool is_line) const {
 
@@ -61,16 +67,15 @@ struct gain_matrix_updater {
         assert(!bound_params.is_invalid());
         assert(!bound_params.surface_link().is_invalid());
 
-        const auto meas = trk_state.get_measurement();
-
         // Some identity matrices
         // @TODO: Make constexpr work
         const auto I66 = matrix::identity<bound_matrix_type>();
         const auto I_m = matrix::identity<matrix_type<D, D>>();
 
         // Measurement data on surface
-        const matrix_type<D, 1> meas_local =
-            trk_state.template measurement_local<D>();
+        matrix_type<D, 1> meas_local;
+        edm::get_measurement_local<algebra_t>(
+            measurements.at(trk_state.measurement_index()), meas_local);
 
         assert((dim > 1) || (getter::element(meas_local, 1u, 0u) == 0.f));
 
@@ -80,7 +85,9 @@ struct gain_matrix_updater {
         // Predicted covaraince of bound track parameters
         const bound_matrix_type& predicted_cov = bound_params.covariance();
 
-        matrix_type<D, e_bound_size> H = meas.subs.template projector<D>();
+        matrix_type<D, e_bound_size> H =
+            measurements.at(trk_state.measurement_index())
+                .subs.template projector<D>();
 
         // Flip the sign of projector matrix element in case the first element
         // of line measurement is negative
@@ -94,7 +101,9 @@ struct gain_matrix_updater {
         }
 
         // Spatial resolution (Measurement covariance)
-        matrix_type<D, D> V = trk_state.template measurement_covariance<D>();
+        matrix_type<D, D> V;
+        edm::get_measurement_covariance<algebra_t>(
+            measurements.at(trk_state.measurement_index()), V);
 
         if (dim == 1) {
             getter::element(V, 1u, 1u) = 1.f;
@@ -148,14 +157,14 @@ struct gain_matrix_updater {
         }
 
         // Set the track state parameters
-        trk_state.filtered().set_vector(filtered_vec);
-        trk_state.filtered().set_covariance(filtered_cov);
+        trk_state.filtered_params().set_vector(filtered_vec);
+        trk_state.filtered_params().set_covariance(filtered_cov);
         trk_state.filtered_chi2() = getter::element(chi2, 0, 0);
 
         // Wrap the phi in the range of [-pi, pi]
-        wrap_phi(trk_state.filtered());
+        wrap_phi(trk_state.filtered_params());
 
-        assert(!trk_state.filtered().is_invalid());
+        assert(!trk_state.filtered_params().is_invalid());
 
         return kalman_fitter_status::SUCCESS;
     }

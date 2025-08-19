@@ -20,8 +20,8 @@
 #include "traccc/bfield/magnetic_field.hpp"
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
+#include "traccc/edm/track_fit_collection.hpp"
 #include "traccc/edm/track_parameters.hpp"
-#include "traccc/edm/track_state.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
@@ -44,7 +44,7 @@ namespace traccc::alpaka {
 /// At least as much as is implemented in the project at any given moment.
 ///
 class full_chain_algorithm
-    : public algorithm<vecmem::vector<fitting_result<default_algebra>>(
+    : public algorithm<edm::track_fit_collection<default_algebra>::host(
           const edm::silicon_cell_collection::host&)>,
       public messaging {
 
@@ -125,8 +125,10 @@ class full_chain_algorithm
 
     /// Host memory resource
     ::vecmem::memory_resource& m_host_mr;
+    /// Cached pinned host memory resource
+    mutable ::vecmem::binary_page_memory_resource m_cached_pinned_host_mr;
     /// Device caching memory resource
-    std::unique_ptr<::vecmem::binary_page_memory_resource> m_cached_device_mr;
+    mutable ::vecmem::binary_page_memory_resource m_cached_device_mr;
 
     /// Constant B field for the (seed) track parameter estimation
     traccc::vector3 m_field_vec;
@@ -143,7 +145,7 @@ class full_chain_algorithm
     /// Buffer holding the detector's payload on the device
     host_detector_type::buffer_type m_device_detector;
     /// View of the detector's payload on the device
-    host_detector_type::view_type m_device_detector_view;
+    host_detector_type::const_view_type m_device_detector_view;
 
     /// @name Sub-algorithms used by this full-chain algorithm
     /// @{

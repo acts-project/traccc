@@ -12,6 +12,7 @@
 #include "traccc/utils/particle.hpp"
 
 // System include(s).
+#include <format>
 #include <sstream>
 
 namespace traccc::opts {
@@ -64,21 +65,23 @@ track_finding::track_finding() : interface("Track Finding Options") {
                          po::value(&m_pdg_number)->default_value(m_pdg_number),
                          "PDG number for the particle hypothesis");
     m_desc.add_options()(
-        "min-total-momentum [GeV]",
-        po::value(&m_config.min_p_mag)->default_value(m_config.min_p_mag),
-        "Minimum total track momentum");
+        "min-total-momentum",
+        po::value(&m_config.min_p)->default_value(m_config.min_p),
+        "Minimum total track momentum [GeV]");
     m_desc.add_options()(
-        "min-transverse-momentum [GeV]",
-        po::value(&m_config.min_p_mag)->default_value(m_config.min_p_mag),
-        "Minimum transverse track momentum");
+        "min-transverse-momentum",
+        po::value(&m_config.min_pT)->default_value(m_config.min_pT),
+        "Minimum transverse track momentum [GeV]");
+    m_desc.add_options()(
+        "duplicate-removal-minimum-length",
+        po::value(&m_config.duplicate_removal_minimum_length)
+            ->default_value(m_config.duplicate_removal_minimum_length),
+        "Minimum track length for deduplication (0 to disable) [cardinal]");
 }
 
-void track_finding::read(const po::variables_map &vm) {
-
-    m_config.min_p_mag *= traccc::unit<float>::GeV;
-
-    // If not set as total momentum, interpret as transverse momentum
-    m_config.is_min_pT = vm["min-total-momentum"].defaulted();
+void track_finding::read(const po::variables_map &) {
+    m_config.min_p *= traccc::unit<float>::GeV;
+    m_config.min_pT *= traccc::unit<float>::GeV;
 }
 
 track_finding::operator finding_config() const {
@@ -117,17 +120,16 @@ std::unique_ptr<configuration_printable> track_finding::as_printable() const {
         "Max holes per candidate",
         std::to_string(m_config.max_num_skipping_per_cand)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Min track length for deduplication",
+        std::to_string(m_config.duplicate_removal_minimum_length)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
         "PDG number", std::to_string(m_pdg_number)));
-    // How to interpret the minimum track momentum value
-    if (m_config.is_min_pT) {
-        cat->add_child(std::make_unique<configuration_kv_pair>(
-            "Minimum transverse track momentum",
-            std::to_string(m_config.min_p_mag)));
-    } else {
-        cat->add_child(std::make_unique<configuration_kv_pair>(
-            "Minimum total track momentum",
-            std::to_string(m_config.min_p_mag)));
-    }
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Minimum pT",
+        std::format("{} GeV", m_config.min_pT / traccc::unit<float>::GeV)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Minimum p",
+        std::format("{} GeV", m_config.min_p / traccc::unit<float>::GeV)));
 
     return cat;
 }

@@ -10,7 +10,7 @@
 #include <cuda_runtime.h>
 
 #include "traccc/edm/track_candidate_container.hpp"
-#include "traccc/edm/track_state.hpp"
+#include "traccc/edm/track_fit_container.hpp"
 
 namespace traccc::cuda {
 void fit_prelude(const dim3& grid_size, const dim3& block_size,
@@ -18,6 +18,6 @@ void fit_prelude(const dim3& grid_size, const dim3& block_size,
                  vecmem::data::vector_view<const unsigned int> param_ids_view,
                  edm::track_candidate_container<default_algebra>::const_view
                      track_candidates_view,
-                 track_state_container_types::view track_states_view,
+                 edm::track_fit_container<default_algebra>::view tracks_view,
                  vecmem::data::vector_view<unsigned int> param_liveness_view);
 }

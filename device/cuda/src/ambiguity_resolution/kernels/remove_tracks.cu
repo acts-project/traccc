@@ -6,6 +6,7 @@
  */
 
 // Project include(s).
+#include "traccc/definitions/math.hpp"
 #include "traccc/utils/pair.hpp"
 
 // Local include(s).
@@ -110,6 +111,7 @@ __launch_bounds__(512) __global__
     vecmem::device_vector<unsigned int> updated_tracks(
         payload.updated_tracks_view);
     vecmem::device_vector<int> is_updated(payload.is_updated_view);
+    vecmem::device_vector<int> track_count(payload.track_count_view);
 
     if (threadIndex == 0) {
         *(payload.n_removable_tracks) = 0;
@@ -341,6 +343,7 @@ __launch_bounds__(512) __global__
 
     bool active = false;
     unsigned int pos1;
+    int alive_trk_id = 0;
 
     if (!is_duplicate && is_valid_thread) {
 
@@ -396,33 +399,27 @@ __launch_bounds__(512) __global__
                 track_status.begin();
 
             pos1 = atomicAdd(&n_updating_threads, 1);
+            alive_trk_id = static_cast<int>(tracks[alive_idx]);
 
-            sh_buffer[pos1] = static_cast<int>(tracks[alive_idx]);
+            sh_buffer[pos1] = alive_trk_id;
+            atomicAdd(&track_count[alive_trk_id], 1);
 
-            auto tid = sh_buffer[pos1];
+            const auto m_count = static_cast<unsigned int>(
+                thrust::count(thrust::seq, meas_ids[alive_trk_id].begin(),
+                              meas_ids[alive_trk_id].end(), id));
 
-            const auto m_count = static_cast<unsigned int>(thrust::count(
-                thrust::seq, meas_ids[tid].begin(), meas_ids[tid].end(), id));
-
-            const unsigned int N_S =
-                vecmem::device_atomic_ref<unsigned int>(n_shared.at(tid))
-                    .fetch_sub(m_count);
+            const unsigned int N_S = vecmem::device_atomic_ref<unsigned int>(
+                                         n_shared.at(alive_trk_id))
+                                         .fetch_sub(m_count);
         }
     }
 
     __syncthreads();
 
     if (active) {
-        auto tid = sh_buffer[pos1];
-        bool already_pushed = false;
-        for (unsigned int i = 0; i < pos1; ++i) {
-            if (sh_buffer[i] == tid) {
-                already_pushed = true;
-                break;
-            }
-        }
 
-        if (!already_pushed) {
+        auto count = atomicAdd(&track_count[alive_trk_id], -1);
+        if (count == 1) {
 
             // Write updated track IDs
             vecmem::device_atomic_ref<unsigned int> num_updated_tracks(
@@ -430,11 +427,12 @@ __launch_bounds__(512) __global__
 
             const unsigned int pos2 = num_updated_tracks.fetch_add(1);
 
-            updated_tracks[pos2] = tid;
-            is_updated[tid] = 1;
+            updated_tracks[pos2] = alive_trk_id;
+            is_updated[alive_trk_id] = 1;
 
-            rel_shared.at(tid) = static_cast<traccc::scalar>(n_shared.at(tid)) /
-                                 static_cast<traccc::scalar>(n_meas.at(tid));
+            rel_shared.at(alive_trk_id) = math::div_ieee754(
+                static_cast<traccc::scalar>(n_shared.at(alive_trk_id)),
+                static_cast<traccc::scalar>(n_meas.at(alive_trk_id)));
         }
     }
 }

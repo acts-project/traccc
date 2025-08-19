@@ -199,7 +199,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
         finding_algorithm::output_type track_candidates{host_mr};
         traccc::host::greedy_ambiguity_resolution_algorithm::output_type
             resolved_track_candidates{host_mr};
-        fitting_algorithm::output_type track_states{&host_mr};
+        fitting_algorithm::output_type track_states{host_mr};
 
         {  // Start measuring wall time.
             traccc::performance::timer timer_wall{"Wall time", elapsedTimes};
@@ -320,7 +320,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
             n_seeds += seeds.size();
             n_found_tracks += track_candidates.size();
             n_ambiguity_free_tracks += resolved_track_candidates.size();
-            n_fitted_tracks += track_states.size();
+            n_fitted_tracks += track_states.tracks.size();
 
         }  // Stop measuring Wall time.
 
@@ -341,19 +341,18 @@ int seq_run(const traccc::opts::input_data& input_opts,
                 vecmem::get_data(spacepoints_per_event),
                 vecmem::get_data(measurements_per_event), evt_data);
             find_performance_writer.write(
-                vecmem::get_data(track_candidates),
-                vecmem::get_data(measurements_per_event), evt_data);
+                {vecmem::get_data(track_candidates),
+                 vecmem::get_data(measurements_per_event)},
+                evt_data);
             ar_performance_writer.write(
-                vecmem::get_data(resolved_track_candidates),
-                vecmem::get_data(measurements_per_event), evt_data);
+                {vecmem::get_data(resolved_track_candidates),
+                 vecmem::get_data(measurements_per_event)},
+                evt_data);
 
-            for (unsigned int i = 0; i < track_states.size(); i++) {
-                const auto& trk_states_per_track = track_states.at(i).items;
-
-                const auto& fit_res = track_states[i].header;
-
-                fit_performance_writer.write(trk_states_per_track, fit_res,
-                                             detector, evt_data);
+            for (unsigned int i = 0; i < track_states.tracks.size(); i++) {
+                fit_performance_writer.write(
+                    track_states.tracks.at(i), track_states.states,
+                    measurements_per_event, detector, evt_data);
             }
         }
     }

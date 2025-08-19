@@ -41,17 +41,28 @@ TRACCC_DEVICE inline bool find_valid_index(
     return false;
 }
 
-__global__ void rearrange_tracks(device::rearrange_tracks_payload payload) {
+__launch_bounds__(1024) __global__
+    void rearrange_tracks(device::rearrange_tracks_payload payload) {
 
     if (*(payload.terminate) == 1 || *(payload.n_updated_tracks) == 0) {
         return;
     }
 
-    auto gid = threadIdx.x + blockIdx.x * blockDim.x;
+    auto gid = threadIdx.x / nThreads_per_track +
+               blockIdx.x * (blockDim.x / nThreads_per_track);
     const unsigned int n_accepted = *(payload.n_accepted);
 
-    if (gid >= n_accepted) {
-        return;
+    auto N = *(payload.n_updated_tracks);
+
+    int neff_threads = (N + nThreads_per_track - 1) / nThreads_per_track;
+
+    if (neff_threads > nThreads_per_track) {
+        neff_threads = nThreads_per_track;
+    }
+
+    bool is_valid_thread = true;
+    if (threadIdx.x % nThreads_per_track >= neff_threads || gid >= n_accepted) {
+        is_valid_thread = false;
     }
 
     vecmem::device_vector<const unsigned int> sorted_ids(
@@ -68,116 +79,139 @@ __global__ void rearrange_tracks(device::rearrange_tracks_payload payload) {
     vecmem::device_vector<unsigned int> temp_sorted_ids(
         payload.temp_sorted_ids_view);
 
-    const auto tid = sorted_ids[gid];
-    auto rel_sh_ref = rel_shared[tid];
-    auto pval_ref = pvals[tid];
-    int shifted_idx = static_cast<int>(gid);
-    auto N = *(payload.n_updated_tracks);
+    __shared__ int shifted_indices[1024];
+    auto& shifted_idx = shifted_indices[threadIdx.x / nThreads_per_track];
+    unsigned int tid = std::numeric_limits<unsigned int>::max();
 
-    if (is_updated[tid]) {
+    if (is_valid_thread) {
 
-        if (gid > 0) {
+        tid = sorted_ids[gid];
+        auto rel_sh_ref = rel_shared[tid];
+        auto pval_ref = pvals[tid];
 
-            unsigned int left = 0;
-            unsigned int right = gid;
+        shifted_idx = static_cast<int>(gid);
 
-            bool first_iteration = true;
-            while (right > left) {
+        int stride = (N + neff_threads - 1) / neff_threads;
 
-                const bool find_left =
-                    find_valid_index(left, 0, gid, sorted_ids, is_updated);
+        int ini_idx = stride * (threadIdx.x % nThreads_per_track);
+        int fin_idx = std::min(ini_idx + stride, static_cast<int>(N));
 
-                if (!find_left) {
+        if (is_updated[tid]) {
+
+            if (gid > 0) {
+
+                unsigned int left = 0;
+                unsigned int right = gid;
+
+                bool first_iteration = true;
+
+                if (threadIdx.x % nThreads_per_track == 0) {
+
+                    while (right > left) {
+
+                        const bool find_left = find_valid_index(
+                            left, 0, gid, sorted_ids, is_updated);
+
+                        if (!find_left) {
+                            break;
+                        }
+
+                        const bool find_right = find_valid_index(
+                            right, 0, gid, sorted_ids, is_updated);
+
+                        if (!find_right) {
+                            break;
+                        }
+
+                        if (first_iteration) {
+                            const auto right_idx = sorted_ids[right];
+                            auto rel_sh = rel_shared[right_idx];
+                            auto pval = pvals[right_idx];
+
+                            if (rel_sh < rel_sh_ref ||
+                                (rel_sh == rel_sh_ref && pval >= pval_ref)) {
+                                left = gid;
+                                break;
+                            }
+                        }
+
+                        first_iteration = false;
+
+                        unsigned int mid = left + (right - left) / 2;
+
+                        const bool find_mid = find_valid_index(
+                            mid, left, right - 1, sorted_ids, is_updated);
+
+                        if (find_mid) {
+
+                            const auto mid_idx = sorted_ids[mid];
+                            auto rel_sh = rel_shared[mid_idx];
+                            auto pval = pvals[mid_idx];
+
+                            if (rel_sh < rel_sh_ref ||
+                                (rel_sh == rel_sh_ref && pval >= pval_ref)) {
+
+                                left = mid + 1;
+                            } else {
+                                right = mid;
+                            }
+                        }
+                    }
+
+                    int delta = delta =
+                        gid - left - (prefix_sums[gid] - prefix_sums[left]);
+
+                    if (!is_updated[sorted_ids[left]]) {
+                        delta++;
+                    }
+
+                    atomicAdd(&shifted_idx, -delta);
+                }
+            }
+
+            for (int i = ini_idx; i < fin_idx; i++) {
+
+                auto id = updated_tracks[i];
+
+                if (inverted_ids[id] < gid) {
+                    atomicAdd(&shifted_idx, -1);
+                }
+            }
+
+            int offset = 0;
+            for (int i = ini_idx; i < fin_idx; i++) {
+                if (updated_tracks[i] == tid) {
+                    offset = i;
                     break;
                 }
+            }
+            if (offset != 0) {
+                atomicAdd(&shifted_idx, offset);
+            }
+        } else {
 
-                const bool find_right =
-                    find_valid_index(right, 0, gid, sorted_ids, is_updated);
+            for (int i = ini_idx; i < fin_idx; i++) {
 
-                if (!find_right) {
-                    break;
-                }
+                auto id = updated_tracks[i];
+                auto rel_sh = rel_shared[id];
+                auto pval = pvals[id];
 
-                if (first_iteration) {
-                    auto rel_sh = rel_shared[sorted_ids[right]];
-                    auto pval = pvals[sorted_ids[right]];
-
-                    if (rel_sh < rel_sh_ref ||
-                        (rel_sh == rel_sh_ref && pval >= pval_ref)) {
-                        left = gid;
-                        break;
+                if (inverted_ids[id] > gid) {
+                    if (rel_sh < rel_sh_ref) {
+                        atomicAdd(&shifted_idx, 1);
+                    } else if (rel_sh == rel_sh_ref && pval > pval_ref) {
+                        atomicAdd(&shifted_idx, 1);
                     }
-                }
-
-                first_iteration = false;
-
-                unsigned int mid = left + (right - left) / 2;
-
-                const bool find_mid = find_valid_index(mid, left, right - 1,
-                                                       sorted_ids, is_updated);
-
-                if (find_mid) {
-
-                    auto rel_sh = rel_shared[sorted_ids[mid]];
-                    auto pval = pvals[sorted_ids[mid]];
-
-                    if (rel_sh < rel_sh_ref ||
-                        (rel_sh == rel_sh_ref && pval >= pval_ref)) {
-
-                        left = mid + 1;
-                    } else {
-                        right = mid;
-                    }
-                }
-            }
-
-            int delta = 0;
-
-            if (is_updated[sorted_ids[left]]) {
-                delta = gid - left - (prefix_sums[gid] - prefix_sums[left]);
-            } else {
-                delta = gid - left - (prefix_sums[gid] - prefix_sums[left] - 1);
-            }
-
-            shifted_idx -= delta;
-        }
-
-        for (int i = 0; i < N; i++) {
-
-            auto id = updated_tracks[i];
-
-            if (inverted_ids[id] < gid) {
-                shifted_idx--;
-            }
-        }
-
-        int offset = 0;
-        for (int i = 0; i < N; i++) {
-            if (updated_tracks[i] == tid) {
-                offset = i;
-                break;
-            }
-        }
-        shifted_idx += offset;
-
-    } else {
-        for (int i = 0; i < N; i++) {
-
-            auto id = updated_tracks[i];
-            auto rel_sh = rel_shared[id];
-            auto pval = pvals[id];
-
-            if (inverted_ids[id] > gid) {
-                if (rel_sh < rel_sh_ref) {
-                    shifted_idx++;
-                } else if (rel_sh == rel_sh_ref && pval > pval_ref) {
-                    shifted_idx++;
                 }
             }
         }
     }
 
-    temp_sorted_ids.at(shifted_idx) = tid;
+    __syncthreads();
+
+    if (is_valid_thread && (threadIdx.x % nThreads_per_track) == 0) {
+        temp_sorted_ids.at(shifted_idx) = tid;
+    }
 }
 
 }  // namespace traccc::cuda::kernels

@@ -21,6 +21,7 @@ full_chain_algorithm::full_chain_algorithm(
     const magnetic_field& field, detector_type* detector,
     std::unique_ptr<const traccc::Logger> logger)
     : messaging(logger->clone()),
+      m_mr(mr),
       m_copy{std::make_unique<vecmem::copy>()},
       m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
       m_field(field),
@@ -79,14 +80,15 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
 
         // Run the track fitting, and return its results.
         return m_fitting(
-            *m_detector, m_field,
-            {vecmem::get_data(track_candidates), measurements_view});
+                   *m_detector, m_field,
+                   {vecmem::get_data(track_candidates), measurements_view})
+            .tracks;
     }
     // If not, just return an empty object.
     else {
 
         // Return an empty object.
-        return {};
+        return output_type{m_mr.get()};
     }
 }
 

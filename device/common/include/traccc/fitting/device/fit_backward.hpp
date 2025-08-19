@@ -22,20 +22,23 @@ TRACCC_HOST_DEVICE inline void fit_backward(
     vecmem::device_vector<const unsigned int> param_ids(payload.param_ids_view);
     vecmem::device_vector<unsigned int> param_liveness(
         payload.param_liveness_view);
-    track_state_container_types::device track_states(payload.track_states_view);
+    typename edm::track_fit_container<
+        typename fitter_t::detector_type::algebra_type>::device
+        tracks(payload.tracks_view);
 
-    if (globalIndex >= track_states.size()) {
+    if (globalIndex >= tracks.tracks.size()) {
         return;
     }
 
     const unsigned int param_id = param_ids.at(globalIndex);
+    auto track = tracks.tracks.at(param_id);
 
     // Run fitting
     fitter_t fitter(det, payload.field_data, cfg);
 
     if (param_liveness.at(param_id) > 0u) {
         typename fitter_t::state fitter_state(
-            track_states.at(param_id).items,
+            track, tracks.states, tracks.measurements,
             *(payload.barcodes_view.ptr() + param_id));
 
         kalman_fitter_status fit_status = fitter.smooth(fitter_state);
@@ -48,7 +51,7 @@ TRACCC_HOST_DEVICE inline void fit_backward(
 
             assert(fit_status == kalman_fitter_status::SUCCESS);
 
-            track_states.at(param_id).header = fitter_state.m_fit_res;
+            track = fitter_state.m_fit_res;
         } else {
             param_liveness.at(param_id) = 0u;
         }

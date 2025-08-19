@@ -12,5 +12,7 @@
 
 namespace traccc::cuda::kernels {
 
+constexpr const int nThreads_per_track = 4;
+
 __global__ void rearrange_tracks(device::rearrange_tracks_payload payload);
-}
+}  // namespace traccc::cuda::kernels

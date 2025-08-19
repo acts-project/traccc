@@ -25,6 +25,7 @@
 #include "./kernels/sort_tracks_per_measurement.cuh"
 #include "./kernels/sort_updated_tracks.cuh"
 #include "traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
+#include "traccc/definitions/math.hpp"
 
 // Thrust include(s).
 #include <thrust/execution_policy.h>
@@ -42,7 +43,8 @@ namespace traccc::cuda {
 struct devide_op {
     TRACCC_HOST_DEVICE
     traccc::scalar operator()(unsigned int a, unsigned int b) const {
-        return static_cast<traccc::scalar>(a) / static_cast<traccc::scalar>(b);
+        return math::div_ieee754(static_cast<traccc::scalar>(a),
+                                 static_cast<traccc::scalar>(b));
     }
 };
 
@@ -363,6 +365,11 @@ greedy_ambiguity_resolution_algorithm::operator()(
     vecmem::data::vector_buffer<int> is_updated_buffer{n_tracks, m_mr.main};
     m_copy.get().setup(inverted_ids_buffer)->ignore();
 
+    // Count track id apperance during removal process
+    vecmem::data::vector_buffer<int> track_count_buffer{n_tracks, m_mr.main};
+    m_copy.get().setup(track_count_buffer)->ignore();
+    m_copy.get().memset(track_count_buffer, 0)->ignore();
+
     // Prefix sum buffer
     vecmem::data::vector_buffer<int> prefix_sums_buffer{n_tracks, m_mr.main};
     m_copy.get().setup(prefix_sums_buffer)->ignore();
@@ -415,6 +422,11 @@ greedy_ambiguity_resolution_algorithm::operator()(
     unsigned int nThreads_full = 1024;
     unsigned int nBlocks_full = (n_tracks + 1023) / 1024;
 
+    unsigned int nThreads_rearrange = 1024;
+    unsigned int nBlocks_rearrange =
+        (n_accepted + (nThreads_rearrange / kernels::nThreads_per_track) - 1) /
+        (nThreads_rearrange / kernels::nThreads_per_track);
+
     // Compute the threadblock dimension for scanning kernels
     auto compute_scan_config = [&](unsigned int n_accepted) {
         unsigned int nThreads_scan = m_warp_size * 4;
@@ -457,6 +469,10 @@ greedy_ambiguity_resolution_algorithm::operator()(
         scan_dim = compute_scan_config(n_accepted);
         nThreads_scan = scan_dim.first;
         nBlocks_scan = scan_dim.second;
+        nBlocks_rearrange =
+            (n_accepted + (nThreads_rearrange / kernels::nThreads_per_track) -
+             1) /
+            (nThreads_rearrange / kernels::nThreads_per_track);
 
         /*
         CUDA kernel sequence with multiple streams
@@ -522,8 +538,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .n_accepted = n_accepted_device.get(),
                 .n_shared_view = n_shared_buffer,
                 .terminate = terminate_device.get(),
-                .max_shared = max_shared_device.get(),
-                .is_updated_view = is_updated_buffer});
+                .max_shared = max_shared_device.get()});
 
         kernels::remove_tracks<<<1, 512, 0, stream>>>(
             device::remove_tracks_payload{
@@ -546,7 +561,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .n_updated_tracks = n_updated_tracks_device.get(),
                 .updated_tracks_view = updated_tracks_buffer,
                 .is_updated_view = is_updated_buffer,
-                .n_valid_threads = n_valid_threads_device.get()});
+                .n_valid_threads = n_valid_threads_device.get(),
+                .track_count_view = track_count_buffer});
 
         // Record the event after remove_tracks
         cudaEvent_t event_removal;
@@ -639,7 +655,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
         cudaStreamWaitEvent(stream, event_fill, 0);
         cudaStreamWaitEvent(stream, event_scan, 0);
 
-        kernels::rearrange_tracks<<<nBlocks_adaptive, nThreads_adaptive, 0,
+        kernels::rearrange_tracks<<<nBlocks_rearrange, nThreads_rearrange, 0,
                                     stream>>>(device::rearrange_tracks_payload{
             .sorted_ids_view = sorted_ids_buffer,
             .inverted_ids_view = inverted_ids_buffer,

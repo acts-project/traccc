@@ -34,7 +34,7 @@ struct find_tracks_payload {
     /**
      * @brief View object to the tracking detector description
      */
-    typename detector_t::view_type det_data;
+    typename detector_t::const_view_type det_data;
 
     /**
      * @brief View object to the vector of bound track parameters

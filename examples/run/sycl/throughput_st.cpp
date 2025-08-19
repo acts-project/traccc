@@ -13,8 +13,6 @@
 int main(int argc, char* argv[]) {
 
     // Execute the throughput test.
-    static const bool use_host_caching = true;
     return traccc::throughput_st<traccc::sycl::full_chain_algorithm>(
-        "Single-threaded SYCL GPU throughput tests", argc, argv,
-        use_host_caching);
+        "Single-threaded SYCL GPU throughput tests", argc, argv);
 }

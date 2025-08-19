@@ -9,8 +9,6 @@
 #include "traccc/bfield/construct_const_bfield.hpp"
 #include "traccc/bfield/magnetic_field_types.hpp"
 #include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
-#include "traccc/device/container_d2h_copy_alg.hpp"
-#include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
@@ -68,7 +66,7 @@ TEST_P(CkfToyDetectorTests, Run) {
         .add_file(path + "toy_detector_homogeneous_material.json")
         .add_file(path + "toy_detector_surface_grids.json");
 
-    auto [host_det, names] =
+    const auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);
 
     const auto field = traccc::construct_const_bfield(B);
@@ -124,9 +122,6 @@ TEST_P(CkfToyDetectorTests, Run) {
 
     // Copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
-
-    traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
-        track_state_d2h{mr, copy};
 
     // Seed generator
     seed_generator<host_detector_type> sg(host_det, stddevs);
