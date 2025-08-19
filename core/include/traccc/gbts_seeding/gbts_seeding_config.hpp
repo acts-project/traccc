@@ -21,11 +21,27 @@
 namespace traccc::device {
 //where to put these definitions?
 struct gbts_layerInfo {
-	bool isEndcap{};
-	int etaBin0{};
-	int numBins{};
-	float minEta{};
-	float delatEta{};
+	std::vector<bool> isEndcap;
+	std::vector<int> etaBin0;
+	std::vector<int> numBins;
+	std::vector<float> minEta;
+	std::vector<float> delatEta;
+
+	void reserve(int n) {
+		isEndCap.reserve(n);
+		etaBin0.reserve(n);
+		numBins.reserve(n);
+		minEta.reserve(n);
+		deltaEta.reserve(n);
+	}
+
+	void addLayer(bool isEnd, int firstBin, int nBins, float mEta, float dEta) {
+		isEndCap.push_back(isEnd);
+		etaBin0.push_back(firstBin);
+		numBins.push_back(nBins);
+		minEta.push_back(mEta);
+		deltaEta.push_back(dEta);
+	}
 };
 
 enum class gbts_consts : unsigned short {
