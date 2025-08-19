@@ -21,20 +21,20 @@
 namespace traccc::device {
 //where to put these definitions?
 struct gbts_layerInfo {
-	std::vector<bool> isEndcap;
+	std::vector<char> isEndcap;
 	//etaBin0 and numBins
 	std::vector<std::pair<int, int>> info;
 	//minEta and deltaEta
 	std::vector<std::pair<float, float>> geo;
 
 	void reserve(int n) {
-		isEndCap.reserve(n);
+		isEndcap.reserve(n);
 		info.reserve(n);
 		geo.reserve(n);
 	}
 
 	void addLayer(bool isEnd, int firstBin, int nBins, float minEta, float etaBinWidth) {
-		isEndCap.push_back(isEnd);
+		isEndcap.push_back(isEnd);
 		info.push_back(std::make_pair(nBins, firstBin));
 		geo.push_back(std::make_pair(minEta, etaBinWidth));
 	}
@@ -61,8 +61,8 @@ enum class gbts_consts : unsigned short {
 namespace traccc {
 
 struct gbts_seedfinder_config {
-	setLinkingScheme(const std::vector<std::pair<int, int>>& binTables, const std::vector<device::gbts_layerInfo>& layerInfo,
-              const std::vector<std::pair<uint64_t, int>>& detrayBarcodeBinning, float minPt);
+	bool setLinkingScheme(const std::vector<std::pair<int, std::vector<int>>>& binTables, const device::gbts_layerInfo layerInfo,
+    std::vector<std::pair<uint64_t, short>>& detrayBarcodeBinning, float minPt);
 
 	//layer linking and geometry	
 	std::vector<std::pair<int, int>> binTables{};

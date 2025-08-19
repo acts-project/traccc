@@ -7,7 +7,6 @@
 
 #include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 
-#include <limits>
 #include <algorithm>
 
 namespace traccc {
@@ -16,23 +15,23 @@ namespace traccc {
 //the layerInfo should really be calculated from the barcodeBinning
 //BarcodeBinning pair is detray barcode and bin index (corrisponding to the layers in layerInfo) 
 //minPt in MeV
-bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, std::vector<int>>>& input_binTables, const device::gbts_layerInfo& input_layerInfo,
-	  const std::vector<std::pair<uint64_t, short>>& detrayBarcodeBinning, float minPt = 900.0f) {
+bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, std::vector<int>>>& input_binTables, const device::gbts_layerInfo input_layerInfo,
+	 std::vector<std::pair<uint64_t, short>>& detrayBarcodeBinning, float minPt = 900.0f) {
 
 	//copy layer-eta binning infomation
 	layerInfo = input_layerInfo;
 	// unroll binTables
 	for(std::pair<int, std::vector<int>> binPairs : input_binTables) {
-		for(int bin2 : binPairs) binTables.push_back(std::make_pair<binPairs.first, bin2>);
+		for(int bin2 : binPairs.second) binTables.push_back(std::make_pair(binPairs.first, bin2));
 	}
 
 	//bin by volume	
-	std::sort(detrayBarcodeBinning, [](const std::pair<uint64_t, short> a, const std::pair<uint64_t, short> b) {return a.first > b.first;});
+	std::sort(detrayBarcodeBinning.begin(), detrayBarcodeBinning.end(), [](const std::pair<uint64_t, short> a, const std::pair<uint64_t, short> b) {return a.first > b.first;});
 
 	bool layerChange     = false;
 	short current_layer  = -1; 
 	short current_volume = -1;	
-	unsigned int largest_volume_index = 0;
+	short largest_volume_index = 0;
 	std::vector<std::pair<int, short>> volumeToLayerMap_unordered;
 
 	for(std::pair<uint64_t, short> barcodeLayerPair : detrayBarcodeBinning) {
@@ -40,7 +39,7 @@ bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, s
 		
 		detray::geometry::barcode barcode(barcodeLayerPair.first);
 		if(current_volume == -1) current_volume = static_cast<short>(barcode.volume());		
-		else if(current_volume != barcode.volume()) {	
+		else if(current_volume != static_cast<short>(barcode.volume())) {	
 			//reached the end of this volume so add it to the maps
 			short bin = -1*current_layer;
 			if(layerChange) {
@@ -60,7 +59,7 @@ bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, s
 		else if(current_layer != barcodeLayerPair.second) {layerChange = true;}	
 
 		//save surfaces incase volume is not encommpassed by a layer
-		surfacesInVolume.push_back(std::array<unsigned int, 2>{static_cast<unsigned int>(barcode.id()), static_cast<unsigned int>(surfaceLayerPair.second)});
+		surfacesInVolume.push_back(std::array<unsigned int, 2>{static_cast<unsigned int>(barcode.id()), static_cast<unsigned int>(barcodeLayerPair.second)});
 	}
 	// make volume by layer map
 	volumeToLayerMap = std::make_shared<int[]>(largest_volume_index);
@@ -78,7 +77,9 @@ bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, s
 	maxVolIndex    = largest_volume_index;
 	nLayers        = layerInfo.isEndcap.size();
 	surfaceMapSize = surfaceToLayerMap.size();
-	if(surfaceMapSize > std::numeric_limits<short>::max) return false;
+	if(surfaceMapSize > SHRT_MAX) {
+		return false;
+	}
 	return true;
 }
 
