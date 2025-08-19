@@ -16,6 +16,12 @@
 
 namespace traccc::cuda {
 
+struct gpu_gbts_layerInfo {
+	bool* isEndcap;
+	int*
+
+};
+
 struct gbts_ctx {
 	//counters
 	unsigned int nSp{};
@@ -25,20 +31,22 @@ struct gbts_ctx {
 	//nEdges, nConnections, nConnectedEdges, .., nSeeds
 	unsigned int* d_counters;	
 
-	//NodeMaking
+	//node making
 	unsigned int* d_layerCounts{};
 	unsigned short* d_spacepointsLayer{};
 	//begin_idx + 1 for the surfaceToLayerMap or -layerBin if one to one
 	int* d_volumeToLayerMap{};	
 	//surface_id, layerBin
 	uint2* d_surfaceToLayerMap{};
-
-	traccc::device::gbts_layerInfo* d_layerInfo{};
-
+	bool* d_layerIEndcap{};
+	
 	//x,y,z,cluster width in eta
 	float4* d_reducedSP{};
 	//output of layer binning
 	float4* d_sp_params{};	
+	
+	int4* d_layerInfo{};
+	float2* d_layerGeo{};
 
 	//GraphMaking
 
@@ -74,11 +82,11 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	cudaMemcpyAsync(ctx.d_volumeToLayerMap, m_config.volumeToLayerMap.get(), sizeof(int)*m_config.maxVolIndex, cudaMemcpyHostToDevice, stream);
 	cudaMemcpyAsync(ctx.d_surfaceToLayerMap, m_config.surfaceToLayerMap.data(), sizeof(uint2)*m_config.surfaceMapSize, cudaMemcpyHostToDevice, stream);
 
-	cudaMalloc(&ctx.d_layerInfo, sizeof(traccc::device::gbts_layerInfo)*m_config.nLayers);
-	cudaMemcpyAsync(ctx.d_layerInfo, m_config.layerInfo.data(), sizeof(traccc::device::gbts_layerInfo)*m_config.nLayers, cudaMemcpyHostToDevice, stream);	
-
+	cudaMalloc(&ctx.d_layerIsEndcap, sizeof(bool)*m_config.nLayers);
+	cudaMemcpyAsync(ctx.d_layerIsEndcap, m_config.layerInfo.isEndcap.data(), sizeof(bool)*m_config.nLayers, cudaMemcpyHostToDevice, stream);	
+	
 	kernels::count_sp_by_layer<<<nBlocks,nThreads,0,stream>>>(spacepoints,measurements,
-	                            ctx.d_volumeToLayerMap,ctx.d_surfaceToLayerMap,ctx.d_layerInfo, 
+	                            ctx.d_volumeToLayerMap,ctx.d_surfaceToLayerMap,ctx.d_layerIsEndcap, 
                                 ctx.d_reducedSP, ctx.d_layerCounts, ctx.d_spacepointsLayer,
 								ctx.nSp, m_config.surfaceMapSize);
 	//prefix sum layerCounts
@@ -95,6 +103,13 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	kernels::bin_sp_by_layer<<<nBlocks, nThreads, 0, stream>>>(ctx.d_sp_params, ctx.d_reducedSP, ctx.d_layerCounts, ctx.d_spacepointsLayer, ctx.nSp);	
 
 	//1. histogram spacepoints by layer->eta->phi and convert to nodes phi,r,z,tau_min,tau_max
+	//do this in config setup?
+	cudaMalloc(&ctx.d_layerInfo, sizeof(int2)*m_config.nLayers);
+	cudaMemcpyAsync(ctx.d_layerInfo, m_config.layerInfo.info.data(), sizeof(int2)*m_config.nLayers, cudaMemcpyHostToDevice, stream);	
+	
+	cudaMalloc(&ctx.d_layerGeo, sizeof(float2)*m_config.nLayers);
+	cudaMemcpyAsync(ctx.d_layerGeo, m_config.layerInfo.geo.data(), sizeof(float2)*m_config.nLayers, cudaMemcpyHostToDevice, stream);	
+
 
 	//2. Find edges between spacepoint pairs
 
