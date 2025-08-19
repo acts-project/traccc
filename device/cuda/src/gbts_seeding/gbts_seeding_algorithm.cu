@@ -16,12 +16,6 @@
 
 namespace traccc::cuda {
 
-struct gpu_gbts_layerInfo {
-	bool* isEndcap;
-	int*
-
-};
-
 struct gbts_ctx {
 	//counters
 	unsigned int nSp{};
@@ -38,7 +32,7 @@ struct gbts_ctx {
 	int* d_volumeToLayerMap{};	
 	//surface_id, layerBin
 	uint2* d_surfaceToLayerMap{};
-	bool* d_layerIEndcap{};
+	char* d_layerIsEndcap{};
 	
 	//x,y,z,cluster width in eta
 	float4* d_reducedSP{};
@@ -82,8 +76,8 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	cudaMemcpyAsync(ctx.d_volumeToLayerMap, m_config.volumeToLayerMap.get(), sizeof(int)*m_config.maxVolIndex, cudaMemcpyHostToDevice, stream);
 	cudaMemcpyAsync(ctx.d_surfaceToLayerMap, m_config.surfaceToLayerMap.data(), sizeof(uint2)*m_config.surfaceMapSize, cudaMemcpyHostToDevice, stream);
 
-	cudaMalloc(&ctx.d_layerIsEndcap, sizeof(bool)*m_config.nLayers);
-	cudaMemcpyAsync(ctx.d_layerIsEndcap, m_config.layerInfo.isEndcap.data(), sizeof(bool)*m_config.nLayers, cudaMemcpyHostToDevice, stream);	
+	cudaMalloc(&ctx.d_layerIsEndcap, sizeof(char)*m_config.nLayers);
+	cudaMemcpyAsync(ctx.d_layerIsEndcap, m_config.layerInfo.isEndcap.data(), sizeof(char)*m_config.nLayers, cudaMemcpyHostToDevice, stream);	
 	
 	kernels::count_sp_by_layer<<<nBlocks,nThreads,0,stream>>>(spacepoints,measurements,
 	                            ctx.d_volumeToLayerMap,ctx.d_surfaceToLayerMap,ctx.d_layerIsEndcap, 

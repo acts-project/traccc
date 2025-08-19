@@ -25,14 +25,14 @@ namespace traccc::cuda::kernels {
 //just pixel spacepoints for now
 
 __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::const_view& spacepoints_view, const traccc::measurement_collection_types::const_view& measurements_view, 
-                                  const int* volumeToLayerMap, const uint2* surfaceToLayerMap, const traccc::device::gbts_layerInfo* layerInfo, 
+                                  const int* volumeToLayerMap, const uint2* surfaceToLayerMap, const char* d_layerIsEndcap, 
                                   float4* reducedSP, unsigned int* layerCounts, unsigned short* spacepointsLayer,
                                   const unsigned int nSp, const unsigned int surfaceMapSize) {
 	//shared mem volumeToLayer map
 	
 	const traccc::measurement_collection_types::const_device measurements(measurements_view);
 	const traccc::edm::spacepoint_collection::const_device spacepoints(spacepoints_view);
-	/*
+	
 	for(int spIdx = threadIdx.x + gridDim.x*blockDim.x; spIdx<nSp; spIdx += gridDim.x*blockDim.x) {
 		//get the layer of the spacepoint
 		const traccc::edm::spacepoint_collection::const_device::const_proxy_type spacepoint = spacepoints.at(spIdx);
@@ -56,7 +56,7 @@ __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::cons
 		else layerIdx = static_cast<unsigned int>(-1*begin_or_bin);
 
 		float cluster_diameter = measurement.diameter;
-		if(layerInfo[layerIdx].isEndcap) { //get info from sp <-> move to before layerIdx map?
+		if(d_layerIsEndcap[layerIdx] == 1) { //get info from sp -> move to before layerIdx map?
 			if(cluster_diameter > 0.2) continue;
 			cluster_diameter = -1; //flag for skiping tau range calculation
 		}
@@ -66,7 +66,7 @@ __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::cons
 		spacepointsLayer[spIdx] = layerIdx;
 		const traccc::point3 pos = spacepoint.global();
 		reducedSP[spIdx] = make_float4(pos[0], pos[1], pos[2], cluster_diameter);
-	}*/
+	}
 }
 
 //layerCounts is prefix sumed on CPU inbetween count_sp_by_layer and this kerenel
