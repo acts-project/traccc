@@ -19,7 +19,7 @@
 #include "traccc/utils/messaging.hpp"
 
 //GBTS include(s)
-#include "./gbts_seeding_config.hpp"
+#include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
