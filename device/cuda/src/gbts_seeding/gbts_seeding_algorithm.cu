@@ -33,7 +33,7 @@ struct gbts_ctx {
 	//surface_id, layerBin
 	uint2* d_surfaceToLayerMap{};
 
-	traccc::device::GBTS::gbts_layerInfo* d_layerInfo{};
+	traccc::device::gbts_layerInfo* d_layerInfo{};
 
 	//x,y,z,cluster width in eta
 	float4* d_reducedSP{};
@@ -61,26 +61,26 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	//0. bin spacepoints by layer(disk) or any other maping supplied to the config.m_surfaceToLayerMap
 	ctx.nSp = m_copy.get().get_size(spacepoints); //why is get needed?
 
-	int nThreads = 1024;
-	int nBlocks = 1+(ctx.nSp-1)/nThreads;
+	unsigned int nThreads = 1024;
+	unsigned int nBlocks = 1+(ctx.nSp-1)/nThreads;
 
 	cudaMalloc(&ctx.d_layerCounts, m_config.nLayers*sizeof(unsigned int));	
 	cudaMalloc(&ctx.d_spacepointsLayer, ctx.nSp*sizeof(unsigned char));	
 	cudaMalloc(&ctx.d_reducedSP, ctx.nSp*sizeof(float4));	
 
-	cudaMalloc(&ctx.d_volumeToLayerMap, sizeof(uint2)*m_config.maxVolIndex);	
+	cudaMalloc(&ctx.d_volumeToLayerMap, sizeof(int)*m_config.maxVolIndex);	
 	cudaMalloc(&ctx.d_surfaceToLayerMap, sizeof(uint2)*m_config.surfaceMapSize);	
 
-	cudaMemcpyAsync(ctx.d_volumeToLayerMap, m_config.volumeToLayerMap.get(), sizeof(uint2)*m_config.maxVolIndex, cudaMemcpyHostToDevice, stream);
+	cudaMemcpyAsync(ctx.d_volumeToLayerMap, m_config.volumeToLayerMap.get(), sizeof(int)*m_config.maxVolIndex, cudaMemcpyHostToDevice, stream);
 	cudaMemcpyAsync(ctx.d_surfaceToLayerMap, m_config.surfaceToLayerMap.data(), sizeof(uint2)*m_config.surfaceMapSize, cudaMemcpyHostToDevice, stream);
 
-	cudaMalloc(&ctx.d_layerInfo, sizeof(traccc::device::GBTS::gbts_layerInfo)*m_config.nLayers);
-	cudaMemcpyAsync(ctx.d_layerInfo, m_config.layerInfo.data(), sizeof(traccc::device::GBTS::gbts_layerInfo)*m_config.nLayers, cudaMemcpyHostToDevice, stream);	
+	cudaMalloc(&ctx.d_layerInfo, sizeof(traccc::device::gbts_layerInfo)*m_config.nLayers);
+	cudaMemcpyAsync(ctx.d_layerInfo, m_config.layerInfo.data(), sizeof(traccc::device::gbts_layerInfo)*m_config.nLayers, cudaMemcpyHostToDevice, stream);	
 
-	kernels::count_sp_by_layer<<<nBlocks, nThreads, 0, stream>>>(spacepoints, measurements, ctx.d_volumeToLayerMap, ctx.d_surfaceToLayerMap, ctx.d_layerInfo, 
-                                                                 ctx.d_reducedSP, ctx.d_layerCounts, ctx.d_spacepointsLayer,
-                                                                 ctx.nSp, m_config.surfaceMapSize);
-
+	kernels::count_sp_by_layer<<<nBlocks,nThreads,0,stream>>>(spacepoints,measurements,
+	                            ctx.d_volumeToLayerMap,ctx.d_surfaceToLayerMap,ctx.d_layerInfo, 
+                                ctx.d_reducedSP, ctx.d_layerCounts, ctx.d_spacepointsLayer,
+								ctx.nSp, m_config.surfaceMapSize);
 	//prefix sum layerCounts
 	std::unique_ptr<unsigned int[]> layerCounts = std::make_unique<unsigned int[]>(m_config.nLayers);
 

@@ -1,109 +1,73 @@
-/** TRACCC library, part of the ACTS project (R&D line)
- *
- * (c) 2025 CERN for the benefit of the ACTS project
- *
- * Mozilla Public License Version 2.0
- */
-
 #include "traccc/gbts_seeding/gbts_seeding_config.hpp"
-#include <algorithm>
-#include <ranges>
 
 namespace traccc {
 
 //binTables contains pairs of linked layer-eta bins
-//the layerInfo should really be calculated from the barcodeBinning
-//BarcodeBinning pair is detray barcode and bin index (corrisponding to the layers in layerInfo) 
+//the layerInfo should be calculated from the barcodeBinning
+//BarcodeBinning pair is detray barcode and bin index (corrisponding to the layers in layerInfo) ordered by volume 
 //minPt in MeV
-bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, std::vector<int>>>& input_binTables, const device::gbts_layerInfo input_layerInfo,
-	 std::vector<std::pair<uint64_t, short>>& detrayBarcodeBinning, float minPt = 900.0f, std::unique_ptr<const ::Acts::Logger> callers_logger = getDummyLogger().clone()) {
+gbts_seedfinder_config::gbts_seedfinder_config(const std::vector<std::pair<int, int>>& input_binTables, const std::vector<device::gbts_layerInfo>& input_layerInfo,
+	  const std::vector<std::pair<uint64_t, int>>& detrayBarcodeBinning, float minPt = 900.0f) {
 
-	TRACCC_LOCAL_LOGGER(std::move(callers_logger));	
-	//copy layer-eta binning infomation
+	//format layer-eta binning infomation
+	binTables = input_binTables;
 	layerInfo = input_layerInfo;
-	// unroll binTables
-	for(std::pair<int, std::vector<int>> binPairs : input_binTables) {
-		for(int bin2 : binPairs.second) {
-			binTables.push_back(std::make_pair(binPairs.first, bin2));
-		}
-	}
 
-	for(std::pair<int, int> lI : layerInfo.info) n_eta_bins = std::max(n_eta_bins, lI.first + lI.second);
+	int current_volume = 0;
 
-	//bin by volume	
-	std::ranges::sort(detrayBarcodeBinning, [](const std::pair<uint64_t, short> a, const std::pair<uint64_t, short> b) {return a.first > b.first;});
+	int current_layer = 0;
+	bool layerChange = false;
 
-	unsigned int largest_volume_index = detray::geometry::barcode(detrayBarcodeBinning[0].first).volume();
-	auto current_volume = static_cast<short>(largest_volume_index);
-	if(largest_volume_index >= SHRT_MAX) { 
-		TRACCC_ERROR("volume index to large to fit in type-short GBTS volume to layer map");
-		return false;
-	}
-		
-	bool layerChange     = false;
-	short current_layer  = detrayBarcodeBinning[0].second;
-	
-	int split_volumes = 0;
-	std::vector<std::pair<short, unsigned int>> volumeToLayerMap_unordered;
-	detrayBarcodeBinning.push_back(std::make_pair(UINT_MAX,-1)); // end-of-vector element
+	std::pair<uint64_t, int> surfaceLayerPair;
 	std::vector<std::array<unsigned int, 2>> surfacesInVolume;
-	for(std::pair<uint64_t, short> barcodeLayerPair : detrayBarcodeBinning) {
-		detray::geometry::barcode barcode(barcodeLayerPair.first);
-		if(current_volume != static_cast<short>(barcode.volume())) {	
-			//reached the end of this volume so add it to the maps
-			short bin = current_layer;
-			if(layerChange) {
-				split_volumes++;
-				bin = -1*static_cast<short>(surfaceToLayerMap.size() + 1); //start of this volume's surfaces in the map + 1
-				for(std::array<unsigned int, 2> pair : surfacesInVolume) surfaceToLayerMap.push_back(pair);
-			}
-			volumeToLayerMap_unordered.push_back(std::make_pair(bin, current_volume)); // layerIdx if not split, begin-index in the surface map otherwise
-			
-			current_volume = static_cast<short>(barcode.volume());		
-			current_layer = barcodeLayerPair.second;
-			layerChange = false;
-			surfacesInVolume.clear();
-		}
-		//is volume encompassed by a layer
-		layerChange |= (current_layer != barcodeLayerPair.second);	
+
+	std::vector<std::pair<int, int>> volumeToLayerMap_unordered;
+	unsigned int largest_volume_index = 0;
+	for(unsigned int index = 0; index<detrayBarcodeBinning.size(); index++) {
+
+		surfaceLayerPair = detrayBarcodeBinning[index];
+		detray::geometry::barcode barcode(surfaceLayerPair.first);
+
+		if(current_layer == -1) current_layer = surfaceLayerPair.second;
+		if(current_volume == -1) current_volume = barcode.volume();
 
 		//save surfaces incase volume is not encommpassed by a layer
-		surfacesInVolume.push_back(std::array<unsigned int, 2>{static_cast<unsigned int>(barcode.index()), static_cast<unsigned int>(barcodeLayerPair.second)});
+		surfacesInVolume.push_back(std::array<unsigned int, 2>{static_cast<unsigned int>(barcode.id()), static_cast<unsigned int>(surfaceLayerPair.second)});
+
+		//is volume encompassed by a layer
+		if(current_layer != surfaceLayerPair.second) layerChange = true;
+
+		//create volume veiw on the surface map
+		if(barcode.volume() != static_cast<unsigned int>(current_volume)) {
+
+			int bin = -1*surfaceLayerPair.second;
+			if(layerChange) {
+				bin = static_cast<int>(surfaceToLayerMap.size() + 1); //start of this volumes surfaces in the map
+				for(std::array<unsigned int, 2> pair : surfacesInVolume) surfaceToLayerMap.push_back(pair);
+			}
+			volumeToLayerMap_unordered.push_back(std::make_pair(bin, current_volume)); // -ve layerIdx if one-to-one +ve index + 1 otherwise
+			if(barcode.volume() > largest_volume_index) largest_volume_index = barcode.volume();
+			current_layer  = -1;
+			current_volume = -1;
+			layerChange = false;
+		}
 	}
 	// make volume by layer map
-	volumeToLayerMap.resize(largest_volume_index+1);
-	for(unsigned int i = 0; i < largest_volume_index + 1; ++i) volumeToLayerMap.push_back(SHRT_MAX);
-	for(std::pair<short, unsigned int> vLpair : volumeToLayerMap_unordered) volumeToLayerMap[vLpair.second] = vLpair.first;
+	volumeToLayerMap = std::make_shared<int[]>(largest_volume_index);
+	for(std::pair<int, unsigned int> vLpair : volumeToLayerMap_unordered) volumeToLayerMap[vLpair.second] = vLpair.first;
+
 	//scale cuts
 	float ptScale = 900.0f/minPt;
-	algo_params.min_delta_phi*=ptScale;
-	algo_params.dphi_coeff*=ptScale;
-	algo_params.min_delta_phi_low_dr*=ptScale;
-	algo_params.dphi_coeff_low_dr*=ptScale;
-	algo_params.max_Kappa*=ptScale;
+	min_deltaPhi*=ptScale;
+	dphi_coeff*=ptScale;
+	min_deltaPhi_low_dr*=ptScale;
+	dphi_coeff_low_dr*=ptScale;
+	maxKappa*=ptScale;
 
 	//contianers sizes
-	nLayers = layerInfo.isEndcap.size();
-	
-	TRACCC_INFO("volume layer map has " << volumeToLayerMap_unordered.size() << " volumes");
-	TRACCC_INFO("The maxium volume index in the layer map is " << volumeToLayerMap.size());
-	TRACCC_INFO("surface to layer map has " << surfaceToLayerMap.size() << " barcodes from " << split_volumes << " multi-layer volumes");
-	TRACCC_INFO("layer info found for " << nLayers << " layers");
-	TRACCC_INFO(binTables.size() << " linked layer-eta bins for GBTS");
-	
-	if(nLayers == 0) {
-		TRACCC_ERROR("no layers input");
-		return false;
-	}
-	else if(volumeToLayerMap.size() == 0) {
-		TRACCC_ERROR("empty volume to layer map");
-		return false;
-	}
-	else if(surfaceToLayerMap.size() > SHRT_MAX) { 
-		TRACCC_ERROR("surface to layer map is to large");
-		return false;
-	}
-	return true;
+	maxVolIndex    = largest_volume_index;
+	nLayers        = layerInfo.size();
+	surfaceMapSize = surfaceToLayerMap.size();
 }
 
 } //namespace traccc
