@@ -461,6 +461,11 @@ greedy_ambiguity_resolution_algorithm::operator()(
                                                                   m_mr.main};
     m_copy.get().setup(block_offsets_buffer)->ignore();
 
+    // Create stream for parallelizable kernels
+    cudaStream_t stream_fill, stream_scan;
+    cudaStreamCreateWithFlags(&stream_fill, cudaStreamNonBlocking);
+    cudaStreamCreateWithFlags(&stream_scan, cudaStreamNonBlocking);
+
     while (!terminate && n_accepted > 0) {
         nBlocks_adaptive =
             (n_accepted + nThreads_adaptive - 1) / nThreads_adaptive;
@@ -517,11 +522,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
         // Make CUDA Graph
         cudaGraph_t graph;
         cudaGraphExec_t graphExec;
-
-        // Create stream for parallelizable kernels
-        cudaStream_t stream_fill, stream_scan;
-        cudaStreamCreateWithFlags(&stream_fill, cudaStreamNonBlocking);
-        cudaStreamCreateWithFlags(&stream_scan, cudaStreamNonBlocking);
 
         cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal);
 
@@ -694,6 +694,9 @@ greedy_ambiguity_resolution_algorithm::operator()(
         cudaMemcpyAsync(&n_accepted, n_accepted_device.get(),
                         sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
     }
+
+    cudaStreamDestroy(stream_fill);
+    cudaStreamDestroy(stream_scan);
 
     cudaMemcpyAsync(&n_accepted, n_accepted_device.get(), sizeof(unsigned int),
                     cudaMemcpyDeviceToHost, stream);
