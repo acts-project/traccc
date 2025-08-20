@@ -9,6 +9,7 @@
 
 // Local include(s).
 #include "../../../utils/global_index.hpp"
+#include "../../../utils/hints.hpp"
 #include "../propagate_to_next_surface.hpp"
 
 // Project include(s).
@@ -24,6 +25,7 @@ __global__ __launch_bounds__(128) void propagate_to_next_surface(
     typename propagator_t::detector_type::const_view_type det_data,
     const __grid_constant__ bfield_t field_data,
     const __grid_constant__ device::propagate_to_next_surface_payload payload) {
+    TRACCC_CUDA_SPILL_TO_SHARED_MEMORY;
 
     device::propagate_to_next_surface<propagator_t>(
         details::global_index1(), cfg, det_data, field_data, payload);

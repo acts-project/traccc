@@ -12,6 +12,7 @@
 
 // Local include(s).
 #include "../../../utils/barrier.hpp"
+#include "../../../utils/hints.hpp"
 #include "../../../utils/thread_id.hpp"
 
 // System include(s).
@@ -25,6 +26,7 @@ __global__ void find_tracks(
     const __grid_constant__ finding_config cfg,
     const __grid_constant__ typename detector_t::const_view_type det,
     const __grid_constant__ device::find_tracks_payload payload) {
+    TRACCC_CUDA_SPILL_TO_SHARED_MEMORY;
 
     __shared__ unsigned int shared_num_out_params;
     __shared__ unsigned int shared_candidates_size;
