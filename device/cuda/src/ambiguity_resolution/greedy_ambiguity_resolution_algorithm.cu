@@ -39,6 +39,13 @@
 #include <thrust/unique.h>
 namespace traccc::cuda {
 
+struct identity_op {
+    template <typename T>
+    TRACCC_HOST_DEVICE T operator()(T i) const {
+        return i;
+    }
+};
+
 // Device operator to calculate relative number of shared measurements
 struct devide_op {
     TRACCC_HOST_DEVICE
@@ -200,7 +207,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     auto cit_begin = thrust::counting_iterator<int>(0);
     auto cit_end = cit_begin + n_tracks;
     thrust::copy_if(thrust_policy, cit_begin, cit_end, status_buffer.ptr(),
-                    pre_accepted_ids_buffer.ptr(), thrust::identity<int>());
+                    pre_accepted_ids_buffer.ptr(), identity_op{});
 
     // Sort the flat measurement id vector
     thrust::sort(thrust_policy, flat_meas_ids_buffer.ptr(),
