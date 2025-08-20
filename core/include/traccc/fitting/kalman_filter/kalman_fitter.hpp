@@ -10,7 +10,7 @@
 // Project include(s).
 #include "kalman_actor.hpp"
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/track_collection.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_state_collection.hpp"
@@ -109,7 +109,8 @@ class kalman_fitter {
                 algebra_type>::device::proxy_type& track,
             const typename edm::track_state_collection<algebra_type>::device&
                 track_states,
-            const measurement_collection_types::const_device& measurements,
+            const typename edm::measurement_collection<
+                algebra_type>::const_device& measurements,
             vecmem::data::vector_view<detray::geometry::barcode>
                 sequence_buffer,
             const detray::propagation::config& prop_cfg)
@@ -383,7 +384,7 @@ class kalman_fitter {
             const detray::tracking_surface sf{
                 m_detector, fitter_state.m_fit_actor_state.m_measurements
                                 .at(trk_state.measurement_index())
-                                .surface_link};
+                                .surface_link()};
             statistics_updater<algebra_type>{}(
                 fit_res, trk_state,
                 fitter_state.m_fit_actor_state.m_measurements);

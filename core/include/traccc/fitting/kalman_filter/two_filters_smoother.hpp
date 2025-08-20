@@ -10,7 +10,7 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/definitions/track_parametrization.hpp"
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/measurement_helpers.hpp"
 #include "traccc/edm/track_state_collection.hpp"
 #include "traccc/fitting/status_codes.hpp"
@@ -38,11 +38,13 @@ struct two_filters_smoother {
     [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status operator()(
         typename edm::track_state_collection<algebra_t>::device::proxy_type&
             trk_state,
-        const measurement_collection_types::const_device& measurements,
+        const typename edm::measurement_collection<algebra_t>::const_device&
+            measurements,
         bound_track_parameters<algebra_t>& bound_params,
         const bool is_line) const {
 
-        const auto D = measurements.at(trk_state.measurement_index()).meas_dim;
+        const auto D =
+            measurements.at(trk_state.measurement_index()).dimensions();
         assert(D == 1u || D == 2u);
 
         return smoothe(trk_state, measurements, bound_params, D, is_line);
@@ -53,7 +55,8 @@ struct two_filters_smoother {
     [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status smoothe(
         typename edm::track_state_collection<algebra_t>::device::proxy_type&
             trk_state,
-        const measurement_collection_types::const_device& measurements,
+        const typename edm::measurement_collection<algebra_t>::const_device&
+            measurements,
         bound_track_parameters<algebra_t>& bound_params, const unsigned int dim,
         const bool is_line) const {
 
@@ -134,9 +137,9 @@ struct two_filters_smoother {
         // Wrap the phi and theta angles in their valid ranges
         normalize_angles(trk_state.smoothed_params());
 
-        matrix_type<D, e_bound_size> H =
-            measurements.at(trk_state.measurement_index())
-                .subs.template projector<D>();
+        const subspace<algebra_t, e_bound_size> subs(
+            measurements.at(trk_state.measurement_index()).subspace());
+        matrix_type<D, e_bound_size> H = subs.template projector<D>();
         if (dim == 1) {
             getter::element(H, 1u, 0u) = 0.f;
             getter::element(H, 1u, 1u) = 0.f;

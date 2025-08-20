@@ -10,7 +10,7 @@
 // Local include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 
 namespace traccc::edm {
 
@@ -23,9 +23,11 @@ namespace traccc::edm {
 /// @param meas The measurement to extract the local position from
 /// @param pos The matrix to fill with the local position of the measurement
 ///
-template <detray::concepts::algebra algebra_t, std::integral size_t, size_t D>
+template <detray::concepts::algebra algebra_t, typename measurement_backend_t,
+          std::integral size_t, size_t D>
 TRACCC_HOST_DEVICE void get_measurement_local(
-    const measurement& meas, detray::dmatrix<algebra_t, D, 1>& pos);
+    const edm::measurement<measurement_backend_t>& meas,
+    detray::dmatrix<algebra_t, D, 1>& pos);
 
 /// Get the covariance of a measurement as a matrix
 ///
@@ -36,9 +38,11 @@ TRACCC_HOST_DEVICE void get_measurement_local(
 /// @param meas The measurement to extract the covariance from
 /// @param cov The matrix to fill with the covariance of the measurement
 ///
-template <detray::concepts::algebra algebra_t, std::integral size_t, size_t D>
+template <detray::concepts::algebra algebra_t, typename measurement_backend_t,
+          std::integral size_t, size_t D>
 TRACCC_HOST_DEVICE void get_measurement_covariance(
-    const measurement& meas, detray::dmatrix<algebra_t, D, D>& cov);
+    const edm::measurement<measurement_backend_t>& meas,
+    detray::dmatrix<algebra_t, D, D>& cov);
 
 }  // namespace traccc::edm
 

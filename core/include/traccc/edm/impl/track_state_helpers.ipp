@@ -12,9 +12,9 @@ namespace traccc::edm {
 template <typename algebra_t>
 TRACCC_HOST_DEVICE
     typename track_state_collection<algebra_t>::device::object_type
-    make_track_state(
-        const measurement_collection_types::const_device& measurements,
-        unsigned int mindex) {
+    make_track_state(const typename measurement_collection<
+                         algebra_t>::const_device& measurements,
+                     unsigned int mindex) {
 
     // Create the result object.
     typename track_state_collection<algebra_t>::device::object_type state;
@@ -25,9 +25,9 @@ TRACCC_HOST_DEVICE
 
     // Set the correct surface link for the track parameters.
     state.filtered_params().set_surface_link(
-        measurements.at(mindex).surface_link);
+        measurements.at(mindex).surface_link());
     state.smoothed_params().set_surface_link(
-        measurements.at(mindex).surface_link);
+        measurements.at(mindex).surface_link());
 
     // Return the initialized state.
     return state;

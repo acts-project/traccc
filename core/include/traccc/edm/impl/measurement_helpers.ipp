@@ -9,19 +9,21 @@
 
 namespace traccc::edm {
 
-template <detray::concepts::algebra algebra_t, std::integral size_t, size_t D>
+template <detray::concepts::algebra algebra_t, typename measurement_backend_t,
+          std::integral size_t, size_t D>
 TRACCC_HOST_DEVICE void get_measurement_local(
-    const measurement& meas, detray::dmatrix<algebra_t, D, 1>& pos) {
+    const edm::measurement<measurement_backend_t>& meas,
+    detray::dmatrix<algebra_t, D, 1>& pos) {
 
     static_assert(((D == 1u) || (D == 2u)),
                   "The measurement dimension must be 1 or 2");
 
-    assert((meas.subs.get_indices()[0] == e_bound_loc0) ||
-           (meas.subs.get_indices()[0] == e_bound_loc1));
+    assert((meas.subspace()[0] == e_bound_loc0) ||
+           (meas.subspace()[0] == e_bound_loc1));
 
-    const point2& local = meas.local;
+    const point2& local = meas.local_position();
 
-    switch (meas.subs.get_indices()[0]) {
+    switch (meas.subspace()[0]) {
         case e_bound_loc0:
             getter::element(pos, 0, 0) = local[0];
             if constexpr (D == 2u) {
@@ -41,19 +43,21 @@ TRACCC_HOST_DEVICE void get_measurement_local(
     }
 }
 
-template <detray::concepts::algebra algebra_t, std::integral size_t, size_t D>
+template <detray::concepts::algebra algebra_t, typename measurement_backend_t,
+          std::integral size_t, size_t D>
 TRACCC_HOST_DEVICE void get_measurement_covariance(
-    const measurement& meas, detray::dmatrix<algebra_t, D, D>& cov) {
+    const edm::measurement<measurement_backend_t>& meas,
+    detray::dmatrix<algebra_t, D, D>& cov) {
 
     static_assert(((D == 1u) || (D == 2u)),
                   "The measurement dimension must be 1 or 2");
 
-    assert((meas.subs.get_indices()[0] == e_bound_loc0) ||
-           (meas.subs.get_indices()[0] == e_bound_loc1));
+    assert((meas.subspace()[0] == e_bound_loc0) ||
+           (meas.subspace()[0] == e_bound_loc1));
 
-    const variance2& variance = meas.variance;
+    const variance2& variance = meas.local_variance();
 
-    switch (meas.subs.get_indices()[0]) {
+    switch (meas.subspace()[0]) {
         case e_bound_loc0:
             getter::element(cov, 0, 0) = variance[0];
             if constexpr (D == 2u) {
