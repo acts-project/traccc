@@ -12,6 +12,7 @@
 #include "../propagate_to_next_surface.hpp"
 
 // Project include(s).
+#include "traccc/cuda/utils/hints.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
 
 namespace traccc::cuda {
@@ -23,6 +24,8 @@ __global__ __launch_bounds__(128) void propagate_to_next_surface(
     const __grid_constant__
         device::propagate_to_next_surface_payload<propagator_t, bfield_t>
             payload) {
+
+    TRACCC_CUDA_SPILL_TO_SHARED_MEMORY;
 
     device::propagate_to_next_surface<propagator_t, bfield_t>(
         details::global_index1(), cfg, payload);

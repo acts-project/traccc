@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/cuda/utils/hints.hpp"
 #include "traccc/finding/device/find_tracks.hpp"
 
 // Local include(s).
@@ -24,6 +25,8 @@ template <typename detector_t>
 __global__ void find_tracks(
     const __grid_constant__ finding_config cfg,
     const __grid_constant__ device::find_tracks_payload<detector_t> payload) {
+    TRACCC_CUDA_SPILL_TO_SHARED_MEMORY;
+
     __shared__ unsigned int shared_num_out_params;
     __shared__ unsigned int shared_out_offset;
     __shared__ unsigned int shared_candidates_size;
