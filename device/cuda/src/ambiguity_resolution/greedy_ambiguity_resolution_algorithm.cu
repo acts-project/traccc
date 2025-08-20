@@ -426,9 +426,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
     unsigned int nBlocks_warp =
         (n_accepted + nThreads_warp - 1) / nThreads_warp;
 
-    unsigned int nThreads_full = 1024;
-    unsigned int nBlocks_full = (n_tracks + 1023) / 1024;
-
     unsigned int nThreads_rearrange = 1024;
     unsigned int nBlocks_rearrange =
         (n_accepted + (nThreads_rearrange / kernels::nThreads_per_track) - 1) /
@@ -604,14 +601,16 @@ greedy_ambiguity_resolution_algorithm::operator()(
             .temp_sorted_ids_view = temp_sorted_ids_buffer,
         });
 
-        kernels::gather_tracks<<<nBlocks_full, nThreads_full, 0, stream>>>(
-            device::gather_tracks_payload{
-                .terminate = terminate_device.get(),
-                .n_accepted = n_accepted_device.get(),
-                .n_updated_tracks = n_updated_tracks_device.get(),
-                .temp_sorted_ids_view = temp_sorted_ids_buffer,
-                .sorted_ids_view = sorted_ids_buffer,
-                .is_updated_view = is_updated_buffer});
+        kernels::
+            gather_tracks<<<nBlocks_adaptive, nThreads_adaptive, 0, stream>>>(
+                device::gather_tracks_payload{
+                    .terminate = terminate_device.get(),
+                    .n_accepted = n_accepted_device.get(),
+                    .n_updated_tracks = n_updated_tracks_device.get(),
+                    .temp_sorted_ids_view = temp_sorted_ids_buffer,
+                    .sorted_ids_view = sorted_ids_buffer,
+                    .updated_tracks_view = updated_tracks_buffer,
+                    .is_updated_view = is_updated_buffer});
 
         cudaStreamEndCapture(stream, &graph);
         cudaGraphInstantiate(&graphExec, graph, nullptr, nullptr, 0);
