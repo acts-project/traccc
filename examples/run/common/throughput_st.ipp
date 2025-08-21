@@ -86,16 +86,13 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
     traccc::silicon_detector_description::host det_descr{host_mr};
     traccc::io::read_detector_description(
         det_descr, detector_opts.detector_file, detector_opts.digitization_file,
-        (detector_opts.use_detray_detector ? traccc::data_format::json
-                                           : traccc::data_format::csv));
+        traccc::data_format::json);
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host detector{host_mr};
-    if (detector_opts.use_detray_detector) {
-        traccc::io::read_detector(
-            detector, host_mr, detector_opts.detector_file,
-            detector_opts.material_file, detector_opts.grid_file);
-    }
+    traccc::io::read_detector(detector, host_mr, detector_opts.detector_file,
+                              detector_opts.material_file,
+                              detector_opts.grid_file);
 
     // Construct the magnetic field object.
     const auto field = details::make_magnetic_field(bfield_opts);
@@ -138,8 +135,7 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
     std::unique_ptr<FULL_CHAIN_ALG> alg = std::make_unique<FULL_CHAIN_ALG>(
         host_mr, clustering_cfg, seedfinder_config, spacepoint_grid_config,
         seedfilter_config, finding_cfg, fitting_cfg, det_descr, field,
-        (detector_opts.use_detray_detector ? &detector : nullptr),
-        logger->clone("FullChainAlg"));
+        &detector, logger->clone("FullChainAlg"));
 
     // Seed the random number generator.
     if (throughput_opts.random_seed == 0) {

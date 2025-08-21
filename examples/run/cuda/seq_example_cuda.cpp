@@ -92,9 +92,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     traccc::silicon_detector_description::host host_det_descr{host_mr};
     traccc::io::read_detector_description(
         host_det_descr, detector_opts.detector_file,
-        detector_opts.digitization_file,
-        (detector_opts.use_detray_detector ? traccc::data_format::json
-                                           : traccc::data_format::csv));
+        detector_opts.digitization_file, traccc::data_format::json);
     traccc::silicon_detector_description::data host_det_descr_data{
         vecmem::get_data(host_det_descr)};
     traccc::silicon_detector_description::buffer device_det_descr{
@@ -108,16 +106,14 @@ int seq_run(const traccc::opts::detector& detector_opts,
     traccc::default_detector::host host_detector{host_mr};
     traccc::default_detector::buffer device_detector;
     traccc::default_detector::view device_detector_view;
-    if (detector_opts.use_detray_detector) {
-        traccc::io::read_detector(
-            host_detector, host_mr, detector_opts.detector_file,
-            detector_opts.material_file, detector_opts.grid_file);
-        device_detector = detray::get_buffer(host_detector, device_mr, copy);
-        stream.synchronize();
-        const traccc::default_detector::buffer& const_device_detector =
-            device_detector;
-        device_detector_view = detray::get_data(const_device_detector);
-    }
+    traccc::io::read_detector(
+        host_detector, host_mr, detector_opts.detector_file,
+        detector_opts.material_file, detector_opts.grid_file);
+    device_detector = detray::get_buffer(host_detector, device_mr, copy);
+    stream.synchronize();
+    const traccc::default_detector::buffer& const_device_detector =
+        device_detector;
+    device_detector_view = detray::get_data(const_device_detector);
 
     // Output stats
     uint64_t n_cells = 0;
@@ -293,115 +289,108 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
             // Perform seeding, track finding and fitting only when using a
             // Detray geometry.
-            if (detector_opts.use_detray_detector) {
+            // CUDA
+            {
+                traccc::performance::timer t("Spacepoint formation (cuda)",
+                                             elapsedTimes);
+                spacepoints_cuda_buffer =
+                    sf_cuda(device_detector_view, measurements_cuda_buffer);
+                stream.synchronize();
+            }  // stop measuring spacepoint formation cuda timer
 
-                // CUDA
-                {
-                    traccc::performance::timer t("Spacepoint formation (cuda)",
-                                                 elapsedTimes);
-                    spacepoints_cuda_buffer =
-                        sf_cuda(device_detector_view, measurements_cuda_buffer);
-                    stream.synchronize();
-                }  // stop measuring spacepoint formation cuda timer
+            // CPU
+            if (accelerator_opts.compare_with_cpu) {
+                traccc::performance::timer t("Spacepoint formation  (cpu)",
+                                             elapsedTimes);
+                spacepoints_per_event =
+                    sf(host_detector, vecmem::get_data(measurements_per_event));
+            }  // stop measuring spacepoint formation cpu timer
 
-                // CPU
-                if (accelerator_opts.compare_with_cpu) {
-                    traccc::performance::timer t("Spacepoint formation  (cpu)",
-                                                 elapsedTimes);
-                    spacepoints_per_event =
-                        sf(host_detector,
-                           vecmem::get_data(measurements_per_event));
-                }  // stop measuring spacepoint formation cpu timer
+            // CUDA
+            {
+                traccc::performance::timer t("Seeding (cuda)", elapsedTimes);
+                seeds_cuda_buffer = sa_cuda(spacepoints_cuda_buffer);
+                stream.synchronize();
+            }  // stop measuring seeding cuda timer
 
-                // CUDA
-                {
-                    traccc::performance::timer t("Seeding (cuda)",
-                                                 elapsedTimes);
-                    seeds_cuda_buffer = sa_cuda(spacepoints_cuda_buffer);
-                    stream.synchronize();
-                }  // stop measuring seeding cuda timer
+            // CPU
+            if (accelerator_opts.compare_with_cpu) {
+                traccc::performance::timer t("Seeding  (cpu)", elapsedTimes);
+                seeds = sa(vecmem::get_data(spacepoints_per_event));
+            }  // stop measuring seeding cpu timer
 
-                // CPU
-                if (accelerator_opts.compare_with_cpu) {
-                    traccc::performance::timer t("Seeding  (cpu)",
-                                                 elapsedTimes);
-                    seeds = sa(vecmem::get_data(spacepoints_per_event));
-                }  // stop measuring seeding cpu timer
+            // CUDA
+            {
+                traccc::performance::timer t("Track params (cuda)",
+                                             elapsedTimes);
+                params_cuda_buffer =
+                    tp_cuda(measurements_cuda_buffer, spacepoints_cuda_buffer,
+                            seeds_cuda_buffer, field_vec);
+                stream.synchronize();
+            }  // stop measuring track params timer
 
-                // CUDA
-                {
-                    traccc::performance::timer t("Track params (cuda)",
-                                                 elapsedTimes);
-                    params_cuda_buffer = tp_cuda(measurements_cuda_buffer,
-                                                 spacepoints_cuda_buffer,
-                                                 seeds_cuda_buffer, field_vec);
-                    stream.synchronize();
-                }  // stop measuring track params timer
+            // CPU
+            if (accelerator_opts.compare_with_cpu) {
+                traccc::performance::timer t("Track params  (cpu)",
+                                             elapsedTimes);
+                params = tp(vecmem::get_data(measurements_per_event),
+                            vecmem::get_data(spacepoints_per_event),
+                            vecmem::get_data(seeds), field_vec);
+            }  // stop measuring track params cpu timer
 
-                // CPU
-                if (accelerator_opts.compare_with_cpu) {
-                    traccc::performance::timer t("Track params  (cpu)",
-                                                 elapsedTimes);
-                    params = tp(vecmem::get_data(measurements_per_event),
-                                vecmem::get_data(spacepoints_per_event),
-                                vecmem::get_data(seeds), field_vec);
-                }  // stop measuring track params cpu timer
+            // CUDA
+            {
+                traccc::performance::timer timer{"Track finding (cuda)",
+                                                 elapsedTimes};
+                track_candidates_buffer = finding_alg_cuda(
+                    device_detector_view, device_field,
+                    measurements_cuda_buffer, params_cuda_buffer);
+            }
 
-                // CUDA
-                {
-                    traccc::performance::timer timer{"Track finding (cuda)",
-                                                     elapsedTimes};
-                    track_candidates_buffer = finding_alg_cuda(
-                        device_detector_view, device_field,
-                        measurements_cuda_buffer, params_cuda_buffer);
-                }
+            // CPU
+            if (accelerator_opts.compare_with_cpu) {
+                traccc::performance::timer timer{"Track finding (cpu)",
+                                                 elapsedTimes};
+                track_candidates =
+                    finding_alg(host_detector, host_field,
+                                vecmem::get_data(measurements_per_event),
+                                vecmem::get_data(params));
+            }
 
-                // CPU
-                if (accelerator_opts.compare_with_cpu) {
-                    traccc::performance::timer timer{"Track finding (cpu)",
-                                                     elapsedTimes};
-                    track_candidates =
-                        finding_alg(host_detector, host_field,
-                                    vecmem::get_data(measurements_per_event),
-                                    vecmem::get_data(params));
-                }
+            // CUDA
+            {
+                traccc::performance::timer timer{"Ambiguity resolution (cuda)",
+                                                 elapsedTimes};
+                res_track_candidates_buffer = resolution_alg_cuda(
+                    {track_candidates_buffer, measurements_cuda_buffer});
+            }
 
-                // CUDA
-                {
-                    traccc::performance::timer timer{
-                        "Ambiguity resolution (cuda)", elapsedTimes};
-                    res_track_candidates_buffer = resolution_alg_cuda(
-                        {track_candidates_buffer, measurements_cuda_buffer});
-                }
+            // CPU
+            if (accelerator_opts.compare_with_cpu) {
+                traccc::performance::timer timer{"Ambiguity resolution (cpu)",
+                                                 elapsedTimes};
+                res_track_candidates = resolution_alg_cpu(
+                    {vecmem::get_data(track_candidates),
+                     vecmem::get_data(measurements_per_event)});
+            }
 
-                // CPU
-                if (accelerator_opts.compare_with_cpu) {
-                    traccc::performance::timer timer{
-                        "Ambiguity resolution (cpu)", elapsedTimes};
-                    res_track_candidates = resolution_alg_cpu(
-                        {vecmem::get_data(track_candidates),
-                         vecmem::get_data(measurements_per_event)});
-                }
+            // CUDA
+            {
+                traccc::performance::timer timer{"Track fitting (cuda)",
+                                                 elapsedTimes};
+                track_states_buffer = fitting_alg_cuda(
+                    device_detector_view, device_field,
+                    {res_track_candidates_buffer, measurements_cuda_buffer});
+            }
 
-                // CUDA
-                {
-                    traccc::performance::timer timer{"Track fitting (cuda)",
-                                                     elapsedTimes};
-                    track_states_buffer =
-                        fitting_alg_cuda(device_detector_view, device_field,
-                                         {res_track_candidates_buffer,
-                                          measurements_cuda_buffer});
-                }
-
-                // CPU
-                if (accelerator_opts.compare_with_cpu) {
-                    traccc::performance::timer timer{"Track fitting (cpu)",
-                                                     elapsedTimes};
-                    track_states =
-                        fitting_alg(host_detector, host_field,
-                                    {vecmem::get_data(res_track_candidates),
-                                     vecmem::get_data(measurements_per_event)});
-                }
+            // CPU
+            if (accelerator_opts.compare_with_cpu) {
+                traccc::performance::timer timer{"Track fitting (cpu)",
+                                                 elapsedTimes};
+                track_states =
+                    fitting_alg(host_detector, host_field,
+                                {vecmem::get_data(res_track_candidates),
+                                 vecmem::get_data(measurements_per_event)});
             }
 
         }  // Stop measuring wall time

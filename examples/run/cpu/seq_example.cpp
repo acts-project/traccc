@@ -91,18 +91,15 @@ int seq_run(const traccc::opts::input_data& input_opts,
     traccc::silicon_detector_description::host det_descr{host_mr};
     traccc::io::read_detector_description(
         det_descr, detector_opts.detector_file, detector_opts.digitization_file,
-        (detector_opts.use_detray_detector ? traccc::data_format::json
-                                           : traccc::data_format::csv));
+        traccc::data_format::json);
     traccc::silicon_detector_description::data det_descr_data{
         vecmem::get_data(det_descr)};
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host detector{host_mr};
-    if (detector_opts.use_detray_detector) {
-        traccc::io::read_detector(
-            detector, host_mr, detector_opts.detector_file,
-            detector_opts.material_file, detector_opts.grid_file);
-    }
+    traccc::io::read_detector(detector, host_mr, detector_opts.detector_file,
+                              detector_opts.material_file,
+                              detector_opts.grid_file);
 
     // Output stats
     uint64_t n_cells = 0;
@@ -230,84 +227,77 @@ int seq_run(const traccc::opts::input_data& input_opts,
 
             // Perform seeding, track finding and fitting only when using a
             // Detray geometry.
-            if (detector_opts.use_detray_detector) {
+            /*------------------------
+                Spacepoint formation
+              ------------------------*/
 
-                /*------------------------
-                    Spacepoint formation
-                  ------------------------*/
+            {
+                traccc::performance::timer timer{"Spacepoint formation",
+                                                 elapsedTimes};
+                spacepoints_per_event =
+                    sf(detector, vecmem::get_data(measurements_per_event));
+            }
+            if (output_opts.directory != "") {
+                traccc::io::write(event, output_opts.directory,
+                                  output_opts.format,
+                                  vecmem::get_data(spacepoints_per_event),
+                                  vecmem::get_data(measurements_per_event));
+            }
 
-                {
-                    traccc::performance::timer timer{"Spacepoint formation",
-                                                     elapsedTimes};
-                    spacepoints_per_event =
-                        sf(detector, vecmem::get_data(measurements_per_event));
-                }
-                if (output_opts.directory != "") {
-                    traccc::io::write(event, output_opts.directory,
-                                      output_opts.format,
-                                      vecmem::get_data(spacepoints_per_event),
-                                      vecmem::get_data(measurements_per_event));
-                }
+            /*-----------------------
+              Seeding algorithm
+              -----------------------*/
 
-                /*-----------------------
-                  Seeding algorithm
-                  -----------------------*/
+            {
+                traccc::performance::timer timer{"Seeding", elapsedTimes};
+                seeds = sa(vecmem::get_data(spacepoints_per_event));
+            }
+            if (output_opts.directory != "") {
+                traccc::io::write(event, output_opts.directory,
+                                  output_opts.format, vecmem::get_data(seeds),
+                                  vecmem::get_data(spacepoints_per_event));
+            }
 
-                {
-                    traccc::performance::timer timer{"Seeding", elapsedTimes};
-                    seeds = sa(vecmem::get_data(spacepoints_per_event));
-                }
-                if (output_opts.directory != "") {
-                    traccc::io::write(event, output_opts.directory,
-                                      output_opts.format,
-                                      vecmem::get_data(seeds),
-                                      vecmem::get_data(spacepoints_per_event));
-                }
+            /*----------------------------
+              Track params estimation
+              ----------------------------*/
 
-                /*----------------------------
-                  Track params estimation
-                  ----------------------------*/
+            {
+                traccc::performance::timer timer{"Track params estimation",
+                                                 elapsedTimes};
+                params = tp(vecmem::get_data(measurements_per_event),
+                            vecmem::get_data(spacepoints_per_event),
+                            vecmem::get_data(seeds), field_vec);
+            }
 
-                {
-                    traccc::performance::timer timer{"Track params estimation",
-                                                     elapsedTimes};
-                    params = tp(vecmem::get_data(measurements_per_event),
-                                vecmem::get_data(spacepoints_per_event),
-                                vecmem::get_data(seeds), field_vec);
-                }
+            {
+                traccc::performance::timer timer{"Track finding", elapsedTimes};
+                track_candidates = finding_alg(
+                    detector, field, vecmem::get_data(measurements_per_event),
+                    vecmem::get_data(params));
+            }
+            if (output_opts.directory != "") {
+                traccc::io::write(
+                    event, output_opts.directory, output_opts.format,
+                    vecmem::get_data(track_candidates),
+                    vecmem::get_data(measurements_per_event), detector);
+            }
 
-                {
-                    traccc::performance::timer timer{"Track finding",
-                                                     elapsedTimes};
-                    track_candidates =
-                        finding_alg(detector, field,
-                                    vecmem::get_data(measurements_per_event),
-                                    vecmem::get_data(params));
-                }
-                if (output_opts.directory != "") {
-                    traccc::io::write(
-                        event, output_opts.directory, output_opts.format,
-                        vecmem::get_data(track_candidates),
-                        vecmem::get_data(measurements_per_event), detector);
-                }
+            {
+                // Perform ambiguity resolution only if asked for.
+                traccc::performance::timer timer{"Track ambiguity resolution",
+                                                 elapsedTimes};
+                resolved_track_candidates =
+                    resolution_alg({vecmem::get_data(track_candidates),
+                                    vecmem::get_data(measurements_per_event)});
+            }
 
-                {
-                    // Perform ambiguity resolution only if asked for.
-                    traccc::performance::timer timer{
-                        "Track ambiguity resolution", elapsedTimes};
-                    resolved_track_candidates = resolution_alg(
-                        {vecmem::get_data(track_candidates),
-                         vecmem::get_data(measurements_per_event)});
-                }
-
-                {
-                    traccc::performance::timer timer{"Track fitting",
-                                                     elapsedTimes};
-                    track_states = fitting_alg(
-                        detector, field,
-                        {vecmem::get_data(resolved_track_candidates),
-                         vecmem::get_data(measurements_per_event)});
-                }
+            {
+                traccc::performance::timer timer{"Track fitting", elapsedTimes};
+                track_states =
+                    fitting_alg(detector, field,
+                                {vecmem::get_data(resolved_track_candidates),
+                                 vecmem::get_data(measurements_per_event)});
             }
 
             /*----------------------------

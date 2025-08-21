@@ -81,7 +81,6 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host detector{host_mr};
-    assert(detector_opts.use_detray_detector == true);
     traccc::io::read_detector(detector, host_mr, detector_opts.detector_file,
                               detector_opts.material_file,
                               detector_opts.grid_file);

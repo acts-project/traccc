@@ -243,7 +243,6 @@ def main():
                     "--input-events=1",
                     "--check-performance",
                     "--use-acts-geom-source=on",
-                    "--use-detray-detector=on",
                 ]
 
                 for k, v in params["config"].items():

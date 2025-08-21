@@ -8,7 +8,6 @@
 // Library include(s).
 #include "traccc/io/read_detector_description.hpp"
 
-#include "csv/read_surfaces.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/utils.hpp"
@@ -40,56 +39,6 @@ void fill_digi_info(traccc::silicon_detector_description::host& dd,
     dd.pitch_x().back() = binning_data.at(0).step;
     dd.pitch_y().back() = binning_data.at(1).step;
     dd.dimensions().back() = data.dimensions;
-}
-
-void read_csv_dd(traccc::silicon_detector_description::host& dd,
-                 std::string_view geometry_file,
-                 const traccc::digitization_config& digi) {
-
-    // Read the geometry description as a map of surface tranformations.
-    const std::map<traccc::geometry_id, traccc::transform3> surfaces =
-        traccc::io::csv::read_surfaces(
-            traccc::io::get_absolute_path(geometry_file.data()));
-
-    // Fill the detector description with information about the (sensitive)
-    // surfaces, and the digitization configurations belonging to those
-    // surfaces.
-    dd.reserve(surfaces.size());
-    for (const auto& [geom_id, transform] : surfaces) {
-
-        // Acts geometry identifier for the surface.
-        const Acts::GeometryIdentifier acts_geom_id{geom_id};
-
-        // Skip non-sensitive surfaces. They are not needed in the
-        // "detector description".
-        if (acts_geom_id.sensitive() == 0) {
-            continue;
-        }
-
-        // Add a new element to the detector description.
-        dd.resize(dd.size() + 1);
-
-        // Fill the new element with the geometry ID and the transformation of
-        // the surface in question.
-        dd.geometry_id().back() = detray::geometry::barcode{geom_id};
-        dd.acts_geometry_id().back() = geom_id;
-        dd.measurement_translation().back() = {0.f, 0.f};
-        dd.subspace().back() = {0, 1};
-
-        // Find the module's digitization configuration.
-        const traccc::digitization_config::Iterator digi_it =
-            digi.find(acts_geom_id);
-        if (digi_it == digi.end()) {
-            std::ostringstream msg;
-            msg << "Could not find digitization config for geometry ID: "
-                << acts_geom_id;
-            throw std::runtime_error(msg.str());
-        }
-
-        // Fill the new element with the digitization configuration for the
-        // surface.
-        fill_digi_info(dd, *digi_it);
-    }
 }
 
 void read_json_dd(traccc::silicon_detector_description::host& dd,
@@ -173,9 +122,6 @@ void read_detector_description(silicon_detector_description::host& dd,
     switch (geometry_format) {
         case data_format::json:
             ::read_json_dd(dd, geometry_file, digi);
-            break;
-        case data_format::csv:
-            ::read_csv_dd(dd, geometry_file, digi);
             break;
         default:
             throw std::invalid_argument("Unsupported geometry format.");

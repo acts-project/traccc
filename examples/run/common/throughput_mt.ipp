@@ -98,16 +98,13 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
     traccc::silicon_detector_description::host det_descr{host_mr};
     traccc::io::read_detector_description(
         det_descr, detector_opts.detector_file, detector_opts.digitization_file,
-        (detector_opts.use_detray_detector ? traccc::data_format::json
-                                           : traccc::data_format::csv));
+        traccc::data_format::json);
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host detector{host_mr};
-    if (detector_opts.use_detray_detector) {
-        traccc::io::read_detector(
-            detector, host_mr, detector_opts.detector_file,
-            detector_opts.material_file, detector_opts.grid_file);
-    }
+    traccc::io::read_detector(detector, host_mr, detector_opts.detector_file,
+                              detector_opts.material_file,
+                              detector_opts.grid_file);
 
     // Construct the magnetic field object.
     const auto field = details::make_magnetic_field(bfield_opts);
@@ -157,11 +154,10 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
     std::vector<FULL_CHAIN_ALG> algs;
     algs.reserve(threading_opts.threads + 1);
     for (std::size_t i = 0; i < threading_opts.threads + 1; ++i) {
-        algs.push_back(
-            {host_mr, clustering_cfg, seedfinder_config, spacepoint_grid_config,
-             seedfilter_config, finding_cfg, fitting_cfg, det_descr, field,
-             (detector_opts.use_detray_detector ? &detector : nullptr),
-             logger().clone()});
+        algs.push_back({host_mr, clustering_cfg, seedfinder_config,
+                        spacepoint_grid_config, seedfilter_config, finding_cfg,
+                        fitting_cfg, det_descr, field, &detector,
+                        logger().clone()});
     }
 
     // Set up a lambda that calls the correct function on the algorithms.

@@ -121,9 +121,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     traccc::silicon_detector_description::host host_det_descr{host_mr};
     traccc::io::read_detector_description(
         host_det_descr, detector_opts.detector_file,
-        detector_opts.digitization_file,
-        (detector_opts.use_detray_detector ? traccc::data_format::json
-                                           : traccc::data_format::csv));
+        detector_opts.digitization_file, traccc::data_format::json);
     traccc::silicon_detector_description::data host_det_descr_data{
         vecmem::get_data(host_det_descr)};
     traccc::silicon_detector_description::buffer device_det_descr{
@@ -136,15 +134,13 @@ int seq_run(const traccc::opts::detector& detector_opts,
     traccc::default_detector::host host_detector{host_mr};
     traccc::default_detector::buffer device_detector;
     traccc::default_detector::view device_detector_view;
-    if (detector_opts.use_detray_detector) {
-        traccc::io::read_detector(
-            host_detector, host_mr, detector_opts.detector_file,
-            detector_opts.material_file, detector_opts.grid_file);
-        device_detector = detray::get_buffer(host_detector, device_mr, copy);
-        q.wait_and_throw();
-        const auto& const_device_detector = device_detector;
-        device_detector_view = detray::get_data(const_device_detector);
-    }
+    traccc::io::read_detector(
+        host_detector, host_mr, detector_opts.detector_file,
+        detector_opts.material_file, detector_opts.grid_file);
+    device_detector = detray::get_buffer(host_detector, device_mr, copy);
+    q.wait_and_throw();
+    const auto& const_device_detector = device_detector;
+    device_detector_view = detray::get_data(const_device_detector);
 
     // Output stats
     uint64_t n_cells = 0;
@@ -276,80 +272,74 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
             // Perform seeding, track finding and fitting only when using a
             // Detray geometry.
-            if (detector_opts.use_detray_detector) {
+            // SYCL
+            {
+                traccc::performance::timer t("Spacepoint formation (sycl)",
+                                             elapsedTimes);
+                // Reconstruct it into spacepoints on the device.
+                spacepoints_sycl_buffer =
+                    sf_sycl(device_detector_view, measurements_sycl_buffer);
+                q.wait_and_throw();
+            }  // stop measuring clusterization sycl timer
 
-                // SYCL
-                {
-                    traccc::performance::timer t("Spacepoint formation (sycl)",
-                                                 elapsedTimes);
-                    // Reconstruct it into spacepoints on the device.
-                    spacepoints_sycl_buffer =
-                        sf_sycl(device_detector_view, measurements_sycl_buffer);
-                    q.wait_and_throw();
-                }  // stop measuring clusterization sycl timer
+            // CPU
+            if (accelerator_opts.compare_with_cpu) {
+                traccc::performance::timer t("Spacepoint formation  (cpu)",
+                                             elapsedTimes);
+                spacepoints_per_event =
+                    sf(host_detector, vecmem::get_data(measurements_per_event));
+            }
 
-                // CPU
-                if (accelerator_opts.compare_with_cpu) {
-                    traccc::performance::timer t("Spacepoint formation  (cpu)",
-                                                 elapsedTimes);
-                    spacepoints_per_event =
-                        sf(host_detector,
-                           vecmem::get_data(measurements_per_event));
-                }
+            // SYCL
+            {
+                traccc::performance::timer t("Seeding (sycl)", elapsedTimes);
+                seeds_sycl_buffer = sa_sycl(spacepoints_sycl_buffer);
+                q.wait_and_throw();
+            }  // stop measuring seeding sycl timer
 
-                // SYCL
-                {
-                    traccc::performance::timer t("Seeding (sycl)",
-                                                 elapsedTimes);
-                    seeds_sycl_buffer = sa_sycl(spacepoints_sycl_buffer);
-                    q.wait_and_throw();
-                }  // stop measuring seeding sycl timer
+            // CPU
+            if (accelerator_opts.compare_with_cpu) {
+                traccc::performance::timer t("Seeding  (cpu)", elapsedTimes);
+                seeds = sa(vecmem::get_data(spacepoints_per_event));
+            }  // stop measuring seeding cpu timer
 
-                // CPU
-                if (accelerator_opts.compare_with_cpu) {
-                    traccc::performance::timer t("Seeding  (cpu)",
-                                                 elapsedTimes);
-                    seeds = sa(vecmem::get_data(spacepoints_per_event));
-                }  // stop measuring seeding cpu timer
+            // SYCL
+            {
+                traccc::performance::timer t("Track params (sycl)",
+                                             elapsedTimes);
+                params_sycl_buffer =
+                    tp_sycl(measurements_sycl_buffer, spacepoints_sycl_buffer,
+                            seeds_sycl_buffer, field_vec);
+                q.wait_and_throw();
+            }  // stop measuring track params timer
 
-                // SYCL
-                {
-                    traccc::performance::timer t("Track params (sycl)",
-                                                 elapsedTimes);
-                    params_sycl_buffer = tp_sycl(measurements_sycl_buffer,
-                                                 spacepoints_sycl_buffer,
-                                                 seeds_sycl_buffer, field_vec);
-                    q.wait_and_throw();
-                }  // stop measuring track params timer
+            // CPU
+            if (accelerator_opts.compare_with_cpu) {
+                traccc::performance::timer t("Track params  (cpu)",
+                                             elapsedTimes);
+                params = tp(vecmem::get_data(measurements_per_event),
+                            vecmem::get_data(spacepoints_per_event),
+                            vecmem::get_data(seeds), field_vec);
+            }  // stop measuring track params cpu timer
 
-                // CPU
-                if (accelerator_opts.compare_with_cpu) {
-                    traccc::performance::timer t("Track params  (cpu)",
-                                                 elapsedTimes);
-                    params = tp(vecmem::get_data(measurements_per_event),
-                                vecmem::get_data(spacepoints_per_event),
-                                vecmem::get_data(seeds), field_vec);
-                }  // stop measuring track params cpu timer
+            // SYCL
+            {
+                traccc::performance::timer timer{"Track finding (sycl)",
+                                                 elapsedTimes};
+                track_candidates_sycl_buffer = finding_alg_sycl(
+                    device_detector_view, device_field,
+                    measurements_sycl_buffer, params_sycl_buffer);
+                q.wait_and_throw();
+            }
 
-                // SYCL
-                {
-                    traccc::performance::timer timer{"Track finding (sycl)",
-                                                     elapsedTimes};
-                    track_candidates_sycl_buffer = finding_alg_sycl(
-                        device_detector_view, device_field,
-                        measurements_sycl_buffer, params_sycl_buffer);
-                    q.wait_and_throw();
-                }
-
-                // CPU
-                if (accelerator_opts.compare_with_cpu) {
-                    traccc::performance::timer timer{"Track finding  (cpu)",
-                                                     elapsedTimes};
-                    track_candidates =
-                        finding_alg(host_detector, host_field,
-                                    vecmem::get_data(measurements_per_event),
-                                    vecmem::get_data(params));
-                }
+            // CPU
+            if (accelerator_opts.compare_with_cpu) {
+                traccc::performance::timer timer{"Track finding  (cpu)",
+                                                 elapsedTimes};
+                track_candidates =
+                    finding_alg(host_detector, host_field,
+                                vecmem::get_data(measurements_per_event),
+                                vecmem::get_data(params));
             }
         }  // stop measuring wall time
 

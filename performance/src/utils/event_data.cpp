@@ -17,7 +17,6 @@
 #include "traccc/io/csv/make_particle_reader.hpp"
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
-#include "traccc/io/read_geometry.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/utils/particle.hpp"
 
