@@ -8,7 +8,6 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_container.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/host_detector.hpp"

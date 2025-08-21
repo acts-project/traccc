@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -18,9 +18,10 @@
 namespace traccc::io {
 
 std::vector<measurement_id_type> read_measurements(
-    measurement_collection_types::host& measurements, std::size_t event,
-    std::string_view directory, const traccc::host_detector* detector,
-    const bool sort_measurements, data_format format) {
+    edm::measurement_collection<default_algebra>::host& measurements,
+    std::size_t event, std::string_view directory,
+    const traccc::host_detector* detector, const bool sort_measurements,
+    data_format format) {
 
     switch (format) {
         case data_format::csv: {
@@ -33,14 +34,13 @@ std::vector<measurement_id_type> read_measurements(
                 detector, sort_measurements, format);
         }
         case data_format::binary: {
-
-            details::read_binary_collection<measurement_collection_types::host>(
+            return read_measurements(
                 measurements,
                 get_absolute_path((std::filesystem::path(directory) /
                                    std::filesystem::path(get_event_filename(
                                        event, "-measurements.dat")))
-                                      .native()));
-            return {};
+                                      .native()),
+                detector, sort_measurements, format);
         }
         default:
             throw std::invalid_argument("Unsupported data format");
@@ -48,14 +48,17 @@ std::vector<measurement_id_type> read_measurements(
 }
 
 std::vector<measurement_id_type> read_measurements(
-    measurement_collection_types::host& measurements, std::string_view filename,
-    const traccc::host_detector* detector, const bool sort_measurements,
-    data_format format) {
+    edm::measurement_collection<default_algebra>::host& measurements,
+    std::string_view filename, const traccc::host_detector* detector,
+    const bool sort_measurements, data_format format) {
 
     switch (format) {
         case data_format::csv:
             return csv::read_measurements(measurements, filename, detector,
                                           sort_measurements);
+        case data_format::binary:
+            details::read_binary_soa(measurements, filename);
+            return {};
         default:
             throw std::invalid_argument("Unsupported data format");
     }

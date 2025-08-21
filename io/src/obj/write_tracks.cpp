@@ -48,12 +48,13 @@ void write_tracks(std::string_view filename,
              tracks.tracks.constituent_links().at(i)) {
 
             // Find the measurement of this constituent.
-            const measurement* meas = nullptr;
+            edm::measurement_collection<
+                default_algebra>::const_device::object_type meas;
             if (type == edm::track_constituent_link::measurement) {
-                meas = &(tracks.measurements.at(idx));
+                meas = tracks.measurements.at(idx);
             } else if (type == edm::track_constituent_link::track_state) {
-                meas = &(tracks.measurements.at(
-                    tracks.states.at(idx).measurement_index()));
+                meas = tracks.measurements.at(
+                    tracks.states.at(idx).measurement_index());
             } else {
                 // This should not happen...
                 throw std::runtime_error(
@@ -64,8 +65,9 @@ void write_tracks(std::string_view filename,
             const auto global = host_detector_visitor<detector_type_list>(
                 detector, [meas]<typename detector_traits_t>(
                               const typename detector_traits_t::host& d) {
-                    detray::tracking_surface surface{d, meas->surface_link};
-                    return surface.local_to_global({}, meas->local, {});
+                    detray::tracking_surface surface{d, meas.surface_link()};
+                    return surface.local_to_global({}, meas.local_position(),
+                                                   {});
                 });
 
             // Write the 3D coordinates of the measurement / spacepoint.

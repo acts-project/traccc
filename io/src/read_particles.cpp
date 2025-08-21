@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -48,15 +48,17 @@ void read_particles(particle_collection_types::host& particles,
     }
 }
 
-void read_particles(particle_container_types::host& particles,
-                    std::size_t event, std::string_view directory,
-                    const traccc::host_detector* detector, data_format format,
-                    std::string_view filename_postfix) {
+void read_particles(
+    particle_container_types::host& particles,
+    edm::measurement_collection<default_algebra>::host& measurements,
+    std::size_t event, std::string_view directory,
+    const traccc::host_detector* detector, data_format format,
+    std::string_view filename_postfix) {
 
     switch (format) {
         case data_format::csv:
             read_particles(
-                particles,
+                particles, measurements,
                 get_absolute_path(
                     (std::filesystem::path(directory) /
                      std::filesystem::path(get_event_filename(
@@ -81,16 +83,18 @@ void read_particles(particle_container_types::host& particles,
     }
 }
 
-void read_particles(particle_container_types::host& particles,
-                    std::string_view particles_file, std::string_view hits_file,
-                    std::string_view measurements_file,
-                    std::string_view hit_map_file,
-                    const traccc::host_detector* detector, data_format format) {
+void read_particles(
+    particle_container_types::host& particles,
+    edm::measurement_collection<default_algebra>::host& measurements,
+    std::string_view particles_file, std::string_view hits_file,
+    std::string_view measurements_file, std::string_view hit_map_file,
+    const traccc::host_detector* detector, data_format format) {
 
     switch (format) {
         case data_format::csv:
-            csv::read_particles(particles, particles_file, hits_file,
-                                measurements_file, hit_map_file, detector);
+            csv::read_particles(particles, measurements, particles_file,
+                                hits_file, measurements_file, hit_map_file,
+                                detector);
             break;
         default:
             throw std::invalid_argument("Unsupported data format");
