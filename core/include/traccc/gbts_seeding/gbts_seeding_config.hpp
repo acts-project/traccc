@@ -14,6 +14,7 @@
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
+#include "traccc/utils/messaging.hpp"
 
 //Detray include(s).
 #include <detray/geometry/barcode.hpp>
@@ -62,15 +63,15 @@ namespace traccc {
 
 struct gbts_seedfinder_config {
 	bool setLinkingScheme(const std::vector<std::pair<int, std::vector<int>>>& binTables, const device::gbts_layerInfo layerInfo,
-    std::vector<std::pair<uint64_t, short>>& detrayBarcodeBinning, float minPt);
-
+    std::vector<std::pair<uint64_t, short>>& detrayBarcodeBinning, float minPt, std::unique_ptr<const ::Acts::Logger> logger);
+	
 	//layer linking and geometry	
 	std::vector<std::pair<int, int>> binTables{};
 	traccc::device::gbts_layerInfo layerInfo{};
 	unsigned int nLayers = 0;	
-
-	std::shared_ptr<int[]> volumeToLayerMap{};
-	unsigned int maxVolIndex = 0;	
+	//could even get away with char for ITk
+	std::shared_ptr<short[]> volumeToLayerMap{};
+	unsigned int volumeMapSize = 0;	
 
 	std::vector<std::array<unsigned int, 2>> surfaceToLayerMap{};
 	unsigned int surfaceMapSize = 0;	
@@ -103,6 +104,7 @@ struct gbts_seedfinder_config {
 	
 	//seed extraction maxiums
 	unsigned char max_cca_iterations = 20;
+
 };
 
 }
