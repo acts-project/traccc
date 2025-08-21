@@ -67,6 +67,9 @@ __launch_bounds__(512) __global__
         if (*(payload.max_shared) == 0) {
             *(payload.terminate) = 1;
         }
+        // Reset the max_shared and n_updated_tracks
+        *(payload.max_shared) = 0;
+        *(payload.n_updated_tracks) = 0;
     }
 
     __syncthreads();

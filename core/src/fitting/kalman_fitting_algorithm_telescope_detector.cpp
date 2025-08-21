@@ -21,28 +21,15 @@ kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
     const edm::track_candidate_container<default_algebra>::const_view&
         track_candidates) const {
 
-    // Perform the track finding using the appropriate templated implementation.
-    if (bfield.is<const_bfield_backend_t<scalar>>()) {
-        traccc::details::kalman_fitter_t<
-            telescope_detector::host,
-            covfie::field<const_bfield_backend_t<scalar>>::view_t>
-            fitter{det, bfield.as_view<const_bfield_backend_t<scalar>>(),
-                   m_config};
-        return details::kalman_fitting<default_algebra>(
-            fitter, track_candidates, m_mr.get(), m_copy.get());
-    } else if (bfield.is<host::inhom_bfield_backend_t<scalar>>()) {
-        traccc::details::kalman_fitter_t<
-            telescope_detector::host,
-            covfie::field<host::inhom_bfield_backend_t<scalar>>::view_t>
-            fitter{det, bfield.as_view<host::inhom_bfield_backend_t<scalar>>(),
-                   m_config};
-        return details::kalman_fitting<default_algebra>(
-            fitter, track_candidates, m_mr.get(), m_copy.get());
-    } else {
-        throw std::invalid_argument(
-            "Unsupported b-field type received in "
-            "traccc::host::kalman_fitting_algorithm");
-    }
+    // Perform the track fitting using the appropriate templated implementation.
+    return magnetic_field_visitor<bfield_type_list<scalar>>(
+        bfield, [&]<typename bfield_view_t>(const bfield_view_t& bfield_view) {
+            traccc::details::kalman_fitter_t<telescope_detector::host,
+                                             bfield_view_t>
+                fitter{det, bfield_view, m_config};
+            return details::kalman_fitting<default_algebra>(
+                fitter, track_candidates, m_mr.get(), m_copy.get());
+        });
 }
 
 }  // namespace traccc::host
