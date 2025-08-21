@@ -31,8 +31,6 @@ class detector : public interface {
     /// The file containing the surface grid description
     std::string grid_file =
         "geometries/odd/odd-detray_surface_grids_detray.json";
-    /// Use detray::detector for the geometry handling
-    bool use_detray_detector = true;
 
     /// The digitization configuration file
     std::string digitization_file =

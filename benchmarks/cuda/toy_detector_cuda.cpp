@@ -15,7 +15,6 @@
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/io/read_detector.hpp"
-#include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/read_spacepoints.hpp"
 #include "traccc/utils/propagation.hpp"

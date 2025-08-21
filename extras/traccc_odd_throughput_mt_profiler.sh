@@ -147,7 +147,6 @@ for NTHREAD in $(seq ${TRACCC_MIN_THREADS} ${TRACCC_THREAD_STEP} ${TRACCC_MAX_TH
             --detector-file="geometries/odd/odd-detray_geometry_detray.json"    \
             --material-file="geometries/odd/odd-detray_material_detray.json"    \
             --grid-file="geometries/odd/odd-detray_surface_grids_detray.json"   \
-            --use-detray-detector                                               \
             --digitization-file="geometries/odd/odd-digi-geometric-config.json" \
             --input-directory="${TRACCC_INPUT_DIR}/geant4_${EVTDIR}/"           \
             --input-events=500                                                  \

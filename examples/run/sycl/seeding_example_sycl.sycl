@@ -90,15 +90,13 @@ int seq_run(const traccc::opts::detector& detector_opts,
     traccc::default_detector::host host_det{host_mr};
     traccc::default_detector::buffer device_det;
     traccc::default_detector::view device_det_view;
-    if (detector_opts.use_detray_detector) {
-        traccc::io::read_detector(
-            host_det, host_mr, detector_opts.detector_file,
-            detector_opts.material_file, detector_opts.grid_file);
-        device_det = detray::get_buffer(host_det, device_mr, copy);
-        q.wait_and_throw();
-        const auto& const_device_det = device_det;
-        device_det_view = detray::get_data(const_device_det);
-    }
+    traccc::io::read_detector(host_det, host_mr, detector_opts.detector_file,
+                              detector_opts.material_file,
+                              detector_opts.grid_file);
+    device_det = detray::get_buffer(host_det, device_mr, copy);
+    q.wait_and_throw();
+    const auto& const_device_det = device_det;
+    device_det_view = detray::get_data(const_device_det);
 
     const traccc::vector3 field_vec(seeding_opts);
 

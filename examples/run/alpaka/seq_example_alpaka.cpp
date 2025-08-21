@@ -83,9 +83,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     traccc::silicon_detector_description::host host_det_descr{host_mr};
     traccc::io::read_detector_description(
         host_det_descr, detector_opts.detector_file,
-        detector_opts.digitization_file,
-        (detector_opts.use_detray_detector ? traccc::data_format::json
-                                           : traccc::data_format::csv));
+        detector_opts.digitization_file, traccc::data_format::json);
     traccc::silicon_detector_description::data host_det_descr_data{
         vecmem::get_data(host_det_descr)};
     traccc::silicon_detector_description::buffer device_det_descr{
@@ -99,15 +97,13 @@ int seq_run(const traccc::opts::detector& detector_opts,
     traccc::default_detector::host host_detector{host_mr};
     traccc::default_detector::buffer device_detector;
     traccc::default_detector::view device_detector_view;
-    if (detector_opts.use_detray_detector) {
-        traccc::io::read_detector(
-            host_detector, host_mr, detector_opts.detector_file,
-            detector_opts.material_file, detector_opts.grid_file);
-        device_detector = detray::get_buffer(host_detector, device_mr, copy);
-        queue.synchronize();
-        const auto& const_device_detector = device_detector;
-        device_detector_view = detray::get_data(const_device_detector);
-    }
+    traccc::io::read_detector(
+        host_detector, host_mr, detector_opts.detector_file,
+        detector_opts.material_file, detector_opts.grid_file);
+    device_detector = detray::get_buffer(host_detector, device_mr, copy);
+    queue.synchronize();
+    const auto& const_device_detector = device_detector;
+    device_detector_view = detray::get_data(const_device_detector);
 
     // Output stats
     uint64_t n_cells = 0;
@@ -263,97 +259,92 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
             // Perform seeding, track finding and fitting only when using a
             // Detray geometry.
-            if (detector_opts.use_detray_detector) {
 
-                // Alpaka
-                {
-                    traccc::performance::timer t(
-                        "Spacepoint formation (alpaka)", elapsedTimes);
-                    spacepoints_alpaka_buffer = sf_alpaka(
-                        device_detector_view, measurements_alpaka_buffer);
-                    queue.synchronize();
-                }  // stop measuring spacepoint formation alpaka timer
+            // Alpaka
+            {
+                traccc::performance::timer t("Spacepoint formation (alpaka)",
+                                             elapsedTimes);
+                spacepoints_alpaka_buffer =
+                    sf_alpaka(device_detector_view, measurements_alpaka_buffer);
+                queue.synchronize();
+            }  // stop measuring spacepoint formation alpaka timer
 
-                // CPU
-                if (accelerator_opts.compare_with_cpu) {
-                    traccc::performance::timer t("Spacepoint formation  (cpu)",
-                                                 elapsedTimes);
-                    spacepoints_per_event =
-                        sf(host_detector,
-                           vecmem::get_data(measurements_per_event));
-                }  // stop measuring spacepoint formation cpu timer
+            // CPU
+            if (accelerator_opts.compare_with_cpu) {
+                traccc::performance::timer t("Spacepoint formation  (cpu)",
+                                             elapsedTimes);
+                spacepoints_per_event =
+                    sf(host_detector, vecmem::get_data(measurements_per_event));
+            }  // stop measuring spacepoint formation cpu timer
 
-                // Alpaka
-                {
-                    traccc::performance::timer t("Seeding (alpaka)",
-                                                 elapsedTimes);
-                    seeds_alpaka_buffer = sa_alpaka(spacepoints_alpaka_buffer);
-                    queue.synchronize();
-                }  // stop measuring seeding alpaka timer
+            // Alpaka
+            {
+                traccc::performance::timer t("Seeding (alpaka)", elapsedTimes);
+                seeds_alpaka_buffer = sa_alpaka(spacepoints_alpaka_buffer);
+                queue.synchronize();
+            }  // stop measuring seeding alpaka timer
 
-                // CPU
-                if (accelerator_opts.compare_with_cpu) {
-                    traccc::performance::timer t("Seeding  (cpu)",
-                                                 elapsedTimes);
-                    seeds = sa(vecmem::get_data(spacepoints_per_event));
-                }  // stop measuring seeding cpu timer
+            // CPU
+            if (accelerator_opts.compare_with_cpu) {
+                traccc::performance::timer t("Seeding  (cpu)", elapsedTimes);
+                seeds = sa(vecmem::get_data(spacepoints_per_event));
+            }  // stop measuring seeding cpu timer
 
-                // Alpaka
-                {
-                    traccc::performance::timer t("Track params (alpaka)",
-                                                 elapsedTimes);
-                    params_alpaka_buffer = tp_alpaka(
-                        measurements_alpaka_buffer, spacepoints_alpaka_buffer,
-                        seeds_alpaka_buffer, field_vec);
-                    queue.synchronize();
-                }  // stop measuring track params timer
+            // Alpaka
+            {
+                traccc::performance::timer t("Track params (alpaka)",
+                                             elapsedTimes);
+                params_alpaka_buffer = tp_alpaka(
+                    measurements_alpaka_buffer, spacepoints_alpaka_buffer,
+                    seeds_alpaka_buffer, field_vec);
+                queue.synchronize();
+            }  // stop measuring track params timer
 
-                // CPU
-                if (accelerator_opts.compare_with_cpu) {
-                    traccc::performance::timer t("Track params  (cpu)",
-                                                 elapsedTimes);
-                    params = tp(vecmem::get_data(measurements_per_event),
-                                vecmem::get_data(spacepoints_per_event),
-                                vecmem::get_data(seeds), field_vec);
-                }  // stop measuring track params cpu timer
+            // CPU
+            if (accelerator_opts.compare_with_cpu) {
+                traccc::performance::timer t("Track params  (cpu)",
+                                             elapsedTimes);
+                params = tp(vecmem::get_data(measurements_per_event),
+                            vecmem::get_data(spacepoints_per_event),
+                            vecmem::get_data(seeds), field_vec);
+            }  // stop measuring track params cpu timer
 
-                // Alpaka
-                {
-                    traccc::performance::timer timer{"Track finding (alpaka)",
-                                                     elapsedTimes};
-                    track_candidates_buffer = finding_alg_alpaka(
-                        device_detector_view, field, measurements_alpaka_buffer,
-                        params_alpaka_buffer);
-                }
+            // Alpaka
+            {
+                traccc::performance::timer timer{"Track finding (alpaka)",
+                                                 elapsedTimes};
+                track_candidates_buffer = finding_alg_alpaka(
+                    device_detector_view, field, measurements_alpaka_buffer,
+                    params_alpaka_buffer);
+            }
 
-                // CPU
-                if (accelerator_opts.compare_with_cpu) {
-                    traccc::performance::timer timer{"Track finding (cpu)",
-                                                     elapsedTimes};
-                    track_candidates =
-                        finding_alg(host_detector, field,
-                                    vecmem::get_data(measurements_per_event),
-                                    vecmem::get_data(params));
-                }
+            // CPU
+            if (accelerator_opts.compare_with_cpu) {
+                traccc::performance::timer timer{"Track finding (cpu)",
+                                                 elapsedTimes};
+                track_candidates =
+                    finding_alg(host_detector, field,
+                                vecmem::get_data(measurements_per_event),
+                                vecmem::get_data(params));
+            }
 
-                // Alpaka
-                {
-                    traccc::performance::timer timer{"Track fitting (alpaka)",
-                                                     elapsedTimes};
-                    track_states_buffer = fitting_alg_alpaka(
-                        device_detector_view, field,
-                        {track_candidates_buffer, measurements_alpaka_buffer});
-                }
+            // Alpaka
+            {
+                traccc::performance::timer timer{"Track fitting (alpaka)",
+                                                 elapsedTimes};
+                track_states_buffer = fitting_alg_alpaka(
+                    device_detector_view, field,
+                    {track_candidates_buffer, measurements_alpaka_buffer});
+            }
 
-                // CPU
-                if (accelerator_opts.compare_with_cpu) {
-                    traccc::performance::timer timer{"Track fitting (cpu)",
-                                                     elapsedTimes};
-                    track_states =
-                        fitting_alg(host_detector, field,
-                                    {vecmem::get_data(track_candidates),
-                                     vecmem::get_data(measurements_per_event)});
-                }
+            // CPU
+            if (accelerator_opts.compare_with_cpu) {
+                traccc::performance::timer timer{"Track fitting (cpu)",
+                                                 elapsedTimes};
+                track_states =
+                    fitting_alg(host_detector, field,
+                                {vecmem::get_data(track_candidates),
+                                 vecmem::get_data(measurements_per_event)});
             }
         }  // Stop measuring wall time
 

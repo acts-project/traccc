@@ -7,7 +7,6 @@
 # Declare the io library test(s).
 traccc_add_test( io
    "test_bfield.cpp"
-   "test_binary.cpp"
    "test_csv.cpp"
    "test_event_data.cpp"
    "test_json.cpp"

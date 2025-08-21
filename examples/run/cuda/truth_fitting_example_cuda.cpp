@@ -16,7 +16,6 @@
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"
-#include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/options/accelerator.hpp"
