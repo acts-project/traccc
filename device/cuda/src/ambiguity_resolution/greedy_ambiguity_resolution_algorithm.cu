@@ -20,7 +20,6 @@
 #include "./kernels/gather_tracks.cuh"
 #include "./kernels/rearrange_tracks.cuh"
 #include "./kernels/remove_tracks.cuh"
-#include "./kernels/reset_status.cuh"
 #include "./kernels/scan_block_offsets.cuh"
 #include "./kernels/sort_tracks_per_measurement.cuh"
 #include "./kernels/sort_updated_tracks.cuh"
@@ -404,11 +403,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
     vecmem::unique_alloc_ptr<unsigned int> n_valid_threads_device =
         vecmem::make_unique_alloc<unsigned int>(m_mr.main);
 
-    int is_first_iteration = 1;
-    vecmem::unique_alloc_ptr<int> is_first_iteration_device =
-        vecmem::make_unique_alloc<int>(m_mr.main);
-    cudaMemcpyAsync(is_first_iteration_device.get(), &is_first_iteration,
-                    sizeof(int), cudaMemcpyHostToDevice, stream);
     int terminate = 0;
     vecmem::unique_alloc_ptr<int> terminate_device =
         vecmem::make_unique_alloc<int>(m_mr.main);
@@ -486,13 +480,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
         cudaGraphExec_t graphExec;
 
         cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal);
-
-        kernels::reset_status<<<1, 1, 0, stream>>>(device::reset_status_payload{
-            .is_first_iteration = is_first_iteration_device.get(),
-            .terminate = terminate_device.get(),
-            .n_accepted = n_accepted_device.get(),
-            .max_shared = max_shared_device.get(),
-            .n_updated_tracks = n_updated_tracks_device.get()});
 
         kernels::find_max_shared<<<nBlocks_warp, nThreads_warp, 0, stream>>>(
             device::find_max_shared_payload{
