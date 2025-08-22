@@ -13,8 +13,8 @@
 namespace traccc::device {
 
 /// (Event Data) Payload for the @c
-/// traccc::device::gather_tracks function
-struct gather_tracks_payload {
+/// traccc::device::update_status function
+struct update_status_payload {
 
     /**
      * @brief Whether to terminate the calculation
@@ -50,6 +50,16 @@ struct gather_tracks_payload {
      * @brief View object to the whether track id is updated
      */
     vecmem::data::vector_view<int> is_updated_view;
+
+    /**
+     * @brief View object to the vector of number of shared measurements
+     */
+    vecmem::data::vector_view<const unsigned int> n_shared_view;
+
+    /**
+     * @brief The number of max shared
+     */
+    unsigned int* max_shared;
 };
 
 }  // namespace traccc::device
