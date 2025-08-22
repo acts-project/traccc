@@ -11,7 +11,6 @@
 // Acts include(s).
 #include <Acts/Plugins/Json/ActsJson.hpp>
 #include <Acts/Plugins/Json/GeometryHierarchyMapJsonConverter.hpp>
-#include <Acts/Plugins/Json/UtilitiesJsonConverter.hpp>
 
 // System include(s).
 #include <fstream>
