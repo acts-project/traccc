@@ -175,6 +175,7 @@ combinatorial_kalman_filter(
     vecmem::data::vector_buffer<unsigned int> n_tracks_per_seed_buffer(n_seeds,
                                                                        mr.main);
     copy.setup(n_tracks_per_seed_buffer)->wait();
+    copy.memset(n_tracks_per_seed_buffer, 0)->wait();
 
     // Create a buffer for links
     unsigned int link_buffer_capacity = config.initial_links_per_seed * n_seeds;
@@ -236,9 +237,6 @@ combinatorial_kalman_filter(
         vecmem::data::vector_buffer<unsigned int> updated_liveness_buffer(
             n_max_candidates, mr.main);
         copy.setup(updated_liveness_buffer)->wait();
-
-        // Reset the number of tracks per seed
-        copy.memset(n_tracks_per_seed_buffer, 0)->wait();
 
         const unsigned int links_size = copy.get_size(links_buffer);
 
