@@ -202,7 +202,7 @@ struct seedfilter_config {
     float deltaRMin = 5.f * unit<float>::mm;
     // how often do you want to increase the weight of a seed for finding a
     // compatible seed?
-    size_t compatSeedLimit = 2;
+    unsigned int compatSeedLimit = 2;
 
     // seed weight increase
     float good_spB_min_radius = 150.f * unit<float>::mm;
@@ -214,7 +214,6 @@ struct seedfilter_config {
     float good_spB_min_weight = 380.f;
 
     // seed cut
-    float seed_min_weight = 200.f;
     float spB_min_radius = 43.f * unit<float>::mm;
 };
 
