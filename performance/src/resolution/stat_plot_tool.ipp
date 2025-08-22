@@ -34,7 +34,8 @@ template <typename track_state_backend_t>
 void stat_plot_tool::fill(
     stat_plot_cache& cache,
     const edm::track_state<track_state_backend_t>& trk_state,
-    const measurement_collection_types::host& measurements) const {
+    const edm::measurement_collection<default_algebra>::host& measurements)
+    const {
 
     // Avoid unused variable warnings when building the code without ROOT.
     (void)cache;
@@ -43,7 +44,7 @@ void stat_plot_tool::fill(
 
 #ifdef TRACCC_HAVE_ROOT
     const unsigned int D =
-        measurements.at(trk_state.measurement_index()).meas_dim;
+        measurements.at(trk_state.measurement_index()).dimensions();
     const auto filtered_chi2 = trk_state.filtered_chi2();
     const auto smoothed_chi2 = trk_state.smoothed_chi2();
     cache.chi2_filtered_hist[D]->Fill(filtered_chi2);

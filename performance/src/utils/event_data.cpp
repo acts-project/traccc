@@ -8,7 +8,7 @@
 // Local include(s).
 #include "traccc/utils/event_data.hpp"
 
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/io/csv/make_cell_reader.hpp"
 #include "traccc/io/csv/make_hit_reader.hpp"
 #include "traccc/io/csv/make_measurement_edm.hpp"
@@ -30,7 +30,10 @@ event_data::event_data(const std::string& event_dir, const std::size_t event_id,
                        vecmem::memory_resource& resource,
                        bool use_acts_geom_source, const host_detector* det,
                        data_format format, bool include_silicon_cells)
-    : m_event_dir(event_dir), m_event_id(event_id), m_mr(resource) {
+    : m_measurements(resource),
+      m_event_dir(event_dir),
+      m_event_id(event_id),
+      m_mr(resource) {
 
     // Currently, we only support csv type for event data
     assert(format == data_format::csv);
@@ -169,19 +172,20 @@ void event_data::setup_csv(bool use_acts_geom_source, const host_detector* det,
     // Measurement map
     for (const auto& iomeas : csv_measurements) {
         // Construct the measurement object.
-        traccc::measurement meas;
+        m_measurements.resize(m_measurements.size() + 1u);
+        auto meas = m_measurements.at(m_measurements.size() - 1u);
         if (use_acts_geom_source) {
-            meas = traccc::io::csv::make_measurement_edm(iomeas,
-                                                         &acts_to_detray_id);
+            traccc::io::csv::make_measurement_edm(iomeas, meas,
+                                                  &acts_to_detray_id);
         } else {
-            meas = traccc::io::csv::make_measurement_edm(iomeas, nullptr);
+            traccc::io::csv::make_measurement_edm(iomeas, meas, nullptr);
         }
 
         if (!csv_measurements_have_time) {
             const auto hid = csv_meas_hit_ids.at(iomeas.measurement_id).hit_id;
             const auto& iohit = csv_hits.at(hid);
 
-            meas.time = iohit.tt;
+            meas.time() = iohit.tt;
         }
 
         if (iomeas.measurement_id <=
@@ -213,7 +217,8 @@ void event_data::setup_csv(bool use_acts_geom_source, const host_detector* det,
     // When including silicon cells
     if (include_silicon_cells) {
 
-        std::map<measurement, std::vector<io::csv::cell>> meas_to_cluster_map;
+        std::map<measurement_proxy, std::vector<io::csv::cell>>
+            meas_to_cluster_map;
 
         for (const auto& iocell : csv_cells) {
 
@@ -222,14 +227,8 @@ void event_data::setup_csv(bool use_acts_geom_source, const host_detector* det,
             auto hid = csv_meas_hit_ids[meas_id].hit_id;
             const auto& iohit = csv_hits[hid];
 
-            traccc::measurement meas;
-            if (meas_id <= std::numeric_limits<measurement_id_type>::max()) {
-                meas = m_measurement_map.at(
-                    static_cast<measurement_id_type>(meas_id));
-            } else {
-                throw std::runtime_error("Measurement ID exceeds the bound");
-            }
-
+            measurement_proxy meas =
+                m_measurement_map.at(static_cast<measurement_id_type>(meas_id));
             meas_to_cluster_map[meas].push_back(iocell);
 
             const auto& ptc = m_particle_map.at(iohit.particle_id);
@@ -259,14 +258,8 @@ void event_data::setup_csv(bool use_acts_geom_source, const host_detector* det,
         const auto& ptc = m_particle_map.at(iohit.particle_id);
 
         // Construct the measurement object.
-        traccc::measurement meas;
-        if (iomeas.measurement_id <=
-            std::numeric_limits<measurement_id_type>::max()) {
-            meas = m_measurement_map.at(
-                static_cast<measurement_id_type>(iomeas.measurement_id));
-        } else {
-            throw std::runtime_error("Measurement ID exceeds the bound");
-        }
+        measurement_proxy meas = m_measurement_map.at(
+            static_cast<measurement_id_type>(iomeas.measurement_id));
 
         // Fill measurement to truth global position and momentum map
         m_meas_to_param_map[meas] = std::make_pair(global_pos, global_mom);
@@ -274,11 +267,11 @@ void event_data::setup_csv(bool use_acts_geom_source, const host_detector* det,
         // Fill particle to measurement map
         auto& meas_vec = m_ptc_to_meas_map[ptc];
 
-        meas_vec.insert(std::upper_bound(
-                            meas_vec.begin(), meas_vec.end(), meas,
-                            [](const measurement& val, const measurement& old) {
-                                return old.time > val.time;
-                            }),
+        meas_vec.insert(std::upper_bound(meas_vec.begin(), meas_vec.end(), meas,
+                                         [](const measurement_proxy& val,
+                                            const measurement_proxy& old) {
+                                             return old.time() > val.time();
+                                         }),
                         meas);
 
         if (!include_silicon_cells) {
@@ -295,15 +288,16 @@ void event_data::setup_csv(bool use_acts_geom_source, const host_detector* det,
 void event_data::fill_cca_result(
     const edm::silicon_cell_collection::host& cells,
     const edm::silicon_cluster_collection::host& cca_clusters,
-    const measurement_collection_types::host& cca_measurements,
+    const edm::measurement_collection<default_algebra>::host& cca_measurements,
     const silicon_detector_description::host& dd) {
 
     const std::size_t n_cca_clusters = cca_measurements.size();
 
-    std::map<measurement, std::vector<io::csv::cell>> found_meas_to_cluster_map;
+    std::map<measurement_proxy, std::vector<io::csv::cell>>
+        found_meas_to_cluster_map;
 
     for (std::size_t i = 0; i < n_cca_clusters; i++) {
-        const auto& meas = cca_measurements.at(i);
+        const auto meas = cca_measurements.at(i);
         const auto cluster = cca_clusters[i];
 
         std::vector<io::csv::cell> iocells;
