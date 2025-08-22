@@ -16,13 +16,12 @@
 #include "./kernels/fill_tracks_per_measurement.cuh"
 #include "./kernels/fill_unique_meas_id_map.cuh"
 #include "./kernels/fill_vectors.cuh"
-#include "./kernels/find_max_shared.cuh"
-#include "./kernels/gather_tracks.cuh"
 #include "./kernels/rearrange_tracks.cuh"
 #include "./kernels/remove_tracks.cuh"
 #include "./kernels/scan_block_offsets.cuh"
 #include "./kernels/sort_tracks_per_measurement.cuh"
 #include "./kernels/sort_updated_tracks.cuh"
+#include "./kernels/update_status.cuh"
 #include "traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 #include "traccc/definitions/math.hpp"
 
@@ -406,19 +405,20 @@ greedy_ambiguity_resolution_algorithm::operator()(
     int terminate = 0;
     vecmem::unique_alloc_ptr<int> terminate_device =
         vecmem::make_unique_alloc<int>(m_mr.main);
+    auto max_shared = thrust::max_element(thrust::device, n_shared_buffer.ptr(),
+                                          n_shared_buffer.ptr() + n_tracks);
     vecmem::unique_alloc_ptr<unsigned int> max_shared_device =
         vecmem::make_unique_alloc<unsigned int>(m_mr.main);
+    cudaMemcpyAsync(max_shared_device.get(), max_shared, sizeof(unsigned int),
+                    cudaMemcpyHostToDevice, stream);
+
     vecmem::unique_alloc_ptr<unsigned int> n_updated_tracks_device =
         vecmem::make_unique_alloc<unsigned int>(m_mr.main);
 
     // Thread block size
-    unsigned int nThreads_adaptive = m_warp_size * 4;
+    unsigned int nThreads_adaptive = m_warp_size;
     unsigned int nBlocks_adaptive =
         (n_accepted + nThreads_adaptive - 1) / nThreads_adaptive;
-
-    unsigned int nThreads_warp = m_warp_size;
-    unsigned int nBlocks_warp =
-        (n_accepted + nThreads_warp - 1) / nThreads_warp;
 
     unsigned int nThreads_rearrange = 1024;
     unsigned int nBlocks_rearrange =
@@ -462,7 +462,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
     while (!terminate && n_accepted > 0) {
         nBlocks_adaptive =
             (n_accepted + nThreads_adaptive - 1) / nThreads_adaptive;
-        nBlocks_warp = (n_accepted + nThreads_warp - 1) / nThreads_warp;
 
         scan_dim = compute_scan_config(n_accepted);
         nThreads_scan = scan_dim.first;
@@ -477,14 +476,6 @@ greedy_ambiguity_resolution_algorithm::operator()(
         cudaGraphExec_t graphExec;
 
         cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal);
-
-        kernels::find_max_shared<<<nBlocks_warp, nThreads_warp, 0, stream>>>(
-            device::find_max_shared_payload{
-                .sorted_ids_view = sorted_ids_buffer,
-                .n_accepted = n_accepted_device.get(),
-                .n_shared_view = n_shared_buffer,
-                .terminate = terminate_device.get(),
-                .max_shared = max_shared_device.get()});
 
         kernels::remove_tracks<<<1, 512, 0, stream>>>(
             device::remove_tracks_payload{
@@ -589,15 +580,17 @@ greedy_ambiguity_resolution_algorithm::operator()(
         });
 
         kernels::
-            gather_tracks<<<nBlocks_adaptive, nThreads_adaptive, 0, stream>>>(
-                device::gather_tracks_payload{
+            update_status<<<nBlocks_adaptive, nThreads_adaptive, 0, stream>>>(
+                device::update_status_payload{
                     .terminate = terminate_device.get(),
                     .n_accepted = n_accepted_device.get(),
                     .n_updated_tracks = n_updated_tracks_device.get(),
                     .temp_sorted_ids_view = temp_sorted_ids_buffer,
                     .sorted_ids_view = sorted_ids_buffer,
                     .updated_tracks_view = updated_tracks_buffer,
-                    .is_updated_view = is_updated_buffer});
+                    .is_updated_view = is_updated_buffer,
+                    .n_shared_view = n_shared_buffer,
+                    .max_shared = max_shared_device.get()});
 
         cudaStreamEndCapture(stream, &graph);
         cudaGraphInstantiate(&graphExec, graph, nullptr, nullptr, 0);

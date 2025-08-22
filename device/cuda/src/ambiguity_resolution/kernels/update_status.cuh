@@ -8,9 +8,9 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/ambiguity_resolution/device/gather_tracks.hpp"
+#include "traccc/ambiguity_resolution/device/update_status.hpp"
 
 namespace traccc::cuda::kernels {
 
-__global__ void gather_tracks(device::gather_tracks_payload payload);
+__global__ void update_status(device::update_status_payload payload);
 }
