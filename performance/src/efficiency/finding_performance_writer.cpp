@@ -91,28 +91,25 @@ namespace {
  * with its corresponding measurements.
  */
 std::vector<std::vector<measurement>> prepare_data(
-    const edm::track_candidate_collection<default_algebra>::const_view&
-        track_candidates_view,
-    const measurement_collection_types::const_view& measurements_view) {
+    const edm::track_candidate_container<default_algebra>::const_view&
+        track_candidates_view) {
     std::vector<std::vector<measurement>> result;
 
     // Iterate over the tracks.
-    const edm::track_candidate_collection<default_algebra>::const_device
+    const edm::track_candidate_container<default_algebra>::const_device
         track_candidates(track_candidates_view);
-    const measurement_collection_types::const_device measurements{
-        measurements_view};
 
-    const unsigned int n_tracks = track_candidates.size();
+    const unsigned int n_tracks = track_candidates.tracks.size();
     result.reserve(n_tracks);
 
     for (unsigned int i = 0; i < n_tracks; i++) {
         std::vector<measurement> m;
-        m.reserve(track_candidates.at(i).measurement_indices().size());
+        m.reserve(track_candidates.tracks.at(i).measurement_indices().size());
         const edm::track_candidate_collection<
             default_algebra>::const_device::const_proxy_type track =
-            track_candidates.at(i);
+            track_candidates.tracks.at(i);
         for (unsigned int midx : track.measurement_indices()) {
-            m.push_back(measurements.at(midx));
+            m.push_back(track_candidates.measurements.at(midx));
         }
         result.push_back(std::move(m));
     }
@@ -129,23 +126,27 @@ std::vector<std::vector<measurement>> prepare_data(
  * with its corresponding measurements.
  */
 std::vector<std::vector<measurement>> prepare_data(
-    const track_state_container_types::const_view& track_states_view) {
+    const edm::track_fit_container<default_algebra>::const_view&
+        track_fit_view) {
     std::vector<std::vector<measurement>> result;
 
-    // Iterate over the tracks.
-    track_state_container_types::const_device track_states(track_states_view);
+    // Set up the input containers.
+    const edm::track_fit_container<default_algebra>::const_device track_fits(
+        track_fit_view);
 
-    const unsigned int n_tracks = track_states.size();
+    // Iterate over the tracks.
+    const unsigned int n_tracks = track_fits.tracks.size();
     result.reserve(n_tracks);
 
     for (unsigned int i = 0; i < n_tracks; i++) {
-        auto const& [fit_res, states] = track_states.at(i);
-        std::vector<measurement> measurements;
-        measurements.reserve(states.size());
-        for (const auto& st : states) {
-            measurements.push_back(st.get_measurement());
+        std::vector<measurement> result_measurements;
+        result_measurements.reserve(
+            track_fits.tracks.at(i).state_indices().size());
+        for (unsigned int st_idx : track_fits.tracks.state_indices().at(i)) {
+            result_measurements.push_back(track_fits.measurements.at(
+                track_fits.states.at(st_idx).measurement_index()));
         }
-        result.push_back(std::move(measurements));
+        result.push_back(std::move(result_measurements));
     }
     return result;
 }
@@ -166,6 +167,8 @@ void finding_performance_writer::write_common(
 
     // Iterate over the tracks.
     const std::size_t n_tracks = tracks.size();
+
+    std::size_t total_fake_tracks = 0;
 
     for (std::size_t i = 0; i < n_tracks; i++) {
 
@@ -203,17 +206,24 @@ void finding_performance_writer::write_common(
         // of the number of measurements
         assert(found_measurements.size() > 0u);
         assert(truth_measurements.size() > 0u);
-        const bool reco_matched =
-            static_cast<double>(n_major_hits) /
-                static_cast<double>(found_measurements.size()) >
-            m_cfg.matching_ratio;
-        const bool truth_matched =
-            static_cast<double>(n_major_hits) /
-                static_cast<double>(truth_measurements.size()) >
-            m_cfg.matching_ratio;
 
-        if ((!m_cfg.double_matching && reco_matched) ||
-            (m_cfg.double_matching && reco_matched && truth_matched)) {
+        const double purity = static_cast<double>(n_major_hits) /
+                              static_cast<double>(found_measurements.size());
+        const double completeness =
+            static_cast<double>(n_major_hits) /
+            static_cast<double>(truth_measurements.size());
+
+        const bool reco_matched =
+            purity > m_cfg.track_truth_config.matching_ratio;
+        const bool truth_matched =
+            completeness > m_cfg.track_truth_config.matching_ratio;
+
+        m_data->m_stat_plot_tool.fill(m_data->m_stat_plot_cache, purity,
+                                      completeness);
+
+        if ((!m_cfg.track_truth_config.double_matching && reco_matched) ||
+            (m_cfg.track_truth_config.double_matching && reco_matched &&
+             truth_matched)) {
             const auto pid = major_ptc.particle_id;
             match_counter[pid]++;
         } else {
@@ -221,18 +231,37 @@ void finding_performance_writer::write_common(
                 const auto pid = phc.ptc.particle_id;
                 fake_counter[pid]++;
             }
+            total_fake_tracks++;
         }
     }
 
+    std::size_t total_truth_particles = 0;
+    std::size_t total_matched_truth_particles = 0;
+    std::size_t total_duplicate_tracks = 0;
+
     // For each truth particle...
     for (auto const& [pid, ptc] : evt_data.m_particle_map) {
+        std::size_t num_measurements = 0;
 
-        // Count only charged particles which satisfy pT_cut
-        if (ptc.charge == 0 || vector::perp(ptc.momentum) < m_cfg.pT_cut ||
-            ptc.vertex[2] < m_cfg.z_min || ptc.vertex[2] > m_cfg.z_max ||
-            vector::perp(ptc.vertex) > m_cfg.r_max) {
+        // Find the number of measurements belonging to this track
+        if (auto it = evt_data.m_ptc_to_meas_map.find(ptc);
+            it != evt_data.m_ptc_to_meas_map.end()) {
+            num_measurements = it->second.size();
+        } else {
             continue;
         }
+
+        // Count only charged particles which satisfy pT_cut and vertex cut
+        if (ptc.charge == 0 ||
+            vector::perp(ptc.momentum) < m_cfg.truth_config.pT_min ||
+            ptc.vertex[2] < m_cfg.truth_config.z_min ||
+            ptc.vertex[2] > m_cfg.truth_config.z_max ||
+            vector::perp(ptc.vertex) > m_cfg.truth_config.r_max ||
+            num_measurements < m_cfg.truth_config.min_track_candidates) {
+            continue;
+        }
+
+        total_truth_particles++;
 
         // Finds how many tracks were made solely by hits from the current truth
         // particle
@@ -241,7 +270,9 @@ void finding_performance_writer::write_common(
         auto it = match_counter.find(pid);
         if (it != match_counter.end()) {
             is_matched = true;
+            total_matched_truth_particles++;
             n_matched_seeds_for_particle = it->second;
+            total_duplicate_tracks += n_matched_seeds_for_particle - 1;
         }
 
         // Finds how many (fake) tracks were made with at least one hit from the
@@ -259,18 +290,36 @@ void finding_performance_writer::write_common(
         m_data->m_fake_tracks_plot_tool.fill(m_data->m_fake_tracks_plot_cache,
                                              ptc, fake_count);
     }
+
+    TRACCC_INFO("Total number of truth particles was "
+                << total_truth_particles);
+    TRACCC_INFO("Total number of found tracks was " << n_tracks);
+    TRACCC_INFO("Total number of track-matched particles was "
+                << total_matched_truth_particles);
+    TRACCC_INFO("Total number of duplicated tracks was "
+                << total_duplicate_tracks);
+    TRACCC_INFO("Total number of fake tracks was " << total_fake_tracks);
+    TRACCC_INFO("Total track efficiency was "
+                << (100. * static_cast<double>(total_matched_truth_particles) /
+                    static_cast<double>(total_truth_particles))
+                << "%");
+    TRACCC_INFO("Total track duplicate rate was "
+                << (static_cast<double>(total_duplicate_tracks) /
+                    static_cast<double>(total_matched_truth_particles)));
+    TRACCC_INFO("Total track fake rate was "
+                << (static_cast<double>(total_fake_tracks) /
+                    static_cast<double>(total_truth_particles)));
 }
 
 /// For track finding
 void finding_performance_writer::write(
-    const edm::track_candidate_collection<default_algebra>::const_view&
+    const edm::track_candidate_container<default_algebra>::const_view&
         track_candidates_view,
-    const measurement_collection_types::const_view& measurements_view,
     const event_data& evt_data) {
 
     // Set up the input containers.
     const edm::track_candidate_collection<default_algebra>::const_device
-        track_candidates(track_candidates_view);
+        track_candidates(track_candidates_view.tracks);
 
     const unsigned int n_tracks = track_candidates.size();
 
@@ -282,16 +331,16 @@ void finding_performance_writer::write(
     }
 
     std::vector<std::vector<measurement>> tracks =
-        prepare_data(track_candidates_view, measurements_view);
+        prepare_data(track_candidates_view);
     write_common(tracks, evt_data);
 }
 
 /// For ambiguity resolution
 void finding_performance_writer::write(
-    const track_state_container_types::const_view& track_states_view,
+    const edm::track_fit_container<default_algebra>::const_view& track_fit_view,
     const event_data& evt_data) {
-    std::vector<std::vector<measurement>> tracks =
-        prepare_data(track_states_view);
+
+    std::vector<std::vector<measurement>> tracks = prepare_data(track_fit_view);
     write_common(tracks, evt_data);
 }
 

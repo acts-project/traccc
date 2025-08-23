@@ -26,11 +26,16 @@ void stat_plot_tool::book(stat_plot_cache& cache) const {
     plot_helpers::binning b_reduced_chi2 = m_cfg.var_binning.at("reduced_chi2");
     plot_helpers::binning b_pval = m_cfg.var_binning.at("pval");
     plot_helpers::binning b_chi2_local = m_cfg.var_binning.at("chi2_local");
+    plot_helpers::binning b_purity = m_cfg.var_binning.at("purity");
+    plot_helpers::binning b_completeness = m_cfg.var_binning.at("completeness");
     cache.ndf_hist = plot_helpers::book_histo("ndf", "NDF", b_ndf);
     cache.chi2_hist = plot_helpers::book_histo("chi2", "Chi2", b_chi2);
     cache.reduced_chi2_hist =
         plot_helpers::book_histo("reduced_chi2", "Chi2/NDF", b_reduced_chi2);
     cache.pval_hist = plot_helpers::book_histo("pval", "p value", b_pval);
+    cache.purity_hist = plot_helpers::book_histo("purity", "Ratio", b_purity);
+    cache.completeness_hist =
+        plot_helpers::book_histo("completeness", "Ratio", b_completeness);
     for (unsigned int D = 1u; D <= 2u; D++) {
         cache.chi2_filtered_hist[D] = plot_helpers::book_histo(
             Form("chi2_%dD_filtered", D),
@@ -48,42 +53,17 @@ void stat_plot_tool::book(stat_plot_cache& cache) const {
 #endif  // TRACCC_HAVE_ROOT
 }
 
-void stat_plot_tool::fill(
-    stat_plot_cache& cache,
-    const fitting_result<traccc::default_algebra>& fit_res) const {
+void stat_plot_tool::fill(stat_plot_cache& cache, double purity,
+                          double completeness) const {
 
     // Avoid unused variable warnings when building the code without ROOT.
     (void)cache;
-    (void)fit_res;
+    (void)purity;
+    (void)completeness;
 
 #ifdef TRACCC_HAVE_ROOT
-    const auto& ndf = fit_res.trk_quality.ndf;
-    const auto& chi2 = fit_res.trk_quality.chi2;
-    cache.ndf_hist->Fill(ndf);
-    cache.chi2_hist->Fill(chi2);
-    cache.reduced_chi2_hist->Fill(chi2 / ndf);
-    cache.pval_hist->Fill(fit_res.trk_quality.pval);
-#endif  // TRACCC_HAVE_ROOT
-}
-
-void stat_plot_tool::fill(
-    stat_plot_cache& cache,
-    const track_state<traccc::default_algebra>& trk_state) const {
-
-    // Avoid unused variable warnings when building the code without ROOT.
-    (void)cache;
-    (void)trk_state;
-
-#ifdef TRACCC_HAVE_ROOT
-    const unsigned int D = trk_state.get_measurement().meas_dim;
-    const auto filtered_chi2 = trk_state.filtered_chi2();
-    const auto smoothed_chi2 = trk_state.smoothed_chi2();
-    cache.chi2_filtered_hist[D]->Fill(filtered_chi2);
-    cache.chi2_smoothed_hist[D]->Fill(smoothed_chi2);
-    cache.pval_filtered_hist[D]->Fill(
-        prob(filtered_chi2, static_cast<traccc::scalar>(D)));
-    cache.pval_smoothed_hist[D]->Fill(
-        prob(smoothed_chi2, static_cast<traccc::scalar>(D)));
+    cache.purity_hist->Fill(purity);
+    cache.completeness_hist->Fill(completeness);
 #endif  // TRACCC_HAVE_ROOT
 }
 
@@ -101,6 +81,8 @@ void stat_plot_tool::write(const stat_plot_cache& cache) const {
     cache.chi2_hist->Write();
     cache.reduced_chi2_hist->Write();
     cache.pval_hist->Write();
+    cache.purity_hist->Write();
+    cache.completeness_hist->Write();
 
     for (const auto& flt : cache.chi2_filtered_hist) {
         flt.second->Write();

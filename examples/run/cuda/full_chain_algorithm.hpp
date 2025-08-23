@@ -19,7 +19,8 @@
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
-#include "traccc/edm/track_state.hpp"
+#include "traccc/edm/track_fit_collection.hpp"
+#include "traccc/edm/track_parameters.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
@@ -30,6 +31,7 @@
 #include <vecmem/containers/vector.hpp>
 #include <vecmem/memory/binary_page_memory_resource.hpp>
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
+#include <vecmem/memory/cuda/host_memory_resource.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
 
@@ -43,7 +45,7 @@ namespace traccc::cuda {
 /// At least as much as is implemented in the project at any given moment.
 ///
 class full_chain_algorithm
-    : public algorithm<vecmem::vector<fitting_result<default_algebra>>(
+    : public algorithm<edm::track_fit_collection<default_algebra>::host(
           const edm::silicon_cell_collection::host&)>,
       public messaging {
 
@@ -114,15 +116,27 @@ class full_chain_algorithm
     output_type operator()(
         const edm::silicon_cell_collection::host& cells) const override;
 
+    /// Reconstruct track seeds in the entire detector
+    ///
+    /// @param cells The cells for every detector module in the event
+    /// @return The track seeds reconstructed
+    ///
+    bound_track_parameters_collection_types::host seeding(
+        const edm::silicon_cell_collection::host& cells) const;
+
     private:
     /// Host memory resource
     vecmem::memory_resource& m_host_mr;
+    /// Pinned host memory resource
+    vecmem::cuda::host_memory_resource m_pinned_host_mr;
+    /// Cached pinned host memory resource
+    mutable vecmem::binary_page_memory_resource m_cached_pinned_host_mr;
     /// CUDA stream to use
     stream m_stream;
     /// Device memory resource
     vecmem::cuda::device_memory_resource m_device_mr;
     /// Device caching memory resource
-    std::unique_ptr<vecmem::binary_page_memory_resource> m_cached_device_mr;
+    mutable vecmem::binary_page_memory_resource m_cached_device_mr;
     /// (Asynchronous) Memory copy object
     mutable vecmem::cuda::async_copy m_copy;
 
@@ -141,7 +155,7 @@ class full_chain_algorithm
     /// Buffer holding the detector's payload on the device
     host_detector_type::buffer_type m_device_detector;
     /// View of the detector's payload on the device
-    host_detector_type::view_type m_device_detector_view;
+    host_detector_type::const_view_type m_device_detector_view;
 
     /// @name Sub-algorithms used by this full-chain algorithm
     /// @{

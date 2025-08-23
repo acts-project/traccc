@@ -12,8 +12,6 @@
 // Project include(s).
 #include "traccc/bfield/construct_const_bfield.hpp"
 #include "traccc/bfield/magnetic_field_types.hpp"
-#include "traccc/device/container_d2h_copy_alg.hpp"
-#include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_measurements.hpp"
@@ -81,7 +79,8 @@ TEST_P(CkfToyDetectorTests, Run) {
     const auto field = traccc::construct_const_bfield(B);
 
     // Detector view object
-    auto det_view = detray::get_data(host_det);
+    const host_detector_type& const_host_det = host_det;
+    auto det_view = detray::get_data(const_host_det);
 
     /***************************
      * Generate simulation data
@@ -127,9 +126,6 @@ TEST_P(CkfToyDetectorTests, Run) {
     // Copy objects
     vecmem::sycl::async_copy copy{vecmem_queue};
 
-    traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
-        track_state_d2h{mr, copy};
-
     // Seed generator
     seed_generator<host_detector_type> sg(host_det, stddevs);
 
@@ -137,8 +133,9 @@ TEST_P(CkfToyDetectorTests, Run) {
     traccc::sycl::combinatorial_kalman_filter_algorithm::config_type cfg;
     cfg.ptc_hypothesis = ptc;
     cfg.max_num_branches_per_seed = 500;
+    cfg.max_num_branches_per_surface = 2;
+    cfg.chi2_max = 10.f;
     cfg.propagation.navigation.search_window = search_window;
-    cfg.duplicate_removal_minimum_length = 100u;
 
     // Finding algorithm object
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(cfg,

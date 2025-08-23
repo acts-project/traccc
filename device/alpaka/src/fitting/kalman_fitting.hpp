@@ -8,12 +8,13 @@
 #pragma once
 
 // Local include(s).
+#include "../utils/parallel_algorithms.hpp"
 #include "../utils/utils.hpp"
 
 // Project include(s).
 #include "traccc/edm/device/sort_key.hpp"
 #include "traccc/edm/track_candidate_container.hpp"
-#include "traccc/edm/track_state.hpp"
+#include "traccc/edm/track_fit_container.hpp"
 #include "traccc/fitting/details/kalman_fitting_types.hpp"
 #include "traccc/fitting/device/fill_fitting_sort_keys.hpp"
 #include "traccc/fitting/device/fit.hpp"
@@ -25,10 +26,6 @@
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
-
-// Thrust include(s).
-#include <thrust/execution_policy.h>
-#include <thrust/sort.h>
 
 namespace traccc::alpaka::details {
 namespace kernels {
@@ -58,14 +55,14 @@ struct fit_prelude {
         vecmem::data::vector_view<const unsigned int> param_ids_view,
         edm::track_candidate_container<default_algebra>::const_view
             track_candidates_view,
-        track_state_container_types::view track_states_view,
+        edm::track_fit_container<default_algebra>::view track_states_view,
         vecmem::data::vector_view<unsigned int> param_liveness_view) const {
 
         const device::global_index_t globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
-        device::fit_prelude(globalThreadIdx, param_ids_view,
-                            track_candidates_view, track_states_view,
-                            param_liveness_view);
+        device::fit_prelude<default_algebra>(
+            globalThreadIdx, param_ids_view, track_candidates_view,
+            track_states_view, param_liveness_view);
     }
 };
 
@@ -115,19 +112,14 @@ struct fit_backward {
 /// @return A container of the fitted track states
 ///
 template <typename detector_t, typename bfield_t>
-track_state_container_types::buffer kalman_fitting(
-    const typename detector_t::view_type& det_view, const bfield_t& field_view,
+typename edm::track_fit_container<typename detector_t::algebra_type>::buffer
+kalman_fitting(
+    const typename detector_t::const_view_type& det_view,
+    const bfield_t& field_view,
     const typename edm::track_candidate_container<
         typename detector_t::algebra_type>::const_view& track_candidates_view,
     const fitting_config& config, const memory_resource& mr, vecmem::copy& copy,
     Queue& queue) {
-
-    /// Thrust policy to use.
-#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_GPU_HIP_ENABLED)
-    auto thrustExecPolicy = thrust::device;
-#else
-    auto thrustExecPolicy = thrust::host;
-#endif
 
     // Number of threads per block to use.
     const Idx threadsPerBlock = getWarpSize<Acc>() * 2;
@@ -140,21 +132,24 @@ track_state_container_types::buffer kalman_fitting(
     // Get the sizes of the track candidates in each track.
     const std::vector<unsigned int> candidate_sizes =
         copy.get_sizes(track_candidates_view.tracks);
+    const unsigned int n_states =
+        std::accumulate(candidate_sizes.begin(), candidate_sizes.end(), 0u);
 
     // Create the result buffer.
-    track_state_container_types::buffer track_states_buffer{
-        {n_tracks, mr.main},
-        {candidate_sizes, mr.main, mr.host,
-         vecmem::data::buffer_type::resizable}};
-    vecmem::copy::event_type track_states_headers_setup_event =
-        copy.setup(track_states_buffer.headers);
-    vecmem::copy::event_type track_states_items_setup_event =
-        copy.setup(track_states_buffer.items);
+    typename edm::track_fit_container<typename detector_t::algebra_type>::buffer
+        track_states_buffer{
+            {candidate_sizes, mr.main, mr.host,
+             vecmem::data::buffer_type::resizable},
+            {n_states, mr.main, vecmem::data::buffer_type::resizable}};
+    vecmem::copy::event_type tracks_setup_event =
+        copy.setup(track_states_buffer.tracks);
+    vecmem::copy::event_type track_states_setup_event =
+        copy.setup(track_states_buffer.states);
 
     // Return early, if there are no tracks.
     if (n_tracks == 0) {
-        track_states_headers_setup_event->wait();
-        track_states_items_setup_event->wait();
+        tracks_setup_event->wait();
+        track_states_setup_event->wait();
         return track_states_buffer;
     }
 
@@ -199,13 +194,16 @@ track_state_container_types::buffer kalman_fitting(
     // Sort the key to get the sorted parameter ids
     vecmem::device_vector<device::sort_key> keys_device(keys_buffer);
     vecmem::device_vector<unsigned int> param_ids_device(param_ids_buffer);
-    thrust::sort_by_key(thrustExecPolicy, keys_device.begin(),
-                        keys_device.end(), param_ids_device.begin());
+    details::sort_by_key(queue, mr, keys_device.begin(), keys_device.end(),
+                         param_ids_device.begin());
 
     // Run the fitting, using the sorted parameter IDs.
-    track_state_container_types::view track_states_view = track_states_buffer;
-    track_states_headers_setup_event->wait();
-    track_states_items_setup_event->wait();
+    typename edm::track_fit_container<typename detector_t::algebra_type>::view
+        track_states_view{track_states_buffer.tracks,
+                          track_states_buffer.states,
+                          track_candidates_view.measurements};
+    tracks_setup_event->wait();
+    track_states_setup_event->wait();
 
     ::alpaka::exec<Acc>(queue, workDiv, kernels::fit_prelude{},
                         vecmem::get_data(param_ids_buffer),
@@ -220,7 +218,7 @@ track_state_container_types::buffer kalman_fitting(
         .field_data = field_view,
         .param_ids_view = param_ids_buffer,
         .param_liveness_view = param_liveness_buffer,
-        .track_states_view = track_states_view,
+        .tracks_view = track_states_view,
         .barcodes_view = seqs_buffer};
     // Now copy it to device memory.
     vecmem::data::vector_buffer<device::fit_payload<fitter_t>> device_payload(

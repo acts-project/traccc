@@ -34,10 +34,13 @@
 #include "traccc/options/input_data.hpp"
 #include "traccc/options/performance.hpp"
 #include "traccc/options/program_options.hpp"
+#include "traccc/options/seed_matching.hpp"
 #include "traccc/options/track_finding.hpp"
 #include "traccc/options/track_fitting.hpp"
+#include "traccc/options/track_matching.hpp"
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/options/track_seeding.hpp"
+#include "traccc/options/truth_finding.hpp"
 #include "traccc/performance/collection_comparator.hpp"
 #include "traccc/performance/soa_comparator.hpp"
 #include "traccc/performance/timer.hpp"
@@ -63,6 +66,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::magnetic_field& bfield_opts,
             const traccc::opts::performance& performance_opts,
             const traccc::opts::accelerator& accelerator_opts,
+            const traccc::opts::truth_finding& truth_finding_opts,
+            const traccc::opts::seed_matching& seed_matching_opts,
+            const traccc::opts::track_matching& track_matching_opts,
             [[maybe_unused]] std::unique_ptr<const traccc::Logger> ilogger) {
     TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
@@ -77,10 +83,14 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     // Performance writer
     traccc::seeding_performance_writer sd_performance_writer(
-        traccc::seeding_performance_writer::config{},
+        traccc::seeding_performance_writer::config{
+            .truth_config = truth_finding_opts,
+            .seed_truth_config = seed_matching_opts},
         logger().clone("SeedingPerformanceWriter"));
     traccc::finding_performance_writer find_performance_writer(
-        traccc::finding_performance_writer::config{},
+        traccc::finding_performance_writer::config{
+            .truth_config = truth_finding_opts,
+            .track_truth_config = track_matching_opts},
         logger().clone("FindingPerformanceWriter"));
     traccc::fitting_performance_writer fit_performance_writer(
         traccc::fitting_performance_writer::config{},
@@ -111,6 +121,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     // B field value and its type
     const auto field = traccc::details::make_magnetic_field(bfield_opts);
+    const traccc::vector3 field_vec(seeding_opts);
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host host_det{mng_mr};
@@ -119,28 +130,29 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                               detector_opts.grid_file);
 
     // Detector view object
-    traccc::default_detector::view det_view = detray::get_data(host_det);
+    const traccc::default_detector::host& const_host_det = host_det;
+    traccc::default_detector::view det_view = detray::get_data(const_host_det);
 
     // Copy objects
     vecmem::copy host_copy;
     vecmem::copy& copy = vo.copy();
     vecmem::copy& async_copy = vo.async_copy();
 
-    traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
-        track_state_d2h{mr, copy, logger().clone("TrackStateD2HCopyAlg")};
-
     // Seeding algorithms
+    const traccc::seedfinder_config seedfinder_config(seeding_opts);
+    const traccc::seedfilter_config seedfilter_config(seeding_opts);
+    const traccc::spacepoint_grid_config spacepoint_grid_config(seeding_opts);
     traccc::host::seeding_algorithm sa(
-        seeding_opts.seedfinder, {seeding_opts.seedfinder},
-        seeding_opts.seedfilter, host_mr, logger().clone("HostSeedingAlg"));
+        seedfinder_config, spacepoint_grid_config, seedfilter_config, host_mr,
+        logger().clone("HostSeedingAlg"));
     traccc::host::track_params_estimation tp(
         host_mr, logger().clone("HostTrackParEstAlg"));
 
     // Alpaka Algorithms
     traccc::alpaka::seeding_algorithm sa_alpaka{
-        seeding_opts.seedfinder,
-        {seeding_opts.seedfinder},
-        seeding_opts.seedfilter,
+        seedfinder_config,
+        spacepoint_grid_config,
+        seedfilter_config,
         mr,
         async_copy,
         queue,
@@ -184,7 +196,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         traccc::host::track_params_estimation::output_type params;
         traccc::edm::track_candidate_collection<traccc::default_algebra>::host
             track_candidates{host_mr};
-        traccc::track_state_container_types::host track_states;
+        traccc::edm::track_fit_container<traccc::default_algebra>::host
+            track_states{host_mr};
 
         traccc::edm::seed_collection::buffer seeds_alpaka_buffer;
         traccc::bound_track_parameters_collection_types::buffer
@@ -193,8 +206,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
             track_candidates_alpaka_buffer;
 
-        traccc::track_state_container_types::buffer track_states_alpaka_buffer{
-            {{}, *(mr.host)}, {{}, *(mr.host), mr.host}};
+        traccc::edm::track_fit_container<traccc::default_algebra>::buffer
+            track_states_alpaka_buffer;
 
         {  // Start measuring wall time
             traccc::performance::timer wall_t("Wall time", elapsedTimes);
@@ -263,10 +276,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             {
                 traccc::performance::timer t("Track params (alpaka)",
                                              elapsedTimes);
-                params_alpaka_buffer =
-                    tp_alpaka(measurements_alpaka_buffer,
-                              spacepoints_alpaka_buffer, seeds_alpaka_buffer,
-                              {0.f, 0.f, seeding_opts.seedfinder.bFieldInZ});
+                params_alpaka_buffer = tp_alpaka(
+                    measurements_alpaka_buffer, spacepoints_alpaka_buffer,
+                    seeds_alpaka_buffer, field_vec);
                 queue.synchronize();
             }  // stop measuring track params alpaka timer
 
@@ -276,8 +288,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                                              elapsedTimes);
                 params = tp(vecmem::get_data(measurements_per_event),
                             vecmem::get_data(spacepoints_per_event),
-                            vecmem::get_data(seeds),
-                            {0.f, 0.f, seeding_opts.seedfinder.bFieldInZ});
+                            vecmem::get_data(seeds), field_vec);
             }  // stop measuring track params cpu timer
 
             /*------------------------
@@ -342,8 +353,14 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         copy(track_candidates_alpaka_buffer, track_candidates_alpaka)->wait();
 
         // Copy track states from device to host
-        traccc::track_state_container_types::host track_states_alpaka =
-            track_state_d2h(track_states_alpaka_buffer);
+        traccc::edm::track_fit_container<traccc::default_algebra>::host
+            track_states_alpaka{host_mr};
+        async_copy(track_states_alpaka_buffer.tracks,
+                   track_states_alpaka.tracks)
+            ->wait();
+        async_copy(track_states_alpaka_buffer.states,
+                   track_states_alpaka.states)
+            ->wait();
 
         if (accelerator_opts.compare_with_cpu) {
             // Show which event we are currently presenting the results for.
@@ -390,8 +407,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         n_seeds += seeds.size();
         n_found_tracks_alpaka += track_candidates_alpaka.size();
         n_found_tracks += track_candidates.size();
-        n_fitted_tracks_alpaka += track_states_alpaka.size();
-        n_fitted_tracks += track_states.size();
+        n_fitted_tracks_alpaka += track_states_alpaka.tracks.size();
+        n_fitted_tracks += track_states.tracks.size();
 
         /*------------
           Writer
@@ -452,10 +469,14 @@ int main(int argc, char* argv[]) {
     traccc::opts::track_fitting fitting_opts;
     traccc::opts::performance performance_opts;
     traccc::opts::accelerator accelerator_opts;
+    traccc::opts::truth_finding truth_finding_opts;
+    traccc::opts::seed_matching seed_matching_opts;
+    traccc::opts::track_matching track_matching_opts;
     traccc::opts::program_options program_opts{
         "Full Tracking Chain Using Alpaka (without clusterization)",
         {detector_opts, bfield_opts, input_opts, seeding_opts, finding_opts,
-         propagation_opts, fitting_opts, performance_opts, accelerator_opts},
+         propagation_opts, fitting_opts, performance_opts, accelerator_opts,
+         truth_finding_opts, seed_matching_opts, track_matching_opts},
         argc,
         argv,
         logger->cloneWithSuffix("Options")};
@@ -463,5 +484,6 @@ int main(int argc, char* argv[]) {
     // Run the application.
     return seq_run(seeding_opts, finding_opts, propagation_opts, fitting_opts,
                    input_opts, detector_opts, bfield_opts, performance_opts,
-                   accelerator_opts, logger->clone());
+                   accelerator_opts, truth_finding_opts, seed_matching_opts,
+                   track_matching_opts, logger->clone());
 }

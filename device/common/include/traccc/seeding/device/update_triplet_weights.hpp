@@ -37,7 +37,6 @@ TRACCC_HOST_DEVICE
 inline void update_triplet_weights(
     global_index_t globalIndex, const seedfilter_config& filter_config,
     const edm::spacepoint_collection::const_view& spacepoints,
-    const traccc::details::spacepoint_grid_types::const_view& sp_view,
     const triplet_counter_spM_collection_types::const_view& spM_tc_view,
     const triplet_counter_collection_types::const_view& tc_view, scalar* data,
     device_triplet_collection_types::view triplet_view);

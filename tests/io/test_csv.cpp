@@ -7,7 +7,6 @@
 
 // Project include(s).
 #include "traccc/geometry/detector.hpp"
-#include "traccc/io/details/read_surfaces.hpp"
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_detector_description.hpp"
@@ -78,15 +77,6 @@ TEST_F(io, csv_read_two_modules) {
 }
 
 // This reads in the tml pixel barrel first event
-TEST_F(io, csv_read_tml_transforms) {
-    std::string file = get_datafile("tml_detector/trackml-detector.csv");
-
-    auto tml_barrel_transforms = traccc::io::details::read_surfaces(file);
-
-    ASSERT_EQ(tml_barrel_transforms.size(), 18791u);
-}
-
-// This reads in the tml pixel barrel first event
 TEST_F(io, csv_read_tml_pixelbarrel) {
 
     vecmem::host_memory_resource resource;
@@ -98,35 +88,6 @@ TEST_F(io, csv_read_tml_pixelbarrel) {
         false);
 
     EXPECT_EQ(cells.size(), 179961u);
-}
-
-// This checks if hit and measurement container from the first single muon event
-TEST_F(io, csv_read_tml_single_muon) {
-    vecmem::host_memory_resource resource;
-
-    // Read the detector description.
-    traccc::silicon_detector_description::host dd{resource};
-    traccc::io::read_detector_description(
-        dd, "tml_detector/trackml-detector.csv",
-        "tml_detector/default-geometric-config-generic.json",
-        traccc::data_format::csv);
-
-    // Read the hits from the relevant event file
-    traccc::measurement_collection_types::host measurements_per_event{
-        &resource};
-    traccc::edm::spacepoint_collection::host spacepoints_per_event(resource);
-    traccc::io::read_spacepoints(spacepoints_per_event, measurements_per_event,
-                                 0, "tml_full/single_muon/");
-
-    // Read the particles from the relevant event file
-    traccc::particle_collection_types::host particles_per_event(&resource);
-    traccc::io::read_particles(particles_per_event, 0, "tml_full/single_muon/",
-                               traccc::data_format::csv);
-
-    EXPECT_EQ(spacepoints_per_event.size(), 11u);
-    EXPECT_EQ(measurements_per_event.size(), 11u);
-
-    EXPECT_EQ(particles_per_event.size(), 1u);
 }
 
 /// Tests with ODD "single" muon events.

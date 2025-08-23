@@ -10,22 +10,20 @@
 #include "../utils/utils.hpp"
 #include "./kernels/add_block_offset.cuh"
 #include "./kernels/block_inclusive_scan.cuh"
-#include "./kernels/count_removable_tracks.cuh"
 #include "./kernels/count_shared_measurements.cuh"
-#include "./kernels/exclusive_scan.cuh"
 #include "./kernels/fill_inverted_ids.cuh"
 #include "./kernels/fill_track_candidates.cuh"
 #include "./kernels/fill_tracks_per_measurement.cuh"
 #include "./kernels/fill_unique_meas_id_map.cuh"
 #include "./kernels/fill_vectors.cuh"
-#include "./kernels/find_max_shared.cuh"
-#include "./kernels/gather_tracks.cuh"
 #include "./kernels/rearrange_tracks.cuh"
 #include "./kernels/remove_tracks.cuh"
-#include "./kernels/reset_status.cuh"
 #include "./kernels/scan_block_offsets.cuh"
+#include "./kernels/sort_tracks_per_measurement.cuh"
 #include "./kernels/sort_updated_tracks.cuh"
+#include "./kernels/update_status.cuh"
 #include "traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
+#include "traccc/definitions/math.hpp"
 
 // Thrust include(s).
 #include <thrust/execution_policy.h>
@@ -39,11 +37,19 @@
 #include <thrust/unique.h>
 namespace traccc::cuda {
 
+struct identity_op {
+    template <typename T>
+    TRACCC_HOST_DEVICE T operator()(T i) const {
+        return i;
+    }
+};
+
 // Device operator to calculate relative number of shared measurements
 struct devide_op {
     TRACCC_HOST_DEVICE
     traccc::scalar operator()(unsigned int a, unsigned int b) const {
-        return static_cast<traccc::scalar>(a) / static_cast<traccc::scalar>(b);
+        return math::div_ieee754(static_cast<traccc::scalar>(a),
+                                 static_cast<traccc::scalar>(b));
     }
 };
 
@@ -199,7 +205,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     auto cit_begin = thrust::counting_iterator<int>(0);
     auto cit_end = cit_begin + n_tracks;
     thrust::copy_if(thrust_policy, cit_begin, cit_end, status_buffer.ptr(),
-                    pre_accepted_ids_buffer.ptr(), thrust::identity<int>());
+                    pre_accepted_ids_buffer.ptr(), identity_op{});
 
     // Sort the flat measurement id vector
     thrust::sort(thrust_policy, flat_meas_ids_buffer.ptr(),
@@ -234,7 +240,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     // Unique measurement ids
     vecmem::data::vector_buffer<measurement_id_type>
-        meas_id_to_unique_id_buffer{max_meas.measurement_id, m_mr.main};
+        meas_id_to_unique_id_buffer{max_meas.measurement_id + 1, m_mr.main};
 
     // Make meas_id to meas vector
     {
@@ -297,6 +303,22 @@ greedy_ambiguity_resolution_algorithm::operator()(
         m_stream.get().synchronize();
     }
 
+    // Sort tracks per measurement vector
+    // @TODO: For the case where the measurement is shared by more than 1024
+    // tracks, the tracks need to be sorted again using thrust::sort
+    {
+        const unsigned int nThreads = 1024;
+        const unsigned int nBlocks = meas_count;
+
+        kernels::sort_tracks_per_measurement<<<nBlocks, nThreads, 0, stream>>>(
+            device::sort_tracks_per_measurement_payload{
+                .tracks_per_measurement_view = tracks_per_measurement_buffer,
+            });
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+        m_stream.get().synchronize();
+    }
+
     // Make shared number of measurements vector
     vecmem::data::vector_buffer<unsigned int> n_shared_buffer{n_tracks,
                                                               m_mr.main};
@@ -348,6 +370,11 @@ greedy_ambiguity_resolution_algorithm::operator()(
     vecmem::data::vector_buffer<int> is_updated_buffer{n_tracks, m_mr.main};
     m_copy.get().setup(inverted_ids_buffer)->ignore();
 
+    // Count track id apperance during removal process
+    vecmem::data::vector_buffer<int> track_count_buffer{n_tracks, m_mr.main};
+    m_copy.get().setup(track_count_buffer)->ignore();
+    m_copy.get().memset(track_count_buffer, 0)->ignore();
+
     // Prefix sum buffer
     vecmem::data::vector_buffer<int> prefix_sums_buffer{n_tracks, m_mr.main};
     m_copy.get().setup(prefix_sums_buffer)->ignore();
@@ -367,44 +394,58 @@ greedy_ambiguity_resolution_algorithm::operator()(
                                                                     m_mr.main};
     m_copy.get().setup(updated_tracks_buffer)->ignore();
 
-    // Measurements to remove for each iteration
-    vecmem::data::vector_buffer<measurement_id_type> meas_to_remove_buffer{
-        1024, m_mr.main};
-    vecmem::data::vector_buffer<unsigned int> threads_buffer{1024, m_mr.main};
-
+    // Device objects
     vecmem::unique_alloc_ptr<unsigned int> n_removable_tracks_device =
         vecmem::make_unique_alloc<unsigned int>(m_mr.main);
     vecmem::unique_alloc_ptr<unsigned int> n_meas_to_remove_device =
         vecmem::make_unique_alloc<unsigned int>(m_mr.main);
+    vecmem::unique_alloc_ptr<unsigned int> n_valid_threads_device =
+        vecmem::make_unique_alloc<unsigned int>(m_mr.main);
 
-    // Device objects
-    int is_first_iteration = 1;
-    vecmem::unique_alloc_ptr<int> is_first_iteration_device =
-        vecmem::make_unique_alloc<int>(m_mr.main);
-    cudaMemcpyAsync(is_first_iteration_device.get(), &is_first_iteration,
-                    sizeof(int), cudaMemcpyHostToDevice, stream);
     int terminate = 0;
     vecmem::unique_alloc_ptr<int> terminate_device =
         vecmem::make_unique_alloc<int>(m_mr.main);
+    auto max_shared = thrust::max_element(thrust::device, n_shared_buffer.ptr(),
+                                          n_shared_buffer.ptr() + n_tracks);
     vecmem::unique_alloc_ptr<unsigned int> max_shared_device =
         vecmem::make_unique_alloc<unsigned int>(m_mr.main);
+    cudaMemcpyAsync(max_shared_device.get(), max_shared, sizeof(unsigned int),
+                    cudaMemcpyHostToDevice, stream);
+
     vecmem::unique_alloc_ptr<unsigned int> n_updated_tracks_device =
         vecmem::make_unique_alloc<unsigned int>(m_mr.main);
 
     // Thread block size
-    unsigned int nThreads_adaptive = m_warp_size * 4;
+    unsigned int nThreads_adaptive = m_warp_size;
     unsigned int nBlocks_adaptive =
         (n_accepted + nThreads_adaptive - 1) / nThreads_adaptive;
 
-    unsigned int nThreads_warp = m_warp_size;
-    unsigned int nBlocks_warp =
-        (n_accepted + nThreads_warp - 1) / nThreads_warp;
+    unsigned int nThreads_rearrange = 1024;
+    unsigned int nBlocks_rearrange =
+        (n_accepted + (nThreads_rearrange / kernels::nThreads_per_track) - 1) /
+        (nThreads_rearrange / kernels::nThreads_per_track);
 
-    unsigned int nThreads_full = 1024;
-    unsigned int nBlocks_full = (n_tracks + 1023) / 1024;
+    // Compute the threadblock dimension for scanning kernels
+    auto compute_scan_config = [&](unsigned int n_accepted) {
+        unsigned int nThreads_scan = m_warp_size * 4;
+        unsigned int nBlocks_scan =
+            (n_accepted + nThreads_scan - 1) / nThreads_scan;
 
-    unsigned int nThreads_scan = 1024;
-    unsigned int nBlocks_scan = (n_accepted + 1023) / 1024;
+        while (nThreads_scan <= 1024) {
+            if (nBlocks_scan > 1024) {
+                nThreads_scan *= 2;
+                nBlocks_scan = (n_accepted + nThreads_scan - 1) / nThreads_scan;
+            } else {
+                break;
+            }
+        }
+
+        return std::make_pair(nThreads_scan, nBlocks_scan);
+    };
+
+    auto scan_dim = compute_scan_config(n_accepted);
+    unsigned int nThreads_scan = scan_dim.first;
+    unsigned int nBlocks_scan = scan_dim.second;
 
     assert(nBlocks_scan <= 1024 &&
            "nBlocks_scan larger than 1024 will cause invalid arguments in "
@@ -421,8 +462,14 @@ greedy_ambiguity_resolution_algorithm::operator()(
     while (!terminate && n_accepted > 0) {
         nBlocks_adaptive =
             (n_accepted + nThreads_adaptive - 1) / nThreads_adaptive;
-        nBlocks_warp = (n_accepted + nThreads_warp - 1) / nThreads_warp;
-        nBlocks_scan = (n_accepted + 1023) / 1024;
+
+        scan_dim = compute_scan_config(n_accepted);
+        nThreads_scan = scan_dim.first;
+        nBlocks_scan = scan_dim.second;
+        nBlocks_rearrange =
+            (n_accepted + (nThreads_rearrange / kernels::nThreads_per_track) -
+             1) /
+            (nThreads_rearrange / kernels::nThreads_per_track);
 
         // Make CUDA Graph
         cudaGraph_t graph;
@@ -430,47 +477,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
         cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal);
 
-        kernels::reset_status<<<1, 1, 0, stream>>>(device::reset_status_payload{
-            .is_first_iteration = is_first_iteration_device.get(),
-            .terminate = terminate_device.get(),
-            .n_accepted = n_accepted_device.get(),
-            .max_shared = max_shared_device.get(),
-            .n_updated_tracks = n_updated_tracks_device.get()});
-
-        kernels::find_max_shared<<<nBlocks_warp, nThreads_warp, 0, stream>>>(
-            device::find_max_shared_payload{
-                .sorted_ids_view = sorted_ids_buffer,
-                .n_accepted = n_accepted_device.get(),
-                .n_shared_view = n_shared_buffer,
-                .terminate = terminate_device.get(),
-                .max_shared = max_shared_device.get(),
-                .is_updated_view = is_updated_buffer});
-
-        kernels::count_removable_tracks<<<1, 512, 0, stream>>>(
-            device::count_removable_tracks_payload{
-                .terminate = terminate_device.get(),
-                .max_shared = max_shared_device.get(),
-                .sorted_ids_view = sorted_ids_buffer,
-                .n_accepted = n_accepted_device.get(),
-                .meas_ids_view = meas_ids_buffer,
-                .n_meas_view = n_meas_buffer,
-                .meas_id_to_unique_id_view = meas_id_to_unique_id_buffer,
-                .n_accepted_tracks_per_measurement_view =
-                    n_accepted_tracks_per_measurement_buffer,
-                .n_removable_tracks = n_removable_tracks_device.get(),
-                .n_meas_to_remove = n_meas_to_remove_device.get(),
-                .meas_to_remove_view = meas_to_remove_buffer,
-                .threads_view = threads_buffer});
-
-        kernels::exclusive_scan<<<1, 1024, 0, stream>>>(
-            device::exclusive_scan_payload{
-                .terminate = terminate_device.get(),
-                .n_removable_tracks = n_removable_tracks_device.get(),
-                .n_meas_to_remove = n_meas_to_remove_device.get(),
-                .meas_to_remove_view = meas_to_remove_buffer,
-                .threads_view = threads_buffer});
-
-        kernels::remove_tracks<<<1, 1024, 0, stream>>>(
+        kernels::remove_tracks<<<1, 512, 0, stream>>>(
             device::remove_tracks_payload{
                 .sorted_ids_view = sorted_ids_buffer,
                 .n_accepted = n_accepted_device.get(),
@@ -486,12 +493,13 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .rel_shared_view = rel_shared_buffer,
                 .n_removable_tracks = n_removable_tracks_device.get(),
                 .n_meas_to_remove = n_meas_to_remove_device.get(),
-                .meas_to_remove_view = meas_to_remove_buffer,
-                .threads_view = threads_buffer,
                 .terminate = terminate_device.get(),
+                .max_shared = max_shared_device.get(),
                 .n_updated_tracks = n_updated_tracks_device.get(),
                 .updated_tracks_view = updated_tracks_buffer,
-                .is_updated_view = is_updated_buffer});
+                .is_updated_view = is_updated_buffer,
+                .n_valid_threads = n_valid_threads_device.get(),
+                .track_count_view = track_count_buffer});
 
         // The seven kernels below are to keep sorted_ids sorted based on
         // the relative shared measurements and pvalues. This can be reduced
@@ -509,8 +517,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
         // when the number of updated tracks <= 1024) and might be faster
         // with large number of updated tracks
 
-        kernels::sort_updated_tracks<<<1, 1024, 1024 * sizeof(unsigned int),
-                                       stream>>>(
+        kernels::sort_updated_tracks<<<1, 512, 0, stream>>>(
             device::sort_updated_tracks_payload{
                 .rel_shared_view = rel_shared_buffer,
                 .pvals_view = pvals_buffer,
@@ -557,7 +564,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .block_offsets_view = scanned_block_offsets_buffer,
                 .prefix_sums_view = prefix_sums_buffer});
 
-        kernels::rearrange_tracks<<<nBlocks_adaptive, nThreads_adaptive, 0,
+        kernels::rearrange_tracks<<<nBlocks_rearrange, nThreads_rearrange, 0,
                                     stream>>>(device::rearrange_tracks_payload{
             .sorted_ids_view = sorted_ids_buffer,
             .inverted_ids_view = inverted_ids_buffer,
@@ -572,20 +579,24 @@ greedy_ambiguity_resolution_algorithm::operator()(
             .temp_sorted_ids_view = temp_sorted_ids_buffer,
         });
 
-        kernels::gather_tracks<<<nBlocks_full, nThreads_full, 0, stream>>>(
-            device::gather_tracks_payload{
-                .terminate = terminate_device.get(),
-                .n_accepted = n_accepted_device.get(),
-                .n_updated_tracks = n_updated_tracks_device.get(),
-                .temp_sorted_ids_view = temp_sorted_ids_buffer,
-                .sorted_ids_view = sorted_ids_buffer,
-                .is_updated_view = is_updated_buffer});
+        kernels::
+            update_status<<<nBlocks_adaptive, nThreads_adaptive, 0, stream>>>(
+                device::update_status_payload{
+                    .terminate = terminate_device.get(),
+                    .n_accepted = n_accepted_device.get(),
+                    .n_updated_tracks = n_updated_tracks_device.get(),
+                    .temp_sorted_ids_view = temp_sorted_ids_buffer,
+                    .sorted_ids_view = sorted_ids_buffer,
+                    .updated_tracks_view = updated_tracks_buffer,
+                    .is_updated_view = is_updated_buffer,
+                    .n_shared_view = n_shared_buffer,
+                    .max_shared = max_shared_device.get()});
 
         cudaStreamEndCapture(stream, &graph);
         cudaGraphInstantiate(&graphExec, graph, nullptr, nullptr, 0);
 
         // TODO: Make n_it adaptive based on the average track length, bound
-        // value in count_removable_tracks, etc.
+        // value in remove_tracks, etc.
         const unsigned int n_it = 100;
         for (unsigned int iter = 0; iter < n_it; iter++) {
             cudaGraphLaunch(graphExec, stream);

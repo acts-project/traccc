@@ -10,6 +10,8 @@
 // Local include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
+#include "traccc/definitions/track_parametrization.hpp"
+#include "traccc/utils/subspace.hpp"
 
 // Detray include(s).
 #include <detray/geometry/barcode.hpp>
@@ -205,6 +207,27 @@ class silicon_detector_description_interface : public BASE {
         return BASE::template get<8>();
     }
     /// @}
+
+    /// The subspace of measurements on the module
+    ///
+    /// The "subspace" defines which of the measurement's parameters are
+    /// "sensitive", to be used during the track finding/fitting.
+    ///
+    /// @return A (non-const) vector of @c std::array<uint,2> objects
+    ///
+    TRACCC_HOST_DEVICE
+    auto& subspace() { return BASE::template get<9>(); }
+
+    /// The subspace of measurements on the module
+    ///
+    /// The "subspace" defines which of the measurement's parameters are
+    /// "sensitive", to be used during the track finding/fitting.
+    ///
+    /// @return A (const) vector of @c std::array<uint,2> objects
+    ///
+    TRACCC_HOST_DEVICE
+    const auto& subspace() const { return BASE::template get<9>(); }
+
     /// @}
 
 };  // class silicon_detector_description_interface
@@ -217,6 +240,8 @@ using silicon_detector_description = vecmem::edm::container<
     vecmem::edm::type::vector<scalar>, vecmem::edm::type::vector<scalar>,
     vecmem::edm::type::vector<scalar>, vecmem::edm::type::vector<scalar>,
     vecmem::edm::type::vector<unsigned char>,
-    vecmem::edm::type::vector<vector2>>;
+    vecmem::edm::type::vector<vector2>,
+    vecmem::edm::type::vector<
+        std::array<detray::dsize_type<default_algebra>, 2u>>>;
 
 }  // namespace traccc

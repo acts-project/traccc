@@ -18,7 +18,7 @@ namespace traccc::cuda {
 namespace kernels {
 
 template <typename propagator_t, typename bfield_t>
-__global__ __launch_bounds__(128, 8) void propagate_to_next_surface(
+__global__ __launch_bounds__(128) void propagate_to_next_surface(
     const finding_config cfg,
     device::propagate_to_next_surface_payload<propagator_t, bfield_t> payload) {
 

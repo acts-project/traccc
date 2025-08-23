@@ -11,10 +11,12 @@
 #include "traccc/resolution/stat_plot_tool_config.hpp"
 #include "traccc/utils/helpers.hpp"
 #include "traccc/utils/messaging.hpp"
+#include "traccc/utils/track_matching_config.hpp"
+#include "traccc/utils/truth_matching_config.hpp"
 
 // Project include(s).
-#include "traccc/edm/track_candidate_collection.hpp"
-#include "traccc/edm/track_state.hpp"
+#include "traccc/edm/track_candidate_container.hpp"
+#include "traccc/edm/track_fit_container.hpp"
 #include "traccc/utils/event_data.hpp"
 
 // System include(s).
@@ -52,15 +54,10 @@ class finding_performance_writer : public messaging {
             {"Pt", plot_helpers::binning("p_{T} [GeV/c]", 40, 0.f, 100.f)},
             {"Num", plot_helpers::binning("N", 30, -0.5f, 29.5f)}};
 
-        /// Cut values
-        scalar pT_cut = 0.5f * traccc::unit<scalar>::GeV;
-        scalar z_min = -500.f * traccc::unit<scalar>::mm;
-        scalar z_max = 500.f * traccc::unit<scalar>::mm;
-        scalar r_max = 200.f * traccc::unit<scalar>::mm;
-        scalar matching_ratio = 0.5f;
-        bool double_matching = true;
+        truth_matching_config truth_config;
+        track_matching_config track_truth_config;
 
-        stat_plot_tool_config stat_config;
+        stat_plot_tool_config stat_config{};
     };
 
     /// Construct from configuration and log level.
@@ -72,13 +69,12 @@ class finding_performance_writer : public messaging {
     /// Destructor
     ~finding_performance_writer();
 
-    void write(
-        const edm::track_candidate_collection<default_algebra>::const_view&
-            track_candidates_view,
-        const measurement_collection_types::const_view& measurements_view,
-        const event_data& evt_data);
+    void write(const edm::track_candidate_container<
+                   default_algebra>::const_view& track_candidates_view,
+               const event_data& evt_data);
 
-    void write(const track_state_container_types::const_view& track_states_view,
+    void write(const edm::track_fit_container<default_algebra>::const_view&
+                   track_fit_view,
                const event_data& evt_data);
 
     void finalize();

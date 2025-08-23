@@ -83,8 +83,8 @@ void KalmanFittingTests::pull_value_tests(
 #endif  // TRACCC_HAVE_ROOT
 }
 
-void KalmanFittingTests::p_value_tests([
-    [maybe_unused]] std::string_view file_name) const {
+void KalmanFittingTests::p_value_tests(
+    [[maybe_unused]] std::string_view file_name) const {
 
 #ifdef TRACCC_HAVE_ROOT
     // Open the file with the histograms.
@@ -151,31 +151,51 @@ void KalmanFittingTests::ndf_tests(
 }
 
 void KalmanFittingTests::ndf_tests(
-    const fitting_result<traccc::default_algebra>& fit_res,
-    const track_state_collection_types::host& track_states_per_track) {
+    const edm::track_fit_collection<default_algebra>::host::const_proxy_type&
+        track,
+    const edm::track_state_collection<default_algebra>::host& track_states,
+    const measurement_collection_types::host& measurements) {
 
     scalar dim_sum = 0;
     std::size_t n_effective_states = 0;
 
-    for (const auto& state : track_states_per_track) {
+    for (unsigned int state_idx : track.state_indices()) {
 
-        if (!state.is_hole && state.is_smoothed) {
+        auto state = track_states.at(state_idx);
 
-            dim_sum += static_cast<scalar>(state.get_measurement().meas_dim);
+        if (!state.is_hole() && state.is_smoothed()) {
+
+            dim_sum += static_cast<scalar>(
+                measurements.at(state.measurement_index()).meas_dim);
             n_effective_states++;
         }
     }
 
     // Check if the number of degree of freedoms is equal to (the sum of
     // measurement dimensions - 5)
-    ASSERT_FLOAT_EQ(static_cast<float>(fit_res.trk_quality.ndf),
+    ASSERT_FLOAT_EQ(static_cast<float>(track.ndf()),
                     static_cast<float>(dim_sum) - 5.f);
 
     // The number of track states is supposed to be eqaul to the number
     // of measurements unless KF failes in the middle of propagation
-    if (n_effective_states == track_states_per_track.size()) {
+    if (n_effective_states == track.state_indices().size()) {
         n_success++;
     }
+}
+
+std::size_t KalmanFittingTests::count_successfully_fitted_tracks(
+    const edm::track_fit_collection<default_algebra>::host& tracks) const {
+
+    const std::size_t n_tracks = tracks.size();
+    std::size_t n_fitted_tracks = 0u;
+
+    for (std::size_t i = 0; i < n_tracks; ++i) {
+        if (tracks.at(i).fit_outcome() == track_fit_outcome::SUCCESS) {
+            n_fitted_tracks++;
+        }
+    }
+
+    return n_fitted_tracks;
 }
 
 }  // namespace traccc

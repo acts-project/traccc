@@ -43,7 +43,10 @@ struct seedfinder_config {
     // minimum distance in mm in r between two measurements within one seed
     float deltaRMin = 20 * unit<float>::mm;
     // maximum distance in mm in r between two measurements within one seed
-    float deltaRMax = 280 * unit<float>::mm;
+    float deltaRMax = 80 * unit<float>::mm;
+
+    // maximum distance in mm in z between measurements in one seed
+    float deltaZMax = 450 * unit<float>::mm;
 
     // FIXME: this is not used yet
     //        float upperPtResolutionPerSeed = 20* Acts::GeV;
@@ -62,7 +65,7 @@ struct seedfinder_config {
     float maxPtScattering = 10.f * unit<float>::GeV;
 
     // for how many seeds can one SpacePoint be the middle SpacePoint?
-    unsigned int maxSeedsPerSpM = 10;
+    unsigned int maxSeedsPerSpM = 5;
 
     float bFieldInZ = 1.99724f * unit<float>::T;
     // location of beam in x,y plane.
@@ -197,15 +200,9 @@ struct seedfilter_config {
     // minimum distance between compatible seeds to be considered for weight
     // boost
     float deltaRMin = 5.f * unit<float>::mm;
-    // in dense environments many seeds may be found per middle space point.
-    // only seeds with the highest weight will be kept if this limit is reached.
-    unsigned int maxSeedsPerSpM = 20;
     // how often do you want to increase the weight of a seed for finding a
     // compatible seed?
     size_t compatSeedLimit = 2;
-    // Tool to apply experiment specific cuts on collected middle space points
-
-    size_t max_triplets_per_spM = 5;
 
     // seed weight increase
     float good_spB_min_radius = 150.f * unit<float>::mm;

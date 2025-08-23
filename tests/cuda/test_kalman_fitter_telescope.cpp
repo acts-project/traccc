@@ -9,9 +9,7 @@
 #include "traccc/bfield/construct_const_bfield.hpp"
 #include "traccc/bfield/magnetic_field_types.hpp"
 #include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
-#include "traccc/device/container_d2h_copy_alg.hpp"
-#include "traccc/device/container_h2d_copy_alg.hpp"
-#include "traccc/edm/track_state.hpp"
+#include "traccc/edm/track_fit_container.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/performance/details/is_same_object.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
@@ -80,7 +78,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     detray::io::detector_reader_config reader_cfg{};
     reader_cfg.add_file(path + "telescope_detector_geometry.json")
         .add_file(path + "telescope_detector_homogeneous_material.json");
-    auto [host_det, names] =
+    const auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);
 
     // Detector view object
@@ -135,9 +133,6 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     // Copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
-        track_state_d2h{mr, copy};
-
     // Seed generator
     seed_generator<host_detector_type> sg(host_det, stddevs);
 
@@ -169,30 +164,37 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
                         mr.main, vecmem::copy::type::host_to_device)};
 
         // Run fitting
-        traccc::track_state_container_types::buffer track_states_cuda_buffer =
+        auto track_states_cuda_buffer =
             device_fitting(det_view, field,
                            {track_candidates_buffer.tracks,
                             track_candidates_buffer.measurements});
 
-        traccc::track_state_container_types::host track_states_cuda =
-            track_state_d2h(track_states_cuda_buffer);
-        const std::size_t n_fitted_tracks =
-            count_successfully_fitted_tracks(track_states_cuda);
+        traccc::edm::track_fit_container<traccc::default_algebra>::host
+            track_states_cuda{host_mr};
+        copy(track_states_cuda_buffer.tracks, track_states_cuda.tracks,
+             vecmem::copy::type::device_to_host)
+            ->wait();
+        copy(track_states_cuda_buffer.states, track_states_cuda.states,
+             vecmem::copy::type::device_to_host)
+            ->wait();
 
-        ASSERT_EQ(track_states_cuda.size(), n_truth_tracks);
-        ASSERT_EQ(track_states_cuda.size(), n_fitted_tracks);
+        const std::size_t n_fitted_tracks =
+            count_successfully_fitted_tracks(track_states_cuda.tracks);
+
+        ASSERT_EQ(track_states_cuda.tracks.size(), n_truth_tracks);
+        ASSERT_EQ(track_states_cuda.tracks.size(), n_fitted_tracks);
 
         for (std::size_t i_trk = 0; i_trk < n_truth_tracks; i_trk++) {
 
-            const auto& track_states_per_track = track_states_cuda[i_trk].items;
-            const auto& fit_res = track_states_cuda[i_trk].header;
+            consistency_tests(track_states_cuda.tracks.at(i_trk),
+                              track_states_cuda.states);
 
-            consistency_tests(track_states_per_track);
+            ndf_tests(track_states_cuda.tracks.at(i_trk),
+                      track_states_cuda.states, track_candidates.measurements);
 
-            ndf_tests(fit_res, track_states_per_track);
-
-            fit_performance_writer.write(track_states_per_track, fit_res,
-                                         host_det, evt_data);
+            fit_performance_writer.write(
+                track_states_cuda.tracks.at(i_trk), track_states_cuda.states,
+                track_candidates.measurements, host_det, evt_data);
         }
     }
 

@@ -52,7 +52,7 @@ TEST(SYCLSpacepointFormation, sycl) {
     tel_cfg.pilot_track(traj);
 
     // Create telescope geometry
-    auto [det, name_map] = build_telescope_detector(shared_mr, tel_cfg);
+    const auto [det, name_map] = build_telescope_detector(shared_mr, tel_cfg);
 
     // Surface lookup
     auto surfaces = det.surfaces();

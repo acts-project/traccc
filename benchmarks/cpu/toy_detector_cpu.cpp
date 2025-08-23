@@ -17,7 +17,6 @@
 
 // Traccc IO include(s).
 #include "traccc/io/read_detector.hpp"
-#include "traccc/io/read_geometry.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/read_spacepoints.hpp"
 

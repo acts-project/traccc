@@ -31,6 +31,7 @@
 #include "traccc/options/program_options.hpp"
 #include "traccc/options/track_finding.hpp"
 #include "traccc/options/track_fitting.hpp"
+#include "traccc/options/track_matching.hpp"
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/options/truth_finding.hpp"
 #include "traccc/performance/collection_comparator.hpp"
@@ -64,6 +65,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
             const traccc::opts::performance& performance_opts,
             const traccc::opts::accelerator& accelerator_opts,
             const traccc::opts::truth_finding& truth_finding_opts,
+            const traccc::opts::track_matching& track_matching_opts,
             std::unique_ptr<const traccc::Logger> ilogger) {
     TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
@@ -76,7 +78,9 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
     // Performance writer
     traccc::finding_performance_writer find_performance_writer(
-        traccc::finding_performance_writer::config{},
+        traccc::finding_performance_writer::config{
+            .truth_config = truth_finding_opts,
+            .track_truth_config = track_matching_opts},
         logger().clone("FindingPerformanceWriter"));
     traccc::fitting_performance_writer fit_performance_writer(
         traccc::fitting_performance_writer::config{},
@@ -98,13 +102,13 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::default_detector::host detector{mng_mr};
-    assert(detector_opts.use_detray_detector == true);
     traccc::io::read_detector(detector, mng_mr, detector_opts.detector_file,
                               detector_opts.material_file,
                               detector_opts.grid_file);
 
     // Detector view object
-    traccc::default_detector::view det_view = detray::get_data(detector);
+    const traccc::default_detector::host& const_detector = detector;
+    traccc::default_detector::view det_view = detray::get_data(const_detector);
 
     /*****************************
      * Do the reconstruction
@@ -116,9 +120,6 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     // Copy object
     vecmem::copy host_copy;
     vecmem::cuda::async_copy async_copy{stream.cudaStream()};
-
-    traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
-        track_state_d2h{mr, async_copy, logger().clone("TrackStateD2HCopyAlg")};
 
     // Standard deviations for seed track parameters
     static constexpr std::array<traccc::scalar, traccc::e_bound_size> stddevs =
@@ -169,7 +170,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
         traccc::edm::track_candidate_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
         evt_data.generate_truth_candidates(truth_track_candidates, sg, host_mr,
-                                           truth_finding_opts.m_min_pt);
+                                           truth_finding_opts.m_pT_min);
 
         // Prepare truth seeds
         traccc::bound_track_parameters_collection_types::host seeds(mr.host);
@@ -219,8 +220,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
             ->wait();
 
         // Instantiate cuda containers/collections
-        traccc::track_state_container_types::buffer track_states_cuda_buffer{
-            {{}, *(mr.host)}, {{}, *(mr.host), mr.host}};
+        traccc::edm::track_fit_container<traccc::default_algebra>::buffer
+            track_states_cuda_buffer;
 
         {
             traccc::performance::timer t("Track fitting  (cuda)", elapsedTimes);
@@ -230,13 +231,20 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                 det_view, device_field,
                 {track_candidates_cuda_buffer, measurements_cuda_buffer});
         }
-        traccc::track_state_container_types::host track_states_cuda =
-            track_state_d2h(track_states_cuda_buffer);
+        traccc::edm::track_fit_container<traccc::default_algebra>::host
+            track_states_cuda{host_mr};
+        async_copy(track_states_cuda_buffer.tracks, track_states_cuda.tracks,
+                   vecmem::copy::type::device_to_host)
+            ->wait();
+        async_copy(track_states_cuda_buffer.states, track_states_cuda.states,
+                   vecmem::copy::type::device_to_host)
+            ->wait();
 
         // CPU containers
         traccc::host::combinatorial_kalman_filter_algorithm::output_type
             track_candidates{host_mr};
-        traccc::host::kalman_fitting_algorithm::output_type track_states;
+        traccc::host::kalman_fitting_algorithm::output_type track_states{
+            host_mr};
 
         if (accelerator_opts.compare_with_cpu) {
 
@@ -285,23 +293,20 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
         /// Statistics
         n_found_tracks += track_candidates.size();
-        n_fitted_tracks += track_states.size();
+        n_fitted_tracks += track_states.tracks.size();
         n_found_tracks_cuda += track_candidates_cuda.size();
-        n_fitted_tracks_cuda += track_states_cuda.size();
+        n_fitted_tracks_cuda += track_states_cuda.tracks.size();
 
         if (performance_opts.run) {
             find_performance_writer.write(
-                vecmem::get_data(track_candidates_cuda),
-                vecmem::get_data(measurements_per_event), evt_data);
+                {vecmem::get_data(track_candidates_cuda),
+                 vecmem::get_data(measurements_per_event)},
+                evt_data);
 
-            for (unsigned int i = 0; i < track_states_cuda.size(); i++) {
-                const auto& trk_states_per_track =
-                    track_states_cuda.at(i).items;
-
-                const auto& fit_res = track_states_cuda[i].header;
-
-                fit_performance_writer.write(trk_states_per_track, fit_res,
-                                             detector, evt_data);
+            for (unsigned int i = 0; i < track_states_cuda.tracks.size(); i++) {
+                fit_performance_writer.write(
+                    track_states_cuda.tracks.at(i), track_states_cuda.states,
+                    measurements_per_event, detector, evt_data);
             }
         }
     }
@@ -338,11 +343,12 @@ int main(int argc, char* argv[]) {
     traccc::opts::performance performance_opts;
     traccc::opts::accelerator accelerator_opts;
     traccc::opts::truth_finding truth_finding_config;
+    traccc::opts::track_matching track_matching_opts;
     traccc::opts::program_options program_opts{
         "Truth Track Finding Using CUDA",
         {detector_opts, bfield_opts, input_opts, finding_opts, propagation_opts,
-         fitting_opts, performance_opts, accelerator_opts,
-         truth_finding_config},
+         fitting_opts, performance_opts, accelerator_opts, truth_finding_config,
+         track_matching_opts},
         argc,
         argv,
         logger->cloneWithSuffix("Options")};
@@ -350,5 +356,6 @@ int main(int argc, char* argv[]) {
     // Run the application.
     return seq_run(finding_opts, propagation_opts, fitting_opts, input_opts,
                    detector_opts, bfield_opts, performance_opts,
-                   accelerator_opts, truth_finding_config, logger->clone());
+                   accelerator_opts, truth_finding_config, track_matching_opts,
+                   logger->clone());
 }

@@ -10,6 +10,8 @@
 // Local include(s).
 #include "traccc/utils/helpers.hpp"
 #include "traccc/utils/messaging.hpp"
+#include "traccc/utils/seed_matching_config.hpp"
+#include "traccc/utils/truth_matching_config.hpp"
 
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
@@ -51,11 +53,8 @@ class seeding_performance_writer : public messaging {
             {"Num", plot_helpers::binning("N", 30, -0.5f, 29.5f)}};
 
         /// Cut values
-        scalar pT_cut = 0.5f * traccc::unit<scalar>::GeV;
-        scalar z_min = -500.f * traccc::unit<scalar>::mm;
-        scalar z_max = 500.f * traccc::unit<scalar>::mm;
-        scalar r_max = 200.f * traccc::unit<scalar>::mm;
-        scalar matching_ratio = 0.5f;
+        truth_matching_config truth_config;
+        seed_matching_config seed_truth_config;
     };
 
     /// Construct from configuration and log level.

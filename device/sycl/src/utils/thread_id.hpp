@@ -18,7 +18,8 @@ namespace traccc::sycl::details {
 
 /// A SYCL thread identifier type
 template <std::size_t DIMENSIONS>
-requires(DIMENSIONS >= 1 && DIMENSIONS <= 3) struct thread_id {
+    requires(DIMENSIONS >= 1 && DIMENSIONS <= 3)
+struct thread_id {
 
     /// Dimensions of the thread identifier
     static constexpr std::size_t dimensions = DIMENSIONS;

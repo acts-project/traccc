@@ -96,10 +96,11 @@ class is_contiguous_on_all_unique {};
  * @return false Otherwise.
  */
 template <typename CONTAINER, std::semiregular P, typename VIEW>
-requires std::regular_invocable<P,
-                                decltype(std::declval<CONTAINER>().at(0))> bool
-is_contiguous_on(P&& projection, vecmem::memory_resource& mr,
-                 vecmem::copy& copy, ::sycl::queue& queue, const VIEW& view) {
+    requires std::regular_invocable<P,
+                                    decltype(std::declval<CONTAINER>().at(0))>
+bool is_contiguous_on(P&& projection, vecmem::memory_resource& mr,
+                      vecmem::copy& copy, ::sycl::queue& queue,
+                      const VIEW& view) {
 
     // This should never be a performance-critical step, so we can keep the
     // block size fixed.

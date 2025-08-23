@@ -38,7 +38,7 @@
 #include "traccc/performance/timing_info.hpp"
 
 // VecMem include(s).
-#include <vecmem/memory/binary_page_memory_resource.hpp>
+#include <vecmem/memory/host_memory_resource.hpp>
 
 // Indicators include(s).
 #include <indicators/progress_bar.hpp>
@@ -46,14 +46,15 @@
 // System include(s).
 #include <cstdlib>
 #include <ctime>
+#include <functional>
 #include <iostream>
 #include <memory>
 
 namespace traccc {
 
-template <typename FULL_CHAIN_ALG, typename HOST_MR>
-int throughput_st(std::string_view description, int argc, char* argv[],
-                  bool use_host_caching) {
+template <typename FULL_CHAIN_ALG>
+int throughput_st(std::string_view description, int argc, char* argv[]) {
+
     std::unique_ptr<const traccc::Logger> logger = traccc::getDefaultLogger(
         "ThroughputExample", traccc::Logging::Level::INFO);
 
@@ -81,42 +82,32 @@ int throughput_st(std::string_view description, int argc, char* argv[],
     performance::timing_info times;
 
     // Memory resource to use in the test.
-    HOST_MR uncached_host_mr;
-    std::unique_ptr<vecmem::binary_page_memory_resource> cached_host_mr =
-        std::make_unique<vecmem::binary_page_memory_resource>(uncached_host_mr);
+    vecmem::host_memory_resource host_mr;
 
     // Construct the detector description object.
-    traccc::silicon_detector_description::host det_descr{uncached_host_mr};
+    traccc::silicon_detector_description::host det_descr{host_mr};
     traccc::io::read_detector_description(
         det_descr, detector_opts.detector_file, detector_opts.digitization_file,
-        (detector_opts.use_detray_detector ? traccc::data_format::json
-                                           : traccc::data_format::csv));
+        traccc::data_format::json);
 
     // Construct a Detray detector object, if supported by the configuration.
-    traccc::default_detector::host detector{uncached_host_mr};
-    if (detector_opts.use_detray_detector) {
-        traccc::io::read_detector(
-            detector, uncached_host_mr, detector_opts.detector_file,
-            detector_opts.material_file, detector_opts.grid_file);
-    }
+    traccc::default_detector::host detector{host_mr};
+    traccc::io::read_detector(detector, host_mr, detector_opts.detector_file,
+                              detector_opts.material_file,
+                              detector_opts.grid_file);
 
     // Construct the magnetic field object.
     const auto field = details::make_magnetic_field(bfield_opts);
 
-    vecmem::memory_resource& alg_host_mr =
-        use_host_caching
-            ? static_cast<vecmem::memory_resource&>(*cached_host_mr)
-            : static_cast<vecmem::memory_resource&>(uncached_host_mr);
-
     // Read in all input events into memory.
-    vecmem::vector<edm::silicon_cell_collection::host> input{&uncached_host_mr};
+    vecmem::vector<edm::silicon_cell_collection::host> input{&host_mr};
     {
         performance::timer t{"File reading", times};
         // Read the input cells into memory event-by-event.
         input.reserve(input_opts.events);
         for (std::size_t i = input_opts.skip;
              i < input_opts.skip + input_opts.events; ++i) {
-            input.emplace_back(uncached_host_mr);
+            input.emplace_back(host_mr);
             static constexpr bool DEDUPLICATE = true;
             io::read_cells(input.back(), i, input_opts.directory,
                            logger->clone(), &det_descr, input_opts.format,
@@ -130,6 +121,10 @@ int throughput_st(std::string_view description, int argc, char* argv[],
     typename FULL_CHAIN_ALG::clustering_algorithm::config_type clustering_cfg(
         clusterization_opts);
 
+    const traccc::seedfinder_config seedfinder_config(seeding_opts);
+    const traccc::seedfilter_config seedfilter_config(seeding_opts);
+    const traccc::spacepoint_grid_config spacepoint_grid_config(seeding_opts);
+
     typename FULL_CHAIN_ALG::finding_algorithm::config_type finding_cfg(
         finding_opts);
     finding_cfg.propagation = propagation_config;
@@ -142,18 +137,28 @@ int throughput_st(std::string_view description, int argc, char* argv[],
 
     // Set up the full-chain algorithm.
     std::unique_ptr<FULL_CHAIN_ALG> alg = std::make_unique<FULL_CHAIN_ALG>(
-        alg_host_mr, clustering_cfg, seeding_opts.seedfinder,
-        spacepoint_grid_config{seeding_opts.seedfinder},
-        seeding_opts.seedfilter, finding_cfg, resolution_cfg, fitting_cfg,
-        det_descr, field,
-        (detector_opts.use_detray_detector ? &detector : nullptr),
-        logger->clone("FullChainAlg"));
+        host_mr, clustering_cfg, seedfinder_config, spacepoint_grid_config,
+        seedfilter_config, finding_cfg, resolution_cfg, fitting_cfg, det_descr,
+        field, &detector, logger->clone("FullChainAlg"));
 
     // Seed the random number generator.
     if (throughput_opts.random_seed == 0) {
         std::srand(static_cast<unsigned int>(std::time(0)));
     } else {
         std::srand(throughput_opts.random_seed);
+    }
+
+    // Set up a lambda that calls the correct function on the algorithm.
+    std::function<std::size_t(const edm::silicon_cell_collection::host&)>
+        process_event;
+    if (throughput_opts.reco_stage == opts::throughput::stage::seeding) {
+        process_event = [&](const edm::silicon_cell_collection::host& cells)
+            -> std::size_t { return alg->seeding(cells).size(); };
+    } else if (throughput_opts.reco_stage == opts::throughput::stage::full) {
+        process_event = [&](const edm::silicon_cell_collection::host& cells)
+            -> std::size_t { return (*alg)(cells).size(); };
+    } else {
+        throw std::invalid_argument("Unknown reconstruction stage");
     }
 
     // Dummy count uses output of tp algorithm to ensure the compiler
@@ -185,7 +190,7 @@ int throughput_st(std::string_view description, int argc, char* argv[],
                 input_opts.events;
 
             // Process one event.
-            rec_track_params += (*alg)(input[event]).size();
+            rec_track_params += process_event(input[event]);
             progress_bar.tick();
         }
     }
@@ -223,7 +228,6 @@ int throughput_st(std::string_view description, int argc, char* argv[],
 
     // Explicitly delete the objects in the correct order.
     alg.reset();
-    cached_host_mr.reset();
 
     // Print some results.
     std::cout << "Reconstructed track parameters: " << rec_track_params

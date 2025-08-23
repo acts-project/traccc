@@ -53,7 +53,7 @@ TEST(CUDASpacepointFormation, cuda) {
     tel_cfg.pilot_track(traj);
 
     // Create telescope geometry
-    auto [det, name_map] = build_telescope_detector(mng_mr, tel_cfg);
+    const auto [det, name_map] = build_telescope_detector(mng_mr, tel_cfg);
     using device_detector_type = traccc::telescope_detector::device;
 
     // Surface lookup

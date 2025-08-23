@@ -9,7 +9,6 @@
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/geometry/module_map.hpp"
-#include "traccc/io/details/read_surfaces.hpp"
 #include "traccc/io/utils.hpp"
 
 // GTest include(s).
@@ -126,41 +125,4 @@ TEST(geometry, module_map_failure) {
      * This value is not in the map, so it should throw.
      */
     ASSERT_THROW(map.at(100), std::out_of_range);
-}
-
-/*
- * This test reads in the TrackML detector and ensures that the resulting
- * module map is exactly identical to what would have been obtained from the
- * existing map which is based on std::map.
- */
-TEST(geometry, module_map_read_trackml) {
-
-    const std::string file =
-        traccc::io::data_directory() + "tml_detector/trackml-detector.csv";
-
-    /*
-     * Next, we read the surfaces from the TrackML data file, and we get back a
-     * std::map.
-     */
-    std::map<traccc::geometry_id, traccc::transform3> inp =
-        traccc::io::details::read_surfaces(file);
-
-    /*
-     * Convert the old-style map to a module map.
-     */
-    traccc::module_map map(inp);
-
-    /*
-     * Obviously, the two maps need to be the same size!
-     */
-    ASSERT_EQ(map.size(), inp.size());
-
-    /*
-     * Next, iterate over all geometry IDs in the old map, and check whether
-     * the two maps return exactly the same result.
-     */
-    for (const std::map<traccc::geometry_id, traccc::transform3>::value_type
-             &i : inp) {
-        ASSERT_EQ(map.at(i.first), i.second);
-    }
 }

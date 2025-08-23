@@ -88,11 +88,8 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     typename detray::detail::tuple_element<5, actor_tuple_type>::type::state s5;
     s5.min_step_length = cfg.min_step_length_for_next_surface;
     s5.max_count = cfg.max_step_counts_for_next_surface;
-    if (cfg.is_min_pT) {
-        s4.min_pT(static_cast<scalar_t>(cfg.min_p_mag));
-    } else {
-        s4.min_p(static_cast<scalar_t>(cfg.min_p_mag));
-    }
+    s4.min_pT(static_cast<scalar_t>(cfg.min_pT));
+    s4.min_p(static_cast<scalar_t>(cfg.min_p));
 
     // Propagate to the next surface
     propagator.propagate(propagation, detray::tie(s0, s2, s3, s4, s5));

@@ -18,6 +18,7 @@
 // System include(s).
 #include <ranges>
 #include <stdexcept>
+#include <unordered_map>
 
 namespace traccc::io::csv {
 
@@ -36,13 +37,14 @@ void read_spacepoints(edm::spacepoint_collection::host& spacepoints,
     // Measurement hit id reader
     auto mhid_reader =
         io::csv::make_measurement_hit_id_reader(meas_hit_map_filename);
-    std::vector<traccc::io::csv::measurement_hit_id> measurement_hit_ids;
+    std::unordered_map<std::size_t, traccc::io::csv::measurement_hit_id>
+        measurement_hit_ids;
     traccc::io::csv::measurement_hit_id io_mh_id;
     while (mhid_reader.read(io_mh_id)) {
         if (sort_measurements) {
             io_mh_id.measurement_id = new_idx_map[io_mh_id.measurement_id];
         }
-        measurement_hit_ids.push_back(io_mh_id);
+        measurement_hit_ids.insert({io_mh_id.hit_id, io_mh_id});
     }
 
     // Construct the hit reader object.
@@ -55,14 +57,12 @@ void read_spacepoints(edm::spacepoint_collection::host& spacepoints,
         // Find the index of the measurement that this hit/spacepoint belongs
         // to. Which may not be valid, as some simulated hits are not associated
         // with a measurement.
-        auto const measurement_id_it = std::ranges::find_if(
-            measurement_hit_ids.begin(), measurement_hit_ids.end(),
-            [&](const measurement_hit_id& mh_id) {
-                return mh_id.hit_id == spacepoints.size();
-            });
+        auto const measurement_id_it =
+            measurement_hit_ids.find(spacepoints.size());
         const unsigned int measurement_index =
             (measurement_id_it != measurement_hit_ids.end())
-                ? static_cast<unsigned int>(measurement_id_it->measurement_id)
+                ? static_cast<unsigned int>(
+                      measurement_id_it->second.measurement_id)
                 : static_cast<unsigned int>(-1);
 
         // Create a new spacepoint for the SoA container.

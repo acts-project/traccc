@@ -32,8 +32,6 @@ __global__ void block_inclusive_scan(
 
     auto globalIndex = threadIdx.x + blockIdx.x * blockDim.x;
     auto threadIndex = threadIdx.x;
-    auto blockIndex = blockIdx.x;
-    auto blockSize = blockDim.x;
 
     const unsigned int n_accepted = *(payload.n_accepted);
 
@@ -46,7 +44,7 @@ __global__ void block_inclusive_scan(
     __syncthreads();
 
     // inclusive scan in shared memory
-    for (int stride = 1; stride < blockSize; stride *= 2) {
+    for (int stride = 1; stride < blockDim.x; stride *= 2) {
         int val = 0;
         if (threadIndex >= stride) {
             val = shared_temp[threadIndex - stride];
@@ -64,8 +62,8 @@ __global__ void block_inclusive_scan(
 
     __syncthreads();
 
-    if (threadIndex == blockSize - 1) {
-        block_offsets[blockIndex] = shared_temp[threadIndex];
+    if (threadIndex == blockDim.x - 1) {
+        block_offsets[blockIdx.x] = shared_temp[threadIndex];
     }
 }
 

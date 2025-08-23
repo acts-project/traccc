@@ -19,7 +19,6 @@ TRACCC_HOST_DEVICE
 inline void update_triplet_weights(
     const global_index_t globalIndex, const seedfilter_config& filter_config,
     const edm::spacepoint_collection::const_view& spacepoints_view,
-    const traccc::details::spacepoint_grid_types::const_view& sp_view,
     const triplet_counter_spM_collection_types::const_view& spM_tc_view,
     const triplet_counter_collection_types::const_view& tc_view, scalar* data,
     device_triplet_collection_types::view triplet_view) {
@@ -33,7 +32,6 @@ inline void update_triplet_weights(
     // Set up the device containers
     const edm::spacepoint_collection::const_device spacepoints{
         spacepoints_view};
-    const traccc::details::spacepoint_grid_types::const_device sp_grid(sp_view);
     const triplet_counter_spM_collection_types::const_device triplet_counts_spM(
         spM_tc_view);
     const triplet_counter_collection_types::const_device triplet_counts(
@@ -42,11 +40,8 @@ inline void update_triplet_weights(
     // Current work item
     device_triplet this_triplet = triplets.at(globalIndex);
 
-    const sp_location& spT_idx = this_triplet.spT;
-
     const edm::spacepoint_collection::const_device::const_proxy_type
-        current_spT =
-            spacepoints.at(sp_grid.bin(spT_idx.bin_idx)[spT_idx.sp_idx]);
+        current_spT = spacepoints.at(this_triplet.spT);
 
     const scalar currentTop_r = current_spT.radius();
 
@@ -82,10 +77,8 @@ inline void update_triplet_weights(
         }
 
         const device_triplet other_triplet = triplets[i];
-        const sp_location other_spT_idx = other_triplet.spT;
         const edm::spacepoint_collection::const_device::const_proxy_type
-            other_spT = spacepoints.at(
-                sp_grid.bin(other_spT_idx.bin_idx)[other_spT_idx.sp_idx]);
+            other_spT = spacepoints.at(other_triplet.spT);
 
         // compared top SP should have at least deltaRMin distance
         const scalar otherTop_r = other_spT.radius();

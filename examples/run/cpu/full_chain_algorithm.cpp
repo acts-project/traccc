@@ -22,6 +22,7 @@ full_chain_algorithm::full_chain_algorithm(
     const magnetic_field& field, detector_type* detector,
     std::unique_ptr<const traccc::Logger> logger)
     : messaging(logger->clone()),
+      m_mr(mr),
       m_copy{std::make_unique<vecmem::copy>()},
       m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
       m_field(field),
@@ -85,9 +86,47 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
                 {vecmem::get_data(track_candidates), measurements_view});
 
         // Run the track fitting, and return its results.
-        return m_fitting(
-            *m_detector, m_field,
-            {vecmem::get_data(resolved_track_candidates), measurements_view});
+        return m_fitting(*m_detector, m_field,
+                         {vecmem::get_data(resolved_track_candidates),
+                          measurements_view})
+            .tracks;
+    }
+    // If not, just return an empty object.
+    else {
+
+        // Return an empty object.
+        return output_type{m_mr.get()};
+    }
+}
+
+bound_track_parameters_collection_types::host full_chain_algorithm::seeding(
+    const edm::silicon_cell_collection::host& cells) const {
+
+    // Create a data object for the detector description.
+    const silicon_detector_description::const_data det_descr_data =
+        vecmem::get_data(m_det_descr.get());
+
+    // Run the clusterization.
+    auto cells_data = vecmem::get_data(cells);
+    const clustering_algorithm::output_type measurements =
+        m_clusterization(cells_data, det_descr_data);
+
+    // If we have a Detray detector, run the seeding track finding and fitting.
+    if (m_detector != nullptr) {
+
+        // Run the seed-finding.
+        const measurement_collection_types::const_view measurements_view =
+            vecmem::get_data(measurements);
+        const spacepoint_formation_algorithm::output_type spacepoints =
+            m_spacepoint_formation(*m_detector, measurements_view);
+        const edm::spacepoint_collection::const_data spacepoints_data =
+            vecmem::get_data(spacepoints);
+        const host::seeding_algorithm::output_type seeds =
+            m_seeding(spacepoints_data);
+        const edm::seed_collection::const_data seeds_data =
+            vecmem::get_data(seeds);
+        return m_track_parameter_estimation(measurements_view, spacepoints_data,
+                                            seeds_data, m_field_vec);
     }
     // If not, just return an empty object.
     else {

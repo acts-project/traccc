@@ -20,7 +20,7 @@ namespace traccc::device {
 namespace details {
 // Finding minimum element algorithm
 template <typename Comparator>
-TRACCC_HOST_DEVICE std::size_t min_elem(const triplet* arr,
+TRACCC_HOST_DEVICE std::size_t min_elem(const device_triplet* arr,
                                         const std::size_t begin_idx,
                                         const std::size_t end_idx,
                                         Comparator comp) {
@@ -38,11 +38,11 @@ TRACCC_HOST_DEVICE std::size_t min_elem(const triplet* arr,
 
 // Sorting algorithm for sorting seeds in the local memory
 template <typename Comparator>
-TRACCC_HOST_DEVICE void insertionSort(triplet* arr,
+TRACCC_HOST_DEVICE void insertionSort(device_triplet* arr,
                                       const unsigned int begin_idx,
                                       const unsigned int n, Comparator comp) {
     int j = 0;
-    triplet key = arr[begin_idx];
+    device_triplet key = arr[begin_idx];
     for (unsigned int i = 0; i < n; ++i) {
         key = arr[begin_idx + i];
         j = static_cast<int>(i) - 1;
@@ -60,13 +60,14 @@ TRACCC_HOST_DEVICE void insertionSort(triplet* arr,
 // Select seeds kernel
 TRACCC_HOST_DEVICE
 inline void select_seeds(
-    const global_index_t globalIndex, const seedfilter_config& filter_config,
+    const global_index_t globalIndex, const seedfinder_config& finder_config,
+    const seedfilter_config& filter_config,
     const edm::spacepoint_collection::const_view& spacepoints_view,
     const traccc::details::spacepoint_grid_types::const_view& sp_view,
     const triplet_counter_spM_collection_types::const_view& spM_tc_view,
     const triplet_counter_collection_types::const_view& tc_view,
     const device_triplet_collection_types::const_view& triplet_view,
-    triplet* data, edm::seed_collection::view seed_view) {
+    device_triplet* data, edm::seed_collection::view seed_view) {
 
     // Check if anything needs to be done.
     const triplet_counter_spM_collection_types::const_device triplet_counts_spM(
@@ -89,8 +90,9 @@ inline void select_seeds(
     // Current work item = middle spacepoint
     const triplet_counter_spM spM_counter = triplet_counts_spM.at(globalIndex);
     const sp_location spM_loc = spM_counter.spM;
+    const unsigned int spM_idx = sp_device.bin(spM_loc.bin_idx)[spM_loc.sp_idx];
     const edm::spacepoint_collection::const_device::const_proxy_type spM =
-        spacepoints.at(sp_device.bin(spM_loc.bin_idx)[spM_loc.sp_idx]);
+        spacepoints.at(spM_idx);
 
     // Number of triplets added for this spM
     unsigned int n_triplets_per_spM = 0;
@@ -102,14 +104,12 @@ inline void select_seeds(
         device_triplet aTriplet = triplets[i];
 
         // spacepoints bottom and top for this triplet
-        const sp_location spB_loc =
-            triplet_counts.at(static_cast<unsigned int>(aTriplet.counter_link))
-                .spB;
-        const sp_location spT_loc = aTriplet.spT;
+        const unsigned int spB_idx = aTriplet.spB;
         const edm::spacepoint_collection::const_device::const_proxy_type spB =
-            spacepoints.at(sp_device.bin(spB_loc.bin_idx)[spB_loc.sp_idx]);
+            spacepoints.at(spB_idx);
+        const unsigned int spT_idx = aTriplet.spT;
         const edm::spacepoint_collection::const_device::const_proxy_type spT =
-            spacepoints.at(sp_device.bin(spT_loc.bin_idx)[spT_loc.sp_idx]);
+            spacepoints.at(spT_idx);
 
         // update weight of triplet
         seed_selecting_helper::seed_weight(filter_config, spM, spB, spT,
@@ -123,29 +123,25 @@ inline void select_seeds(
 
         // if the number of good triplets is larger than the threshold,
         // the triplet with the lowest weight is removed
-        if (n_triplets_per_spM >= filter_config.max_triplets_per_spM) {
+        if (n_triplets_per_spM >= finder_config.maxSeedsPerSpM) {
 
-            const std::size_t min_index =
-                details::min_elem(data, 0, filter_config.max_triplets_per_spM,
-                                  [](const triplet lhs, const triplet rhs) {
-                                      return lhs.weight > rhs.weight;
-                                  });
+            const std::size_t min_index = details::min_elem(
+                data, 0, finder_config.maxSeedsPerSpM,
+                [](const device_triplet& lhs, const device_triplet& rhs) {
+                    return lhs.weight > rhs.weight;
+                });
 
             const scalar& min_weight = data[min_index].weight;
 
             if (aTriplet.weight > min_weight) {
-                data[min_index] = {spB_loc,         spM_loc,
-                                   spT_loc,         aTriplet.curvature,
-                                   aTriplet.weight, aTriplet.z_vertex};
+                data[min_index] = aTriplet;
             }
         }
 
         // if the number of good triplets is below the threshold, add
         // the current triplet to the array
-        else if (n_triplets_per_spM < filter_config.max_triplets_per_spM) {
-            data[n_triplets_per_spM] = {spB_loc,         spM_loc,
-                                        spT_loc,         aTriplet.curvature,
-                                        aTriplet.weight, aTriplet.z_vertex};
+        else if (n_triplets_per_spM < finder_config.maxSeedsPerSpM) {
+            data[n_triplets_per_spM] = aTriplet;
             n_triplets_per_spM++;
         }
     }
@@ -153,33 +149,30 @@ inline void select_seeds(
     // sort the triplets per spM
     details::insertionSort(
         data, 0, n_triplets_per_spM,
-        traccc::details::triplet_sorter{spacepoints, sp_device});
+        [](const device_triplet& lhs, const device_triplet& rhs) {
+            return lhs.weight > rhs.weight;
+        });
 
     // the number of good seed per compatible middle spacepoint
     unsigned int n_seeds_per_spM = 0;
 
     // iterate over the good triplets for final selection of seeds
     for (unsigned int i = 0; i < n_triplets_per_spM; ++i) {
-        const triplet& aTriplet = data[i];
-        const sp_location& spB_loc = aTriplet.sp1;
-        const sp_location& spT_loc = aTriplet.sp3;
+        const device_triplet& aTriplet = data[i];
 
         // if the number of seeds reaches the threshold, break
-        if (n_seeds_per_spM >= filter_config.maxSeedsPerSpM + 1) {
+        if (n_seeds_per_spM >= finder_config.maxSeedsPerSpM + 1) {
             break;
         }
 
         // check if it is a good triplet
-        if (seed_selecting_helper::cut_per_middle_sp(filter_config, spacepoints,
-                                                     sp_device, aTriplet) ||
+        if (seed_selecting_helper::cut_per_middle_sp(
+                filter_config, spacepoints.at(aTriplet.spB), aTriplet.weight) ||
             n_seeds_per_spM == 0) {
 
             n_seeds_per_spM++;
 
-            seeds_device.push_back(
-                {sp_device.bin(spB_loc.bin_idx)[spB_loc.sp_idx],
-                 sp_device.bin(spM_loc.bin_idx)[spM_loc.sp_idx],
-                 sp_device.bin(spT_loc.bin_idx)[spT_loc.sp_idx]});
+            seeds_device.push_back({aTriplet.spB, aTriplet.spM, aTriplet.spT});
         }
     }
 }

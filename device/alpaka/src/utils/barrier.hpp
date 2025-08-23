@@ -18,7 +18,7 @@ namespace traccc::alpaka {
 template <typename TAcc>
 struct barrier {
 
-    ALPAKA_FN_INLINE ALPAKA_FN_ACC barrier(const TAcc* acc) : m_acc(acc){};
+    ALPAKA_FN_INLINE ALPAKA_FN_ACC barrier(const TAcc* acc) : m_acc(acc) {};
 
     ALPAKA_FN_ACC
     void blockBarrier() const { ::alpaka::syncBlockThreads(*m_acc); }

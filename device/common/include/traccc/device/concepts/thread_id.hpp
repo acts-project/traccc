@@ -24,45 +24,38 @@ concept thread_id1 = requires(T& i) {
      * This function should return the local thread identifier in a *flat* way,
      * e.g. compressing two or three dimensional blocks into one dimension.
      */
-    { i.getLocalThreadId() }
-    ->std::integral;
+    { i.getLocalThreadId() } -> std::integral;
 
     /*
      * This function should return the local thread identifier in the X-axis.
      */
-    { i.getLocalThreadIdX() }
-    ->std::integral;
+    { i.getLocalThreadIdX() } -> std::integral;
 
     /*
      * This function should return the global thread identifier in a *flat*
      * way, e.g. compressing two or three dimensional blocks into one
      * dimension.
      */
-    { i.getGlobalThreadId() }
-    ->std::integral;
+    { i.getGlobalThreadId() } -> std::integral;
 
     /*
      * This function should return the global thread identifier in the X-axis.
      */
-    { i.getGlobalThreadIdX() }
-    ->std::integral;
+    { i.getGlobalThreadIdX() } -> std::integral;
 
     /*
      * This function should return the block identifier in the X-axis.
      */
-    { i.getBlockIdX() }
-    ->std::integral;
+    { i.getBlockIdX() } -> std::integral;
 
     /*
      * This function should return the block size in the X-axis.
      */
-    { i.getBlockIdX() }
-    ->std::integral;
+    { i.getBlockIdX() } -> std::integral;
 
     /*
      * This function should return the grid identifier in the X-axis.
      */
-    { i.getBlockIdX() }
-    ->std::integral;
+    { i.getBlockIdX() } -> std::integral;
 };
 }  // namespace traccc::device::concepts

@@ -15,17 +15,16 @@
 
 namespace traccc {
 
-struct [[maybe_unused]] cell_module_projection{
-    template <typename T> TRACCC_HOST_DEVICE auto operator()(
-        const edm::silicon_cell<T>& c) const {return c.module_index();
-}
-}
-;
+struct [[maybe_unused]] cell_module_projection {
+    template <typename T>
+    TRACCC_HOST_DEVICE auto operator()(const edm::silicon_cell<T>& c) const {
+        return c.module_index();
+    }
+};
 
-struct [[maybe_unused]] measurement_module_projection{
-    TRACCC_HOST_DEVICE auto operator()(const traccc::measurement& m)
-        const {return m.surface_link;
-}
-}
-;
+struct [[maybe_unused]] measurement_module_projection {
+    TRACCC_HOST_DEVICE auto operator()(const traccc::measurement& m) const {
+        return m.surface_link;
+    }
+};
 }  // namespace traccc

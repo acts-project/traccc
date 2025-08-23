@@ -17,7 +17,8 @@ namespace traccc::device {
 
 template <typename detector_t>
 TRACCC_HOST_DEVICE inline void form_spacepoints(
-    const global_index_t globalIndex, typename detector_t::view_type det_view,
+    const global_index_t globalIndex,
+    typename detector_t::const_view_type det_view,
     const measurement_collection_types::const_view& measurements_view,
     edm::spacepoint_collection::view spacepoints_view) {
 

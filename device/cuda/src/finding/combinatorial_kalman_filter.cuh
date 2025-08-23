@@ -72,7 +72,7 @@ namespace traccc::cuda::details {
 template <typename detector_t, typename bfield_t>
 edm::track_candidate_collection<default_algebra>::buffer
 combinatorial_kalman_filter(
-    const typename detector_t::view_type& det, const bfield_t& field,
+    const typename detector_t::const_view_type& det, const bfield_t& field,
     const measurement_collection_types::const_view& measurements,
     const bound_track_parameters_collection_types::const_view& seeds,
     const finding_config& config, const memory_resource& mr, vecmem::copy& copy,

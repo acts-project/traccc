@@ -9,6 +9,7 @@
 
 // Local include(s).
 #include "../utils/barrier.hpp"
+#include "../utils/parallel_algorithms.hpp"
 #include "../utils/thread_id.hpp"
 #include "../utils/utils.hpp"
 
@@ -21,10 +22,12 @@
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
 #include "traccc/finding/device/apply_interaction.hpp"
 #include "traccc/finding/device/build_tracks.hpp"
+#include "traccc/finding/device/fill_finding_duplicate_removal_sort_keys.hpp"
 #include "traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
 #include "traccc/finding/device/find_tracks.hpp"
 #include "traccc/finding/device/make_barcode_sequence.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
+#include "traccc/finding/device/remove_duplicates.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/utils/logging.hpp"
 #include "traccc/utils/memory_resource.hpp"
@@ -33,14 +36,6 @@
 
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
-
-// Thrust include(s).
-#include <thrust/copy.h>
-#include <thrust/execution_policy.h>
-#include <thrust/fill.h>
-#include <thrust/scan.h>
-#include <thrust/sort.h>
-#include <thrust/unique.h>
 
 namespace traccc::alpaka::details {
 namespace kernels {
@@ -105,8 +100,37 @@ struct find_tracks {
     }
 };
 
-/// Alpaka kernel functor for @c
-/// traccc::device::fill_finding_propagation_sort_keys
+/// Alpaka kernel functor for
+/// @c traccc::device::fill_finding_duplicate_removal_sort_keys
+struct fill_finding_duplicate_removal_sort_keys {
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(
+        TAcc const& acc,
+        const device::fill_finding_duplicate_removal_sort_keys_payload& payload)
+        const {
+
+        const device::global_index_t globalThreadIdx =
+            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
+        device::fill_finding_duplicate_removal_sort_keys(globalThreadIdx,
+                                                         payload);
+    }
+};
+
+/// Alpaka kernel functor for @c traccc::device::remove_duplicates
+struct remove_duplicates {
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(
+        TAcc const& acc, const finding_config& cfg,
+        const device::remove_duplicates_payload& payload) const {
+
+        const device::global_index_t globalThreadIdx =
+            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
+        device::remove_duplicates(globalThreadIdx, cfg, payload);
+    }
+};
+
+/// Alpaka kernel functor for
+/// @c traccc::device::fill_finding_propagation_sort_keys
 struct fill_finding_propagation_sort_keys {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
@@ -174,7 +198,7 @@ struct build_tracks {
 template <typename detector_t, typename bfield_t>
 edm::track_candidate_collection<default_algebra>::buffer
 combinatorial_kalman_filter(
-    const typename detector_t::view_type& det, const bfield_t& field,
+    const typename detector_t::const_view_type& det, const bfield_t& field,
     const measurement_collection_types::const_view& measurements,
     const bound_track_parameters_collection_types::const_view& seeds,
     const finding_config& config, const memory_resource& mr, vecmem::copy& copy,
@@ -187,13 +211,6 @@ combinatorial_kalman_filter(
 
     // Create a logger.
     auto logger = [&log]() -> const Logger& { return log; };
-
-    /// Thrust policy to use.
-#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_GPU_HIP_ENABLED)
-    auto thrustExecPolicy = thrust::device;
-#else
-    auto thrustExecPolicy = thrust::host;
-#endif
 
     // Number of threads per block to use.
     const Idx threadsPerBlock = getWarpSize<Acc>() * 2;
@@ -212,9 +229,9 @@ combinatorial_kalman_filter(
     measurement_collection_types::device uniques(uniques_buffer);
 
     measurement_collection_types::device::iterator uniques_end =
-        thrust::unique_copy(thrustExecPolicy, measurements.ptr(),
-                            measurements.ptr() + n_measurements,
-                            uniques.begin(), measurement_equal_comp());
+        details::unique_copy(queue, mr, measurements.ptr(),
+                             measurements.ptr() + n_measurements,
+                             uniques.begin(), measurement_equal_comp());
     const unsigned int n_modules =
         static_cast<unsigned int>(uniques_end - uniques.begin());
 
@@ -224,10 +241,10 @@ combinatorial_kalman_filter(
     copy.setup(upper_bounds_buffer)->wait();
     vecmem::device_vector<unsigned int> upper_bounds(upper_bounds_buffer);
 
-    thrust::upper_bound(thrustExecPolicy, measurements.ptr(),
-                        measurements.ptr() + n_measurements, uniques.begin(),
-                        uniques.begin() + n_modules, upper_bounds.begin(),
-                        measurement_sort_comp());
+    details::upper_bound(queue, mr, measurements.ptr(),
+                         measurements.ptr() + n_measurements, uniques.begin(),
+                         uniques.begin() + n_modules, upper_bounds.begin(),
+                         measurement_sort_comp());
 
     /*****************************************************************
      * Kernel1: Create barcode sequence
@@ -408,6 +425,74 @@ combinatorial_kalman_filter(
                 step_to_link_idx_map[step + 1] - step_to_link_idx_map[step];
         }
 
+        /*
+         * On later steps, we can duplicate removal which will attempt to find
+         * tracks that are propagated multiple times and deduplicate them.
+         */
+        if (n_candidates > 0 &&
+            step >= config.duplicate_removal_minimum_length) {
+            vecmem::data::vector_buffer<unsigned int>
+                link_last_measurement_buffer(n_candidates, mr.main);
+            vecmem::data::vector_buffer<unsigned int> param_ids_buffer(
+                n_candidates, mr.main);
+
+            /*
+             * First, we sort the tracks by the index of their final
+             * measurement which is critical to ensure good performance.
+             */
+            {
+                const unsigned int nThreads = 256;
+                const unsigned int nBlocks =
+                    (n_candidates + nThreads - 1) / nThreads;
+                const auto workDiv = makeWorkDiv<Acc>(nBlocks, nThreads);
+
+                ::alpaka::exec<Acc>(
+                    queue, workDiv,
+                    kernels::fill_finding_duplicate_removal_sort_keys{},
+                    device::fill_finding_duplicate_removal_sort_keys_payload{
+                        .links_view = links_buffer,
+                        .param_liveness_view = param_liveness_buffer,
+                        .link_last_measurement_view =
+                            link_last_measurement_buffer,
+                        .param_ids_view = param_ids_buffer,
+                        .n_links = n_candidates,
+                        .curr_links_idx = step_to_link_idx_map[step],
+                        .n_measurements = n_measurements});
+                ::alpaka::wait(queue);
+            }
+
+            vecmem::device_vector<unsigned int> keys_device(
+                link_last_measurement_buffer);
+            vecmem::device_vector<unsigned int> param_ids_device(
+                param_ids_buffer);
+            details::sort_by_key(queue, mr, keys_device.begin(),
+                                 keys_device.end(), param_ids_device.begin());
+
+            /*
+             * Then, we run the actual duplicate removal kernel.
+             */
+            {
+                const unsigned int nThreads = 256;
+                const unsigned int nBlocks =
+                    (n_candidates + nThreads - 1) / nThreads;
+                const auto workDiv = makeWorkDiv<Acc>(nBlocks, nThreads);
+
+                ::alpaka::exec<Acc>(
+                    queue, workDiv, kernels::remove_duplicates{}, config,
+                    device::remove_duplicates_payload{
+                        .links_view = links_buffer,
+                        .link_last_measurement_view =
+                            link_last_measurement_buffer,
+                        .param_ids_view = param_ids_buffer,
+                        .param_liveness_view = param_liveness_buffer,
+                        .n_links = n_candidates,
+                        .curr_links_idx = step_to_link_idx_map[step],
+                        .n_measurements = n_measurements,
+                        .step = step});
+                ::alpaka::wait(queue);
+            }
+        }
+
         if (step == config.max_track_candidates_per_track - 1) {
             break;
         }
@@ -443,9 +528,9 @@ combinatorial_kalman_filter(
                     keys_buffer);
                 vecmem::device_vector<unsigned int> param_ids_device(
                     param_ids_buffer);
-                thrust::sort_by_key(thrustExecPolicy, keys_device.begin(),
-                                    keys_device.end(),
-                                    param_ids_device.begin());
+                details::sort_by_key(queue, mr, keys_device.begin(),
+                                     keys_device.end(),
+                                     param_ids_device.begin());
             }
 
             /*****************************************************************
@@ -566,3 +651,22 @@ struct BlockSharedMemDynSizeBytes<
 };
 
 }  // namespace alpaka::trait
+
+namespace alpaka {
+
+/// Convince Alpaka that
+/// @c traccc::device::fill_finding_duplicate_removal_sort_keys_payload
+/// is trivially copyable
+template <>
+struct IsKernelArgumentTriviallyCopyable<
+    traccc::device::fill_finding_duplicate_removal_sort_keys_payload, void>
+    : std::true_type {};
+
+/// Convince Alpaka that
+/// @c traccc::device::remove_duplicates_payload
+/// is trivially copyable
+template <>
+struct IsKernelArgumentTriviallyCopyable<
+    traccc::device::remove_duplicates_payload, void> : std::true_type {};
+
+}  // namespace alpaka

@@ -14,7 +14,7 @@
 namespace traccc::cuda {
 namespace kernels {
 template <typename fitter_t>
-__global__ __launch_bounds__(128, 8) void fit_forward(
+__global__ __launch_bounds__(128) void fit_forward(
     const fitting_config cfg, const device::fit_payload<fitter_t> payload) {
     device::fit_forward<fitter_t>(details::global_index1(), cfg, payload);
 }

@@ -109,6 +109,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     traccc_config.deltaRMin = 1.f * traccc::unit<float>::mm;
     traccc_config.deltaRMax = 60.f * traccc::unit<float>::mm;
     traccc_config.sigmaScattering = 1.0f;
+    traccc_config.deltaZMax = 1000000.f * traccc::unit<float>::mm;
 
     traccc::spacepoint_grid_config grid_config(traccc_config);
 
@@ -164,7 +165,6 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     // Start creating Seed filter object
     Acts::SeedFilterConfig sfconf;
-    sfconf.maxSeedsPerSpM = traccc::seedfilter_config().maxSeedsPerSpM;
     // there are a lot more variables here tbh
 
     // We also need some atlas-specific cut

@@ -12,8 +12,6 @@
 // Project include(s).
 #include "traccc/bfield/construct_const_bfield.hpp"
 #include "traccc/bfield/magnetic_field_types.hpp"
-#include "traccc/device/container_d2h_copy_alg.hpp"
-#include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
@@ -85,7 +83,8 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
     auto field = traccc::construct_const_bfield(std::get<13>(GetParam()));
 
     // Detector view object
-    auto det_view = detray::get_data(host_det);
+    const host_detector_type& const_host_det = host_det;
+    auto det_view = detray::get_data(const_host_det);
 
     /***************************
      * Generate simulation data
@@ -128,9 +127,6 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
 
     // Copy objects
     vecmem::sycl::async_copy copy{vecmem_queue};
-
-    traccc::device::container_d2h_copy_alg<traccc::track_state_container_types>
-        track_state_d2h{mr, copy};
 
     // Seed generator
     seed_generator<host_detector_type> sg(host_det, stddevs);

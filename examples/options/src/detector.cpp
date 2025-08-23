@@ -31,10 +31,6 @@ detector::detector() : interface("Detector Options") {
                          po::value(&grid_file)->default_value(grid_file),
                          "Surface grid file");
     m_desc.add_options()(
-        "use-detray-detector",
-        po::value(&use_detray_detector)->default_value(use_detray_detector),
-        "Use detray::detector for the geometry handling");
-    m_desc.add_options()(
         "digitization-file",
         po::value(&digitization_file)->default_value(digitization_file),
         "Digitization file");
@@ -49,8 +45,6 @@ std::unique_ptr<configuration_printable> detector::as_printable() const {
                                                            material_file));
     cat->add_child(std::make_unique<configuration_kv_pair>("Surface grid file",
                                                            grid_file));
-    cat->add_child(std::make_unique<configuration_kv_pair>(
-        "Use detray detector", std::format("{}", use_detray_detector)));
     cat->add_child(std::make_unique<configuration_kv_pair>("Digitization file",
                                                            digitization_file));
 

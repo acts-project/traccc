@@ -23,7 +23,7 @@ struct finding_config {
     unsigned int max_num_branches_per_seed = 10;
 
     /// Maximum number of branches per surface
-    unsigned int max_num_branches_per_surface = 2;
+    unsigned int max_num_branches_per_surface = 1;
 
     /// Min/Max number of track candidates per track
     unsigned int min_track_candidates_per_track = 3;
@@ -40,14 +40,14 @@ struct finding_config {
     unsigned int max_step_counts_for_next_surface = 100;
 
     /// Maximum Chi-square that is allowed for branching
-    float chi2_max = 10.f;
+    float chi2_max = 100.f;
 
     /// Propagation configuration
     detray::propagation::config propagation{};
 
     /// Minimum momentum for reconstructed tracks
-    bool is_min_pT = true;
-    float min_p_mag = 100.f * traccc::unit<float>::MeV;
+    float min_p = 100.f * traccc::unit<float>::MeV;
+    float min_pT = 600.f * traccc::unit<float>::MeV;
 
     /// Particle hypothesis
     traccc::pdg_particle<traccc::scalar> ptc_hypothesis =
@@ -75,20 +75,6 @@ struct finding_config {
     /// @note This parameter affects GPU-based track finding only.
     unsigned int initial_links_per_seed = 100;
     /// @}
-
-    /// Set the momentum limit to @param p
-    TRACCC_HOST_DEVICE
-    inline void min_p(const float p) {
-        is_min_pT = false;
-        min_p_mag = p;
-    }
-
-    /// Set the transverse momentum limit to @param p
-    TRACCC_HOST_DEVICE
-    inline void min_pT(const float p) {
-        is_min_pT = true;
-        min_p_mag = p;
-    }
 };
 
 }  // namespace traccc

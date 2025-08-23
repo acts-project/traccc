@@ -20,8 +20,8 @@
 
 namespace traccc::sycl {
 namespace kernels {
-struct ckf_constant_field_telescope_detector;
-struct ckf_inhomogeneous_field_telescope_detector;
+template <typename bfield_tag_t>
+struct ckf_telescope_detector;
 }  // namespace kernels
 
 combinatorial_kalman_filter_algorithm::output_type
@@ -31,24 +31,15 @@ combinatorial_kalman_filter_algorithm::operator()(
     const bound_track_parameters_collection_types::const_view& seeds) const {
 
     // Perform the track finding using the templated implementation.
-    if (bfield.is<const_bfield_backend_t<scalar>>()) {
-        return details::combinatorial_kalman_filter<
-            kernels::ckf_constant_field_telescope_detector,
-            telescope_detector::device>(
-            det, bfield.as_view<const_bfield_backend_t<scalar>>(), measurements,
-            seeds, m_config, m_mr, m_copy, details::get_queue(m_queue));
-    } else if (bfield.is<sycl::inhom_bfield_backend_t<scalar>>()) {
-        return details::combinatorial_kalman_filter<
-            kernels::ckf_inhomogeneous_field_telescope_detector,
-            telescope_detector::device>(
-            det, bfield.as_view<sycl::inhom_bfield_backend_t<scalar>>(),
-            measurements, seeds, m_config, m_mr, m_copy,
-            details::get_queue(m_queue));
-    } else {
-        throw std::invalid_argument(
-            "Unsupported b-field type received in "
-            "traccc::sycl::combinatorial_kalman_filter_algorithm");
-    }
+    return magnetic_field_visitor<sycl::bfield_type_list<scalar>>(
+        bfield, [&]<typename bfield_view_t>(const bfield_view_t& bfield_view) {
+            return details::combinatorial_kalman_filter<
+                kernels::ckf_telescope_detector<
+                    bfield_tag_selector_t<typename bfield_view_t::backend_t>>,
+                telescope_detector::device>(det, bfield_view, measurements,
+                                            seeds, m_config, m_mr, m_copy,
+                                            details::get_queue(m_queue));
+        });
 }
 
 }  // namespace traccc::sycl

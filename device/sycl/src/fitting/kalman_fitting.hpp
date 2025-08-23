@@ -15,7 +15,7 @@
 // Project include(s).
 #include "traccc/edm/device/sort_key.hpp"
 #include "traccc/edm/track_candidate_container.hpp"
-#include "traccc/edm/track_state.hpp"
+#include "traccc/edm/track_fit_container.hpp"
 #include "traccc/fitting/details/kalman_fitting_types.hpp"
 #include "traccc/fitting/device/fill_fitting_sort_keys.hpp"
 #include "traccc/fitting/device/fit.hpp"
@@ -30,6 +30,9 @@
 
 // SYCL include(s).
 #include <sycl/sycl.hpp>
+
+// System include(s).
+#include <numeric>
 
 namespace traccc::sycl {
 namespace kernels {
@@ -64,8 +67,10 @@ namespace details {
 /// @return A container of the fitted track states
 ///
 template <typename kernel_t, typename detector_t, typename bfield_t>
-track_state_container_types::buffer kalman_fitting(
-    const typename detector_t::view_type& det_view, const bfield_t& field_view,
+typename edm::track_fit_container<typename detector_t::algebra_type>::buffer
+kalman_fitting(
+    const typename detector_t::const_view_type& det_view,
+    const bfield_t& field_view,
     const typename edm::track_candidate_container<
         typename detector_t::algebra_type>::const_view& track_candidates_view,
     const fitting_config& config, const memory_resource& mr, vecmem::copy& copy,
@@ -79,21 +84,24 @@ track_state_container_types::buffer kalman_fitting(
     // Get the sizes of the track candidates in each track.
     const std::vector<unsigned int> candidate_sizes =
         copy.get_sizes(track_candidates_view.tracks);
+    const unsigned int n_states =
+        std::accumulate(candidate_sizes.begin(), candidate_sizes.end(), 0u);
 
     // Create the result buffer.
-    track_state_container_types::buffer track_states_buffer{
-        {n_tracks, mr.main},
-        {candidate_sizes, mr.main, mr.host,
-         vecmem::data::buffer_type::resizable}};
-    vecmem::copy::event_type track_states_headers_setup_event =
-        copy.setup(track_states_buffer.headers);
-    vecmem::copy::event_type track_states_items_setup_event =
-        copy.setup(track_states_buffer.items);
+    typename edm::track_fit_container<typename detector_t::algebra_type>::buffer
+        track_states_buffer{
+            {candidate_sizes, mr.main, mr.host,
+             vecmem::data::buffer_type::resizable},
+            {n_states, mr.main, vecmem::data::buffer_type::resizable}};
+    vecmem::copy::event_type tracks_setup_event =
+        copy.setup(track_states_buffer.tracks);
+    vecmem::copy::event_type track_states_setup_event =
+        copy.setup(track_states_buffer.states);
 
     // Return early, if there are no tracks.
     if (n_tracks == 0) {
-        track_states_headers_setup_event->wait();
-        track_states_items_setup_event->wait();
+        tracks_setup_event->wait();
+        track_states_setup_event->wait();
         return track_states_buffer;
     }
 
@@ -149,9 +157,12 @@ track_state_container_types::buffer kalman_fitting(
                              param_ids_device.begin());
 
     // Run the fitting, using the sorted parameter IDs.
-    track_state_container_types::view track_states_view = track_states_buffer;
-    track_states_headers_setup_event->wait();
-    track_states_items_setup_event->wait();
+    typename edm::track_fit_container<typename detector_t::algebra_type>::view
+        track_states_view{track_states_buffer.tracks,
+                          track_states_buffer.states,
+                          track_candidates_view.measurements};
+    tracks_setup_event->wait();
+    track_states_setup_event->wait();
 
     queue
         .submit([&](::sycl::handler& h) {
@@ -160,9 +171,10 @@ track_state_container_types::buffer kalman_fitting(
                         track_candidates_view, track_states_view,
                         param_liveness_view = vecmem::get_data(
                             param_liveness_buffer)](::sycl::nd_item<1> item) {
-                    device::fit_prelude(details::global_index(item),
-                                        param_ids_view, track_candidates_view,
-                                        track_states_view, param_liveness_view);
+                    device::fit_prelude<typename detector_t::algebra_type>(
+                        details::global_index(item), param_ids_view,
+                        track_candidates_view, track_states_view,
+                        param_liveness_view);
                 });
         })
         .wait_and_throw();
@@ -173,7 +185,7 @@ track_state_container_types::buffer kalman_fitting(
         .field_data = field_view,
         .param_ids_view = param_ids_buffer,
         .param_liveness_view = param_liveness_buffer,
-        .track_states_view = track_states_view,
+        .tracks_view = track_states_view,
         .barcodes_view = seqs_buffer};
 
     for (std::size_t i = 0; i < config.n_iterations; ++i) {

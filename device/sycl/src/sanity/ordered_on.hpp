@@ -89,10 +89,11 @@ struct is_ordered_on {
  * @return false Otherwise.
  */
 template <typename CONTAINER, std::semiregular R, typename VIEW>
-requires std::regular_invocable<R, decltype(std::declval<CONTAINER>().at(0)),
-                                decltype(std::declval<CONTAINER>().at(0))> bool
-is_ordered_on(R&& relation, vecmem::memory_resource& mr, vecmem::copy& copy,
-              ::sycl::queue& queue, const VIEW& view) {
+    requires std::regular_invocable<R,
+                                    decltype(std::declval<CONTAINER>().at(0)),
+                                    decltype(std::declval<CONTAINER>().at(0))>
+bool is_ordered_on(R&& relation, vecmem::memory_resource& mr,
+                   vecmem::copy& copy, ::sycl::queue& queue, const VIEW& view) {
 
     // This should never be a performance-critical step, so we can keep the
     // block size fixed.

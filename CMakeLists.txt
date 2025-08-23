@@ -6,7 +6,7 @@
 
 # Set up the project.
 cmake_minimum_required( VERSION 3.25 )
-project( traccc VERSION 0.22.0 LANGUAGES CXX )
+project( traccc VERSION 0.24.0 LANGUAGES CXX )
 
 # Set up the used C++ standard(s).
 set( CMAKE_CXX_STANDARD 20 CACHE STRING "The (host) C++ standard to use" )

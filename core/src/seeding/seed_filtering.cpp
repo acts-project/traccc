@@ -16,10 +16,14 @@
 
 namespace traccc::host::details {
 
-seed_filtering::seed_filtering(const seedfilter_config& config,
+seed_filtering::seed_filtering(const seedfinder_config& finder_config,
+                               const seedfilter_config& filter_config,
                                vecmem::memory_resource& mr,
                                std::unique_ptr<const Logger> logger)
-    : messaging(std::move(logger)), m_filter_config(config), m_mr{mr} {}
+    : messaging(std::move(logger)),
+      m_finder_config(finder_config),
+      m_filter_config(filter_config),
+      m_mr{mr} {}
 
 void seed_filtering::operator()(
     const edm::spacepoint_collection::const_device& spacepoints,
@@ -89,11 +93,16 @@ void seed_filtering::operator()(
         // Consider only a maximum number of triplets for the final quality cut.
         const std::size_t itLength =
             std::min(triplets_passing_single_seed_cuts.size(),
-                     m_filter_config.max_triplets_per_spM);
+                     static_cast<std::size_t>(m_finder_config.maxSeedsPerSpM));
         for (std::size_t i = 1; i < itLength; ++i) {
+            const traccc::details::spacepoint_grid_types::const_device
+                sp_grid_accessor(sp_grid_data);
+            const auto& this_seed = triplets_passing_single_seed_cuts[i].get();
             if (seed_selecting_helper::cut_per_middle_sp(
-                    m_filter_config, spacepoints, sp_grid_data,
-                    triplets_passing_single_seed_cuts[i])) {
+                    m_filter_config,
+                    spacepoints.at(sp_grid_accessor.bin(
+                        this_seed.sp1.bin_idx)[this_seed.sp1.sp_idx]),
+                    this_seed.weight)) {
                 triplets_passing_final_cuts.push_back(
                     triplets_passing_single_seed_cuts[i]);
             }
@@ -103,7 +112,7 @@ void seed_filtering::operator()(
     // Add the best remaining seeds to the output collection.
     for (std::size_t i = 0;
          const triplet& triplet : triplets_passing_final_cuts) {
-        if (i++ >= m_filter_config.maxSeedsPerSpM) {
+        if (i++ >= m_finder_config.maxSeedsPerSpM) {
             break;
         }
         seeds.push_back({sp_grid.bin(triplet.sp1.bin_idx)[triplet.sp1.sp_idx],
