@@ -48,13 +48,6 @@ class host_detector {
         return m_obj.as<typename detector_traits_t::host>();
     }
 
-    template <typename detector_traits_t>
-    typename detector_traits_t::view as_view() const
-        requires(is_detector_traits<detector_traits_t>)
-    {
-        return detray::get_data(as<detector_traits_t>());
-    }
-
     private:
     move_only_any m_obj;
 };

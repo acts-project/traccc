@@ -7,15 +7,9 @@
 
 #pragma once
 
-// Project include(s).
-#include "traccc/definitions/primitives.hpp"
-
-// Detray include(s).
 #include <any>
-#include <detray/core/detector.hpp>
-#include <detray/detectors/default_metadata.hpp>
-#include <detray/detectors/telescope_metadata.hpp>
-#include <detray/detectors/toy_metadata.hpp>
+
+#include "traccc/definitions/primitives.hpp"
 
 namespace traccc {
 
@@ -27,10 +21,20 @@ class move_only_any {
 
     template <typename obj_t>
     explicit move_only_any(obj_t &&obj)
+        requires(!std::same_as<std::decay_t<obj_t>, move_only_any>)
         : m_obj(std::malloc(sizeof(obj_t))),
           m_type(&typeid(obj_t)),
           m_destructor(get_destructor<obj_t>()) {
-        new (m_obj) obj_t(std::move(obj));
+        new (m_obj) obj_t(std::forward<obj_t>(obj));
+    }
+
+    move_only_any(move_only_any &&other) {
+        m_obj = other.m_obj;
+        other.m_obj = nullptr;
+        m_type = other.m_type;
+        other.m_type = nullptr;
+        m_destructor = other.m_destructor;
+        other.m_destructor = nullptr;
     }
 
     move_only_any &operator=(move_only_any &&other) {
@@ -59,7 +63,9 @@ class move_only_any {
     }
 
     template <typename obj_t>
-    void set(obj_t &&obj) {
+    void set(obj_t &&obj)
+        requires(!std::same_as<std::decay_t<obj_t>, move_only_any>)
+    {
         if (m_obj != nullptr) {
             assert(m_destructor != nullptr);
             m_destructor(m_obj);
@@ -67,7 +73,7 @@ class move_only_any {
         }
 
         m_obj = std::malloc(sizeof(obj_t));
-        new (m_obj) obj_t(std::move(obj));
+        new (m_obj) obj_t(std::forward<obj_t>(obj));
 
         m_type = &typeid(obj_t);
         m_destructor = get_destructor<obj_t>();
@@ -75,21 +81,41 @@ class move_only_any {
 
     template <typename obj_t>
     bool is() const {
-        return (*m_type == typeid(obj_t));
+        if (m_type == nullptr) {
+            return false;
+        } else {
+            return (*m_type == typeid(obj_t));
+        }
     }
 
-    const std::type_info &type() const { return *m_type; }
+    bool has_value() const { return m_type != nullptr; }
+
+    const std::type_info &type() const {
+        if (!has_value()) {
+            throw std::logic_error(
+                "Type ID for `traccc::move_only_any` requested, but no value "
+                "exists.");
+        }
+
+        return *m_type;
+    }
 
     template <typename obj_t>
     obj_t &as() const {
+        if (!has_value()) {
+            throw std::logic_error(
+                "Value for `traccc::move_only_any` requested, but no value "
+                "exists.");
+        }
+
         return *static_cast<obj_t *>(m_obj);
     }
 
     private:
-    template <typename detector_t>
+    template <typename obj_t>
     void (*get_destructor() const)(void *) {
         return static_cast<void (*)(void *)>(
-            [](void *ptr) { static_cast<detector_t *>(ptr)->~detector_t(); });
+            [](void *ptr) { static_cast<obj_t *>(ptr)->~obj_t(); });
     }
 
     void *m_obj = nullptr;

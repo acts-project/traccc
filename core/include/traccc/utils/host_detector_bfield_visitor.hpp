@@ -13,9 +13,9 @@
 namespace traccc {
 
 template <typename detector_list_t, typename bfield_list_t, typename callable_t>
-auto host_detector_magnetic_field_visitor(
-    const host_detector& host_detector, const magnetic_field& bfield,
-    callable_t&& callable) {
+auto host_detector_magnetic_field_visitor(const host_detector& host_detector,
+                                          const magnetic_field& bfield,
+                                          callable_t&& callable) {
     return magnetic_field_visitor<bfield_list_t>(
         bfield, [&host_detector, &callable]<typename bfield_t>(
                     const bfield_t& concrete_bfield) {
