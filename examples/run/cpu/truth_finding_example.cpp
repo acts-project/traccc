@@ -86,9 +86,6 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
         polymorphic_detector, host_mr, detector_opts.detector_file,
         detector_opts.material_file, detector_opts.grid_file);
 
-    const traccc::default_detector::host& detector =
-        polymorphic_detector.as<traccc::default_detector>();
-
     /*****************************
      * Do the reconstruction
      *****************************/
@@ -120,10 +117,6 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
     traccc::host::kalman_fitting_algorithm host_fitting(
         fit_cfg, host_mr, copy, logger().clone("FittingAlg"));
 
-    // Seed generator
-    traccc::seed_generator<traccc::default_detector::host> sg(detector,
-                                                              stddevs);
-
     // Iterate over events
     for (std::size_t event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
@@ -136,8 +129,18 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
         traccc::edm::track_candidate_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
-        evt_data.generate_truth_candidates(truth_track_candidates, sg, host_mr,
-                                           truth_finding_opts.m_pT_min);
+
+        // Seed generator
+        host_detector_visitor<detector_type_list>(
+            polymorphic_detector,
+            [&]<typename detector_traits_t>(
+                const typename detector_traits_t::host& det) {
+                traccc::seed_generator<typename detector_traits_t::host> sg(
+                    det, stddevs);
+                evt_data.generate_truth_candidates(truth_track_candidates, sg,
+                                                   host_mr,
+                                                   truth_finding_opts.m_pT_min);
+            });
 
         // Prepare truth seeds
         traccc::bound_track_parameters_collection_types::host seeds(&host_mr);
@@ -156,15 +159,15 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
         // Run finding
         auto track_candidates = host_finding(
-            detector, field, vecmem::get_data(measurements_per_event),
-            vecmem::get_data(seeds));
+            polymorphic_detector, field,
+            vecmem::get_data(measurements_per_event), vecmem::get_data(seeds));
 
         std::cout << "Number of found tracks: " << track_candidates.size()
                   << std::endl;
 
         // Run fitting
         auto track_states =
-            host_fitting(detector, field,
+            host_fitting(polymorphic_detector, field,
                          {vecmem::get_data(track_candidates),
                           vecmem::get_data(measurements_per_event)});
 
@@ -179,9 +182,14 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                 evt_data);
 
             for (std::size_t i = 0; i < n_fitted_tracks; i++) {
-                fit_performance_writer.write(
-                    track_states.tracks.at(i), track_states.states,
-                    measurements_per_event, detector, evt_data);
+                host_detector_visitor<detector_type_list>(
+                    polymorphic_detector,
+                    [&]<typename detector_traits_t>(
+                        const typename detector_traits_t::host& det) {
+                        fit_performance_writer.write(
+                            track_states.tracks.at(i), track_states.states,
+                            measurements_per_event, det, evt_data);
+                    });
             }
         }
     }

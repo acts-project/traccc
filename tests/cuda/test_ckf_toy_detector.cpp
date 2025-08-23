@@ -189,8 +189,8 @@ TEST_P(CkfToyDetectorTests, Run) {
 
         // Run host finding
         auto track_candidates = host_finding(
-            detector.as<detector_traits>(), field,
-            vecmem::get_data(measurements_per_event), vecmem::get_data(seeds));
+            detector, field, vecmem::get_data(measurements_per_event),
+            vecmem::get_data(seeds));
 
         // Run device finding
         traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer

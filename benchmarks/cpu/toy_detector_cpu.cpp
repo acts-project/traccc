@@ -75,14 +75,13 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
                              vecmem::get_data(seeds), B);
 
             // Track finding with CKF
-            auto track_candidates =
-                host_finding(det.as<traccc::default_detector>(), field,
-                             vecmem::get_data(measurements_per_event),
-                             vecmem::get_data(params));
+            auto track_candidates = host_finding(
+                det, field, vecmem::get_data(measurements_per_event),
+                vecmem::get_data(params));
 
             // Track fitting with KF
             auto track_states =
-                host_fitting(det.as<traccc::default_detector>(), field,
+                host_fitting(det, field,
                              {vecmem::get_data(track_candidates),
                               vecmem::get_data(measurements_per_event)});
         }

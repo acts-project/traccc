@@ -48,9 +48,6 @@ class full_chain_algorithm
     /// @name Type declaration(s)
     /// @{
 
-    /// Detector type used during track finding and fitting
-    using detector_type = traccc::default_detector::host;
-
     /// Clusterization algorithm type
     using clustering_algorithm = host::clusterization_algorithm;
     /// Spacepoint formation algorithm type

@@ -273,10 +273,10 @@ int seq_run(const traccc::opts::input_data& input_opts,
 
             {
                 traccc::performance::timer timer{"Track finding", elapsedTimes};
-                track_candidates = finding_alg(
-                    polymorphic_detector.as<traccc::default_detector>(), field,
-                    vecmem::get_data(measurements_per_event),
-                    vecmem::get_data(params));
+                track_candidates =
+                    finding_alg(polymorphic_detector, field,
+                                vecmem::get_data(measurements_per_event),
+                                vecmem::get_data(params));
             }
             if (output_opts.directory != "") {
                 traccc::io::write(event, output_opts.directory,
@@ -297,10 +297,10 @@ int seq_run(const traccc::opts::input_data& input_opts,
 
             {
                 traccc::performance::timer timer{"Track fitting", elapsedTimes};
-                track_states = fitting_alg(
-                    polymorphic_detector.as<traccc::default_detector>(), field,
-                    {vecmem::get_data(resolved_track_candidates),
-                     vecmem::get_data(measurements_per_event)});
+                track_states =
+                    fitting_alg(polymorphic_detector, field,
+                                {vecmem::get_data(resolved_track_candidates),
+                                 vecmem::get_data(measurements_per_event)});
             }
 
             /*----------------------------

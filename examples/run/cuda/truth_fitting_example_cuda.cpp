@@ -216,7 +216,7 @@ int main(int argc, char* argv[]) {
 
                 // Run fitting
                 track_states = host_fitting(
-                    host_det, host_field,
+                    polymorphic_detector, host_field,
                     {vecmem::get_data(truth_track_candidates.tracks),
                      vecmem::get_data(truth_track_candidates.measurements)});
             }

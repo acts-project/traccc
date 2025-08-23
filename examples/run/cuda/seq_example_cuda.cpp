@@ -106,14 +106,12 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::host_detector host_detector;
-    traccc::default_detector::view device_detector_view;
     traccc::io::read_detector(
         host_detector, host_mr, detector_opts.detector_file,
         detector_opts.material_file, detector_opts.grid_file);
     const traccc::detector_buffer device_detector =
         traccc::buffer_from_host_detector(host_detector, device_mr, copy);
     stream.synchronize();
-    device_detector_view = device_detector.as_view<traccc::default_detector>();
 
     // Output stats
     uint64_t n_cells = 0;
@@ -351,10 +349,10 @@ int seq_run(const traccc::opts::detector& detector_opts,
             if (accelerator_opts.compare_with_cpu) {
                 traccc::performance::timer timer{"Track finding (cpu)",
                                                  elapsedTimes};
-                track_candidates = finding_alg(
-                    host_detector.as<traccc::default_detector>(), host_field,
-                    vecmem::get_data(measurements_per_event),
-                    vecmem::get_data(params));
+                track_candidates =
+                    finding_alg(host_detector, host_field,
+                                vecmem::get_data(measurements_per_event),
+                                vecmem::get_data(params));
             }
 
             // CUDA
@@ -387,10 +385,10 @@ int seq_run(const traccc::opts::detector& detector_opts,
             if (accelerator_opts.compare_with_cpu) {
                 traccc::performance::timer timer{"Track fitting (cpu)",
                                                  elapsedTimes};
-                track_states = fitting_alg(
-                    host_detector.as<traccc::default_detector>(), host_field,
-                    {vecmem::get_data(res_track_candidates),
-                     vecmem::get_data(measurements_per_event)});
+                track_states =
+                    fitting_alg(host_detector, host_field,
+                                {vecmem::get_data(res_track_candidates),
+                                 vecmem::get_data(measurements_per_event)});
             }
 
         }  // Stop measuring wall time

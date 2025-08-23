@@ -198,8 +198,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
           ------------------------*/
 
         track_candidates = host_finding(
-            detector.as<traccc::default_detector>(), field,
-            vecmem::get_data(measurements_per_event), vecmem::get_data(params));
+            detector, field, vecmem::get_data(measurements_per_event),
+            vecmem::get_data(params));
         n_found_tracks += track_candidates.size();
 
         /*-----------------------------------------
@@ -215,10 +215,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
            Track Fitting with KF
           ------------------------*/
 
-        track_states =
-            host_fitting(detector.as<traccc::default_detector>(), field,
-                         {vecmem::get_data(track_candidates_ar),
-                          vecmem::get_data(measurements_per_event)});
+        track_states = host_fitting(detector, field,
+                                    {vecmem::get_data(track_candidates_ar),
+                                     vecmem::get_data(measurements_per_event)});
         n_fitted_tracks += track_states.tracks.size();
 
         /*------------
@@ -254,10 +253,13 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 evt_data);
 
             for (unsigned int i = 0; i < track_states.tracks.size(); i++) {
-                fit_performance_writer.write(
-                    track_states.tracks.at(i), track_states.states,
-                    measurements_per_event,
-                    detector.as<traccc::default_detector>(), evt_data);
+                host_detector_visitor<detector_type_list>(
+                    detector, [&]<typename detector_traits_t>(
+                                  const typename detector_traits_t::host& det) {
+                        fit_performance_writer.write(
+                            track_states.tracks.at(i), track_states.states,
+                            measurements_per_event, det, evt_data);
+                    });
             }
         }
     }

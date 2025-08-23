@@ -76,13 +76,12 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
             track_params_view = vecmem::get_data(track_params);
 
         // Run the track finding.
-        const finding_algorithm::output_type track_candidates =
-            m_finding(m_detector->as<traccc::default_detector>(), m_field,
-                      measurements_view, track_params_view);
+        const finding_algorithm::output_type track_candidates = m_finding(
+            *m_detector, m_field, measurements_view, track_params_view);
 
         // Run the track fitting, and return its results.
         return m_fitting(
-                   m_detector->as<traccc::default_detector>(), m_field,
+                   *m_detector, m_field,
                    {vecmem::get_data(track_candidates), measurements_view})
             .tracks;
     }

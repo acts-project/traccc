@@ -256,10 +256,10 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                                              elapsedTimes);
 
                 // Run finding
-                track_candidates = host_finding(
-                    polymorphic_detector.as<traccc::default_detector>(),
-                    host_field, vecmem::get_data(measurements_per_event),
-                    vecmem::get_data(seeds));
+                track_candidates =
+                    host_finding(polymorphic_detector, host_field,
+                                 vecmem::get_data(measurements_per_event),
+                                 vecmem::get_data(seeds));
             }
 
             {
@@ -267,11 +267,10 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                                              elapsedTimes);
 
                 // Run fitting
-                track_states = host_fitting(
-                    polymorphic_detector.as<traccc::default_detector>(),
-                    host_field,
-                    {vecmem::get_data(track_candidates),
-                     vecmem::get_data(measurements_per_event)});
+                track_states =
+                    host_fitting(polymorphic_detector, host_field,
+                                 {vecmem::get_data(track_candidates),
+                                  vecmem::get_data(measurements_per_event)});
             }
         }
 

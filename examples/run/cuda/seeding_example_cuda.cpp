@@ -316,10 +316,10 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             if (accelerator_opts.compare_with_cpu) {
                 traccc::performance::timer t("Track finding with CKF (cpu)",
                                              elapsedTimes);
-                track_candidates = host_finding(
-                    host_det.as<traccc::default_detector>(), host_field,
-                    vecmem::get_data(measurements_per_event),
-                    vecmem::get_data(params));
+                track_candidates =
+                    host_finding(host_det, host_field,
+                                 vecmem::get_data(measurements_per_event),
+                                 vecmem::get_data(params));
             }
 
             /*------------------------
@@ -338,10 +338,10 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             if (accelerator_opts.compare_with_cpu) {
                 traccc::performance::timer t("Track fitting with KF (cpu)",
                                              elapsedTimes);
-                track_states = host_fitting(
-                    host_det.as<traccc::default_detector>(), host_field,
-                    {vecmem::get_data(track_candidates),
-                     vecmem::get_data(measurements_per_event)});
+                track_states =
+                    host_fitting(host_det, host_field,
+                                 {vecmem::get_data(track_candidates),
+                                  vecmem::get_data(measurements_per_event)});
             }
 
         }  // Stop measuring wall time
