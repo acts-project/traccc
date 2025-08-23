@@ -38,11 +38,8 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
     // VecMem copy object
     vecmem::copy copy;
 
-    // Type declarations
-    using host_detector_type = traccc::default_detector::host;
-
     // Read back detector file
-    host_detector_type det{host_mr};
+    traccc::host_detector det;
     traccc::io::read_detector(
         det, host_mr, sim_dir + "toy_detector_geometry.json",
         sim_dir + "toy_detector_homogeneous_material.json",

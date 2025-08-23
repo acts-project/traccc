@@ -13,6 +13,7 @@
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/host_detector.hpp"
 
 // System include(s).
 #include <cstddef>
@@ -34,8 +35,7 @@ namespace traccc::io {
 ///
 std::vector<measurement_id_type> read_measurements(
     measurement_collection_types::host& measurements, std::size_t event,
-    std::string_view directory,
-    const traccc::default_detector::host* detector = nullptr,
+    std::string_view directory, const traccc::host_detector* detector = nullptr,
     const bool sort_measurements = true, data_format format = data_format::csv);
 
 /// Read measurement data into memory
@@ -49,7 +49,7 @@ std::vector<measurement_id_type> read_measurements(
 ///
 std::vector<measurement_id_type> read_measurements(
     measurement_collection_types::host& measurements, std::string_view filename,
-    const traccc::default_detector::host* detector = nullptr,
+    const traccc::host_detector* detector = nullptr,
     const bool sort_measurements = true, data_format format = data_format::csv);
 
 }  // namespace traccc::io

@@ -27,7 +27,7 @@ void read_spacepoints(edm::spacepoint_collection::host& spacepoints,
                       std::string_view hit_filename,
                       std::string_view meas_filename,
                       std::string_view meas_hit_map_filename,
-                      const traccc::default_detector::host* detector,
+                      const traccc::host_detector* detector,
                       const bool sort_measurements) {
 
     // Read all measurements.

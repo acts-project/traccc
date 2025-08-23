@@ -16,6 +16,7 @@
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
@@ -47,9 +48,6 @@ class full_chain_algorithm
     /// @name Type declaration(s)
     /// @{
 
-    /// Detector type used during track finding and fitting
-    using detector_type = traccc::default_detector::host;
-
     /// Clusterization algorithm type
     using clustering_algorithm = host::clusterization_algorithm;
     /// Spacepoint formation algorithm type
@@ -78,7 +76,8 @@ class full_chain_algorithm
                          const finding_algorithm::config_type& finding_config,
                          const fitting_algorithm::config_type& fitting_config,
                          const silicon_detector_description::host& det_descr,
-                         const magnetic_field& field, detector_type* detector,
+                         const magnetic_field& field,
+                         const host_detector* detector,
                          std::unique_ptr<const traccc::Logger> logger);
 
     /// Reconstruct track parameters in the entire detector
@@ -111,7 +110,7 @@ class full_chain_algorithm
     std::reference_wrapper<const silicon_detector_description::host>
         m_det_descr;
     /// Detector
-    detector_type* m_detector;
+    const host_detector* m_detector;
 
     /// @name Sub-algorithms used by this full-chain algorithm
     /// @{

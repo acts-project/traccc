@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/host_detector.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
@@ -29,8 +29,7 @@ namespace traccc::io {
 /// @param material_file The file containing the material description
 /// @param grid_file The file containing the detector grid description
 ///
-void read_detector(default_detector::host& detector,
-                   vecmem::memory_resource& mr,
+void read_detector(host_detector& detector, vecmem::memory_resource& mr,
                    const std::string_view& geometry_file,
                    const std::string_view& material_file = "",
                    const std::string_view& grid_file = "");
