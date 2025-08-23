@@ -64,9 +64,6 @@ int main(int argc, char* argv[]) {
         argv,
         logger().cloneWithSuffix("Options")};
 
-    /// Type declarations
-    using host_detector_type = traccc::default_detector::host;
-
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
     // Copy obejct
@@ -90,9 +87,6 @@ int main(int argc, char* argv[]) {
         polymorphic_detector, host_mr, detector_opts.detector_file,
         detector_opts.material_file, detector_opts.grid_file);
 
-    const traccc::default_detector::host& host_det =
-        polymorphic_detector.as<traccc::default_detector>();
-
     /*****************************
      * Do the reconstruction
      *****************************/
@@ -113,9 +107,6 @@ int main(int argc, char* argv[]) {
     traccc::host::kalman_fitting_algorithm host_fitting(
         fit_cfg, host_mr, copy, logger().clone("FittingAlg"));
 
-    // Seed generator
-    traccc::seed_generator<host_detector_type> sg(host_det, stddevs);
-
     // Iterate over events
     for (auto event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
@@ -128,7 +119,17 @@ int main(int argc, char* argv[]) {
 
         traccc::edm::track_candidate_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
-        evt_data.generate_truth_candidates(truth_track_candidates, sg, host_mr);
+
+        host_detector_visitor<detector_type_list>(
+            polymorphic_detector,
+            [&]<typename detector_traits_t>(
+                const typename detector_traits_t::host& det) {
+                // Seed generator
+                traccc::seed_generator<typename detector_traits_t::host> sg(
+                    det, stddevs);
+                evt_data.generate_truth_candidates(truth_track_candidates, sg,
+                                                   host_mr);
+            });
 
         // Run fitting
         auto track_states = host_fitting(
@@ -143,9 +144,14 @@ int main(int argc, char* argv[]) {
         if (performance_opts.run) {
 
             for (unsigned int i = 0; i < n_fitted_tracks; i++) {
-                fit_performance_writer.write(
-                    track_states.tracks.at(i), track_states.states,
-                    truth_track_candidates.measurements, host_det, evt_data);
+                host_detector_visitor<detector_type_list>(
+                    polymorphic_detector,
+                    [&]<typename detector_traits_t>(
+                        const typename detector_traits_t::host& det) {
+                        fit_performance_writer.write(
+                            track_states.tracks.at(i), track_states.states,
+                            truth_track_candidates.measurements, det, evt_data);
+                    });
             }
         }
     }

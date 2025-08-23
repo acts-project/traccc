@@ -155,10 +155,6 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
     traccc::performance::timing_info elapsedTimes;
 
-    // Seed generator
-    traccc::seed_generator<traccc::default_detector::host> sg(
-        polymorphic_detector.as<traccc::default_detector>(), stddevs);
-
     // Iterate over events
     for (std::size_t event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
@@ -171,8 +167,18 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
         traccc::edm::track_candidate_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
-        evt_data.generate_truth_candidates(truth_track_candidates, sg, host_mr,
-                                           truth_finding_opts.m_pT_min);
+
+        host_detector_visitor<detector_type_list>(
+            polymorphic_detector,
+            [&]<typename detector_traits_t>(
+                const typename detector_traits_t::host& det) {
+                // Seed generator
+                traccc::seed_generator<typename detector_traits_t::host> sg(
+                    det, stddevs);
+                evt_data.generate_truth_candidates(truth_track_candidates, sg,
+                                                   host_mr,
+                                                   truth_finding_opts.m_pT_min);
+            });
 
         // Prepare truth seeds
         traccc::bound_track_parameters_collection_types::host seeds(mr.host);
@@ -307,11 +313,15 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                 evt_data);
 
             for (unsigned int i = 0; i < track_states_cuda.tracks.size(); i++) {
-                fit_performance_writer.write(
-                    track_states_cuda.tracks.at(i), track_states_cuda.states,
-                    measurements_per_event,
-                    polymorphic_detector.as<traccc::default_detector>(),
-                    evt_data);
+                host_detector_visitor<detector_type_list>(
+                    polymorphic_detector,
+                    [&]<typename detector_traits_t>(
+                        const typename detector_traits_t::host& det) {
+                        fit_performance_writer.write(
+                            track_states_cuda.tracks.at(i),
+                            track_states_cuda.states, measurements_per_event,
+                            det, evt_data);
+                    });
             }
         }
     }

@@ -40,10 +40,14 @@ TEST(spacepoint_formation, cpu) {
     tel_cfg.pilot_track(traj);
 
     // Create telescope geometry
-    const auto [det, name_map] = build_telescope_detector(host_mr, tel_cfg);
+    auto [det, name_map] = build_telescope_detector(host_mr, tel_cfg);
+
+    auto surfaces = det.surfaces();
+
+    traccc::host_detector host_det;
+    host_det.set<traccc::telescope_detector>(std::move(det));
 
     // Surface lookup
-    auto surfaces = det.surfaces();
 
     // Prepare measurement collection
     typename measurement_collection_types::host measurements{&host_mr};
@@ -56,7 +60,7 @@ TEST(spacepoint_formation, cpu) {
 
     // Run spacepoint formation
     host::silicon_pixel_spacepoint_formation_algorithm sp_formation(host_mr);
-    auto spacepoints = sp_formation(det, vecmem::get_data(measurements));
+    auto spacepoints = sp_formation(host_det, vecmem::get_data(measurements));
 
     // Check the results
     EXPECT_EQ(spacepoints.size(), 2u);

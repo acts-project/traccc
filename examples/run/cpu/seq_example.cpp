@@ -236,7 +236,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
                 traccc::performance::timer timer{"Spacepoint formation",
                                                  elapsedTimes};
                 spacepoints_per_event =
-                    sf(polymorphic_detector.as<traccc::default_detector>(),
+                    sf(polymorphic_detector,
                        vecmem::get_data(measurements_per_event));
             }
             if (output_opts.directory != "") {
@@ -344,11 +344,14 @@ int seq_run(const traccc::opts::input_data& input_opts,
                 evt_data);
 
             for (unsigned int i = 0; i < track_states.tracks.size(); i++) {
-                fit_performance_writer.write(
-                    track_states.tracks.at(i), track_states.states,
-                    measurements_per_event,
-                    polymorphic_detector.as<traccc::default_detector>(),
-                    evt_data);
+                host_detector_visitor<traccc::detector_type_list>(
+                    polymorphic_detector,
+                    [&]<typename detector_traits_t>(
+                        const typename detector_traits_t::host& det) {
+                        fit_performance_writer.write(
+                            track_states.tracks.at(i), track_states.states,
+                            measurements_per_event, det, evt_data);
+                    });
             }
         }
     }

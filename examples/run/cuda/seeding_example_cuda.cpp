@@ -438,10 +438,14 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 evt_data);
 
             for (unsigned int i = 0; i < track_states_cuda.tracks.size(); i++) {
-                fit_performance_writer.write(
-                    track_states_cuda.tracks.at(i), track_states_cuda.states,
-                    measurements_per_event,
-                    host_det.as<traccc::default_detector>(), evt_data);
+                host_detector_visitor<detector_type_list>(
+                    host_det, [&]<typename detector_traits_t>(
+                                  const typename detector_traits_t::host& det) {
+                        fit_performance_writer.write(
+                            track_states_cuda.tracks.at(i),
+                            track_states_cuda.states, measurements_per_event,
+                            det, evt_data);
+                    });
             }
         }
     }

@@ -300,8 +300,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 traccc::performance::timer t("Spacepoint formation  (cpu)",
                                              elapsedTimes);
                 spacepoints_per_event =
-                    sf(host_detector.as<traccc::default_detector>(),
-                       vecmem::get_data(measurements_per_event));
+                    sf(host_detector, vecmem::get_data(measurements_per_event));
             }  // stop measuring spacepoint formation cpu timer
 
             // CUDA

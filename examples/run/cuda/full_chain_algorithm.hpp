@@ -53,9 +53,6 @@ class full_chain_algorithm
     public:
     /// @name Type declaration(s)
     /// @{
-
-    using scalar_type = traccc::default_detector::device::scalar_type;
-
     /// Spacepoint formation algorithm type
     using spacepoint_formation_algorithm =
         traccc::cuda::spacepoint_formation_algorithm;

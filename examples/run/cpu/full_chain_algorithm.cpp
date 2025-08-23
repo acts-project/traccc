@@ -61,8 +61,7 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
         const measurement_collection_types::const_view measurements_view =
             vecmem::get_data(measurements);
         const spacepoint_formation_algorithm::output_type spacepoints =
-            m_spacepoint_formation(m_detector->as<traccc::default_detector>(),
-                                   measurements_view);
+            m_spacepoint_formation(*m_detector, measurements_view);
         const edm::spacepoint_collection::const_data spacepoints_data =
             vecmem::get_data(spacepoints);
         const host::seeding_algorithm::output_type seeds =
@@ -112,8 +111,7 @@ bound_track_parameters_collection_types::host full_chain_algorithm::seeding(
         const measurement_collection_types::const_view measurements_view =
             vecmem::get_data(measurements);
         const spacepoint_formation_algorithm::output_type spacepoints =
-            m_spacepoint_formation(m_detector->as<traccc::default_detector>(),
-                                   measurements_view);
+            m_spacepoint_formation(*m_detector, measurements_view);
         const edm::spacepoint_collection::const_data spacepoints_data =
             vecmem::get_data(spacepoints);
         const host::seeding_algorithm::output_type seeds =
