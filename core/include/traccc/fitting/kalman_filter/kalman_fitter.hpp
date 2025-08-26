@@ -131,7 +131,7 @@ class kalman_fitter {
         TRACCC_HOST_DEVICE
         typename forward_actor_chain_type::state_ref_tuple operator()() {
             return detray::tie(m_aborter_state, m_interactor_state,
-                               m_fit_actor_state, m_sequencer_state,
+                               m_fit_actor_state, m_parameter_resetter, m_sequencer_state,
                                m_step_aborter_state);
         }
 
@@ -140,7 +140,7 @@ class kalman_fitter {
         typename backward_actor_chain_type::state_ref_tuple
         backward_actor_state() {
             return detray::tie(m_aborter_state, m_fit_actor_state,
-                               m_interactor_state, m_step_aborter_state);
+                               m_interactor_state, m_parameter_resetter, m_step_aborter_state);
         }
 
         /// Individual actor states
@@ -149,6 +149,7 @@ class kalman_fitter {
         typename forward_fit_actor::state m_fit_actor_state;
         typename barcode_sequencer::state m_sequencer_state;
         kalman_step_aborter::state m_step_aborter_state{};
+        typename resetter::state m_parameter_resetter{};
 
         /// Fitting result per track
         fitting_result<algebra_type> m_fit_res;
@@ -168,6 +169,8 @@ class kalman_fitter {
     fit(const seed_parameters_t& seed_params, state& fitter_state) const {
         seed_parameters_t params = seed_params;
         fitter_state.m_fit_actor_state.reset();
+        fitter_state.m_fit_actor_state.do_precise_hole_count =
+            m_cfg.do_precise_hole_count;
 
         // Run the kalman filtering for a given number of iterations
         for (std::size_t i = 0; i < m_cfg.n_iterations; i++) {
