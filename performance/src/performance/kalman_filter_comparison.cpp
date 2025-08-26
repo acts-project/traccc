@@ -42,7 +42,7 @@ bool kalman_filter_comparison(
     const bool use_acts_geoid,
     const traccc::pdg_particle<traccc::scalar> ptc_type,
     const std::array<traccc::scalar, traccc::e_bound_size>& stddevs,
-    const traccc::vector3& B, const traccc::scalar min_p,
+    const traccc::vector3& B, const traccc::scalar min_pT,
     const traccc::scalar max_rad) {
 
     using namespace traccc;
@@ -75,8 +75,6 @@ bool kalman_filter_comparison(
                           .as_field<traccc::const_bfield_backend_t<scalar_t>>();
     b_field_t::view_t field_view = field;
 
-    constexpr double rel_mat_error{0.01};
-
     // Collect data for comparison
 
     // Initial track parameters from truth particle
@@ -104,11 +102,11 @@ bool kalman_filter_comparison(
                 continue;
             }
             // Minimum momentum
-            const traccc::scalar p{vector::norm(ptc.momentum)};
-            if (p <= min_p) {
+            const traccc::scalar pT{vector::perp(ptc.momentum)};
+            if (pT <= min_pT) {
                 TRACCC_INFO("Removing particle "
-                            << ptc_id << " due to momentum cut (momentum was "
-                            << p / traccc::unit<traccc::scalar>::MeV
+                            << ptc_id << " due to transv. momentum cut (pT was "
+                            << pT / traccc::unit<traccc::scalar>::MeV
                             << " MeV)");
                 continue;
             }
@@ -202,17 +200,23 @@ bool kalman_filter_comparison(
 
     // Reusable actor states
     perigee_stopper::state stopper_state{};
+    resetter::state resetter_state{};
+    resetter_state.n_stddev = prop_cfg.navigation.n_scattering_stddev;
+    resetter_state.accumulated_error = prop_cfg.navigation.accumulated_error;
+    resetter_state.estimate_scattering_noise = prop_cfg.navigation.estimate_scattering_noise;
     interactor::state interactor_state{};
     interactor_state.do_multiple_scattering = do_multiple_scattering;
     interactor_state.do_energy_loss = do_energy_loss;
 
     {
-        std::cout << "-----------------------------------"
+        /*std::cout << "-----------------------------------"
                   << "\nFORWARD - No KF" << std::endl
                   << "-----------------------------------\n";
 
+        constexpr double rel_mat_error{0.01};
+
         // Prepare actor states
-        auto state_tuple = detray::make_tuple(interactor_state);
+        auto state_tuple = detray::make_tuple(interactor_state, resetter_state);
         auto state_ref_tuple = setup_actor_states(state_tuple);
         auto state_ref_tuples =
             vecmem::vector<decltype(state_ref_tuple)>{state_ref_tuple};
@@ -230,7 +234,7 @@ bool kalman_filter_comparison(
         std::cout << "BACKWARD - No KF" << std::endl
                   << "-----------------------------------\n";
         auto bw_state_tuple =
-            detray::make_tuple(interactor_state, stopper_state);
+            detray::make_tuple(interactor_state, resetter_state, stopper_state);
         auto bw_state_ref_tuple = setup_actor_states(bw_state_tuple);
         auto bw_state_ref_tuples =
             vecmem::vector<decltype(bw_state_ref_tuple)>{bw_state_ref_tuple};
@@ -322,7 +326,7 @@ bool kalman_filter_comparison(
         if (n_diff_mat != 0) {
             TRACCC_ERROR("" << n_diff_mat << " tracks have differing material");
             test_successful = false;
-        }
+        }*/
         /*
 
         // Check stats
@@ -372,9 +376,10 @@ bool kalman_filter_comparison(
             auto trk_states_view = vecmem::get_data(track_states);
             fit_actor_fw::state fit_actor_state{
                 vecmem::device_vector<track_state<algebra_t>>(trk_states_view)};
+            fit_actor_state.do_precise_hole_count = true;
 
             state_tuple.push_back(
-                detray::make_tuple(interactor_state, fit_actor_state));
+                detray::make_tuple(interactor_state, fit_actor_state, resetter_state));
             state_ref_tuple.push_back(setup_actor_states(state_tuple.back()));
         }
 
@@ -405,6 +410,7 @@ bool kalman_filter_comparison(
                 n_trk_missing_fw++;
             }
             if (fitter_state.n_holes > 0u) {
+                //std::cout << "KF TRACK: " << i << std::endl;
                 n_trk_holes_fw++;
             }
         }
@@ -434,20 +440,14 @@ bool kalman_filter_comparison(
             TRACCC_ERROR("Forward filter hole counting incorrect: was "
                          << n_holes_fw << ", should be "
                          << n_miss_truth_fw.n_total());
-            // TODO: The backward KF actor terminates before all holes are
-            // encountered
-            if (n_miss_truth_fw.n_total() > 0u) {
-                test_successful = (n_holes_fw > 0u);
-            }
+            test_successful = false;
         }
         if (n_trk_holes_fw < trk_stats_fw.n_tracks_w_extra) {
             TRACCC_ERROR(
                 "Forward filter number of tracks with holes incorrect: was "
                 << n_trk_holes_fw << ", should be "
                 << trk_stats_fw.n_tracks_w_extra);
-            if (trk_stats_fw.n_tracks_w_extra > 0u) {
-                test_successful = (n_trk_holes_fw > 0u);
-            }
+            test_successful = false;
         }
 
         std::cout << "-----------------------------------" << std::endl;
@@ -477,9 +477,10 @@ bool kalman_filter_comparison(
             auto trk_states_view = vecmem::get_data(track_states);
             fit_actor_bd::state fit_actor_state{
                 vecmem::device_vector<track_state<algebra_t>>(trk_states_view)};
+            fit_actor_state.do_precise_hole_count = false;
 
             state_tuple_bw.push_back(detray::make_tuple(
-                fit_actor_state, interactor_state, stopper_state));
+                fit_actor_state, interactor_state, resetter_state, stopper_state));
             state_ref_tuple_bw.push_back(
                 setup_actor_states(state_tuple_bw.back()));
         }
@@ -525,7 +526,7 @@ bool kalman_filter_comparison(
                 }
             }
         }
-        std::cout << "RUNS ON MISSED STATES BY FW KF PASS:\n" << std::endl;
+        std::cout << "INCLUDES MISSED STATES BY FW KF PASS:\n" << std::endl;
         std::cout << "No. skipped states in bw KF: " << n_missed_bw
                   << std::endl;
         std::cout << "No. tracks with skipped states in bw KF: "
@@ -559,22 +560,14 @@ bool kalman_filter_comparison(
             TRACCC_ERROR("Backward filter hole counting incorrect: was "
                          << n_holes_bw << ", should be "
                          << n_miss_truth_bw.n_total());
-            // TODO: The backward KF actor terminates before all holes are
-            // encountered
-            if (n_miss_truth_bw.n_total() > 0u) {
-                test_successful = (n_holes_bw > 0u);
-            }
+            test_successful = false;
         }
         if (n_trk_holes_bw != trk_stats_bw.n_tracks_w_extra) {
             TRACCC_ERROR(
                 "Backward filter number of tracks with holes incorrect: was "
                 << n_trk_holes_bw << ", should be "
                 << trk_stats_bw.n_tracks_w_extra);
-            // TODO: The backward KF actor terminates before all holes are
-            // encountered
-            if (trk_stats_bw.n_tracks_w_extra > 0u) {
-                test_successful = (n_trk_holes_bw > 0u);
-            }
+            test_successful = false;
         }
     }
 

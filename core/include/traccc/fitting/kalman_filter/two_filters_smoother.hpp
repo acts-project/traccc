@@ -178,7 +178,10 @@ struct two_filters_smoother {
         // Calculate the filtered track parameters
         const matrix_type<6, 1> filtered_vec =
             predicted_vec + K * (meas_local - H * predicted_vec);
-        const matrix_type<6, 6> filtered_cov = (I66 - K * H) * predicted_cov;
+        const matrix_type<6, 6> i_minus_kh = I66 - K * H;
+        const matrix_type<6, 6> filtered_cov =
+            i_minus_kh * predicted_cov * matrix::transpose(i_minus_kh) +
+            K * V * matrix::transpose(K);
 
         // Residual between measurement and (projected) filtered vector
         const matrix_type<D, 1> residual = meas_local - H * filtered_vec;

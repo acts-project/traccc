@@ -35,6 +35,7 @@ struct fitting_config {
     std::size_t min_barcode_sequence_capacity = 100;
     traccc::scalar backward_filter_mask_tolerance =
         5.f * traccc::unit<scalar>::mm;
+    bool do_precise_hole_count = false;
 };
 
 }  // namespace traccc

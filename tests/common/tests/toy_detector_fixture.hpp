@@ -48,8 +48,8 @@ class ToyDetectorFixture : public testing::Test {
     static constexpr std::array<scalar, e_bound_size> stddevs = {
         smearing[0],
         smearing[1],
-        1.f * traccc::unit<scalar>::degree,
-        1.f * traccc::unit<scalar>::degree,
+        0.5f * traccc::unit<scalar>::degree,
+        0.5f * traccc::unit<scalar>::degree,
         0.01f / traccc::unit<scalar>::GeV,
         1000.f * traccc::unit<scalar>::ns};
 
@@ -61,7 +61,7 @@ class ToyDetectorFixture : public testing::Test {
         toy_cfg.n_brl_layers(n_barrels)
             .n_edc_layers(n_endcaps)
             .envelope(2.f * traccc::unit<scalar>::mm)
-            .use_material_maps(false)
+            .use_material_maps(true)
             .do_check(false);
 
         // Create the toy geometry

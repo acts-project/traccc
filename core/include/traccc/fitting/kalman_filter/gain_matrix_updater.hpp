@@ -120,13 +120,22 @@ struct gain_matrix_updater {
         // Calculate the filtered track parameters
         const matrix_type<6, 1> filtered_vec =
             predicted_vec + K * (meas_local - H * predicted_vec);
-        const matrix_type<6, 6> filtered_cov = (I66 - K * H) * predicted_cov;
+        const matrix_type<6, 6> i_minus_kh = I66 - K * H;
+        const matrix_type<6, 6> filtered_cov =
+            i_minus_kh * predicted_cov * matrix::transpose(i_minus_kh) +
+            K * V * matrix::transpose(K);
 
         // Residual between measurement and (projected) filtered vector
         const matrix_type<D, 1> residual = meas_local - H * filtered_vec;
 
         // Calculate the chi square
-        const matrix_type<D, D> R = (I_m - H * K) * V;
+        const matrix_type<D, D> i_minus_hk = I_m - H * K;
+        // See
+        // https://indico.cern.ch/event/1564924/contributions/6629447/attachments/3113201/5519076/asami_250731_acts.pdf
+        const matrix_type<D, D> R =
+            i_minus_hk * V * matrix::transpose(i_minus_hk) +
+            H * i_minus_kh * predicted_cov * matrix::transpose(i_minus_kh) *
+                matrix::transpose(H);
         const matrix_type<1, 1> chi2 =
             algebra::matrix::transposed_product<true, false>(
                 residual, matrix::inverse(R)) *

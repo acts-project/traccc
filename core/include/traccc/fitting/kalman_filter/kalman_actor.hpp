@@ -114,6 +114,13 @@ struct kalman_actor_state {
         return n_missed;
     }
 
+    template <typename nav_state_t>
+    TRACCC_HOST_DEVICE void evaluate_hole(const nav_state_t& navigation) {
+        if (do_precise_hole_count || !navigation.current().is_edge()) {
+            ++n_holes;
+        }
+    }
+
     /// @return true if the iterator reaches the end of vector
     /// @TODO: Remove once direct navigator is used in forward pass
     template <typename propagation_state_t>
@@ -127,7 +134,7 @@ struct kalman_actor_state {
         if (navigation.barcode() == trk_state.surface_link()) {
             // Count a hole, if track finding did not find a measurement
             if (trk_state.is_hole) {
-                ++n_holes;
+                evaluate_hole(navigation);
             }
             // If track finding did not find measurement on this surface: skip
             return !trk_state.is_hole;
@@ -148,7 +155,7 @@ struct kalman_actor_state {
                 // not match, it must be an additional surface
                 // -> continue navigation until matched
                 if (m_it_rev + 1 == m_track_states.rend()) {
-                    ++n_holes;
+                    evaluate_hole(navigation);
                     return false;
                 }
                 // Check if the current navigation surfaces can be found on a
@@ -164,7 +171,7 @@ struct kalman_actor_state {
                 }
             } else {
                 if (m_it + 1 == m_track_states.end()) {
-                    ++n_holes;
+                    evaluate_hole(navigation);
                     return false;
                 }
                 for (auto itr = m_it + 1; itr != m_track_states.end(); ++itr) {
@@ -178,7 +185,7 @@ struct kalman_actor_state {
         }
 
         // Mismatch was not from missed state: Is a hole
-        ++n_holes;
+        evaluate_hole(navigation);
 
         // After additional surface, keep navigating until match is found
         return false;
@@ -205,6 +212,9 @@ struct kalman_actor_state {
 
     // Run back filtering for smoothing, if true
     bool backward_mode = false;
+
+    // Run back filtering for smoothing, if true
+    bool do_precise_hole_count = false;
 };
 
 /// Detray actor for Kalman filtering
@@ -226,7 +236,12 @@ struct kalman_actor : detray::actor {
         auto& navigation = propagation._navigation;
 
         if (actor_state.is_complete()) {
-            propagation._heartbeat &= navigation.exit();
+            if (!actor_state.do_precise_hole_count) {
+                propagation._heartbeat &= navigation.exit();
+            } else if (navigation.is_on_sensitive()) {
+                // At this point the surface is always a hole
+                actor_state.n_holes++;
+            }
             return;
         }
 
