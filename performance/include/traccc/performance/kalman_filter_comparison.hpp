@@ -38,6 +38,8 @@ namespace traccc {
 /// @param ptc_type the particle hypothesis to use
 /// @param stddevs the initial track parameters uncertainty
 /// @param B constant magnetic field vector
+/// @param min_pT minimum transverse momentum
+/// @param min_rad minimum radial distance of the particle vertex position
 ///
 /// @returns whether the validation was successful
 bool kalman_filter_comparison(
@@ -58,7 +60,7 @@ bool kalman_filter_comparison(
          1000.f * traccc::unit<traccc::scalar>::ns},
     const traccc::vector3& B = {0.f, 0.f,
                                 2.f * traccc::unit<traccc::scalar>::T},
-    const traccc::scalar min_p = 50.f * traccc::unit<traccc::scalar>::MeV,
+    const traccc::scalar min_pT = 500.f * traccc::unit<traccc::scalar>::MeV,
     const traccc::scalar max_rad = 50.f * traccc::unit<traccc::scalar>::mm);
 
 }  // namespace traccc

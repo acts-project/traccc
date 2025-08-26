@@ -71,9 +71,12 @@ auto transcribe_to_trace(const typename detector_t::geometry_context ctx,
         // Build an intersection from the hit
         using nav_link_t = typename intersection_t::nav_link_t;
         auto loc_pos = sf.global_to_local(ctx, pos, dir);
-        intersection_t intr{
-            sf_desc, path, static_cast<nav_link_t>(bcd.volume()),
-            true,    true, loc_pos};
+        intersection_t intr{sf_desc,
+                            path,
+                            static_cast<nav_link_t>(bcd.volume()),
+                            detray::intersection::status::e_inside,
+                            true,
+                            loc_pos};
 
         candidates.emplace_back(pos, dir, intr, ptc.q, vector::norm(mom));
     }
@@ -126,7 +129,8 @@ auto transcribe_to_trace(
         // Build an intersection
         using nav_link_t = typename intersection_t::nav_link_t;
         intersection_t intr{
-            {sf_desc, path, static_cast<nav_link_t>(bcd.volume()), true, true},
+            {sf_desc, path, static_cast<nav_link_t>(bcd.volume()),
+             detray::intersection::status::e_inside, true},
             {meas.local[0], meas.local[1], 0.f}};
 
         // TODO: Don't use intial particle momentum
