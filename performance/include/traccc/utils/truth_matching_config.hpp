@@ -16,8 +16,8 @@ struct truth_matching_config {
 
     float z_min = -500.f * traccc::unit<float>::mm;
     float z_max = 500.f * traccc::unit<float>::mm;
-
     float r_max = 200.f * traccc::unit<float>::mm;
+    bool is_HS = 0;
 
     unsigned int min_track_candidates = 3;
 };

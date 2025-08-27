@@ -23,6 +23,7 @@ class truth_finding : public interface,
     float m_z_min = -500.f * unit<float>::mm;
     float m_z_max = 500.f * unit<float>::mm;
     float m_r_max = 200.f * unit<float>::mm;
+    bool m_is_HS = 0;
     unsigned int m_min_track_candidates = 3;
 
     truth_finding();

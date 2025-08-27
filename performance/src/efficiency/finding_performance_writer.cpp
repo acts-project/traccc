@@ -257,6 +257,7 @@ void finding_performance_writer::write_common(
             ptc.vertex[2] < m_cfg.truth_config.z_min ||
             ptc.vertex[2] > m_cfg.truth_config.z_max ||
             vector::perp(ptc.vertex) > m_cfg.truth_config.r_max ||
+            ptc.process != m_cfg.truth_config.is_HS ||
             num_measurements < m_cfg.truth_config.min_track_candidates) {
             continue;
         }
