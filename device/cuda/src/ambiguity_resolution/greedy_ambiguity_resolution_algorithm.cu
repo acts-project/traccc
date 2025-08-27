@@ -368,7 +368,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     // Whether track id is updated after an iteration
     vecmem::data::vector_buffer<int> is_updated_buffer{n_tracks, m_mr.main};
-    m_copy.get().setup(inverted_ids_buffer)->ignore();
+    m_copy.get().setup(is_updated_buffer)->ignore();
+    m_copy.get().memset(is_updated_buffer, 0)->ignore();
 
     // Count track id apperance during removal process
     vecmem::data::vector_buffer<int> track_count_buffer{n_tracks, m_mr.main};
