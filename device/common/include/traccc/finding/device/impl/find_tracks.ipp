@@ -61,12 +61,22 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     vecmem::device_vector<candidate_link> tmp_links(payload.tmp_links_view);
     bound_track_parameters_collection_types::device tmp_params(
         payload.tmp_params_view);
+    bound_track_parameters_collection_types::device persistent_params(
+        payload.persistent_parameters_view);
     vecmem::device_vector<const detray::geometry::barcode> barcodes(
         payload.barcodes_view);
     vecmem::device_vector<const unsigned int> upper_bounds(
         payload.upper_bounds_view);
     vecmem::device_vector<unsigned int> tips(payload.tips_view);
     vecmem::device_vector<unsigned int> tip_lengths(payload.tip_lengths_view);
+    vecmem::device_vector<detray::geometry::barcode>
+        persistent_barcode_sequences(payload.persistent_barcode_sequence_view);
+    vecmem::device_vector<unsigned int> persistent_barcode_lengths(
+        payload.persistent_barcode_sequence_length_view);
+    vecmem::device_vector<detray::geometry::barcode> barcode_sequences(
+        payload.barcode_sequence_view);
+    vecmem::device_vector<unsigned int> barcode_sequence_lengths(
+        payload.barcode_sequence_length_view);
     vecmem::device_vector<unsigned int> n_tracks_per_seed(
         payload.n_tracks_per_seed_view);
 
@@ -608,6 +618,28 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                     .chi2_sum = prev_chi2_sum,
                     .ndf_sum = prev_ndf_sum};
 
+                if (persistent_params.capacity() > 0) {
+                    persistent_params.at(out_offset) =
+                        in_params.at(in_param_id);
+                }
+
+                if (persistent_barcode_sequences.capacity() > 0) {
+                    if (payload.step == 0) {
+                        persistent_barcode_lengths.at(out_offset) = 0u;
+                    } else {
+                        for (unsigned int i = 0;
+                             i < barcode_sequence_lengths.at(in_param_id);
+                             ++i) {
+                            persistent_barcode_sequences.at(10 * out_offset +
+                                                            i) =
+                                barcode_sequences.at(10 * in_param_id + i);
+                        }
+
+                        persistent_barcode_lengths.at(out_offset) =
+                            barcode_sequence_lengths.at(in_param_id);
+                    }
+                }
+
                 unsigned int param_pos = out_offset - payload.curr_links_idx;
 
                 out_params.at(param_pos) = in_params.at(in_param_id);
@@ -618,7 +650,12 @@ TRACCC_HOST_DEVICE inline void find_tracks(
 
                 if (n_cands >= cfg.min_track_candidates_per_track) {
                     auto tip_pos = tips.push_back(prev_link_idx);
-                    tip_lengths.at(tip_pos) = n_cands;
+
+                    if (payload.count_holes) {
+                        tip_lengths.at(tip_pos) = payload.step + 1u;
+                    } else {
+                        tip_lengths.at(tip_pos) = n_cands;
+                    }
                 }
             }
         } else {
@@ -637,12 +674,38 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                     static_cast<unsigned int>(!last_step);
                 links.at(out_offset) = tmp_links.at(in_offset);
 
+                if (persistent_params.capacity() > 0) {
+                    persistent_params.at(out_offset) = tmp_params.at(in_offset);
+                }
+
+                if (persistent_barcode_sequences.capacity() > 0) {
+                    if (payload.step == 0) {
+                        persistent_barcode_lengths.at(out_offset) = 0u;
+                    } else {
+                        for (unsigned int i = 0;
+                             i < barcode_sequence_lengths.at(in_param_id);
+                             ++i) {
+                            persistent_barcode_sequences.at(10 * out_offset +
+                                                            i) =
+                                barcode_sequences.at(10 * in_param_id + i);
+                        }
+
+                        persistent_barcode_lengths.at(out_offset) =
+                            barcode_sequence_lengths.at(in_param_id);
+                    }
+                }
+
                 const unsigned int n_cands = payload.step + 1 - n_skipped;
 
                 if (last_step &&
                     n_cands >= cfg.min_track_candidates_per_track) {
                     auto tip_pos = tips.push_back(param_pos);
-                    tip_lengths.at(tip_pos) = n_cands;
+
+                    if (payload.count_holes) {
+                        tip_lengths.at(tip_pos) = payload.step + 1u;
+                    } else {
+                        tip_lengths.at(tip_pos) = n_cands;
+                    }
                 }
             }
         }

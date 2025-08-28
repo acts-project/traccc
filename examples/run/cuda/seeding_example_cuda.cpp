@@ -213,8 +213,10 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         traccc::bound_track_parameters_collection_types::buffer
             params_cuda_buffer(0, *mr.host);
 
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
-            track_candidates_cuda_buffer;
+        traccc::cuda::combinatorial_kalman_filter_algorithm::
+            unfitted_output_type track_candidates_cuda_buffer;
+        traccc::cuda::combinatorial_kalman_filter_algorithm::fitted_output_type
+            track_candidates_fitted_cuda_buffer;
 
         traccc::edm::track_fit_container<traccc::default_algebra>::buffer
             track_states_cuda_buffer;
@@ -308,9 +310,14 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             {
                 traccc::performance::timer t("Track finding with CKF (cuda)",
                                              elapsedTimes);
-                track_candidates_cuda_buffer = device_finding(
-                    detector_buffer, device_field, measurements_cuda_buffer,
-                    params_cuda_buffer);
+                track_candidates_cuda_buffer =
+                    device_finding(detector_buffer, device_field,
+                                   measurements_cuda_buffer, params_cuda_buffer,
+                                   traccc::device::finding_return_unfitted{});
+                track_candidates_fitted_cuda_buffer =
+                    device_finding(detector_buffer, device_field,
+                                   measurements_cuda_buffer, params_cuda_buffer,
+                                   traccc::device::finding_return_fitted{});
             }
 
             if (accelerator_opts.compare_with_cpu) {
@@ -332,7 +339,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
                 track_states_cuda_buffer = device_fitting(
                     detector_buffer, device_field,
-                    {track_candidates_cuda_buffer, measurements_cuda_buffer});
+                    std::move(track_candidates_fitted_cuda_buffer),
+                    measurements_cuda_buffer);
             }
 
             if (accelerator_opts.compare_with_cpu) {

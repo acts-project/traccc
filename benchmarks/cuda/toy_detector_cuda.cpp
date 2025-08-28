@@ -120,7 +120,8 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
             traccc::edm::track_candidate_collection<
                 traccc::default_algebra>::buffer track_candidates_cuda_buffer =
                 device_finding(det_buffer, field, measurements_cuda_buffer,
-                               params_cuda_buffer);
+                               params_cuda_buffer,
+                               traccc::device::finding_return_unfitted{});
 
             // Run track fitting
             traccc::edm::track_fit_container<traccc::default_algebra>::buffer

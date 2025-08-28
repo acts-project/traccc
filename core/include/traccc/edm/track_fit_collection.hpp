@@ -134,6 +134,20 @@ class track_fit : public BASE {
     TRACCC_HOST_DEVICE
     const auto& state_indices() const { return BASE::template get<6>(); }
 
+    /// The barcodes of the track states associated to the track fit
+    /// (non-const)
+    ///
+    /// @return A (non-const) jagged vector of barcodes
+    ///
+    TRACCC_HOST_DEVICE
+    auto& barcodes() { return BASE::template get<7>(); }
+    /// The barcodes of the track states associated to the track fit (const)
+    ///
+    /// @return A (const) jagged vector of barcodes
+    ///
+    TRACCC_HOST_DEVICE
+    const auto& barcodes() const { return BASE::template get<7>(); }
+
     /// @}
 
     /// @name Utility functions
@@ -167,7 +181,9 @@ using track_fit_collection = vecmem::edm::container<
     // nholes
     vecmem::edm::type::vector<unsigned int>,
     // state_indices
-    vecmem::edm::type::jagged_vector<unsigned int>>;
+    vecmem::edm::type::jagged_vector<unsigned int>,
+    // barcodes
+    vecmem::edm::type::jagged_vector<detray::geometry::barcode>>;
 
 }  // namespace traccc::edm
 

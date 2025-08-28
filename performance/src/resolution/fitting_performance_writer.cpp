@@ -8,6 +8,8 @@
 // Library include(s).
 #include "traccc/resolution/fitting_performance_writer.hpp"
 
+#include <limits>
+
 #include "res_plot_tool.hpp"
 #include "stat_plot_tool.hpp"
 
@@ -91,9 +93,11 @@ void fitting_performance_writer::write_stat(
 
     m_data->m_stat_plot_tool.fill(m_data->m_stat_plot_cache, track);
 
-    for (std::size_t i : track.state_indices()) {
-        m_data->m_stat_plot_tool.fill(m_data->m_stat_plot_cache,
-                                      track_states.at(i), measurements);
+    for (unsigned int i : track.state_indices()) {
+        if (i != std::numeric_limits<unsigned int>::max()) {
+            m_data->m_stat_plot_tool.fill(m_data->m_stat_plot_cache,
+                                          track_states.at(i), measurements);
+        }
     }
 }
 

@@ -9,6 +9,7 @@
 #include "../utils/magnetic_field_types.hpp"
 #include "combinatorial_kalman_filter.cuh"
 #include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
+#include "traccc/finding/device/tags.hpp"
 #include "traccc/utils/detector_buffer_bfield_visitor.hpp"
 
 // Project include(s).
@@ -19,11 +20,12 @@
 
 namespace traccc::cuda {
 
-combinatorial_kalman_filter_algorithm::output_type
+combinatorial_kalman_filter_algorithm::unfitted_output_type
 combinatorial_kalman_filter_algorithm::operator()(
     const detector_buffer& det, const magnetic_field& field,
     const measurement_collection_types::const_view& measurements,
-    const bound_track_parameters_collection_types::const_view& seeds) const {
+    const bound_track_parameters_collection_types::const_view& seeds,
+    device::finding_return_unfitted&&) const {
 
     // Perform the track finding using the appropriate templated implementation.
     return detector_buffer_magnetic_field_visitor<
@@ -35,7 +37,30 @@ combinatorial_kalman_filter_algorithm::operator()(
             return details::combinatorial_kalman_filter<
                 typename detector_t::device>(detector, bfield, measurements,
                                              seeds, m_config, m_mr, m_copy,
-                                             logger(), m_stream, m_warp_size);
+                                             logger(), m_stream, m_warp_size,
+                                             device::finding_return_unfitted{});
+        });
+}
+
+combinatorial_kalman_filter_algorithm::fitted_output_type
+combinatorial_kalman_filter_algorithm::operator()(
+    const detector_buffer& det, const magnetic_field& field,
+    const measurement_collection_types::const_view& measurements,
+    const bound_track_parameters_collection_types::const_view& seeds,
+    device::finding_return_fitted&&) const {
+
+    // Perform the track finding using the appropriate templated implementation.
+    return detector_buffer_magnetic_field_visitor<
+        detector_type_list, cuda::bfield_type_list<scalar>>(
+        det, field,
+        [&]<typename detector_t, typename bfield_view_t>(
+            const typename detector_t::view& detector,
+            const bfield_view_t& bfield) {
+            return details::combinatorial_kalman_filter<
+                typename detector_t::device>(detector, bfield, measurements,
+                                             seeds, m_config, m_mr, m_copy,
+                                             logger(), m_stream, m_warp_size,
+                                             device::finding_return_fitted{});
         });
 }
 

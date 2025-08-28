@@ -198,7 +198,8 @@ TEST_P(CkfToyDetectorTests, Run) {
         // Run device finding
         traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
             track_candidates_cuda_buffer = device_finding(
-                detector_buffer, field, measurements_buffer, seeds_buffer);
+                detector_buffer, field, measurements_buffer, seeds_buffer,
+                traccc::device::finding_return_unfitted{});
 
         traccc::edm::track_candidate_collection<traccc::default_algebra>::host
             track_candidates_cuda{host_mr};

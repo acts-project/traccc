@@ -16,9 +16,13 @@ TRACCC_HOST_DEVICE
         const measurement_collection_types::const_device& measurements,
         unsigned int mindex) {
 
+    const bool is_hole = mindex >= measurements.size();
+
     // Create the result object.
     typename track_state_collection<algebra_t>::device::object_type state{
-        track_state_collection<algebra_t>::device::object_type::IS_HOLE_MASK,
+        is_hole ? track_state_collection<
+                      algebra_t>::device::object_type::IS_HOLE_MASK
+                : static_cast<unsigned char>(0u),
         0.f,
         0.f,
         0.f,
@@ -27,10 +31,12 @@ TRACCC_HOST_DEVICE
         mindex};
 
     // Set the correct surface link for the track parameters.
-    state.filtered_params().set_surface_link(
-        measurements.at(mindex).surface_link);
-    state.smoothed_params().set_surface_link(
-        measurements.at(mindex).surface_link);
+    if (!is_hole) {
+        state.filtered_params().set_surface_link(
+            measurements.at(mindex).surface_link);
+        state.smoothed_params().set_surface_link(
+            measurements.at(mindex).surface_link);
+    }
 
     // Return the initialized state.
     return state;
