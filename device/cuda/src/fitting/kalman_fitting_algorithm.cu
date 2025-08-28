@@ -32,4 +32,22 @@ kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
         });
 }
 
+kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
+    const detector_buffer& det, const magnetic_field& field,
+    edm::track_fit_container<default_algebra>::buffer&& track_candidates,
+    const measurement_collection_types::const_view& measurements) const {
+
+    // Run the track fitting.
+    return detector_buffer_magnetic_field_visitor<
+        detector_type_list, cuda::bfield_type_list<scalar>>(
+        det, field,
+        [&]<typename detector_t, typename bfield_view_t>(
+            const typename detector_t::view& detector,
+            const bfield_view_t& bfield) {
+            return details::kalman_fitting<typename detector_t::device>(
+                detector, bfield, std::move(track_candidates), measurements,
+                m_config, m_mr, m_copy.get(), m_stream, m_warp_size);
+        });
+}
+
 }  // namespace traccc::cuda
