@@ -26,13 +26,13 @@ namespace traccc::cuda::kernels {
 
 __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::const_view spacepoints_view, const traccc::measurement_collection_types::const_view measurements_view, 
                                   const short* volumeToLayerMap, const uint2* surfaceToLayerMap, const char* d_layerIsEndcap, 
-                                  float4* reducedSP, unsigned int* layerCounts, unsigned short* spacepointsLayer,
+                                  float4* reducedSP, unsigned int* layerCounts, short* spacepointsLayer,
                                   const unsigned int nSp, const unsigned int volumeMapSize, const unsigned int surfaceMapSize) {
 	//shared mem volumeToLayer map
 	const traccc::measurement_collection_types::const_device measurements(measurements_view);
 	const traccc::edm::spacepoint_collection::const_device spacepoints(spacepoints_view);
 	
-	for(int spIdx = threadIdx.x + gridDim.x*blockIdx.x; spIdx<spacepoints.size(); spIdx += gridDim.x*blockDim.x) {
+	for(int spIdx = threadIdx.x + blockDim.x*blockIdx.x; spIdx<spacepoints.size(); spIdx += blockDim.x*gridDim.x) {
 		//get the layer of the spacepoint
 		const traccc::edm::spacepoint_collection::const_device::const_proxy_type spacepoint = spacepoints.at(spIdx);	
 		const traccc::measurement measurement = measurements.at(spacepoint.measurement_index_1());
@@ -43,14 +43,14 @@ __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::cons
 		if(barcode.volume() > volumeMapSize) continue; //unconfigured volume
 		
 		short begin_or_bin = volumeToLayerMap[barcode.volume()];
-		if(begin_or_bin == SHRT_MAX) continue; //unconfigured volume
-		
+		if(begin_or_bin == SHRT_MAX) continue; //unconfigured volume 		
+
 		unsigned int layerIdx;
 		if(begin_or_bin < 0) {
-			unsigned int surface_id = static_cast<unsigned int>(barcode.id());
-			for(unsigned int surface = -1*(begin_or_bin + 1); surface < surfaceMapSize ;surface++) {
+			unsigned int surface_index = static_cast<unsigned int>(barcode.index());
+			for(unsigned int surface = -1*(begin_or_bin + 1); surface < surfaceMapSize;surface++) {
 				uint2 surfaceBinPair = surfaceToLayerMap[surface];
-				if(surfaceBinPair.x == surface_id) { 
+				if(surfaceBinPair.x == surface_index) { 
 					layerIdx = surfaceBinPair.y; 
 					break;
 				}
@@ -60,10 +60,12 @@ __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::cons
 		
 		float cluster_diameter = measurement.diameter;
 		if(d_layerIsEndcap[layerIdx] == 1) { //get info from sp -> move to before layerIdx map?
-			if(cluster_diameter > 0.2) continue;
+			if(cluster_diameter > 0.2) {
+				spacepointsLayer[spIdx] = -1;
+				continue;
+			}
 			cluster_diameter = -1; //flag for skiping tau range calculation
 		}
-		
 		//count and store x,y,z,cw info
 		atomicAdd(&layerCounts[layerIdx], 1);
 		spacepointsLayer[spIdx] = layerIdx;
@@ -73,9 +75,13 @@ __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::cons
 }
 
 //layerCounts is prefix sumed on CPU inbetween count_sp_by_layer and this kerenel
-__global__ void bin_sp_by_layer(float4* d_sp_params ,float4* reducedSP, unsigned int* layerCounts, unsigned short* spacepointLayer, const unsigned int nSp) {
-	for(int spIdx = threadIdx.x + gridDim.x*blockDim.x; spIdx<nSp; spIdx += gridDim.x*blockDim.x) {
-		d_sp_params[atomicSub(&layerCounts[spacepointLayer[spIdx]], 1)] = reducedSP[spIdx];
+__global__ void bin_sp_by_layer(float4* sp_params ,float4* reducedSP, unsigned int* layerCounts, short* spacepointsLayer, int* original_sp_idx, const unsigned int nSp) {
+	for(int spIdx = threadIdx.x + blockDim.x*blockIdx.x; spIdx<nSp; spIdx += blockDim.x*gridDim.x) {
+		short layerIdx = spacepointsLayer[spIdx];
+		if(layerIdx == -1) continue; 
+		unsigned int binedIdx = atomicSub(&layerCounts[layerIdx], 1) - 1;
+		original_sp_idx[binedIdx] = spIdx;
+		sp_params[binedIdx] = reducedSP[spIdx];
 	}
 }
 
