@@ -37,6 +37,7 @@ full_chain_algorithm::full_chain_algorithm(
     const spacepoint_grid_config& grid_config,
     const seedfilter_config& filter_config,
     const finding_algorithm::config_type& finding_config,
+    const ambiguity_solving_algorithm::config_type& resolution_config,
     const fitting_algorithm::config_type& fitting_config,
     const silicon_detector_description::host& det_descr,
     const magnetic_field& field, host_detector* detector,
@@ -73,6 +74,9 @@ full_chain_algorithm::full_chain_algorithm(
           logger->cloneWithSuffix("TrackParEstAlg")),
       m_finding(finding_config, {m_cached_device_mr, &m_cached_pinned_host_mr},
                 m_copy, m_stream, logger->cloneWithSuffix("TrackFindingAlg")),
+      m_ambiguity_solving(
+          resolution_config, {m_cached_device_mr, &m_cached_pinned_host_mr},
+          m_copy, m_stream, logger->cloneWithSuffix("AmbiguityResolutionAlg")),
       m_fitting(fitting_config, {m_cached_device_mr, &m_cached_pinned_host_mr},
                 m_copy, m_stream, logger->cloneWithSuffix("TrackFittingAlg")),
       m_clustering_config(clustering_config),
@@ -80,6 +84,7 @@ full_chain_algorithm::full_chain_algorithm(
       m_grid_config(grid_config),
       m_filter_config(filter_config),
       m_finding_config(finding_config),
+      m_resolution_config(resolution_config),
       m_fitting_config(fitting_config) {
 
     // Tell the user what device is being used.
@@ -134,6 +139,10 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_finding(parent.m_finding_config,
                 {m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy,
                 m_stream, parent.logger().cloneWithSuffix("TrackFindingAlg")),
+      m_ambiguity_solving(
+          parent.m_resolution_config,
+          {m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy, m_stream,
+          parent.logger().cloneWithSuffix("AmbiguityResolutionAlg")),
       m_fitting(parent.m_fitting_config,
                 {m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy,
                 m_stream, parent.logger().cloneWithSuffix("TrackFittingAlg")),
@@ -142,6 +151,7 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_grid_config(parent.m_grid_config),
       m_filter_config(parent.m_filter_config),
       m_finding_config(parent.m_finding_config),
+      m_resolution_config(parent.m_resolution_config),
       m_fitting_config(parent.m_fitting_config) {
 
     // Copy the detector (description) to the device.
@@ -180,9 +190,15 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
         const finding_algorithm::output_type track_candidates =
             m_finding(m_device_detector, m_field, measurements, track_params);
 
+        // Run the ambiguity solver (asynchronously).
+        const ambiguity_solving_algorithm::output_type
+            resolved_track_candidates =
+                m_ambiguity_solving({track_candidates, measurements});
+
         // Run the track fitting (asynchronously).
-        const fitting_algorithm::output_type track_states = m_fitting(
-            m_device_detector, m_field, {track_candidates, measurements});
+        const fitting_algorithm::output_type track_states =
+            m_fitting(m_device_detector, m_field,
+                      {resolved_track_candidates, measurements});
 
         // Copy a limited amount of result data back to the host.
         const auto host_tracks =
