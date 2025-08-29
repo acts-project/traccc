@@ -16,6 +16,7 @@
 #include "traccc/edm/track_fit_container.hpp"
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/detector_buffer.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
@@ -31,11 +32,12 @@ namespace traccc::sycl {
 /// Kalman filter based track fitting algorithm
 class kalman_fitting_algorithm
     : public algorithm<edm::track_fit_container<default_algebra>::buffer(
-          const default_detector::view&, const magnetic_field&,
+          const detector_buffer&, const magnetic_field&,
           const edm::track_candidate_container<default_algebra>::const_view&)>,
       public algorithm<edm::track_fit_container<default_algebra>::buffer(
-          const telescope_detector::view&, const magnetic_field&,
-          const edm::track_candidate_container<default_algebra>::const_view&)>,
+          const detector_buffer&, const magnetic_field&,
+          edm::track_fit_container<default_algebra>::buffer&&,
+          const measurement_collection_types::const_view&)>,
       public messaging {
 
     public:
@@ -53,31 +55,31 @@ class kalman_fitting_algorithm
         vecmem::copy& copy, queue_wrapper queue,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
-    /// Execute the algorithm
+    /// Execute the algorithm with unfitted tracks
     ///
-    /// @param det             The (default) detector object
+    /// @param det             The detector object
     /// @param bfield          The magnetic field object
     /// @param track_candidates All track candidates to fit
     ///
     /// @return A container of the fitted track states
     ///
     output_type operator()(
-        const default_detector::view& det, const magnetic_field& bfield,
+        const detector_buffer& det, const magnetic_field& bfield,
         const edm::track_candidate_container<default_algebra>::const_view&
             track_candidates) const override;
 
-    /// Execute the algorithm
+    /// Execute the algorithm with fitted tracks
     ///
-    /// @param det             The (telescope) detector object
+    /// @param det             The detector object
     /// @param bfield          The magnetic field object
     /// @param track_candidates All track candidates to fit
     ///
     /// @return A container of the fitted track states
     ///
     output_type operator()(
-        const telescope_detector::view& det, const magnetic_field& bfield,
-        const edm::track_candidate_container<default_algebra>::const_view&
-            track_candidates) const override;
+        const detector_buffer& det, const magnetic_field& bfield,
+        edm::track_fit_container<default_algebra>::buffer&& track_states,
+        const measurement_collection_types::const_view&) const override;
 
     private:
     /// Algorithm configuration

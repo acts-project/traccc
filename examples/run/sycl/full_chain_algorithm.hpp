@@ -11,6 +11,8 @@
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/detector_buffer.hpp"
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 #include "traccc/sycl/clusterization/measurement_sorting_algorithm.hpp"
@@ -51,11 +53,6 @@ class full_chain_algorithm
     /// @name (For now dummy...) Type declaration(s)
     /// @{
 
-    /// (Host) Detector type used during track finding and fitting
-    using host_detector_type = traccc::default_detector::host;
-    /// (Device) Detector type used during track finding and fitting
-    using device_detector_type = traccc::default_detector::device;
-
     /// Spacepoint formation algorithm type
     using spacepoint_formation_algorithm =
         traccc::sycl::silicon_pixel_spacepoint_formation_algorithm;
@@ -82,8 +79,7 @@ class full_chain_algorithm
                          const finding_algorithm::config_type& finding_config,
                          const fitting_algorithm::config_type& fitting_config,
                          const silicon_detector_description::host& det_descr,
-                         const magnetic_field& field,
-                         host_detector_type* detector,
+                         const magnetic_field& field, host_detector* detector,
                          std::unique_ptr<const traccc::Logger> logger);
 
     /// Copy constructor
@@ -141,12 +137,11 @@ class full_chain_algorithm
         m_det_descr;
     /// Detector description buffer
     silicon_detector_description::buffer m_device_det_descr;
+
     /// Host detector
-    host_detector_type* m_detector;
+    host_detector* m_detector;
     /// Buffer holding the detector's payload on the device
-    host_detector_type::buffer_type m_device_detector;
-    /// View of the detector's payload on the device
-    host_detector_type::const_view_type m_device_detector_view;
+    detector_buffer m_device_detector;
 
     /// @name Sub-algorithms used by this full-chain algorithm
     /// @{

@@ -45,7 +45,7 @@ TEST_P(SurfaceBinningTests, Run) {
         vecmem::get_data(dd);
 
     // Read the detector
-    traccc::default_detector::host detector{host_mr};
+    traccc::host_detector detector;
     traccc::io::read_detector(detector, host_mr, detector_file);
 
     // Algorithms

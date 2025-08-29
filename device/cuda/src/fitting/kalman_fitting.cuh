@@ -37,7 +37,131 @@
 
 namespace traccc::cuda::details {
 
-/// Templated implementation of the CUDA track fitting algorithm.
+/// Templated implementation of the CUDA track fitting algorithm for fitted
+/// tracks; reuses input memory
+///
+/// @tparam detector_t The (device) detector type to use
+/// @tparam bfield_t   The magnetic field type to use
+///
+/// @param[in] det_view     A view of the detector geometry
+/// @param[in] field_view   A view of the magnetic field
+/// @param[in] track_fit_view All track candidates to fit
+/// @param[in] config       The fitting configuration
+/// @param[in] mr           Memory resource(s) to use
+/// @param[in] copy         The copy object to use for memory transfers
+/// @param[in] queue        The Alpaka queue to use for execution
+///
+/// @return A container of the fitted track states
+///
+template <typename detector_t, typename bfield_t>
+typename edm::track_fit_container<typename detector_t::algebra_type>::buffer
+kalman_fitting(
+    const typename detector_t::const_view_type& det_view,
+    const bfield_t& field_view,
+    typename edm::track_fit_container<
+        typename detector_t::algebra_type>::buffer&& track_fit_buffer,
+    const measurement_collection_types::const_view& measurements,
+    const fitting_config& config, const memory_resource& mr, vecmem::copy& copy,
+    stream& str, unsigned int warp_size,
+    bool forward_on_first_iteration = false) {
+
+    // Get a convenience variable for the stream that we'll be using.
+    cudaStream_t stream = details::get_stream(str);
+
+    typename edm::track_fit_container<
+        typename detector_t::algebra_type>::const_view track_fit_view{
+        vecmem::get_data(track_fit_buffer.tracks),
+        vecmem::get_data(track_fit_buffer.states), measurements};
+
+    // Get the number of tracks.
+    const edm::track_fit_collection<default_algebra>::const_device::size_type
+        n_tracks = copy.get_size(track_fit_view.tracks);
+
+    // Get the sizes of the track candidates in each track.
+    const std::vector<unsigned int> state_sizes =
+        copy.get_sizes(track_fit_view.tracks);
+    const unsigned int n_states =
+        std::accumulate(state_sizes.begin(), state_sizes.end(), 0u);
+
+    // Return early, if there are no tracks.
+    if (n_tracks == 0) {
+        return track_fit_buffer;
+    }
+
+    std::vector<unsigned int> seqs_sizes(state_sizes.size());
+    std::transform(state_sizes.begin(), state_sizes.end(), seqs_sizes.begin(),
+                   [&config](const unsigned int sz) {
+                       return std::max(sz * config.barcode_sequence_size_factor,
+                                       config.min_barcode_sequence_capacity);
+                   });
+    vecmem::data::jagged_vector_buffer<detray::geometry::barcode> seqs_buffer{
+        seqs_sizes, mr.main, mr.host, vecmem::data::buffer_type::resizable};
+    copy.setup(seqs_buffer)->ignore();
+
+    // Create the buffers for sorting the parameter IDs.
+    vecmem::data::vector_buffer<device::sort_key> keys_buffer(n_tracks,
+                                                              mr.main);
+    vecmem::data::vector_buffer<unsigned int> param_ids_buffer(n_tracks,
+                                                               mr.main);
+    vecmem::data::vector_buffer<unsigned int> param_liveness_buffer(n_tracks,
+                                                                    mr.main);
+    vecmem::copy::event_type keys_setup_event = copy.setup(keys_buffer);
+    vecmem::copy::event_type param_ids_setup_event =
+        copy.setup(param_ids_buffer);
+    vecmem::copy::event_type param_liveness_setup_event =
+        copy.setup(param_liveness_buffer);
+    keys_setup_event->ignore();
+    param_ids_setup_event->ignore();
+    param_liveness_setup_event->ignore();
+    copy.memset(param_liveness_buffer, 1)->ignore();
+
+    // Launch parameters for all the kernels.
+    const unsigned int nThreads = warp_size * 4;
+    const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
+
+    // Fill the keys and param_ids buffers.
+    fill_fitting_sort_keys(nBlocks, nThreads, stream, track_fit_view.tracks,
+                           keys_buffer, param_ids_buffer);
+
+    // Sort the key to get the sorted parameter ids
+    vecmem::device_vector<device::sort_key> keys_device(keys_buffer);
+    vecmem::device_vector<unsigned int> param_ids_device(param_ids_buffer);
+    thrust::sort_by_key(
+        thrust::cuda::par_nosync(std::pmr::polymorphic_allocator(&mr.main))
+            .on(stream),
+        keys_device.begin(), keys_device.end(), param_ids_device.begin());
+
+    // Allocate the fitting kernels's payload in host memory.
+    using fitter_t = traccc::details::kalman_fitter_t<detector_t, bfield_t>;
+    device::fit_payload<fitter_t> host_payload{
+        .det_data = det_view,
+        .field_data = field_view,
+        .param_ids_view = param_ids_buffer,
+        .param_liveness_view = param_liveness_buffer,
+        .tracks_view = {track_fit_buffer.tracks, track_fit_buffer.states,
+                        measurements},
+        .barcodes_view = seqs_buffer};
+
+    for (std::size_t i = 0; i < config.n_iterations; ++i) {
+        // Run the track fitting
+        if (i > 0 || forward_on_first_iteration) {
+            // Don't run the forward step on the first iteration, as the
+            // input tracks are already fit.
+            fit_forward<fitter_t>(nBlocks, nThreads, 0, stream, config,
+                                  host_payload);
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+        }
+        fit_backward<fitter_t>(nBlocks, nThreads, 0, stream, config,
+                               host_payload);
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+    }
+
+    // Return the fitted tracks.
+    return track_fit_buffer;
+}
+
+/// Templated implementation of the CUDA track fitting algorithm for unfitted
+/// tracks.
 ///
 /// @tparam detector_t The (device) detector type to use
 /// @tparam bfield_t   The magnetic field type to use
@@ -90,81 +214,25 @@ kalman_fitting(
         return track_states_buffer;
     }
 
-    std::vector<unsigned int> seqs_sizes(candidate_sizes.size());
-    std::transform(candidate_sizes.begin(), candidate_sizes.end(),
-                   seqs_sizes.begin(), [&config](const unsigned int sz) {
-                       return std::max(sz * config.barcode_sequence_size_factor,
-                                       config.min_barcode_sequence_capacity);
-                   });
-    vecmem::data::jagged_vector_buffer<detray::geometry::barcode> seqs_buffer{
-        seqs_sizes, mr.main, mr.host, vecmem::data::buffer_type::resizable};
-    copy.setup(seqs_buffer)->ignore();
-
-    // Create the buffers for sorting the parameter IDs.
-    vecmem::data::vector_buffer<device::sort_key> keys_buffer(n_tracks,
-                                                              mr.main);
-    vecmem::data::vector_buffer<unsigned int> param_ids_buffer(n_tracks,
-                                                               mr.main);
-    vecmem::data::vector_buffer<unsigned int> param_liveness_buffer(n_tracks,
-                                                                    mr.main);
-    vecmem::copy::event_type keys_setup_event = copy.setup(keys_buffer);
-    vecmem::copy::event_type param_ids_setup_event =
-        copy.setup(param_ids_buffer);
-    vecmem::copy::event_type param_liveness_setup_event =
-        copy.setup(param_liveness_buffer);
-    keys_setup_event->ignore();
-    param_ids_setup_event->ignore();
-    param_liveness_setup_event->ignore();
-
     // Launch parameters for all the kernels.
     const unsigned int nThreads = warp_size * 4;
     const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
 
-    // Fill the keys and param_ids buffers.
-    fill_fitting_sort_keys(nBlocks, nThreads, stream,
-                           track_candidates_view.tracks, keys_buffer,
-                           param_ids_buffer);
-
-    // Sort the key to get the sorted parameter ids
-    vecmem::device_vector<device::sort_key> keys_device(keys_buffer);
-    vecmem::device_vector<unsigned int> param_ids_device(param_ids_buffer);
-    thrust::sort_by_key(
-        thrust::cuda::par_nosync(std::pmr::polymorphic_allocator(&mr.main))
-            .on(stream),
-        keys_device.begin(), keys_device.end(), param_ids_device.begin());
-
     // Run the fitting, using the sorted parameter IDs.
-    fit_prelude(nBlocks, nThreads, 0, stream, param_ids_buffer,
-                track_candidates_view,
+    fit_prelude(nBlocks, nThreads, 0, stream, track_candidates_view,
                 {track_states_buffer.tracks, track_states_buffer.states,
-                 track_candidates_view.measurements},
-                param_liveness_buffer);
+                 track_candidates_view.measurements});
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
     str.synchronize();
 
-    // Allocate the fitting kernels's payload in host memory.
-    using fitter_t = traccc::details::kalman_fitter_t<detector_t, bfield_t>;
-    device::fit_payload<fitter_t> host_payload{
-        .det_data = det_view,
-        .field_data = field_view,
-        .param_ids_view = param_ids_buffer,
-        .param_liveness_view = param_liveness_buffer,
-        .tracks_view = {track_states_buffer.tracks, track_states_buffer.states,
-                        track_candidates_view.measurements},
-        .barcodes_view = seqs_buffer};
-
-    for (std::size_t i = 0; i < config.n_iterations; ++i) {
-        // Run the track fitting
-        fit_forward<fitter_t>(nBlocks, nThreads, 0, stream, config,
-                              host_payload);
-        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
-        fit_backward<fitter_t>(nBlocks, nThreads, 0, stream, config,
-                               host_payload);
-        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
-    }
-
-    // Return the fitted tracks.
-    return track_states_buffer;
+    return kalman_fitting<detector_t, bfield_t>(
+        det_view, field_view,
+        typename edm::track_fit_container<
+            typename detector_t::algebra_type>::buffer{
+            std::move(track_states_buffer.tracks),
+            std::move(track_states_buffer.states)},
+        track_candidates_view.measurements, config, mr, copy, str, warp_size,
+        true);
 }
 
 }  // namespace traccc::cuda::details

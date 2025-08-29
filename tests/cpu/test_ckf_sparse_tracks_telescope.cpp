@@ -9,6 +9,7 @@
 #include "traccc/bfield/construct_const_bfield.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
+#include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
@@ -69,12 +70,16 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
 
     // Read back detector file
     const std::string path = name + "/";
-    detray::io::detector_reader_config reader_cfg{};
-    reader_cfg.add_file(path + "telescope_detector_geometry.json")
-        .add_file(path + "telescope_detector_homogeneous_material.json");
-
-    const auto [host_det, names] =
-        detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
+    traccc::host_detector detector;
+    traccc::io::read_detector(
+        detector, host_mr,
+        std::filesystem::absolute(
+            std::filesystem::path(path + "telescope_detector_geometry.json"))
+            .native(),
+        std::filesystem::absolute(
+            std::filesystem::path(
+                path + "telescope_detector_homogeneous_material.json"))
+            .native());
 
     auto field = traccc::construct_const_bfield(std::get<13>(GetParam()));
 
@@ -110,7 +115,7 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     std::filesystem::create_directories(full_path);
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
                                  writer_type>(
-        ptc, n_events, host_det,
+        ptc, n_events, detector.as<detector_traits>(),
         field.as_field<traccc::const_bfield_backend_t<traccc::scalar>>(),
         std::move(generator), std::move(smearer_writer_cfg), full_path);
 
@@ -121,7 +126,8 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
      *****************************/
 
     // Seed generator
-    seed_generator<host_detector_type> sg(host_det, stddevs);
+    seed_generator<host_detector_type> sg(detector.as<detector_traits>(),
+                                          stddevs);
 
     // Finding algorithm configuration
     typename traccc::finding_config cfg;
@@ -165,7 +171,7 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
 
         // Run finding
         auto track_candidates = host_finding(
-            host_det, field, vecmem::get_data(measurements_per_event),
+            detector, field, vecmem::get_data(measurements_per_event),
             vecmem::get_data(seeds));
 
         ASSERT_EQ(track_candidates.size(), n_truth_tracks);
@@ -179,7 +185,7 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
 
         // Run fitting
         auto track_states =
-            host_fitting(host_det, field,
+            host_fitting(detector, field,
                          {vecmem::get_data(track_candidates),
                           vecmem::get_data(measurements_per_event)});
         const std::size_t n_fitted_tracks =
@@ -198,7 +204,8 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
 
             fit_performance_writer.write(
                 track_states.tracks.at(i_trk), track_states.states,
-                measurements_per_event, host_det, evt_data);
+                measurements_per_event, detector.as<detector_traits>(),
+                evt_data);
         }
     }
 

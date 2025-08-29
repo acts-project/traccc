@@ -11,6 +11,7 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/detector_buffer.hpp"
 #include "traccc/sycl/utils/queue_wrapper.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
@@ -31,10 +32,7 @@ namespace traccc::sycl {
 ///
 class silicon_pixel_spacepoint_formation_algorithm
     : public algorithm<edm::spacepoint_collection::buffer(
-          const default_detector::view&,
-          const measurement_collection_types::const_view&)>,
-      public algorithm<edm::spacepoint_collection::buffer(
-          const telescope_detector::view&,
+          const detector_buffer&,
           const measurement_collection_types::const_view&)>,
       public messaging {
 
@@ -58,18 +56,7 @@ class silicon_pixel_spacepoint_formation_algorithm
     /// @return A spacepoint buffer, with one spacepoint for every
     ///         silicon pixel measurement
     ///
-    output_type operator()(const default_detector::view& det,
-                           const measurement_collection_types::const_view&
-                               measurements) const override;
-
-    /// Construct spacepoints from 2D silicon pixel measurements
-    ///
-    /// @param det Detector object
-    /// @param measurements A collection of measurements
-    /// @return A spacepoint buffer, with one spacepoint for every
-    ///         silicon pixel measurement
-    ///
-    output_type operator()(const telescope_detector::view& det,
+    output_type operator()(const detector_buffer& det,
                            const measurement_collection_types::const_view&
                                measurements) const override;
 

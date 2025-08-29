@@ -8,6 +8,7 @@
 // Project include(s).
 #include "traccc/bfield/construct_const_bfield.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
+#include "traccc/io/read_detector.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
 #include "traccc/simulation/event_generators.hpp"
@@ -62,14 +63,19 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
 
     // Read back detector file
     const std::string path = name + "/";
-    detray::io::detector_reader_config reader_cfg{};
-    reader_cfg.add_file(path + "wire_chamber_geometry.json")
-        .add_file(path + "wire_chamber_homogeneous_material.json")
-        .add_file(path + "wire_chamber_surface_grids.json")
-        .do_check(true);
-
-    const auto [host_det, names] =
-        detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
+    traccc::host_detector detector;
+    traccc::io::read_detector(
+        detector, host_mr,
+        std::filesystem::absolute(
+            std::filesystem::path(path + "wire_chamber_geometry.json"))
+            .native(),
+        std::filesystem::absolute(
+            std::filesystem::path(path +
+                                  "wire_chamber_homogeneous_material.json"))
+            .native(),
+        std::filesystem::absolute(
+            std::filesystem::path(path + "wire_chamber_surface_grids.json"))
+            .native());
     const auto field = traccc::construct_const_bfield(B);
 
     /***************************
@@ -105,7 +111,7 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
     std::filesystem::create_directories(full_path);
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
                                  writer_type>(
-        ptc, n_events, host_det,
+        ptc, n_events, detector.as<detector_traits>(),
         field.as_field<traccc::const_bfield_backend_t<traccc::scalar>>(),
         std::move(generator), std::move(smearer_writer_cfg), full_path);
 
@@ -118,7 +124,8 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
      ***************/
 
     // Seed generator
-    seed_generator<host_detector_type> sg(host_det, stddevs);
+    seed_generator<host_detector_type> sg(detector.as<detector_traits>(),
+                                          stddevs);
 
     // Fitting algorithm object
     traccc::fitting_config fit_cfg;
@@ -143,7 +150,7 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
 
         // Run fitting
         auto track_states =
-            fitting(host_det, field,
+            fitting(detector, field,
                     {vecmem::get_data(track_candidates.tracks),
                      vecmem::get_data(track_candidates.measurements)});
 
@@ -174,7 +181,8 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
 
             fit_performance_writer.write(
                 track_states.tracks.at(i_trk), track_states.states,
-                track_candidates.measurements, host_det, evt_data);
+                track_candidates.measurements, detector.as<detector_traits>(),
+                evt_data);
         }
     }
 

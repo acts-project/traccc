@@ -86,8 +86,6 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/finding/details/combinatorial_kalman_filter.hpp"
   "include/traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
   "src/finding/combinatorial_kalman_filter_algorithm.cpp"
-  "src/finding/combinatorial_kalman_filter_algorithm_default_detector.cpp"
-  "src/finding/combinatorial_kalman_filter_algorithm_telescope_detector.cpp"
   # Fitting algorithmic code
   "include/traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
   "include/traccc/fitting/kalman_filter/kalman_actor.hpp"
@@ -99,8 +97,6 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/fitting/details/kalman_fitting.hpp"
   "include/traccc/fitting/kalman_fitting_algorithm.hpp"
   "src/fitting/kalman_fitting_algorithm.cpp"
-  "src/fitting/kalman_fitting_algorithm_default_detector.cpp"
-  "src/fitting/kalman_fitting_algorithm_telescope_detector.cpp"
   # Seed finding algorithmic code.
   "include/traccc/seeding/detail/lin_circle.hpp"
   "include/traccc/seeding/detail/doublet.hpp"
@@ -130,8 +126,6 @@ traccc_add_library( traccc_core core TYPE SHARED
   "src/seeding/silicon_pixel_spacepoint_formation.hpp"
   "include/traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
   "src/seeding/silicon_pixel_spacepoint_formation_algorithm.cpp"
-  "src/seeding/silicon_pixel_spacepoint_formation_algorithm_defdet.cpp"
-  "src/seeding/silicon_pixel_spacepoint_formation_algorithm_teldet.cpp"
   # Ambiguity resolution
   "include/traccc/ambiguity_resolution/ambiguity_resolution_config.hpp"
   "include/traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"

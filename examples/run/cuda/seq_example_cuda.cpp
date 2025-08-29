@@ -24,6 +24,8 @@
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/detector_buffer.hpp"
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_detector_description.hpp"
@@ -103,17 +105,13 @@ int seq_run(const traccc::opts::detector& detector_opts,
     copy(host_det_descr_data, device_det_descr)->wait();
 
     // Construct a Detray detector object, if supported by the configuration.
-    traccc::default_detector::host host_detector{host_mr};
-    traccc::default_detector::buffer device_detector;
-    traccc::default_detector::view device_detector_view;
+    traccc::host_detector host_detector;
     traccc::io::read_detector(
         host_detector, host_mr, detector_opts.detector_file,
         detector_opts.material_file, detector_opts.grid_file);
-    device_detector = detray::get_buffer(host_detector, device_mr, copy);
+    const traccc::detector_buffer device_detector =
+        traccc::buffer_from_host_detector(host_detector, device_mr, copy);
     stream.synchronize();
-    const traccc::default_detector::buffer& const_device_detector =
-        device_detector;
-    device_detector_view = detray::get_data(const_device_detector);
 
     // Output stats
     uint64_t n_cells = 0;
@@ -134,8 +132,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     using host_spacepoint_formation_algorithm =
         traccc::host::silicon_pixel_spacepoint_formation_algorithm;
     using device_spacepoint_formation_algorithm =
-        traccc::cuda::spacepoint_formation_algorithm<
-            traccc::default_detector::device>;
+        traccc::cuda::spacepoint_formation_algorithm;
 
     using host_finding_algorithm =
         traccc::host::combinatorial_kalman_filter_algorithm;
@@ -294,7 +291,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 traccc::performance::timer t("Spacepoint formation (cuda)",
                                              elapsedTimes);
                 spacepoints_cuda_buffer =
-                    sf_cuda(device_detector_view, measurements_cuda_buffer);
+                    sf_cuda(device_detector, measurements_cuda_buffer);
                 stream.synchronize();
             }  // stop measuring spacepoint formation cuda timer
 
@@ -343,8 +340,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 traccc::performance::timer timer{"Track finding (cuda)",
                                                  elapsedTimes};
                 track_candidates_buffer = finding_alg_cuda(
-                    device_detector_view, device_field,
-                    measurements_cuda_buffer, params_cuda_buffer);
+                    device_detector, device_field, measurements_cuda_buffer,
+                    params_cuda_buffer);
             }
 
             // CPU
@@ -379,7 +376,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 traccc::performance::timer timer{"Track fitting (cuda)",
                                                  elapsedTimes};
                 track_states_buffer = fitting_alg_cuda(
-                    device_detector_view, device_field,
+                    device_detector, device_field,
                     {res_track_candidates_buffer, measurements_cuda_buffer});
             }
 

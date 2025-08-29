@@ -10,6 +10,7 @@
 // Project include(s).
 #include "traccc/edm/particle.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/host_detector.hpp"
 
 // System include(s).
 #include <string_view>
@@ -37,7 +38,7 @@ void read_particles(particle_container_types::host& particles,
                     std::string_view particles_file, std::string_view hits_file,
                     std::string_view measurements_file,
                     std::string_view hit_map_file,
-                    const traccc::default_detector::host* detector,
+                    const traccc::host_detector* detector,
                     const bool sort_measurements = true);
 
 }  // namespace traccc::io::csv

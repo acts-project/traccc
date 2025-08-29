@@ -123,20 +123,19 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     const auto field = traccc::details::make_magnetic_field(bfield_opts);
     const traccc::vector3 field_vec(seeding_opts);
 
-    // Construct a Detray detector object, if supported by the configuration.
-    traccc::default_detector::host host_det{mng_mr};
+    // Detector view object
+    traccc::host_detector host_det;
     traccc::io::read_detector(host_det, mng_mr, detector_opts.detector_file,
                               detector_opts.material_file,
                               detector_opts.grid_file);
-
-    // Detector view object
-    const traccc::default_detector::host& const_host_det = host_det;
-    traccc::default_detector::view det_view = detray::get_data(const_host_det);
 
     // Copy objects
     vecmem::copy host_copy;
     vecmem::copy& copy = vo.copy();
     vecmem::copy& async_copy = vo.async_copy();
+
+    const traccc::detector_buffer detector_buffer =
+        traccc::buffer_from_host_detector(host_det, mng_mr, copy);
 
     // Seeding algorithms
     const traccc::seedfinder_config seedfinder_config(seeding_opts);
@@ -298,9 +297,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             {
                 traccc::performance::timer t("Track finding with CKF (alpaka)",
                                              elapsedTimes);
-                track_candidates_alpaka_buffer =
-                    device_finding(det_view, field, measurements_alpaka_buffer,
-                                   params_alpaka_buffer);
+                track_candidates_alpaka_buffer = device_finding(
+                    detector_buffer, field, measurements_alpaka_buffer,
+                    params_alpaka_buffer);
             }
 
             if (accelerator_opts.compare_with_cpu) {
@@ -320,7 +319,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                                              elapsedTimes);
 
                 track_states_alpaka_buffer =
-                    device_fitting(det_view, field,
+                    device_fitting(detector_buffer, field,
                                    {track_candidates_alpaka_buffer,
                                     measurements_alpaka_buffer});
             }

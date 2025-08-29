@@ -12,6 +12,7 @@
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/io/read_detector.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/options/detector.hpp"
 #include "traccc/options/input_data.hpp"
@@ -84,19 +85,13 @@ int main(int argc, char* argv[]) {
     const auto field = details::make_magnetic_field(bfield_opts);
 
     // Read the detector
-    detray::io::detector_reader_config reader_cfg{};
-    reader_cfg.add_file(
-        traccc::io::get_absolute_path(detector_opts.detector_file));
-    if (!detector_opts.material_file.empty()) {
-        reader_cfg.add_file(
-            traccc::io::get_absolute_path(detector_opts.material_file));
-    }
-    if (!detector_opts.grid_file.empty()) {
-        reader_cfg.add_file(
-            traccc::io::get_absolute_path(detector_opts.grid_file));
-    }
-    const auto [host_det, names] =
-        detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
+    traccc::host_detector polymorphic_detector;
+    traccc::io::read_detector(
+        polymorphic_detector, host_mr, detector_opts.detector_file,
+        detector_opts.material_file, detector_opts.grid_file);
+
+    const traccc::default_detector::host& host_det =
+        polymorphic_detector.as<traccc::default_detector>();
 
     /// Create a "misaligned" context in the transform store
     using xf_container = host_detector_type::transform_container;
@@ -150,8 +145,9 @@ int main(int argc, char* argv[]) {
 
         // Truth Track Candidates
         traccc::event_data evt_data(input_opts.directory, event, host_mr,
-                                    input_opts.use_acts_geom_source, &host_det,
-                                    input_opts.format, false);
+                                    input_opts.use_acts_geom_source,
+                                    &polymorphic_detector, input_opts.format,
+                                    false);
 
         // For the first half of events run Alg0
         if ((event - input_opts.skip) / (input_opts.events / 2) == 0) {
@@ -162,7 +158,7 @@ int main(int argc, char* argv[]) {
 
             // Run fitting
             auto track_states = host_fitting0(
-                host_det, field,
+                polymorphic_detector, field,
                 {vecmem::get_data(truth_track_candidates.tracks),
                  vecmem::get_data(truth_track_candidates.measurements)});
 
@@ -187,7 +183,7 @@ int main(int argc, char* argv[]) {
 
             // Run fitting
             auto track_states = host_fitting1(
-                host_det, field,
+                polymorphic_detector, field,
                 {vecmem::get_data(truth_track_candidates.tracks),
                  vecmem::get_data(truth_track_candidates.measurements)});
 

@@ -35,8 +35,9 @@ namespace traccc {
 class KalmanFittingTests : public testing::Test {
     public:
     /// Type declarations
-    using host_detector_type = traccc::default_detector::host;
-    using device_detector_type = traccc::default_detector::device;
+    using detector_traits = traccc::default_detector;
+    using host_detector_type = detector_traits::host;
+    using device_detector_type = detector_traits::device;
 
     using scalar_type = device_detector_type::scalar_type;
     using b_field_t =

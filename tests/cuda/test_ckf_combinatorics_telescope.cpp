@@ -9,6 +9,7 @@
 #include "traccc/bfield/construct_const_bfield.hpp"
 #include "traccc/bfield/magnetic_field_types.hpp"
 #include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
+#include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/simulation/event_generators.hpp"
@@ -62,20 +63,25 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
     vecmem::cuda::device_memory_resource device_mr;
     traccc::memory_resource mr{device_mr, &host_mr};
     vecmem::cuda::managed_memory_resource mng_mr;
+    vecmem::copy host_copy;
 
     // Read back detector file
     const std::string path = name + "/";
-    detray::io::detector_reader_config reader_cfg{};
-    reader_cfg.add_file(path + "telescope_detector_geometry.json")
-        .add_file(path + "telescope_detector_homogeneous_material.json");
+    traccc::host_detector detector;
+    traccc::io::read_detector(
+        detector, mng_mr,
+        std::filesystem::absolute(
+            std::filesystem::path(path + "telescope_detector_geometry.json"))
+            .native(),
+        std::filesystem::absolute(
+            std::filesystem::path(
+                path + "telescope_detector_homogeneous_material.json"))
+            .native());
 
-    const auto [host_det, names] =
-        detray::io::read_detector<host_detector_type>(mng_mr, reader_cfg);
+    const traccc::detector_buffer detector_buffer =
+        traccc::buffer_from_host_detector(detector, mng_mr, host_copy);
 
     const auto field = traccc::construct_const_bfield(std::get<13>(GetParam()));
-
-    // Detector view object
-    auto det_view = detray::get_data(host_det);
 
     /***************************
      * Generate simulation data
@@ -109,7 +115,7 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
     std::filesystem::create_directories(full_path);
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
                                  writer_type>(
-        ptc, n_events, host_det,
+        ptc, n_events, detector.as<detector_traits>(),
         field.as_field<traccc::const_bfield_backend_t<traccc::scalar>>(),
         std::move(generator), std::move(smearer_writer_cfg), full_path);
     sim.run();
@@ -125,7 +131,8 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
     // Seed generator
-    seed_generator<host_detector_type> sg(host_det, stddevs);
+    seed_generator<host_detector_type> sg(detector.as<detector_traits>(),
+                                          stddevs);
 
     // Finding algorithm configuration
     typename traccc::cuda::combinatorial_kalman_filter_algorithm::config_type
@@ -189,12 +196,12 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
         // Run device finding
         traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
             track_candidates_cuda_buffer = device_finding(
-                det_view, field, measurements_buffer, seeds_buffer);
+                detector_buffer, field, measurements_buffer, seeds_buffer);
 
         // Run device finding (Limit)
         traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
             track_candidates_limit_cuda_buffer = device_finding_limit(
-                det_view, field, measurements_buffer, seeds_buffer);
+                detector_buffer, field, measurements_buffer, seeds_buffer);
 
         traccc::edm::track_candidate_collection<traccc::default_algebra>::host
             track_candidates_cuda{host_mr},

@@ -52,10 +52,17 @@ TEST(SYCLSpacepointFormation, sycl) {
     tel_cfg.pilot_track(traj);
 
     // Create telescope geometry
-    const auto [det, name_map] = build_telescope_detector(shared_mr, tel_cfg);
+    auto [det, name_map] = build_telescope_detector(shared_mr, tel_cfg);
 
     // Surface lookup
     auto surfaces = det.surfaces();
+
+    traccc::host_detector polymorphic_detector;
+    polymorphic_detector.set<traccc::telescope_detector>(std::move(det));
+
+    const traccc::detector_buffer detector_buffer =
+        traccc::buffer_from_host_detector(polymorphic_detector, shared_mr,
+                                          copy);
 
     // Prepare measurement collection
     measurement_collection_types::host measurements{&shared_mr};
@@ -70,7 +77,7 @@ TEST(SYCLSpacepointFormation, sycl) {
     traccc::sycl::silicon_pixel_spacepoint_formation_algorithm sp_formation(
         mr, copy, queue.queue());
     auto spacepoints_buffer =
-        sp_formation(detray::get_data(det), vecmem::get_data(measurements));
+        sp_formation(detector_buffer, vecmem::get_data(measurements));
 
     edm::spacepoint_collection::device spacepoints(spacepoints_buffer);
 

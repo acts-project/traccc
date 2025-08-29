@@ -23,7 +23,7 @@ full_chain_algorithm::full_chain_algorithm(
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
     const silicon_detector_description::host& det_descr,
-    const magnetic_field& field, host_detector_type* detector,
+    const magnetic_field& field, host_detector* detector,
     std::unique_ptr<const traccc::Logger> logger)
     : messaging(logger->clone()),
       m_queue(),
@@ -76,11 +76,9 @@ full_chain_algorithm::full_chain_algorithm(
         .async_copy()(::vecmem::get_data(m_det_descr.get()), m_device_det_descr)
         ->ignore();
     if (m_detector != nullptr) {
-        m_device_detector = detray::get_buffer(detray::get_data(*m_detector),
-                                               m_vecmem_objects.device_mr(),
-                                               m_vecmem_objects.async_copy());
-        const auto& const_device_detector = m_device_detector;
-        m_device_detector_view = detray::get_data(const_device_detector);
+        m_device_detector = traccc::buffer_from_host_detector(
+            *m_detector, m_vecmem_objects.device_mr(),
+            m_vecmem_objects.async_copy());
     }
 }
 
@@ -137,11 +135,9 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
         .async_copy()(::vecmem::get_data(m_det_descr.get()), m_device_det_descr)
         ->ignore();
     if (m_detector != nullptr) {
-        m_device_detector = detray::get_buffer(detray::get_data(*m_detector),
-                                               m_vecmem_objects.device_mr(),
-                                               m_vecmem_objects.async_copy());
-        const auto& const_device_detector = m_device_detector;
-        m_device_detector_view = detray::get_data(const_device_detector);
+        m_device_detector = traccc::buffer_from_host_detector(
+            *m_detector, m_vecmem_objects.device_mr(),
+            m_vecmem_objects.async_copy());
     }
 }
 
@@ -166,18 +162,18 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
 
         // Run the seed-finding (asynchronously).
         const spacepoint_formation_algorithm::output_type spacepoints =
-            m_spacepoint_formation(m_device_detector_view, measurements);
+            m_spacepoint_formation(m_device_detector, measurements);
         const track_params_estimation::output_type track_params =
             m_track_parameter_estimation(measurements, spacepoints,
                                          m_seeding(spacepoints), m_field_vec);
 
         // Run the track finding (asynchronously).
-        const finding_algorithm::output_type track_candidates = m_finding(
-            m_device_detector_view, m_field, measurements, track_params);
+        const finding_algorithm::output_type track_candidates =
+            m_finding(m_device_detector, m_field, measurements, track_params);
 
         // Run the track fitting (asynchronously).
         const fitting_algorithm::output_type track_states = m_fitting(
-            m_device_detector_view, m_field, {track_candidates, measurements});
+            m_device_detector, m_field, {track_candidates, measurements});
 
         // Copy a limited amount of result data back to the host.
         const auto host_tracks = m_vecmem_objects.async_copy().to(
@@ -221,7 +217,7 @@ bound_track_parameters_collection_types::host full_chain_algorithm::seeding(
 
         // Run the seed-finding (asynchronously).
         const spacepoint_formation_algorithm::output_type spacepoints =
-            m_spacepoint_formation(m_device_detector_view, measurements);
+            m_spacepoint_formation(m_device_detector, measurements);
         const track_params_estimation::output_type track_params =
             m_track_parameter_estimation(measurements, spacepoints,
                                          m_seeding(spacepoints), m_field_vec);
