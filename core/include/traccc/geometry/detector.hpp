@@ -47,7 +47,7 @@ struct device_detector_container_types {
 
 /// Base struct for the different detector types supported by the project.
 template <typename metadata_t>
-struct detector {
+struct detector_traits {
 
     /// Metadata type of the detector.
     using metadata_type = metadata_t;
@@ -66,15 +66,26 @@ struct detector {
 
 };  // struct default_detector
 
+template <typename T>
+concept is_detector_traits = requires {
+    typename T::metadata_type;
+    typename T::host;
+    typename T::device;
+    typename T::view;
+    typename T::buffer;
+};
+
 /// Default detector (also used for ODD)
 using default_detector =
-    detector<detray::default_metadata<traccc::default_algebra>>;
+    detector_traits<detray::default_metadata<traccc::default_algebra>>;
 
 /// Telescope detector
-using telescope_detector = detector<
+using telescope_detector = detector_traits<
     detray::telescope_metadata<traccc::default_algebra, detray::rectangle2D>>;
 
 /// Toy detector
-using toy_detector = detector<detray::toy_metadata<traccc::default_algebra>>;
+using toy_detector =
+    detector_traits<detray::toy_metadata<traccc::default_algebra>>;
 
+using detector_type_list = std::tuple<default_detector, telescope_detector>;
 }  // namespace traccc

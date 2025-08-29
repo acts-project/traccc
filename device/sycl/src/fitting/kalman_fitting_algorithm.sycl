@@ -6,6 +6,7 @@
  */
 
 // Local include(s).
+#include "../utils/detector_types.hpp"
 #include "../utils/get_queue.hpp"
 #include "../utils/magnetic_field_types.hpp"
 #include "kalman_fitting.hpp"
@@ -13,27 +14,32 @@
 
 // Project include(s).
 #include "traccc/bfield/magnetic_field_types.hpp"
+#include "traccc/utils/detector_buffer_bfield_visitor.hpp"
 
 namespace traccc::sycl {
 namespace kernels {
-template <typename bfield_tag_t>
-struct fit_tracks_default_detector;
+template <typename detector_tag_t, typename bfield_tag_t>
+struct fit_tracks;
 }  // namespace kernels
 
 kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
-    const default_detector::view& det, const magnetic_field& bfield,
+    const detector_buffer& detector, const magnetic_field& bfield,
     const edm::track_candidate_container<default_algebra>::const_view&
         track_candidates) const {
 
     // Perform the track fitting using the templated implementation.
-    return magnetic_field_visitor<sycl::bfield_type_list<scalar>>(
-        bfield, [&]<typename bfield_view_t>(const bfield_view_t& bfield_view) {
+    return detector_buffer_magnetic_field_visitor<
+        detector_type_list, sycl::bfield_type_list<scalar>>(
+        detector, bfield,
+        [&]<typename detector_t, typename bfield_view_t>(
+            const typename detector_t::view& det, const bfield_view_t& field) {
             return details::kalman_fitting<
-                kernels::fit_tracks_default_detector<
+                kernels::fit_tracks<
+                    detector_tag_selector_t<detector_t>,
                     bfield_tag_selector_t<typename bfield_view_t::backend_t>>,
-                default_detector::device>(det, bfield_view, track_candidates,
-                                          m_config, m_mr, m_copy.get(),
-                                          details::get_queue(m_queue));
+                typename detector_t::device>(det, field, track_candidates,
+                                             m_config, m_mr, m_copy.get(),
+                                             details::get_queue(m_queue));
         });
 }
 

@@ -11,6 +11,7 @@
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/messaging.hpp"
 
@@ -29,10 +30,7 @@ namespace traccc::host {
 ///
 class silicon_pixel_spacepoint_formation_algorithm
     : public algorithm<edm::spacepoint_collection::host(
-          const default_detector::host&,
-          const measurement_collection_types::const_view&)>,
-      public algorithm<edm::spacepoint_collection::host(
-          const telescope_detector::host&,
+          const host_detector&,
           const measurement_collection_types::const_view&)>,
       public messaging {
 
@@ -56,18 +54,7 @@ class silicon_pixel_spacepoint_formation_algorithm
     ///         silicon pixel measurement
     ///
     output_type operator()(
-        const default_detector::host& det,
-        const measurement_collection_types::const_view&) const override;
-
-    /// Construct spacepoints from 2D silicon pixel measurements
-    ///
-    /// @param det Detector object
-    /// @param measurements A collection of measurements
-    /// @return A spacepoint container, with one spacepoint for every
-    ///         silicon pixel measurement
-    ///
-    output_type operator()(
-        const telescope_detector::host& det,
+        const host_detector& det,
         const measurement_collection_types::const_view&) const override;
 
     private:

@@ -131,16 +131,13 @@ int seq_run(const traccc::opts::detector& detector_opts,
     copy(host_det_descr_data, device_det_descr)->wait();
 
     // Construct a Detray detector object, if supported by the configuration.
-    traccc::default_detector::host host_detector{host_mr};
-    traccc::default_detector::buffer device_detector;
-    traccc::default_detector::view device_detector_view;
-    traccc::io::read_detector(
-        host_detector, host_mr, detector_opts.detector_file,
-        detector_opts.material_file, detector_opts.grid_file);
-    device_detector = detray::get_buffer(host_detector, device_mr, copy);
-    q.wait_and_throw();
-    const auto& const_device_detector = device_detector;
-    device_detector_view = detray::get_data(const_device_detector);
+    traccc::host_detector host_det;
+    traccc::io::read_detector(host_det, host_mr, detector_opts.detector_file,
+                              detector_opts.material_file,
+                              detector_opts.grid_file);
+
+    const traccc::detector_buffer detector_buffer =
+        traccc::buffer_from_host_detector(host_det, device_mr, copy);
 
     // Output stats
     uint64_t n_cells = 0;
@@ -278,7 +275,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                                              elapsedTimes);
                 // Reconstruct it into spacepoints on the device.
                 spacepoints_sycl_buffer =
-                    sf_sycl(device_detector_view, measurements_sycl_buffer);
+                    sf_sycl(detector_buffer, measurements_sycl_buffer);
                 q.wait_and_throw();
             }  // stop measuring clusterization sycl timer
 
@@ -287,7 +284,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 traccc::performance::timer t("Spacepoint formation  (cpu)",
                                              elapsedTimes);
                 spacepoints_per_event =
-                    sf(host_detector, vecmem::get_data(measurements_per_event));
+                    sf(host_det, vecmem::get_data(measurements_per_event));
             }
 
             // SYCL
@@ -327,8 +324,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 traccc::performance::timer timer{"Track finding (sycl)",
                                                  elapsedTimes};
                 track_candidates_sycl_buffer = finding_alg_sycl(
-                    device_detector_view, device_field,
-                    measurements_sycl_buffer, params_sycl_buffer);
+                    detector_buffer, device_field, measurements_sycl_buffer,
+                    params_sycl_buffer);
                 q.wait_and_throw();
             }
 
@@ -337,7 +334,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 traccc::performance::timer timer{"Track finding  (cpu)",
                                                  elapsedTimes};
                 track_candidates =
-                    finding_alg(host_detector, host_field,
+                    finding_alg(host_det, host_field,
                                 vecmem::get_data(measurements_per_event),
                                 vecmem::get_data(params));
             }
@@ -426,8 +423,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
             traccc::event_data evt_data(input_opts.directory, event, host_mr,
                                         input_opts.use_acts_geom_source,
-                                        &host_detector, input_opts.format,
-                                        true);
+                                        &host_det, input_opts.format, true);
 
             sd_performance_writer.write(
                 vecmem::get_data(seeds_sycl),

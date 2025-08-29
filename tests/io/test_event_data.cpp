@@ -42,9 +42,13 @@ TEST(event_data, acts_odd) {
     auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(resource, reader_cfg);
 
+    traccc::host_detector polymorphic_detector;
+    polymorphic_detector.set<traccc::default_detector>(std::move(host_det));
+
     {
         // without cell
-        traccc::event_data evt_data(path, 0u, resource, true, &host_det,
+        traccc::event_data evt_data(path, 0u, resource, true,
+                                    &polymorphic_detector,
                                     traccc::data_format::csv, false);
         EXPECT_EQ(evt_data.m_particle_map.size(), 4515u);
         EXPECT_EQ(evt_data.m_meas_to_ptc_map.size(), 58u);
@@ -52,7 +56,8 @@ TEST(event_data, acts_odd) {
     }
     {
         // with cell
-        traccc::event_data evt_data(path, 0u, resource, true, &host_det,
+        traccc::event_data evt_data(path, 0u, resource, true,
+                                    &polymorphic_detector,
                                     traccc::data_format::csv, true);
         EXPECT_EQ(evt_data.m_particle_map.size(), 4515u);
         EXPECT_EQ(evt_data.m_meas_to_ptc_map.size(), 58u);
@@ -107,7 +112,10 @@ TEST(event_data, mock_data) {
     auto [host_det, names] =
         detray::io::read_detector<host_detector_type>(resource, reader_cfg);
 
-    traccc::event_data evt_data(path, 0u, resource, true, &host_det,
+    traccc::host_detector polymorphic_detector;
+    polymorphic_detector.set<traccc::default_detector>(std::move(host_det));
+
+    traccc::event_data evt_data(path, 0u, resource, true, &polymorphic_detector,
                                 traccc::data_format::csv, true);
 
     // There are three measurements

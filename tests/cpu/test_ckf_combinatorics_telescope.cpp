@@ -9,6 +9,7 @@
 #include "traccc/bfield/construct_const_bfield.hpp"
 #include "traccc/bfield/magnetic_field.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
+#include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_measurements.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
@@ -58,12 +59,16 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
 
     // Read back detector file
     const std::string path = name + "/";
-    detray::io::detector_reader_config reader_cfg{};
-    reader_cfg.add_file(path + "telescope_detector_geometry.json")
-        .add_file(path + "telescope_detector_homogeneous_material.json");
-
-    const auto [host_det, names] =
-        detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
+    traccc::host_detector detector;
+    traccc::io::read_detector(
+        detector, host_mr,
+        std::filesystem::absolute(
+            std::filesystem::path(path + "telescope_detector_geometry.json"))
+            .native(),
+        std::filesystem::absolute(
+            std::filesystem::path(
+                path + "telescope_detector_homogeneous_material.json"))
+            .native());
 
     const auto field = traccc::construct_const_bfield(std::get<13>(GetParam()));
 
@@ -99,7 +104,7 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
     std::filesystem::create_directories(full_path);
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
                                  writer_type>(
-        std::get<6>(GetParam()), n_events, host_det,
+        std::get<6>(GetParam()), n_events, detector.as<detector_traits>(),
         field.as_field<const_bfield_backend_t<traccc::scalar>>(),
         std::move(generator), std::move(smearer_writer_cfg), full_path);
     sim.run();
@@ -109,7 +114,8 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
      *****************************/
 
     // Seed generator
-    seed_generator<host_detector_type> sg(host_det, stddevs);
+    seed_generator<host_detector_type> sg(detector.as<detector_traits>(),
+                                          stddevs);
 
     // Finding algorithm configuration
     traccc::finding_config cfg_no_limit;
@@ -161,10 +167,10 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
 
         // Run finding
         auto track_candidates =
-            host_finding(host_det, field, measurements_view, seeds_view);
+            host_finding(detector, field, measurements_view, seeds_view);
 
         auto track_candidates_limit =
-            host_finding_limit(host_det, field, measurements_view, seeds_view);
+            host_finding_limit(detector, field, measurements_view, seeds_view);
 
         // Make sure that the number of found tracks = n_track ^ (n_planes + 1)
         ASSERT_TRUE(track_candidates.size() > track_candidates_limit.size());
