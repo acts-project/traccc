@@ -27,12 +27,13 @@ struct gbts_ctx {
 
 	//node making
 	unsigned int* d_layerCounts{};
-	unsigned short* d_spacepointsLayer{};
+	short* d_spacepointsLayer{};
 	//begin_idx + 1 for the surfaceToLayerMap or -layerBin if one to one
 	short* d_volumeToLayerMap{};	
 	//surface_id, layerBin
 	uint2* d_surfaceToLayerMap{};
 	char* d_layerIsEndcap{};
+	int* d_original_sp_idx{};
 	
 	//x,y,z,cluster width in eta
 	float4* d_reducedSP{};
@@ -67,10 +68,10 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	unsigned int nThreads = 1024;
 	unsigned int nBlocks = 1+(ctx.nSp-1)/nThreads;
 	
-	cudaMalloc(&ctx.d_layerCounts, m_config.nLayers*sizeof(unsigned int));
-	cudaMemset(ctx.d_layerCounts, 0 ,m_config.nLayers*sizeof(unsigned int));	
+	cudaMalloc(&ctx.d_layerCounts, (m_config.nLayers+1)*sizeof(unsigned int));
+	cudaMemset(ctx.d_layerCounts, 0 , (m_config.nLayers+1)*sizeof(unsigned int));	
 	
-	cudaMalloc(&ctx.d_spacepointsLayer, ctx.nSp*sizeof(unsigned char));	
+	cudaMalloc(&ctx.d_spacepointsLayer, ctx.nSp*sizeof(short));	
 	cudaMalloc(&ctx.d_reducedSP, ctx.nSp*sizeof(float4));	
 	
 	cudaMalloc(&ctx.d_volumeToLayerMap, sizeof(short)*m_config.volumeMapSize);		
@@ -96,17 +97,19 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	//prefix sum layerCounts
 	std::unique_ptr<unsigned int[]> layerCounts = std::make_unique<unsigned int[]>(m_config.nLayers+1);
 
-	cudaMemcpyAsync(layerCounts.get(), ctx.d_layerCounts, m_config.nLayers*sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);	
-	for(int layer = 0; layer<m_config.nLayers; layer++) TRACCC_INFO("layer " << layer << " with " << layerCounts[layer] << "sp");
-	for(int layer = 1; layer<m_config.nLayers; layer++) {
+	cudaMemcpyAsync(layerCounts.get(), ctx.d_layerCounts, (m_config.nLayers+1)*sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);	
+	for(int layer = 0; layer < m_config.nLayers + 1; layer++) TRACCC_INFO("layer " << layer << " with " << layerCounts[layer] << "sp");
+	for(int layer = 1; layer < m_config.nLayers + 1; layer++) {
 		layerCounts[layer] += layerCounts[layer-1];
 	}
-	TRACCC_INFO("sum layer sp " << layerCounts[m_config.nLayers-1]);
+	TRACCC_INFO("sum layer sp " << layerCounts[m_config.nLayers]);
+	TRACCC_INFO(ctx.nSp);
 	cudaMemcpyAsync(ctx.d_layerCounts, layerCounts.get(), m_config.nLayers*sizeof(unsigned int), cudaMemcpyHostToDevice, stream);	
-
+	
 	cudaMalloc(&ctx.d_sp_params, ctx.nSp*sizeof(float4));	
+	cudaMalloc(&ctx.d_original_sp_idx, ctx.nSp*sizeof(int));	
 
-	kernels::bin_sp_by_layer<<<nBlocks, nThreads, 0, stream>>>(ctx.d_sp_params, ctx.d_reducedSP, ctx.d_layerCounts, ctx.d_spacepointsLayer, ctx.nSp);	
+	kernels::bin_sp_by_layer<<<nBlocks, nThreads, 0, stream>>>(ctx.d_sp_params, ctx.d_reducedSP, ctx.d_layerCounts, ctx.d_spacepointsLayer, ctx.d_original_sp_idx, ctx.nSp);	
 
 	cudaFree(ctx.d_reducedSP);
 	cudaFree(ctx.d_spacepointsLayer);
@@ -122,6 +125,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	cudaFree(ctx.d_layerCounts);
 	cudaFree(ctx.d_layerInfo);
 	cudaFree(ctx.d_layerGeo);
+	cudaFree(ctx.d_original_sp_idx);
 
 	//2. Find edges between spacepoint pairs
 

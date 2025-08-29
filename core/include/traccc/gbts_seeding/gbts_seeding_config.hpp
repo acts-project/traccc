@@ -34,16 +34,17 @@ struct gbts_layerInfo {
 		geo.reserve(n);
 	}
 
-	void addLayer(bool isEnd, int firstBin, int nBins, float minEta, float etaBinWidth) {
-		isEndcap.push_back(isEnd);
+	void addLayer(bool isNotPixel, int firstBin, int nBins, float minEta, float etaBinWidth) {
+		isEndcap.push_back(isNotPixel);
 		info.push_back(std::make_pair(nBins, firstBin));
 		geo.push_back(std::make_pair(minEta, etaBinWidth));
 	}
 };
 
 enum class gbts_consts : unsigned short {
-
-	//for GPU seed extraction
+	
+	//shared memory allocation sizes
+	node_buffer_length = 250,
 	shared_state_buffer_size = 578,
 	//matrix access for kalman filter state
 	M3_0_0 = 0, 
@@ -99,7 +100,6 @@ struct gbts_seedfinder_config {
 
 	//graph making maxiums
 	unsigned char max_num_neighbours = 10;
-	unsigned short node_buffer_length = 250;
 	unsigned short max_phi_bin_size = 120;
 	
 	//seed extraction maxiums

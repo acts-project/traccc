@@ -27,19 +27,22 @@ bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, s
 
 	//bin by volume	
 	std::sort(detrayBarcodeBinning.begin(), detrayBarcodeBinning.end(), [](const std::pair<uint64_t, short> a, const std::pair<uint64_t, short> b) {return a.first > b.first;});
-
+	
+	unsigned int maxVol = detray::geometry::barcode(detrayBarcodeBinning[0].first).volume();
+	short current_volume = static_cast<short>(maxVol);
+	
 	bool layerChange     = false;
-	short current_layer  = -1; 
-	short current_volume = -1;	
+	short current_layer  = detrayBarcodeBinning[0].second; 
+	
 	int largest_volume_index = 0;
-	std::vector<std::pair<short, unsigned int>> volumeToLayerMap_unordered;
 	int split_volumes = 0;
+	std::vector<std::pair<short, unsigned int>> volumeToLayerMap_unordered;
+	detrayBarcodeBinning.push_back(std::make_pair(UINT_MAX,-1)); // end-of-vector element
+	std::vector<std::array<unsigned int, 2>> surfacesInVolume;
 	for(std::pair<uint64_t, short> barcodeLayerPair : detrayBarcodeBinning) {
-		std::vector<std::array<unsigned int, 2>> surfacesInVolume;
-			
 		detray::geometry::barcode barcode(barcodeLayerPair.first);
-		if(current_volume == -1) current_volume = static_cast<short>(barcode.volume());		
-		else if(current_volume != static_cast<short>(barcode.volume())) {	
+		if(barcodeLayerPair.second == 10) TRACCC_INFO("hit " << barcode.volume());	
+		if(current_volume != static_cast<short>(barcode.volume())) {	
 			//reached the end of this volume so add it to the maps
 			short bin = current_layer;
 			if(layerChange) {
@@ -49,24 +52,23 @@ bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, s
 			}
 			volumeToLayerMap_unordered.push_back(std::make_pair(bin, current_volume)); // layerIdx if not split, begin-index in the surface map otherwise
 			if(current_volume > largest_volume_index) largest_volume_index = current_volume;
-			current_layer  = -1;
-			current_volume = -1;
+			
+			current_volume = static_cast<short>(barcode.volume());		
+			current_layer = barcodeLayerPair.second;
 			layerChange = false;
 			surfacesInVolume.clear();
 		}
-		
 		//is volume encompassed by a layer
-		if(current_layer == -1) current_layer = barcodeLayerPair.second;		
-		else if(current_layer != barcodeLayerPair.second) {layerChange = true;}	
+		layerChange |= (current_layer != barcodeLayerPair.second);	
 
 		//save surfaces incase volume is not encommpassed by a layer
-		surfacesInVolume.push_back(std::array<unsigned int, 2>{static_cast<unsigned int>(barcode.id()), static_cast<unsigned int>(barcodeLayerPair.second)});
+		surfacesInVolume.push_back(std::array<unsigned int, 2>{static_cast<unsigned int>(barcode.index()), static_cast<unsigned int>(barcodeLayerPair.second)});
 	}
 	// make volume by layer map
 	volumeToLayerMap = std::make_shared<short[]>(largest_volume_index+1);
-	for(int i = 0; i < largest_volume_index; ++i) volumeToLayerMap[i] = SHRT_MAX;
-	for(std::pair<short, unsigned int> vLpair : volumeToLayerMap_unordered) volumeToLayerMap[vLpair.second] = vLpair.first;
-	
+	for(int i = 0; i < largest_volume_index + 1; ++i) volumeToLayerMap[i] = SHRT_MAX;
+	for(std::pair<short, unsigned int> vLpair : volumeToLayerMap_unordered) {TRACCC_INFO(" V " << vLpair.second << " L " << vLpair.first << " "); volumeToLayerMap[vLpair.second] = vLpair.first;}
+	for(std::array<unsigned int, 2> test : surfaceToLayerMap) TRACCC_INFO(test[0] << " <surface layer> " << test[1]);	
 	//scale cuts
 	float ptScale = 900.0f/minPt;
 	min_deltaPhi*=ptScale;
@@ -82,8 +84,8 @@ bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, s
 	
 	TRACCC_INFO("volume layer map has " << volumeToLayerMap_unordered.size() << " volumes");
 	TRACCC_INFO("The maxium volume index in the layer map is " << volumeMapSize);
-	TRACCC_INFO("surface to layer map has " << split_volumes << " multi-layer volumes");
-	TRACCC_INFO("layer info found for" << nLayers << " layers");
+	TRACCC_INFO("surface to layer map has " << surfaceMapSize << " barcodes from " << split_volumes << " multi-layer volumes");
+	TRACCC_INFO("layer info found for " << nLayers << " layers");
 	TRACCC_INFO(binTables.size() << " linked layer-eta bins for GBTS");
 	
 	if(nLayers == 0) {
