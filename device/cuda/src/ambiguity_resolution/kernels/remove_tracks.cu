@@ -26,6 +26,15 @@
 
 namespace traccc::cuda::kernels {
 
+__device__ __forceinline__ uint64_t pack_key(uint32_t meas, uint32_t thr) {
+    return (uint64_t(meas) << 32) | uint64_t(thr);
+}
+__device__ __forceinline__ void unpack_key(uint64_t k, uint32_t& meas,
+                                           uint32_t& thr) {
+    meas = uint32_t(k >> 32);
+    thr = uint32_t(k & 0xFFFFFFFFu);
+}
+
 __device__ void count_tracks(int tid, int* sh_n_meas, int n_tracks,
                              unsigned int& bound, unsigned int& count,
                              bool& stop) {
@@ -81,6 +90,7 @@ __launch_bounds__(512) __global__
     __shared__ int sh_buffer[512];
     __shared__ measurement_id_type sh_meas_ids[512];
     __shared__ unsigned int sh_threads[512];
+    __shared__ uint64_t sh_keys[512];
     __shared__ unsigned int n_meas_total;
     __shared__ unsigned int bound;
     __shared__ unsigned int n_tracks_to_iterate;
@@ -193,32 +203,58 @@ __launch_bounds__(512) __global__
     __syncthreads();
 
     const auto tid = threadIndex;
+    // No early return: out-of-range threads carry a sentinel and only
+    // sync/shuffle.
+    uint64_t key = (tid < N) ? pack_key(sh_meas_ids[tid], sh_threads[tid])
+                             : 0xFFFFFFFFFFFFFFFFull;  // sentinel that won't
+                                                       // affect in-range items
+
     for (int k = 2; k <= N; k <<= 1) {
+        // Inter-warp (j >= 32): use shared + barriers
+        for (int j = (k >> 1); j >= warpSize; j >>= 1) {
+            sh_keys[tid] = key;  // safe: sh_keys sized to blockDim.x
+            __syncthreads();
 
-        bool ascending = ((tid & k) == 0);
+            const int ixj = tid ^ j;
+            // If partner is out-of-range, compare with self (no change).
+            uint64_t other = (ixj < N) ? sh_keys[ixj] : key;
 
-        for (int j = k >> 1; j > 0; j >>= 1) {
-            int ixj = tid ^ j;
+            const bool dir = ((tid & k) == 0);    // ascending segment?
+            const bool lower = ((tid & j) == 0);  // am I lower index?
 
-            if (ixj > tid && ixj < N && tid < N) {
-                auto meas_i = sh_meas_ids[tid];
-                auto meas_j = sh_meas_ids[ixj];
-                auto thread_i = sh_threads[tid];
-                auto thread_j = sh_threads[ixj];
+            const uint64_t mn = (key < other) ? key : other;
+            const uint64_t mx = (key < other) ? other : key;
 
-                bool should_swap =
-                    (meas_i > meas_j ||
-                     (meas_i == meas_j && thread_i > thread_j)) == ascending;
+            key = dir ? (lower ? mn : mx) : (lower ? mx : mn);
 
-                if (should_swap) {
-                    sh_meas_ids[tid] = meas_j;
-                    sh_meas_ids[ixj] = meas_i;
-                    sh_threads[tid] = thread_j;
-                    sh_threads[ixj] = thread_i;
-                }
-            }
             __syncthreads();
         }
+
+        // Intra-warp (j < 32): warp shuffles only; no barriers
+        for (int j = min(k >> 1, warpSize >> 1); j > 0; j >>= 1) {
+            const unsigned mask = 0xFFFFFFFFu;
+            uint64_t other = __shfl_xor_sync(mask, key, j);
+
+            const bool dir = ((tid & k) == 0);
+            const bool lower = ((tid & j) == 0);
+
+            const uint64_t mn = (key < other) ? key : other;
+            const uint64_t mx = (key < other) ? other : key;
+
+            key = dir ? (lower ? mn : mx) : (lower ? mx : mn);
+        }
+
+        // Commit for next inter-warp round visibility
+        sh_keys[tid] = key;
+        __syncthreads();
+    }
+
+    // Write back only in-range threads
+    if (tid < N) {
+        uint32_t meas, thr;
+        unpack_key(key, meas, thr);
+        sh_meas_ids[tid] = meas;
+        sh_threads[tid] = thr;
     }
 
     // Find starting point
