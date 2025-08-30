@@ -36,36 +36,62 @@ __device__ __forceinline__ void unpack_key(uint64_t k, uint32_t& meas,
 }
 
 __device__ void count_tracks(int tid, int* sh_n_meas, int n_tracks,
-                             unsigned int& bound, unsigned int& count,
-                             bool& stop) {
+                             unsigned int& bound, unsigned int& count) {
 
     unsigned int add = 0;
-    unsigned int offset = 0;
-    for (unsigned int stride = 1; stride < (n_tracks - count); stride *= 2) {
-        if ((count + tid + stride) < n_tracks) {
-            sh_n_meas[count + tid] += sh_n_meas[count + tid + stride];
-        }
-        __syncthreads();
 
-        if (sh_n_meas[count] < bound) {
-            if (tid == 0) {
-                offset = sh_n_meas[count];
-                add = stride * 2;
+    // --- Warp-level phase: handle strides < 32 using warp shuffle (no
+    // __syncthreads needed) ---
+    const int lane = threadIdx.x & 31;
+    const unsigned int full_mask = 0xFFFFFFFFu;
+
+    // Load this thread's value into a register if it's in range
+    int v = (tid < n_tracks) ? sh_n_meas[tid] : 0;
+
+    // Mask for active lanes in this warp
+    const unsigned int mask = __ballot_sync(full_mask, tid < n_tracks);
+
+    const int max_stride = min(n_tracks, 32);
+
+    for (int stride = 1; stride < max_stride; stride <<= 1) {
+        // Accumulate neighbor's value via warp shuffle
+        unsigned int other = __shfl_down_sync(mask, v, stride);
+        if (lane + stride < 32 && (tid + stride) < n_tracks) {
+            v += other;
+        }
+
+        // Thread 0 can directly check its register value in the warp phase
+        if (tid == 0) {
+            if (v < bound) {
+                add = stride << 1;
             }
         }
+    }
 
+    // Write warp-phase result back to shared memory
+    if (tid < n_tracks) {
+        sh_n_meas[tid] = static_cast<int>(v);
+    }
+    __syncthreads();
+
+    // --- Block-level phase: handle strides >= 32 (minimal required
+    // synchronizations) ---
+    for (int stride = 32; stride < n_tracks; stride <<= 1) {
+        if ((tid + stride) < n_tracks) {
+            sh_n_meas[tid] += sh_n_meas[tid + stride];
+        }
+        __syncthreads();
+
+        if (tid == 0 && sh_n_meas[0] < bound) {
+            add = stride << 1;
+        }
         __syncthreads();
     }
 
+    // --- Final update ---
     if (tid == 0) {
-        bound -= offset;
         count += add;
-
-        if (add == 0) {
-            stop = true;
-        }
     }
-
     __syncthreads();
 }
 
@@ -96,7 +122,6 @@ __launch_bounds__(512) __global__
     __shared__ unsigned int n_tracks_to_iterate;
     __shared__ unsigned int min_thread;
     __shared__ unsigned int N;
-    __shared__ bool stop;
     __shared__ unsigned int n_updating_threads;
 
     auto threadIndex = threadIdx.x;
@@ -135,7 +160,6 @@ __launch_bounds__(512) __global__
         N = 1;
         n_tracks_to_iterate = 0;
         min_thread = std::numeric_limits<unsigned int>::max();
-        stop = false;
     }
 
     __syncthreads();
@@ -158,26 +182,8 @@ __launch_bounds__(512) __global__
      * Count the number of removable tracks
      ****************************************/
 
-    // @TODO: Improve the logic
     count_tracks(threadIdx.x, sh_buffer, n_tracks_total, bound,
-                 n_tracks_to_iterate, stop);
-    /*
-    for (int i = 0; i < 100; i++) {
-        count_tracks(threadIdx.x, shared_n_meas, n_tracks_total, bound,
-                     n_tracks_to_iterate, stop);
-        __syncthreads();
-        if (stop)
-            break;
-
-        if (gid >= 0 && static_cast<unsigned int>(gid) < sorted_ids.size()) {
-            const auto trk_id = sorted_ids[gid];
-            if (trk_id < n_meas.size()) {
-                shared_n_meas[threadIndex] = n_meas[trk_id];
-            }
-        }
-        __syncthreads();
-    }
-    */
+                 n_tracks_to_iterate);
 
     if (threadIndex == 0 && n_tracks_to_iterate == 0) {
         n_tracks_to_iterate = 1;
