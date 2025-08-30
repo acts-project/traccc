@@ -57,15 +57,14 @@ __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::cons
 			}
 		}
 		else layerIdx = static_cast<unsigned int>(begin_or_bin);
-		
-		float cluster_diameter = measurement.diameter;
-		if(d_layerIsEndcap[layerIdx] == 1) { //get info from sp -> move to before layerIdx map?
-			if(cluster_diameter > 0.2) {
-				spacepointsLayer[spIdx] = -1;
-				continue;
-			}
-			cluster_diameter = -1; //flag for skiping tau range calculation
-		}
+		//get isEndcap from surface?
+		float cluster_diameter = (d_layerIsEndcap[layerIdx] != 1) ? measurement.diameter/10 : -1 -(measurement.diameter > 0.2); 
+		//-1->skip tau range calculation, -2->skip spacepoint
+	
+		if(cluster_diameter == -2) {
+			reducedSP[spIdx].w = -2;
+			continue;
+		}	
 		//count and store x,y,z,cw info
 		atomicAdd(&layerCounts[layerIdx], 1);
 		spacepointsLayer[spIdx] = layerIdx;
@@ -77,8 +76,9 @@ __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::cons
 //layerCounts is prefix sumed on CPU inbetween count_sp_by_layer and this kerenel
 __global__ void bin_sp_by_layer(float4* sp_params ,float4* reducedSP, unsigned int* layerCounts, short* spacepointsLayer, int* original_sp_idx, const unsigned int nSp) {
 	for(int spIdx = threadIdx.x + blockDim.x*blockIdx.x; spIdx<nSp; spIdx += blockDim.x*gridDim.x) {
+		float4 sp = reducedSP[spIdx];
+		if(sp.w == -2) continue;
 		short layerIdx = spacepointsLayer[spIdx];
-		if(layerIdx == -1) continue; 
 		unsigned int binedIdx = atomicSub(&layerCounts[layerIdx], 1) - 1;
 		original_sp_idx[binedIdx] = spIdx;
 		sp_params[binedIdx] = reducedSP[spIdx];
