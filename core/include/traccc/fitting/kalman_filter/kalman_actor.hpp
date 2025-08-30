@@ -54,40 +54,44 @@ struct kalman_actor_state {
     TRACCC_HOST_DEVICE
     typename edm::track_state_collection<algebra_t>::device::proxy_type
     operator()() {
-        if (!backward_mode) {
-            return m_track_states.at(*m_it);
-        } else {
-            return m_track_states.at(*m_it_rev);
-        }
+        return m_track_states.at(m_track.state_indices().at(m_idx));
     }
 
     /// Reset the iterator
     TRACCC_HOST_DEVICE
     void reset() {
-        m_it = m_track.state_indices().begin();
-        m_it_rev = m_track.state_indices().rbegin();
+        if (!backward_mode) {
+            m_idx = 0;
+        } else {
+            m_idx = m_track.state_indices().size() - 1;
+        }
     }
 
     /// Advance the iterator
     TRACCC_HOST_DEVICE
     void next() {
         if (!backward_mode) {
-            m_it++;
+            m_idx++;
         } else {
-            m_it_rev++;
+            m_idx--;
         }
     }
 
     /// @return true if the iterator reaches the end of vector
     TRACCC_HOST_DEVICE
     bool is_complete() {
-        if (!backward_mode && m_it == m_track.state_indices().end()) {
+        if (!backward_mode && m_idx == m_track.state_indices().size()) {
             return true;
-        } else if (backward_mode &&
-                   m_it_rev == m_track.state_indices().rend()) {
+        } else if (backward_mode && m_idx > m_track.state_indices().size()) {
             return true;
         }
         return false;
+    }
+
+    TRACCC_HOST_DEVICE
+    bool is_state() {
+        return m_track.state_indices().at(m_idx) !=
+               std::numeric_limits<unsigned int>::max();
     }
 
     /// Object describing the track fit
@@ -97,11 +101,8 @@ struct kalman_actor_state {
     /// All measurements in the event
     measurement_collection_types::const_device m_measurements;
 
-    /// Iterator for forward filtering over the track states
-    vecmem::device_vector<unsigned int>::iterator m_it;
-
-    /// Iterator for backward filtering over the track states
-    vecmem::device_vector<unsigned int>::reverse_iterator m_it_rev;
+    /// Index of the current track state
+    unsigned int m_idx;
 
     // The number of holes (The number of sensitive surfaces which do not
     // have a measurement for the track pattern)
