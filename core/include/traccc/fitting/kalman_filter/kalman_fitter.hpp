@@ -259,22 +259,23 @@ class kalman_fitter {
             return kalman_fitter_status::ERROR_BARCODE_SEQUENCE_OVERFLOW;
         }
 
-        auto& track = fitter_state.m_fit_actor_state.m_track;
-        auto& track_states = fitter_state.m_fit_actor_state.m_track_states;
+        fitter_state.m_fit_actor_state.backward_mode = true;
+        fitter_state.m_fit_actor_state.reset();
 
         // Since the smoothed track parameter of the last surface can be
         // considered to be the filtered one, we can reversly iterate the
         // algorithm to obtain the smoothed parameter of other surfaces
-        for (auto it = track.state_indices().rbegin();
-             it != track.state_indices().rend(); ++it) {
-            if (!track_states.at(*it).is_hole()) {
-                fitter_state.m_fit_actor_state.m_it_rev = it;
-                break;
-            }
-            // TODO: Return false because there is no valid track state
-            // return false;
+        while (!fitter_state.m_fit_actor_state.is_complete() &&
+               (!fitter_state.m_fit_actor_state.is_state() ||
+                fitter_state.m_fit_actor_state().is_hole())) {
+            fitter_state.m_fit_actor_state.next();
         }
-        auto last = track_states.at(*fitter_state.m_fit_actor_state.m_it_rev);
+
+        if (fitter_state.m_fit_actor_state.is_complete()) {
+            return kalman_fitter_status::SUCCESS;
+        }
+
+        auto last = fitter_state.m_fit_actor_state();
 
         const scalar theta = last.filtered_params().theta();
         if (theta <= 0.f || theta >= constant<traccc::scalar>::pi) {
@@ -322,7 +323,6 @@ class kalman_fitter {
 
         propagation._navigation.set_direction(
             detray::navigation::direction::e_backward);
-        fitter_state.m_fit_actor_state.backward_mode = true;
 
         // Synchronize the current barcode with the input track parameter
         while (propagation._navigation.get_target_barcode() !=
