@@ -18,7 +18,10 @@ namespace traccc::cuda::kernels {
 __launch_bounds__(512) __global__
     void sort_updated_tracks(device::sort_updated_tracks_payload payload) {
 
-    if (*(payload.terminate) == 1 || *(payload.n_updated_tracks) == 0) {
+    const unsigned int terminate = *(payload.terminate);
+    const unsigned int n_updated = *(payload.n_updated_tracks);
+
+    if (terminate == 1 || n_updated == 0 || n_updated == 1) {
         return;
     }
 
@@ -35,14 +38,14 @@ __launch_bounds__(512) __global__
     // Load to shared memory
     shared_mem_tracks[tid] = std::numeric_limits<unsigned int>::max();
 
-    if (tid < *(payload.n_updated_tracks)) {
+    if (tid < n_updated) {
         shared_mem_tracks[tid] = updated_tracks[tid];
     }
 
     __syncthreads();
 
     // Padding the number of tracks to the power of 2
-    const unsigned int N = 1 << (32 - __clz(*(payload.n_updated_tracks) - 1));
+    const unsigned int N = 1 << (32 - __clz(n_updated - 1));
 
     traccc::scalar rel_i;
     traccc::scalar rel_j;
@@ -57,7 +60,7 @@ __launch_bounds__(512) __global__
         for (int j = k >> 1; j > 0; j >>= 1) {
             int ixj = tid ^ j;
 
-            if (ixj > tid && ixj < N && tid < N) {
+            if (ixj > tid && ixj < N) {
                 unsigned int trk_i = shared_mem_tracks[tid];
                 unsigned int trk_j = shared_mem_tracks[ixj];
 
@@ -90,7 +93,7 @@ __launch_bounds__(512) __global__
         }
     }
 
-    if (tid < *(payload.n_updated_tracks)) {
+    if (tid < n_updated) {
         updated_tracks[tid] = shared_mem_tracks[tid];
     }
 }
