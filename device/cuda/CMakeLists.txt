@@ -51,6 +51,7 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "include/traccc/cuda/gbts_seeding/gbts_seeding_algorithm.hpp"
   "src/gbts_seeding/gbts_seeding_algorithm.cu"
   "src/gbts_seeding/kernels/GbtsNodesMakingKernels.cuh"
+  "src/gbts_seeding/kernels/GbtsGraphMakingKernels.cuh"
   # Clusterization
   "include/traccc/cuda/clusterization/clusterization_algorithm.hpp"
   "src/clusterization/clusterization_algorithm.cu"

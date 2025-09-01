@@ -41,7 +41,7 @@ struct gbts_layerInfo {
 	}
 };
 
-enum class gbts_consts : unsigned short {
+enum gbts_consts : unsigned short {
 	
 	//shared memory allocation sizes
 	node_buffer_length = 250,
@@ -57,10 +57,41 @@ enum class gbts_consts : unsigned short {
 	M2_0_0 = 0,
 	M2_0_1 = 1,
 	M2_1_1 = 1,
+	// access into output graph
+	node1 = 0,
+	node2 = 1,
+	nNei = 2,
+	nei_start = 3
 }; 
+
 }
 
 namespace traccc {
+
+struct gbts_algo_params {
+	//edge making cuts
+	float min_delta_phi = 0.015f;
+	float dphi_coeff = 2.2e-4f;
+	float min_delta_phi_low_dr = 0.002f;
+	float dphi_coeff_low_dr = 4.33e-4f;	
+	
+	float minDeltaRadius = 2.0f;
+	
+	float min_z0 = 160.0f;
+	float max_z0 = 160.0f;
+	float maxOuterRadius = 550.0f;
+	float cut_zMinU = min_z0 - maxOuterRadius*36;
+	float cut_zMaxU = max_z0 + maxOuterRadius*36; //how to get ROI dzdr
+	
+	float max_Kappa = 0.337f;
+	float low_Kappa_d0 = 0.02f;
+	float high_Kappa_d0 = 0.1f;
+
+	//edge matching cuts
+	float cut_dphi_max = 0.012f;
+	float cut_dcurv_max = 0.001f;
+	float cut_tau_ratio_max = 0.01f;
+};
 
 struct gbts_seedfinder_config {
 	bool setLinkingScheme(const std::vector<std::pair<int, std::vector<int>>>& binTables, const device::gbts_layerInfo layerInfo,
@@ -69,8 +100,7 @@ struct gbts_seedfinder_config {
 	//layer linking and geometry	
 	std::vector<std::pair<int, int>> binTables{};
 	traccc::device::gbts_layerInfo layerInfo{};
-	unsigned int nLayers = 0;	
-	//could even get away with char for ITk
+	unsigned int nLayers  = 0;	
 	std::shared_ptr<short[]> volumeToLayerMap{};
 	unsigned int volumeMapSize = 0;	
 
@@ -78,29 +108,14 @@ struct gbts_seedfinder_config {
 	unsigned int surfaceMapSize = 0;	
 
 	//tuned for 900 MeV pT cut and scaled by input minPt	
-	//edge making cuts
-	float min_deltaPhi = 0.015f;
-	float dphi_coeff = 2.2e-4f;
-	float min_deltaPhi_low_dr = 0.002f;
-	float dphi_coeff_low_dr = 4.33e-4f;	
-	float minDeltaRadius = 2.0f;
-	float min_z0 = 160.0f;
-	float max_z0 = 160.0f;
-	float maxOuterRadius = 550.0f; //change to 350
-	float cut_zMinU = min_z0 - maxOuterRadius*36;
-	float cut_zMaxU = max_z0 + maxOuterRadius*36; //how to get ROI dzdr
-	float maxKappa = 0.337f;
-	float low_Kappa_d0 = 0.02f;
-	float high_Kappa_d0 = 0.1f;
+	gbts_algo_params algo_params{};	
 
-	//edge matching cuts
-	float cut_dphi_max = 0.012f;
-	float cut_dcurv_max = 0.001f;
-	float cut_tau_ratio_max = 0.01f;
-
+	//node making bin counts
+	int n_eta_bins = 0; //calculated from input binTables	
+	unsigned int n_eta_bin_pairs = 0;
+	unsigned int n_phi_bins = 120;
 	//graph making maxiums
 	unsigned char max_num_neighbours = 10;
-	unsigned short max_phi_bin_size = 120;
 	
 	//seed extraction maxiums
 	unsigned char max_cca_iterations = 20;
