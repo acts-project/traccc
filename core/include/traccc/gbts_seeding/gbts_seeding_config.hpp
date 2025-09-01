@@ -36,7 +36,7 @@ struct gbts_layerInfo {
 
 	void addLayer(bool isNotPixel, int firstBin, int nBins, float minEta, float etaBinWidth) {
 		isEndcap.push_back(isNotPixel);
-		info.push_back(std::make_pair(nBins, firstBin));
+		info.push_back(std::make_pair(firstBin, nBins));
 		geo.push_back(std::make_pair(minEta, etaBinWidth));
 	}
 };
@@ -77,7 +77,7 @@ struct gbts_algo_params {
 	
 	float minDeltaRadius = 2.0f;
 	
-	float min_z0 = 160.0f;
+	float min_z0 = -160.0f;
 	float max_z0 = 160.0f;
 	float maxOuterRadius = 550.0f;
 	float cut_zMinU = min_z0 - maxOuterRadius*36;
@@ -111,8 +111,7 @@ struct gbts_seedfinder_config {
 	gbts_algo_params algo_params{};	
 
 	//node making bin counts
-	int n_eta_bins = 0; //calculated from input binTables	
-	unsigned int n_eta_bin_pairs = 0;
+	int n_eta_bins = 0; //calculated from input layerInfo	
 	unsigned int n_phi_bins = 120;
 	//graph making maxiums
 	unsigned char max_num_neighbours = 10;

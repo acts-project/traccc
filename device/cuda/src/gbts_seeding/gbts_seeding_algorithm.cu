@@ -202,8 +202,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 		TRACCC_ERROR("eta-phi binning: CUDA error: " << cudaGetErrorString(error));
 		return output_seeds;
 	}
-	
-	unsigned int hist_size = static_cast<unsigned int>(sizeof(unsigned int))*m_config.n_eta_bins*m_config.n_phi_bins;
+	size_t hist_size = sizeof(unsigned int)*m_config.n_eta_bins*m_config.n_phi_bins;
 	cudaMalloc(&ctx.d_eta_phi_histo, hist_size);
 	cudaMemset(ctx.d_eta_phi_histo, 0, hist_size); 
 	cudaMalloc(&ctx.d_phi_cusums, hist_size);	
@@ -255,9 +254,9 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	ctx.h_eta_bin_views = std::make_unique<int[]>(2*m_config.n_eta_bins);
 
 	for(int view_idx = 0; view_idx < m_config.n_eta_bins; view_idx++) {
-	   int pos = 2*view_idx;
-	   ctx.h_eta_bin_views[pos]   = (view_idx == 0) ? 0 : eta_sums[view_idx-1];
-	   ctx.h_eta_bin_views[pos+1] = eta_sums[view_idx];
+		int pos = 2*view_idx;
+		ctx.h_eta_bin_views[pos]   = (view_idx == 0) ? 0 : eta_sums[view_idx-1];
+		ctx.h_eta_bin_views[pos+1] = eta_sums[view_idx];
 	} 
 	eta_sums.reset();
 
@@ -271,8 +270,8 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	error = cudaGetLastError();
 
 	if(error != cudaSuccess) {
-	   TRACCC_ERROR("eta-phi cusum: CUDA error: " << cudaGetErrorString(error));
-	   return output_seeds;
+		TRACCC_ERROR("eta-phi cusum: CUDA error: " << cudaGetErrorString(error));
+		return output_seeds;
 	}
 		
 	cudaMalloc(&ctx.d_node_params, 5*sizeof(float)*ctx.nNodes);
@@ -371,7 +370,6 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 			   
 	   float deltaPhi = m_config.algo_params.min_delta_phi + m_config.algo_params.dphi_coeff*maxDeltaR;
 	   if(maxDeltaR < 60) deltaPhi = m_config.algo_params.min_delta_phi_low_dr + m_config.algo_params.dphi_coeff_low_dr*maxDeltaR;
-
 	   //splitting large bins into more consistent sizes
 			   
 	   unsigned int currBegin_bin1 = begin_bin1;
@@ -402,7 +400,8 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	   
 	}
 	ctx.nUsedBinPairs = pairIdx;
-	if(pairIdx == 0) return output_seeds;
+	TRACCC_INFO("used bin pairs " << ctx.nUsedBinPairs);
+	if(ctx.nUsedBinPairs == 0) return output_seeds;
 	ctx.h_eta_bin_views.reset();	
 
 	// allocate memory and copy bin pair views and phi cuts to GPU
@@ -418,16 +417,15 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	cudaMemcpyAsync(&ctx.d_bin_pair_dphi[0], &ctx.h_bin_pair_dphi[0], data_size, cudaMemcpyHostToDevice, stream);
 
 	cudaMalloc(&ctx.d_counters, sizeof(unsigned int)*12);
-	cudaMemset(ctx.d_counters, 0, 12*sizeof(unsigned int));
+	cudaMemset(ctx.d_counters, 0, sizeof(unsigned int)*12);
 
 	cudaStreamSynchronize(stream);
 	
 	//2. Find edges between spacepoint pairs
-	ctx.nMaxEdges = 7*ctx.nNodes;
+	ctx.nMaxEdges = 14*ctx.nNodes; //is 7* need more until cluster width is fixed
 	cudaMalloc(&ctx.d_edge_params, sizeof(kernels::half4)*ctx.nMaxEdges);
 	cudaMalloc(&ctx.d_edge_nodes, sizeof(int2)*ctx.nMaxEdges);
 	cudaMalloc(&ctx.d_num_incoming_edges, sizeof(unsigned int)*(ctx.nNodes+1));
-
 
 	nBlocks = ctx.nUsedBinPairs;
 	nThreads = 128;
@@ -453,7 +451,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 
 	TRACCC_INFO("Created " << ctx.nEdges << " edges under a cap of " << ctx.nMaxEdges);
 	   
-	if(ctx.nEdges >= ctx.nMaxEdges) ctx.nEdges = ctx.nMaxEdges-1;
+	if(ctx.nEdges >= ctx.nMaxEdges) ctx.nEdges = ctx.nMaxEdges;
 	else if(ctx.nEdges == 0) return output_seeds;
 
 	std::unique_ptr<unsigned int[]> cusum = std::make_unique<unsigned int[]>(ctx.nNodes+1);
@@ -465,7 +463,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	cudaStreamSynchronize(stream);
 
 	for(int k=0;k<ctx.nNodes;k++) cusum[k+1] += cusum[k];
-
+	
 	cudaMemcpyAsync(ctx.d_num_incoming_edges, &cusum[0], data_size, cudaMemcpyHostToDevice, stream);
 
 	cusum.reset();
@@ -569,7 +567,6 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	cudaFree(ctx.d_reIndexer);
 	cudaFree(ctx.d_num_neighbours);
 	cudaFree(ctx.d_neighbours);
-	cudaFree(ctx.d_node_index);
 
 	error = cudaGetLastError();
 	if(error != cudaSuccess) {
