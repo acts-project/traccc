@@ -22,7 +22,11 @@ bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, s
 	layerInfo = input_layerInfo;
 	// unroll binTables
 	for(std::pair<int, std::vector<int>> binPairs : input_binTables) {
-		for(int bin2 : binPairs.second) binTables.push_back(std::make_pair(binPairs.first, bin2));
+		n_eta_bins = std::max(n_eta_bins, binPairs.first);  
+		for(int bin2 : binPairs.second) {
+			binTables.push_back(std::make_pair(binPairs.first, bin2));
+			n_eta_bins = std::max(n_eta_bins, bin2);  
+		}
 	}
 
 	//bin by volume	
@@ -71,16 +75,17 @@ bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, s
 	for(std::array<unsigned int, 2> test : surfaceToLayerMap) TRACCC_INFO(test[0] << " <surface layer> " << test[1]);	
 	//scale cuts
 	float ptScale = 900.0f/minPt;
-	min_deltaPhi*=ptScale;
-	dphi_coeff*=ptScale;
-	min_deltaPhi_low_dr*=ptScale;
-	dphi_coeff_low_dr*=ptScale;
-	maxKappa*=ptScale;
+	algo_params.min_delta_phi*=ptScale;
+	algo_params.dphi_coeff*=ptScale;
+	algo_params.min_delta_phi_low_dr*=ptScale;
+	algo_params.dphi_coeff_low_dr*=ptScale;
+	algo_params.max_Kappa*=ptScale;
 
 	//contianers sizes
-	volumeMapSize  = largest_volume_index + 1;
-	nLayers        = layerInfo.isEndcap.size();
-	surfaceMapSize = surfaceToLayerMap.size();
+	volumeMapSize   = largest_volume_index + 1;
+	nLayers         = layerInfo.isEndcap.size();
+	surfaceMapSize  = surfaceToLayerMap.size();
+	n_eta_bin_pairs = binTables.size();	
 	
 	TRACCC_INFO("volume layer map has " << volumeToLayerMap_unordered.size() << " volumes");
 	TRACCC_INFO("The maxium volume index in the layer map is " << volumeMapSize);
@@ -96,7 +101,11 @@ bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, s
 		TRACCC_ERROR("empty volume to layer map");
 		return false;
 	}
-	else if(surfaceMapSize >= SHRT_MAX) { //using SHRT_MAX as no layer code
+	else if(n_eta_bin_pairs == 0) {
+		TRACCC_ERROR("no linked layer-eta bins");
+		return false;
+	}
+	else if(surfaceMapSize >= SHRT_MAX) { //using SHRT_MAX as unused volume code
 		TRACCC_ERROR("surface to layer map is to large");
 		return false;
 	}
