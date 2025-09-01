@@ -56,7 +56,7 @@ __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::cons
 			}
 		}
 		else layerIdx = static_cast<unsigned int>(begin_or_bin);
-		/*float cluster_diameter = (d_layerIsEndcap[layerIdx] != 1) ? measurement.diameter : -1 -(measurement.diameter > 0.2); 
+		/*float cluster_diameter = (d_layerIsEndcap[layerIdx] != 1) ? measurement.diameter : -1 - (measurement.diameter > 0.2); 
 		//-1->skip tau range calculation, -2->skip spacepoint
 	
 		if(cluster_diameter == -2) {
@@ -121,8 +121,8 @@ __global__ void node_eta_binning_kernel(const float4* d_sp_params, const int2* d
 
     if(threadIdx.x == 0) {
         int2 layerInfo     = d_layer_info[layerIdx];
-        num_eta_bins       = layerInfo.x;
-        bin0               = layerInfo.y;
+        bin0               = layerInfo.x;
+        num_eta_bins       = layerInfo.y;
 		layer_begin        = d_layerCounts[layerIdx];
 		layer_end          = d_layerCounts[layerIdx+1];
         float2 layerGeo    = d_layer_geo[layerIdx];
@@ -169,10 +169,8 @@ __global__ void eta_phi_histo_kernel(const int* d_node_phi_index, const int* d_n
        int eta_index = d_node_eta_index[idx];
 
        int histo_bin = d_node_phi_index[idx] + nPhiBins*eta_index;
-
        atomicAdd(&d_eta_phi_histo[histo_bin], 1);
     }
-
 }
 
 __global__ void eta_phi_counting_kernel(const unsigned int* d_histo, unsigned int* d_eta_node_counter, unsigned int* d_phi_cusums, int nBinsPerBlock, int maxEtaBin, unsigned int nPhiBins) {
@@ -188,12 +186,11 @@ __global__ void eta_phi_counting_kernel(const unsigned int* d_histo, unsigned in
     int sum = 0;
 
     for(int phiIdx=0;phiIdx<nPhiBins;phiIdx++) {
-
+		
         d_phi_cusums[offset + phiIdx] = sum;
 
         sum += d_histo[offset + phiIdx];
     }
-
     d_eta_node_counter[eta_bin_idx] = sum;
 }
 
@@ -251,7 +248,7 @@ __global__ void node_sorting_kernel(const float4* d_sp_params, const int* d_node
        d_node_params[o+3] = r;
        d_node_params[o+4] = z;
        d_node_index[pos] = d_original_sp_idx[idx];//keep the original index of the input spacepoint
-
+	   if(min_tau > -99) printf(" what %f %f", min_tau, sp.w);
     }                          
 }
 

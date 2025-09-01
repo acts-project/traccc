@@ -22,12 +22,12 @@ bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, s
 	layerInfo = input_layerInfo;
 	// unroll binTables
 	for(std::pair<int, std::vector<int>> binPairs : input_binTables) {
-		n_eta_bins = std::max(n_eta_bins, binPairs.first);  
 		for(int bin2 : binPairs.second) {
 			binTables.push_back(std::make_pair(binPairs.first, bin2));
-			n_eta_bins = std::max(n_eta_bins, bin2);  
 		}
 	}
+
+	for(std::pair<int, int> lI : layerInfo.info) n_eta_bins = std::max(n_eta_bins, lI.first + lI.second);
 
 	//bin by volume	
 	std::sort(detrayBarcodeBinning.begin(), detrayBarcodeBinning.end(), [](const std::pair<uint64_t, short> a, const std::pair<uint64_t, short> b) {return a.first > b.first;});
@@ -45,7 +45,6 @@ bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, s
 	std::vector<std::array<unsigned int, 2>> surfacesInVolume;
 	for(std::pair<uint64_t, short> barcodeLayerPair : detrayBarcodeBinning) {
 		detray::geometry::barcode barcode(barcodeLayerPair.first);
-		if(barcodeLayerPair.second == 10) TRACCC_INFO("hit " << barcode.volume());	
 		if(current_volume != static_cast<short>(barcode.volume())) {	
 			//reached the end of this volume so add it to the maps
 			short bin = current_layer;
@@ -71,8 +70,7 @@ bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, s
 	// make volume by layer map
 	volumeToLayerMap = std::make_shared<short[]>(largest_volume_index+1);
 	for(int i = 0; i < largest_volume_index + 1; ++i) volumeToLayerMap[i] = SHRT_MAX;
-	for(std::pair<short, unsigned int> vLpair : volumeToLayerMap_unordered) {TRACCC_INFO(" V " << vLpair.second << " L " << vLpair.first << " "); volumeToLayerMap[vLpair.second] = vLpair.first;}
-	for(std::array<unsigned int, 2> test : surfaceToLayerMap) TRACCC_INFO(test[0] << " <surface layer> " << test[1]);	
+	for(std::pair<short, unsigned int> vLpair : volumeToLayerMap_unordered) volumeToLayerMap[vLpair.second] = vLpair.first;
 	//scale cuts
 	float ptScale = 900.0f/minPt;
 	algo_params.min_delta_phi*=ptScale;
@@ -85,7 +83,6 @@ bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, s
 	volumeMapSize   = largest_volume_index + 1;
 	nLayers         = layerInfo.isEndcap.size();
 	surfaceMapSize  = surfaceToLayerMap.size();
-	n_eta_bin_pairs = binTables.size();	
 	
 	TRACCC_INFO("volume layer map has " << volumeToLayerMap_unordered.size() << " volumes");
 	TRACCC_INFO("The maxium volume index in the layer map is " << volumeMapSize);
@@ -99,10 +96,6 @@ bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, s
 	}
 	else if(volumeMapSize == 0) {
 		TRACCC_ERROR("empty volume to layer map");
-		return false;
-	}
-	else if(n_eta_bin_pairs == 0) {
-		TRACCC_ERROR("no linked layer-eta bins");
 		return false;
 	}
 	else if(surfaceMapSize >= SHRT_MAX) { //using SHRT_MAX as unused volume code
