@@ -43,6 +43,8 @@ struct gbts_layerInfo {
 
 enum gbts_consts : unsigned short {
 	
+	//CCA max iterations -> maxium seed length
+	max_cca_iter = 20,
 	//shared memory allocation sizes
 	node_buffer_length = 250,
 	shared_state_buffer_size = 578,
@@ -115,10 +117,8 @@ struct gbts_seedfinder_config {
 	unsigned int n_phi_bins = 120;
 	//graph making maxiums
 	unsigned char max_num_neighbours = 10;
-	
-	//seed extraction maxiums
-	unsigned char max_cca_iterations = 20;
-
+	//graph extraction cuts
+	int minLevel = 3; //equivlent to a cut of #seed edges or #spacepoints-1	
 };
 
 }
