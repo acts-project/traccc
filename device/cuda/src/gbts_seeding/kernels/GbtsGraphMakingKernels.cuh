@@ -50,16 +50,16 @@ __global__ static void graphEdgeMakingKernel(const uint4* d_bin_pair_views, cons
 	__shared__ float low_Kappa_d0;
 	__shared__ float high_Kappa_d0;
 
-    __shared__ float tau_min[traccc::device::gbts_consts::node_buffer_length];
-    __shared__ float tau_max[traccc::device::gbts_consts::node_buffer_length];
-    __shared__ float phi[traccc::device::gbts_consts::node_buffer_length];
-    __shared__ float r[traccc::device::gbts_consts::node_buffer_length];
-    __shared__ float z[traccc::device::gbts_consts::node_buffer_length];
+    __shared__ float tau_min[traccc::device::node_buffer_length];
+    __shared__ float tau_max[traccc::device::node_buffer_length];
+    __shared__ float phi[traccc::device::node_buffer_length];
+    __shared__ float r[traccc::device::node_buffer_length];
+    __shared__ float z[traccc::device::node_buffer_length];
 
     if(threadIdx.x == 0) {
         uint4 views    = d_bin_pair_views[blockIdx.x];
         deltaPhi       = d_bin_pair_dphi[blockIdx.x];
-		 
+        
         begin_bin1     = views.x; 
         begin_bin2     = views.z;
         num_nodes1 = views.y - begin_bin1;
@@ -170,9 +170,10 @@ __global__ static void graphEdgeMakingKernel(const uint4* d_bin_pair_views, cons
             if(zouter < min_zU || zouter > max_zU) continue;
 
             float dphi = phi2 - phi1;
+			//shift dphi by 2pi into [-pi,pi] range
             if(boundary) { 
-				if (dphi < -CUDART_PI_F) dphi += 2.0f * CUDART_PI_F;
-				else if (dphi > CUDART_PI_F) dphi -= 2.0f * CUDART_PI_F;
+				if (dphi < CUDART_PI_F) dphi += 2.0f * CUDART_PI_F;
+				else if (dphi >  CUDART_PI_F) dphi -= 2.0f * CUDART_PI_F;
 			}
 		
             //needed for sliding phi window consistancy
@@ -180,8 +181,7 @@ __global__ static void graphEdgeMakingKernel(const uint4* d_bin_pair_views, cons
 
             float curv = dphi/dr;
             float d0_for_max_curv = r1*r2*(fabsf(curv) - max_kappa);
-            float d0_max = (ftau < 4.0f) ? low_Kappa_d0 : high_Kappa_d0;
-			if(d0_for_max_curv > d0_max) continue;
+            if(d0_for_max_curv > ((ftau < 4.0f) ? low_Kappa_d0 : high_Kappa_d0)) continue;
             
 			int nEdges = atomicAdd(&d_counters[0], 1);
 
@@ -203,6 +203,7 @@ __global__ static void graphEdgeLinkingKernel(const int2* d_edge_nodes, int* d_e
     int n2Idx = d_edge_nodes[edge_idx].y;//global index of n2
 
     unsigned int pos = atomicSub(&d_num_outgoing_edges[n2Idx], 1); //this converts num_outgoing_edges to the start postion for each node in d_edge_links
+	if(pos-1 >= nEdges) printf("howdy %i ", pos-1);
 	d_edge_links[pos-1] = edge_idx; //this edge starts from n2, matching will check edge's n1 and then loop over edges outgoing from that node
 }
 
@@ -248,6 +249,8 @@ __global__ static void graphEdgeMatchingKernel(const gbts_algo_params* d_algo_pa
 
     for(int k=0;k<nLinks;k++) {//loop over potential neighbours
 
+        if (num_nei == nMaxNei-1) break;
+        
         int edge2_idx = d_edge_links[link_begin + k];
         
         half4 params2 = d_edge_params[edge2_idx];
@@ -299,7 +302,7 @@ __global__ void edgeReIndexingKernel(int* d_reIndexer, unsigned int* d_counters,
     d_reIndexer[edge_idx] = atomicAdd(&d_counters[2], 1);
 }
 
-__global__ static void graphCompressionKernel(const int* d_orig_node_index, 
+__global__ static void graphCompressionKernel(float4* d_sp_params, const int* d_orig_node_index, 
                                                   const int2* d_edge_nodes, const unsigned char* d_num_neighbours, const int* d_neighbours, 
                                                   const int* d_reIndexer, int* d_output_graph, int nEdgesPerBlock, int nEdges, int nMaxNei) {
            
@@ -315,15 +318,15 @@ __global__ static void graphCompressionKernel(const int* d_orig_node_index,
         int pos = edge_size*newIdx;
 		int2 edge_nodes = d_edge_nodes[idx];
         int node1_idx = d_orig_node_index[edge_nodes.x];
-        d_output_graph[pos + traccc::device::gbts_consts::node1] = node1_idx;
+        d_output_graph[pos + traccc::device::node1] = node1_idx;
         int node2_idx = d_orig_node_index[edge_nodes.y];
-        d_output_graph[pos + traccc::device::gbts_consts::node2] = node2_idx;
+        d_output_graph[pos + traccc::device::node2] = node2_idx;
 
         unsigned char nNei = d_num_neighbours[idx];
-        d_output_graph[pos + traccc::device::gbts_consts::nNei] = nNei;
+        d_output_graph[pos + traccc::device::nNei] = nNei;
         int nei_pos = nMaxNei*idx;
         for(int k=0;k<nNei;k++) {
-            d_output_graph[pos + traccc::device::gbts_consts::nei_start + k] = d_reIndexer[d_neighbours[nei_pos + k]];
+            d_output_graph[pos + traccc::device::nei_start + k] = d_reIndexer[d_neighbours[nei_pos + k]];
         }   
     }
 }
