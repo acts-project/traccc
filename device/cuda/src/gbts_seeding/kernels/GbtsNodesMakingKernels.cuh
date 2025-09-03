@@ -56,13 +56,14 @@ __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::cons
 			}
 		}
 		else layerIdx = static_cast<unsigned int>(begin_or_bin);
-		/*float cluster_diameter = (d_layerIsEndcap[layerIdx] != 1) ? measurement.diameter : -1 - (measurement.diameter > 0.2); 
+		float cluster_diameter = measurement_diameter/10.0f;
+		cluster_diameter = (d_layerIsEndcap[layerIdx] != 1) ? cluster_diameter : -1 - (cluster_diameter > 0.2); 
 		//-1->skip tau range calculation, -2->skip spacepoint
 	
 		if(cluster_diameter == -2) {
 			reducedSP[spIdx].w = -2;
 			continue;
-		} cluster width not calculated in the same way athena currently */	
+		} //cluster width not calculated in the same way athena currently	
 		//count and store x,y,z,cw info
 		atomicAdd(&d_layerCounts[layerIdx], 1);
 		spacepointsLayer[spIdx] = layerIdx;
@@ -75,7 +76,7 @@ __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::cons
 __global__ void bin_sp_by_layer(float4* sp_params ,float4* reducedSP, unsigned int* layerCounts, short* spacepointsLayer, int* original_sp_idx, const unsigned int nSp) {
 	for(int spIdx = threadIdx.x + blockDim.x*blockIdx.x; spIdx<nSp; spIdx += blockDim.x*gridDim.x) {
 		float4 sp = reducedSP[spIdx];
-		if(sp.w == -2) continue;
+		if(sp.w < -1.5f) continue;
 		short layerIdx = spacepointsLayer[spIdx];
 		unsigned int binedIdx = atomicSub(&layerCounts[layerIdx], 1) - 1;
 		original_sp_idx[binedIdx] = spIdx;
