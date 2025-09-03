@@ -108,7 +108,7 @@ gbts_seeding_algorithm::gbts_seeding_algorithm(const gbts_seedfinder_config& cfg
 gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const traccc::edm::spacepoint_collection::const_view& spacepoints, const traccc::measurement_collection_types::const_view& measurements) const {
 	
     edm::seed_collection::buffer output_seeds(0, m_mr.main, vecmem::data::buffer_type::resizable);
-	m_copy.setup(seed_buffer)->ignore();
+	m_copy.get().setup(output_seeds)->ignore();
 	
 	gbts_ctx ctx;
 
@@ -436,7 +436,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	cudaStreamSynchronize(stream);
 	
 	//2. Find edges between spacepoint pairs
-	ctx.nMaxEdges = 14*ctx.nNodes; //is 7* need more until cluster width is fixed
+	ctx.nMaxEdges = 20*ctx.nNodes; //used 7*
 	cudaMalloc(&ctx.d_edge_params, sizeof(kernels::half4)*ctx.nMaxEdges);
 	cudaMalloc(&ctx.d_edge_nodes, sizeof(int2)*ctx.nMaxEdges);
 	cudaMalloc(&ctx.d_num_incoming_edges, sizeof(unsigned int)*(ctx.nNodes+1));
@@ -465,7 +465,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 
 	TRACCC_INFO("Created " << ctx.nEdges << " edges under a cap of " << ctx.nMaxEdges);
 	   
-	if(ctx.nEdges >= ctx.nMaxEdges) ctx.nEdges = ctx.nMaxEdges;
+	if(ctx.nEdges > ctx.nMaxEdges) ctx.nEdges = ctx.nMaxEdges;
 	else if(ctx.nEdges == 0) return output_seeds;
 
 	std::unique_ptr<unsigned int[]> cusum = std::make_unique<unsigned int[]>(ctx.nNodes+1);
@@ -649,7 +649,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	int SM_count; cudaDeviceGetAttribute(&SM_count, cudaDevAttrMultiProcessorCount, device);
 	int smem; cudaDeviceGetAttribute(&smem, cudaDevAttrMaxSharedMemoryPerMultiprocessor, device);
 
-	nThreads = 928; //448 for two blocks per SM limited by registers
+	nThreads = 1024; //448 for two blocks per SM limited by registers
 
 	nBlocks = 0;
 	int smem_per_block = static_cast<int>(sizeof(kernels::edgeState))*traccc::device::shared_state_buffer_size; 
@@ -711,7 +711,6 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	cudaFree(ctx.d_output_graph);	
 	cudaFree(ctx.d_algo_params);	
 
-	TRACCC_INFO("cast");	
 	cudaMemcpyAsync(&ctx.nSeeds, &ctx.d_counters[9], sizeof(unsigned int) ,cudaMemcpyDeviceToHost, stream);
     if(ctx.nSeeds > nMaxSeeds) ctx.nSeeds = nMaxSeeds;
 		
@@ -735,7 +734,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 		return output_seeds;
 	}
 
-	TRACCC_INFO("GBTS found " << ctx.nSeeds);
+	TRACCC_INFO("GBTS found " << ctx.nSeeds << " seeds");
 
 	return output_seeds;
 }
