@@ -126,8 +126,6 @@ traccc_add_library( traccc_core core TYPE SHARED
   "src/seeding/silicon_pixel_spacepoint_formation.hpp"
   "include/traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
   "src/seeding/silicon_pixel_spacepoint_formation_algorithm.cpp"
-  "src/seeding/silicon_pixel_spacepoint_formation_algorithm_defdet.cpp"
-  "src/seeding/silicon_pixel_spacepoint_formation_algorithm_teldet.cpp"
   #gbts seed finding config
   "include/traccc/gbts_seeding/gbts_seeding_config.hpp"
   "src/gbts_seeding/gbts_seeding_config.cpp"
