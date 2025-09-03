@@ -100,7 +100,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                               detector_opts.grid_file);
 
     const traccc::detector_buffer detector_buffer =
-        traccc::buffer_from_host_detector(host_det, device_mr, host_copy);
+        traccc::buffer_from_host_detector(host_det, device_mr, copy);
 
     // Output stats
     uint64_t n_cells = 0;
