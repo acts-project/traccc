@@ -109,6 +109,10 @@ gbts_seeding_algorithm::gbts_seeding_algorithm(const gbts_seedfinder_config& cfg
                                                : messaging(logger->clone()), m_config(cfg), m_mr(mr), m_copy(copy), m_stream(str) {}
 
 gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const traccc::edm::spacepoint_collection::const_view& spacepoints, const traccc::measurement_collection_types::const_view& measurements) const {
+
+	//empty dummy container for failures or empty events	
+    edm::seed_collection::buffer output_seeds(0, m_mr.main, vecmem::data::buffer_type::resizable);
+	m_copy.get().setup(output_seeds)->ignore();
 	
 	gbts_ctx ctx;
 
@@ -433,11 +437,12 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	cudaStreamSynchronize(stream);
 	
 	//2. Find edges between spacepoint pairs
-	ctx.nMaxEdges = 7*ctx.nNodes;
+	ctx.nMaxEdges = 20*ctx.nNodes; //was 7*nNodes, need more until graph building cuts are fixed
 	cudaMalloc(&ctx.d_edge_params, sizeof(kernels::half4)*ctx.nMaxEdges);
 	cudaMalloc(&ctx.d_edge_nodes, sizeof(int2)*ctx.nMaxEdges);
+	
 	cudaMalloc(&ctx.d_num_incoming_edges, sizeof(unsigned int)*(ctx.nNodes+1));
-	cudaMemset(ctx.d_num_incoming_edges, 0, sizeof(unsigned int)*(ctx.nNodes+1));	
+	cudaMemset(ctx.d_num_incoming_edges, 0, sizeof(unsigned int)*(ctx.nNodes+1));
 
 	nBlocks = ctx.nUsedBinPairs;
 	nThreads = 128;
@@ -464,7 +469,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	TRACCC_INFO("Created " << ctx.nEdges << " edges under a cap of " << ctx.nMaxEdges);
 	   
 	if(ctx.nEdges > ctx.nMaxEdges) ctx.nEdges = ctx.nMaxEdges;
-	else if(ctx.nEdges == 0) return {0, m_mr.main};
+	else if(ctx.nEdges == 0) return output_seeds;
 
 	std::unique_ptr<unsigned int[]> cusum = std::make_unique<unsigned int[]>(ctx.nNodes+1);
 
@@ -473,11 +478,11 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	cudaMemcpyAsync(&cusum[0], ctx.d_num_incoming_edges, data_size, cudaMemcpyDeviceToHost, stream);
 
 	cudaStreamSynchronize(stream);
-
+	
 	for(int k=0;k<ctx.nNodes;k++) cusum[k+1] += cusum[k];
 	
 	cudaMemcpyAsync(ctx.d_num_incoming_edges, &cusum[0], data_size, cudaMemcpyHostToDevice, stream);
-	
+
 	cudaStreamSynchronize(stream);
 	
 	cusum.reset();
@@ -672,7 +677,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	int view_shift = nEdgesByLevel_cuml[0];
 	for(int level = level_max-1; level+1>=m_config.minLevel; level--) {
 		int nRootEdges = (nEdgesByLevel_cuml[level]-nEdgesByLevel_cuml[level_max]);
-			
+		
 		if(nRootEdges == 0) continue;
 		int estimated_nStates = static_cast<int>(std::pow(1.3f, level+1))*nRootEdges;
 		nBlocks += 1 + estimated_nStates/traccc::device::gbts_consts::shared_state_buffer_size;
@@ -715,14 +720,14 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
     
 	//8. convert to 3sp seeds and make output buffer
 	
-    edm::seed_collection::buffer output_seeds(ctx.nSeeds, m_mr.main, vecmem::data::buffer_type::resizable);
-	m_copy.get().setup(output_seeds)->ignore();	
+	output_seeds = edm::seed_collection::buffer(ctx.nSeeds, m_mr.main, vecmem::data::buffer_type::resizable);
+	m_copy.get().setup(output_seeds)->ignore();
 	
 	nThreads = 128;
 	nBlocks = 1 + (ctx.nSeeds-1)/nThreads;
 	
 	kernels::gbts_seed_conversion_kernel<<<nBlocks, nThreads, 0, stream>>>(ctx.d_seeds, output_seeds, ctx.nSeeds);		
-
+	
 	cudaStreamSynchronize(stream);
 	
 	cudaFree(ctx.d_seeds);
@@ -736,6 +741,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	}
 
 	TRACCC_INFO("GBTS found " << ctx.nSeeds << " seeds");
+
 	return output_seeds;
 }
 
