@@ -33,9 +33,11 @@ namespace traccc::details {
 /// @tparam bfield_t The type of magnetic field to use
 ///
 template <typename bfield_t>
-using ckf_stepper_t =
-    detray::rk_stepper<bfield_t, traccc::default_algebra,
-                       detray::constrained_step<traccc::scalar>>;
+using ckf_stepper_t = detray::rk_stepper<
+    bfield_t, traccc::default_algebra, detray::constrained_step<traccc::scalar>,
+    detray::stepper_rk_policy<traccc::scalar>, detray::stepping::void_inspector,
+    static_cast<std::uint32_t>(
+        detray::rk_stepper_flags::e_allow_covariance_transport)>;
 
 /// Interactor used in the Combinatorial Kalman Filter (CKF)
 using ckf_interactor_t =
