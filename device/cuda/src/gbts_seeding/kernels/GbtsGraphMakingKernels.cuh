@@ -203,7 +203,6 @@ __global__ static void graphEdgeLinkingKernel(const int2* d_edge_nodes, int* d_e
     int n2Idx = d_edge_nodes[edge_idx].y;//global index of n2
 
     unsigned int pos = atomicSub(&d_num_outgoing_edges[n2Idx], 1); //this converts num_outgoing_edges to the start postion for each node in d_edge_links
-	if(pos-1 >= nEdges) printf("howdy %i ", pos-1);
 	d_edge_links[pos-1] = edge_idx; //this edge starts from n2, matching will check edge's n1 and then loop over edges outgoing from that node
 }
 
@@ -302,7 +301,7 @@ __global__ void edgeReIndexingKernel(int* d_reIndexer, unsigned int* d_counters,
     d_reIndexer[edge_idx] = atomicAdd(&d_counters[2], 1);
 }
 
-__global__ static void graphCompressionKernel(float4* d_sp_params, const int* d_orig_node_index, 
+__global__ static void graphCompressionKernel(const int* d_orig_node_index, 
                                                   const int2* d_edge_nodes, const unsigned char* d_num_neighbours, const int* d_neighbours, 
                                                   const int* d_reIndexer, int* d_output_graph, int nEdgesPerBlock, int nEdges, int nMaxNei) {
            

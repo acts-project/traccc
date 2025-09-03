@@ -56,7 +56,7 @@ __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::cons
 			}
 		}
 		else layerIdx = static_cast<unsigned int>(begin_or_bin);
-		float cluster_diameter = measurement_diameter/10.0f;
+		float cluster_diameter = measurement.diameter/10.0f;
 		cluster_diameter = (d_layerIsEndcap[layerIdx] != 1) ? cluster_diameter : -1 - (cluster_diameter > 0.2); 
 		//-1->skip tau range calculation, -2->skip spacepoint
 	
