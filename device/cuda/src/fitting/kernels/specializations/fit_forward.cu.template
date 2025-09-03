@@ -6,10 +6,11 @@
  */
 
 // Local include(s).
-#include "../../../utils/magnetic_field_types.hpp"
-#include "fit_forward_src.cuh"
+#include "${SOURCE_DIR}/../../../utils/magnetic_field_types.hpp"
+#include "${SOURCE_DIR}/fit_forward_src.cuh"
 
 // Project include(s).
+#include "traccc/bfield/magnetic_field_types.hpp"
 #include "traccc/fitting/details/kalman_fitting_types.hpp"
 #include "traccc/geometry/detector.hpp"
 
@@ -17,9 +18,10 @@
 #include <covfie/core/field.hpp>
 
 namespace traccc::cuda {
+using scalar = default_detector::device::scalar_type;
 using fitter = traccc::details::kalman_fitter_t<
-    default_detector::device,
-    covfie::field<traccc::cuda::inhom_texture_bfield_backend_t>::view_t>;
+    ${DETECTOR_NAME}::device,
+    covfie::field<${BFIELD_NAME}>::view_t>;
 
 template void fit_forward<fitter>(const dim3& grid_size, const dim3& block_size,
                                   std::size_t shared_mem_size,

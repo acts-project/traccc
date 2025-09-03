@@ -6,10 +6,10 @@
  */
 
 // Local include(s).
-#include "propagate_to_next_surface_src.cuh"
+#include "${SOURCE_DIR}/../../../utils/magnetic_field_types.hpp"
+#include "${SOURCE_DIR}/propagate_to_next_surface_src.cuh"
 
 // Project include(s).
-#include "traccc/bfield/magnetic_field_types.hpp"
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
 #include "traccc/geometry/detector.hpp"
 
@@ -18,9 +18,8 @@
 
 namespace traccc::cuda {
 
-using bfield_t = covfie::field<const_bfield_backend_t<scalar>>::view_t;
-using propagator_t =
-    traccc::details::ckf_propagator_t<telescope_detector::device, bfield_t>;
+using bfield_t = covfie::field<${BFIELD_NAME}>::view_t;
+using propagator_t = traccc::details::ckf_propagator_t<${DETECTOR_NAME}::device, bfield_t>;
 
 template void propagate_to_next_surface<propagator_t, bfield_t>(
     const dim3& grid_size, const dim3& block_size, std::size_t shared_mem_size,
