@@ -71,16 +71,6 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/finding/kernels/build_tracks.cuh"
   "src/finding/kernels/find_tracks.cuh"
   "src/finding/kernels/propagate_to_next_surface.hpp"
-  "src/finding/kernels/specializations/find_tracks_default_detector.cu"
-  "src/finding/kernels/specializations/find_tracks_telescope_detector.cu"
-  "src/finding/kernels/specializations/apply_interaction_default_detector.cu"
-  "src/finding/kernels/specializations/apply_interaction_telescope_detector.cu"
-  "src/finding/kernels/specializations/propagate_to_next_surface_constant_field_default_detector.cu"
-  "src/finding/kernels/specializations/propagate_to_next_surface_constant_field_telescope_detector.cu"
-  "src/finding/kernels/specializations/propagate_to_next_surface_inhomogeneous_global_field_default_detector.cu"
-  "src/finding/kernels/specializations/propagate_to_next_surface_inhomogeneous_global_field_telescope_detector.cu"
-  "src/finding/kernels/specializations/propagate_to_next_surface_inhomogeneous_texture_field_default_detector.cu"
-  "src/finding/kernels/specializations/propagate_to_next_surface_inhomogeneous_texture_field_telescope_detector.cu"
   # Ambiguity resolution
   "include/traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
   "src/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.cu"
@@ -119,19 +109,118 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/fitting/kalman_fitting.cuh"
   "src/fitting/kernels/fill_fitting_sort_keys.cu"
   "src/fitting/kernels/fit_prelude.cu"
-  "src/fitting/kernels/specializations/fit_forward_constant_field_default_detector.cu"
-  "src/fitting/kernels/specializations/fit_forward_constant_field_telescope_detector.cu"
-  "src/fitting/kernels/specializations/fit_forward_inhomogeneous_global_field_default_detector.cu"
-  "src/fitting/kernels/specializations/fit_forward_inhomogeneous_global_field_telescope_detector.cu"
-  "src/fitting/kernels/specializations/fit_forward_inhomogeneous_texture_field_default_detector.cu"
-  "src/fitting/kernels/specializations/fit_forward_inhomogeneous_texture_field_telescope_detector.cu"
-  "src/fitting/kernels/specializations/fit_backward_constant_field_default_detector.cu"
-  "src/fitting/kernels/specializations/fit_backward_constant_field_telescope_detector.cu"
-  "src/fitting/kernels/specializations/fit_backward_inhomogeneous_global_field_default_detector.cu"
-  "src/fitting/kernels/specializations/fit_backward_inhomogeneous_global_field_telescope_detector.cu"
-  "src/fitting/kernels/specializations/fit_backward_inhomogeneous_texture_field_default_detector.cu"
-  "src/fitting/kernels/specializations/fit_backward_inhomogeneous_texture_field_telescope_detector.cu"
 )
+
+set(TRACCC_CUDA_SUPPORTED_BFIELDS "const;inhom_global;inhom_texture")
+
+set(KERNEL_SPECIALIZATION_PY "${PROJECT_SOURCE_DIR}/codegen/kernel_specialization/gen_kernel_specialization.py")
+
+# Generate specializations of find_tracks
+foreach(DETECTOR_NAME ${TRACCC_SUPPORTED_DETECTORS})
+    set(GENERATED_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/src/finding/kernels/specializations/find_tracks_${DETECTOR_NAME}.cu")
+    set(TEMPLATE_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/src/finding/kernels/specializations/find_tracks.cu.template")
+    add_custom_command(
+        OUTPUT "${GENERATED_SOURCE}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/src/finding/kernels/specializations/"
+        COMMAND
+            Python::Interpreter
+            "${KERNEL_SPECIALIZATION_PY}"
+            "${TEMPLATE_SOURCE}"
+            -o "${GENERATED_SOURCE}"
+            --detector "${DETECTOR_NAME}"
+        DEPENDS "${KERNEL_SPECIALIZATION_PY}" "${TEMPLATE_SOURCE}"
+        COMMENT "Generating kernel specialization of `find_tracks` for ${DETECTOR_NAME}"
+    )
+    target_sources(traccc_cuda PRIVATE ${GENERATED_SOURCE})
+endforeach()
+
+# Generate specializations for apply_interaction
+foreach(DETECTOR_NAME ${TRACCC_SUPPORTED_DETECTORS})
+    set(GENERATED_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/src/finding/kernels/specializations/apply_interaction_${DETECTOR_NAME}.cu")
+    set(TEMPLATE_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/src/finding/kernels/specializations/apply_interaction.cu.template")
+    add_custom_command(
+        OUTPUT "${GENERATED_SOURCE}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/src/finding/kernels/specializations/"
+        COMMAND
+            Python::Interpreter
+            "${KERNEL_SPECIALIZATION_PY}"
+            "${TEMPLATE_SOURCE}"
+            -o "${GENERATED_SOURCE}"
+            --detector "${DETECTOR_NAME}"
+        DEPENDS "${KERNEL_SPECIALIZATION_PY}" "${TEMPLATE_SOURCE}"
+        COMMENT "Generating kernel specialization of `apply_interaction` for ${DETECTOR_NAME}"
+    )
+    target_sources(traccc_cuda PRIVATE ${GENERATED_SOURCE})
+endforeach()
+
+# Generate specializations for propagate_to_next_surface
+foreach(DETECTOR_NAME ${TRACCC_SUPPORTED_DETECTORS})
+    foreach(BFIELD_NAME ${TRACCC_CUDA_SUPPORTED_BFIELDS})
+        set(GENERATED_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/src/finding/kernels/specializations/propagate_to_next_surface_${DETECTOR_NAME}_${BFIELD_NAME}.cu")
+        set(TEMPLATE_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/src/finding/kernels/specializations/propagate_to_next_surface.cu.template")
+        add_custom_command(
+            OUTPUT "${GENERATED_SOURCE}"
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/src/finding/kernels/specializations/"
+            COMMAND
+                Python::Interpreter
+                "${KERNEL_SPECIALIZATION_PY}"
+                "${TEMPLATE_SOURCE}"
+                -o "${GENERATED_SOURCE}"
+                --detector "${DETECTOR_NAME}"
+                --bfield "${BFIELD_NAME}"
+                --model cuda
+            DEPENDS "${KERNEL_SPECIALIZATION_PY}" "${TEMPLATE_SOURCE}"
+            COMMENT "Generating kernel specialization of `propagate_to_next_surface` for ${DETECTOR_NAME} and ${BFIELD_NAME}"
+        )
+        target_sources(traccc_cuda PRIVATE ${GENERATED_SOURCE})
+    endforeach()
+endforeach()
+
+# Generate specializations for fit_forward
+foreach(DETECTOR_NAME ${TRACCC_SUPPORTED_DETECTORS})
+    foreach(BFIELD_NAME ${TRACCC_CUDA_SUPPORTED_BFIELDS})
+        set(GENERATED_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/src/fitting/kernels/specializations/fit_forward_${DETECTOR_NAME}_${BFIELD_NAME}.cu")
+        set(TEMPLATE_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/src/fitting/kernels/specializations/fit_forward.cu.template")
+        add_custom_command(
+            OUTPUT "${GENERATED_SOURCE}"
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/src/fitting/kernels/specializations/"
+            COMMAND
+                Python::Interpreter
+                "${KERNEL_SPECIALIZATION_PY}"
+                "${TEMPLATE_SOURCE}"
+                -o "${GENERATED_SOURCE}"
+                --detector "${DETECTOR_NAME}"
+                --bfield "${BFIELD_NAME}"
+                --model cuda
+            DEPENDS "${KERNEL_SPECIALIZATION_PY}" "${TEMPLATE_SOURCE}"
+            COMMENT "Generating kernel specialization of `fit_forward` for ${DETECTOR_NAME} and ${BFIELD_NAME}"
+        )
+        target_sources(traccc_cuda PRIVATE ${GENERATED_SOURCE})
+    endforeach()
+endforeach()
+
+# Generate specializations for fit_backward
+foreach(DETECTOR_NAME ${TRACCC_SUPPORTED_DETECTORS})
+    foreach(BFIELD_NAME ${TRACCC_CUDA_SUPPORTED_BFIELDS})
+        set(GENERATED_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/src/fitting/kernels/specializations/fit_backward_${DETECTOR_NAME}_${BFIELD_NAME}.cu")
+        set(TEMPLATE_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/src/fitting/kernels/specializations/fit_backward.cu.template")
+        add_custom_command(
+            OUTPUT "${GENERATED_SOURCE}"
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/src/fitting/kernels/specializations/"
+            COMMAND
+                Python::Interpreter
+                "${KERNEL_SPECIALIZATION_PY}"
+                "${TEMPLATE_SOURCE}"
+                -o "${GENERATED_SOURCE}"
+                --detector "${DETECTOR_NAME}"
+                --bfield "${BFIELD_NAME}"
+                --model cuda
+            DEPENDS "${KERNEL_SPECIALIZATION_PY}" "${TEMPLATE_SOURCE}"
+            COMMENT "Generating kernel specialization of `fit_backward` for ${DETECTOR_NAME} and ${BFIELD_NAME}"
+        )
+        target_sources(traccc_cuda PRIVATE ${GENERATED_SOURCE})
+    endforeach()
+endforeach()
 
 if(TRACCC_ENABLE_NVTX_PROFILING)
     traccc_add_library(

@@ -85,6 +85,11 @@ if(${TRACCC_BUILD_HIP} AND ${CMAKE_HIP_STANDARD} LESS 20)
    message(SEND_ERROR "CMAKE_HIP_STANDARD=${CMAKE_HIP_STANDARD}, but traccc requires C++>=20")
 endif()
 
+# In order to generate specializations for our kernels, we need to have both
+# a working Python interpreter, and a list of supported detectors.
+find_package (Python COMPONENTS Interpreter REQUIRED)
+set(TRACCC_SUPPORTED_DETECTORS "default_detector;telescope_detector;toy_detector")
+
 # Set up build profiling for the project.
 if( CTEST_USE_LAUNCHERS )
 
