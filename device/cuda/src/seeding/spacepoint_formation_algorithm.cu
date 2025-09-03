@@ -7,6 +7,7 @@
 
 // Local include(s).
 #include "../utils/cuda_error_handling.hpp"
+#include "../utils/get_size.hpp"
 #include "../utils/global_index.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
@@ -41,9 +42,16 @@ edm::spacepoint_collection::buffer spacepoint_formation_algorithm::operator()(
     const detector_buffer& detector,
     const measurement_collection_types::const_view& measurements_view) const {
 
+    // Get a convenience variable for the stream that we'll be using.
+    cudaStream_t stream = details::get_stream(m_stream);
+
+    // Staging area for copying sizes from device to host
+    vecmem::unique_alloc_ptr<unsigned int> size_staging_ptr =
+        vecmem::make_unique_alloc<unsigned int>(*(m_mr.host));
+
     // Get the number of measurements.
     const measurement_collection_types::const_view::size_type num_measurements =
-        m_copy.get().get_size(measurements_view);
+        get_size(measurements_view, size_staging_ptr.get(), stream);
 
     // Create the result buffer.
     edm::spacepoint_collection::buffer spacepoints(
@@ -54,9 +62,6 @@ edm::spacepoint_collection::buffer spacepoint_formation_algorithm::operator()(
     if (num_measurements == 0) {
         return spacepoints;
     }
-
-    // Get a convenience variable for the stream that we'll be using.
-    cudaStream_t stream = details::get_stream(m_stream);
 
     // Launch parameters for the kernel.
     const unsigned int blockSize = 256;
