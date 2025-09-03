@@ -440,6 +440,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	cudaMalloc(&ctx.d_edge_params, sizeof(kernels::half4)*ctx.nMaxEdges);
 	cudaMalloc(&ctx.d_edge_nodes, sizeof(int2)*ctx.nMaxEdges);
 	cudaMalloc(&ctx.d_num_incoming_edges, sizeof(unsigned int)*(ctx.nNodes+1));
+	cudaMemset(ctx.d_num_incoming_edges, 0, sizeof(unsigned int)*(ctx.nNodes+1));	
 
 	nBlocks = ctx.nUsedBinPairs;
 	nThreads = 128;
@@ -479,10 +480,10 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	for(int k=0;k<ctx.nNodes;k++) cusum[k+1] += cusum[k];
 	
 	cudaMemcpyAsync(ctx.d_num_incoming_edges, &cusum[0], data_size, cudaMemcpyHostToDevice, stream);
-
-	cusum.reset();
-
+	
 	cudaStreamSynchronize(stream);
+	
+	cusum.reset();
 
 	//3. link edges and nodes
 
@@ -571,7 +572,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 
 	nBlocks = 1 + (ctx.nEdges-1)/nEdgesPerBlock;
 	   
-	kernels::graphCompressionKernel<<<nBlocks, nThreads, 0, stream>>>(ctx.d_sp_params, ctx.d_node_index, 
+	kernels::graphCompressionKernel<<<nBlocks, nThreads, 0, stream>>>(ctx.d_node_index, 
 																ctx.d_edge_nodes, ctx.d_num_neighbours, ctx.d_neighbours,
 																ctx.d_reIndexer, ctx.d_output_graph, nEdgesPerBlock, ctx.nEdges, m_config.max_num_neighbours);
 
@@ -717,14 +718,16 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	//8. convert to 3sp seeds and make output buffer
 	
 	output_seeds = edm::seed_collection::buffer(ctx.nSeeds, m_mr.main, vecmem::data::buffer_type::resizable);
+	m_copy.get().setup(output_seeds)->ignore();	
+	
 	nThreads = 128;
 	nBlocks = 1 + (ctx.nSeeds-1)/nThreads;
 	
-	kernels::convert_gbts_seeds<<<nBlocks, nThreads, 0, stream>>>(ctx.d_seeds, output_seeds, ctx.nSeeds);		
+	kernels::gbts_seed_conversion_kernel<<<nBlocks, nThreads, 0, stream>>>(ctx.d_seeds, output_seeds, ctx.nSeeds);		
 	
 	cudaStreamSynchronize(stream);
 	
-	cudaFree(d_seeds);
+	cudaFree(ctx.d_seeds);
 	cudaFree(ctx.d_counters);
 
 	error = cudaGetLastError();
