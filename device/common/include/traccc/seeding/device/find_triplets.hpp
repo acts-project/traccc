@@ -49,6 +49,8 @@ inline void find_triplets(
     const device_doublet_collection_types::const_view& mid_top_doublet_view,
     const triplet_counter_spM_collection_types::const_view& spM_tc_view,
     const triplet_counter_collection_types::const_view& tc_view,
+    vecmem::data::vector_view<const lin_circle> mid_bot_circle_view,
+    vecmem::data::vector_view<const lin_circle> mid_top_circle_view,
     device_triplet_collection_types::view triplet_view);
 
 }  // namespace traccc::device
