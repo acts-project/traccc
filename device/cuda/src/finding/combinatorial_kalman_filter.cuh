@@ -11,6 +11,7 @@
 #include "../sanity/contiguous_on.cuh"
 #include "../utils/barrier.hpp"
 #include "../utils/cuda_error_handling.hpp"
+#include "../utils/get_size.hpp"
 #include "../utils/thread_id.hpp"
 #include "../utils/utils.hpp"
 #include "./kernels/apply_interaction.hpp"
@@ -90,6 +91,9 @@ combinatorial_kalman_filter(
 
     /// Access the underlying CUDA stream.
     cudaStream_t stream = get_stream(str);
+
+    vecmem::unique_alloc_ptr<unsigned int> size_staging_ptr =
+        vecmem::make_unique_alloc<unsigned int>(*(mr.host));
 
     /// Thrust policy to use.
     auto thrust_policy =
@@ -231,7 +235,7 @@ combinatorial_kalman_filter(
         // Reset the number of tracks per seed
         copy.memset(n_tracks_per_seed_buffer, 0)->ignore();
 
-        const unsigned int links_size = copy.get_size(links_buffer);
+        const unsigned int links_size = step_to_link_idx_map[step];
 
         if (links_size + n_max_candidates > link_buffer_capacity) {
             const unsigned int new_link_buffer_capacity = std::max(
@@ -302,9 +306,13 @@ combinatorial_kalman_filter(
             std::swap(in_params_buffer, updated_params_buffer);
             std::swap(param_liveness_buffer, updated_liveness_buffer);
 
+            TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
+                size_staging_ptr.get(), links_buffer.size_ptr(),
+                sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
+
             str.synchronize();
 
-            step_to_link_idx_map[step + 1] = copy.get_size(links_buffer);
+            step_to_link_idx_map[step + 1] = *size_staging_ptr;
             n_candidates =
                 step_to_link_idx_map[step + 1] - step_to_link_idx_map[step];
         }
@@ -464,9 +472,9 @@ combinatorial_kalman_filter(
      *****************************************************************/
 
     // Get the number of tips
-    auto n_tips_total = copy.get_size(tips_buffer);
+    auto n_tips_total = get_size(tips_buffer, size_staging_ptr.get(), stream);
 
-    std::vector<unsigned int> tips_length_host;
+    vecmem::vector<unsigned int> tips_length_host(mr.host);
 
     if (n_tips_total > 0) {
         copy(tip_length_buffer, tips_length_host)->wait();

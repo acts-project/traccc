@@ -169,6 +169,10 @@ edm::seed_collection::buffer seed_finding::operator()(
     const edm::spacepoint_collection::const_view& spacepoints_view,
     const traccc::details::spacepoint_grid_types::const_view& g2_view) const {
 
+    // Pointer to stage device-to-host copies for container sizes
+    vecmem::unique_alloc_ptr<unsigned int> size_staging_ptr =
+        vecmem::make_unique_alloc<unsigned int>(*(m_mr.host));
+
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
 
@@ -212,6 +216,11 @@ edm::seed_collection::buffer seed_finding::operator()(
         (*globalCounter_device).m_nMidTop);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
+    // Transfer the doublet count to the host.
+    TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
+        size_staging_ptr.get(), doublet_counter_buffer.size_ptr(),
+        sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
+
     // Get the summary values.
     vecmem::unique_alloc_ptr<device::seeding_global_counter>
         globalCounter_host =
@@ -239,8 +248,7 @@ edm::seed_collection::buffer seed_finding::operator()(
     // Calculate the number of threads and thread blocks to run the doublet
     // finding kernel for.
     const unsigned int nDoubletFindThreads = m_warp_size * 2;
-    const unsigned int doublet_counter_buffer_size =
-        m_copy.get_size(doublet_counter_buffer);
+    const unsigned int doublet_counter_buffer_size = *size_staging_ptr;
     const unsigned int nDoubletFindBlocks =
         (doublet_counter_buffer_size + nDoubletFindThreads - 1) /
         nDoubletFindThreads;
@@ -296,6 +304,9 @@ edm::seed_collection::buffer seed_finding::operator()(
         cudaMemcpyAsync(globalCounter_host.get(), globalCounter_device.get(),
                         sizeof(device::seeding_global_counter),
                         cudaMemcpyDeviceToHost, stream));
+    TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
+        size_staging_ptr.get(), triplet_counter_midBot_buffer.size_ptr(),
+        sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
     m_stream.synchronize();
 
     if (globalCounter_host->m_nTriplets == 0) {
@@ -311,9 +322,7 @@ edm::seed_collection::buffer seed_finding::operator()(
     // finding kernel for.
     const unsigned int nTripletFindThreads = m_warp_size * 2;
     const unsigned int nTripletFindBlocks =
-        (m_copy.get_size(triplet_counter_midBot_buffer) + nTripletFindThreads -
-         1) /
-        nTripletFindThreads;
+        (*size_staging_ptr + nTripletFindThreads - 1) / nTripletFindThreads;
 
     // Find all of the spacepoint triplets.
     kernels::

@@ -14,6 +14,7 @@
 
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
+#include <vecmem/memory/cuda/host_memory_resource.hpp>
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
@@ -27,7 +28,8 @@ TEST(CUDASpacepointFormation, cuda) {
 
     // Memory resource used by the EDM.
     vecmem::cuda::managed_memory_resource mng_mr;
-    traccc::memory_resource mr{mng_mr};
+    vecmem::cuda::host_memory_resource host_mr;
+    traccc::memory_resource mr{mng_mr, &host_mr};
 
     // Cuda stream
     traccc::cuda::stream stream;

@@ -6,6 +6,8 @@
  */
 
 // Library include(s).
+#include "../utils/cuda_error_handling.hpp"
+#include "../utils/get_size.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/clusterization/measurement_sorting_algorithm.hpp"
 
@@ -28,11 +30,13 @@ measurement_sorting_algorithm::operator()(
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
 
-    // Get the number of measurements. This is necessary because the input
-    // container may not be fixed sized. And we can't give invalid pointers /
-    // iterators to Thrust.
+    // Staging area for copying sizes from device to host
+    vecmem::unique_alloc_ptr<unsigned int> size_staging_ptr =
+        vecmem::make_unique_alloc<unsigned int>(*(m_mr.host));
+
+    // Copy the number of measurements to the host
     const measurement_collection_types::view::size_type n_measurements =
-        m_copy.get().get_size(measurements_view);
+        get_size(measurements_view, size_staging_ptr.get(), stream);
 
     // Sort the measurements in place
     thrust::sort(

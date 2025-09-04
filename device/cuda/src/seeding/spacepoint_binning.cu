@@ -7,6 +7,7 @@
 
 // Local include(s).
 #include "../utils/cuda_error_handling.hpp"
+#include "../utils/get_size.hpp"
 #include "../utils/global_index.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/seeding/details/spacepoint_binning.hpp"
@@ -64,8 +65,13 @@ traccc::details::spacepoint_grid_types::buffer spacepoint_binning::operator()(
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
 
+    // Staging area for copying sizes from device to host
+    vecmem::unique_alloc_ptr<unsigned int> size_staging_ptr =
+        vecmem::make_unique_alloc<unsigned int>(*(m_mr.host));
+
     // Get the spacepoint sizes from the view
-    const auto sp_size = m_copy.get_size(spacepoints_view);
+    const auto sp_size =
+        get_size(spacepoints_view, size_staging_ptr.get(), stream);
 
     if (sp_size == 0) {
         return {m_axes.first, m_axes.second, {}, m_mr.main, m_mr.host};
