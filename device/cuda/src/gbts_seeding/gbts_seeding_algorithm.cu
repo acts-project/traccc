@@ -369,7 +369,6 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 
 	int pairIdx = 0;
 	for(std::pair<int, int> binPair : m_config.binTables) {
-	   
 	   float rb1 = ctx.h_bin_rads[2*binPair.first];//min radius
 
 	   unsigned int begin_bin1 = ctx.h_eta_bin_views[2*binPair.first];
@@ -414,13 +413,11 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	   
 	}
 	ctx.nUsedBinPairs = pairIdx;
-	TRACCC_INFO("used bin pairs " << ctx.nUsedBinPairs);
 	if(ctx.nUsedBinPairs == 0) return output_seeds;
 	ctx.h_eta_bin_views.reset();	
-
 	// allocate memory and copy bin pair views and phi cuts to GPU
 
-	size_t data_size = ctx.nUsedBinPairs*4*sizeof(unsigned int);
+	size_t data_size = ctx.nUsedBinPairs*sizeof(uint4);
 	   
 	cudaMalloc(&ctx.d_bin_pair_views, data_size);
 	cudaMemcpyAsync(&ctx.d_bin_pair_views[0], &ctx.h_bin_pair_views[0], data_size, cudaMemcpyHostToDevice, stream);
@@ -436,7 +433,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	cudaStreamSynchronize(stream);
 	
 	//2. Find edges between spacepoint pairs
-	ctx.nMaxEdges = 20*ctx.nNodes; //used 7*
+	ctx.nMaxEdges = 20*ctx.nNodes; //used to be 7*
 	cudaMalloc(&ctx.d_edge_params, sizeof(kernels::half4)*ctx.nMaxEdges);
 	cudaMalloc(&ctx.d_edge_nodes, sizeof(int2)*ctx.nMaxEdges);
 	cudaMalloc(&ctx.d_num_incoming_edges, sizeof(unsigned int)*(ctx.nNodes+1));

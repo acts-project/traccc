@@ -57,18 +57,16 @@ __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::cons
 		}
 		else layerIdx = static_cast<unsigned int>(begin_or_bin);
 		float cluster_diameter = measurement.diameter/10.0f;
-		cluster_diameter = (d_layerIsEndcap[layerIdx] != 1) ? cluster_diameter : -1 - (cluster_diameter > 0.2); 
-		//-1->skip tau range calculation, -2->skip spacepoint
-	
-		if(cluster_diameter == -2) {
+		cluster_diameter = (d_layerIsEndcap[layerIdx] == 1) ? -1 - (cluster_diameter > 0.2) : cluster_diameter; 
+		if(cluster_diameter == -2) { 
 			reducedSP[spIdx].w = -2;
 			continue;
-		} //cluster width not calculated in the same way athena currently	
+		} //-1 to skip cot(theta) prediction, -2 to skip spacepoint entirly	
 		//count and store x,y,z,cw info
 		atomicAdd(&d_layerCounts[layerIdx], 1);
 		spacepointsLayer[spIdx] = layerIdx;
 		const traccc::point3 pos = spacepoint.global();
-		reducedSP[spIdx] = make_float4(pos[0], pos[1], pos[2], -1);//cluster_diameter);
+		reducedSP[spIdx] = make_float4(pos[0], pos[1], pos[2], -1);//cluster_diameter is calculated diffrently in traccc vs athena so turn off for now;
 	}
 }
 
@@ -76,7 +74,7 @@ __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::cons
 __global__ void bin_sp_by_layer(float4* sp_params ,float4* reducedSP, unsigned int* layerCounts, short* spacepointsLayer, int* original_sp_idx, const unsigned int nSp) {
 	for(int spIdx = threadIdx.x + blockDim.x*blockIdx.x; spIdx<nSp; spIdx += blockDim.x*gridDim.x) {
 		float4 sp = reducedSP[spIdx];
-		if(sp.w < -1.5f) continue;
+		if(sp.w == -2) continue;
 		short layerIdx = spacepointsLayer[spIdx];
 		unsigned int binedIdx = atomicSub(&layerCounts[layerIdx], 1) - 1;
 		original_sp_idx[binedIdx] = spIdx;
@@ -249,7 +247,6 @@ __global__ void node_sorting_kernel(const float4* d_sp_params, const int* d_node
        d_node_params[o+3] = r;
        d_node_params[o+4] = z;
        d_node_index[pos] = d_original_sp_idx[idx];//keep the original index of the input spacepoint
-	   if(min_tau > -99) printf(" what %f %f", min_tau, sp.w);
     }                          
 }
 
