@@ -79,15 +79,15 @@ struct gbts_algo_params {
 	
 	float minDeltaRadius = 2.0f;
 	
-	float min_z0 = -160.0f;
-	float max_z0 = 160.0f;
+	float min_z0 = -150.0f;
+	float max_z0 = 150.0f;
 	float maxOuterRadius = 550.0f;
-	float cut_zMinU = min_z0 - maxOuterRadius*36;
-	float cut_zMaxU = max_z0 + maxOuterRadius*36; //how to get ROI dzdr
+	float cut_zMinU = min_z0 - maxOuterRadius*45;
+	float cut_zMaxU = max_z0 + maxOuterRadius*45; //how to get ROI dzdr
 	
-	float max_Kappa = 0.337f;
-	float low_Kappa_d0 = 0.02f;
-	float high_Kappa_d0 = 0.1f;
+	float max_Kappa = 3.74e-4f;
+	float low_Kappa_d0 = 0.2f;
+	float high_Kappa_d0 = 1.0f;
 
 	//edge matching cuts
 	float cut_dphi_max = 0.012f;

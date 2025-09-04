@@ -59,7 +59,7 @@ __global__ static void graphEdgeMakingKernel(const uint4* d_bin_pair_views, cons
     if(threadIdx.x == 0) {
         uint4 views    = d_bin_pair_views[blockIdx.x];
         deltaPhi       = d_bin_pair_dphi[blockIdx.x];
-        
+		 
         begin_bin1     = views.x; 
         begin_bin2     = views.z;
         num_nodes1 = views.y - begin_bin1;
@@ -170,10 +170,9 @@ __global__ static void graphEdgeMakingKernel(const uint4* d_bin_pair_views, cons
             if(zouter < min_zU || zouter > max_zU) continue;
 
             float dphi = phi2 - phi1;
-			//shift dphi by 2pi into [-pi,pi] range
             if(boundary) { 
-				if (dphi < CUDART_PI_F) dphi += 2.0f * CUDART_PI_F;
-				else if (dphi >  CUDART_PI_F) dphi -= 2.0f * CUDART_PI_F;
+				if (dphi < -CUDART_PI_F) dphi += 2.0f * CUDART_PI_F;
+				else if (dphi > CUDART_PI_F) dphi -= 2.0f * CUDART_PI_F;
 			}
 		
             //needed for sliding phi window consistancy
@@ -181,7 +180,8 @@ __global__ static void graphEdgeMakingKernel(const uint4* d_bin_pair_views, cons
 
             float curv = dphi/dr;
             float d0_for_max_curv = r1*r2*(fabsf(curv) - max_kappa);
-            if(d0_for_max_curv > ((ftau < 4.0f) ? low_Kappa_d0 : high_Kappa_d0)) continue;
+            float d0_max = (ftau < 4.0f) ? low_Kappa_d0 : high_Kappa_d0;
+			if(d0_for_max_curv > d0_max) continue;
             
 			int nEdges = atomicAdd(&d_counters[0], 1);
 
@@ -248,7 +248,7 @@ __global__ static void graphEdgeMatchingKernel(const gbts_algo_params* d_algo_pa
 
     for(int k=0;k<nLinks;k++) {//loop over potential neighbours
 
-        if (num_nei == nMaxNei-1) break;
+        if (num_nei == nMaxNei-1) {printf("hit max"); break;}
         
         int edge2_idx = d_edge_links[link_begin + k];
         
