@@ -27,8 +27,13 @@ namespace traccc::details {
 ///
 template <typename detector_t, typename bfield_t>
 using kalman_fitter_t = kalman_fitter<
-    detray::rk_stepper<bfield_t, typename detector_t::algebra_type,
-                       detray::constrained_step<traccc::scalar>>,
+    detray::rk_stepper<
+        bfield_t, typename detector_t::algebra_type,
+        detray::constrained_step<traccc::scalar>,
+        detray::stepper_rk_policy<traccc::scalar>,
+        detray::stepping::void_inspector,
+        static_cast<std::uint32_t>(
+            detray::rk_stepper_flags::e_allow_covariance_transport)>,
     detray::navigator<std::add_const_t<detector_t>>>;
 
 }  // namespace traccc::details
