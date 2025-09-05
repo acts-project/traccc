@@ -110,7 +110,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
          * If we cannot find any corresponding measurements, set the number of
          * measurements to zero.
          */
-        if (lo == barcodes.end()) {
+        if (lo == barcodes.end() || *lo != bcd) {
             init_meas = 0;
         }
         /*
