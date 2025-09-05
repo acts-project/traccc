@@ -67,6 +67,7 @@ inline void select_seeds(
     const triplet_counter_spM_collection_types::const_view& spM_tc_view,
     const triplet_counter_collection_types::const_view& tc_view,
     const device_triplet_collection_types::const_view& triplet_view,
+    const vecmem::data::vector_view<const unsigned int> num_confirmations_view,
     device_triplet* data, edm::seed_collection::view seed_view) {
 
     // Check if anything needs to be done.
@@ -85,6 +86,8 @@ inline void select_seeds(
         sp_view);
 
     const device_triplet_collection_types::const_device triplets(triplet_view);
+    const vecmem::device_vector<const unsigned int> num_confirmations(
+        num_confirmations_view);
     edm::seed_collection::device seeds_device(seed_view);
 
     // Current work item = middle spacepoint
@@ -99,6 +102,14 @@ inline void select_seeds(
 
     const unsigned int end_triplets_spM =
         spM_counter.posTriplets + spM_counter.m_nTriplets;
+
+    unsigned int max_num_confirmations = 0;
+
+    for (unsigned int i = spM_counter.posTriplets; i < end_triplets_spM; ++i) {
+        max_num_confirmations =
+            std::max(max_num_confirmations, num_confirmations.at(i));
+    }
+
     // iterate over the triplets in the bin
     for (unsigned int i = spM_counter.posTriplets; i < end_triplets_spM; ++i) {
         device_triplet aTriplet = triplets[i];
@@ -111,9 +122,18 @@ inline void select_seeds(
         const edm::spacepoint_collection::const_device::const_proxy_type spT =
             spacepoints.at(spT_idx);
 
+        if (num_confirmations.at(i) + 1 < max_num_confirmations) {
+            continue;
+        }
+
         // update weight of triplet
         seed_selecting_helper::seed_weight(filter_config, spM, spB, spT,
                                            aTriplet.weight);
+
+        aTriplet.weight +=
+            static_cast<scalar>(std::min(num_confirmations.at(i),
+                                         filter_config.compatSeedLimit)) *
+            filter_config.compatSeedWeight;
 
         // check if it is a good triplet
         if (!seed_selecting_helper::single_seed_cut(filter_config, spM, spB,
@@ -165,15 +185,15 @@ inline void select_seeds(
             break;
         }
 
-        // check if it is a good triplet
-        if (seed_selecting_helper::cut_per_middle_sp(
-                filter_config, spacepoints.at(aTriplet.spB), aTriplet.weight) ||
-            n_seeds_per_spM == 0) {
-
-            n_seeds_per_spM++;
-
-            seeds_device.push_back({aTriplet.spB, aTriplet.spM, aTriplet.spT});
+        if (spacepoints.at(aTriplet.spB).radius() <=
+                filter_config.spB_min_radius &&
+            n_seeds_per_spM > 0) {
+            continue;
         }
+
+        n_seeds_per_spM++;
+
+        seeds_device.push_back({aTriplet.spB, aTriplet.spM, aTriplet.spT});
     }
 }
 
