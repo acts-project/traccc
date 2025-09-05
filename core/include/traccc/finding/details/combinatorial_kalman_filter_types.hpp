@@ -17,6 +17,7 @@
 #include <detray/navigation/navigator.hpp>
 #include <detray/propagator/actor_chain.hpp>
 #include <detray/propagator/actors/aborters.hpp>
+#include <detray/propagator/actors/barcode_sequencer.hpp>
 #include <detray/propagator/actors/parameter_transporter.hpp>
 #include <detray/propagator/actors/pointwise_material_interactor.hpp>
 #include <detray/propagator/constrained_step.hpp>
@@ -47,7 +48,8 @@ using ckf_actor_chain_t =
                         detray::parameter_transporter<traccc::default_algebra>,
                         interaction_register<ckf_interactor_t>,
                         ckf_interactor_t,
-                        detray::momentum_aborter<traccc::scalar>, ckf_aborter>;
+                        detray::momentum_aborter<traccc::scalar>,
+                        detray::barcode_sequencer, ckf_aborter>;
 
 /// Propagator type used in the Combinatorial Kalman Filter (CKF)
 ///

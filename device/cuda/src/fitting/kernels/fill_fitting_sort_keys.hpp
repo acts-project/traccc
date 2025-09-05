@@ -9,7 +9,7 @@
 
 // Project include(s).
 #include "traccc/edm/device/sort_key.hpp"
-#include "traccc/edm/track_candidate_collection.hpp"
+#include "traccc/edm/track_fit_collection.hpp"
 
 // CUDA include(s).
 #include <cuda_runtime.h>
@@ -22,8 +22,7 @@ namespace traccc::cuda {
 /// Function calling a kernel for @c traccc::device::fill_fitting_sort_keys
 void fill_fitting_sort_keys(
     const dim3& grid_size, const dim3& block_size, cudaStream_t stream,
-    edm::track_candidate_collection<default_algebra>::const_view
-        track_candidates_view,
+    edm::track_fit_collection<default_algebra>::const_view track_fit_view,
     vecmem::data::vector_view<device::sort_key> keys_view,
     vecmem::data::vector_view<unsigned int> ids_view);
 

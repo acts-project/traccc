@@ -217,9 +217,9 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
             traccc::performance::timer t("Track finding  (cuda)", elapsedTimes);
 
             // Run finding
-            track_candidates_cuda_buffer =
-                device_finding(detector_buffer, device_field,
-                               measurements_cuda_buffer, seeds_buffer);
+            track_candidates_cuda_buffer = device_finding(
+                detector_buffer, device_field, measurements_cuda_buffer,
+                seeds_buffer, traccc::device::finding_return_unfitted{});
         }
 
         traccc::edm::track_candidate_collection<traccc::default_algebra>::host

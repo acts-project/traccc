@@ -79,6 +79,22 @@ struct propagate_to_next_surface_payload {
      * @brief Vector to hold the number of track states per tip
      */
     vecmem::data::vector_view<unsigned int> tip_lengths_view;
+
+    /**
+     * @brief View object to the list of barcodes for this step
+     */
+    vecmem::data::vector_view<detray::geometry::barcode> barcode_sequence_view;
+
+    /**
+     * @brief View object to the length of the list of barcodes for this step
+     */
+    vecmem::data::vector_view<unsigned int> barcode_sequence_length_view;
+
+    /**
+     * @brief Flag that, if true, indicates whether holes should be counted
+     * in the length of the tip in the tip length output.
+     */
+    bool count_holes;
 };
 
 /// Function for propagating the kalman-updated tracks to the next surface

@@ -48,6 +48,12 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     vecmem::device_vector<unsigned int> tips(payload.tips_view);
     vecmem::device_vector<unsigned int> tip_lengths(payload.tip_lengths_view);
 
+    // barcode sequence
+    vecmem::device_vector<detray::geometry::barcode> barcode_sequences(
+        payload.barcode_sequence_view);
+    vecmem::device_vector<unsigned int> barcode_sequence_lengths(
+        payload.barcode_sequence_length_view);
+
     // Detector
     typename propagator_t::detector_type det(payload.det_data);
 
@@ -85,17 +91,26 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
         s3};
     typename detray::detail::tuple_element<4, actor_tuple_type>::type::state s4;
 
-    typename detray::detail::tuple_element<5, actor_tuple_type>::type::state s5;
-    s5.min_step_length = cfg.min_step_length_for_next_surface;
-    s5.max_count = cfg.max_step_counts_for_next_surface;
+    barcode_sequence_lengths.at(param_id) = 0u;
+    vecmem::data::vector_view<detray::geometry::barcode> barcode_sequence_view(
+        10, &barcode_sequence_lengths.at(param_id),
+        &barcode_sequences.at(10 * param_id));
+    vecmem::device_vector<detray::geometry::barcode> barcode_sequence(
+        barcode_sequence_view);
+
+    typename detray::detail::tuple_element<5, actor_tuple_type>::type::state s5{
+        barcode_sequence};
+    typename detray::detail::tuple_element<6, actor_tuple_type>::type::state s6;
+    s6.min_step_length = cfg.min_step_length_for_next_surface;
+    s6.max_count = cfg.max_step_counts_for_next_surface;
     s4.min_pT(static_cast<scalar_t>(cfg.min_pT));
     s4.min_p(static_cast<scalar_t>(cfg.min_p));
 
     // Propagate to the next surface
-    propagator.propagate(propagation, detray::tie(s0, s2, s3, s4, s5));
+    propagator.propagate(propagation, detray::tie(s0, s2, s3, s4, s5, s6));
 
     // If a surface found, add the parameter for the next step
-    if (s5.success) {
+    if (s6.success) {
         assert(propagation._navigation.is_on_sensitive());
         assert(!propagation._stepping.bound_params().is_invalid());
 
@@ -106,7 +121,12 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
 
         if (n_cands >= cfg.min_track_candidates_per_track) {
             auto tip_pos = tips.push_back(link_idx);
-            tip_lengths.at(tip_pos) = n_cands;
+
+            if (payload.count_holes) {
+                tip_lengths.at(tip_pos) = link.step + 1;
+            } else {
+                tip_lengths.at(tip_pos) = n_cands;
+            }
         }
     }
 }

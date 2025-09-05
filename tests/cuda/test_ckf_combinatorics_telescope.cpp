@@ -196,12 +196,14 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
         // Run device finding
         traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
             track_candidates_cuda_buffer = device_finding(
-                detector_buffer, field, measurements_buffer, seeds_buffer);
+                detector_buffer, field, measurements_buffer, seeds_buffer,
+                traccc::device::finding_return_unfitted{});
 
         // Run device finding (Limit)
         traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
             track_candidates_limit_cuda_buffer = device_finding_limit(
-                detector_buffer, field, measurements_buffer, seeds_buffer);
+                detector_buffer, field, measurements_buffer, seeds_buffer,
+                traccc::device::finding_return_unfitted{});
 
         traccc::edm::track_candidate_collection<traccc::default_algebra>::host
             track_candidates_cuda{host_mr},

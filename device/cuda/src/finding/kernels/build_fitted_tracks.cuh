@@ -8,10 +8,11 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/finding/device/build_tracks.hpp"
+#include "traccc/finding/device/build_fitted_tracks.hpp"
 #include "traccc/finding/finding_config.hpp"
 
 namespace traccc::cuda::kernels {
 
-__global__ void build_tracks(device::build_tracks_payload payload);
+__global__ void build_fitted_tracks(
+    device::build_fitted_tracks_payload payload);
 }

@@ -15,7 +15,8 @@
 #include "../utils/thread_id.hpp"
 #include "../utils/utils.hpp"
 #include "./kernels/apply_interaction.hpp"
-#include "./kernels/build_tracks.cuh"
+#include "./kernels/build_fitted_tracks.cuh"
+#include "./kernels/build_unfitted_tracks.cuh"
 #include "./kernels/fill_finding_duplicate_removal_sort_keys.cuh"
 #include "./kernels/fill_finding_propagation_sort_keys.cuh"
 #include "./kernels/find_tracks.cuh"
@@ -25,9 +26,10 @@
 
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_candidate_collection.hpp"
+#include "traccc/edm/track_fit_collection.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
+#include "traccc/finding/device/tags.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/utils/logging.hpp"
 #include "traccc/utils/memory_resource.hpp"
@@ -71,13 +73,19 @@ namespace traccc::cuda::details {
 /// @return A buffer of the found track candidates
 ///
 template <typename detector_t, typename bfield_t>
-edm::track_candidate_collection<default_algebra>::buffer
-combinatorial_kalman_filter(
+std::tuple<std::vector<unsigned int>,
+           vecmem::data::vector_buffer<candidate_link>,
+           vecmem::data::vector_buffer<unsigned int>,
+           bound_track_parameters_collection_types::buffer,
+           vecmem::data::vector_buffer<detray::geometry::barcode>,
+           vecmem::data::vector_buffer<unsigned int>>
+combinatorial_kalman_filter_core(
     const typename detector_t::const_view_type& det, const bfield_t& field,
     const measurement_collection_types::const_view& measurements,
     const bound_track_parameters_collection_types::const_view& seeds,
     const finding_config& config, const memory_resource& mr, vecmem::copy& copy,
-    const Logger& log, stream& str, unsigned int warp_size) {
+    const Logger& log, stream& str, unsigned int warp_size,
+    bool making_fitted_params) {
 
     assert(config.min_step_length_for_next_surface >
                math::fabs(config.propagation.navigation.overstep_tolerance) &&
@@ -177,6 +185,36 @@ combinatorial_kalman_filter(
         link_buffer_capacity, mr.main, vecmem::data::buffer_type::resizable);
     copy.setup(links_buffer)->ignore();
 
+    // Create a buffer for track parameters, if we want to output making fitted
+    // tracks.
+    const unsigned int barcodes_per_link = 10;
+
+    bound_track_parameters_collection_types::buffer
+        persistent_track_parameter_buffer;
+    vecmem::data::vector_buffer<detray::geometry::barcode>
+        barcode_sequence_buffer;
+    vecmem::data::vector_buffer<unsigned int> barcode_count_buffer;
+    if (making_fitted_params) {
+        persistent_track_parameter_buffer =
+            bound_track_parameters_collection_types::buffer(
+                link_buffer_capacity, mr.main);
+        barcode_sequence_buffer =
+            vecmem::data::vector_buffer<detray::geometry::barcode>(
+                barcodes_per_link * link_buffer_capacity, mr.main);
+        barcode_count_buffer = vecmem::data::vector_buffer<unsigned int>(
+            link_buffer_capacity, mr.main);
+    } else {
+        persistent_track_parameter_buffer =
+            bound_track_parameters_collection_types::buffer(0u, mr.main);
+        barcode_sequence_buffer =
+            vecmem::data::vector_buffer<detray::geometry::barcode>(0u, mr.main);
+        barcode_count_buffer =
+            vecmem::data::vector_buffer<unsigned int>(0, mr.main);
+    }
+    copy.setup(persistent_track_parameter_buffer)->ignore();
+    copy.setup(barcode_sequence_buffer)->ignore();
+    copy.setup(barcode_count_buffer)->ignore();
+
     // Create a buffer of tip links
     vecmem::data::vector_buffer<unsigned int> tips_buffer{
         config.max_num_branches_per_seed * n_seeds, mr.main,
@@ -188,6 +226,10 @@ combinatorial_kalman_filter(
 
     std::map<unsigned int, unsigned int> step_to_link_idx_map;
     step_to_link_idx_map[0] = 0;
+
+    vecmem::data::vector_buffer<detray::geometry::barcode>
+        current_sequence_buffer;
+    vecmem::data::vector_buffer<unsigned int> current_sequence_length_buffer;
 
     unsigned int n_in_params = n_seeds;
     for (unsigned int step = 0;
@@ -257,6 +299,33 @@ combinatorial_kalman_filter(
             copy(links_buffer, new_links_buffer)->wait();
 
             links_buffer = std::move(new_links_buffer);
+
+            if (making_fitted_params) {
+                bound_track_parameters_collection_types::buffer
+                    new_persistent_track_parameter_buffer(link_buffer_capacity,
+                                                          mr.main);
+                vecmem::data::vector_buffer<detray::geometry::barcode>
+                    new_barcode_sequence_buffer(
+                        barcodes_per_link * link_buffer_capacity, mr.main);
+                vecmem::data::vector_buffer<unsigned int>
+                    new_barcode_count_buffer(link_buffer_capacity, mr.main);
+
+                copy.setup(new_persistent_track_parameter_buffer)->ignore();
+                copy.setup(new_barcode_sequence_buffer)->ignore();
+                copy.setup(new_barcode_count_buffer)->ignore();
+                copy(persistent_track_parameter_buffer,
+                     new_persistent_track_parameter_buffer)
+                    ->ignore();
+                copy(barcode_sequence_buffer, new_barcode_sequence_buffer)
+                    ->ignore();
+                copy(barcode_count_buffer, new_barcode_count_buffer)->ignore();
+
+                persistent_track_parameter_buffer =
+                    std::move(new_persistent_track_parameter_buffer);
+                barcode_sequence_buffer =
+                    std::move(new_barcode_sequence_buffer);
+                barcode_count_buffer = std::move(barcode_count_buffer);
+            }
         }
 
         {
@@ -288,7 +357,13 @@ combinatorial_kalman_filter(
                 .tip_lengths_view = tip_length_buffer,
                 .n_tracks_per_seed_view = n_tracks_per_seed_buffer,
                 .tmp_params_view = tmp_params_buffer,
-                .tmp_links_view = tmp_links_buffer};
+                .tmp_links_view = tmp_links_buffer,
+                .persistent_parameters_view = persistent_track_parameter_buffer,
+                .persistent_barcode_sequence_view = barcode_sequence_buffer,
+                .persistent_barcode_sequence_length_view = barcode_count_buffer,
+                .barcode_sequence_view = current_sequence_buffer,
+                .barcode_sequence_length_view = current_sequence_length_buffer,
+                .count_holes = making_fitted_params};
 
             // The number of threads, blocks and shared memory to use.
             const unsigned int nThreads = warp_size * 2;
@@ -394,6 +469,13 @@ combinatorial_kalman_filter(
             vecmem::data::vector_buffer<unsigned int> param_ids_buffer(
                 n_candidates, mr.main);
             copy.setup(param_ids_buffer)->ignore();
+            current_sequence_buffer =
+                vecmem::data::vector_buffer<detray::geometry::barcode>(
+                    n_candidates * barcodes_per_link, mr.main);
+            copy.setup(current_sequence_buffer)->ignore();
+            current_sequence_length_buffer =
+                vecmem::data::vector_buffer<unsigned int>(n_candidates,
+                                                          mr.main);
 
             {
                 vecmem::data::vector_buffer<device::sort_key> keys_buffer(
@@ -442,7 +524,11 @@ combinatorial_kalman_filter(
                     .step = step,
                     .n_in_params = n_candidates,
                     .tips_view = tips_buffer,
-                    .tip_lengths_view = tip_length_buffer};
+                    .tip_lengths_view = tip_length_buffer,
+                    .barcode_sequence_view = current_sequence_buffer,
+                    .barcode_sequence_length_view =
+                        current_sequence_length_buffer,
+                    .count_holes = making_fitted_params};
 
                 const unsigned int nThreads = warp_size * 4;
                 const unsigned int nBlocks =
@@ -481,18 +567,112 @@ combinatorial_kalman_filter(
         tips_length_host.resize(n_tips_total);
     }
 
-    // Create track candidate buffer
+    return {std::move(tips_length_host),
+            std::move(links_buffer),
+            std::move(tips_buffer),
+            std::move(persistent_track_parameter_buffer),
+            std::move(barcode_sequence_buffer),
+            std::move(barcode_count_buffer)};
+}
+
+template <typename detector_t, typename bfield_t>
+edm::track_fit_container<default_algebra>::buffer combinatorial_kalman_filter(
+    const typename detector_t::const_view_type& det, const bfield_t& field,
+    const measurement_collection_types::const_view& measurements,
+    const bound_track_parameters_collection_types::const_view& seeds,
+    const finding_config& config, const memory_resource& mr, vecmem::copy& copy,
+    const Logger& log, stream& str, unsigned int warp_size,
+    device::finding_return_fitted&&) {
+
+    cudaStream_t stream = get_stream(str);
+
+    const auto [tips_length_host, links_buffer, tips_buffer,
+                persistent_track_parameters_buffer, barcode_sequence_buffer,
+                barcode_sequence_length_buffer] =
+        combinatorial_kalman_filter_core<detector_t, bfield_t>(
+            det, field, measurements, seeds, config, mr, copy, log, str,
+            warp_size, true);
+
+    unsigned int n_states =
+        std::accumulate(tips_length_host.begin(), tips_length_host.end(), 0u);
+
+    std::vector<unsigned int> barcodes_length;
+    barcodes_length.reserve(tips_length_host.size());
+    std::transform(tips_length_host.begin(), tips_length_host.end(),
+                   std::back_inserter(barcodes_length),
+                   [&config](const unsigned int s) { return 10 * s; });
+
+    // NOTE: Even though none of this needs to be resizable, these vectors
+    // both need to be, as an assignment operator later down the line
+    // implicitly resizes some parts of this array, even if it is completely
+    // unnecessary. Making these arrays non-resizable leads to hard-to-debug
+    // segmentation faults.
+    edm::track_fit_container<default_algebra>::buffer track_fit_buffer{
+        {barcodes_length, mr.main, mr.host,
+         vecmem::data::buffer_type::resizable},
+        {n_states, mr.main, vecmem::data::buffer_type::resizable}};
+    copy.setup(track_fit_buffer.tracks)->ignore();
+    copy.setup(track_fit_buffer.states)->ignore();
+
+    // @Note: nBlocks can be zero in case there is no tip. This happens when
+    // chi2_max config is set tightly and no tips are found
+    if (tips_length_host.size() > 0) {
+        const unsigned int nThreads = warp_size * 2;
+        const unsigned int nBlocks =
+            (static_cast<unsigned int>(tips_length_host.size()) + nThreads -
+             1) /
+            nThreads;
+
+        kernels::build_fitted_tracks<<<nBlocks, nThreads, 0, stream>>>(
+            {.seeds_view = seeds,
+             .links_view = links_buffer,
+             .track_param_view = persistent_track_parameters_buffer,
+             .tips_view = tips_buffer,
+             .barcode_sequence_view = barcode_sequence_buffer,
+             .barcode_sequence_length_view = barcode_sequence_length_buffer,
+             .track_fit_view = {track_fit_buffer.tracks,
+                                track_fit_buffer.states, measurements}});
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+        str.synchronize();
+    }
+
+    return track_fit_buffer;
+}
+
+template <typename detector_t, typename bfield_t>
+edm::track_candidate_collection<default_algebra>::buffer
+combinatorial_kalman_filter(
+    const typename detector_t::const_view_type& det, const bfield_t& field,
+    const measurement_collection_types::const_view& measurements,
+    const bound_track_parameters_collection_types::const_view& seeds,
+    const finding_config& config, const memory_resource& mr, vecmem::copy& copy,
+    const Logger& log, stream& str, unsigned int warp_size,
+    device::finding_return_unfitted&&) {
+
+    cudaStream_t stream = get_stream(str);
+
+    const auto [tips_length_host, links_buffer, tips_buffer,
+                persistent_track_parameters_buffer, barcode_sequence_buffer,
+                barcode_sequence_length_buffer] =
+        combinatorial_kalman_filter_core<detector_t, bfield_t>(
+            det, field, measurements, seeds, config, mr, copy, log, str,
+            warp_size, false);
+
     edm::track_candidate_collection<default_algebra>::buffer
         track_candidates_buffer{tips_length_host, mr.main, mr.host};
     copy.setup(track_candidates_buffer)->ignore();
 
     // @Note: nBlocks can be zero in case there is no tip. This happens when
     // chi2_max config is set tightly and no tips are found
-    if (n_tips_total > 0) {
+    if (tips_length_host.size() > 0) {
         const unsigned int nThreads = warp_size * 2;
-        const unsigned int nBlocks = (n_tips_total + nThreads - 1) / nThreads;
+        const unsigned int nBlocks =
+            (static_cast<unsigned int>(tips_length_host.size()) + nThreads -
+             1) /
+            nThreads;
 
-        kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(
+        kernels::build_unfitted_tracks<<<nBlocks, nThreads, 0, stream>>>(
             {.seeds_view = seeds,
              .links_view = links_buffer,
              .tips_view = tips_buffer,

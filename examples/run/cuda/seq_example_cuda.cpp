@@ -234,8 +234,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
         traccc::edm::seed_collection::buffer seeds_cuda_buffer;
         traccc::bound_track_parameters_collection_types::buffer
             params_cuda_buffer(0, *mr.host);
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
-            track_candidates_buffer;
+        device_finding_algorithm::unfitted_output_type track_candidates_buffer;
         traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
             res_track_candidates_buffer;
         traccc::edm::track_fit_container<traccc::default_algebra>::buffer
@@ -341,7 +340,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
                                                  elapsedTimes};
                 track_candidates_buffer = finding_alg_cuda(
                     device_detector, device_field, measurements_cuda_buffer,
-                    params_cuda_buffer);
+                    params_cuda_buffer,
+                    traccc::device::finding_return_unfitted{});
             }
 
             // CPU

@@ -290,6 +290,7 @@ class kalman_fitter {
         last.smoothed_params().set_covariance(
             last.filtered_params().covariance());
         last.smoothed_chi2() = last.filtered_chi2();
+        // last.set_smoothed(true);
 
         if (fitter_state.m_sequencer_state._sequence.empty()) {
             return kalman_fitter_status::SUCCESS;
@@ -347,6 +348,10 @@ class kalman_fitter {
         // Fit parameter = smoothed track parameter of the first smoothed track
         // state
         for (unsigned int i : fit_res.state_indices()) {
+            if (i == std::numeric_limits<unsigned int>::max()) {
+                continue;
+            }
+
             if (track_states.at(i).is_smoothed()) {
                 fit_res.params() = track_states.at(i).smoothed_params();
                 break;
@@ -354,6 +359,9 @@ class kalman_fitter {
         }
 
         for (unsigned int i : fit_res.state_indices()) {
+            if (i == std::numeric_limits<unsigned int>::max()) {
+                continue;
+            }
 
             auto trk_state = track_states.at(i);
             const detray::tracking_surface sf{
@@ -382,6 +390,10 @@ class kalman_fitter {
         // NDF should always be positive for fitting
         if (fit_res.ndf() > 0) {
             for (unsigned int i : fit_res.state_indices()) {
+                if (i == std::numeric_limits<unsigned int>::max()) {
+                    continue;
+                }
+
                 auto trk_state = track_states.at(i);
                 // Fitting fails if any of non-hole track states is not smoothed
                 if (!trk_state.is_hole() && !trk_state.is_smoothed()) {

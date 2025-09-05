@@ -64,7 +64,7 @@ typename edm::track_fit_container<algebra_t>::host kalman_fitting(
 
         // Create the objects that will describe this track fit.
         result.tracks.push_back(
-            {track_fit_outcome::UNKNOWN, {}, 0.f, 0.f, 0.f, 0u, {}});
+            {track_fit_outcome::UNKNOWN, {}, 0.f, 0.f, 0.f, 0u, {}, {}});
         auto fitted_track = result.tracks.at(result.tracks.size() - 1);
         for (unsigned int measurement_index :
              track_candidates.measurement_indices().at(i)) {

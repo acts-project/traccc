@@ -125,6 +125,40 @@ struct find_tracks_payload {
      * @brief View object to the temporary link vector
      */
     vecmem::data::vector_view<candidate_link> tmp_links_view;
+
+    /**
+     * @brief View object to the persistent track parameters, estabilishing
+     * a direct map between links and parameters at the same index.
+     */
+    bound_track_parameters_collection_types::view persistent_parameters_view;
+
+    /**
+     * @brief View object to the list of barcodes for all steps
+     */
+    vecmem::data::vector_view<detray::geometry::barcode>
+        persistent_barcode_sequence_view;
+
+    /**
+     * @brief View object to the length of the list of barcodes for all steps
+     */
+    vecmem::data::vector_view<unsigned int>
+        persistent_barcode_sequence_length_view;
+
+    /**
+     * @brief View object to the list of barcodes for this step
+     */
+    vecmem::data::vector_view<detray::geometry::barcode> barcode_sequence_view;
+
+    /**
+     * @brief View object to the length of the list of barcodes for this step
+     */
+    vecmem::data::vector_view<unsigned int> barcode_sequence_length_view;
+
+    /**
+     * @brief Flag that, if true, indicates whether holes should be counted
+     * in the length of the tip in the tip length output.
+     */
+    bool count_holes;
 };
 
 /// (Shared Event Data) Payload for the @c traccc::device::find_tracks function

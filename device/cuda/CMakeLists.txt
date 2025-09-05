@@ -67,8 +67,8 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/finding/kernels/fill_finding_propagation_sort_keys.cuh"
   "src/finding/kernels/fill_finding_duplicate_removal_sort_keys.cu"
   "src/finding/kernels/remove_duplicates.cu"
-  "src/finding/kernels/build_tracks.cu"
-  "src/finding/kernels/build_tracks.cuh"
+  "src/finding/kernels/build_fitted_tracks.cu"
+  "src/finding/kernels/build_unfitted_tracks.cu"
   "src/finding/kernels/find_tracks.cuh"
   "src/finding/kernels/propagate_to_next_surface.hpp"
   # Ambiguity resolution

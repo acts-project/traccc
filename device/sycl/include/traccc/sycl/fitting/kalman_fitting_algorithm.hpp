@@ -34,6 +34,10 @@ class kalman_fitting_algorithm
     : public algorithm<edm::track_fit_container<default_algebra>::buffer(
           const detector_buffer&, const magnetic_field&,
           const edm::track_candidate_container<default_algebra>::const_view&)>,
+      public algorithm<edm::track_fit_container<default_algebra>::buffer(
+          const detector_buffer&, const magnetic_field&,
+          edm::track_fit_container<default_algebra>::buffer&&,
+          const measurement_collection_types::const_view&)>,
       public messaging {
 
     public:
@@ -51,7 +55,7 @@ class kalman_fitting_algorithm
         vecmem::copy& copy, queue_wrapper queue,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
-    /// Execute the algorithm
+    /// Execute the algorithm with unfitted tracks
     ///
     /// @param det             The detector object
     /// @param bfield          The magnetic field object
@@ -63,6 +67,19 @@ class kalman_fitting_algorithm
         const detector_buffer& det, const magnetic_field& bfield,
         const edm::track_candidate_container<default_algebra>::const_view&
             track_candidates) const override;
+
+    /// Execute the algorithm with fitted tracks
+    ///
+    /// @param det             The detector object
+    /// @param bfield          The magnetic field object
+    /// @param track_candidates All track candidates to fit
+    ///
+    /// @return A container of the fitted track states
+    ///
+    output_type operator()(
+        const detector_buffer& det, const magnetic_field& bfield,
+        edm::track_fit_container<default_algebra>::buffer&& track_states,
+        const measurement_collection_types::const_view&) const override;
 
     private:
     /// Algorithm configuration

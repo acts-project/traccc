@@ -22,6 +22,7 @@
 #include <detray/propagator/base_actor.hpp>
 
 // vecmem include(s)
+#include <limits>
 #include <vecmem/containers/device_vector.hpp>
 
 namespace traccc {
@@ -54,7 +55,14 @@ struct kalman_actor_state {
     TRACCC_HOST_DEVICE
     typename edm::track_state_collection<algebra_t>::device::proxy_type
     operator()() {
+        assert(m_track.state_indices().at(m_idx) !=
+               std::numeric_limits<unsigned int>::max());
         return m_track_states.at(m_track.state_indices().at(m_idx));
+    }
+
+    TRACCC_HOST_DEVICE
+    detray::geometry::barcode get_barcode() {
+        return m_track.barcodes().at(m_idx);
     }
 
     /// Reset the iterator
@@ -137,82 +145,84 @@ struct kalman_actor : detray::actor {
         }
 
         // triggered only for sensitive surfaces
-        if (navigation.is_on_sensitive()) {
+        if (navigation.is_on_sensitive() ||
+            navigation.encountered_sf_material()) {
+            if (navigation.is_on_sensitive() && actor_state.is_state()) {
 
-            typename edm::track_state_collection<algebra_t>::device::proxy_type
-                trk_state = actor_state();
+                typename edm::track_state_collection<
+                    algebra_t>::device::proxy_type trk_state = actor_state();
 
-            // Increase the hole counts if the propagator fails to find the next
-            // measurement
-            if (navigation.barcode() !=
-                actor_state.m_measurements.at(trk_state.measurement_index())
-                    .surface_link) {
+                // Increase the hole counts if the propagator fails to find the
+                // next measurement
+                if (navigation.barcode() != actor_state.get_barcode()) {
+                    if (!actor_state.backward_mode) {
+                        actor_state.n_holes++;
+                    }
+                    return;
+                }
+
+                // This track state is not a hole
                 if (!actor_state.backward_mode) {
-                    actor_state.n_holes++;
+                    trk_state.set_hole(false);
                 }
-                return;
-            }
 
-            // This track state is not a hole
-            if (!actor_state.backward_mode) {
-                trk_state.set_hole(false);
-            }
+                // Run Kalman Gain Updater
+                const auto sf = navigation.get_surface();
 
-            // Run Kalman Gain Updater
-            const auto sf = navigation.get_surface();
+                const bool is_line = sf.template visit_mask<is_line_visitor>();
 
-            const bool is_line = sf.template visit_mask<is_line_visitor>();
+                kalman_fitter_status res = kalman_fitter_status::SUCCESS;
 
-            kalman_fitter_status res = kalman_fitter_status::SUCCESS;
+                if (!actor_state.backward_mode) {
+                    if constexpr (direction_e ==
+                                      kalman_actor_direction::FORWARD_ONLY ||
+                                  direction_e ==
+                                      kalman_actor_direction::BIDIRECTIONAL) {
+                        // Forward filter
+                        res = gain_matrix_updater<algebra_t>{}(
+                            trk_state, actor_state.m_measurements,
+                            propagation._stepping.bound_params(), is_line);
 
-            if (!actor_state.backward_mode) {
-                if constexpr (direction_e ==
-                                  kalman_actor_direction::FORWARD_ONLY ||
-                              direction_e ==
-                                  kalman_actor_direction::BIDIRECTIONAL) {
-                    // Forward filter
-                    res = gain_matrix_updater<algebra_t>{}(
-                        trk_state, actor_state.m_measurements,
-                        propagation._stepping.bound_params(), is_line);
-
-                    // Update the propagation flow
-                    stepping.bound_params() = trk_state.filtered_params();
+                        // Update the propagation flow
+                        stepping.bound_params() = trk_state.filtered_params();
+                    } else {
+                        assert(false);
+                    }
                 } else {
-                    assert(false);
+                    if constexpr (direction_e ==
+                                      kalman_actor_direction::BACKWARD_ONLY ||
+                                  direction_e ==
+                                      kalman_actor_direction::BIDIRECTIONAL) {
+                        // Backward filter for smoothing
+                        res = two_filters_smoother<algebra_t>{}(
+                            trk_state, actor_state.m_measurements,
+                            propagation._stepping.bound_params(), is_line);
+                    } else {
+                        assert(false);
+                    }
                 }
-            } else {
-                if constexpr (direction_e ==
-                                  kalman_actor_direction::BACKWARD_ONLY ||
-                              direction_e ==
-                                  kalman_actor_direction::BIDIRECTIONAL) {
-                    // Backward filter for smoothing
-                    res = two_filters_smoother<algebra_t>{}(
-                        trk_state, actor_state.m_measurements,
-                        propagation._stepping.bound_params(), is_line);
-                } else {
-                    assert(false);
+
+                // Abort if the Kalman update fails
+                if (res != kalman_fitter_status::SUCCESS) {
+                    propagation._heartbeat &=
+                        navigation.abort(fitter_debug_msg{res});
+                    return;
                 }
+
+                // Change the charge of hypothesized particles when the sign of
+                // qop is changed (This rarely happens when qop is set with a
+                // poor seed resolution)
+                propagation.set_particle(detail::correct_particle_hypothesis(
+                    stepping.particle_hypothesis(),
+                    propagation._stepping.bound_params()));
+
+                // Flag renavigation of the current candidate
+                navigation.set_high_trust();
             }
 
-            // Abort if the Kalman update fails
-            if (res != kalman_fitter_status::SUCCESS) {
-                propagation._heartbeat &=
-                    navigation.abort(fitter_debug_msg{res});
-                return;
-            }
-
-            // Change the charge of hypothesized particles when the sign of qop
-            // is changed (This rarely happens when qop is set with a poor seed
-            // resolution)
-            propagation.set_particle(detail::correct_particle_hypothesis(
-                stepping.particle_hypothesis(),
-                propagation._stepping.bound_params()));
-
+            // TODO: assert that target reached?
             // Update iterator
             actor_state.next();
-
-            // Flag renavigation of the current candidate
-            navigation.set_high_trust();
         }
     }
 };
