@@ -529,7 +529,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
             payload.step > 0 ? links.at(prev_link_idx).seed_idx : in_param_id;
         n_skipped = payload.step == 0 ? 0 : links.at(prev_link_idx).n_skipped;
         in_param_can_create_hole =
-            (n_skipped <= cfg.max_num_skipping_per_cand) && (!last_step);
+            (n_skipped < cfg.max_num_skipping_per_cand) && (!last_step);
         prev_ndf_sum = payload.step == 0 ? 0 : links.at(prev_link_idx).ndf_sum;
         prev_chi2_sum =
             payload.step == 0 ? 0.f : links.at(prev_link_idx).chi2_sum;
@@ -641,7 +641,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
 
                 if (last_step &&
                     n_cands >= cfg.min_track_candidates_per_track) {
-                    auto tip_pos = tips.push_back(param_pos);
+                    auto tip_pos = tips.push_back(out_offset);
                     tip_lengths.at(tip_pos) = n_cands;
                 }
             }
