@@ -54,6 +54,9 @@ struct measurement {
 
     /// subspace
     subspace<default_algebra, e_bound_size, 2u> subs{{0u, 1u}};
+
+    /// Cluster link
+    std::size_t cluster_link = std::numeric_limits<std::size_t>::max();
 };
 
 /// Comparison / ordering operator for measurements
