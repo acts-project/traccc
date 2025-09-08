@@ -24,6 +24,7 @@
 #include "traccc/options/track_finding.hpp"
 #include "traccc/options/track_fitting.hpp"
 #include "traccc/options/track_propagation.hpp"
+#include "traccc/options/track_resolution.hpp"
 #include "traccc/options/track_seeding.hpp"
 
 // I/O include(s).
@@ -66,13 +67,14 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
     opts::track_seeding seeding_opts;
     opts::track_finding finding_opts;
     opts::track_propagation propagation_opts;
+    opts::track_resolution resolution_opts;
     opts::track_fitting fitting_opts;
     opts::throughput throughput_opts;
     opts::program_options program_opts{
         description,
         {detector_opts, bfield_opts, input_opts, clusterization_opts,
-         seeding_opts, finding_opts, propagation_opts, fitting_opts,
-         throughput_opts},
+         seeding_opts, finding_opts, propagation_opts, resolution_opts,
+         fitting_opts, throughput_opts},
         argc,
         argv,
         logger->cloneWithSuffix("Options")};
@@ -128,6 +130,8 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
         finding_opts);
     finding_cfg.propagation = propagation_config;
 
+    ambiguity_resolution_config resolution_cfg(resolution_opts);
+
     typename FULL_CHAIN_ALG::fitting_algorithm::config_type fitting_cfg(
         fitting_opts);
     fitting_cfg.propagation = propagation_config;
@@ -135,8 +139,8 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
     // Set up the full-chain algorithm.
     std::unique_ptr<FULL_CHAIN_ALG> alg = std::make_unique<FULL_CHAIN_ALG>(
         host_mr, clustering_cfg, seedfinder_config, spacepoint_grid_config,
-        seedfilter_config, finding_cfg, fitting_cfg, det_descr, field,
-        &detector, logger->clone("FullChainAlg"));
+        seedfilter_config, finding_cfg, resolution_cfg, fitting_cfg, det_descr,
+        field, &detector, logger->clone("FullChainAlg"));
 
     // Seed the random number generator.
     if (throughput_opts.random_seed == 0) {
