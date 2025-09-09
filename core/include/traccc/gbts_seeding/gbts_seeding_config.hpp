@@ -48,17 +48,7 @@ enum gbts_consts : unsigned short {
 	//shared memory allocation sizes
 	node_buffer_length = 250,
 	shared_state_buffer_size = 578,
-	//matrix access for kalman filter state
-	M3_0_0 = 0, 
-	M3_0_1 = 1, 
-	M3_0_2 = 2,
-	M3_1_1 = 3,
-	M3_1_2 = 4,
-	M3_2_2 = 5,
-
-	M2_0_0 = 0,
-	M2_0_1 = 1,
-	M2_1_1 = 1,
+	
 	// access into output graph
 	node1 = 0,
 	node2 = 1,

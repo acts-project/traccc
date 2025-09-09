@@ -13,6 +13,9 @@
 #include "./kernels/GbtsGraphProcessingKernels.cuh"
 #include "traccc/cuda/gbts_seeding/gbts_seeding_algorithm.hpp"
 
+//C++ include(s)
+#include <ranges>
+
 namespace traccc::cuda {
 
 struct gbts_ctx {
@@ -106,7 +109,7 @@ gbts_seeding_algorithm::gbts_seeding_algorithm(const gbts_seedfinder_config& cfg
                                                : messaging(logger->clone()), m_config(cfg), m_mr(mr), m_copy(copy), m_stream(str) {}
 
 gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const traccc::edm::spacepoint_collection::const_view& spacepoints, const traccc::measurement_collection_types::const_view& measurements) const {
-	
+
     edm::seed_collection::buffer output_seeds(0, m_mr.main, vecmem::data::buffer_type::resizable);
 	m_copy.get().setup(output_seeds)->ignore();
 	
@@ -695,7 +698,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 		}
 	}
 	cudaStreamSynchronize(stream);
-	
+
 	cudaFree(ctx.d_levels);
 	cudaFree(ctx.d_level_views);
 	cudaFree(ctx.d_level_boundaries);
@@ -721,7 +724,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	nBlocks = 1 + (ctx.nSeeds-1)/nThreads;
 	
 	kernels::gbts_seed_conversion_kernel<<<nBlocks, nThreads, 0, stream>>>(ctx.d_seeds, output_seeds, ctx.nSeeds);		
-	
+
 	cudaStreamSynchronize(stream);
 	
 	cudaFree(ctx.d_seeds);
@@ -735,7 +738,6 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	}
 
 	TRACCC_INFO("GBTS found " << ctx.nSeeds << " seeds");
-
 	return output_seeds;
 }
 

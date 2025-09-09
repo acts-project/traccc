@@ -15,43 +15,37 @@
 #include <cuda_fp16.h>
 
 namespace traccc::cuda::kernels {
-
-using traccc::device::M3_0_0;
-using traccc::device::M3_0_1;
-using traccc::device::M3_0_2;
-using traccc::device::M3_1_1;
-using traccc::device::M3_1_2;
-using traccc::device::M3_2_2;
-
-using traccc::device::M2_0_0;
-using traccc::device::M2_0_1;
-using traccc::device::M2_1_1;
-
+//currently 80 bytes -> 5 v4 loads/stores
 struct __align__(16) edgeState {
 		
-	 __device__ inline void initialize(const float4& node1_params, const float4& node2_params);
-
-    //upper triangle of the Cov matrix for the parabola in the x,y plane since symetry gives the rest
-    float m_Cx[5]; //(0,0), (0,1), (0,2), (1,1), (1,2), (2,2)
-    //Cov matrix for the linear fit of eta and z
-    float m_Cy[3]; //(0,0), (0,1), (1,1)
+	__device__ inline void initialize(const float4& node1_params, const float4& node2_params);
+	
+	__device__ inline float& m_Cx(const int i, const int j) {return Cx[i + j + 1*(i == 0)*(j == 0)];}
+	__device__ inline float& m_Cy(const int i, const int j) {return Cy[i + j];}
+	__device__ inline const float& m_Cx(const int i, const int j) const {return Cx[i + j + 1*(i == 0)*(j == 0)];}
+	__device__ inline const float& m_Cy(const int i, const int j) const {return Cy[i + j];}
 
     float m_X[3], m_Y[2];
     float m_c, m_s, m_refX, m_refY;
 
-    unsigned int m_J : 31;
+    int m_J : 31;
 
-    unsigned int m_head_node_type : 1;
+    bool m_head_node_type : 1;
 
     unsigned int m_mini_idx : 27;
     unsigned int m_length : 5;
     int m_edge_idx;
+    
+	//upper triangle of the Cov matrix for the parabola in the x,y plane since symetry gives the rest
+    float Cx[5]; //(0,0), (0,1), (0,2), (1,1), (1,2), (2,2)
+    //Cov matrix for the linear fit of eta and z
+    float Cy[3]; //(0,0), (0,1), (1,1)
+	
 };
 
 struct Tracklet {
-	unsigned int m_nodes[traccc::device::max_cca_iter+1];
-	int m_size;
-	float m_Q;
+	unsigned int nodes[traccc::device::max_cca_iter+1];
+	int size;
 };
 
 /** @brief Performs one iteration of the CCA over the graph to calculate potential seed length
@@ -164,15 +158,15 @@ __device__ inline void edgeState::initialize(const float4& node1_params, const f
     m_Y[0] = node2_params.z;
     m_Y[1] = (node1_params.z - node2_params.z)/(r1 - r2);
     
-    memset(&m_Cx[0], 0, sizeof(m_Cx));
-    memset(&m_Cy[0], 0, sizeof(m_Cy));
+    memset(&m_Cx(0,0), 0, sizeof(Cx));
+    memset(&m_Cy(0,0), 0, sizeof(Cy));
 
-    m_Cx[M3_0_0] = 0.25f;
-    m_Cx[M3_1_1] = 0.001f;
-    m_Cx[M3_2_2] = 0.001f;
+    m_Cx(0,0) = 0.25f;
+    m_Cx(1,1) = 0.001f;
+    m_Cx(2,2) = 0.001f;
 
-    m_Cy[M2_0_0] = 1.5f;
-    m_Cy[M2_1_1] = 0.001f;
+    m_Cy(0,0) = 1.5f;
+    m_Cy(1,1) = 0.001f;
 
 }
 
@@ -181,7 +175,7 @@ __device__ inline void edgeState::initialize(const float4& node1_params, const f
 *  This is a Kalamn filter update fitting to strait line in z,r and a parabola in x',y' with the transformation defined by the first edge when the state is initialized  
 *  It's main output is the m_J seed quality used for disambiguation
 *  Seed extraction goes outside in
-*
+*  
 *  @param[out] new_ts output edgeState for the updated seed including node1
 *  @param[in] ts input edgeState is const because it will be re used for each of its head edge's connections
 *  @param[in] node1_params params of the inner node of the new edge to be added to the seed
@@ -203,11 +197,12 @@ inline __device__ bool update(edgeState* new_ts, const edgeState* ts, const floa
     const float maxDChi2_y = 60.0f;//was 31.0;
 
     const float add_hit = 14.0f;
+	//m_J is stored in 30 + sign bits so max qual = INT_MAX/2 = add_hit*max_length*qual_scale
+	const float qual_scale = 0.5*static_cast<float>(INT_MAX)/static_cast<float>(add_hit*traccc::device::max_cca_iter) - 1;
 
     //add ms.
-
-    float m_Cx22 = ts->m_Cx[M3_2_2] + sigma_w*sigma_w;
-    float m_Cx11 = ts->m_Cx[M3_1_1] + sigma_t*sigma_t;
+    float m_Cx22 = ts->m_Cx(2,2) + sigma_w*sigma_w;
+    float m_Cx11 = ts->m_Cx(1,1) + sigma_t*sigma_t;
 
     float t2 = node1_params.w != -1 ? 1 + ts->m_Y[1]*ts->m_Y[1] : 1 + 1/(ts->m_Y[1]*ts->m_Y[1]); 
     
@@ -216,7 +211,7 @@ inline __device__ bool update(edgeState* new_ts, const edgeState* ts, const floa
 
     s2 *= sqrtf(t2);
 
-    float m_Cy11 = ts->m_Cy[M2_1_1] + s2;  
+    float m_Cy11 = ts->m_Cy(1,1) + s2;  
 
     //extrapolation
 
@@ -239,21 +234,21 @@ inline __device__ bool update(edgeState* new_ts, const edgeState* ts, const floa
     new_ts->m_X[1] = ts->m_X[1] + ts->m_X[2]*A;
     new_ts->m_X[2] = ts->m_X[2];
     
-    new_ts->m_Cx[M3_0_0] = ts->m_Cx[M3_0_0] + 2*ts->m_Cx[M3_0_1]*A + 2*ts->m_Cx[M3_0_2]*B + A*m_Cx11*A + 2*A*ts->m_Cx[M3_1_2]*B + B*m_Cx22*B;
-    new_ts->m_Cx[M3_0_1] = ts->m_Cx[M3_0_1] + m_Cx11*A + ts->m_Cx[M3_1_2]*B + ts->m_Cx[M3_0_2]*A + A*A*ts->m_Cx[M3_1_2]  + A*m_Cx22*B;
-    new_ts->m_Cx[M3_0_2] = ts->m_Cx[M3_0_2] + ts->m_Cx[M3_1_2]*A + m_Cx22*B;   
+    new_ts->m_Cx(0,0) = ts->m_Cx(0,0) + 2*ts->m_Cx(0,1)*A + 2*ts->m_Cx(0,2)*B + A*m_Cx11*A + 2*A*ts->m_Cx(1,2)*B + B*m_Cx22*B;
+    new_ts->m_Cx(0,1) = ts->m_Cx(0,1) + m_Cx11*A + ts->m_Cx(1,2)*B + ts->m_Cx(0,2)*A + A*A*ts->m_Cx(1,2)  + A*m_Cx22*B;
+    new_ts->m_Cx(0,2) = ts->m_Cx(0,2) + ts->m_Cx(1,2)*A + m_Cx22*B;   
         
-    new_ts->m_Cx[M3_1_1] = m_Cx11 + 2*A*ts->m_Cx[M3_1_2] + A*m_Cx22*A;
-    new_ts->m_Cx[M3_1_2] = ts->m_Cx[M3_1_2] + m_Cx22*A;
+    new_ts->m_Cx(1,1) = m_Cx11 + 2*A*ts->m_Cx(1,2) + A*m_Cx22*A;
+    new_ts->m_Cx(1,2) = ts->m_Cx(1,2) + m_Cx22*A;
 
-    new_ts->m_Cx[M3_2_2] = m_Cx22;
+    new_ts->m_Cx(2,2) = m_Cx22;
 
     new_ts->m_Y[0] = ts->m_Y[0] + ts->m_Y[1]*dr;
     new_ts->m_Y[1] = ts->m_Y[1];
     
-    new_ts->m_Cy[M2_0_0] = ts->m_Cy[M2_0_0] + 2*ts->m_Cy[M2_0_1]*dr + dr*m_Cy11*dr;
-    new_ts->m_Cy[M2_0_1] = ts->m_Cy[M2_0_1] + dr*m_Cy11;
-    new_ts->m_Cy[M2_1_1] = m_Cy11;
+    new_ts->m_Cy(0,0) = ts->m_Cy(0,0) + 2*ts->m_Cy(0,1)*dr + dr*m_Cy11*dr;
+    new_ts->m_Cy(0,1) = ts->m_Cy(0,1) + dr*m_Cy11;
+    new_ts->m_Cy(1,1) = m_Cy11;
     
     //chi2 test
     float resid_x = mx - new_ts->m_X[0];
@@ -261,7 +256,7 @@ inline __device__ bool update(edgeState* new_ts, const edgeState* ts, const floa
     
     float sigma_rz = 0;
 
-    if(ts->m_head_node_type != 1) {//barrel TO-DO: split into barrel Pixel and barrel SCT
+    if(!ts->m_head_node_type) {//barrel TO-DO: split into barrel Pixel and barrel SCT
         sigma_rz = sigma_y*sigma_y;
     }
     else {
@@ -269,9 +264,9 @@ inline __device__ bool update(edgeState* new_ts, const edgeState* ts, const floa
         sigma_rz = sigma_rz*sigma_rz;
     }
 
-    float Dx = 1/(new_ts->m_Cx[M3_0_0] + sigma_x*sigma_x);
+    float Dx = 1/(new_ts->m_Cx(0,0) + sigma_x*sigma_x);
 
-    float Dy = 1/(new_ts->m_Cy[M3_0_0] + sigma_rz);
+    float Dy = 1/(new_ts->m_Cy(0,0) + sigma_rz);
 
     float dchi2_x = resid_x*resid_x*Dx;
     float dchi2_y = resid_y*resid_y*Dy;
@@ -281,37 +276,33 @@ inline __device__ bool update(edgeState* new_ts, const edgeState* ts, const floa
     }
 
     //state update
-    new_ts->m_J = ts->m_J + add_hit - dchi2_x*weight_x - dchi2_y*weight_y;
+    new_ts->m_J = ts->m_J + static_cast<int>((add_hit - dchi2_x*weight_x - dchi2_y*weight_y)*qual_scale);
     new_ts->m_length = ts->m_length+1;  
 
-    for(int i=0;i<3;i++) new_ts->m_X[i] += Dx*new_ts->m_Cx[i]*resid_x; //M3_0_i
-    for(int i=0;i<2;i++) new_ts->m_Y[i] += Dx*new_ts->m_Cy[i]*resid_y; //M2_0_i
+    for(int i=0;i<3;i++) new_ts->m_X[i] += Dx*new_ts->m_Cx(0,i)*resid_x;
+    for(int i=0;i<2;i++) new_ts->m_Y[i] += Dx*new_ts->m_Cy(0,i)*resid_y;
     
-    new_ts->m_Cx[M3_2_2] -= Dx*new_ts->m_Cx[M3_0_2]*new_ts->m_Cx[M3_0_2];
-    new_ts->m_Cx[M3_1_2] -= Dx*new_ts->m_Cx[M3_0_1]*new_ts->m_Cx[M3_0_2];
-    new_ts->m_Cx[M3_1_1] -= Dx*new_ts->m_Cx[M3_0_1]*new_ts->m_Cx[M3_0_1];
-    new_ts->m_Cx[M3_0_2] -= Dx*new_ts->m_Cx[M3_0_0]*new_ts->m_Cx[M3_0_2];
-    new_ts->m_Cx[M3_0_1] -= Dx*new_ts->m_Cx[M3_0_0]*new_ts->m_Cx[M3_0_1];
-    new_ts->m_Cx[M3_0_0] -= Dx*new_ts->m_Cx[M3_0_0]*new_ts->m_Cx[M3_0_0];
+    new_ts->m_Cx(2,2) -= Dx*new_ts->m_Cx(0,2)*new_ts->m_Cx(0,2);
+    new_ts->m_Cx(1,2) -= Dx*new_ts->m_Cx(0,1)*new_ts->m_Cx(0,2);
+    new_ts->m_Cx(1,1) -= Dx*new_ts->m_Cx(0,1)*new_ts->m_Cx(0,1);
+    new_ts->m_Cx(0,2) -= Dx*new_ts->m_Cx(0,0)*new_ts->m_Cx(0,2);
+    new_ts->m_Cx(0,1) -= Dx*new_ts->m_Cx(0,0)*new_ts->m_Cx(0,1);
+    new_ts->m_Cx(0,0) -= Dx*new_ts->m_Cx(0,0)*new_ts->m_Cx(0,0);
     
-    new_ts->m_Cy[M2_1_1] -= Dx*new_ts->m_Cy[M2_0_1]*new_ts->m_Cy[M2_0_1];
-    new_ts->m_Cy[M2_0_1] -= Dx*new_ts->m_Cy[M2_0_0]*new_ts->m_Cy[M2_0_1];
-    new_ts->m_Cy[M2_0_0] -= Dx*new_ts->m_Cy[M2_0_0]*new_ts->m_Cy[M2_0_0];
+    new_ts->m_Cy(1,1) -= Dx*new_ts->m_Cy(0,1)*new_ts->m_Cy(0,1);
+    new_ts->m_Cy(0,1) -= Dx*new_ts->m_Cy(0,0)*new_ts->m_Cy(0,1);
+    new_ts->m_Cy(0,0) -= Dx*new_ts->m_Cy(0,0)*new_ts->m_Cy(0,0);
     
     new_ts->m_c = ts->m_c;
     new_ts->m_s = ts->m_s;  
-    new_ts->m_head_node_type = (node1_params.w == 1);
+    new_ts->m_head_node_type = (node1_params.w == -1);
 
     return true;
 }   
 
-// for the conversion of seed quality m_J -> int_m_J -> m_Q
-inline __device__ int qual_FtoI(float m_J) {return static_cast<int>(m_J*1e7);}
-inline __device__ float qual_ItoF(int int_m_J) {return static_cast<float>(int_m_J)*1e-7;} 
-
 /** @brief Performs seed disambiguation through seeds biding to use edges with seed quality  
 *
-*  @param[in] int_m_J is the quality metric output by the Kalman filter converted to an int
+*  @param[in] m_J is the quality metric output by the Kalman filter
 *  @param[in] mini_idx the index of final mini_state, backtracking from this gives the seeds path (edges->nodes)
 *  @param[in] d_mini_states stores the path each seed took through the graph in reverse order
 *  @param[in] prop_idx the index of this new seeds proposition in d_seed_proposals
@@ -319,14 +310,14 @@ inline __device__ float qual_ItoF(int int_m_J) {return static_cast<float>(int_m_
 *  @param[out] d_seed_proposals stores the information needed to construct an output Tracklet for this seed
 *  @param[out] d_seed_ambiguity here is 0 if the seed is the highest quality seed using all of its edges and -1 otherwise
 */
-inline __device__ void add_seed_proposal(const int int_m_J, const int mini_idx, const unsigned int prop_idx, char* d_seed_ambiguity, int2* d_seed_proposals, 
+inline __device__ void add_seed_proposal(const int m_J, const int mini_idx, const unsigned int prop_idx, char* d_seed_ambiguity, int2* d_seed_proposals, 
                                          unsigned long long int* d_edge_bids, const int2* d_mini_states) {
     //new seed bids for its edges
-    d_seed_proposals[prop_idx] = make_int2(int_m_J, mini_idx);
+    d_seed_proposals[prop_idx] = make_int2(m_J, mini_idx);
     d_seed_ambiguity[prop_idx] = 0;
     __threadfence(); //ensure above proposal info is written before biding
     
-    unsigned long long int seed_bid = (static_cast<unsigned long long int>(int_m_J) << 32) | (static_cast<unsigned long long int>(prop_idx));
+    unsigned long long int seed_bid = (static_cast<unsigned long long int>(m_J) << 32) | (static_cast<unsigned long long int>(prop_idx));
     
     int2 mini_state;
     for(int next_mini = mini_idx; next_mini >= 0;) {
@@ -460,7 +451,7 @@ __global__ void seed_extracting_kernel(int view_min, int view_max, int* d_level_
                     if(d_output_graph[edge_size*nei_idx + traccc::device::nNei] == 0) { //no neighbours so will fail next round anyway so save shared
                         if(new_state.m_length >= minLevel) {
                             int prop_idx = atomicAdd(&d_counters[8], 1);
-                            if(prop_idx < nMaxProps) add_seed_proposal(qual_FtoI(new_state.m_J), new_state.m_mini_idx, prop_idx, d_seed_ambiguity, d_seed_proposals, d_edge_bids, d_mini_states);
+                            if(prop_idx < nMaxProps) add_seed_proposal(new_state.m_J, new_state.m_mini_idx, prop_idx, d_seed_ambiguity, d_seed_proposals, d_edge_bids, d_mini_states);
                         }
                     }
                     else {
@@ -476,7 +467,7 @@ __global__ void seed_extracting_kernel(int view_min, int view_max, int* d_level_
             if(no_updates) {
                 if(state.m_length >= minLevel) {
                     int prop_idx = atomicAdd(&d_counters[8], 1);
-                    if(prop_idx < nMaxProps ) add_seed_proposal(qual_FtoI(state.m_J), state.m_mini_idx, prop_idx, d_seed_ambiguity, d_seed_proposals, d_edge_bids, d_mini_states);
+                    if(prop_idx < nMaxProps ) add_seed_proposal(state.m_J, state.m_mini_idx, prop_idx, d_seed_ambiguity, d_seed_proposals, d_edge_bids, d_mini_states);
                 }
             }
         }
@@ -555,12 +546,11 @@ __global__ void seed_extracting_kernel(int view_min, int view_max, int* d_level_
             mini_state = d_mini_states[next_mini];
             next_mini = mini_state.y;
             
-            d_seeds[seed_idx].m_nodes[length] = d_output_graph[mini_state.x*edge_size + traccc::device::node1]; 
+            d_seeds[seed_idx].nodes[length] = d_output_graph[mini_state.x*edge_size + traccc::device::node1]; 
             d_levels[mini_state.x] = -1; //remove edge from graph
         }
-        d_seeds[seed_idx].m_nodes[length] = d_output_graph[mini_state.x*edge_size + traccc::device::node2];
-        d_seeds[seed_idx].m_size = ++length;
-        d_seeds[seed_idx].m_Q = qual_ItoF(prop.x); 
+        d_seeds[seed_idx].nodes[length] = d_output_graph[mini_state.x*edge_size + traccc::device::node2];
+        d_seeds[seed_idx].size = ++length;
     }
     __syncthreads();
     
@@ -570,9 +560,9 @@ void __global__ gbts_seed_conversion_kernel(Tracklet* d_seeds, edm::seed_collect
 
 	edm::seed_collection::device seeds_device(output_seeds);
 	for(int tracklet = threadIdx.x + blockIdx.x*blockDim.x; tracklet < nSeeds; tracklet += blockDim.x*gridDim.x) {
-		int length = d_seeds[tracklet].m_size;
+		int length = d_seeds[tracklet].size;
 		//sample begining, middle, end sp from tracklet for now
-		seeds_device.push_back({d_seeds[tracklet].m_nodes[0], d_seeds[tracklet].m_nodes[length/2], d_seeds[tracklet].m_nodes[length-1]});
+		seeds_device.push_back({d_seeds[tracklet].nodes[0], d_seeds[tracklet].nodes[length/2], d_seeds[tracklet].nodes[length-1]});
 	}
 }
 
