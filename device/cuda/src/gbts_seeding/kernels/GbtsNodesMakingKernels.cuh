@@ -66,7 +66,7 @@ __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::cons
 		atomicAdd(&d_layerCounts[layerIdx], 1);
 		spacepointsLayer[spIdx] = layerIdx;
 		const traccc::point3 pos = spacepoint.global();
-		reducedSP[spIdx] = make_float4(pos[0], pos[1], pos[2], -1);//cluster_diameter is calculated diffrently in traccc vs athena so turn off for now;
+		reducedSP[spIdx] = make_float4(pos[0], pos[1], pos[2], cluster_diameter);//cluster_diameter is calculated diffrently in traccc vs athena so turn off for now;
 	}
 }
 
@@ -228,11 +228,11 @@ __global__ void node_sorting_kernel(const float4* d_sp_params, const int* d_node
 
        float min_tau = -100.0;
        float max_tau = 100.0;
-
+	   /*
        if (sp.w > 0) {
             min_tau = 6.7*(sp.w - 0.2);//linear fit
             max_tau = 1.6 + 0.15/(sp.w + 0.2) + 6.1*(sp.w - 0.2);//linear fit + correction for short clusters
-       }
+       }*/
 
        int eta_index = d_node_eta_index[idx];
        int histo_bin = d_node_phi_index[idx] + nPhiBins*eta_index;
