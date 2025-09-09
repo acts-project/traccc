@@ -50,11 +50,11 @@ __global__ static void graphEdgeMakingKernel(const uint4* d_bin_pair_views, cons
 	__shared__ float low_Kappa_d0;
 	__shared__ float high_Kappa_d0;
 
-    __shared__ float tau_min[traccc::device::node_buffer_length];
-    __shared__ float tau_max[traccc::device::node_buffer_length];
-    __shared__ float phi[traccc::device::node_buffer_length];
-    __shared__ float r[traccc::device::node_buffer_length];
-    __shared__ float z[traccc::device::node_buffer_length];
+    __shared__ float tau_min[traccc::device::gbts_consts::node_buffer_length];
+    __shared__ float tau_max[traccc::device::gbts_consts::node_buffer_length];
+    __shared__ float phi[traccc::device::gbts_consts::node_buffer_length];
+    __shared__ float r[traccc::device::gbts_consts::node_buffer_length];
+    __shared__ float z[traccc::device::gbts_consts::node_buffer_length];
 
     if(threadIdx.x == 0) {
         uint4 views    = d_bin_pair_views[blockIdx.x];
@@ -317,15 +317,15 @@ __global__ static void graphCompressionKernel(const int* d_orig_node_index,
         int pos = edge_size*newIdx;
 		int2 edge_nodes = d_edge_nodes[idx];
         int node1_idx = d_orig_node_index[edge_nodes.x];
-        d_output_graph[pos + traccc::device::node1] = node1_idx;
+        d_output_graph[pos + traccc::device::gbts_consts::node1] = node1_idx;
         int node2_idx = d_orig_node_index[edge_nodes.y];
-        d_output_graph[pos + traccc::device::node2] = node2_idx;
+        d_output_graph[pos + traccc::device::gbts_consts::node2] = node2_idx;
 
         unsigned char nNei = d_num_neighbours[idx];
-        d_output_graph[pos + traccc::device::nNei] = nNei;
+        d_output_graph[pos + traccc::device::gbts_consts::nNei] = nNei;
         int nei_pos = nMaxNei*idx;
         for(int k=0;k<nNei;k++) {
-            d_output_graph[pos + traccc::device::nei_start + k] = d_reIndexer[d_neighbours[nei_pos + k]];
+            d_output_graph[pos + traccc::device::gbts_consts::nei_start + k] = d_reIndexer[d_neighbours[nei_pos + k]];
         }   
     }
 }

@@ -26,7 +26,7 @@ namespace traccc::cuda::kernels {
 __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::const_view spacepoints_view, const traccc::measurement_collection_types::const_view measurements_view, 
                                   const short* volumeToLayerMap, const uint2* surfaceToLayerMap, const char* d_layerIsEndcap, 
                                   float4* reducedSP, unsigned int* d_layerCounts, short* spacepointsLayer,
-                                  const unsigned int nSp, const unsigned int volumeMapSize, const unsigned int surfaceMapSize) {
+                                  const unsigned int nSp, const long unsigned int volumeMapSize, const long unsigned int surfaceMapSize) {
 	//shared mem volumeToLayer map
 	const traccc::measurement_collection_types::const_device measurements(measurements_view);
 	const traccc::edm::spacepoint_collection::const_device spacepoints(spacepoints_view);

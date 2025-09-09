@@ -41,19 +41,19 @@ struct gbts_layerInfo {
 	}
 };
 
-enum gbts_consts : unsigned short {
+struct gbts_consts {
 	
 	//CCA max iterations -> maxium seed length
-	max_cca_iter = 20,
+	static constexpr short max_cca_iter = 20;
 	//shared memory allocation sizes
-	node_buffer_length = 250,
-	shared_state_buffer_size = 578,
+	static constexpr short node_buffer_length = 250;
+	static constexpr short shared_state_buffer_size = 608;
 	
 	// access into output graph
-	node1 = 0,
-	node2 = 1,
-	nNei = 2,
-	nei_start = 3
+	static constexpr short node1 = 0;
+	static constexpr short node2 = 1;
+	static constexpr short nNei = 2;
+	static constexpr short nei_start = 3;
 }; 
 
 }
@@ -93,11 +93,9 @@ struct gbts_seedfinder_config {
 	std::vector<std::pair<int, int>> binTables{};
 	traccc::device::gbts_layerInfo layerInfo{};
 	unsigned int nLayers  = 0;	
-	std::shared_ptr<short[]> volumeToLayerMap{};
-	unsigned int volumeMapSize = 0;	
 
+	std::vector<short> volumeToLayerMap{};
 	std::vector<std::array<unsigned int, 2>> surfaceToLayerMap{};
-	unsigned int surfaceMapSize = 0;	
 
 	//tuned for 900 MeV pT cut and scaled by input minPt	
 	gbts_algo_params algo_params{};	

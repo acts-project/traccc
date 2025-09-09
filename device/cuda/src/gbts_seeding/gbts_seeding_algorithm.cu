@@ -121,7 +121,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	cudaMemcpyAsync(ctx.d_algo_params, &m_config.algo_params , sizeof(m_config.algo_params), cudaMemcpyHostToDevice);
 
 	//0. bin spacepoints by layer(disk) or any other maping supplied to the config.m_surfaceToLayerMap
-	ctx.nSp = m_copy.get().get_size(spacepoints); //why is get needed?
+	ctx.nSp = m_copy.get().get_size(spacepoints);
 	if(ctx.nSp == 0) return output_seeds;
 
 	unsigned int nThreads = 1024;
@@ -133,12 +133,12 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	cudaMalloc(&ctx.d_spacepointsLayer, ctx.nSp*sizeof(short));	
 	cudaMalloc(&ctx.d_reducedSP, ctx.nSp*sizeof(float4));	
 	
-	cudaMalloc(&ctx.d_volumeToLayerMap, sizeof(short)*m_config.volumeMapSize);		
-	cudaMemcpyAsync(ctx.d_volumeToLayerMap, m_config.volumeToLayerMap.get(), sizeof(short)*m_config.volumeMapSize, cudaMemcpyHostToDevice, stream);
+	cudaMalloc(&ctx.d_volumeToLayerMap, sizeof(short)*m_config.volumeToLayerMap.size());		
+	cudaMemcpyAsync(ctx.d_volumeToLayerMap, m_config.volumeToLayerMap.data(), sizeof(short)*m_config.volumeToLayerMap.size(), cudaMemcpyHostToDevice, stream);
 	
-	if(m_config.surfaceMapSize != 0) {
-		cudaMalloc(&ctx.d_surfaceToLayerMap, sizeof(uint2)*m_config.surfaceMapSize);	
-		cudaMemcpyAsync(ctx.d_surfaceToLayerMap, m_config.surfaceToLayerMap.data(), sizeof(uint2)*m_config.surfaceMapSize, cudaMemcpyHostToDevice, stream);
+	if(m_config.surfaceToLayerMap.size() != 0) {
+		cudaMalloc(&ctx.d_surfaceToLayerMap, sizeof(uint2)*m_config.surfaceToLayerMap.size());	
+		cudaMemcpyAsync(ctx.d_surfaceToLayerMap, m_config.surfaceToLayerMap.data(), sizeof(uint2)*m_config.surfaceToLayerMap.size(), cudaMemcpyHostToDevice, stream);
 	} //may be zero and correct, volumeMapSize and nLayers are checked at config
 
 	cudaMalloc(&ctx.d_layerIsEndcap, sizeof(char)*m_config.nLayers);
@@ -147,7 +147,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	kernels::count_sp_by_layer<<<nBlocks,nThreads,0,stream>>>(spacepoints,measurements,
 								ctx.d_volumeToLayerMap,ctx.d_surfaceToLayerMap,ctx.d_layerIsEndcap, 
                                 ctx.d_reducedSP, ctx.d_layerCounts, ctx.d_spacepointsLayer,
-								ctx.nSp, m_config.volumeMapSize, m_config.surfaceMapSize);
+								ctx.nSp, m_config.volumeToLayerMap.size(), m_config.surfaceToLayerMap.size());
 
 	cudaStreamSynchronize(stream);
 	
@@ -364,7 +364,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	   
 	   unsigned int nNodesInBin1 = bin1_end - bin1_begin;
 
-	   nBinPairs += 1 + (nNodesInBin1-1)/traccc::device::node_buffer_length;
+	   nBinPairs += 1 + (nNodesInBin1-1)/traccc::device::gbts_consts::node_buffer_length;
 	}
 
 	ctx.h_bin_pair_views = std::make_unique<unsigned int[]>(4*nBinPairs);
@@ -390,9 +390,9 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 			   
 	   unsigned int currBegin_bin1 = begin_bin1;
 
-	   unsigned int currEnd_bin1 = end_bin1 < traccc::device::node_buffer_length ? end_bin1 : begin_bin1 + traccc::device::node_buffer_length;
+	   unsigned int currEnd_bin1 = end_bin1 < traccc::device::gbts_consts::node_buffer_length ? end_bin1 : begin_bin1 + traccc::device::gbts_consts::node_buffer_length;
 	   
-	   for(;currEnd_bin1 < end_bin1; currEnd_bin1 += traccc::device::node_buffer_length, pairIdx++) {
+	   for(;currEnd_bin1 < end_bin1; currEnd_bin1 += traccc::device::gbts_consts::node_buffer_length, pairIdx++) {
 		   unsigned int offset = 4*pairIdx;
 		   
 		   ctx.h_bin_pair_views[offset] = currBegin_bin1;
@@ -606,7 +606,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 
 	cudaMalloc(&ctx.d_level_views, data_size);//level-based edge views
 
-	data_size = (traccc::device::max_cca_iter+1)*sizeof(int);
+	data_size = (traccc::device::gbts_consts::max_cca_iter+1)*sizeof(int);
 
 	cudaMalloc(&ctx.d_level_boundaries, data_size);
 	cudaMemset(ctx.d_level_boundaries, 0, data_size);
@@ -619,7 +619,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 
 	nThreads = 128;
 	nBlocks = 1 + (nEdgesLeft-1)/nThreads;
-	for(int iter = 0;iter < traccc::device::max_cca_iter; iter++) {
+	for(int iter = 0;iter < traccc::device::gbts_consts::max_cca_iter; iter++) {
 	   kernels::CCA_IterationKernel<<<nBlocks, nThreads, 0, stream>>>(ctx.d_output_graph, ctx.d_levels, ctx.d_active_edges, ctx.d_level_views,
 															     ctx.d_level_boundaries, ctx.d_counters, iter, ctx.nConnectedEdges, m_config.max_num_neighbours);
 	   cudaStreamSynchronize(stream);                                 
@@ -636,10 +636,10 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	   return output_seeds;
 	}
 
-	int nEdgesByLevel_cuml[traccc::device::max_cca_iter + 1];
-	nEdgesByLevel_cuml[traccc::device::max_cca_iter] = 0;        
+	int nEdgesByLevel_cuml[traccc::device::gbts_consts::max_cca_iter + 1];
+	nEdgesByLevel_cuml[traccc::device::gbts_consts::max_cca_iter] = 0;        
 	cudaMemcpyAsync(&nEdgesByLevel_cuml[0], ctx.d_level_boundaries, sizeof(nEdgesByLevel_cuml), cudaMemcpyDeviceToHost, stream);
-	int level_max = traccc::device::max_cca_iter; for(;nEdgesByLevel_cuml[level_max-1] == 0; level_max--); 
+	int level_max = traccc::device::gbts_consts::max_cca_iter; for(;nEdgesByLevel_cuml[level_max-1] == 0; level_max--); 
 
 	if(level_max < m_config.minLevel) return output_seeds;
 	
@@ -653,7 +653,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	nThreads = 1024; //448 for two blocks per SM limited by registers
 
 	nBlocks = 0;
-	int smem_per_block = static_cast<int>(sizeof(kernels::edgeState))*traccc::device::shared_state_buffer_size; 
+	int smem_per_block = static_cast<int>(sizeof(kernels::edgeState))*traccc::device::gbts_consts::shared_state_buffer_size; 
 	int soft_max_blocks = SM_count*(smem/smem_per_block);
 
 	//TO-DO better fit malloc sizes
@@ -678,7 +678,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 			
 		if(nRootEdges == 0) continue;
 		int estimated_nStates = static_cast<int>(std::pow(1.3f, level+1))*nRootEdges;
-		nBlocks += 1 + estimated_nStates/traccc::device::shared_state_buffer_size;
+		nBlocks += 1 + estimated_nStates/traccc::device::gbts_consts::shared_state_buffer_size;
 		if(nBlocks > soft_max_blocks || level_max-level>1 || level+1==m_config.minLevel) {
 
 			int view_min = view_shift-nEdgesByLevel_cuml[level]; 
