@@ -44,7 +44,7 @@ struct __align__(16) edgeState {
 };
 
 struct Tracklet {
-	unsigned int nodes[traccc::device::max_cca_iter+1];
+	unsigned int nodes[traccc::device::gbts_consts::max_cca_iter+1];
 	int size;
 };
 
@@ -79,7 +79,7 @@ __global__ static void CCA_IterationKernel(const int* d_output_graph, char* d_le
 
         int edge_pos = edge_size*edgeIdx;
         
-        int nNei = d_output_graph[edge_pos + traccc::device::nNei];
+        int nNei = d_output_graph[edge_pos + traccc::device::gbts_consts::nNei];
         
         char next_level = d_levels[levelLoad + edgeIdx];
 
@@ -87,7 +87,7 @@ __global__ static void CCA_IterationKernel(const int* d_output_graph, char* d_le
 
         for(int nIdx = 0; nIdx < nNei; nIdx++) {//loop over neighbouring edges
             
-            int nextEdgeIdx = d_output_graph[edge_pos + traccc::device::nei_start + nIdx];
+            int nextEdgeIdx = d_output_graph[edge_pos + traccc::device::gbts_consts::nei_start + nIdx];
             
             char forward_level = d_levels[levelLoad + nextEdgeIdx];
 
@@ -98,7 +98,7 @@ __global__ static void CCA_IterationKernel(const int* d_output_graph, char* d_le
             }
         }
         // add all remianing edges to level_views on the last iteration
-        if(localChange && iter < traccc::device::max_cca_iter - 1) {
+        if(localChange && iter < traccc::device::gbts_consts::max_cca_iter - 1) {
             int edgesLeftPlace = atomicAdd(&d_counters[4-toggle], 1); //nChanges
             d_active_edges[edgesLeftPlace] = edgeIdx;//for the next iteration
         }
@@ -198,7 +198,7 @@ inline __device__ bool update(edgeState* new_ts, const edgeState* ts, const floa
 
     const float add_hit = 14.0f;
 	//m_J is stored in 30 + sign bits so max qual = INT_MAX/2 = add_hit*max_length*qual_scale
-	const float qual_scale = 0.5*static_cast<float>(INT_MAX)/static_cast<float>(add_hit*traccc::device::max_cca_iter) - 1;
+	const float qual_scale = 0.5*static_cast<float>(INT_MAX)/static_cast<float>(add_hit*traccc::device::gbts_consts::max_cca_iter) - 1;
 
     //add ms.
     float m_Cx22 = ts->m_Cx(2,2) + sigma_w*sigma_w;
@@ -360,7 +360,7 @@ __global__ void seed_extracting_kernel(int view_min, int view_max, int* d_level_
     __shared__ int nStates;
     __shared__ int nSharedSpace;
 
-    __shared__ edgeState current_states[traccc::device::shared_state_buffer_size];
+    __shared__ edgeState current_states[traccc::device::gbts_consts::shared_state_buffer_size];
     
     int edge_size = 2 + 1 + max_num_neighbours;
     //TO-DO? each block to take the same distribution of levels
@@ -386,8 +386,8 @@ __global__ void seed_extracting_kernel(int view_min, int view_max, int* d_level_
 
         int edge_pos = edge_size*edge_idx;  
 
-        float4 node1_params = d_sp_params[d_output_graph[edge_pos + traccc::device::node1]]; 
-        float4 node2_params = d_sp_params[d_output_graph[edge_pos + traccc::device::node2]];
+        float4 node1_params = d_sp_params[d_output_graph[edge_pos + traccc::device::gbts_consts::node1]]; 
+        float4 node2_params = d_sp_params[d_output_graph[edge_pos + traccc::device::gbts_consts::node2]];
 
         int root_idx = atomicAdd(&total_live_states, 1);
         current_states[root_idx].initialize(node1_params, node2_params);
@@ -424,19 +424,19 @@ __global__ void seed_extracting_kernel(int view_min, int view_max, int* d_level_
             
             int edge_pos = edge_idx*edge_size;
             
-            int nNei = d_output_graph[edge_pos + traccc::device::nNei];
+            int nNei = d_output_graph[edge_pos + traccc::device::gbts_consts::nNei];
             
             char edge_level = d_levels[edge_idx];
             
             bool no_updates = true;
             
             for(unsigned char nei = 0;nei<nNei;nei++) {
-                int nei_idx  = d_output_graph[edge_pos + traccc::device::nei_start + nei];
+                int nei_idx  = d_output_graph[edge_pos + traccc::device::gbts_consts::nei_start + nei];
                 
                 char nei_level = d_levels[nei_idx];
                 if(edge_level - 1 != nei_level) continue;
                 
-                float4 node1_params = d_sp_params[d_output_graph[edge_size*nei_idx + traccc::device::node1]];   
+                float4 node1_params = d_sp_params[d_output_graph[edge_size*nei_idx + traccc::device::gbts_consts::node1]];   
                 bool success = update(&new_state, &state, node1_params);
                 
                 if(!success) continue;
@@ -448,14 +448,14 @@ __global__ void seed_extracting_kernel(int view_min, int view_max, int* d_level_
                 if(new_state.m_mini_idx < nMaxMini) {
                     d_mini_states[new_state.m_mini_idx] = make_int2(nei_idx, state.m_mini_idx);
                         
-                    if(d_output_graph[edge_size*nei_idx + traccc::device::nNei] == 0) { //no neighbours so will fail next round anyway so save shared
+                    if(d_output_graph[edge_size*nei_idx + traccc::device::gbts_consts::nNei] == 0) { //no neighbours so will fail next round anyway so save shared
                         if(new_state.m_length >= minLevel) {
                             int prop_idx = atomicAdd(&d_counters[8], 1);
                             if(prop_idx < nMaxProps) add_seed_proposal(new_state.m_J, new_state.m_mini_idx, prop_idx, d_seed_ambiguity, d_seed_proposals, d_edge_bids, d_mini_states);
                         }
                     }
                     else {
-                        int stateStoreIdx = atomicAdd(&total_live_states, 1) - traccc::device::shared_state_buffer_size; 
+                        int stateStoreIdx = atomicAdd(&total_live_states, 1) - traccc::device::gbts_consts::shared_state_buffer_size; 
                         if(stateStoreIdx<nSharedSpace) {current_states[atomicAdd(&nStates, 1)] = new_state;}
                         else { //TO-DO? make state_store shared between blocks
                             if(stateStoreIdx<nMaxStateStorePerBlock) d_state_store[stateStoreIdx+nMaxStateStorePerBlock*blockIdx.x] = new_state;
@@ -546,10 +546,10 @@ __global__ void seed_extracting_kernel(int view_min, int view_max, int* d_level_
             mini_state = d_mini_states[next_mini];
             next_mini = mini_state.y;
             
-            d_seeds[seed_idx].nodes[length] = d_output_graph[mini_state.x*edge_size + traccc::device::node1]; 
+            d_seeds[seed_idx].nodes[length] = d_output_graph[mini_state.x*edge_size + traccc::device::gbts_consts::node1]; 
             d_levels[mini_state.x] = -1; //remove edge from graph
         }
-        d_seeds[seed_idx].nodes[length] = d_output_graph[mini_state.x*edge_size + traccc::device::node2];
+        d_seeds[seed_idx].nodes[length] = d_output_graph[mini_state.x*edge_size + traccc::device::gbts_consts::node2];
         d_seeds[seed_idx].size = ++length;
     }
     __syncthreads();

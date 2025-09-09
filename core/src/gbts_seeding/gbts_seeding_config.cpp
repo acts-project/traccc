@@ -7,6 +7,7 @@
 
 #include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 #include <algorithm>
+#include <ranges>
 
 namespace traccc {
 
@@ -30,15 +31,18 @@ bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, s
 	for(std::pair<int, int> lI : layerInfo.info) n_eta_bins = std::max(n_eta_bins, lI.first + lI.second);
 
 	//bin by volume	
-	std::sort(detrayBarcodeBinning.begin(), detrayBarcodeBinning.end(), [](const std::pair<uint64_t, short> a, const std::pair<uint64_t, short> b) {return a.first > b.first;});
-	
-	unsigned int maxVol = detray::geometry::barcode(detrayBarcodeBinning[0].first).volume();
-	short current_volume = static_cast<short>(maxVol);
-	
+	std::ranges::sort(detrayBarcodeBinning, [](const std::pair<uint64_t, short> a, const std::pair<uint64_t, short> b) {return a.first > b.first;});
+
+	unsigned int largest_volume_index = detray::geometry::barcode(detrayBarcodeBinning[0].first).volume();
+	auto current_volume = static_cast<short>(largest_volume_index);
+	if(largest_volume_index >= SHRT_MAX) { 
+		TRACCC_ERROR("volume index to large to fit in type-short GBTS volume to layer map");
+		return false;
+	}
+		
 	bool layerChange     = false;
 	short current_layer  = detrayBarcodeBinning[0].second; 
 	
-	int largest_volume_index = 0;
 	int split_volumes = 0;
 	std::vector<std::pair<short, unsigned int>> volumeToLayerMap_unordered;
 	detrayBarcodeBinning.push_back(std::make_pair(UINT_MAX,-1)); // end-of-vector element
@@ -54,7 +58,6 @@ bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, s
 				for(std::array<unsigned int, 2> pair : surfacesInVolume) surfaceToLayerMap.push_back(pair);
 			}
 			volumeToLayerMap_unordered.push_back(std::make_pair(bin, current_volume)); // layerIdx if not split, begin-index in the surface map otherwise
-			if(current_volume > largest_volume_index) largest_volume_index = current_volume;
 			
 			current_volume = static_cast<short>(barcode.volume());		
 			current_layer = barcodeLayerPair.second;
@@ -68,8 +71,8 @@ bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, s
 		surfacesInVolume.push_back(std::array<unsigned int, 2>{static_cast<unsigned int>(barcode.index()), static_cast<unsigned int>(barcodeLayerPair.second)});
 	}
 	// make volume by layer map
-	volumeToLayerMap = std::make_shared<short[]>(largest_volume_index+1);
-	for(int i = 0; i < largest_volume_index + 1; ++i) volumeToLayerMap[i] = SHRT_MAX;
+	volumeToLayerMap.resize(largest_volume_index+1);
+	for(unsigned int i = 0; i < largest_volume_index + 1; ++i) volumeToLayerMap.push_back(SHRT_MAX);
 	for(std::pair<short, unsigned int> vLpair : volumeToLayerMap_unordered) volumeToLayerMap[vLpair.second] = vLpair.first;
 	//scale cuts
 	float ptScale = 900.0f/minPt;
@@ -80,13 +83,11 @@ bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, s
 	algo_params.max_Kappa*=ptScale;
 
 	//contianers sizes
-	volumeMapSize   = largest_volume_index + 1;
-	nLayers         = layerInfo.isEndcap.size();
-	surfaceMapSize  = surfaceToLayerMap.size();
+	nLayers = layerInfo.isEndcap.size();
 	
 	TRACCC_INFO("volume layer map has " << volumeToLayerMap_unordered.size() << " volumes");
-	TRACCC_INFO("The maxium volume index in the layer map is " << volumeMapSize);
-	TRACCC_INFO("surface to layer map has " << surfaceMapSize << " barcodes from " << split_volumes << " multi-layer volumes");
+	TRACCC_INFO("The maxium volume index in the layer map is " << volumeToLayerMap.size());
+	TRACCC_INFO("surface to layer map has " << surfaceToLayerMap.size() << " barcodes from " << split_volumes << " multi-layer volumes");
 	TRACCC_INFO("layer info found for " << nLayers << " layers");
 	TRACCC_INFO(binTables.size() << " linked layer-eta bins for GBTS");
 	
@@ -94,11 +95,11 @@ bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, s
 		TRACCC_ERROR("no layers input");
 		return false;
 	}
-	else if(volumeMapSize == 0) {
+	else if(volumeToLayerMap.size() == 0) {
 		TRACCC_ERROR("empty volume to layer map");
 		return false;
 	}
-	else if(surfaceMapSize >= SHRT_MAX) { //using SHRT_MAX as unused volume code
+	else if(surfaceToLayerMap.size() > SHRT_MAX) { 
 		TRACCC_ERROR("surface to layer map is to large");
 		return false;
 	}
