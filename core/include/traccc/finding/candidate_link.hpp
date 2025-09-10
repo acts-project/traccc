@@ -31,6 +31,9 @@ struct candidate_link {
     // How many times it skipped a surface
     unsigned int n_skipped;
 
+    // Number of consecutive holes; reset on measurement
+    unsigned int n_consecutive_skipped;
+
     // chi2
     traccc::scalar chi2;
 
