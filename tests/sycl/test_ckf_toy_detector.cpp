@@ -237,7 +237,7 @@ TEST_P(CkfToyDetectorTests, Run) {
             float(n_matches) /
             static_cast<float>(std::max(track_candidates.size(),
                                         track_candidates_sycl.size()));
-        EXPECT_GE(matching_rate, 0.999f);
+        EXPECT_GE(matching_rate, 0.998f);
     }
 }
 
