@@ -441,6 +441,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                         .meas_idx = meas_idx,
                         .seed_idx = seed_idx,
                         .n_skipped = n_skipped,
+                        .n_consecutive_skipped = 0,
                         .chi2 = chi2,
                         .chi2_sum = prev_chi2_sum + chi2,
                         .ndf_sum =
@@ -511,6 +512,8 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     unsigned int prev_link_idx = std::numeric_limits<unsigned int>::max();
     unsigned int seed_idx = std::numeric_limits<unsigned int>::max();
     unsigned int n_skipped = std::numeric_limits<unsigned int>::max();
+    unsigned int n_consecutive_skipped =
+        std::numeric_limits<unsigned int>::max();
     unsigned int prev_ndf_sum = 0u;
     scalar prev_chi2_sum = 0.f;
 
@@ -528,8 +531,13 @@ TRACCC_HOST_DEVICE inline void find_tracks(
         seed_idx =
             payload.step > 0 ? links.at(prev_link_idx).seed_idx : in_param_id;
         n_skipped = payload.step == 0 ? 0 : links.at(prev_link_idx).n_skipped;
+        n_consecutive_skipped =
+            payload.step == 0 ? 0
+                              : links.at(prev_link_idx).n_consecutive_skipped;
         in_param_can_create_hole =
-            (n_skipped < cfg.max_num_skipping_per_cand) && (!last_step);
+            (n_skipped < cfg.max_num_skipping_per_cand) &&
+            (n_consecutive_skipped < cfg.max_num_consecutive_skipped) &&
+            (!last_step);
         prev_ndf_sum = payload.step == 0 ? 0 : links.at(prev_link_idx).ndf_sum;
         prev_chi2_sum =
             payload.step == 0 ? 0.f : links.at(prev_link_idx).chi2_sum;
@@ -604,6 +612,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                     .meas_idx = std::numeric_limits<unsigned int>::max(),
                     .seed_idx = seed_idx,
                     .n_skipped = n_skipped + 1,
+                    .n_consecutive_skipped = n_consecutive_skipped + 1,
                     .chi2 = std::numeric_limits<traccc::scalar>::max(),
                     .chi2_sum = prev_chi2_sum,
                     .ndf_sum = prev_ndf_sum};

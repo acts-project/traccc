@@ -32,6 +32,9 @@ struct finding_config {
     /// Maximum allowed number of skipped steps per candidate
     unsigned int max_num_skipping_per_cand = 3;
 
+    /// Maximum number of consecutive holes
+    unsigned int max_num_consecutive_skipped = 1;
+
     /// Minimum step length that track should make to reach the next surface. It
     /// should be set higher than the overstep tolerance not to make it stay on
     /// the same surface
