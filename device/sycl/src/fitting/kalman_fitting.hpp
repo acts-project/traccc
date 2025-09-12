@@ -179,22 +179,32 @@ kalman_fitting(
         })
         .wait_and_throw();
 
+    // Allocate the fitting kernels's payload in host memory.
     using fitter_t = traccc::details::kalman_fitter_t<detector_t, bfield_t>;
-    device::fit_payload<fitter_t> payload{
+    device::fit_payload<fitter_t> host_payload{
         .det_data = det_view,
         .field_data = field_view,
         .param_ids_view = param_ids_buffer,
         .param_liveness_view = param_liveness_buffer,
         .tracks_view = track_states_view,
         .barcodes_view = seqs_buffer};
+    // Now copy it to device memory.
+    vecmem::data::vector_buffer<device::fit_payload<fitter_t>> device_payload(
+        1u, mr.main);
+    copy.setup(device_payload)->wait();
+    copy(vecmem::data::vector_view<const device::fit_payload<fitter_t>>(
+             1u, &host_payload),
+         device_payload)
+        ->wait();
 
     for (std::size_t i = 0; i < config.n_iterations; ++i) {
         queue
             .submit([&](::sycl::handler& h) {
                 h.parallel_for<kernels::fit_forward<kernel_t>>(
-                    range, [config, payload](::sycl::nd_item<1> item) {
+                    range, [config, payload = device_payload.ptr()](
+                               ::sycl::nd_item<1> item) {
                         device::fit_forward<fitter_t>(
-                            details::global_index(item), config, payload);
+                            details::global_index(item), config, *payload);
                     });
             })
             .wait_and_throw();
@@ -202,9 +212,10 @@ kalman_fitting(
         queue
             .submit([&](::sycl::handler& h) {
                 h.parallel_for<kernels::fit_backward<kernel_t>>(
-                    range, [config, payload](::sycl::nd_item<1> item) {
+                    range, [config, payload = device_payload.ptr()](
+                               ::sycl::nd_item<1> item) {
                         device::fit_backward<fitter_t>(
-                            details::global_index(item), config, payload);
+                            details::global_index(item), config, *payload);
                     });
             })
             .wait_and_throw();
