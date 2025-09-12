@@ -31,6 +31,8 @@ __global__ void fill_inverted_ids(device::fill_inverted_ids_payload payload) {
         return;
     }
 
+    // Fill the inverted_ids vector which converts a track id to the index of
+    // sorted ids
     inverted_ids[sorted_ids[globalIndex]] = globalIndex;
 }
 

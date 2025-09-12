@@ -32,7 +32,7 @@ __launch_bounds__(512) __global__
 
     const unsigned int tid = threadIdx.x;
 
-    // Load to shared memory
+    // Load updated track indices into shared memory (for sorting)
     shared_mem_tracks[tid] = std::numeric_limits<unsigned int>::max();
 
     if (tid < *(payload.n_updated_tracks)) {
@@ -90,6 +90,7 @@ __launch_bounds__(512) __global__
         }
     }
 
+    // Write back the sorted result from shared memory to global memory
     if (tid < *(payload.n_updated_tracks)) {
         updated_tracks[tid] = shared_mem_tracks[tid];
     }
