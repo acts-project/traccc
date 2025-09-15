@@ -710,56 +710,11 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 
 	cudaFree(ctx.d_output_graph);	
 	cudaFree(ctx.d_algo_params);	
+	cudaFree(ctx.d_reducedSP);
 
 	cudaMemcpyAsync(&ctx.nSeeds, &ctx.d_counters[9], sizeof(unsigned int) ,cudaMemcpyDeviceToHost, stream);
     if(ctx.nSeeds > nMaxSeeds) ctx.nSeeds = nMaxSeeds;
-	
-	// TESTING
-	std::unique_ptr<float4[]> params = std::make_unique<float4[]>(ctx.nSp);
-	std::unique_ptr<kernels::Tracklet[]> seeds = std::make_unique<kernels::Tracklet[]>(ctx.nSeeds);	
-	cudaMemcpyAsync(params.get(), ctx.d_reducedSP, sizeof(float4)*ctx.nSp ,cudaMemcpyDeviceToHost, stream);
-	cudaMemcpyAsync(seeds.get(), ctx.d_seeds, sizeof(kernels::Tracklet)*ctx.nSeeds ,cudaMemcpyDeviceToHost, stream);	
-	cudaFree(ctx.d_reducedSP);
-	
-	std::array<float,45> tau_max = { 0 };
-	std::array<float,45> tau_min = { 0 };
-	std::array<int,56> counts = { 0 };
-	for(int i=0;i<45;++i) tau_min[i] = 40;
-	float max_cw = 0;
-	for(int seed=0;seed<ctx.nSeeds;seed++) {
-		kernels::Tracklet tracklet = seeds[seed];
-		for(int hit = 0;hit<tracklet.size-1;hit++) {	
-			int n1 = tracklet.nodes[hit];
-			int n2 = tracklet.nodes[hit+1];
-			
-			float dr = std::sqrt(params[n1].x*params[n1].x + params[n1].y*params[n1].y) - std::sqrt(params[n2].x*params[n2].x + params[n2].y*params[n2].y);
-			float dz = params[n1].z - params[n2].z;
-			float tau = std::abs(dz/dr);
-			float cw = -1*params[n1].w;
-			int index = static_cast<int>(cw*20.0f);
-			counts[index]++;
-			if(cw <= 0) max_cw = std::max(max_cw, -1*cw);
-			else {
-				tau_max[index] = std::max(tau_max[index], tau);
-				tau_min[index] = std::min(tau_min[index], tau);
-			}
-			cw = -1*params[n2].w;
-			index = static_cast<int>(cw*20.0f);
-			counts[index]++;
-			if(cw <= 0) max_cw = std::max(max_cw, -1*cw);
-			else {
-				tau_max[index] = std::max(tau_max[index], tau);
-				tau_min[index] = std::min(tau_min[index], tau);	
-			}
-		}
-	}
-	float cw = 0;
-	for(float tau : tau_max) {TRACCC_INFO("cw " << cw << " tau_max " << tau << " counts " << counts[20*cw]); cw+=0.05f;}
-	cw = 0;
-	for(float tau : tau_min) {TRACCC_INFO("cw " << cw << " tau_min " << tau); cw+=0.05f;}
-	TRACCC_INFO(max_cw << " max cw");
-	// TESTING	
-	
+		
 	//8. convert to 3sp seeds and make output buffer
 	
 	output_seeds = edm::seed_collection::buffer(ctx.nSeeds, m_mr.main, vecmem::data::buffer_type::resizable);
