@@ -56,9 +56,10 @@ __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::cons
 			}
 		}
 		else layerIdx = static_cast<unsigned int>(begin_or_bin);
+		
 		float cluster_diameter = measurement.diameter/10.0f;
-		cluster_diameter = (d_layerIsEndcap[layerIdx] == 1) ? -1 - (cluster_diameter > 0.2) : cluster_diameter; 
-		if(cluster_diameter == -2) { 
+		cluster_diameter = (d_layerIsEndcap[layerIdx] == 1) ? -1*cluster_diameter - 0.0001 : cluster_diameter; 
+		if(cluster_diameter < -1.0f) { 
 			reducedSP[spIdx].w = -2;
 			continue;
 		} //-1 to skip cot(theta) prediction, -2 to skip spacepoint entirly	
@@ -228,11 +229,13 @@ __global__ void node_sorting_kernel(const float4* d_sp_params, const int* d_node
 
        float min_tau = -100.0;
        float max_tau = 100.0;
-	   /*
-       if (sp.w > 0) {
-            min_tau = 6.7*(sp.w - 0.2);//linear fit
-            max_tau = 1.6 + 0.15/(sp.w + 0.2) + 6.1*(sp.w - 0.2);//linear fit + correction for short clusters
-       }*/
+	   
+		if (sp.w > 0) { // barrel
+			max_tau = (sp.w > 1.0f) ? 3.0f : 12.0f;
+		}
+		else { // endcap
+			min_tau = (sp.w < -0.05f) ? 0.9f : 0.0f;
+		}
 
        int eta_index = d_node_eta_index[idx];
        int histo_bin = d_node_phi_index[idx] + nPhiBins*eta_index;

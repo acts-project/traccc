@@ -88,7 +88,7 @@ struct clustering_config {
      * See the enum definition for more details.
      */
     clustering_diameter_strategy diameter_strategy =
-        clustering_diameter_strategy::CHANNEL0;
+        clustering_diameter_strategy::CHANNEL1;
 
     /**
      * @brief The maximum number of cells per partition.
