@@ -127,7 +127,7 @@ __device__ inline void edgeState::initialize(const float4& node1_params, const f
     
     m_J = 0;
     m_length = 1;
-    m_head_node_type = (node1_params.w == -1); 
+    m_head_node_type = (node1_params.w < 0); 
     //n2->n1
 
     float dx = node1_params.x-node2_params.x;
@@ -295,7 +295,7 @@ inline __device__ bool update(edgeState* new_ts, const edgeState* ts, const floa
     
     new_ts->m_c = ts->m_c;
     new_ts->m_s = ts->m_s;  
-    new_ts->m_head_node_type = (node1_params.w == -1);
+    new_ts->m_head_node_type = (node1_params.w < 0);
 
     return true;
 }   
