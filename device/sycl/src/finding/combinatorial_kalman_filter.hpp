@@ -261,13 +261,42 @@ combinatorial_kalman_filter(
         {
             vecmem::data::vector_buffer<candidate_link> tmp_links_buffer(
                 n_max_candidates, mr.main);
-            copy.setup(tmp_links_buffer)->ignore();
+            copy.setup(tmp_links_buffer)->wait();
             bound_track_parameters_collection_types::buffer tmp_params_buffer(
                 n_max_candidates, mr.main);
-            copy.setup(tmp_params_buffer)->ignore();
+            copy.setup(tmp_params_buffer)->wait();
 
             // The number of threads to use per block in the track finding.
             static const unsigned int nFindTracksThreads = 64;
+
+            // Allocate the kernel's payload in host memory.
+            using payload_t = device::find_tracks_payload<detector_t>;
+            const payload_t host_payload{
+                .det_data = det,
+                .measurements_view = measurements,
+                .in_params_view = in_params_buffer,
+                .in_params_liveness_view = param_liveness_buffer,
+                .n_in_params = n_in_params,
+                .barcodes_view = barcodes_buffer,
+                .upper_bounds_view = upper_bounds_buffer,
+                .links_view = links_buffer,
+                .prev_links_idx =
+                    (step == 0 ? 0 : step_to_link_idx_map[step - 1]),
+                .curr_links_idx = step_to_link_idx_map[step],
+                .step = step,
+                .out_params_view = updated_params_buffer,
+                .out_params_liveness_view = updated_liveness_buffer,
+                .tips_view = tips_buffer,
+                .tip_lengths_view = tip_length_buffer,
+                .n_tracks_per_seed_view = n_tracks_per_seed_buffer,
+                .tmp_params_view = tmp_params_buffer,
+                .tmp_links_view = tmp_links_buffer};
+            // Now copy it to device memory.
+            vecmem::data::vector_buffer<payload_t> device_payload(1u, mr.main);
+            copy.setup(device_payload)->wait();
+            copy(vecmem::data::vector_view<const payload_t>(1u, &host_payload),
+                 device_payload)
+                ->wait();
 
             // Submit the kernel to the queue.
             queue
@@ -287,27 +316,7 @@ combinatorial_kalman_filter(
                     // Launch the kernel.
                     h.parallel_for<kernels::find_tracks<kernel_t>>(
                         calculate1DimNdRange(n_in_params, nFindTracksThreads),
-                        [config, det, measurements,
-                         in_params = vecmem::get_data(in_params_buffer),
-                         param_liveness =
-                             vecmem::get_data(param_liveness_buffer),
-                         n_in_params,
-                         barcodes = vecmem::get_data(barcodes_buffer),
-                         upper_bounds = vecmem::get_data(upper_bounds_buffer),
-                         links_view = vecmem::get_data(links_buffer),
-                         prev_links_idx =
-                             step == 0 ? 0 : step_to_link_idx_map[step - 1],
-                         curr_links_idx = step_to_link_idx_map[step], step,
-                         updated_params =
-                             vecmem::get_data(updated_params_buffer),
-                         updated_liveness =
-                             vecmem::get_data(updated_liveness_buffer),
-                         tips = vecmem::get_data(tips_buffer),
-                         tip_lengths = vecmem::get_data(tip_length_buffer),
-                         n_tracks_per_seed =
-                             vecmem::get_data(n_tracks_per_seed_buffer),
-                         tmp_params = vecmem::get_data(tmp_params_buffer),
-                         tmp_links = vecmem::get_data(tmp_links_buffer),
+                        [config, payload = device_payload.ptr(),
                          shared_insertion_mutex, shared_candidates,
                          shared_candidates_size, shared_num_out_params,
                          shared_out_offset](::sycl::nd_item<1> item) {
@@ -317,13 +326,7 @@ combinatorial_kalman_filter(
 
                             // Call the device function to find tracks.
                             device::find_tracks<detector_t>(
-                                thread_id, barrier, config,
-                                {det, measurements, in_params, param_liveness,
-                                 n_in_params, barcodes, upper_bounds,
-                                 links_view, prev_links_idx, curr_links_idx,
-                                 step, updated_params, updated_liveness, tips,
-                                 tip_lengths, n_tracks_per_seed, tmp_params,
-                                 tmp_links},
+                                thread_id, barrier, config, *payload,
                                 {shared_num_out_params[0], shared_out_offset[0],
                                  &(shared_insertion_mutex[0]),
                                  &(shared_candidates[0]),
@@ -478,34 +481,50 @@ combinatorial_kalman_filter(
              * Kernel5: Propagate to the next surface
              *****************************************************************/
 
-            // Launch the kernel to propagate all active tracks to the next
-            // surface.
-            queue
-                .submit([&](::sycl::handler& h) {
-                    h.parallel_for<
-                        kernels::propagate_to_next_surface<kernel_t>>(
-                        calculate1DimNdRange(n_candidates, 64),
-                        [config, det, field,
-                         in_params = vecmem::get_data(in_params_buffer),
-                         param_liveness =
-                             vecmem::get_data(param_liveness_buffer),
-                         param_ids = vecmem::get_data(param_ids_buffer),
-                         links_view = vecmem::get_data(links_buffer),
-                         prev_links_idx = step_to_link_idx_map[step], step,
-                         n_candidates, tips = vecmem::get_data(tips_buffer),
-                         tip_lengths = vecmem::get_data(tip_length_buffer)](
-                            ::sycl::nd_item<1> item) {
-                            device::propagate_to_next_surface<
-                                traccc::details::ckf_propagator_t<detector_t,
-                                                                  bfield_t>,
-                                bfield_t>(
-                                details::global_index(item), config,
-                                {det, field, in_params, param_liveness,
-                                 param_ids, links_view, prev_links_idx, step,
-                                 n_candidates, tips, tip_lengths});
-                        });
-                })
-                .wait_and_throw();
+            {
+                // Allocate the kernel's payload in host memory.
+                using payload_t = device::propagate_to_next_surface_payload<
+                    traccc::details::ckf_propagator_t<detector_t, bfield_t>,
+                    bfield_t>;
+                const payload_t host_payload{
+                    .det_data = det,
+                    .field_data = field,
+                    .params_view = in_params_buffer,
+                    .params_liveness_view = param_liveness_buffer,
+                    .param_ids_view = param_ids_buffer,
+                    .links_view = links_buffer,
+                    .prev_links_idx = step_to_link_idx_map[step],
+                    .step = step,
+                    .n_in_params = n_candidates,
+                    .tips_view = tips_buffer,
+                    .tip_lengths_view = tip_length_buffer};
+                // Now copy it to device memory.
+                vecmem::data::vector_buffer<payload_t> device_payload(1u,
+                                                                      mr.main);
+                copy.setup(device_payload)->wait();
+                copy(vecmem::data::vector_view<const payload_t>(1u,
+                                                                &host_payload),
+                     device_payload)
+                    ->wait();
+
+                // Launch the kernel to propagate all active tracks to the next
+                // surface.
+                queue
+                    .submit([&](::sycl::handler& h) {
+                        h.parallel_for<
+                            kernels::propagate_to_next_surface<kernel_t>>(
+                            calculate1DimNdRange(n_candidates, 64),
+                            [config, payload = device_payload.ptr()](
+                                ::sycl::nd_item<1> item) {
+                                device::propagate_to_next_surface<
+                                    traccc::details::ckf_propagator_t<
+                                        detector_t, bfield_t>,
+                                    bfield_t>(details::global_index(item),
+                                              config, *payload);
+                            });
+                    })
+                    .wait_and_throw();
+            }
         }
 
         n_in_params = n_candidates;
