@@ -109,9 +109,6 @@ gbts_seeding_algorithm::gbts_seeding_algorithm(const gbts_seedfinder_config& cfg
                                                : messaging(logger->clone()), m_config(cfg), m_mr(mr), m_copy(copy), m_stream(str) {}
 
 gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const traccc::edm::spacepoint_collection::const_view& spacepoints, const traccc::measurement_collection_types::const_view& measurements) const {
-
-    edm::seed_collection::buffer output_seeds(0, m_mr.main, vecmem::data::buffer_type::resizable);
-	m_copy.get().setup(output_seeds)->ignore();
 	
 	gbts_ctx ctx;
 
@@ -122,7 +119,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 
 	//0. bin spacepoints by layer(disk) or any other maping supplied to the config.m_surfaceToLayerMap
 	ctx.nSp = m_copy.get().get_size(spacepoints);
-	if(ctx.nSp == 0) return output_seeds;
+	if(ctx.nSp == 0) return {0, m_mr.main};
 
 	unsigned int nThreads = 1024;
 	unsigned int nBlocks = 1+(ctx.nSp-1)/nThreads;
@@ -164,7 +161,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	}
 	cudaMemcpyAsync(ctx.d_layerCounts, layerCounts.get(), m_config.nLayers*sizeof(unsigned int), cudaMemcpyHostToDevice, stream);	
 	ctx.nNodes = layerCounts[m_config.nLayers];
-	if(ctx.nNodes == 0) return output_seeds;
+	if(ctx.nNodes == 0) return {0, m_mr.main};
 	layerCounts.reset();
 	
 	cudaMalloc(&ctx.d_sp_params, ctx.nSp*sizeof(float4));	
@@ -177,7 +174,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 
 	if(error != cudaSuccess) {
 		TRACCC_ERROR("spacepoint layer binning: CUDA error: " << cudaGetErrorString(error));
-		return output_seeds;
+		return {0, m_mr.main};
 	}
 
 	cudaFree(ctx.d_spacepointsLayer);
@@ -217,7 +214,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 
 	if(error != cudaSuccess) {
 		TRACCC_ERROR("eta-phi binning: CUDA error: " << cudaGetErrorString(error));
-		return output_seeds;
+		return {0, m_mr.main};
 	}
 	size_t hist_size = sizeof(unsigned int)*m_config.n_eta_bins*m_config.n_phi_bins;
 	cudaMalloc(&ctx.d_eta_phi_histo, hist_size);
@@ -234,7 +231,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 
     if(error != cudaSuccess) {
         TRACCC_ERROR("eta-phi histo: CUDA error: " << cudaGetErrorString(error));
-        return output_seeds;
+        return {0, m_mr.main};
     }
 	
 	cudaMalloc(&ctx.d_eta_node_counter, sizeof(unsigned int)*m_config.n_eta_bins);
@@ -254,7 +251,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 
     if(error != cudaSuccess) {
         TRACCC_ERROR("eta-phi counting: CUDA error: " << cudaGetErrorString(error));
-        return output_seeds;
+        return {0, m_mr.main};
     }
 	
 	std::unique_ptr<unsigned int[]> eta_sums = std::make_unique<unsigned int[]>(m_config.n_eta_bins);
@@ -288,7 +285,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 
 	if(error != cudaSuccess) {
 		TRACCC_ERROR("eta-phi cusum: CUDA error: " << cudaGetErrorString(error));
-		return output_seeds;
+		return {0, m_mr.main};
 	}
 		
 	cudaMalloc(&ctx.d_node_params, 5*sizeof(float)*ctx.nNodes);
@@ -314,7 +311,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 
 	if(error != cudaSuccess) {
 	   TRACCC_ERROR("node sorting: CUDA error: " << cudaGetErrorString(error));
-	   return output_seeds;
+	   return {0, m_mr.main};
 	}
 	
 	cudaMalloc(&ctx.d_eta_bin_views, sizeof(int2)*m_config.n_eta_bins);
@@ -340,7 +337,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 
 	if(error != cudaSuccess) {
 	   TRACCC_ERROR("node sorting: CUDA error: " << cudaGetErrorString(error));
-	   return output_seeds;
+	   return {0, m_mr.main};
 	}
 
 	ctx.h_bin_rads = std::make_unique<float[]>(2*m_config.n_eta_bins);
@@ -416,7 +413,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	   
 	}
 	ctx.nUsedBinPairs = pairIdx;
-	if(ctx.nUsedBinPairs == 0) return output_seeds;
+	if(ctx.nUsedBinPairs == 0) return {0, m_mr.main};
 	ctx.h_eta_bin_views.reset();	
 	// allocate memory and copy bin pair views and phi cuts to GPU
 
@@ -459,7 +456,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 
 	if(error != cudaSuccess) {
 	   TRACCC_ERROR("edge making: CUDA error: " << cudaGetErrorString(error));
-	   return output_seeds;
+	   return {0, m_mr.main};
 	}
 
 	cudaMemcpyAsync(&ctx.nEdges, ctx.d_counters, sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
@@ -467,7 +464,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	TRACCC_INFO("Created " << ctx.nEdges << " edges under a cap of " << ctx.nMaxEdges);
 	   
 	if(ctx.nEdges > ctx.nMaxEdges) ctx.nEdges = ctx.nMaxEdges;
-	else if(ctx.nEdges == 0) return output_seeds;
+	else if(ctx.nEdges == 0) return {0, m_mr.main};
 
 	std::unique_ptr<unsigned int[]> cusum = std::make_unique<unsigned int[]>(ctx.nNodes+1);
 
@@ -504,7 +501,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 
 	if(error != cudaSuccess) {
 	   TRACCC_ERROR("edge linking: CUDA error: " << cudaGetErrorString(error));
-	   return output_seeds;
+	   return {0, m_mr.main};
 	}
 
 	//4. edge matching to create edge-to-edge connections
@@ -535,7 +532,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 
 	if(error != cudaSuccess) {
 	   TRACCC_ERROR("edge matching: CUDA error: " << cudaGetErrorString(error));
-	   return output_seeds;
+	   return {0, m_mr.main};
 	}
 
 	//5. Edge re-indexing to keep only edges involved in any connection
@@ -548,7 +545,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 
 	if(error != cudaSuccess) {
 	   TRACCC_ERROR("edge re-indexing: CUDA error: " << cudaGetErrorString(error));
-	   return output_seeds;
+	   return {0, m_mr.main};
 	}
 
 	unsigned int nStats[3];
@@ -559,7 +556,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	ctx.nConnectedEdges = nStats[2];
 
 	TRACCC_INFO("created " << ctx.nConnections << " edge links, found " << ctx.nConnectedEdges << " connected edges for seed extraction");
-	if(ctx.nConnectedEdges == 0) return output_seeds;
+	if(ctx.nConnectedEdges == 0) return {0, m_mr.main};
 
 	int nIntsPerEdge = 2 + 1 + m_config.max_num_neighbours;
 
@@ -587,7 +584,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	error = cudaGetLastError();
 	if(error != cudaSuccess) {
 	   TRACCC_ERROR("graph compression: CUDA error: " << cudaGetErrorString(error));
-       return output_seeds;
+       return {0, m_mr.main};
 	}
 		
 	//6. Find longest segments with CCA
@@ -633,7 +630,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 
 	if(error != cudaSuccess) {
 	   TRACCC_ERROR("message-passing CCA: CUDA error: " << cudaGetErrorString(error));
-	   return output_seeds;
+	   return {0, m_mr.main};
 	}
 
 	int nEdgesByLevel_cuml[traccc::device::gbts_consts::max_cca_iter + 1];
@@ -641,7 +638,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	cudaMemcpyAsync(&nEdgesByLevel_cuml[0], ctx.d_level_boundaries, sizeof(nEdgesByLevel_cuml), cudaMemcpyDeviceToHost, stream);
 	int level_max = traccc::device::gbts_consts::max_cca_iter; for(;nEdgesByLevel_cuml[level_max-1] == 0; level_max--); 
 
-	if(level_max < m_config.minLevel) return output_seeds;
+	if(level_max < m_config.minLevel) return {0, m_mr.main};
 	
 	//7. extract seeds, longest segment first 
 	//(note: probably better to count segments in the CCA then find segments then fit/disambiguate them rather than branch as we go)
@@ -713,11 +710,12 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	cudaFree(ctx.d_reducedSP);
 
 	cudaMemcpyAsync(&ctx.nSeeds, &ctx.d_counters[9], sizeof(unsigned int) ,cudaMemcpyDeviceToHost, stream);
-    if(ctx.nSeeds > nMaxSeeds) ctx.nSeeds = nMaxSeeds;
-		
+    if(ctx.nSeeds > nMaxSeeds) ctx.nSeeds = nMaxSeeds;	
+	if(ctx.nSeeds == 0) return {0, m_mr.main};
+    
 	//8. convert to 3sp seeds and make output buffer
 	
-	output_seeds = edm::seed_collection::buffer(ctx.nSeeds, m_mr.main, vecmem::data::buffer_type::resizable);
+    edm::seed_collection::buffer output_seeds(ctx.nSeeds, m_mr.main, vecmem::data::buffer_type::resizable);
 	m_copy.get().setup(output_seeds)->ignore();	
 	
 	nThreads = 128;
@@ -734,7 +732,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	
 	if(error != cudaSuccess) {
 		TRACCC_ERROR("seed-extracting kalman filter: CUDA error: " << cudaGetErrorString(error));
-		return output_seeds;
+		return {0, m_mr.main};
 	}
 
 	TRACCC_INFO("GBTS found " << ctx.nSeeds << " seeds");
