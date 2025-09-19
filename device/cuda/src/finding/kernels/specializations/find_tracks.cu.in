@@ -6,15 +6,15 @@
  */
 
 // Local include(s).
-#include "${SOURCE_DIR}/find_tracks_src.cuh"
+#include "src/finding/kernels/specializations/find_tracks_src.cuh"
 
 // Project include(s).
 #include "traccc/geometry/detector.hpp"
 
 namespace traccc::cuda {
-template void find_tracks<traccc::${DETECTOR_NAME}::device>(
+template void find_tracks<traccc::@DETECTOR_NAME@ ::device>(
     const dim3& grid_size, const dim3& block_size, std::size_t shared_mem_size,
     const cudaStream_t& stream, const finding_config&,
-    const traccc::${DETECTOR_NAME}::device::const_view_type&,
+    const traccc::@DETECTOR_NAME@ ::device::const_view_type&,
     const device::find_tracks_payload&);
 }  // namespace traccc::cuda
