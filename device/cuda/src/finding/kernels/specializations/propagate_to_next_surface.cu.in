@@ -6,8 +6,8 @@
  */
 
 // Local include(s).
-#include "${SOURCE_DIR}/../../../utils/magnetic_field_types.hpp"
-#include "${SOURCE_DIR}/propagate_to_next_surface_src.cuh"
+#include "src/utils/magnetic_field_types.hpp"
+#include "src/finding/kernels/specializations/propagate_to_next_surface_src.cuh"
 
 // Project include(s).
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
