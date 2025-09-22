@@ -26,7 +26,7 @@ namespace traccc::cuda::kernels {
 __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::const_view spacepoints_view, const traccc::measurement_collection_types::const_view measurements_view, 
                                   const short* volumeToLayerMap, const uint2* surfaceToLayerMap, const char* d_layerIsEndcap, 
                                   float4* reducedSP, unsigned int* d_layerCounts, short* spacepointsLayer,
-                                  const unsigned int nSp, const long unsigned int volumeMapSize, const long unsigned int surfaceMapSize, bool doTauCut = false) {
+                                  const unsigned int nSp, const long unsigned int volumeMapSize, const long unsigned int surfaceMapSize, bool doTauCut = true) {
 	//shared mem volumeToLayer map
 	const traccc::measurement_collection_types::const_device measurements(measurements_view);
 	const traccc::edm::spacepoint_collection::const_device spacepoints(spacepoints_view);
@@ -57,11 +57,10 @@ __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::cons
 		}
 		else layerIdx = static_cast<unsigned int>(begin_or_bin);
 		
-		float cluster_diameter = measurement.diameter/10.0f;
+		float cluster_diameter = measurement.diameter;
 		if(doTauCut) cluster_diameter = (d_layerIsEndcap[layerIdx] == 1) ? -1*cluster_diameter - 0.0001 : cluster_diameter; 
 		else cluster_diameter = (d_layerIsEndcap[layerIdx] == 1) ? -0.1 : 0; //skips the tau cut later < 0 signals endcap
-		
-		if(cluster_diameter < -0.2f) { 
+		if(cluster_diameter < -0.2001f) { 
 			reducedSP[spIdx].w = -2;
 			continue;
 		} //-1 to skip cot(theta) prediction, -2 to skip spacepoint entirly	
