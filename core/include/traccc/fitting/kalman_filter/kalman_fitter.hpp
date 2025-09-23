@@ -407,10 +407,10 @@ class kalman_fitter {
     // Detector object
     const detector_type& m_detector;
     // Field object
-    const bfield_type m_field;
+    const bfield_type& m_field;
 
     // Configuration object
-    config_type m_cfg;
+    const config_type& m_cfg;
 };
 
 }  // namespace traccc

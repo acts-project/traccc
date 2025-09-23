@@ -14,7 +14,7 @@ namespace traccc::device {
 
 template <typename fitter_t>
 TRACCC_HOST_DEVICE inline void fit_backward(
-    const global_index_t globalIndex, const typename fitter_t::config_type cfg,
+    const global_index_t globalIndex, const typename fitter_t::config_type& cfg,
     const fit_payload<fitter_t>& payload) {
 
     typename fitter_t::detector_type det(payload.det_data);
