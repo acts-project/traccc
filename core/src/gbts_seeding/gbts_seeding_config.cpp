@@ -41,7 +41,7 @@ bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, s
 	}
 		
 	bool layerChange     = false;
-	short current_layer  = detrayBarcodeBinning[0].second; 
+	short current_layer  = detrayBarcodeBinning[0].second;
 	
 	int split_volumes = 0;
 	std::vector<std::pair<short, unsigned int>> volumeToLayerMap_unordered;

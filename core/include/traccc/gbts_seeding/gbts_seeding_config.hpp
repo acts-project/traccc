@@ -54,7 +54,7 @@ struct gbts_consts {
 	static constexpr short node2 = 1;
 	static constexpr short nNei = 2;
 	static constexpr short nei_start = 3;
-}; 
+};
 
 }
 
@@ -86,7 +86,7 @@ struct gbts_algo_params {
 };
 
 struct gbts_seedfinder_config {
-	bool setLinkingScheme(const std::vector<std::pair<int, std::vector<int>>>& binTables, const device::gbts_layerInfo layerInfo,
+    bool setLinkingScheme(const std::vector<std::pair<int, std::vector<int>>>& binTables, const device::gbts_layerInfo layerInfo,
     std::vector<std::pair<uint64_t, short>>& detrayBarcodeBinning, float minPt, std::unique_ptr<const ::Acts::Logger> logger);
 	
 	//layer linking and geometry	
