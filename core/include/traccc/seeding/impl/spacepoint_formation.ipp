@@ -17,20 +17,17 @@ namespace traccc::details {
 
 TRACCC_HOST_DEVICE inline bool is_valid_measurement(const measurement& meas) {
     // We use 2D (pixel) measurements only for spacepoint creation
-    if (meas.meas_dim == 2u) {
-        return true;
-    }
-    return false;
+    return (meas.meas_dim == 2u);
 }
 
 template <typename soa_t, typename detector_t>
-TRACCC_HOST_DEVICE inline void fill_pixel_spacepoint(edm::spacepoint<soa_t>& sp,
-                                                     const detector_t& det,
-                                                     const measurement& meas) {
+TRACCC_HOST_DEVICE inline void fill_pixel_spacepoint(
+    edm::spacepoint<soa_t>& sp, const detector_t& det, const measurement& meas,
+    const typename detector_t::geometry_context gctx) {
 
     // Get the global position of this silicon pixel measurement.
     const detray::tracking_surface sf{det, meas.surface_link};
-    const auto global = sf.local_to_global({}, meas.local, {});
+    const auto global = sf.local_to_global(gctx, meas.local, {});
 
     // Fill the spacepoint with the global position and the measurement.
     sp.x() = global[0];

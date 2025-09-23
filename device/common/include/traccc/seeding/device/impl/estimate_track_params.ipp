@@ -42,26 +42,15 @@ inline void estimate_track_params(
         seeds_device.at(globalIndex);
 
     // Get bound track parameter
-    bound_track_parameters<> track_params;
-    track_params.set_vector(seed_to_bound_vector(
-        measurements_device, spacepoints_device, this_seed, bfield));
+    bound_track_parameters<>& track_params = params_device.at(globalIndex);
+    seed_to_bound_param_vector(track_params, measurements_device,
+                               spacepoints_device, this_seed, bfield);
 
     // Set Covariance
     for (std::size_t i = 0; i < e_bound_size; i++) {
         getter::element(track_params.covariance(), i, i) =
             stddev[i] * stddev[i];
     }
-
-    // Get geometry ID for bottom spacepoint
-    const edm::spacepoint_collection::const_device::const_proxy_type spB =
-        spacepoints_device.at(this_seed.bottom_index());
-    assert(spB.measurement_index_2() ==
-           edm::spacepoint_collection::const_device::INVALID_MEASUREMENT_INDEX);
-    track_params.set_surface_link(
-        measurements_device.at(spB.measurement_index_1()).surface_link);
-
-    // Save the object into global memory.
-    params_device.at(globalIndex) = track_params;
 }
 
 }  // namespace traccc::device
