@@ -248,8 +248,6 @@ __global__ static void graphEdgeMatchingKernel(const gbts_algo_params* d_algo_pa
 
     for(int k=0;k<nLinks;k++) {//loop over potential neighbours
 
-        if (num_nei == nMaxNei-1) {printf("hit max"); break;}
-        
         int edge2_idx = d_edge_links[link_begin + k];
         
         half4 params2 = d_edge_params[edge2_idx];

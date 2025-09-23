@@ -433,7 +433,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	cudaStreamSynchronize(stream);
 	
 	//2. Find edges between spacepoint pairs
-	ctx.nMaxEdges = 12*ctx.nNodes; //used to be 7*
+	ctx.nMaxEdges = 7*ctx.nNodes;
 	cudaMalloc(&ctx.d_edge_params, sizeof(kernels::half4)*ctx.nMaxEdges);
 	cudaMalloc(&ctx.d_edge_nodes, sizeof(int2)*ctx.nMaxEdges);
 	cudaMalloc(&ctx.d_num_incoming_edges, sizeof(unsigned int)*(ctx.nNodes+1));
