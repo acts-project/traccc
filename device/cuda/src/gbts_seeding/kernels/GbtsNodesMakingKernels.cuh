@@ -76,7 +76,7 @@ __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::cons
 __global__ void bin_sp_by_layer(float4* sp_params ,float4* reducedSP, unsigned int* layerCounts, short* spacepointsLayer, int* original_sp_idx, const unsigned int nSp) {
 	for(int spIdx = threadIdx.x + blockDim.x*blockIdx.x; spIdx<nSp; spIdx += blockDim.x*gridDim.x) {
 		float4 sp = reducedSP[spIdx];
-		if(sp.w < -1.5) continue;
+		if(sp.w == -2) continue;
 		short layerIdx = spacepointsLayer[spIdx];
 		unsigned int binedIdx = atomicSub(&layerCounts[layerIdx], 1) - 1;
 		original_sp_idx[binedIdx] = spIdx;

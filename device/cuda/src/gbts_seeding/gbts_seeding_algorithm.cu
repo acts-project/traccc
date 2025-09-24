@@ -440,7 +440,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	ctx.nMaxEdges = 20*ctx.nNodes; //was 7*nNodes, need more until graph building cuts are fixed
 	cudaMalloc(&ctx.d_edge_params, sizeof(kernels::half4)*ctx.nMaxEdges);
 	cudaMalloc(&ctx.d_edge_nodes, sizeof(int2)*ctx.nMaxEdges);
-	
+
 	cudaMalloc(&ctx.d_num_incoming_edges, sizeof(unsigned int)*(ctx.nNodes+1));
 	cudaMemset(ctx.d_num_incoming_edges, 0, sizeof(unsigned int)*(ctx.nNodes+1));
 
@@ -478,7 +478,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	cudaMemcpyAsync(&cusum[0], ctx.d_num_incoming_edges, data_size, cudaMemcpyDeviceToHost, stream);
 
 	cudaStreamSynchronize(stream);
-	
+
 	for(int k=0;k<ctx.nNodes;k++) cusum[k+1] += cusum[k];
 	
 	cudaMemcpyAsync(ctx.d_num_incoming_edges, &cusum[0], data_size, cudaMemcpyHostToDevice, stream);
@@ -677,7 +677,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	int view_shift = nEdgesByLevel_cuml[0];
 	for(int level = level_max-1; level+1>=m_config.minLevel; level--) {
 		int nRootEdges = (nEdgesByLevel_cuml[level]-nEdgesByLevel_cuml[level_max]);
-		
+
 		if(nRootEdges == 0) continue;
 		int estimated_nStates = static_cast<int>(std::pow(1.3f, level+1))*nRootEdges;
 		nBlocks += 1 + estimated_nStates/traccc::device::gbts_consts::shared_state_buffer_size;
