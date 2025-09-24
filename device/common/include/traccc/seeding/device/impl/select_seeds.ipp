@@ -67,7 +67,9 @@ inline void select_seeds(
     const triplet_counter_spM_collection_types::const_view& spM_tc_view,
     const triplet_counter_collection_types::const_view& tc_view,
     const device_triplet_collection_types::const_view& triplet_view,
-    device_triplet* data, edm::seed_collection::view seed_view) {
+    device_triplet* data, 
+    const vecmem::data::vector_view<const unsigned int> votes_per_triplet_view,
+    edm::seed_collection::view seed_view) {
 
     // Check if anything needs to be done.
     const triplet_counter_spM_collection_types::const_device triplet_counts_spM(
@@ -85,6 +87,8 @@ inline void select_seeds(
         sp_view);
 
     const device_triplet_collection_types::const_device triplets(triplet_view);
+    const vecmem::device_vector<const unsigned int> votes_per_triplet(
+        votes_per_triplet_view);
     edm::seed_collection::device seeds_device(seed_view);
 
     // Current work item = middle spacepoint
@@ -99,9 +103,14 @@ inline void select_seeds(
 
     const unsigned int end_triplets_spM =
         spM_counter.posTriplets + spM_counter.m_nTriplets;
+
     // iterate over the triplets in the bin
     for (unsigned int i = spM_counter.posTriplets; i < end_triplets_spM; ++i) {
-        device_triplet aTriplet = triplets[i];
+        const device_triplet& aTriplet = triplets[i];
+
+        if (votes_per_triplet.at(i) < 3) {
+            continue;
+        }
 
         // spacepoints bottom and top for this triplet
         const unsigned int spB_idx = aTriplet.spB;
@@ -110,16 +119,6 @@ inline void select_seeds(
         const unsigned int spT_idx = aTriplet.spT;
         const edm::spacepoint_collection::const_device::const_proxy_type spT =
             spacepoints.at(spT_idx);
-
-        // update weight of triplet
-        seed_selecting_helper::seed_weight(filter_config, spM, spB, spT,
-                                           aTriplet.weight);
-
-        // check if it is a good triplet
-        if (!seed_selecting_helper::single_seed_cut(filter_config, spM, spB,
-                                                    spT, aTriplet.weight)) {
-            continue;
-        }
 
         // if the number of good triplets is larger than the threshold,
         // the triplet with the lowest weight is removed
