@@ -15,7 +15,8 @@
 #include <cuda_fp16.h>
 
 namespace traccc::cuda::kernels {
-	//currently 80 bytes -> 5 v4 loads/stores
+
+//currently 80 bytes -> 5 v4 loads/stores
 struct __align__(16) edgeState {
 		
 	__device__ inline void initialize(const float4& node1_params, const float4& node2_params);
@@ -83,11 +84,9 @@ __global__ static void CCA_IterationKernel(const int* d_output_graph, char* d_le
 		char next_level = d_levels[levelLoad + edgeIdx];
 
 		bool localChange = false;
-
 		for(int nIdx = 0; nIdx < nNei; nIdx++) {//loop over neighbouring edges
 			
 			int nextEdgeIdx = d_output_graph[edge_pos + traccc::device::gbts_consts::nei_start + nIdx];
-			
 			char forward_level = d_levels[levelLoad + nextEdgeIdx];
 
 			if(next_level == forward_level) {
@@ -383,7 +382,7 @@ __global__ void seed_extracting_kernel(int view_min, int view_max, int* d_level_
 		char level = d_levels[edge_idx];
 		if(level == -1) continue;
 
-		int edge_pos = edge_size*edge_idx
+		int edge_pos = edge_size*edge_idx;
 
 		float4 node1_params = d_sp_params[d_output_graph[edge_pos + traccc::device::gbts_consts::node1]];
 		float4 node2_params = d_sp_params[d_output_graph[edge_pos + traccc::device::gbts_consts::node2]];

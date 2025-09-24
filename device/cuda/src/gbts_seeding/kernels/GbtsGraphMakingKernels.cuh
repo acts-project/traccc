@@ -247,18 +247,20 @@ __global__ static void graphEdgeMatchingKernel(const gbts_algo_params* d_algo_pa
 
 	for(int k=0;k<nLinks;k++) {//loop over potential neighbours
 
+		if(num_nei >= nMaxNei) break;
+
 		int edge2_idx = d_edge_links[link_begin + k];
 		
 		half4 params2 = d_edge_params[edge2_idx];
-				
+	
 		__half tau_ratio = params2.x*uat_2 - ONE_h;
-				
+
 		if(__habs(tau_ratio) > cut_tau_ratio_max) {//bad match
 			continue;
 		}
-					
+		
 		__half dPhi =  Phi2 - params2.w;//Phi2
-					
+	
 		if (dPhi < -PI_h) dPhi += PI_2_h;
 		else if (dPhi > PI_h) dPhi -= PI_2_h;
 		if(__habs(dPhi) > cut_dphi_max) {
@@ -301,13 +303,13 @@ __global__ void edgeReIndexingKernel(int* d_reIndexer, unsigned int* d_counters,
 __global__ static void graphCompressionKernel(const int* d_orig_node_index, 
 												  const int2* d_edge_nodes, const unsigned char* d_num_neighbours, const int* d_neighbours, 
 												  const int* d_reIndexer, int* d_output_graph, int nEdgesPerBlock, int nEdges, int nMaxNei) {
-		   
+	 
 	int begin_edge = blockIdx.x * nEdgesPerBlock;
 	int edge_size  = 2 + 1 + nMaxNei;
 
 	for(int idx = threadIdx.x + begin_edge;idx < begin_edge + nEdgesPerBlock; idx += blockDim.x) {
 
-		if (idx >= nEdges) continue;
+		if(idx >= nEdges) continue;
 
 		int newIdx = d_reIndexer[idx];
 		if (newIdx == -1) continue;
@@ -323,7 +325,7 @@ __global__ static void graphCompressionKernel(const int* d_orig_node_index,
 		int nei_pos = nMaxNei*idx;
 		for(int k=0;k<nNei;k++) {
 			d_output_graph[pos + traccc::device::gbts_consts::nei_start + k] = d_reIndexer[d_neighbours[nei_pos + k]];
-		}   
+		}
 	}
 }
 
