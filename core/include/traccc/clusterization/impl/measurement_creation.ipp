@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2024 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -157,6 +157,9 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
 
     // Set the measurement's subspace.
     m.subs = module_dd.subspace();
+
+    // Save the index of the cluster that produced this measurement
+    m.cluster_index = static_cast<unsigned int>(index);
 }
 
 }  // namespace traccc::details
