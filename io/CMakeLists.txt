@@ -80,8 +80,8 @@ traccc_add_library( traccc_io io TYPE SHARED
   "src/obj/write_track_candidates.cpp"
   )
 target_link_libraries( traccc_io
-  PUBLIC vecmem::core traccc::core ActsCore dfelibs::dfelibs
-  PRIVATE detray::core detray::io ActsPluginJson )
+  PUBLIC vecmem::core traccc::core Acts::Core dfelibs::dfelibs
+  PRIVATE detray::core detray::io Acts::PluginJson )
 target_compile_definitions( traccc_io
   PRIVATE TRACCC_TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/data" )
 if( OpenMP_CXX_FOUND )
