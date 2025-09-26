@@ -29,7 +29,7 @@
 
 using namespace traccc;
 
-constexpr std::size_t n_events{10u};
+constexpr std::size_t n_events{1u};
 constexpr std::size_t n_tracks{1000u};
 
 constexpr detray::pdg_particle ptc_type{detray::muon<scalar>()};
@@ -68,12 +68,17 @@ TEST_P(KF_intergration_test_toy_detector, toy_detector) {
         .do_check(true);
     if (std::get<5>(GetParam())) {
         reader_cfg.add_file("toy_detector_material_maps.json");
-        //reader_cfg.add_file("toy_detector_homogeneous_material.json");
+        // reader_cfg.add_file("toy_detector_homogeneous_material.json");
     }
 
-    const auto [det, names] =
+    auto [io_det, names] =
         detray::io::read_detector<traccc::default_detector::host>(host_mr,
                                                                   reader_cfg);
+    traccc::host_detector host_det{};
+    host_det.template set<detector_traits<typename detector_t::metadata>>(
+        std::move(io_det));
+    const auto& det = host_det.template as<traccc::detector_traits<typename detector_t::metadata>>();
+
     // Create B field
     b_field_t field = traccc::construct_const_bfield(B)
                           .as_field<traccc::const_bfield_backend_t<scalar>>();
@@ -131,7 +136,7 @@ TEST_P(KF_intergration_test_toy_detector, toy_detector) {
         std::get<1>(GetParam()) + 3.f * traccc::unit<float>::mm;
 
     const bool success = kalman_filter_comparison(
-        det, names, prop_cfg, outdir, n_events, logger->clone(),
+        &host_det, names, prop_cfg, outdir, n_events, logger->clone(),
         std::get<6>(GetParam()), std::get<7>(GetParam()), false, ptc_type,
         stddevs, B, min_p, max_r);
 

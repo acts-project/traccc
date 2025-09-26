@@ -9,7 +9,7 @@
 #include "traccc/bfield/construct_const_bfield.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/fitting/kalman_filter/kalman_actor.hpp"
-#include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/io/data_format.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/simulation/event_generators.hpp"
@@ -80,8 +80,13 @@ int main(int argc, char* argv[]) {
     }
 
     // Read the detector.
-    auto [det, names] =
+    auto [io_det, names] =
         detray::io::read_detector<detector_t>(host_mr, reader_cfg);
+
+    traccc::host_detector host_det{};
+    host_det.template set<traccc::detector_traits<typename detector_t::metadata>>(
+        std::move(io_det));
+    const auto& det = host_det.template as<traccc::detector_traits<typename detector_t::metadata>>();
 
     // Vector for the constant magnetic field
     constexpr vector3_t B{0.f, 0.f, 2.f * traccc::unit<traccc::scalar>::T};
@@ -183,7 +188,7 @@ int main(int argc, char* argv[]) {
 
     // Run the application.
     const bool success = traccc::kalman_filter_comparison(
-        det, names, propagation_opts, input_opts.directory,
+        &host_det, names, propagation_opts, input_opts.directory,
         static_cast<unsigned int>(input_opts.events), logger().clone(),
         generation_opts.do_multiple_scattering, generation_opts.do_energy_loss,
         input_opts.use_acts_geom_source, generation_opts.ptc_type, stddevs, B);

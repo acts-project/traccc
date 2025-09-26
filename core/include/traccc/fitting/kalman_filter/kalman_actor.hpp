@@ -59,21 +59,16 @@ struct kalman_actor_state {
         return m_track_states.at(m_track.state_indices().at(m_idx));
     }
 
-    /// Reset the iterator
+    /// Advance the iterator
     TRACCC_HOST_DEVICE
-    void reset() {
-        if (!backward_mode) {
-            m_idx = 0;
-        } else {
-            m_idx = m_track.state_indices().size() - 1;
-        }
-
-        // Reset the hole states from a previous fitter pass
-        /*for (auto& trk_state : m_track_states) {
-            trk_state.is_hole = true;
-        }*/
-        n_holes = 0u;
+    typename edm::track_state_collection<algebra_t>::device::proxy_type at(
+        unsigned int i) {
+        return m_track_states.at(m_track.state_indices().at(i));
     }
+
+    /// Advance the iterator
+    TRACCC_HOST_DEVICE
+    unsigned int size() /*const*/ { return m_track.state_indices().size(); }
 
     /// Advance the iterator
     TRACCC_HOST_DEVICE
@@ -85,29 +80,37 @@ struct kalman_actor_state {
         }
     }
 
+    /// Reset the iterator
+    TRACCC_HOST_DEVICE
+    void reset() {
+        if (!backward_mode) {
+            m_idx = 0;
+        } else {
+            m_idx = size() - 1;
+        }
+
+        // Reset the hole states from a previous fitter pass
+        for (unsigned int i = 0u; i < size(); ++i) {
+            at(i).set_hole(true);
+        }
+        n_holes = 0u;
+    }
+
     /// @return true if the iterator reaches the end of vector
     TRACCC_HOST_DEVICE
     bool is_complete() /*const*/ {
-        return ((!backward_mode && m_idx == m_track.state_indices().size()) ||
-               (backward_mode && m_idx > m_track.state_indices().size()));
+        return ((!backward_mode && m_idx == size()) ||
+                (backward_mode && m_idx > size()));
     }
 
     /// @returns the current number of holes in this state
     TRACCC_HOST_DEVICE
-    unsigned int count_missed() const {
+    unsigned int count_missed() /*const*/ {
         unsigned int n_missed{0u};
 
-        if (backward_mode) {
-            for (const auto& trk_state : m_track_states) {
-                if (trk_state.smoothed().is_invalid()) {
-                    ++n_missed;
-                }
-            }
-        } else {
-            for (const auto& trk_state : m_track_states) {
-                if (trk_state.filtered().is_invalid()) {
-                    ++n_missed;
-                }
+        for (unsigned int i = 0u; i < size(); ++i) {
+            if (at(i).filtered_params().is_invalid()) {
+                ++n_missed;
             }
         }
 
@@ -128,16 +131,17 @@ struct kalman_actor_state {
         propagation_state_t& propagation) {
 
         auto& navigation = propagation._navigation;
-        auto& trk_state = (*this)();
+        auto trk_state = (*this)();
 
         // Surface was found, continue with KF algorithm
-        if (navigation.barcode() == trk_state.surface_link()) {
+        if (navigation.barcode() ==
+            trk_state.filtered_params().surface_link()) {
             // Count a hole, if track finding did not find a measurement
-            if (trk_state.is_hole) {
+            if (trk_state.is_hole()) {
                 evaluate_hole(navigation);
             }
             // If track finding did not find measurement on this surface: skip
-            return !trk_state.is_hole;
+            return !trk_state.is_hole();
         }
 
         // Skipped surfaces: adjust iterator and remove counted hole
@@ -149,37 +153,39 @@ struct kalman_actor_state {
         if constexpr (!std::same_as<nav_state_t,
                                     typename detray::direct_navigator<
                                         detector_t>::state>) {
-            int i{1};
+            unsigned int n{1};
             if (backward_mode) {
                 // If we are on the last state and the navigation surface does
                 // not match, it must be an additional surface
                 // -> continue navigation until matched
-                if (m_it_rev + 1 == m_track_states.rend()) {
+                if (m_idx == 0u) {
                     evaluate_hole(navigation);
                     return false;
                 }
                 // Check if the current navigation surfaces can be found on a
                 // later track state. That means the current track state was
                 // skipped by the navigator: Advance the internal iterator
-                for (auto itr = m_it_rev + 1; itr != m_track_states.rend();
-                     ++itr) {
-                    if (itr->surface_link() == navigation.barcode()) {
-                        m_it_rev += i;
+                for (int i = m_idx + 1; i >= 0; --i) {
+                    if (at(i).filtered_params().surface_link() ==
+                        navigation.barcode()) {
+                        assert(m_idx >= n);
+                        m_idx -= n;
                         return true;
                     }
-                    ++i;
+                    ++n;
                 }
             } else {
-                if (m_it + 1 == m_track_states.end()) {
+                if (m_idx + 1 == size()) {
                     evaluate_hole(navigation);
                     return false;
                 }
-                for (auto itr = m_it + 1; itr != m_track_states.end(); ++itr) {
-                    if (itr->surface_link() == navigation.barcode()) {
-                        m_it += i;
+                for (unsigned int i = m_idx + 1u; i < size(); ++i) {
+                    if (at(i).filtered_params().surface_link() ==
+                        navigation.barcode()) {
+                        m_idx += n;
                         return true;
                     }
-                    ++i;
+                    ++n;
                 }
             }
         }
@@ -276,11 +282,11 @@ struct kalman_actor : detray::actor {
                                   kalman_actor_direction::BIDIRECTIONAL) {
                     // Forward filter
                     res = gain_matrix_updater<algebra_t>{}(
-                        trk_state, actor_state.m_measurements,
-                        bound_param, is_line);
+                        trk_state, actor_state.m_measurements, bound_param,
+                        is_line);
 
                     // Update the propagation flow
-                    bound_param = trk_state.filtered();
+                    bound_param = trk_state.filtered_params();
                 } else {
                     assert(false);
                 }
@@ -291,13 +297,14 @@ struct kalman_actor : detray::actor {
                                   kalman_actor_direction::BIDIRECTIONAL) {
 
                     // Forward filter did not find this state: skip
-                    if (trk_state.filtered().is_invalid()) {
+                    if (trk_state.filtered_params().is_invalid()) {
                         actor_state.next();
                         return;
                     }
                     // Backward filter for smoothing
                     res = two_filters_smoother<algebra_t>{}(
-                        trk_state, actor_state.m_measurements, bound_param, is_line);
+                        trk_state, actor_state.m_measurements, bound_param,
+                        is_line);
                 } else {
                     assert(false);
                 }
