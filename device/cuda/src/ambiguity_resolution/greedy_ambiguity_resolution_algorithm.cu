@@ -133,7 +133,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
     // Make sure that max_shared_meas is largen than zero
     assert(m_config.max_shared_meas > 0u);
 
-    // Status (1 = Accept, 0 = Reject)
+    // Status (1 = Accept, 0 = Reject) vector to count the number of acceptable
+    // tracks based on the number of candidates (measurements)
     vecmem::data::vector_buffer<int> status_buffer{n_tracks, m_mr.main};
 
     vecmem::device_vector<int> status_device(status_buffer);
@@ -143,15 +144,20 @@ greedy_ambiguity_resolution_algorithm::operator()(
     const std::vector<unsigned int> candidate_sizes =
         m_copy.get().get_sizes(track_candidates_view.tracks);
 
-    // Make measurement ID, pval and n_measurement vector
+    // Declare the buffer for meas_ids which is a jagged vector
+    // Each sub-vector of meas_ids represent measurement IDs of each track
     vecmem::data::jagged_vector_buffer<measurement_id_type> meas_ids_buffer{
         candidate_sizes, m_mr.main, m_mr.host,
         vecmem::data::buffer_type::resizable};
     m_copy.get().setup(meas_ids_buffer)->ignore();
 
+    // The sum of the number of candidates (measurements) of all tracks
     const unsigned int n_cands_total =
         std::accumulate(candidate_sizes.begin(), candidate_sizes.end(), 0u);
 
+    // Declare flat_meas_ids which is just a flattening version of meas_ids with
+    // a single vector container. It is used to count the number of unique
+    // measurements
     vecmem::data::vector_buffer<measurement_id_type> flat_meas_ids_buffer{
         n_cands_total, m_mr.main, vecmem::data::buffer_type::resizable};
     m_copy.get().setup(flat_meas_ids_buffer)->ignore();
@@ -180,6 +186,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
         m_stream.get().synchronize();
     }
 
+    // Count the number of pre-accepted tracks
     unsigned int n_accepted = static_cast<unsigned int>(thrust::count(
         thrust_policy, status_buffer.ptr(), status_buffer.ptr() + n_tracks, 1));
 
@@ -195,19 +202,20 @@ greedy_ambiguity_resolution_algorithm::operator()(
         return {};
     }
 
-    // Make accepted ids vector
+    // Indices of pre-accepted tracks
     vecmem::data::vector_buffer<unsigned int> pre_accepted_ids_buffer{
         n_accepted, m_mr.main};
 
     m_copy.get().setup(pre_accepted_ids_buffer)->ignore();
 
-    // Fill the accepted ids vector using counting iterator
+    // Find the indices of pre-accepted tracks by checking if status is 1
     auto cit_begin = thrust::counting_iterator<int>(0);
     auto cit_end = cit_begin + n_tracks;
     thrust::copy_if(thrust_policy, cit_begin, cit_end, status_buffer.ptr(),
                     pre_accepted_ids_buffer.ptr(), identity_op{});
 
-    // Sort the flat measurement id vector
+    // Sort the flat measurement id vector, which is required to count the
+    // number of unique measurements
     thrust::sort(thrust_policy, flat_meas_ids_buffer.ptr(),
                  flat_meas_ids_buffer.ptr() + n_cands_total);
 
@@ -221,7 +229,9 @@ greedy_ambiguity_resolution_algorithm::operator()(
     vecmem::data::vector_buffer<measurement_id_type> unique_meas_buffer{
         meas_count, m_mr.main};
 
-    // Counts of unique measurement id in flat id vector
+    // Counts of unique measurement id in flat id vector.
+    // This information is used to know the number of tracks associated with a
+    // measurement ID.
     vecmem::data::vector_buffer<std::size_t> unique_meas_counts_buffer{
         meas_count, m_mr.main};
     m_copy.get().setup(unique_meas_counts_buffer)->ignore();
@@ -242,7 +252,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     vecmem::data::vector_buffer<measurement_id_type>
         meas_id_to_unique_id_buffer{max_meas.measurement_id + 1, m_mr.main};
 
-    // Make meas_id to meas vector
+    // Make meas_id to unique_meas_id vector
     {
         const unsigned int nThreads = m_warp_size * 2;
         const unsigned int nBlocks = (meas_count + nThreads - 1) / nThreads;
@@ -256,34 +266,42 @@ greedy_ambiguity_resolution_algorithm::operator()(
         m_stream.get().synchronize();
     }
 
-    // Retreive the counting vector to host
+    // Retreive the counting vector to host for the size allocation of
+    // tracks_per_measurement
     std::vector<std::size_t> unique_meas_counts;
     m_copy
         .get()(unique_meas_counts_buffer, unique_meas_counts,
                vecmem::copy::type::device_to_host)
         ->wait();
 
-    // Make the tracks per measurement vector
+    // Make the tracks_per_measurement vector
+    // Each sub vector contains track ids associated with the unique measurement
     vecmem::data::jagged_vector_buffer<unsigned int>
         tracks_per_measurement_buffer(unique_meas_counts, m_mr.main, m_mr.host,
                                       vecmem::data::buffer_type::resizable);
     m_copy.get().setup(tracks_per_measurement_buffer)->ignore();
 
-    // Make the track status per measurement vector
+    // Make the track_status_per_measurement vector
+    // Each sub vector contains whether the track ids is still associated with
+    // the unique measurements For example, the value turns into 0 (false) if
+    // the track is rejected during the ambiguity solver
     vecmem::data::jagged_vector_buffer<int> track_status_per_measurement_buffer(
         unique_meas_counts, m_mr.main, m_mr.host,
         vecmem::data::buffer_type::resizable);
 
     m_copy.get().setup(track_status_per_measurement_buffer)->ignore();
 
-    // Make the number of accetped tracks per measurement vector
+    // Make the number of accetped_tracks_per_measurement vector
+    // Each element represents the number of associated tracks with the unique
+    // measurement (the number of track_status whose value is 1 (true))
     vecmem::data::vector_buffer<unsigned int>
         n_accepted_tracks_per_measurement_buffer(meas_count, m_mr.main);
     thrust::fill(thrust_policy, n_accepted_tracks_per_measurement_buffer.ptr(),
                  n_accepted_tracks_per_measurement_buffer.ptr() + meas_count,
                  0);
 
-    // Fill tracks per measurement vector
+    // Fill tracks_per_measurement, track_status_per_measurement and
+    // n_accepted_tracks_per_measurement vectors
     {
         const unsigned int nThreads = m_warp_size * 2;
         const unsigned int nBlocks = (n_accepted + nThreads - 1) / nThreads;
@@ -319,14 +337,14 @@ greedy_ambiguity_resolution_algorithm::operator()(
         m_stream.get().synchronize();
     }
 
-    // Make shared number of measurements vector
+    // Make vector buffer for the number of shared measurements for each track
     vecmem::data::vector_buffer<unsigned int> n_shared_buffer{n_tracks,
                                                               m_mr.main};
     thrust::fill(thrust_policy, n_shared_buffer.ptr(),
                  n_shared_buffer.ptr() + n_tracks, 0);
     m_copy.get().setup(n_shared_buffer)->ignore();
 
-    // Count shared number of measurements
+    // Count the number of shared measurements
     {
         const unsigned int nThreads = m_warp_size * 2;
         const unsigned int nBlocks = (n_accepted + nThreads - 1) / nThreads;
@@ -344,7 +362,9 @@ greedy_ambiguity_resolution_algorithm::operator()(
         m_stream.get().synchronize();
     }
 
-    // Make relative shared number of measurements vector
+    // Make relative number of shared measurements vector
+    // The relative number of shared measurement is defined as the number of
+    // shared measurement divided the number of measurements of the track
     vecmem::data::vector_buffer<traccc::scalar> rel_shared_buffer{n_tracks,
                                                                   m_mr.main};
 
@@ -353,10 +373,13 @@ greedy_ambiguity_resolution_algorithm::operator()(
                       n_shared_buffer.ptr() + n_tracks, n_meas_buffer.ptr(),
                       rel_shared_buffer.ptr(), devide_op{});
 
-    // Make sorted ids vector
+    // Make a buffer for track ids sorted based on the relative number of shared
+    // measurements and pvalues
     vecmem::data::vector_buffer<unsigned int> sorted_ids_buffer{n_accepted,
                                                                 m_mr.main};
     m_copy.get().setup(sorted_ids_buffer)->ignore();
+
+    // Make a temporary buffer for sorted track ids
     vecmem::data::vector_buffer<unsigned int> temp_sorted_ids_buffer{n_accepted,
                                                                      m_mr.main};
     m_copy.get().setup(temp_sorted_ids_buffer)->ignore();
@@ -366,7 +389,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
                                                                   m_mr.main};
     m_copy.get().setup(inverted_ids_buffer)->ignore();
 
-    // Whether track id is updated after an iteration
+    // Make a buffer of boolean elements (Whether a corresponding track id is
+    // updated after an iteration)
     vecmem::data::vector_buffer<int> is_updated_buffer{n_tracks, m_mr.main};
     m_copy.get().setup(is_updated_buffer)->ignore();
     m_copy.get().memset(is_updated_buffer, 0)->ignore();
@@ -376,21 +400,25 @@ greedy_ambiguity_resolution_algorithm::operator()(
     m_copy.get().setup(track_count_buffer)->ignore();
     m_copy.get().memset(track_count_buffer, 0)->ignore();
 
-    // Prefix sum buffer
+    // Prefix sum buffer used for the insertion sort during an iteration
     vecmem::data::vector_buffer<int> prefix_sums_buffer{n_tracks, m_mr.main};
     m_copy.get().setup(prefix_sums_buffer)->ignore();
 
-    // Fill and sort the sorted ids vector
+    // Fill the sorted ids vector
     thrust::copy(thrust_policy, pre_accepted_ids_buffer.ptr(),
                  pre_accepted_ids_buffer.ptr() + n_accepted,
                  sorted_ids_buffer.ptr());
     m_stream.get().synchronize();
 
     track_comparator trk_comp(rel_shared_buffer.ptr(), pvals_buffer.ptr());
+
+    // Sort the sorted ids vector based on the relative number of shared
+    // measurements and pvalues
     thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
                  sorted_ids_buffer.ptr() + n_accepted, trk_comp);
 
-    // Update track ids
+    // Make a buffer of track ids whose number of shared measurements are
+    // updated during an iteration
     vecmem::data::vector_buffer<unsigned int> updated_tracks_buffer{n_accepted,
                                                                     m_mr.main};
     m_copy.get().setup(updated_tracks_buffer)->ignore();
@@ -403,16 +431,21 @@ greedy_ambiguity_resolution_algorithm::operator()(
     vecmem::unique_alloc_ptr<unsigned int> n_valid_threads_device =
         vecmem::make_unique_alloc<unsigned int>(m_mr.main);
 
+    // Whether to terminate the iteration process
     int terminate = 0;
     vecmem::unique_alloc_ptr<int> terminate_device =
         vecmem::make_unique_alloc<int>(m_mr.main);
     auto max_shared = thrust::max_element(thrust::device, n_shared_buffer.ptr(),
                                           n_shared_buffer.ptr() + n_tracks);
+
+    // The maximum number of shared measurements. The process is terminated if
+    // this value is zero
     vecmem::unique_alloc_ptr<unsigned int> max_shared_device =
         vecmem::make_unique_alloc<unsigned int>(m_mr.main);
     cudaMemcpyAsync(max_shared_device.get(), max_shared, sizeof(unsigned int),
                     cudaMemcpyHostToDevice, stream);
 
+    // The number of tracks whose number of share measurements is updated
     vecmem::unique_alloc_ptr<unsigned int> n_updated_tracks_device =
         vecmem::make_unique_alloc<unsigned int>(m_mr.main);
 
@@ -452,7 +485,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
            "nBlocks_scan larger than 1024 will cause invalid arguments in "
            "scan_block_offsets kernel");
 
-    // block offsets buffer
+    // Make buffers used in prefix sum calculation
     vecmem::data::vector_buffer<int> block_offsets_buffer{nBlocks_scan,
                                                           m_mr.main};
     m_copy.get().setup(block_offsets_buffer)->ignore();
@@ -460,6 +493,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                                                                   m_mr.main};
     m_copy.get().setup(block_offsets_buffer)->ignore();
 
+    // Start the iteration
     while (!terminate && n_accepted > 0) {
         nBlocks_adaptive =
             (n_accepted + nThreads_adaptive - 1) / nThreads_adaptive;
@@ -472,12 +506,15 @@ greedy_ambiguity_resolution_algorithm::operator()(
              1) /
             (nThreads_rearrange / kernels::nThreads_per_track);
 
-        // Make CUDA Graph
+        // Make a CUDA Graph. We use CUDA graph to minimize the overheads from
+        // kernel launches
         cudaGraph_t graph;
         cudaGraphExec_t graphExec;
 
         cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal);
 
+        // Counts the number of removable tracks in the current iteration and
+        // remove them from the track pool
         kernels::remove_tracks<<<1, 512, 0, stream>>>(
             device::remove_tracks_payload{
                 .sorted_ids_view = sorted_ids_buffer,
@@ -502,22 +539,28 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .n_valid_threads = n_valid_threads_device.get(),
                 .track_count_view = track_count_buffer});
 
-        // The seven kernels below are to keep sorted_ids sorted based on
-        // the relative shared measurements and pvalues. This can be reduced
-        // into thrust::sort():
+        // After the kernel "remove_tracks", sorted_ids_view is not sorted
+        // anymore as the number of measurements of a few tracks might change.
+        // We can consider using thrust::sort() like the following:
         /*
         cudaMemcpyAsync(&n_accepted, n_accepted_device.get(),
                         sizeof(unsigned int), cudaMemcpyDeviceToHost,
-        stream); thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
+                        stream);
+        thrust::sort(thrust_policy, sorted_ids_buffer.ptr(),
                      sorted_ids_buffer.ptr() + n_accepted,
                      trk_comp);
         */
-        // Disadvantage: we need to do device-host copy which has large
-        // overhead and CUDA graph is not available anymore
-        // Advantage: This works for all cases (The below kernels only work
-        // when the number of updated tracks <= 1024) and might be faster
-        // with large number of updated tracks
+        // However, thrust::sort (Radix sort) is not optimized for our case
+        // where we only need to rearrange the indices of a few tracks whose
+        // number of measurement changed. In such case, insertion sort would be
+        // a good choice and the following seven kernels are collaborating each
+        // other to do insertion sort
 
+        // This kernel sort the tracks whose number of measurement changed
+        // during remove_track kernel. The number of such tracks are very small
+        // and we apply bitoncic sort here. The purpose is to make each of
+        // updated tracks not interfere each other when we rearrange them during
+        // the insertion sort
         kernels::sort_updated_tracks<<<1, 512, 0, stream>>>(
             device::sort_updated_tracks_payload{
                 .rel_shared_view = rel_shared_buffer,
@@ -527,6 +570,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .updated_tracks_view = updated_tracks_buffer,
             });
 
+        // Fill the inverted_ids vector which converts a track id to the index
+        // of sorted ids, which is for the fast lookup
         kernels::fill_inverted_ids<<<nBlocks_adaptive, nThreads_adaptive, 0,
                                      stream>>>(
             device::fill_inverted_ids_payload{
@@ -537,6 +582,17 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .inverted_ids_view = inverted_ids_buffer,
             });
 
+        // The three kernels (block_inclusive_scan, scan_block_offsets, and
+        // add_block_offset) work together to compute the prefix sum of track
+        // IDs, with respect to the number of updated tracks, based on the
+        // indices of sorted_ids. The kernels are splitted as it is not
+        // efficient to calculate this in a single kernel. This prefix sums are
+        // used during the insertion sorting in rearrange_tracks to precisely
+        // calculate the new index of updated tracks
+
+        // Caculate the prefix sum of the number of updated tracks block-wisely.
+        // block_offset is the last element of block-wise prefix sums, which is
+        // used to get the real prefix sum later
         kernels::block_inclusive_scan<<<nBlocks_scan, nThreads_scan,
                                         nThreads_scan * sizeof(int), stream>>>(
             device::block_inclusive_scan_payload{
@@ -548,6 +604,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .block_offsets_view = block_offsets_buffer,
                 .prefix_sums_view = prefix_sums_buffer});
 
+        // Calculate the scanned block offsets which is the prefix sum of block
+        // offsets
         kernels::scan_block_offsets<<<1, nBlocks_scan,
                                       nBlocks_scan * sizeof(int), stream>>>(
             device::scan_block_offsets_payload{
@@ -557,6 +615,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .block_offsets_view = block_offsets_buffer,
                 .scanned_block_offsets_view = scanned_block_offsets_buffer});
 
+        // To calculate the real prefix-sum, add the scanned block offsets to
+        // block-wise prefix sums of the number of updated tracks.
         kernels::add_block_offset<<<nBlocks_scan, nThreads_scan, 0, stream>>>(
             device::add_block_offset_payload{
                 .terminate = terminate_device.get(),
@@ -565,6 +625,9 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .block_offsets_view = scanned_block_offsets_buffer,
                 .prefix_sums_view = prefix_sums_buffer});
 
+        // Apply the insertion sort algorithm to sorted_ids_view using the
+        // sorted updated tracks and prefix sums. The sorted elements are stored
+        // in temp_sorted_ids_view
         kernels::rearrange_tracks<<<nBlocks_rearrange, nThreads_rearrange, 0,
                                     stream>>>(device::rearrange_tracks_payload{
             .sorted_ids_view = sorted_ids_buffer,
@@ -580,6 +643,9 @@ greedy_ambiguity_resolution_algorithm::operator()(
             .temp_sorted_ids_view = temp_sorted_ids_buffer,
         });
 
+        // Find the max shared number of measurements to decide whether to
+        // terminate the process. Also Move the elements in temp_sorted_ids to
+        // sorted_ids
         kernels::
             update_status<<<nBlocks_adaptive, nThreads_adaptive, 0, stream>>>(
                 device::update_status_payload{

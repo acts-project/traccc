@@ -39,7 +39,8 @@ __global__ void scan_block_offsets(device::scan_block_offsets_payload payload) {
     }
     __syncthreads();
 
-    // 2. Inclusive scan (Hillis-Steele style)
+    // 2. Inclusive scan to caculated the scanned block offset which is the
+    // prefix sum of block offsets
     for (int offset = 1; offset < n_blocks_prev; offset *= 2) {
         int temp = 0;
         if (threadIndex >= offset) {

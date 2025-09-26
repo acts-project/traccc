@@ -96,6 +96,9 @@ __launch_bounds__(1024) __global__
         int ini_idx = stride * (threadIdx.x % nThreads_per_track);
         int fin_idx = std::min(ini_idx + stride, static_cast<int>(N));
 
+        // If it is an updated track, find new sorted index by using the binary
+        // search. The index is also shifted by using the bitonic sort result
+        // from sort_updated_tracks and prefix sums
         if (is_updated[tid]) {
 
             if (gid > 0) {
@@ -188,7 +191,10 @@ __launch_bounds__(1024) __global__
             if (offset != 0) {
                 atomicAdd(&shifted_idx, offset);
             }
-        } else {
+        }
+        // If it is not an updated track, it is enough to count the number of
+        // updated tracks which need to come earlier.
+        else {
 
             for (int i = ini_idx; i < fin_idx; i++) {
 
@@ -209,6 +215,7 @@ __launch_bounds__(1024) __global__
 
     __syncthreads();
 
+    // Save the result of new indices into a temporary buffer
     if (is_valid_thread && (threadIdx.x % nThreads_per_track) == 0) {
         temp_sorted_ids.at(shifted_idx) = tid;
     }

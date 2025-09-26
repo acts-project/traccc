@@ -31,6 +31,8 @@ __global__ void add_block_offset(device::add_block_offset_payload payload) {
         return;
     }
 
+    // Add the scanned block offsets to block-wise prefix sums of the number of
+    // updated tracks.
     prefix_sums[globalIndex] += block_offsets[blockIdx.x - 1];
 }
 
