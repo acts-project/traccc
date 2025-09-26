@@ -68,7 +68,7 @@ TEST_P(KF_intergration_test_toy_detector, toy_detector) {
         .do_check(true);
     if (std::get<5>(GetParam())) {
         reader_cfg.add_file("toy_detector_material_maps.json");
-        //reader_cfg.add_file("toy_detector_homogeneous_material.json");
+        // reader_cfg.add_file("toy_detector_homogeneous_material.json");
     }
 
     const auto [det, names] =

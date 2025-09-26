@@ -203,7 +203,8 @@ bool kalman_filter_comparison(
     resetter::state resetter_state{};
     resetter_state.n_stddev = prop_cfg.navigation.n_scattering_stddev;
     resetter_state.accumulated_error = prop_cfg.navigation.accumulated_error;
-    resetter_state.estimate_scattering_noise = prop_cfg.navigation.estimate_scattering_noise;
+    resetter_state.estimate_scattering_noise =
+        prop_cfg.navigation.estimate_scattering_noise;
     interactor::state interactor_state{};
     interactor_state.do_multiple_scattering = do_multiple_scattering;
     interactor_state.do_energy_loss = do_energy_loss;
@@ -378,8 +379,8 @@ bool kalman_filter_comparison(
                 vecmem::device_vector<track_state<algebra_t>>(trk_states_view)};
             fit_actor_state.do_precise_hole_count = true;
 
-            state_tuple.push_back(
-                detray::make_tuple(interactor_state, fit_actor_state, resetter_state));
+            state_tuple.push_back(detray::make_tuple(
+                interactor_state, fit_actor_state, resetter_state));
             state_ref_tuple.push_back(setup_actor_states(state_tuple.back()));
         }
 
@@ -410,7 +411,7 @@ bool kalman_filter_comparison(
                 n_trk_missing_fw++;
             }
             if (fitter_state.n_holes > 0u) {
-                //std::cout << "KF TRACK: " << i << std::endl;
+                // std::cout << "KF TRACK: " << i << std::endl;
                 n_trk_holes_fw++;
             }
         }
@@ -479,8 +480,9 @@ bool kalman_filter_comparison(
                 vecmem::device_vector<track_state<algebra_t>>(trk_states_view)};
             fit_actor_state.do_precise_hole_count = false;
 
-            state_tuple_bw.push_back(detray::make_tuple(
-                fit_actor_state, interactor_state, resetter_state, stopper_state));
+            state_tuple_bw.push_back(
+                detray::make_tuple(fit_actor_state, interactor_state,
+                                   resetter_state, stopper_state));
             state_ref_tuple_bw.push_back(
                 setup_actor_states(state_tuple_bw.back()));
         }
