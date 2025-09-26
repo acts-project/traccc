@@ -8,8 +8,11 @@
 // Project include(s).
 #include "traccc/bfield/construct_const_bfield.hpp"
 #include "traccc/edm/track_parameters.hpp"
+#include "traccc/edm/track_state_collection.hpp"
+#include "traccc/edm/track_state_helpers.hpp"
 #include "traccc/fitting/kalman_filter/kalman_actor.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/io/data_format.hpp"
 #include "traccc/utils/event_data.hpp"
 #include "traccc/utils/propagation.hpp"
@@ -34,7 +37,7 @@
 namespace traccc {
 
 bool kalman_filter_comparison(
-    const traccc::default_detector::host& det,
+    const traccc::host_detector* host_det,
     const traccc::default_detector::host::name_map& names,
     const detray::propagation::config& prop_cfg, const std::string& input_dir,
     const unsigned int n_events, std::unique_ptr<const traccc::Logger> ilogger,
@@ -70,6 +73,9 @@ bool kalman_filter_comparison(
     // Geometry context
     const detector_t::geometry_context ctx{};
 
+    // Retrieve detector
+    const detector_t& det = host_det->template as<traccc::default_detector>();
+
     // Create B field
     b_field_t field = traccc::construct_const_bfield(B)
                           .as_field<traccc::const_bfield_backend_t<scalar_t>>();
@@ -82,8 +88,16 @@ bool kalman_filter_comparison(
     // The traces of truth hits forward and in reverse order
     std::vector<vecmem::vector<sf_candidate_t>> truth_traces_fw{};
     std::vector<vecmem::vector<sf_candidate_t>> truth_traces_bw{};
-    // Track states containing truth measurements for the KF
-    std::vector<vecmem::vector<track_state<algebra_t>>> track_state_coll{};
+    // Collection for bound track parameters and track state and measurement
+    // links
+    typename edm::track_fit_collection<algebra_t>::host track_param_coll{
+        host_mr};
+    // Measurments
+    typename measurement_collection_types::host measurement_coll{};
+    // Track states containing the result parameters for the KF
+    typename edm::track_state_collection<algebra_t>::host track_state_coll{
+        host_mr};
+    typename edm::track_state_collection<algebra_t>::host track_states_coll_bw{host_mr};
 
     tracks.reserve(n_events * 1000);
     truth_traces_fw.reserve(tracks.capacity());
@@ -92,7 +106,7 @@ bool kalman_filter_comparison(
     // Read the truth data in
     for (std::size_t i_event = 0u; i_event < n_events; ++i_event) {
         traccc::event_data evt_data(input_dir, i_event, host_mr, use_acts_geoid,
-                                    &det, data_format::csv);
+                                    host_det, data_format::csv);
 
         assert(!evt_data.m_particle_map.empty());
         assert(!evt_data.m_ptc_to_meas_map.empty());
@@ -136,25 +150,48 @@ bool kalman_filter_comparison(
 
                 assert(!truth_trace_bw.empty());
 
-                // Construct initial track parameters
-                // @TODO: Need volume grid in case of large vertex smearing
-                tracks.emplace_back(ptc.vertex, 0.f, ptc.momentum, ptc.charge);
-
                 truth_traces_fw.push_back(std::move(truth_trace_fw));
                 truth_traces_bw.push_back(std::move(truth_trace_bw));
 
-                // Transcribe measurements to track states for the KF
-                const auto& measurements = evt_data.m_ptc_to_meas_map.at(ptc);
-                assert(!measurements.empty());
+                // Transcribe measurements to global collection
+                const auto& measurements_per_ptc =
+                    evt_data.m_ptc_to_meas_map.at(ptc);
+                assert(!measurements_per_ptc.empty());
 
-                vecmem::vector<track_state<algebra_t>> track_states{};
-                track_states.reserve(measurements.size());
+                const auto meas_offset{
+                    static_cast<unsigned int>(measurement_coll.size())};
+                measurement_coll.insert(std::end(measurement_coll),
+                                        std::begin(measurements_per_ptc),
+                                        std::end(measurements_per_ptc));
 
-                for (const auto& meas : measurements) {
-                    track_states.emplace_back(meas);
+                measurement_collection_types::const_device measurement_view{
+                    vecmem::get_data(measurement_coll)};
+
+                track_state_coll.reserve(track_state_coll.size() +
+                                         measurements_per_ptc.size());
+
+                // Construct initial track parameters for the propagation
+                // @TODO: Need volume grid in case of large vertex smearing
+                tracks.emplace_back(ptc.vertex, 0.f, ptc.momentum, ptc.charge);
+
+                // Connect the bound track parameters to the measurements and
+                // states
+                typename edm::track_fit_collection<algebra_t>::host::object_type
+                    track_object{};
+
+                for (unsigned int i = 0u; i < measurements_per_ptc.size();
+                     ++i) {
+                    unsigned int meas_idx{meas_offset + i};
+
+                    track_object.state_indices().push_back(meas_idx);
+
+                    track_state_coll.push_back(edm::make_track_state<algebra_t>(
+                        measurement_view, meas_idx));
+                    track_states_coll_bw.push_back(edm::make_track_state<algebra_t>(
+                        measurement_view, meas_idx));
                 }
 
-                track_state_coll.push_back(std::move(track_states));
+                track_param_coll.push_back(track_object);
             }
         }
     }
@@ -164,7 +201,7 @@ bool kalman_filter_comparison(
         TRACCC_ERROR("Propagation truth data empty");
         return false;
     }
-    if (track_state_coll.empty()) {
+    if (track_state_coll.size() == 0u) {
         TRACCC_ERROR("Kalman Filter truth data empty");
         return false;
     }
@@ -181,7 +218,7 @@ bool kalman_filter_comparison(
     test_cfg.display_only_missed(true).verbose(false);
 
     // Make a tuple of references from a tuple
-    auto setup_actor_states = []<typename... T>(detray::dtuple<T...> & t) {
+    auto setup_actor_states = []<typename... T>(detray::dtuple<T...>& t) {
         return detray::tie(detray::detail::get<T>(t)...);
     };
 
@@ -203,7 +240,8 @@ bool kalman_filter_comparison(
     resetter::state resetter_state{};
     resetter_state.n_stddev = prop_cfg.navigation.n_scattering_stddev;
     resetter_state.accumulated_error = prop_cfg.navigation.accumulated_error;
-    resetter_state.estimate_scattering_noise = prop_cfg.navigation.estimate_scattering_noise;
+    resetter_state.estimate_scattering_noise =
+        prop_cfg.navigation.estimate_scattering_noise;
     interactor::state interactor_state{};
     interactor_state.do_multiple_scattering = do_multiple_scattering;
     interactor_state.do_energy_loss = do_energy_loss;
@@ -361,8 +399,15 @@ bool kalman_filter_comparison(
         using actor_chain_t = detray::actor_chain<transporter, interactor,
                                                   fit_actor_fw, resetter>;
 
-        // Safe track states before KF modifies them
-        auto track_states_coll_bw = track_state_coll;
+        auto track_param_view{vecmem::get_data(track_param_coll)};
+        typename edm::track_fit_collection<algebra_t>::device
+            track_param_device_container{track_param_view};
+        auto track_state_view{vecmem::get_data(track_state_coll)};
+        typename edm::track_state_collection<algebra_t>::device
+            track_state_device_container{track_state_view};
+        typename measurement_collection_types::const_device
+            measuremen_device_container{vecmem::get_data(measurement_coll)};
+
         vecmem::vector<typename actor_chain_t::state_tuple> state_tuple{};
         vecmem::vector<typename actor_chain_t::state_ref_tuple>
             state_ref_tuple{};
@@ -371,15 +416,15 @@ bool kalman_filter_comparison(
 
         // Prepare the fitter state for every track
         for (std::size_t i = 0u; i < tracks.size(); ++i) {
-            auto& track_states = track_state_coll[i];
+
             // Prepare actor states
-            auto trk_states_view = vecmem::get_data(track_states);
-            fit_actor_fw::state fit_actor_state{
-                vecmem::device_vector<track_state<algebra_t>>(trk_states_view)};
+            fit_actor_fw::state fit_actor_state(
+                track_param_device_container.at(static_cast<unsigned int>(i)),
+                track_state_device_container, measuremen_device_container);
             fit_actor_state.do_precise_hole_count = true;
 
-            state_tuple.push_back(
-                detray::make_tuple(interactor_state, fit_actor_state, resetter_state));
+            state_tuple.push_back(detray::make_tuple(
+                interactor_state, fit_actor_state, resetter_state));
             state_ref_tuple.push_back(setup_actor_states(state_tuple.back()));
         }
 
@@ -410,7 +455,7 @@ bool kalman_filter_comparison(
                 n_trk_missing_fw++;
             }
             if (fitter_state.n_holes > 0u) {
-                //std::cout << "KF TRACK: " << i << std::endl;
+                // std::cout << "KF TRACK: " << i << std::endl;
                 n_trk_holes_fw++;
             }
         }
@@ -460,6 +505,10 @@ bool kalman_filter_comparison(
             detray::actor_chain<transporter, fit_actor_bd, interactor, resetter,
                                 perigee_stopper>;
 
+        auto track_state_bw_view{vecmem::get_data(track_states_coll_bw)};
+        auto track_state_device_container_bw =
+            typename edm::track_state_collection<algebra_t>::device{track_state_bw_view};
+
         vecmem::vector<typename actor_chain_bw_t::state_tuple> state_tuple_bw{};
         vecmem::vector<typename actor_chain_bw_t::state_ref_tuple>
             state_ref_tuple_bw{};
@@ -468,19 +517,19 @@ bool kalman_filter_comparison(
 
         // Prepare the fitter state for every track
         for (std::size_t i = 0u; i < tracks.size(); ++i) {
-            auto& track_states = track_states_coll_bw[i];
             // Prepare actor states
 
             // Using a view here guarantees that the forward pass fits the
             // states and only the holes counter etc. gets reset when the
             // backward state is constructed
-            auto trk_states_view = vecmem::get_data(track_states);
-            fit_actor_bd::state fit_actor_state{
-                vecmem::device_vector<track_state<algebra_t>>(trk_states_view)};
-            fit_actor_state.do_precise_hole_count = false;
+            fit_actor_bd::state fit_actor_state(
+                track_param_device_container.at(static_cast<unsigned int>(i)),
+                track_state_device_container_bw, measuremen_device_container);
+            fit_actor_state.do_precise_hole_count = true;
 
-            state_tuple_bw.push_back(detray::make_tuple(
-                fit_actor_state, interactor_state, resetter_state, stopper_state));
+            state_tuple_bw.push_back(
+                detray::make_tuple(fit_actor_state, interactor_state,
+                                   resetter_state, stopper_state));
             state_ref_tuple_bw.push_back(
                 setup_actor_states(state_tuple_bw.back()));
         }
@@ -519,8 +568,9 @@ bool kalman_filter_comparison(
                 n_trk_holes_bw++;
             }
 
-            for (const auto& trk_state : fitter_state.m_track_states) {
-                if (!trk_state.is_smoothed) {
+            for (unsigned int istate = 0u; istate < fitter_state.size();
+                 ++istate) {
+                if (!fitter_state.at(istate).is_smoothed()) {
                     n_not_smoothed_correctly++;
                     break;
                 }

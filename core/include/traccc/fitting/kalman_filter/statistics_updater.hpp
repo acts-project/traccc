@@ -36,7 +36,7 @@ struct statistics_updater {
         const measurement_collection_types::const_device& measurements) {
 
         // Neither missing measurement nor failed track state
-        if (!trk_state.is_hole && !trk_state.filtered().is_invalid()) {
+        if (!trk_state.is_hole() && !trk_state.filtered_params().is_invalid()) {
 
             // Measurement dimension
             const unsigned int D =

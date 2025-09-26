@@ -55,13 +55,14 @@ track_propagation::track_propagation()
         "Scale factor between min. and max. mask tolerance with surface "
         "distance");
 
-            m_desc.add_options()(
+    m_desc.add_options()(
         "accumulated-noise-factor",
         po::value(&(m_config.navigation.accumulated_error))
             ->default_value(m_config.navigation.accumulated_error),
-        "Scale factor on the total track path length to model accumualted noise [%]");
+        "Scale factor on the total track path length to model accumualted "
+        "noise [%]");
 
-            m_desc.add_options()(
+    m_desc.add_options()(
         "scattering-stddevs",
         po::value(&(m_config.navigation.n_scattering_stddev))
             ->default_value(m_config.navigation.n_scattering_stddev),
@@ -152,9 +153,11 @@ std::unique_ptr<configuration_printable> track_propagation::as_printable()
                                          traccc::unit<float>::um) +
                               " um"));
     cat_nav->add_child(std::make_unique<configuration_kv_pair>(
-        "Scale factor for accumulated noise", std::to_string(m_config.navigation.accumulated_error * 100.f) + " %"));
+        "Scale factor for accumulated noise",
+        std::to_string(m_config.navigation.accumulated_error * 100.f) + " %"));
     cat_nav->add_child(std::make_unique<configuration_kv_pair>(
-        "# scattering stddevs to assume", std::to_string(m_config.navigation.n_scattering_stddev)));
+        "# scattering stddevs to assume",
+        std::to_string(m_config.navigation.n_scattering_stddev)));
     cat_nav->add_child(std::make_unique<configuration_kv_pair>(
         "Overstep tolerance",
         std::to_string(m_config.navigation.overstep_tolerance /

@@ -122,8 +122,8 @@ class kalman_fitter {
         TRACCC_HOST_DEVICE
         typename forward_actor_chain_type::state_ref_tuple operator()() {
             return detray::tie(m_aborter_state, m_interactor_state,
-                               m_fit_actor_state, m_parameter_resetter, m_sequencer_state,
-                               m_step_aborter_state);
+                               m_fit_actor_state, m_parameter_resetter,
+                               m_sequencer_state, m_step_aborter_state);
         }
 
         /// @return the actor chain state
@@ -131,7 +131,8 @@ class kalman_fitter {
         typename backward_actor_chain_type::state_ref_tuple
         backward_actor_state() {
             return detray::tie(m_aborter_state, m_fit_actor_state,
-                               m_interactor_state, m_parameter_resetter, m_step_aborter_state);
+                               m_interactor_state, m_parameter_resetter,
+                               m_step_aborter_state);
         }
 
         /// Individual actor states
@@ -395,7 +396,8 @@ class kalman_fitter {
             for (unsigned int i : fit_res.state_indices()) {
                 auto trk_state = track_states.at(i);
                 // Fitting fails if any of non-hole track states is not smoothed
-                if (!trk_state.filtered().is_invalid() && !trk_state.is_smoothed()) {
+                if (!trk_state.filtered_params().is_invalid() &&
+                    !trk_state.is_smoothed()) {
                     fit_res.fit_outcome() =
                         track_fit_outcome::FAILURE_NOT_ALL_SMOOTHED;
                     return;
