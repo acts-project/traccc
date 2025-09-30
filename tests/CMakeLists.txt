@@ -24,7 +24,7 @@ add_library( traccc_tests_common STATIC
 target_include_directories( traccc_tests_common
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/common )
 target_link_libraries( traccc_tests_common
-    PUBLIC dfelibs::dfelibs GTest::gtest ActsCore vecmem::core
+    PUBLIC dfelibs::dfelibs GTest::gtest Acts::Core vecmem::core
            detray::core detray::io detray::test_common covfie::core traccc::core traccc::io traccc_simulation)
 
 # Use ROOT in traccc_tests_common, if requested.

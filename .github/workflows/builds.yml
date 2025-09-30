@@ -129,7 +129,7 @@ jobs:
         run: ${GITHUB_WORKSPACE}/.github/find_f64_ptx.py --source ${GITHUB_WORKSPACE} --build build $(find build -name "*.ptx")
 
   macos:
-    runs-on: macos-14
+    runs-on: macos-15
     name: macOS-Release
     steps:
       - uses: actions/checkout@v4
