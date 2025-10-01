@@ -126,6 +126,9 @@ traccc_add_library( traccc_core core TYPE SHARED
   "src/seeding/silicon_pixel_spacepoint_formation.hpp"
   "include/traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
   "src/seeding/silicon_pixel_spacepoint_formation_algorithm.cpp"
+  #gbts seed finding config
+  "include/traccc/gbts_seeding/gbts_seeding_config.hpp"
+  "src/gbts_seeding/gbts_seeding_config.cpp"
   # Ambiguity resolution
   "include/traccc/ambiguity_resolution/ambiguity_resolution_config.hpp"
   "include/traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
