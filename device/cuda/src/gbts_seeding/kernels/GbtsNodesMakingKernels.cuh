@@ -24,10 +24,10 @@
 namespace traccc::cuda::kernels {
 
 __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::const_view spacepoints_view, const traccc::measurement_collection_types::const_view measurements_view, 
-                                  const short* volumeToLayerMap, const uint2* surfaceToLayerMap, const char* d_layerIsEndcap, 
-                                  float4* reducedSP, unsigned int* d_layerCounts, short* spacepointsLayer,
+                                  const short* volumeToLayerMap, const uint2* surfaceToLayerMap, const char* d_layerType, 
+                                  float4* reducedSP, unsigned int* d_layerCounts, short* spacepointsLayer, const float type1_max_width,
                                   const unsigned int nSp, const long unsigned int volumeMapSize, const long unsigned int surfaceMapSize, bool doTauCut = true) {
-	//shared mem volumeToLayer map
+	
 	const traccc::measurement_collection_types::const_device measurements(measurements_view);
 	const traccc::edm::spacepoint_collection::const_device spacepoints(spacepoints_view);
 	
@@ -56,19 +56,20 @@ __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::cons
 			}
 		}
 		else layerIdx = static_cast<unsigned int>(begin_or_bin);
-		float cluster_diameter = measurement.diameter/10.0f; //are cluster postions measured in cm?
-		cluster_diameter = (d_layerIsEndcap[layerIdx] != 1) ? cluster_diameter : -1 - (cluster_diameter > 0.2);
-		//-1->skip tau range calculation, -2->skip spacepoint
-	
-		if(cluster_diameter == -2) {
-			reducedSP[spIdx].w = -2;
+		
+		float cluster_diameter = measurement.diameter;
+		int type = static_cast<int>(d_layerType[layerIdx]);
+		if(type == 1 && cluster_diameter > type1_max_width) {
+			reducedSP[spIdx].w = -CHAR_MAX-1;
 			continue;
-		} //cluster width not calculated in the same way athena currently	
+		} //-ve cluster_diameter to skip cot(theta) prediction, -2 to skip spacepoint entirely
+		cluster_diameter = (doTauCut && type != 0) ? -1*type : cluster_diameter;
+
 		//count and store x,y,z,cw info
 		atomicAdd(&d_layerCounts[layerIdx], 1);
 		spacepointsLayer[spIdx] = layerIdx;
 		const traccc::point3 pos = spacepoint.global();
-		reducedSP[spIdx] = make_float4(pos[0], pos[1], pos[2], cluster_diameter);//cluster_diameter is calculated diffrently in traccc vs athena so turn off for now;
+		reducedSP[spIdx] = make_float4(pos[0], pos[1], pos[2], cluster_diameter);
 	}
 }
 
@@ -76,7 +77,7 @@ __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::cons
 __global__ void bin_sp_by_layer(float4* sp_params ,float4* reducedSP, unsigned int* layerCounts, short* spacepointsLayer, int* original_sp_idx, const unsigned int nSp) {
 	for(int spIdx = threadIdx.x + blockDim.x*blockIdx.x; spIdx<nSp; spIdx += blockDim.x*gridDim.x) {
 		float4 sp = reducedSP[spIdx];
-		if(sp.w == -2) continue;
+		if(sp.w < -CHAR_MAX) continue;
 		short layerIdx = spacepointsLayer[spIdx];
 		unsigned int binedIdx = atomicSub(&layerCounts[layerIdx], 1) - 1;
 		original_sp_idx[binedIdx] = spIdx;
@@ -99,7 +100,7 @@ __global__ void node_phi_binning_kernel(const float4* d_sp_params, int* d_node_p
 		float Phi = atan2f(sp.y, sp.x);
    
 		int phiIdx = (Phi + CUDART_PI_F)*inv_phiSliceWidth;
-       
+
 		if (phiIdx >= nPhiBins) phiIdx %= nPhiBins;
 		else if (phiIdx < 0) {
 			phiIdx += nPhiBins;
@@ -165,13 +166,13 @@ __global__ void eta_phi_histo_kernel(const int* d_node_phi_index, const int* d_n
 
     for(int idx = threadIdx.x + begin_node; idx < begin_node + nNodesPerBlock; idx += blockDim.x) {
 
-       if (idx >= nNodes) continue;
+		if (idx >= nNodes) continue;
 
-       int eta_index = d_node_eta_index[idx];
+		int eta_index = d_node_eta_index[idx];
 
-       int histo_bin = d_node_phi_index[idx] + nPhiBins*eta_index;
-       atomicAdd(&d_eta_phi_histo[histo_bin], 1);
-    }
+		int histo_bin = d_node_phi_index[idx] + nPhiBins*eta_index;
+		atomicAdd(&d_eta_phi_histo[histo_bin], 1);
+	}
 }
 
 __global__ void eta_phi_counting_kernel(const unsigned int* d_histo, unsigned int* d_eta_node_counter, unsigned int* d_phi_cusums, int nBinsPerBlock, int maxEtaBin, unsigned int nPhiBins) {
@@ -214,42 +215,43 @@ __global__ void eta_phi_prefix_sum_kernel(const unsigned int* d_eta_node_counter
     }
 }
 
-__global__ void node_sorting_kernel(const float4* d_sp_params, const int* d_node_eta_index, const int* d_node_phi_index, unsigned int* d_phi_cusums, float* d_node_params, int* d_node_index, int* d_original_sp_idx, int nNodesPerBlock, int nNodes, unsigned int nPhiBins) {
+__global__ void node_sorting_kernel(const float4* d_sp_params, const int* d_node_eta_index, const int* d_node_phi_index, unsigned int* d_phi_cusums, float* d_node_params, 
+                                    int* d_node_index, int* d_original_sp_idx, const gbts_algo_params* ap, int nNodesPerBlock, int nNodes, unsigned int nPhiBins) {
 
     int begin_node = blockIdx.x * nNodesPerBlock;
 
     for(int idx = threadIdx.x + begin_node; idx < begin_node + nNodesPerBlock; idx += blockDim.x) {
 
-       if (idx >= nNodes) continue;
+		if (idx >= nNodes) continue;
 
-       float4 sp = d_sp_params[idx];
+		float4 sp = d_sp_params[idx];
 
-       float Phi = atan2f(sp.y, sp.x);
-       float r   = sqrtf(powf(sp.x, 2) + powf(sp.y, 2));
-       float z = sp.z;
+		float Phi = atan2f(sp.y, sp.x);
+		float r   = sqrtf(sp.x*sp.x + sp.y*sp.y);
+		float z = sp.z;
 
-       float min_tau = -100.0;
-       float max_tau = 100.0;
-	   
-		if (sp.w > 0) { // barrel
-			min_tau = 6.7*(sp.w - 0.2);//linear fit
-			max_tau = 1.6 + 0.15/(sp.w + 0.2) + 6.1*(sp.w - 0.2);//linear fit + correction for short clusters
+		float min_tau = -100.0;
+		float max_tau = 100.0;
+
+		if (sp.w > 0) { //type 0 only
+			min_tau = ap->tMin_slope*(sp.w - ap->offset);//linear fit
+			max_tau = ap->tMax_min + ap->tMax_correction/(sp.w + ap->offset) + ap->tMax_slope*(sp.w - ap->offset);//linear fit + correction for short clusters
 		}
 
-       int eta_index = d_node_eta_index[idx];
-       int histo_bin = d_node_phi_index[idx] + nPhiBins*eta_index;
+		int eta_index = d_node_eta_index[idx];
+		int histo_bin = d_node_phi_index[idx] + nPhiBins*eta_index;
 
-       int pos = atomicAdd(&d_phi_cusums[histo_bin], 1);
+		int pos = atomicAdd(&d_phi_cusums[histo_bin], 1);
 
-       int o = 5*pos;
+		int o = 5*pos;
 
-       d_node_params[o]   = min_tau;
-       d_node_params[o+1] = max_tau;
-       d_node_params[o+2] = Phi;
-       d_node_params[o+3] = r;
-       d_node_params[o+4] = z;
-       d_node_index[pos] = d_original_sp_idx[idx];//keep the original index of the input spacepoint
-    }                          
+		d_node_params[o]   = min_tau;
+		d_node_params[o+1] = max_tau;
+		d_node_params[o+2] = Phi;
+		d_node_params[o+3] = r;
+		d_node_params[o+4] = z;
+		d_node_index[pos] = d_original_sp_idx[idx];//keep the original index of the input spacepoint
+	} 
 }
 
 __global__ void minmax_rad_kernel(const int2* d_eta_bin_views, const float* d_node_params, float2* d_bin_rads, int nBinsPerBlock, int maxEtaBin) {

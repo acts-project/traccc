@@ -40,7 +40,7 @@ struct gbts_ctx {
 	short* d_spacepointsLayer{}; 
 	short* d_volumeToLayerMap{}; //begin_idx + 1 for the surfaceToLayerMap or -layerBin if one to one
 	uint2* d_surfaceToLayerMap{}; //surface_index, layerBin
-	char* d_layerIsEndcap{};
+	char* d_layerType{};
 	int* d_original_sp_idx{}; // conversion to original sp from post layer binning index
 	int* d_node_index{}; // conversion to orignal sp/node index from post binning index
 	
@@ -142,19 +142,19 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 		cudaMemcpyAsync(ctx.d_surfaceToLayerMap, m_config.surfaceToLayerMap.data(), sizeof(uint2)*m_config.surfaceToLayerMap.size(), cudaMemcpyHostToDevice, stream);
 	} //may be zero and correct, volumeMapSize and nLayers are checked at config
 
-	cudaMalloc(&ctx.d_layerIsEndcap, sizeof(char)*m_config.nLayers);
-	cudaMemcpyAsync(ctx.d_layerIsEndcap, m_config.layerInfo.isEndcap.data(), sizeof(char)*m_config.nLayers, cudaMemcpyHostToDevice, stream);	
+	cudaMalloc(&ctx.d_layerType, sizeof(char)*m_config.nLayers);
+	cudaMemcpyAsync(ctx.d_layerType, m_config.layerInfo.type.data(), sizeof(char)*m_config.nLayers, cudaMemcpyHostToDevice, stream);
 	
 	kernels::count_sp_by_layer<<<nBlocks,nThreads,0,stream>>>(spacepoints,measurements,
-								ctx.d_volumeToLayerMap,ctx.d_surfaceToLayerMap,ctx.d_layerIsEndcap, 
-                                ctx.d_reducedSP, ctx.d_layerCounts, ctx.d_spacepointsLayer,
-								ctx.nSp, m_config.volumeToLayerMap.size(), m_config.surfaceToLayerMap.size());
+                                ctx.d_volumeToLayerMap,ctx.d_surfaceToLayerMap,ctx.d_layerType, 
+                                ctx.d_reducedSP, ctx.d_layerCounts, ctx.d_spacepointsLayer, m_config.algo_params.type1_max_width,
+                                ctx.nSp, m_config.volumeToLayerMap.size(), m_config.surfaceToLayerMap.size());
 
 	cudaStreamSynchronize(stream);
 	
 	cudaFree(ctx.d_volumeToLayerMap);
 	cudaFree(ctx.d_surfaceToLayerMap);
-	cudaFree(ctx.d_layerIsEndcap);
+	cudaFree(ctx.d_layerType);
 
 	//prefix sum layerCounts
 	std::unique_ptr<unsigned int[]> layerCounts = std::make_unique<unsigned int[]>(m_config.nLayers+1);
@@ -167,9 +167,9 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	ctx.nNodes = layerCounts[m_config.nLayers];
 	if(ctx.nNodes == 0) return {0, m_mr.main};
 	layerCounts.reset();
-	
-	cudaMalloc(&ctx.d_sp_params, ctx.nSp*sizeof(float4));	
-	cudaMalloc(&ctx.d_original_sp_idx, ctx.nSp*sizeof(int));	
+
+	cudaMalloc(&ctx.d_sp_params, ctx.nSp*sizeof(float4));
+	cudaMalloc(&ctx.d_original_sp_idx, ctx.nSp*sizeof(int));
 
 	kernels::bin_sp_by_layer<<<nBlocks, nThreads, 0, stream>>>(ctx.d_sp_params, ctx.d_reducedSP, ctx.d_layerCounts, ctx.d_spacepointsLayer, ctx.d_original_sp_idx, ctx.nSp);	
    
@@ -301,8 +301,8 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	nBlocks = 1 + (ctx.nNodes-1)/nNodesPerBlock;
 
 	kernels::node_sorting_kernel<<<nBlocks, nThreads, 0, stream>>>(ctx.d_sp_params, ctx.d_node_eta_index, ctx.d_node_phi_index, 
-														           ctx.d_phi_cusums, ctx.d_node_params, ctx.d_node_index, ctx.d_original_sp_idx,
-                                                                   nNodesPerBlock, ctx.nNodes, m_config.n_phi_bins);
+                                                                   ctx.d_phi_cusums, ctx.d_node_params, ctx.d_node_index, ctx.d_original_sp_idx,
+                                                                   ctx.d_algo_params, nNodesPerBlock, ctx.nNodes, m_config.n_phi_bins);
 
 	cudaStreamSynchronize(stream);
 	cudaFree(ctx.d_sp_params);
@@ -651,8 +651,8 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	int device; cudaGetDevice(&device);
 	int SM_count; cudaDeviceGetAttribute(&SM_count, cudaDevAttrMultiProcessorCount, device);
 	int smem; cudaDeviceGetAttribute(&smem, cudaDevAttrMaxSharedMemoryPerMultiprocessor, device);
-
-	nThreads = 1024; //448 for two blocks per SM limited by registers
+	
+	nThreads = 1024;
 
 	nBlocks = 0;
 	int smem_per_block = static_cast<int>(sizeof(kernels::edgeState))*traccc::device::gbts_consts::shared_state_buffer_size; 
@@ -681,7 +681,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 		if(nRootEdges == 0) continue;
 		int estimated_nStates = static_cast<int>(std::pow(1.3f, level+1))*nRootEdges;
 		nBlocks += 1 + estimated_nStates/traccc::device::gbts_consts::shared_state_buffer_size;
-		if(nBlocks > soft_max_blocks || level_max-level>1 || level+1==m_config.minLevel) {
+		if(nBlocks > soft_max_blocks || level_max-level>3 || level+1==m_config.minLevel) {
 
 			int view_min = view_shift-nEdgesByLevel_cuml[level]; 
 			int view_max = view_shift-nEdgesByLevel_cuml[level_max];    

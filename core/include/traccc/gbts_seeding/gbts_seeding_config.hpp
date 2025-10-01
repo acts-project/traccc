@@ -20,22 +20,22 @@
 #include <detray/geometry/barcode.hpp>
 
 namespace traccc::device {
-//where to put these definitions?
+
 struct gbts_layerInfo {
-	std::vector<char> isEndcap;
+	std::vector<char> type;
 	//etaBin0 and numBins
 	std::vector<std::pair<int, int>> info;
 	//minEta and deltaEta
 	std::vector<std::pair<float, float>> geo;
 
 	void reserve(int n) {
-		isEndcap.reserve(n);
+		type.reserve(n);
 		info.reserve(n);
 		geo.reserve(n);
 	}
 
-	void addLayer(bool isNotPixel, int firstBin, int nBins, float minEta, float etaBinWidth) {
-		isEndcap.push_back(isNotPixel);
+	void addLayer(char layerType, int firstBin, int nBins, float minEta, float etaBinWidth) {
+		type.push_back(layerType);
 		info.push_back(std::make_pair(firstBin, nBins));
 		geo.push_back(std::make_pair(minEta, etaBinWidth));
 	}
@@ -44,9 +44,9 @@ struct gbts_layerInfo {
 struct gbts_consts {
 	
 	//CCA max iterations -> maxium seed length
-	static constexpr short max_cca_iter = 20;
+	static constexpr short max_cca_iter = 15;
 	//shared memory allocation sizes
-	static constexpr short node_buffer_length = 250;
+	static constexpr short node_buffer_length = 128;
 	static constexpr short shared_state_buffer_size = 608;
 	
 	// access into output graph
@@ -61,6 +61,7 @@ struct gbts_consts {
 namespace traccc {
 
 struct gbts_algo_params {
+
 	//edge making cuts
 	float min_delta_phi = 0.015f;
 	float dphi_coeff = 2.2e-4f;
@@ -69,8 +70,8 @@ struct gbts_algo_params {
 	
 	float minDeltaRadius = 2.0f;
 	
-	float min_z0 = -150.0f;
-	float max_z0 = 150.0f;
+	float min_z0 = -160.0f;
+	float max_z0 = 160.0f;
 	float maxOuterRadius = 550.0f;
 	float cut_zMinU = min_z0 - maxOuterRadius*45;
 	float cut_zMaxU = max_z0 + maxOuterRadius*45; //how to get ROI dzdr
@@ -78,11 +79,21 @@ struct gbts_algo_params {
 	float max_Kappa = 3.75e-4f;
 	float low_Kappa_d0 = 0.0f; //used to be 0.2f
 	float high_Kappa_d0 = 0.0f; //used to be 1.0f
+	
+	//tau prediction cut
+	float tMin_slope = 6.7f;
+	float offset = 0.2f;
+	float tMax_min = 1.6f;
+	float tMax_correction = 0.15;
+	float tMax_slope = 6.1f;
+
+	float type1_max_width = 0.2f;
 
 	//edge matching cuts
 	float cut_dphi_max = 0.012f;
 	float cut_dcurv_max = 0.001f;
 	float cut_tau_ratio_max = 0.01f;
+
 };
 
 struct gbts_seedfinder_config {
