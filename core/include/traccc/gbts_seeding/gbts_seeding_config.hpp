@@ -44,17 +44,17 @@ struct gbts_layerInfo {
 struct gbts_consts {
 	
 	//CCA max iterations -> maxium seed length
-	static constexpr short max_cca_iter = 15;
+	static constexpr unsigned short max_cca_iter = 15;
 	//shared memory allocation sizes
-	static constexpr short node_buffer_length = 128;
-	static constexpr short shared_state_buffer_size = 608;
+	static constexpr unsigned short node_buffer_length = 128;
+	static constexpr unsigned short shared_state_buffer_size = 608;
 	
 	// access into output graph
-	static constexpr short node1 = 0;
-	static constexpr short node2 = 1;
-	static constexpr short nNei = 2;
-	static constexpr short nei_start = 3;
-}; 
+	static constexpr char node1 = 0;
+	static constexpr char node2 = 1;
+	static constexpr char nNei = 2;
+	static constexpr char nei_start = 3;
+};
 
 }
 
@@ -97,11 +97,11 @@ struct gbts_algo_params {
 };
 
 struct gbts_seedfinder_config {
-	bool setLinkingScheme(const std::vector<std::pair<int, std::vector<int>>>& binTables, const device::gbts_layerInfo layerInfo,
-    std::vector<std::pair<uint64_t, short>>& detrayBarcodeBinning, float minPt, std::unique_ptr<const ::Acts::Logger> logger);
+    bool setLinkingScheme(const std::vector<std::pair<int, std::vector<int>>>& binTables, const device::gbts_layerInfo layerInfo,
+    std::vector<std::pair<uint64_t, short>>& detrayBarcodeBinning, float minPt, std::unique_ptr<const traccc::Logger> logger);
 	
 	//layer linking and geometry	
-	std::vector<std::pair<int, int>> binTables{};
+	std::vector<std::pair<unsigned int, unsigned int>> binTables{};
 	traccc::device::gbts_layerInfo layerInfo{};
 	unsigned int nLayers  = 0;	
 
@@ -112,8 +112,8 @@ struct gbts_seedfinder_config {
 	gbts_algo_params algo_params{};	
 
 	//node making bin counts
-	int n_eta_bins = 0; //calculated from input layerInfo	
-	unsigned int n_phi_bins = 120;
+	unsigned int n_eta_bins = 0; //calculated from input layerInfo	
+	unsigned int n_phi_bins = 128;
 	//graph making maxiums
 	unsigned char max_num_neighbours = 10;
 	//graph extraction cuts

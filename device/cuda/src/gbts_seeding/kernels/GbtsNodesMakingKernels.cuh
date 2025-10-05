@@ -25,13 +25,13 @@ namespace traccc::cuda::kernels {
 
 __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::const_view spacepoints_view, const traccc::measurement_collection_types::const_view measurements_view, 
                                   const short* volumeToLayerMap, const uint2* surfaceToLayerMap, const char* d_layerType, 
-                                  float4* reducedSP, unsigned int* d_layerCounts, short* spacepointsLayer, const float type1_max_width,
+                                  float4* reducedSP, int* d_layerCounts, short* spacepointsLayer, const float type1_max_width,
                                   const unsigned int nSp, const long unsigned int volumeMapSize, const long unsigned int surfaceMapSize, bool doTauCut = true) {
 	
 	const traccc::measurement_collection_types::const_device measurements(measurements_view);
 	const traccc::edm::spacepoint_collection::const_device spacepoints(spacepoints_view);
 	
-	for(int spIdx = threadIdx.x + blockDim.x*blockIdx.x; spIdx<spacepoints.size(); spIdx += blockDim.x*gridDim.x) {
+	for(int spIdx = threadIdx.x + blockDim.x*blockIdx.x; spIdx<nSp; spIdx += blockDim.x*gridDim.x) {
 		//get the layer of the spacepoint
 		const traccc::edm::spacepoint_collection::const_device::const_proxy_type spacepoint = spacepoints.at(spIdx);	
 		const traccc::measurement measurement = measurements.at(spacepoint.measurement_index_1());
@@ -74,7 +74,7 @@ __global__ void count_sp_by_layer(const traccc::edm::spacepoint_collection::cons
 }
 
 //layerCounts is prefix sumed on CPU inbetween count_sp_by_layer and this kerenel
-__global__ void bin_sp_by_layer(float4* sp_params ,float4* reducedSP, unsigned int* layerCounts, short* spacepointsLayer, int* original_sp_idx, const unsigned int nSp) {
+__global__ void bin_sp_by_layer(float4* sp_params ,float4* reducedSP, int* layerCounts, short* spacepointsLayer, int* original_sp_idx, const unsigned int nSp) {
 	for(int spIdx = threadIdx.x + blockDim.x*blockIdx.x; spIdx<nSp; spIdx += blockDim.x*gridDim.x) {
 		float4 sp = reducedSP[spIdx];
 		if(sp.w < -CHAR_MAX) continue;
@@ -85,7 +85,7 @@ __global__ void bin_sp_by_layer(float4* sp_params ,float4* reducedSP, unsigned i
 	}
 }
 
-__global__ void node_phi_binning_kernel(const float4* d_sp_params, int* d_node_phi_index, int nNodesPerBlock, int nNodes, unsigned int nPhiBins) {
+__global__ void node_phi_binning_kernel(const float4* d_sp_params, int* d_node_phi_index, const unsigned int nNodesPerBlock, const unsigned int nNodes, const unsigned int nPhiBins) {
 
     int begin_node = blockIdx.x * nNodesPerBlock;
 
@@ -110,14 +110,7 @@ __global__ void node_phi_binning_kernel(const float4* d_sp_params, int* d_node_p
     }
 }
 
-__global__ void node_eta_binning_kernel(const float4* d_sp_params, const int2* d_layer_info, const float2* d_layer_geo, int* d_node_eta_index, unsigned int* d_layerCounts, int nLayers) {
-    
-    __shared__ int layer_begin;
-    __shared__ int layer_end;
-    __shared__ int num_eta_bins;
-    __shared__ int bin0;
-    __shared__ float min_eta;
-    __shared__ float eta_bin_width;
+__global__ void node_eta_binning_kernel(const float4* d_sp_params, const int2* d_layer_info, const float2* d_layer_geo, int* d_node_eta_index, int* d_layerCounts, const unsigned int nLayers) {
 
     int layerIdx = blockIdx.x;
 
@@ -160,7 +153,8 @@ __global__ void node_eta_binning_kernel(const float4* d_sp_params, const int2* d
     }
 }
 //TO-DO fuse kernels?
-__global__ void eta_phi_histo_kernel(const int* d_node_phi_index, const int* d_node_eta_index, unsigned int* d_eta_phi_histo, int nNodesPerBlock, int nNodes, unsigned int nPhiBins) {
+__global__ void eta_phi_histo_kernel(const int* d_node_phi_index, const int* d_node_eta_index, int* d_eta_phi_histo, 
+                                     const unsigned int nNodesPerBlock, const unsigned int nNodes, const unsigned int nPhiBins) {
 
     int begin_node = blockIdx.x * nNodesPerBlock;
 
@@ -175,7 +169,8 @@ __global__ void eta_phi_histo_kernel(const int* d_node_phi_index, const int* d_n
 	}
 }
 
-__global__ void eta_phi_counting_kernel(const unsigned int* d_histo, unsigned int* d_eta_node_counter, unsigned int* d_phi_cusums, int nBinsPerBlock, int maxEtaBin, unsigned int nPhiBins) {
+__global__ void eta_phi_counting_kernel(const int* d_histo, int* d_eta_node_counter, int* d_phi_cusums,
+                                        const unsigned nBinsPerBlock, const unsigned maxEtaBin, const unsigned nPhiBins) {
 
     int eta_bin_start = nBinsPerBlock*blockIdx.x;
 
@@ -196,7 +191,8 @@ __global__ void eta_phi_counting_kernel(const unsigned int* d_histo, unsigned in
     d_eta_node_counter[eta_bin_idx] = sum;
 }
 
-__global__ void eta_phi_prefix_sum_kernel(const unsigned int* d_eta_node_counter, unsigned int* d_phi_cusums, int nBinsPerBlock, int maxEtaBin, unsigned int nPhiBins) {
+__global__ void eta_phi_prefix_sum_kernel(const int* d_eta_node_counter, int* d_phi_cusums,
+                                          const unsigned int nBinsPerBlock, const unsigned int maxEtaBin, const unsigned int nPhiBins) {
 
     int eta_bin_start = nBinsPerBlock*blockIdx.x;
 
@@ -215,8 +211,9 @@ __global__ void eta_phi_prefix_sum_kernel(const unsigned int* d_eta_node_counter
     }
 }
 
-__global__ void node_sorting_kernel(const float4* d_sp_params, const int* d_node_eta_index, const int* d_node_phi_index, unsigned int* d_phi_cusums, float* d_node_params, 
-                                    int* d_node_index, int* d_original_sp_idx, const gbts_algo_params* ap, int nNodesPerBlock, int nNodes, unsigned int nPhiBins) {
+__global__ void node_sorting_kernel(const float4* d_sp_params, const int* d_node_eta_index, const int* d_node_phi_index, int* d_phi_cusums, float* d_node_params, 
+                                    int* d_node_index, int* d_original_sp_idx, const gbts_algo_params* ap,
+                                    const unsigned int nNodesPerBlock, const unsigned int nNodes, const unsigned int nPhiBins) {
 
     int begin_node = blockIdx.x * nNodesPerBlock;
 
@@ -254,7 +251,8 @@ __global__ void node_sorting_kernel(const float4* d_sp_params, const int* d_node
 	} 
 }
 
-__global__ void minmax_rad_kernel(const int2* d_eta_bin_views, const float* d_node_params, float2* d_bin_rads, int nBinsPerBlock, int maxEtaBin) {
+__global__ void minmax_rad_kernel(const int2* d_eta_bin_views, const float* d_node_params, float2* d_bin_rads,
+                                  const unsigned int nBinsPerBlock, const unsigned int maxEtaBin) {
 
     int eta_bin_start = nBinsPerBlock*blockIdx.x;
 

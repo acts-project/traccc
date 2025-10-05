@@ -16,7 +16,7 @@ namespace traccc {
 //BarcodeBinning pair is detray barcode and bin index (corrisponding to the layers in layerInfo) 
 //minPt in MeV
 bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, std::vector<int>>>& input_binTables, const device::gbts_layerInfo input_layerInfo,
-	 std::vector<std::pair<uint64_t, short>>& detrayBarcodeBinning, float minPt = 900.0f, std::unique_ptr<const ::Acts::Logger> callers_logger = getDummyLogger().clone()) {
+	 std::vector<std::pair<uint64_t, short>>& detrayBarcodeBinning, float minPt = 900.0f, std::unique_ptr<const traccc::Logger> callers_logger = getDummyLogger().clone()) {
 
 	TRACCC_LOCAL_LOGGER(std::move(callers_logger));	
 	//copy layer-eta binning infomation
@@ -24,11 +24,11 @@ bool gbts_seedfinder_config::setLinkingScheme(const std::vector<std::pair<int, s
 	// unroll binTables
 	for(std::pair<int, std::vector<int>> binPairs : input_binTables) {
 		for(int bin2 : binPairs.second) {
-			binTables.push_back(std::make_pair(binPairs.first, bin2));
+			binTables.push_back(std::make_pair(static_cast<unsigned int>(binPairs.first), static_cast<unsigned int>(bin2)));
 		}
 	}
 
-	for(std::pair<int, int> lI : layerInfo.info) n_eta_bins = std::max(n_eta_bins, lI.first + lI.second);
+	for(std::pair<int, int> lI : layerInfo.info) n_eta_bins = std::max(n_eta_bins, static_cast<unsigned int>(lI.first + lI.second));
 
 	//bin by volume	
 	std::ranges::sort(detrayBarcodeBinning, [](const std::pair<uint64_t, short> a, const std::pair<uint64_t, short> b) {return a.first > b.first;});
