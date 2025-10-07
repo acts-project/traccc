@@ -28,7 +28,7 @@ struct gbts_layerInfo {
 	//minEta and deltaEta
 	std::vector<std::pair<float, float>> geo;
 
-	void reserve(int n) {
+	void reserve(unsigned int n) {
 		type.reserve(n);
 		info.reserve(n);
 		geo.reserve(n);
@@ -84,7 +84,7 @@ struct gbts_algo_params {
 	float tMin_slope = 6.7f;
 	float offset = 0.2f;
 	float tMax_min = 1.6f;
-	float tMax_correction = 0.15;
+	float tMax_correction = 0.15f;
 	float tMax_slope = 6.1f;
 
 	float type1_max_width = 0.2f;

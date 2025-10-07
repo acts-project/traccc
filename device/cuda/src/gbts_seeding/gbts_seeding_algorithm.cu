@@ -654,7 +654,6 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	int level_max = traccc::device::gbts_consts::max_cca_iter; for(;nEdgesByLevel_cuml[level_max-1] == 0; level_max--); 
 
 	if(level_max < m_config.minLevel) return {0, m_mr.main};
-	
 	//7. extract seeds, longest segment first 
 	//(note: probably better to count segments in the CCA then find segments then fit/disambiguate them rather than branch as we go)
 	
@@ -665,8 +664,8 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(const tra
 	nThreads = 1024;
 
 	nBlocks = 0;
-	int smem_per_block = static_cast<int>(sizeof(kernels::edgeState))*traccc::device::gbts_consts::shared_state_buffer_size; 
-	int soft_max_blocks = SM_count*(smem/smem_per_block);
+	int smem_per_block = static_cast<int>(sizeof(kernels::edgeState))*traccc::device::gbts_consts::shared_state_buffer_size;
+	unsigned int soft_max_blocks = static_cast<unsigned int>(SM_count*(smem/smem_per_block));
 
 	unsigned int nMaxMini = 10000 + ctx.nConnectedEdges*3;
 	cudaMalloc(&ctx.d_mini_states, sizeof(int2)*nMaxMini);
