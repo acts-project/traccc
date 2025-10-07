@@ -26,7 +26,8 @@ inline scalar signal_cell_modelling(
 ///
 /// @param cell      The cell to get the position of
 /// @param det_descr The (silicon) detector description
-/// @return The local position of the cell (upper bound) and optionality the lower bound
+/// @return The local position of the cell (upper bound) and optionality the
+/// lower bound
 ///
 template <typename T>
 TRACCC_HOST_DEVICE inline point2 position_from_cell(
