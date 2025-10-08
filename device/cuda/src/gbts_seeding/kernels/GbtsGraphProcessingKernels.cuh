@@ -462,10 +462,11 @@ __global__ void seed_extracting_kernel(
         nStates = 1 + (total_nStates - 1) / gridDim.x;
 
         block_start = view_min + nStates * blockIdx.x;
-        if (block_start >= view_max)
+        if (block_start >= view_max) {
             nStates = 0;
-        else if (block_start + nStates >= view_max)
+        } else if (block_start + nStates >= view_max) {
             nStates = view_max - block_start;
+        }
     }
     __syncthreads();
     // assign root edges to blocks and populate shared with inital states
@@ -475,9 +476,9 @@ __global__ void seed_extracting_kernel(
 
         int edge_idx = d_level_views[block_start + root_edge_idx];
         char level = d_levels[edge_idx];
-        if (level == -1)
+        if (level == -1) {
             continue;
-
+        }
         int edge_pos = edge_size * edge_idx;
 
         float4 node1_params =
@@ -497,9 +498,9 @@ __global__ void seed_extracting_kernel(
         current_states[root_idx].m_mini_idx = mini_idx;
     }
     __syncthreads();
-    if (threadIdx.x == 0)
+    if (threadIdx.x == 0) {
         nStates = total_live_states;  // update after removed edges are exculded
-
+    }
     edgeState state;
     edgeState new_state;
 
@@ -547,16 +548,17 @@ __global__ void seed_extracting_kernel(
                                    nei];
 
                 char nei_level = d_levels[nei_idx];
-                if (edge_level - 1 != nei_level)
+                if (edge_level - 1 != nei_level) {
                     continue;
-
+                }
                 float4 node1_params = d_sp_params
                     [d_output_graph[edge_size * nei_idx +
                                     traccc::device::gbts_consts::node1]];
                 bool success = update(&new_state, &state, node1_params);
 
-                if (!success)
+                if (!success) {
                     continue;
+                }
                 no_updates = false;
 
                 new_state.m_edge_idx = nei_idx;
@@ -568,6 +570,7 @@ __global__ void seed_extracting_kernel(
                     if (d_output_graph[edge_size * nei_idx +
                                        traccc::device::gbts_consts::nNei] ==
                         0) {
+
                         // no neighbours so will fail next round anyway
                         // so save shared
                         if (new_state.m_length >= minLevel) {
@@ -593,8 +596,9 @@ __global__ void seed_extracting_kernel(
                                 d_state_store[stateStoreIdx +
                                               nMaxStateStorePerBlock *
                                                   blockIdx.x] = new_state;
-                            } else
+                            } else {
                                 d_counters[10] = stateStoreIdx;
+                            }
                         }
                     }
                 }
@@ -602,10 +606,11 @@ __global__ void seed_extracting_kernel(
             if (no_updates) {
                 if (state.m_length >= minLevel) {
                     unsigned int prop_idx = atomicAdd(&d_counters[8], 1);
-                    if (prop_idx < nMaxProps)
+                    if (prop_idx < nMaxProps) {
                         add_seed_proposal(state.m_J, state.m_mini_idx, prop_idx,
                                           d_seed_ambiguity, d_seed_proposals,
                                           d_edge_bids, d_mini_states);
+                    }
                 }
             }
         }  // if has state
@@ -614,11 +619,13 @@ __global__ void seed_extracting_kernel(
     __syncthreads();
     // move remianing seed props to seeds after
     // all tracking for this set is done
-    if (threadIdx.x == 0)
+    if (threadIdx.x == 0) {
         nStates = atomicAdd(&d_counters[11], 1);
+    }
     __syncthreads();
-    if (nStates != gridDim.x - 1)
+    if (nStates != gridDim.x - 1) {
         return;
+    }
     unsigned int nProps = d_counters[8];
     __syncthreads();
     // reset for next launch
@@ -637,8 +644,9 @@ __global__ void seed_extracting_kernel(
         d_counters[8] = 0;
     }
     __syncthreads();
-    if (nProps == 0 || nStates == 0)
+    if (nProps == 0 || nStates == 0) {
         return;
+    }
     for (int round = 0; round < 5 && nStates > 0; round++) {
         // re-check maybe seeds that don't clash with a definte seed
         if (threadIdx.x == 0) {
@@ -649,9 +657,9 @@ __global__ void seed_extracting_kernel(
              prop_idx += blockDim.x) {
 
             char ambiguity = d_seed_ambiguity[prop_idx];
-            if (ambiguity == 0 || ambiguity == -2)
+            if (ambiguity == 0 || ambiguity == -2) {
                 continue;  // is not ambiguous
-
+            }
             int2 prop = d_seed_proposals[prop_idx];
 
             bool isgood = true;
@@ -662,9 +670,9 @@ __global__ void seed_extracting_kernel(
                 next_mini = mini_state.y;
 
                 unsigned long long int best_bid = d_edge_bids[mini_state.x];
-                if (best_bid == 0)
+                if (best_bid == 0) {
                     continue;  // already reset
-
+                }
                 if (d_seed_ambiguity[best_bid & 0xFFFFFFFFLL] == 0) {
                     isgood = false;
                     break;
@@ -682,9 +690,9 @@ __global__ void seed_extracting_kernel(
         __syncthreads();
         for (unsigned int prop_idx = threadIdx.x; prop_idx < nProps;
              prop_idx += blockDim.x) {
-            if (d_seed_ambiguity[prop_idx] != 1)
+            if (d_seed_ambiguity[prop_idx] != 1) {
                 continue;
-
+            }
             int2 prop = d_seed_proposals[prop_idx];
 
             add_seed_proposal(prop.x, prop.y, prop_idx, d_seed_ambiguity,
@@ -696,14 +704,15 @@ __global__ void seed_extracting_kernel(
     __syncthreads();
     for (unsigned int prop_idx = threadIdx.x; prop_idx < nProps;
          prop_idx += blockDim.x) {
-        if (d_seed_ambiguity[prop_idx] != 0)
+        if (d_seed_ambiguity[prop_idx] != 0) {
             continue;
+        }
         int2 prop = d_seed_proposals[prop_idx];
 
         unsigned int seed_idx = atomicAdd(&d_counters[9], 1);
-        if (seed_idx > nMaxSeeds)
+        if (seed_idx > nMaxSeeds) {
             break;
-
+        }
         // add good seed to output
         int2 mini_state;
         int length = 0;

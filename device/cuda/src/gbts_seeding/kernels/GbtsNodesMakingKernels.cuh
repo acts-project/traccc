@@ -7,13 +7,13 @@
 
 #pragma once
 
-// cuda includes
+// CUDA include(s)
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <math_constants.h>
 #include <vector_functions.h>
 
-// Project includes
+// Project include(s)
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/gbts_seeding/gbts_seeding_config.hpp"

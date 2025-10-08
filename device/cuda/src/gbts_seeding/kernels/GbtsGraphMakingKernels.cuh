@@ -7,13 +7,14 @@
 
 #pragma once
 
-// cuda includes
+// CUDA include(s)
 #include <cuda.h>
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
 #include <math_constants.h>
 #include <vector_functions.h>
 
+// Project include(s)
 #include "traccc/cuda/gbts_seeding/gbts_seeding_algorithm.hpp"
 
 namespace traccc::cuda::kernels {
