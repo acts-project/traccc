@@ -101,11 +101,11 @@ inline void aggregate_cluster(
                 totalWeight += weight;
                 scalar weight_factor = weight / totalWeight;
 
-				point2 cell_lower_position = {0,0};
-                point2 cell_position =
-                    traccc::details::position_from_cell(cell, det_descr, &cell_lower_position);
-				
-				// calculated from the most-extreme cell edges
+                point2 cell_lower_position = {0, 0};
+                point2 cell_position = traccc::details::position_from_cell(
+                    cell, det_descr, &cell_lower_position);
+
+                // calculated from the most-extreme cell edges
                 min_channel0 = std::min(min_channel0, cell_lower_position[0]);
                 max_channel0 = std::max(max_channel0, cell_position[0]);
                 min_channel1 = std::min(min_channel1, cell_lower_position[1]);
