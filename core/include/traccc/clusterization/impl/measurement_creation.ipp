@@ -34,7 +34,7 @@ TRACCC_HOST_DEVICE inline vector2 position_from_cell(
             (scalar{0.5f} + static_cast<scalar>(cell.channel1())) *
                 module_dd.pitch_y()};
 
-    if (cell_lower_position == nullptr) {
+    if (cell_lower_position) {
         *cell_lower_position = {upper_position[0] - module_dd.pitch_x(),
                                 upper_position[1] - module_dd.pitch_y()};
     }

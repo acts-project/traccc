@@ -56,10 +56,10 @@ inline void aggregate_cluster(
     scalar totalWeight = 0.f;
     point2 mean{0.f, 0.f}, var{0.f, 0.f}, offset{0.f, 0.f};
 
-    scalar min_channel0 = std::numeric_limits<scalar>::lowest();
-    scalar max_channel0 = std::numeric_limits<scalar>::max();
-    scalar min_channel1 = std::numeric_limits<scalar>::lowest();
-    scalar max_channel1 = std::numeric_limits<scalar>::max();
+    scalar min_channel0 = std::numeric_limits<scalar>::max();
+    scalar max_channel0 = std::numeric_limits<scalar>::lowest();
+    scalar min_channel1 = std::numeric_limits<scalar>::max();
+    scalar max_channel1 = std::numeric_limits<scalar>::lowest();
 
     const unsigned int module_idx = cells.module_index().at(cid + start);
     const auto module_descr = det_descr.at(module_idx);
