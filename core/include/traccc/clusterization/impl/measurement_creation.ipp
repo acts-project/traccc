@@ -20,17 +20,24 @@ inline scalar signal_cell_modelling(
 template <typename T>
 TRACCC_HOST_DEVICE inline vector2 position_from_cell(
     const edm::silicon_cell<T>& cell,
-    const silicon_detector_description::const_device& det_descr) {
+    const silicon_detector_description::const_device& det_descr,
+	vector2* cell_lower_position) {
 
     // The detector description for the module that the cell is on.
     const auto module_dd = det_descr.at(cell.module_index());
     // Calculate / construct the local cell position.
-    return {module_dd.reference_x() +
+    vector2 upper_position = {module_dd.reference_x() +
                 (scalar{0.5f} + static_cast<scalar>(cell.channel0())) *
                     module_dd.pitch_x(),
             module_dd.reference_y() +
                 (scalar{0.5f} + static_cast<scalar>(cell.channel1())) *
                     module_dd.pitch_y()};
+
+	if(cell_lower_position == nullptr) {
+		*cell_lower_position =
+		{upper_position[0] - module_dd.pitch_x(), upper_position[1] - module_dd.pitch_y()};
+	}
+	return upper_position;
 }
 
 template <typename T>

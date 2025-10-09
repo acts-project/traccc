@@ -57,9 +57,10 @@ inline void aggregate_cluster(
     point2 mean{0.f, 0.f}, var{0.f, 0.f}, offset{0.f, 0.f};
 
     scalar min_channel0 = std::numeric_limits<scalar>::max();
-    scalar max_channel0 = std::numeric_limits<scalar>::min();
+    scalar max_channel0 = std::numeric_limits<scalar>::lowest();
     scalar min_channel1 = std::numeric_limits<scalar>::max();
-    scalar max_channel1 = std::numeric_limits<scalar>::min();
+    scalar max_channel1 = std::numeric_limits<scalar>::lowest();
+	printf("lowest %f ", min_channel0);
 
     const unsigned int module_idx = cells.module_index().at(cid + start);
     const auto module_descr = det_descr.at(module_idx);
@@ -101,12 +102,14 @@ inline void aggregate_cluster(
                 totalWeight += weight;
                 scalar weight_factor = weight / totalWeight;
 
+				point2 cell_lower_position = {0,0};
                 point2 cell_position =
-                    traccc::details::position_from_cell(cell, det_descr);
-
-                min_channel0 = std::min(min_channel0, cell_position[0]);
+                    traccc::details::position_from_cell(cell, det_descr, &cell_lower_position);
+				
+				// calculated from the most-extreme cell edges
+                min_channel0 = std::min(min_channel0, cell_lower_position[0]);
                 max_channel0 = std::max(max_channel0, cell_position[0]);
-                min_channel1 = std::min(min_channel1, cell_position[1]);
+                min_channel1 = std::min(min_channel1, cell_lower_position[1]);
                 max_channel1 = std::max(max_channel1, cell_position[1]);
 
                 if (!first_processed) {
