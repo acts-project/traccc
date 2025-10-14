@@ -30,10 +30,10 @@ inline scalar signal_cell_modelling(
 /// lower bound
 ///
 template <typename T>
-TRACCC_HOST_DEVICE inline point2 position_from_cell(
+TRACCC_HOST_DEVICE inline vector2 position_from_cell(
     const edm::silicon_cell<T>& cell,
     const silicon_detector_description::const_device& det_descr,
-	point2* cell_lower_postion = nullptr);
+    vector2* cell_lower_position = nullptr);
 
 /// Function used for calculating the properties of the cluster during
 /// measurement creation
