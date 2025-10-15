@@ -22,6 +22,7 @@ __global__ void block_inclusive_scan(
         return;
     }
 
+    // temporary buffer where the block-wise prefix sum will be calculated
     extern __shared__ int shared_temp[];
 
     vecmem::device_vector<const unsigned int> sorted_ids(
@@ -37,13 +38,16 @@ __global__ void block_inclusive_scan(
 
     if (globalIndex >= n_accepted) {
         shared_temp[threadIndex] = 0;
-    } else {
+    }
+    // Start with boolean number depending on whether track id corresponding to
+    // the current thread is updated during the iteration
+    else {
         shared_temp[threadIndex] = is_updated[sorted_ids[globalIndex]];
     }
 
     __syncthreads();
 
-    // inclusive scan in shared memory
+    // Inclusive scan the boolean numbers to calculate the block-wise prefix sum
     for (int stride = 1; stride < blockDim.x; stride *= 2) {
         int val = 0;
         if (threadIndex >= stride) {
@@ -56,12 +60,15 @@ __global__ void block_inclusive_scan(
         __syncthreads();
     }
 
+    // Move the block-wise prefix_sums to global memory
     if (globalIndex < n_accepted) {
         prefix_sums[globalIndex] = shared_temp[threadIndex];
     }
 
     __syncthreads();
 
+    // Block offset, the last element of block-wise prefix sums, is also
+    // recorded to calculate full prefix sums later
     if (threadIndex == blockDim.x - 1) {
         block_offsets[blockIdx.x] = shared_temp[threadIndex];
     }
