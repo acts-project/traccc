@@ -54,6 +54,9 @@ struct measurement {
 
     /// subspace
     subspace<default_algebra, e_bound_size, 2u> subs{{0u, 1u}};
+
+    /// Index of the cluster that produced this measurement
+    unsigned int cluster_index = static_cast<unsigned int>(-1);
 };
 
 /// Comparison / ordering operator for measurements

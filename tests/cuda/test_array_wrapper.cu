@@ -91,6 +91,8 @@ TEST(CUDAArrayWrapper, SoALayout) {
               cudaSuccess);
 
     ASSERT_EQ(host_result, n);
+
+    ASSERT_EQ(cudaFree(dev_result), cudaSuccess);
 }
 
 TEST(CUDAArrayWrapper, AoSLayout) {
@@ -124,4 +126,6 @@ TEST(CUDAArrayWrapper, AoSLayout) {
               cudaSuccess);
 
     ASSERT_EQ(host_result, n);
+
+    ASSERT_EQ(cudaFree(dev_result), cudaSuccess);
 }

@@ -17,14 +17,11 @@ TRACCC_HOST_DEVICE
         unsigned int mindex) {
 
     // Create the result object.
-    typename track_state_collection<algebra_t>::device::object_type state{
-        track_state_collection<algebra_t>::device::object_type::IS_HOLE_MASK,
-        0.f,
-        0.f,
-        0.f,
-        {},
-        {},
-        mindex};
+    typename track_state_collection<algebra_t>::device::object_type state;
+
+    // Set it to be a hole by default, with the appropriate (measurement) index.
+    state.set_hole();
+    state.measurement_index() = mindex;
 
     // Set the correct surface link for the track parameters.
     state.filtered_params().set_surface_link(

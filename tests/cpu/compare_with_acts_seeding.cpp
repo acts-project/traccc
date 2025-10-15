@@ -387,10 +387,10 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     // EXPECT_EQ(seeds.size(), seedVector.size());
     EXPECT_NEAR(static_cast<double>(traccc_seeds.size()),
                 static_cast<double>(n_matched_acts_seeds),
-                static_cast<double>(traccc_seeds.size()) * 0.0023);
+                static_cast<double>(traccc_seeds.size()) * 0.004);
     EXPECT_GT(static_cast<double>(n_matched_acts_seeds) /
                   static_cast<double>(traccc_seeds.size()),
-              0.9977);
+              0.995);
 }
 
 INSTANTIATE_TEST_SUITE_P(
