@@ -460,6 +460,11 @@ greedy_ambiguity_resolution_algorithm::operator()(
                                                                   m_mr.main};
     m_copy.get().setup(block_offsets_buffer)->ignore();
 
+    // Create stream for parallelizable kernels
+    cudaStream_t stream_fill, stream_scan;
+    cudaStreamCreateWithFlags(&stream_fill, cudaStreamNonBlocking);
+    cudaStreamCreateWithFlags(&stream_scan, cudaStreamNonBlocking);
+
     while (!terminate && n_accepted > 0) {
         nBlocks_adaptive =
             (n_accepted + nThreads_adaptive - 1) / nThreads_adaptive;
@@ -471,6 +476,46 @@ greedy_ambiguity_resolution_algorithm::operator()(
             (n_accepted + (nThreads_rearrange / kernels::nThreads_per_track) -
              1) /
             (nThreads_rearrange / kernels::nThreads_per_track);
+
+        /*
+        CUDA kernel sequence with multiple streams
+        │
+        ├── reset_status
+        │
+        ├── find_max_shared
+        │
+        ├── remove_tracks
+        │       │
+        │       └── [record event_removal]
+        │
+        ├── sort_updated_tracks  (Main stream — executed after event_removal)
+        │       │
+        │       └── [record event_main]
+        │
+        ├───▶ stream_fill
+        │       │
+        │       └── [wait for event_removal]
+        │       │
+        │       └── fill_inverted_ids
+        │               │
+        │               └── [record event_fill]
+        │
+        ├───▶ stream_scan
+        │       │
+        │       └── [wait for event_removal]
+        │       │
+        │       ├── block_inclusive_scan
+        │       ├── scan_block_offsets
+        │       └── add_block_offset
+        │               │
+        │               └── [record event_scan]
+        │
+        ├── [wait for event_main, event_fill, and event_scan] ← sync point
+        │
+        ├── rearrange_tracks
+        │
+        └── gather_tracks
+        */
 
         // Make CUDA Graph
         cudaGraph_t graph;
@@ -502,6 +547,17 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .n_valid_threads = n_valid_threads_device.get(),
                 .track_count_view = track_count_buffer});
 
+        // Record the event after remove_tracks
+        cudaEvent_t event_removal;
+        cudaEventCreate(&event_removal);
+        cudaEventRecord(event_removal, stream);
+
+        // Make stream_fill (fill_inverted_ids) and stream_scan
+        // (block_inclusive_scan, scan_block_offsets, add_block_offset) wait for
+        // the remove_tracks
+        cudaStreamWaitEvent(stream_fill, event_removal, 0);
+        cudaStreamWaitEvent(stream_scan, event_removal, 0);
+
         // The seven kernels below are to keep sorted_ids sorted based on
         // the relative shared measurements and pvalues. This can be reduced
         // into thrust::sort():
@@ -528,7 +584,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
             });
 
         kernels::fill_inverted_ids<<<nBlocks_adaptive, nThreads_adaptive, 0,
-                                     stream>>>(
+                                     stream_fill>>>(
             device::fill_inverted_ids_payload{
                 .sorted_ids_view = sorted_ids_buffer,
                 .terminate = terminate_device.get(),
@@ -537,19 +593,20 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .inverted_ids_view = inverted_ids_buffer,
             });
 
-        kernels::block_inclusive_scan<<<nBlocks_scan, nThreads_scan,
-                                        nThreads_scan * sizeof(int), stream>>>(
-            device::block_inclusive_scan_payload{
-                .sorted_ids_view = sorted_ids_buffer,
-                .terminate = terminate_device.get(),
-                .n_accepted = n_accepted_device.get(),
-                .n_updated_tracks = n_updated_tracks_device.get(),
-                .is_updated_view = is_updated_buffer,
-                .block_offsets_view = block_offsets_buffer,
-                .prefix_sums_view = prefix_sums_buffer});
+        kernels::
+            block_inclusive_scan<<<nBlocks_scan, nThreads_scan,
+                                   nThreads_scan * sizeof(int), stream_scan>>>(
+                device::block_inclusive_scan_payload{
+                    .sorted_ids_view = sorted_ids_buffer,
+                    .terminate = terminate_device.get(),
+                    .n_accepted = n_accepted_device.get(),
+                    .n_updated_tracks = n_updated_tracks_device.get(),
+                    .is_updated_view = is_updated_buffer,
+                    .block_offsets_view = block_offsets_buffer,
+                    .prefix_sums_view = prefix_sums_buffer});
 
-        kernels::scan_block_offsets<<<1, nBlocks_scan,
-                                      nBlocks_scan * sizeof(int), stream>>>(
+        kernels::scan_block_offsets<<<
+            1, nBlocks_scan, nBlocks_scan * sizeof(int), stream_scan>>>(
             device::scan_block_offsets_payload{
                 .terminate = terminate_device.get(),
                 .n_accepted = n_accepted_device.get(),
@@ -557,13 +614,29 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .block_offsets_view = block_offsets_buffer,
                 .scanned_block_offsets_view = scanned_block_offsets_buffer});
 
-        kernels::add_block_offset<<<nBlocks_scan, nThreads_scan, 0, stream>>>(
-            device::add_block_offset_payload{
-                .terminate = terminate_device.get(),
-                .n_accepted = n_accepted_device.get(),
-                .n_updated_tracks = n_updated_tracks_device.get(),
-                .block_offsets_view = scanned_block_offsets_buffer,
-                .prefix_sums_view = prefix_sums_buffer});
+        kernels::
+            add_block_offset<<<nBlocks_scan, nThreads_scan, 0, stream_scan>>>(
+                device::add_block_offset_payload{
+                    .terminate = terminate_device.get(),
+                    .n_accepted = n_accepted_device.get(),
+                    .n_updated_tracks = n_updated_tracks_device.get(),
+                    .block_offsets_view = scanned_block_offsets_buffer,
+                    .prefix_sums_view = prefix_sums_buffer});
+
+        // Record the events
+        cudaEvent_t event_main, event_fill, event_scan;
+        cudaEventCreate(&event_main);
+        cudaEventCreate(&event_fill);
+        cudaEventCreate(&event_scan);
+
+        cudaEventRecord(event_main, stream);
+        cudaEventRecord(event_fill, stream_fill);
+        cudaEventRecord(event_scan, stream_scan);
+
+        // Synchronize the events with main stream
+        cudaStreamWaitEvent(stream, event_main, 0);
+        cudaStreamWaitEvent(stream, event_fill, 0);
+        cudaStreamWaitEvent(stream, event_scan, 0);
 
         kernels::rearrange_tracks<<<nBlocks_rearrange, nThreads_rearrange, 0,
                                     stream>>>(device::rearrange_tracks_payload{
@@ -608,6 +681,9 @@ greedy_ambiguity_resolution_algorithm::operator()(
         cudaMemcpyAsync(&n_accepted, n_accepted_device.get(),
                         sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
     }
+
+    cudaStreamDestroy(stream_fill);
+    cudaStreamDestroy(stream_scan);
 
     cudaMemcpyAsync(&n_accepted, n_accepted_device.get(), sizeof(unsigned int),
                     cudaMemcpyDeviceToHost, stream);
