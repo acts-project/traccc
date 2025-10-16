@@ -51,7 +51,9 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CPU)(benchmark::State& state) {
     // Algorithms
     traccc::host::seeding_algorithm sa(seeding_cfg, grid_cfg, filter_cfg,
                                        host_mr);
-    traccc::host::track_params_estimation tp(host_mr);
+    traccc::track_params_estimation_config track_params_estimation_config;
+    traccc::host::track_params_estimation tp(track_params_estimation_config,
+                                             host_mr);
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(
         finding_cfg, host_mr);
     traccc::host::kalman_fitting_algorithm host_fitting(fitting_cfg, host_mr,

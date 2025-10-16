@@ -61,7 +61,9 @@ BENCHMARK_DEFINE_F(ToyDetectorBenchmark, CUDA)(benchmark::State& state) {
     // Algorithms
     traccc::cuda::seeding_algorithm sa_cuda(seeding_cfg, grid_cfg, filter_cfg,
                                             mr, async_copy, stream);
-    traccc::cuda::track_params_estimation tp_cuda(mr, async_copy, stream);
+    traccc::track_params_estimation_config track_params_estimation_config;
+    traccc::cuda::track_params_estimation tp_cuda(
+        track_params_estimation_config, mr, async_copy, stream);
     traccc::cuda::combinatorial_kalman_filter_algorithm device_finding(
         finding_cfg, mr, async_copy, stream);
     traccc::cuda::kalman_fitting_algorithm device_fitting(fitting_cfg, mr,
