@@ -161,7 +161,7 @@ struct kalman_actor : detray::actor {
             // Run Kalman Gain Updater
             const auto sf = navigation.get_surface();
 
-            const bool is_line = sf.template visit_mask<is_line_visitor>();
+            const bool is_line = detail::is_line(sf);
 
             kalman_fitter_status res = kalman_fitter_status::SUCCESS;
 

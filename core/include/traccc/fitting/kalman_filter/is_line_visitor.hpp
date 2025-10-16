@@ -7,20 +7,31 @@
 
 #pragma once
 
+#include <detray/geometry/mask.hpp>
 #include <detray/geometry/shapes/line.hpp>
+#include <detray/geometry/surface.hpp>
 
 #include "traccc/definitions/qualifiers.hpp"
 
-namespace traccc {
+namespace traccc::detail {
 
-struct is_line_visitor {
-    template <typename mask_group_t, typename index_t>
-    [[nodiscard]] TRACCC_HOST_DEVICE inline bool operator()(
-        const mask_group_t& /*mask_group*/, const index_t& /*index*/) const {
-        using shape_type = typename mask_group_t::value_type::shape;
-        return std::is_same_v<shape_type, detray::line<true>> ||
-               std::is_same_v<shape_type, detray::line<false>>;
+/// @returns true if the surface has "line" shape
+template <typename detector_t>
+[[nodiscard]] TRACCC_HOST_DEVICE bool constexpr is_line(
+    const detray::geometry::surface<detector_t> sf) {
+    using algebra_t = typename detector_t::algebra_type;
+    using straw_tube = detray::mask<detray::line<false>, algebra_t>;
+    using wire_cell = detray::mask<detray::line<true>, algebra_t>;
+
+    if constexpr (detector_t::masks::template is_defined<straw_tube>() ||
+                  detector_t::masks::template is_defined<wire_cell>()) {
+        return (sf.shape_id() ==
+                detector_t::masks::template get_id<straw_tube>()) ||
+               (sf.shape_id() ==
+                detector_t::masks::template get_id<wire_cell>());
+    } else {
+        return false;
     }
 };
 
-}  // namespace traccc
+}  // namespace traccc::detail

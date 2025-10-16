@@ -39,7 +39,8 @@ TRACCC_HOST_DEVICE inline void fit_backward(
     if (param_liveness.at(param_id) > 0u) {
         typename fitter_t::state fitter_state(
             track, tracks.states, tracks.measurements,
-            *(payload.barcodes_view.ptr() + param_id));
+            *(payload.barcodes_view.ptr() + param_id),
+            fitter.config().propagation);
 
         kalman_fitter_status fit_status = fitter.smooth(fitter_state);
 

@@ -60,6 +60,12 @@ struct find_tracks_payload {
     unsigned int n_in_params;
 
     /**
+     * @brief View object to the vector of booleans that flags if the sensor
+     * was hit due to tolerance inflation
+     */
+    vecmem::data::vector_view<std::uint8_t> is_edges_view;
+
+    /**
      * @brief View object to the vector of measurement index ranges per surface
      */
     vecmem::data::vector_view<const unsigned int> measurement_ranges_view;

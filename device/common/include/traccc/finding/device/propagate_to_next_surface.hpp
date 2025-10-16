@@ -51,6 +51,12 @@ struct propagate_to_next_surface_payload {
     vecmem::data::vector_view<const unsigned int> param_ids_view;
 
     /**
+     * @brief View object to the vector of booleans that flags if the sensor
+     * was hit due to tolerance inflation
+     */
+    vecmem::data::vector_view<std::uint8_t> is_edges_view;
+
+    /**
      * @brief View object to the vector of candidate links
      */
     vecmem::data::vector_view<const candidate_link> links_view;
