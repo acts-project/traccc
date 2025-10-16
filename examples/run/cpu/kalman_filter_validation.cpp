@@ -114,11 +114,9 @@ int main(int argc, char* argv[]) {
 
     // Data dir does not exist, create default directory
     if (!std::filesystem::exists(input_dir)) {
-        input_dir = data_dir / "validation_data";
 
-        TRACCC_INFO("Input directory " << data_dir / input_opts.directory
-                                       << " does not exist: Creating data path "
-                                       << input_dir);
+        TRACCC_INFO("Input directory " << input_dir
+                                       << " does not exist: Creating data path");
 
         if (std::error_code err;
             !std::filesystem::create_directories(input_dir, err)) {

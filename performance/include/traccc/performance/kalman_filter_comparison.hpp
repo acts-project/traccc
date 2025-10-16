@@ -53,11 +53,11 @@ bool kalman_filter_comparison(
     const traccc::pdg_particle<traccc::scalar> ptc_type =
         traccc::muon<traccc::scalar>(),
     const std::array<traccc::scalar, traccc::e_bound_size>& stddevs =
-        {15.f * traccc::unit<traccc::scalar>::um,
-         15.f * traccc::unit<traccc::scalar>::um,
+        {1.f * traccc::unit<traccc::scalar>::mm,
+         1.f * traccc::unit<traccc::scalar>::mm,
          1.f * traccc::unit<traccc::scalar>::degree,
          1.f * traccc::unit<traccc::scalar>::degree,
-         0.01f / traccc::unit<traccc::scalar>::GeV,
+         0.1f / traccc::unit<traccc::scalar>::GeV,
          1000.f * traccc::unit<traccc::scalar>::ns},
     const traccc::vector3& B = {0.f, 0.f,
                                 2.f * traccc::unit<traccc::scalar>::T},

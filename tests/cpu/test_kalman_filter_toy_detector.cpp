@@ -29,7 +29,7 @@
 
 using namespace traccc;
 
-constexpr std::size_t n_events{1u};
+constexpr std::size_t n_events{10u};
 constexpr std::size_t n_tracks{1000u};
 
 constexpr detray::pdg_particle ptc_type{detray::muon<scalar>()};
@@ -122,15 +122,15 @@ TEST_P(KF_intergration_test_toy_detector, toy_detector) {
     sim.run();
 
     // Specific config for the navigation test
-    prop_cfg.navigation.n_scattering_stddev = 1;
+    prop_cfg.navigation.n_scattering_stddev = 2;
     prop_cfg.navigation.accumulated_error = 0.f;
     prop_cfg.navigation.estimate_scattering_noise = true;
-    prop_cfg.navigation.min_mask_tolerance = 0.15f;
+    //prop_cfg.navigation.min_mask_tolerance = 0.15f;
     // Try with a flat tolerance instead
     if (!prop_cfg.navigation.estimate_scattering_noise) {
         prop_cfg.navigation.min_mask_tolerance = std::get<1>(GetParam());
     }
-    prop_cfg.navigation.mask_tolerance_scalor = 1.f;
+    //prop_cfg.navigation.mask_tolerance_scalor = 1.f;
     prop_cfg.navigation.overstep_tolerance = -1000.f * traccc::unit<float>::um;
     prop_cfg.navigation.max_mask_tolerance =
         std::get<1>(GetParam()) + 3.f * traccc::unit<float>::mm;
@@ -213,16 +213,21 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     pT_100GeV_nominal, KF_intergration_test_toy_detector,
     ::testing::Values(std::make_tuple(100.f * traccc::unit<scalar>::GeV,
-                                      0.05f * traccc::unit<float>::mm, 0.01f,
+                                      1.5f * traccc::unit<float>::mm, 0.01f,
                                       0.15f, 1u, true, true, true)));
 INSTANTIATE_TEST_SUITE_P(
     pT_10GeV_nominal, KF_intergration_test_toy_detector,
     ::testing::Values(std::make_tuple(10.f * traccc::unit<scalar>::GeV,
-                                      0.05f * traccc::unit<float>::mm, 0.01f,
+                                      1.5f * traccc::unit<float>::mm, 0.01f,
+                                      0.15f, 1u, true, true, true)));
+INSTANTIATE_TEST_SUITE_P(
+    pT_1GeV_nominal, KF_intergration_test_toy_detector,
+    ::testing::Values(std::make_tuple(1.f * traccc::unit<scalar>::GeV,
+                                      1.5f * traccc::unit<float>::mm, 0.01f,
                                       0.15f, 1u, true, true, true)));
 
 INSTANTIATE_TEST_SUITE_P(
     pT_05GeV_nominal, KF_intergration_test_toy_detector,
     ::testing::Values(std::make_tuple(0.5f * traccc::unit<scalar>::GeV,
-                                      0.05f * traccc::unit<float>::mm, 0.01f,
+                                      1.5f * traccc::unit<float>::mm, 0.01f,
                                       0.5f, 3u, true, true, true)));

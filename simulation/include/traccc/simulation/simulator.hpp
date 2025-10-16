@@ -87,6 +87,7 @@ struct simulator {
         m_cfg.propagation.stepping.do_covariance_transport = false;
         m_cfg.propagation.stepping.use_eloss_gradient = false;
         m_cfg.propagation.stepping.use_field_gradient = false;
+        m_cfg.propagation.navigation.estimate_scattering_noise = false;
 
         // During simulation, the track direction is known precisely
         m_resetter.estimate_scattering_noise = false;
@@ -130,6 +131,7 @@ struct simulator {
                 propagation.set_particle(
                     detail::correct_particle_hypothesis(m_cfg.ptc_type, track));
 
+                m_cfg.propagation.navigation.estimate_scattering_noise = false;
                 propagator_type p(m_cfg.propagation);
 
                 // Set overstep tolerance and stepper constraint
