@@ -14,6 +14,7 @@
 #include "traccc/edm/measurement_helpers.hpp"
 #include "traccc/edm/track_state_collection.hpp"
 #include "traccc/fitting/status_codes.hpp"
+#include "traccc/utils/logging.hpp"
 
 namespace traccc {
 
@@ -67,6 +68,8 @@ struct two_filters_smoother {
 
         // Do not smoothe if the forward pass produced an error
         if (trk_state.filtered_params().is_invalid()) {
+            TRACCC_ERROR_HOST_DEVICE("Filtered track state invalid");
+            TRACCC_ERROR_HOST(trk_state.filtered_params());
             return kalman_fitter_status::ERROR_INVALID_TRACK_STATE;
         }
 
@@ -110,14 +113,19 @@ struct two_filters_smoother {
 
         // Return false if track is parallel to z-axis or phi is not finite
         if (!std::isfinite(trk_state.smoothed_params().theta())) {
+            TRACCC_ERROR_HOST_DEVICE(
+                "Theta is infinite after smoothing (Matrix inversion)");
             return kalman_fitter_status::ERROR_INVERSION;
         }
 
         if (!std::isfinite(trk_state.smoothed_params().phi())) {
+            TRACCC_ERROR_HOST_DEVICE(
+                "Phi is infinite after smoothing (Matrix inversion)");
             return kalman_fitter_status::ERROR_INVERSION;
         }
 
         if (math::fabs(trk_state.smoothed_params().qop()) == 0.f) {
+            TRACCC_ERROR_HOST_DEVICE("q/p is zero after smoothing");
             return kalman_fitter_status::ERROR_QOP_ZERO;
         }
 
@@ -144,6 +152,11 @@ struct two_filters_smoother {
             getter::element(V, 1u, 1u) = 1.f;
         }
 
+        TRACCC_DEBUG_HOST("Measurement position: " << meas_local);
+        TRACCC_DEBUG_HOST("Measurement variance:\n" << V);
+        TRACCC_DEBUG_HOST("Predicted residual: " << meas_local -
+                                                        H * predicted_vec);
+
         // Eq (3.39) of "Pattern Recognition, Tracking and Vertex
         // Reconstruction in Particle Detectors"
         const matrix_type<D, D> R_smt =
@@ -160,11 +173,20 @@ struct two_filters_smoother {
 
         const scalar chi2_smt_value{getter::element(chi2_smt, 0, 0)};
 
+        TRACCC_VERBOSE_HOST("Smoothed residual: " << residual_smt);
+        TRACCC_DEBUG_HOST("R_smt:\n" << R_smt);
+        TRACCC_DEBUG_HOST_DEVICE("det(R_smt): %f", matrix::determinant(R_smt));
+        TRACCC_DEBUG_HOST("R_smt_inv:\n" << matrix::inverse(R_smt));
+        TRACCC_VERBOSE_HOST_DEVICE("Chi2: %f", chi2_smt_value);
+
         if (chi2_smt_value < 0.f) {
+            TRACCC_ERROR_HOST_DEVICE("Smoothed chi2 negative: %f",
+                                     chi2_smt_value);
             return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NEGATIVE;
         }
 
         if (!std::isfinite(chi2_smt_value)) {
+            TRACCC_ERROR_HOST_DEVICE("Smoothed chi2 infinite");
             return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NOT_FINITE;
         }
 
@@ -194,6 +216,9 @@ struct two_filters_smoother {
         assert(std::isfinite(matrix::determinant(M)));
         const matrix_type<6, D> K = projected_cov * matrix::inverse(M);
 
+        TRACCC_DEBUG_HOST("H:\n" << H);
+        TRACCC_DEBUG_HOST("K:\n" << K);
+
         // Calculate the filtered track parameters
         const matrix_type<6, 1> filtered_vec =
             predicted_vec + K * (meas_local - H * predicted_vec);
@@ -204,14 +229,21 @@ struct two_filters_smoother {
 
         // Return false if track is parallel to z-axis or phi is not finite
         if (!std::isfinite(bound_params.theta())) {
+            TRACCC_ERROR_HOST_DEVICE(
+                "Theta is infinite after filering in smoother (Matrix "
+                "inversion)");
             return kalman_fitter_status::ERROR_INVERSION;
         }
 
         if (!std::isfinite(bound_params.phi())) {
+            TRACCC_ERROR_HOST_DEVICE(
+                "Phi is infinite after filering in smoother (Matrix "
+                "inversion)");
             return kalman_fitter_status::ERROR_INVERSION;
         }
 
         if (math::fabs(bound_params.qop()) == 0.f) {
+            TRACCC_ERROR_HOST_DEVICE("q/p is zero after filering in smoother");
             return kalman_fitter_status::ERROR_QOP_ZERO;
         }
 
@@ -231,11 +263,19 @@ struct two_filters_smoother {
 
         const scalar chi2_val{getter::element(chi2, 0, 0)};
 
+        TRACCC_VERBOSE_HOST("Filtered residual: " << residual);
+        TRACCC_DEBUG_HOST("R:\n" << R);
+        TRACCC_DEBUG_HOST_DEVICE("det(R): %f", matrix::determinant(R));
+        TRACCC_DEBUG_HOST("R_inv:\n" << matrix::inverse(R));
+        TRACCC_VERBOSE_HOST_DEVICE("Chi2: %f", chi2_val);
+
         if (chi2_val < 0.f) {
+            TRACCC_ERROR_HOST_DEVICE("Chi2 negative: %f", chi2_val);
             return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NEGATIVE;
         }
 
         if (!std::isfinite(chi2_val)) {
+            TRACCC_ERROR_HOST_DEVICE("Chi2 infinite");
             return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NOT_FINITE;
         }
 
@@ -247,6 +287,8 @@ struct two_filters_smoother {
 
         const scalar theta = bound_params.theta();
         if (theta <= 0.f || theta >= 2.f * constant<traccc::scalar>::pi) {
+            TRACCC_ERROR_HOST_DEVICE("Hit theta pole after smoothing : %f",
+                                     theta);
             return kalman_fitter_status::ERROR_THETA_POLE;
         }
 

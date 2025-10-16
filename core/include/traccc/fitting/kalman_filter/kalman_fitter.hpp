@@ -20,6 +20,7 @@
 #include "traccc/fitting/kalman_filter/statistics_updater.hpp"
 #include "traccc/fitting/kalman_filter/two_filters_smoother.hpp"
 #include "traccc/fitting/status_codes.hpp"
+#include "traccc/utils/logging.hpp"
 #include "traccc/utils/particle.hpp"
 #include "traccc/utils/prob.hpp"
 #include "traccc/utils/propagation.hpp"
@@ -261,6 +262,7 @@ class kalman_fitter {
     smooth(state& fitter_state) const {
 
         if (fitter_state.m_sequencer_state.overflow) {
+            TRACCC_ERROR_HOST_DEVICE("Barcode sequence overlow");
             return kalman_fitter_status::ERROR_BARCODE_SEQUENCE_OVERFLOW;
         }
 
@@ -284,14 +286,20 @@ class kalman_fitter {
         const scalar theta = last.filtered_params().theta();
 
         if (!std::isfinite(last.filtered_params().theta())) {
+            TRACCC_ERROR_HOST_DEVICE(
+                "Theta is infinite after filtering (Matrix inversion)");
             return kalman_fitter_status::ERROR_INVERSION;
         }
 
         if (!std::isfinite(last.filtered_params().phi())) {
+            TRACCC_ERROR_HOST_DEVICE(
+                "Phi is infinite after filtering (Matrix inversion)");
             return kalman_fitter_status::ERROR_INVERSION;
         }
 
         if (theta <= 0.f || theta >= 2.f * constant<traccc::scalar>::pi) {
+            TRACCC_ERROR_HOST_DEVICE("Hit theta pole after filtering : %f",
+                                     theta);
             return kalman_fitter_status::ERROR_THETA_POLE;
         }
 
@@ -403,6 +411,7 @@ class kalman_fitter {
                 auto trk_state = track_states.at(link.index);
                 // Fitting fails if any of non-hole track states is not smoothed
                 if (!trk_state.is_hole() && !trk_state.is_smoothed()) {
+                    TRACCC_ERROR_HOST_DEVICE("Not all smoothed");
                     fit_res.fit_outcome() =
                         track_fit_outcome::FAILURE_NOT_ALL_SMOOTHED;
                     return;
@@ -414,6 +423,7 @@ class kalman_fitter {
             return;
         }
 
+        TRACCC_ERROR_HOST_DEVICE("Negative NDF");
         fit_res.fit_outcome() = track_fit_outcome::FAILURE_NON_POSITIVE_NDF;
         return;
     }

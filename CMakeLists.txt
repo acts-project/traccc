@@ -52,6 +52,10 @@ include( traccc-functions )
 set( TRACCC_CUSTOM_SCALARTYPE "float" CACHE STRING
    "Scalar type to use in the TRACCC code" )
 
+# Temporary setting for the traccc device log level, until it can be removed.
+set( TRACCC_DEVICE_LOG_LVL "NONE" CACHE STRING
+   "Log level for traccc and detray device code" )
+
 # Flags controlling which parts of traccc to build.
 option( TRACCC_BUILD_CUDA "Build the CUDA sources included in traccc" FALSE )
 option( TRACCC_BUILD_HIP "Build the HIP sources included in traccc" FALSE)

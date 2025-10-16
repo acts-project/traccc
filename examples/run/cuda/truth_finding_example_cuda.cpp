@@ -190,6 +190,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
             seeds.push_back(truth_track_candidates.tracks.at(i_trk).params());
         }
 
+        std::cout << "Number of seeds: " << seeds.size() << std::endl;
+
         traccc::bound_track_parameters_collection_types::buffer seeds_buffer{
             static_cast<unsigned int>(seeds.size()), mr.main};
         async_copy.setup(seeds_buffer)->wait();

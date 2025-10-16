@@ -22,6 +22,10 @@ FetchContent_Declare( Detray SYSTEM ${TRACCC_DETRAY_SOURCE} )
 set( DETRAY_CUSTOM_SCALARTYPE "${TRACCC_CUSTOM_SCALARTYPE}" CACHE STRING
    "Scalar type to use in the Detray code" )
 
+set( DETRAY_SET_LOGGING "${TRACCC_DEVICE_LOG_LVL}" CACHE STRING
+   "Log level to use in device code" FORCE)
+message( STATUS "Setting DETRAY and TRACCC device log level to ${DETRAY_SET_LOGGING}" )
+
 set( DETRAY_BUILD_UNITTESTS FALSE CACHE BOOL
    "Turn off the build of the Detray unit tests" )
 set( DETRAY_BUILD_INTEGRATIONTESTS FALSE CACHE BOOL
