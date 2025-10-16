@@ -22,6 +22,7 @@
 #include <detray/navigation/direct_navigator.hpp>
 #include <detray/navigation/navigator.hpp>
 #include <detray/propagator/base_actor.hpp>
+#include <detray/utils/log.hpp>
 
 // vecmem include(s)
 #include <vecmem/containers/device_vector.hpp>
@@ -91,7 +92,7 @@ struct kalman_actor_state {
 
         // Reset the hole states from a previous fitter pass
         for (unsigned int i = 0u; i < size(); ++i) {
-            at(i).set_hole(true);
+            at(i).set_hole(false);
         }
         n_holes = 0u;
     }
@@ -118,7 +119,7 @@ struct kalman_actor_state {
     }
 
     template <typename nav_state_t>
-    TRACCC_HOST_DEVICE void evaluate_hole(const nav_state_t& navigation) {
+    TRACCC_HOST_DEVICE void check_if_hole(const nav_state_t& navigation) {
         if (do_precise_hole_count || !navigation.current().is_edge()) {
             ++n_holes;
         }
@@ -133,16 +134,22 @@ struct kalman_actor_state {
         auto& navigation = propagation._navigation;
         auto trk_state = (*this)();
 
+        DETRAY_INFO_HOST("Checking: " << navigation.barcode());
+        DETRAY_INFO_HOST("Expected: " << trk_state.filtered_params().surface_link());
+
         // Surface was found, continue with KF algorithm
         if (navigation.barcode() ==
             trk_state.filtered_params().surface_link()) {
             // Count a hole, if track finding did not find a measurement
             if (trk_state.is_hole()) {
-                evaluate_hole(navigation);
+                DETRAY_INFO_HOST_DEVICE("state might be flagged hole");
+                check_if_hole(navigation);
             }
             // If track finding did not find measurement on this surface: skip
             return !trk_state.is_hole();
         }
+
+        DETRAY_INFO_HOST_DEVICE("state not flagged hole");
 
         // Skipped surfaces: adjust iterator and remove counted hole
         // (only relevant if using non-direct navigation, e.g. forward truth
@@ -159,7 +166,7 @@ struct kalman_actor_state {
                 // not match, it must be an additional surface
                 // -> continue navigation until matched
                 if (m_idx == 0u) {
-                    evaluate_hole(navigation);
+                    check_if_hole(navigation);
                     return false;
                 }
                 // Check if the current navigation surfaces can be found on a
@@ -176,12 +183,15 @@ struct kalman_actor_state {
                 }
             } else {
                 if (m_idx + 1 == size()) {
-                    evaluate_hole(navigation);
+                    DETRAY_INFO_HOST_DEVICE("evaluate last state");
+                    check_if_hole(navigation);
                     return false;
                 }
+                DETRAY_INFO_HOST_DEVICE("Check other states for match");
                 for (unsigned int i = m_idx + 1u; i < size(); ++i) {
                     if (at(i).filtered_params().surface_link() ==
                         navigation.barcode()) {
+                        DETRAY_INFO_HOST_DEVICE("found state: skipped not hole");
                         m_idx += n;
                         return true;
                     }
@@ -191,7 +201,8 @@ struct kalman_actor_state {
         }
 
         // Mismatch was not from missed state: Is a hole
-        evaluate_hole(navigation);
+        DETRAY_INFO_HOST_DEVICE("NOT found state: might be hole");
+        check_if_hole(navigation);
 
         // After additional surface, keep navigating until match is found
         return false;
@@ -252,7 +263,9 @@ struct kalman_actor : detray::actor {
         }
 
         // triggered only for sensitive surfaces
-        if (navigation.is_on_sensitive()) {
+        while (navigation.is_on_sensitive()) {
+
+            DETRAY_INFO_HOST("\nIn actor: " << navigation.barcode());
 
             // Did the navigation switch direction?
             actor_state.backward_mode =
@@ -328,6 +341,19 @@ struct kalman_actor : detray::actor {
 
             // Flag renavigation of the current candidate
             navigation.set_high_trust();
+
+            // Need propagation to reach the naext candidate
+            if (math::fabs(navigation()) > 1.f * unit<float>::um) {
+                DETRAY_DEBUG_HOST("DIST: " << math::fabs(navigation()));
+                return;
+            } else {
+                DETRAY_DEBUG_HOST("KALMAN ACTOR OVERLAP");
+                // Jump to the next candidate
+                const auto free_track = sf.bound_to_free_vector(propagation._context, bound_param);
+                using navigator_t =  typename propagator_state_t::navigator_state_type::navigator_type ;
+                constexpr navigator_t navigator{};
+                navigator.update(free_track, navigation, {}, propagation._context);
+            }
         }
     }
 };

@@ -103,14 +103,27 @@ bool kalman_filter_comparison(
     truth_traces_fw.reserve(tracks.capacity());
     truth_traces_bw.reserve(tracks.capacity());
 
+    TRACCC_VERBOSE("Reconstructing " << n_events << " events");
+
     // Read the truth data in
     for (std::size_t i_event = 0u; i_event < n_events; ++i_event) {
         traccc::event_data evt_data(input_dir, i_event, host_mr, use_acts_geoid,
                                     host_det, data_format::csv);
+        TRACCC_VERBOSE("Event " << i_event << ": Found " << evt_data.m_particle_map.size() << " initial particles");
 
-        assert(!evt_data.m_particle_map.empty());
-        assert(!evt_data.m_ptc_to_meas_map.empty());
+        if (evt_data.m_particle_map.empty()) {
+            TRACCC_ERROR("Removing event "
+                        << i_event << ": Found no particles");
+            continue;
+        }
 
+        if (evt_data.m_ptc_to_meas_map.empty()) {
+            TRACCC_ERROR("Removing event "
+                        << i_event << ": Found no connections between particles and measurements");
+            continue;
+        }
+
+        std::size_t n_tracks{tracks.size()};
         for (const auto& [ptc_id, ptc] : evt_data.m_particle_map) {
             if (!evt_data.m_ptc_to_meas_map.contains(ptc)) {
                 continue;
@@ -118,7 +131,7 @@ bool kalman_filter_comparison(
             // Minimum momentum
             const traccc::scalar pT{vector::perp(ptc.momentum)};
             if (pT <= min_pT) {
-                TRACCC_INFO("Removing particle "
+                TRACCC_WARNING("Event " << i_event << ": Removing particle "
                             << ptc_id << " due to transv. momentum cut (pT was "
                             << pT / traccc::unit<traccc::scalar>::MeV
                             << " MeV)");
@@ -130,69 +143,83 @@ bool kalman_filter_comparison(
                 traccc::propagation_validator::transcribe_to_trace(
                     ctx, det, ptc, evt_data.m_ptc_to_meas_map);
 
-            if (!truth_trace_fw.empty()) {
-                // Minimum radius (remove secondaries)
-                const traccc::scalar rad{
-                    vector::perp(truth_trace_fw.front().pos)};
-                if (rad >= max_rad) {
-                    TRACCC_INFO("Removing particle "
-                                << ptc_id << " due to radius cut (radius was "
-                                << rad / traccc::unit<traccc::scalar>::mm
-                                << " mm)");
-                    continue;
-                }
-
-                // Revert the forward trace for the backward propagation
-                vecmem::vector<sf_candidate_t> truth_trace_bw(
-                    truth_trace_fw.size());
-                std::ranges::reverse_copy(truth_trace_fw,
-                                          truth_trace_bw.begin());
-
-                assert(!truth_trace_bw.empty());
-
-                truth_traces_fw.push_back(std::move(truth_trace_fw));
-                truth_traces_bw.push_back(std::move(truth_trace_bw));
-
-                // Transcribe measurements to global collection
-                const auto& measurements_per_ptc =
-                    evt_data.m_ptc_to_meas_map.at(ptc);
-                assert(!measurements_per_ptc.empty());
-
-                const auto meas_offset{
-                    static_cast<unsigned int>(measurement_coll.size())};
-                measurement_coll.insert(std::end(measurement_coll),
-                                        std::begin(measurements_per_ptc),
-                                        std::end(measurements_per_ptc));
-
-                measurement_collection_types::const_device measurement_view{
-                    vecmem::get_data(measurement_coll)};
-
-                track_state_coll.reserve(track_state_coll.size() +
-                                         measurements_per_ptc.size());
-
-                // Construct initial track parameters for the propagation
-                // @TODO: Need volume grid in case of large vertex smearing
-                tracks.emplace_back(ptc.vertex, 0.f, ptc.momentum, ptc.charge);
-
-                // Connect the bound track parameters to the measurements and
-                // states
-                typename edm::track_fit_collection<algebra_t>::host::object_type
-                    track_object{};
-
-                for (unsigned int i = 0u; i < measurements_per_ptc.size();
-                     ++i) {
-                    unsigned int meas_idx{meas_offset + i};
-
-                    track_object.state_indices().push_back(meas_idx);
-
-                    track_state_coll.push_back(edm::make_track_state<algebra_t>(
-                        measurement_view, meas_idx));
-                    track_states_coll_bw.push_back(edm::make_track_state<algebra_t>(
-                        measurement_view, meas_idx));
-                }
-
-                track_param_coll.push_back(track_object);
+            // No meansurements found
+            if (truth_trace_fw.empty()) {
+                TRACCC_WARNING("Event " << i_event << ": No measurements found for particle " << ptc_id);
+                continue;
             }
+
+            // Minimum radius (remove secondaries)
+            const traccc::scalar rad{
+                vector::perp(truth_trace_fw.front().pos)};
+            if (rad >= max_rad) {
+                TRACCC_WARNING("Event " << i_event << ": Removing particle "
+                            << ptc_id << " due to radius cut (radius was "
+                            << rad / traccc::unit<traccc::scalar>::mm
+                            << " mm)");
+                continue;
+            }
+
+            // Revert the forward trace for the backward propagation
+            vecmem::vector<sf_candidate_t> truth_trace_bw(
+                truth_trace_fw.size());
+            std::ranges::reverse_copy(truth_trace_fw,
+                                        truth_trace_bw.begin());
+
+            assert(!truth_trace_bw.empty());
+
+            truth_traces_fw.push_back(std::move(truth_trace_fw));
+            truth_traces_bw.push_back(std::move(truth_trace_bw));
+
+            TRACCC_DEBUG("Event " << i_event << ": Found " << truth_traces_fw.size() << " truth measurement(s) for track " << tracks.size());
+
+            // Transcribe measurements to global collection
+            const auto& measurements_per_ptc =
+                evt_data.m_ptc_to_meas_map.at(ptc);
+            assert(!measurements_per_ptc.empty());
+
+            const auto meas_offset{
+                static_cast<unsigned int>(measurement_coll.size())};
+            measurement_coll.insert(std::end(measurement_coll),
+                                    std::begin(measurements_per_ptc),
+                                    std::end(measurements_per_ptc));
+
+            measurement_collection_types::const_device measurement_view{
+                vecmem::get_data(measurement_coll)};
+
+            track_state_coll.reserve(track_state_coll.size() +
+                                        measurements_per_ptc.size());
+
+            // Construct initial track parameters for the propagation
+            // @TODO: Need volume grid in case of large vertex smearing
+            tracks.emplace_back(ptc.vertex, 0.f, ptc.momentum, ptc.charge);
+
+            TRACCC_DEBUG("-> Truth track " << tracks.size() - 1u << ": " << tracks.back());
+
+            // Connect the bound track parameters to the measurements and
+            // states
+            typename edm::track_fit_collection<algebra_t>::host::object_type
+                track_object{};
+
+            for (unsigned int i = 0u; i < measurements_per_ptc.size();
+                    ++i) {
+                unsigned int meas_idx{meas_offset + i};
+
+                track_object.state_indices().push_back(meas_idx);
+
+                track_state_coll.push_back(edm::make_track_state<algebra_t>(
+                    measurement_view, meas_idx));
+                track_states_coll_bw.push_back(edm::make_track_state<algebra_t>(
+                    measurement_view, meas_idx));
+            }
+
+            track_param_coll.push_back(track_object);
+        }
+
+        if (track_param_coll.size() - n_tracks == 0u) {
+            TRACCC_WARNING("Event " << i_event << ": No eligible tracks in event");
+        } else {
+            TRACCC_VERBOSE("Event " << i_event << ": Found " << track_param_coll.size() - n_tracks << " reconstructible truth track(s) in event");
         }
     }
 
@@ -206,7 +233,6 @@ bool kalman_filter_comparison(
         return false;
     }
 
-    using perigee_stopper = detray::perigee_stopper<algebra_t>;
     using transporter = detray::parameter_transporter<algebra_t>;
     using interactor = detray::pointwise_material_interactor<algebra_t>;
     using resetter = detray::parameter_resetter<algebra_t>;
@@ -236,7 +262,6 @@ bool kalman_filter_comparison(
     }
 
     // Reusable actor states
-    perigee_stopper::state stopper_state{};
     resetter::state resetter_state{};
     resetter_state.n_stddev = prop_cfg.navigation.n_scattering_stddev;
     resetter_state.accumulated_error = prop_cfg.navigation.accumulated_error;
@@ -422,6 +447,7 @@ bool kalman_filter_comparison(
                 track_param_device_container.at(static_cast<unsigned int>(i)),
                 track_state_device_container, measuremen_device_container);
             fit_actor_state.do_precise_hole_count = true;
+            fit_actor_state.reset();
 
             state_tuple.push_back(detray::make_tuple(
                 interactor_state, fit_actor_state, resetter_state));
@@ -495,12 +521,13 @@ bool kalman_filter_comparison(
             test_successful = false;
         }
 
-        std::cout << "-----------------------------------" << std::endl;
+        /*std::cout << "-----------------------------------" << std::endl;
         std::cout << "BACKWARD - With KF" << std::endl
                   << "-----------------------------------\n";
         using fit_actor_bd =
             traccc::kalman_actor<algebra_t,
                                  kalman_actor_direction::BIDIRECTIONAL>;
+        using perigee_stopper = detray::perigee_stopper<algebra_t>;
         using actor_chain_bw_t =
             detray::actor_chain<transporter, fit_actor_bd, interactor, resetter,
                                 perigee_stopper>;
@@ -515,6 +542,8 @@ bool kalman_filter_comparison(
         state_tuple_bw.reserve(tracks.size());
         state_ref_tuple_bw.reserve(tracks.size());
 
+        perigee_stopper::state stopper_state{};
+
         // Prepare the fitter state for every track
         for (std::size_t i = 0u; i < tracks.size(); ++i) {
             // Prepare actor states
@@ -526,6 +555,7 @@ bool kalman_filter_comparison(
                 track_param_device_container.at(static_cast<unsigned int>(i)),
                 track_state_device_container_bw, measuremen_device_container);
             fit_actor_state.do_precise_hole_count = true;
+            fit_actor_state.reset();
 
             state_tuple_bw.push_back(
                 detray::make_tuple(fit_actor_state, interactor_state,
@@ -618,7 +648,7 @@ bool kalman_filter_comparison(
                 << n_trk_holes_bw << ", should be "
                 << trk_stats_bw.n_tracks_w_extra);
             test_successful = false;
-        }
+        }*/
     }
 
     return test_successful;

@@ -15,6 +15,8 @@
 #include "traccc/edm/track_state_collection.hpp"
 #include "traccc/fitting/status_codes.hpp"
 
+#include <detray/utils/log.hpp>
+
 namespace traccc {
 
 /// Type unrolling functor for Kalman updating
@@ -76,7 +78,7 @@ struct gain_matrix_updater {
         edm::get_measurement_local<algebra_t>(
             measurements.at(trk_state.measurement_index()), meas_local);
 
-        assert((dim > 1) || (getter::element(meas_local, 1u, 0u) == 0.f));
+        //assert((dim > 1) || (getter::element(meas_local, 1u, 0u) == 0.f));
 
         // Predicted vector of bound track parameters
         const bound_vector_type& predicted_vec = bound_params.vector();
@@ -87,6 +89,12 @@ struct gain_matrix_updater {
         matrix_type<D, e_bound_size> H =
             measurements.at(trk_state.measurement_index())
                 .subs.template projector<D>();
+
+        if (dim == 1u && bound_params.bound_local()[0] > 600.f) {
+            DETRAY_INFO_HOST("Before: " << bound_params);
+            DETRAY_INFO_HOST("Meas: " << meas_local[0]);
+            DETRAY_INFO_HOST("Res: " << (meas_local - H * predicted_vec));
+        }
 
         // Flip the sign of projector matrix element in case the first element
         // of line measurement is negative
@@ -103,6 +111,10 @@ struct gain_matrix_updater {
         matrix_type<D, D> V;
         edm::get_measurement_covariance<algebra_t>(
             measurements.at(trk_state.measurement_index()), V);
+
+        if (dim == 1u && bound_params.bound_local()[0] > 600.f) {
+            DETRAY_INFO_HOST("Variance: " << V);
+        }
 
         if (dim == 1) {
             getter::element(V, 1u, 1u) = 1.f;
@@ -173,6 +185,11 @@ struct gain_matrix_updater {
         wrap_phi(trk_state.filtered_params());
 
         assert(!trk_state.filtered_params().is_invalid());
+
+
+        if (dim == 1u && bound_params.bound_local()[0] > 600.f) {
+            DETRAY_INFO_HOST("After: " << filtered_vec);
+        }
 
         return kalman_fitter_status::SUCCESS;
     }

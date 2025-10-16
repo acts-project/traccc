@@ -50,6 +50,11 @@ std::vector<measurement_id_type> read_measurements(
         std::array<detray::dsize_type<default_algebra>, 2u> indices{0u, 0u};
         meas.meas_dim = 0u;
 
+        meas.local[0] = iomeas.local0;
+        meas.variance[0] = iomeas.var_local0;
+        meas.local[1] = iomeas.local1;
+        meas.variance[1] = iomeas.var_local1;
+
         // Local key is a 8 bit char and first and last bit are dummy value. 2 -
         // 7th bits are for 6 bound track parameters.
         // Ex1) 0000010 or 2 -> meas dim = 1 and [loc0] active -> strip or wire
@@ -60,13 +65,9 @@ std::vector<measurement_id_type> read_measurements(
 
                 switch (ipar) {
                     case e_bound_loc0: {
-                        meas.local[0] = iomeas.local0;
-                        meas.variance[0] = iomeas.var_local0;
                         indices[meas.meas_dim++] = ipar;
                     }; break;
                     case e_bound_loc1: {
-                        meas.local[1] = iomeas.local1;
-                        meas.variance[1] = iomeas.var_local1;
                         indices[meas.meas_dim++] = ipar;
                     }; break;
                 }

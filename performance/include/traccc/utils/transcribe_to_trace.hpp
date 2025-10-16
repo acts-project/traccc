@@ -18,6 +18,9 @@
 // Detray test include(s)
 #include <detray/test/utils/inspectors.hpp>  //< candidate_record type
 
+// System include(s)
+#include <algorithm>
+
 namespace traccc::propagation_validator {
 
 template <typename detector_t>
@@ -81,6 +84,13 @@ auto transcribe_to_trace(const typename detector_t::geometry_context ctx,
         candidates.emplace_back(pos, dir, intr, ptc.q, vector::norm(mom));
     }
 
+    // Sort records by intersection distance to origin of the trajectory
+    auto sort_by_path = [&](const candidate_type<detector_t> &a, const candidate_type<detector_t> &b) -> bool {
+        return (a.intersection < b.intersection);
+    };
+
+    std::ranges::stable_sort(candidates, sort_by_path);
+
     return candidates;
 }
 
@@ -105,7 +115,7 @@ auto transcribe_to_trace(
     using intersection_t =
         typename candidate_type<detector_t>::intersection_type;
 
-    detray::dvector<candidate_type<detector_t>> candidates{};
+    vecmem::vector<candidate_type<detector_t>> candidates{};
     candidates.reserve(n_meas_for_particle);
 
     // TODO: Not accurate for every measurement
@@ -119,12 +129,25 @@ auto transcribe_to_trace(
         const auto sf_desc = det.surfaces().at(bcd.index());
         const auto sf = detray::tracking_surface{det, bcd};
 
+        /*scalar local_1{meas.local[1]};
+        using annulus_t =
+            detray::mask<detray::annulus2D, traccc::default_algebra>;
+        if (sf_desc.mask().id() ==
+            detector_t::masks::template get_id<annulus_t>()) {
+            std::cout << "Before: " << local_1 << std::endl;
+            local_1 *= traccc::unit<scalar>::degree;
+            std::cout << "After: " << local_1 << std::endl;
+            std::cout << std::boolalpha << "Inside " << sf.is_inside(point3{meas.local[0], local_1, 0.f}, 0.f) << std::endl;
+        }
+        point2 loc{meas.local[0], local_1};*/
         // TODO: Use correct track direction at measurement for line sf.
         const vector3 dir{vector::normalize(ptc.momentum)};
         const point3 glob_pos{sf.local_to_global(ctx, meas.local, dir)};
+        //const point3 glob_pos{sf.local_to_global(ctx, loc, dir)};
 
         // Rough estimate of intersection distance from origin
         const scalar path{vector::norm(glob_pos)};
+
 
         // Build an intersection
         using nav_link_t = typename intersection_t::nav_link_t;
@@ -134,9 +157,16 @@ auto transcribe_to_trace(
                             detray::intersection::status::e_inside,
                             true};
 
-        // TODO: Don't use intial particle momentum
+        // TODO: Don't use initial particle momentum
         candidates.emplace_back(glob_pos, dir, intr, q, p);
     }
+
+    // Sort records by intersection distance to origin of the trajectory
+    auto sort_by_path = [&](const candidate_type<detector_t> &a, const candidate_type<detector_t> &b) -> bool {
+        return (a.intersection < b.intersection);
+    };
+
+    std::ranges::stable_sort(candidates, sort_by_path);
 
     return candidates;
 }
