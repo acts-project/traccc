@@ -129,7 +129,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::host::seeding_algorithm sa(
         seedfinder_config, spacepoint_grid_config, seedfilter_config, host_mr,
         logger().clone("SeedingAlg"));
-    traccc::host::track_params_estimation tp(host_mr,
+    traccc::track_params_estimation_config track_params_estimation_config;
+    traccc::host::track_params_estimation tp(track_params_estimation_config,
+                                             host_mr,
                                              logger().clone("TrackParEstAlg"));
 
     // Propagation configuration

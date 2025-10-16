@@ -153,8 +153,10 @@ int seq_run(const traccc::opts::detector& detector_opts,
     traccc::host::seeding_algorithm sa(
         seedfinder_config, spacepoint_grid_config, seedfilter_config, host_mr,
         logger().clone("HostSeedingAlg"));
+    traccc::track_params_estimation_config track_params_estimation_config;
     traccc::host::track_params_estimation tp(
-        host_mr, logger().clone("HostTrackParEstAlg"));
+        track_params_estimation_config, host_mr,
+        logger().clone("HostTrackParEstAlg"));
     host_finding_algorithm finding_alg(finding_cfg, host_mr,
                                        logger().clone("HostFindingAlg"));
     host_fitting_algorithm fitting_alg(fitting_cfg, host_mr, host_copy,
@@ -171,7 +173,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
         seedfinder_config, spacepoint_grid_config, seedfilter_config, mr, copy,
         queue, logger().clone("AlpakaSeedingAlg"));
     traccc::alpaka::track_params_estimation tp_alpaka(
-        mr, copy, queue, logger().clone("AlpakaTrackParEstAlg"));
+        track_params_estimation_config, mr, copy, queue,
+        logger().clone("AlpakaTrackParEstAlg"));
     device_finding_algorithm finding_alg_alpaka(
         finding_cfg, mr, copy, queue, logger().clone("AlpakaFindingAlg"));
     device_fitting_algorithm fitting_alg_alpaka(
