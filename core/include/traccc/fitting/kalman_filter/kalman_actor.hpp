@@ -173,6 +173,9 @@ struct kalman_actor : detray::actor {
                                   kalman_actor_direction::FORWARD_ONLY ||
                               direction_e ==
                                   kalman_actor_direction::BIDIRECTIONAL) {
+                    // Wrap the phi and theta angles in their valid ranges
+                    normalize_angles(propagation._stepping.bound_params());
+
                     // Forward filter
                     res = gain_matrix_updater<algebra_t>{}(
                         trk_state, actor_state.m_measurements,

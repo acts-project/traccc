@@ -242,7 +242,6 @@ combinatorial_kalman_filter(
 
             // Iterate over the measurements
             for (unsigned int meas_id = lo; meas_id < up; meas_id++) {
-
                 // The measurement on surface to handle.
                 const measurement& meas = measurements.at(meas_id);
 
@@ -502,17 +501,36 @@ combinatorial_kalman_filter(
 
             // If a surface found, add the parameter for the next
             // step
-            if (s5.success) {
+            bool valid_track{s5.success};
+            if (valid_track) {
                 assert(propagation._navigation.is_on_sensitive());
                 assert(!propagation._stepping.bound_params().is_invalid());
 
-                out_params.push_back(propagation._stepping.bound_params());
-                param_to_link[step].push_back(link_id);
+                const auto& out_param = propagation._stepping.bound_params();
+
+                const scalar theta = out_param.theta();
+                if (theta <= 0.f ||
+                    theta >= 2.f * constant<traccc::scalar>::pi) {
+                    valid_track = false;
+                }
+
+                if (!std::isfinite(out_param.phi())) {
+                    valid_track = false;
+                }
+
+                if (math::fabs(out_param.qop()) == 0.f) {
+                    valid_track = false;
+                }
+
+                if (valid_track) {
+                    out_params.push_back(out_param);
+                    param_to_link[step].push_back(link_id);
+                }
             }
             // Unless the track found a surface, it is considered a
             // tip
-            else if (!s5.success &&
-                     (step >= (config.min_track_candidates_per_track - 1u))) {
+            if (!valid_track &&
+                (step >= (config.min_track_candidates_per_track - 1u))) {
                 tips.push_back({step, link_id});
             }
 

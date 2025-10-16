@@ -527,8 +527,8 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     }
 
     /*
-     * Compute the offset at which this block will write, as well as the index
-     * at which this block will write.
+     * Compute the offset at which this block will write, as well as the
+     * index at which this block will write.
      */
     if (in_param_is_live) {
         local_num_params = std::get<1>(decode_insertion_mutex(

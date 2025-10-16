@@ -14,6 +14,7 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/definitions/track_parametrization.hpp"
 #include "traccc/edm/container.hpp"
+#include "traccc/utils/trigonometric_helpers.hpp"
 
 // detray include(s).
 #include <detray/tracks/tracks.hpp>
@@ -48,19 +49,15 @@ using bound_track_parameters_collection_types =
 
 // Wrap the phi of track parameters to [-pi,pi]
 template <detray::concepts::algebra algebra_t>
-TRACCC_HOST_DEVICE inline void wrap_phi(
+TRACCC_HOST_DEVICE constexpr void normalize_angles(
     bound_track_parameters<algebra_t>& param) {
+    traccc::scalar phi;
+    traccc::scalar theta;
 
-    traccc::scalar phi = param.phi();
-    static constexpr traccc::scalar TWOPI =
-        2.f * traccc::constant<traccc::scalar>::pi;
-    phi = math::fmod(phi, TWOPI);
-    if (phi > traccc::constant<traccc::scalar>::pi) {
-        phi -= TWOPI;
-    } else if (phi < -traccc::constant<traccc::scalar>::pi) {
-        phi += TWOPI;
-    }
+    std::tie(phi, theta) = detail::wrap_phi_theta(param.phi(), param.theta());
+
     param.set_phi(phi);
+    param.set_theta(theta);
 }
 
 /// Covariance inflation used for track fitting

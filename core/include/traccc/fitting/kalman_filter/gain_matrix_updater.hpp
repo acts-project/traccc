@@ -123,6 +123,20 @@ struct gain_matrix_updater {
             predicted_vec + K * (meas_local - H * predicted_vec);
         const matrix_type<6, 6> filtered_cov = (I66 - K * H) * predicted_cov;
 
+        // Return false if track is parallel to z-axis or phi is not finite
+        if (!std::isfinite(getter::element(filtered_vec, e_bound_theta, 0))) {
+            return kalman_fitter_status::ERROR_INVERSION;
+        }
+
+        if (!std::isfinite(getter::element(filtered_vec, e_bound_phi, 0))) {
+            return kalman_fitter_status::ERROR_INVERSION;
+        }
+
+        if (math::fabs(getter::element(filtered_vec, e_bound_qoverp, 0)) ==
+            0.f) {
+            return kalman_fitter_status::ERROR_QOP_ZERO;
+        }
+
         // Residual between measurement and (projected) filtered vector
         const matrix_type<D, 1> residual = meas_local - H * filtered_vec;
 
@@ -133,36 +147,28 @@ struct gain_matrix_updater {
                 residual, matrix::inverse(R)) *
             residual;
 
-        // Return false if track is parallel to z-axis or phi is not finite
-        const scalar theta = bound_params.theta();
+        const scalar chi2_val{getter::element(chi2, 0, 0)};
 
-        if (theta <= 0.f || theta >= constant<traccc::scalar>::pi) {
-            return kalman_fitter_status::ERROR_THETA_ZERO;
-        }
-
-        if (!std::isfinite(bound_params.phi())) {
-            return kalman_fitter_status::ERROR_INVERSION;
-        }
-
-        if (std::abs(bound_params.qop()) == 0.f) {
-            return kalman_fitter_status::ERROR_QOP_ZERO;
-        }
-
-        if (getter::element(chi2, 0, 0) < 0.f) {
+        if (chi2_val < 0.f) {
             return kalman_fitter_status::ERROR_UPDATER_CHI2_NEGATIVE;
         }
 
-        if (!std::isfinite(getter::element(chi2, 0, 0))) {
+        if (!std::isfinite(chi2_val)) {
             return kalman_fitter_status::ERROR_UPDATER_CHI2_NOT_FINITE;
         }
 
-        // Set the track state parameters
+        // Set the chi2 for this track and measurement
         trk_state.filtered_params().set_vector(filtered_vec);
         trk_state.filtered_params().set_covariance(filtered_cov);
-        trk_state.filtered_chi2() = getter::element(chi2, 0, 0);
+        trk_state.filtered_chi2() = chi2_val;
 
-        // Wrap the phi in the range of [-pi, pi]
-        wrap_phi(trk_state.filtered_params());
+        // Wrap the phi and theta angles in their valid ranges
+        normalize_angles(trk_state.filtered_params());
+
+        const scalar theta = trk_state.filtered_params().theta();
+        if (theta <= 0.f || theta >= 2.f * constant<traccc::scalar>::pi) {
+            return kalman_fitter_status::ERROR_THETA_POLE;
+        }
 
         assert(!trk_state.filtered_params().is_invalid());
 

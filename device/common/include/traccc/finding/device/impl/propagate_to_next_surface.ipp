@@ -111,13 +111,27 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
 
         params[param_id] = propagation._stepping.bound_params();
         params_liveness[param_id] = 1u;
+
+        const scalar theta = params[param_id].theta();
+        if (theta <= 0.f || theta >= 2.f * constant<traccc::scalar>::pi) {
+            params_liveness[param_id] = 0u;
+        }
+
+        if (!std::isfinite(params[param_id].phi())) {
+            params_liveness[param_id] = 0u;
+        }
+
+        if (math::fabs(params[param_id].qop()) == 0.f) {
+            params_liveness[param_id] = 0u;
+        }
     } else {
         params_liveness[param_id] = 0u;
+    }
 
-        if (n_cands >= cfg.min_track_candidates_per_track) {
-            auto tip_pos = tips.push_back(link_idx);
-            tip_lengths.at(tip_pos) = n_cands;
-        }
+    if (params_liveness[param_id] == 0 &&
+        n_cands >= cfg.min_track_candidates_per_track) {
+        auto tip_pos = tips.push_back(link_idx);
+        tip_lengths.at(tip_pos) = n_cands;
     }
 }
 

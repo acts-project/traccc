@@ -14,7 +14,7 @@ namespace traccc {
 enum class kalman_fitter_status : uint32_t {
     SUCCESS,
     ERROR_QOP_ZERO,
-    ERROR_THETA_ZERO,
+    ERROR_THETA_POLE,
     ERROR_INVERSION,
     ERROR_SMOOTHER_CHI2_NEGATIVE,
     ERROR_SMOOTHER_CHI2_NOT_FINITE,
@@ -36,8 +36,8 @@ struct fitter_debug_msg {
             case ERROR_QOP_ZERO: {
                 return msg + "Track qop is zero";
             }
-            case ERROR_THETA_ZERO: {
-                return msg + "Track theta is zero";
+            case ERROR_THETA_POLE: {
+                return msg + "Track theta hit pole";
             }
             case ERROR_INVERSION: {
                 return msg + "Failed matrix inversion";
@@ -49,10 +49,10 @@ struct fitter_debug_msg {
                 return msg + "Invalid chi2 in smoother";
             }
             case ERROR_UPDATER_CHI2_NEGATIVE: {
-                return msg + "Negative chi2 in gain matrix update";
+                return msg + "Negative chi2 in gain matrix updater";
             }
             case ERROR_UPDATER_CHI2_NOT_FINITE: {
-                return msg + "Invalid chi2 in gain matrix update";
+                return msg + "Invalid chi2 in gain matrix updater";
             }
             case ERROR_BARCODE_SEQUENCE_OVERFLOW: {
                 return msg + "Barcode sequence overflow in direct navigator";
