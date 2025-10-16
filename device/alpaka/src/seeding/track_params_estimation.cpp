@@ -19,33 +19,37 @@ namespace traccc::alpaka {
 struct EstimateTrackParamsKernel {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        TAcc const& acc,
+        TAcc const& acc, const track_params_estimation_config config,
         const edm::measurement_collection<default_algebra>::const_view&
             measurements_view,
         edm::spacepoint_collection::const_view spacepoints_view,
         edm::seed_collection::const_view seed_view, const vector3 bfield,
-        const std::array<traccc::scalar, traccc::e_bound_size> stddev,
         bound_track_parameters_collection_types::view params_view) const {
         auto const globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
 
-        device::estimate_track_params(globalThreadIdx, measurements_view,
-                                      spacepoints_view, seed_view, bfield,
-                                      stddev, params_view);
+        device::estimate_track_params(globalThreadIdx, config,
+                                      measurements_view, spacepoints_view,
+                                      seed_view, bfield, params_view);
     }
 };
 
 track_params_estimation::track_params_estimation(
+    const track_params_estimation_config& config,
     const traccc::memory_resource& mr, vecmem::copy& copy, queue& q,
     std::unique_ptr<const Logger> ilogger)
-    : messaging(std::move(ilogger)), m_mr(mr), m_copy(copy), m_queue(q) {}
+    : messaging(std::move(ilogger)),
+      m_config(config),
+      m_mr(mr),
+      m_copy(copy),
+      m_queue(q) {}
 
 track_params_estimation::output_type track_params_estimation::operator()(
     const edm::measurement_collection<default_algebra>::const_view&
         measurements_view,
     const edm::spacepoint_collection::const_view& spacepoints_view,
-    const edm::seed_collection::const_view& seeds_view, const vector3& bfield,
-    const std::array<traccc::scalar, traccc::e_bound_size>& stddev) const {
+    const edm::seed_collection::const_view& seeds_view,
+    const vector3& bfield) const {
 
     // Get the size of the seeds view
     auto seeds_size = m_copy.get_size(seeds_view);
@@ -67,9 +71,9 @@ track_params_estimation::output_type track_params_estimation::operator()(
     auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
     // Run the kernel
-    ::alpaka::exec<Acc>(queue, workDiv, EstimateTrackParamsKernel{},
+    ::alpaka::exec<Acc>(queue, workDiv, EstimateTrackParamsKernel{}, m_config,
                         measurements_view, spacepoints_view, seeds_view, bfield,
-                        stddev, ::vecmem::get_data(params_buffer));
+                        ::vecmem::get_data(params_buffer));
 
     return params_buffer;
 }

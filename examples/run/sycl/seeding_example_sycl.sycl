@@ -107,8 +107,10 @@ int seq_run(const traccc::opts::detector& detector_opts,
     traccc::host::seeding_algorithm sa(
         seedfinder_config, spacepoint_grid_config, seedfilter_config, host_mr,
         logger().clone("HostSeedingAlg"));
+    const traccc::track_params_estimation_config track_params_estimation_config;
     traccc::host::track_params_estimation tp(
-        host_mr, logger().clone("HostTrackParEstAlg"));
+        track_params_estimation_config, host_mr,
+        logger().clone("HostTrackParEstAlg"));
 
     traccc::sycl::seeding_algorithm sa_sycl{seedfinder_config,
                                             spacepoint_grid_config,
@@ -118,7 +120,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
                                             &q,
                                             logger().clone("SyclSeedingAlg")};
     traccc::sycl::track_params_estimation tp_sycl{
-        mr, copy, &q, logger().clone("SyclTrackParEstAlg")};
+        track_params_estimation_config, mr, copy, &q,
+        logger().clone("SyclTrackParEstAlg")};
 
     traccc::performance::timing_info elapsedTimes;
 

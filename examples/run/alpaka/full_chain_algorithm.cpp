@@ -23,6 +23,7 @@ full_chain_algorithm::full_chain_algorithm(
     const seedfinder_config& finder_config,
     const spacepoint_grid_config& grid_config,
     const seedfilter_config& filter_config,
+    const track_params_estimation_config& track_params_estimation_config,
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
     const silicon_detector_description::host& det_descr,
@@ -56,6 +57,7 @@ full_chain_algorithm::full_chain_algorithm(
                 m_vecmem_objects.async_copy(), m_queue,
                 logger->cloneWithSuffix("SeedingAlg")),
       m_track_parameter_estimation(
+          track_params_estimation_config,
           {m_cached_device_mr, &m_cached_pinned_host_mr},
           m_vecmem_objects.async_copy(), m_queue,
           logger->cloneWithSuffix("TrackParamEstAlg")),
@@ -69,6 +71,7 @@ full_chain_algorithm::full_chain_algorithm(
       m_finder_config(finder_config),
       m_grid_config(grid_config),
       m_filter_config(filter_config),
+      m_track_params_estimation_config(track_params_estimation_config),
       m_finding_config(finding_config),
       m_fitting_config(fitting_config) {
 
@@ -115,6 +118,7 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
                 m_vecmem_objects.async_copy(), m_queue,
                 parent.logger().cloneWithSuffix("SeedingAlg")),
       m_track_parameter_estimation(
+          parent.m_track_params_estimation_config,
           {m_cached_device_mr, &m_cached_pinned_host_mr},
           m_vecmem_objects.async_copy(), m_queue,
           parent.logger().cloneWithSuffix("TrackParamEstAlg")),
@@ -130,6 +134,7 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_finder_config(parent.m_finder_config),
       m_grid_config(parent.m_grid_config),
       m_filter_config(parent.m_filter_config),
+      m_track_params_estimation_config(parent.m_track_params_estimation_config),
       m_finding_config(parent.m_finding_config),
       m_fitting_config(parent.m_fitting_config) {
 

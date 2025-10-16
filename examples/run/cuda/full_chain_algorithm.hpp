@@ -71,16 +71,18 @@ class full_chain_algorithm
     /// @param mr The memory resource to use for the intermediate and result
     ///           objects
     ///
-    full_chain_algorithm(vecmem::memory_resource& host_mr,
-                         const clustering_config& clustering_config,
-                         const seedfinder_config& finder_config,
-                         const spacepoint_grid_config& grid_config,
-                         const seedfilter_config& filter_config,
-                         const finding_algorithm::config_type& finding_config,
-                         const fitting_algorithm::config_type& fitting_config,
-                         const silicon_detector_description::host& det_descr,
-                         const magnetic_field& field, host_detector* detector,
-                         std::unique_ptr<const traccc::Logger> logger);
+    full_chain_algorithm(
+        vecmem::memory_resource& host_mr,
+        const clustering_config& clustering_config,
+        const seedfinder_config& finder_config,
+        const spacepoint_grid_config& grid_config,
+        const seedfilter_config& filter_config,
+        const track_params_estimation_config& track_params_estimation_config,
+        const finding_algorithm::config_type& finding_config,
+        const fitting_algorithm::config_type& fitting_config,
+        const silicon_detector_description::host& det_descr,
+        const magnetic_field& field, host_detector* detector,
+        std::unique_ptr<const traccc::Logger> logger);
 
     /// Copy constructor
     ///
@@ -173,6 +175,9 @@ class full_chain_algorithm
     spacepoint_grid_config m_grid_config;
     /// Configuration for the seed filtering
     seedfilter_config m_filter_config;
+
+    /// Configuration for track parameter estimation
+    track_params_estimation_config m_track_params_estimation_config;
 
     /// Configuration for the track finding
     finding_algorithm::config_type m_finding_config;
