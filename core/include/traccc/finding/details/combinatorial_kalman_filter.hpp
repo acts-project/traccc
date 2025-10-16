@@ -109,7 +109,7 @@ combinatorial_kalman_filter(
         }
 
         auto up = std::upper_bound(measurements.begin(), measurements.end(),
-                                   sf_desc.barcode(), measurement_bcd_comp());
+                                   sf_desc, measurement_sf_comp());
         meas_ranges.push_back(
             static_cast<unsigned int>(std::distance(measurements.begin(), up)));
     }

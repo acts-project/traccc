@@ -96,17 +96,17 @@ struct measurement_sort_comp {
     }
 };
 
-struct measurement_bcd_comp {
-    TRACCC_HOST_DEVICE
-    bool operator()(const detray::geometry::barcode bcd,
-                    const measurement& rhs) {
-        return bcd < rhs.surface_link;
+struct measurement_sf_comp {
+    template <typename sf_descriptor_t>
+    TRACCC_HOST_DEVICE bool operator()(const sf_descriptor_t sf_desc,
+                                       const measurement& rhs) {
+        return sf_desc.barcode() < rhs.surface_link;
     }
 
-    TRACCC_HOST_DEVICE
-    bool operator()(const measurement& lhs,
-                    const detray::geometry::barcode bcd) {
-        return lhs.surface_link < bcd;
+    template <typename sf_descriptor_t>
+    TRACCC_HOST_DEVICE bool operator()(const measurement& lhs,
+                                       const sf_descriptor_t sf_desc) {
+        return lhs.surface_link < sf_desc.barcode();
     }
 };
 

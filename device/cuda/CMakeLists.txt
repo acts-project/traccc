@@ -66,8 +66,6 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/finding/combinatorial_kalman_filter_algorithm.cpp"
   "src/finding/combinatorial_kalman_filter_algorithm.cu"
   "src/finding/combinatorial_kalman_filter.cuh"
-  "src/finding/kernels/make_barcode_sequence.cu"
-  "src/finding/kernels/make_barcode_sequence.cuh"
   "src/finding/kernels/apply_interaction.hpp"
   "src/finding/kernels/fill_finding_propagation_sort_keys.cu"
   "src/finding/kernels/fill_finding_propagation_sort_keys.cuh"
