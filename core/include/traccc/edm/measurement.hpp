@@ -96,6 +96,20 @@ struct measurement_sort_comp {
     }
 };
 
+struct measurement_bcd_comp {
+    TRACCC_HOST_DEVICE
+    bool operator()(const detray::geometry::barcode bcd,
+                    const measurement& rhs) {
+        return bcd < rhs.surface_link;
+    }
+
+    TRACCC_HOST_DEVICE
+    bool operator()(const measurement& lhs,
+                    const detray::geometry::barcode bcd) {
+        return lhs.surface_link < bcd;
+    }
+};
+
 struct measurement_equal_comp {
     TRACCC_HOST_DEVICE
     bool operator()(const measurement& lhs, const measurement& rhs) const {
