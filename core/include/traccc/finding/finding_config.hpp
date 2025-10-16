@@ -43,7 +43,7 @@ struct finding_config {
     unsigned int max_step_counts_for_next_surface = 100;
 
     /// Maximum Chi-square that is allowed for branching
-    float chi2_max = 100.f;
+    float chi2_max = 30.f;
 
     /// Propagation configuration
     detray::propagation::config propagation{};
