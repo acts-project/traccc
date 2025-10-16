@@ -164,7 +164,7 @@ struct kalman_actor : detray::actor {
             // Run Kalman Gain Updater
             const auto sf = navigation.get_surface();
 
-            const bool is_line = sf.template visit_mask<is_line_visitor>();
+            const bool is_line = detail::is_line(sf);
 
             kalman_fitter_status res = kalman_fitter_status::SUCCESS;
 
@@ -215,7 +215,9 @@ struct kalman_actor : detray::actor {
             actor_state.next();
 
             // Flag renavigation of the current candidate
-            navigation.set_high_trust();
+            if (math::fabs(navigation()) > 1.f * unit<float>::um) {
+                navigation.set_high_trust();
+            }
         }
     }
 };

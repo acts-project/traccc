@@ -126,8 +126,10 @@ combinatorial_kalman_filter(
     std::vector<std::pair<unsigned int, unsigned int>> tips;
 
     // Create propagator
+    auto prop_cfg{config.propagation};
+    prop_cfg.navigation.estimate_scattering_noise = false;
     traccc::details::ckf_propagator_t<detector_t, bfield_t> propagator(
-        config.propagation);
+        prop_cfg);
 
     // Create the input seeds container.
     bound_track_parameters_collection_types::const_device seeds{seeds_view};
@@ -248,7 +250,7 @@ combinatorial_kalman_filter(
                 auto trk_state =
                     edm::make_track_state<algebra_type>(measurements, meas_id);
 
-                const bool is_line = sf.template visit_mask<is_line_visitor>();
+                const bool is_line = detail::is_line(sf);
 
                 // Run the Kalman update on a copy of the track parameters
                 const kalman_fitter_status res =
@@ -484,8 +486,8 @@ combinatorial_kalman_filter(
             traccc::details::ckf_interactor_t::state s2;
             typename interaction_register<
                 traccc::details::ckf_interactor_t>::state s1{s2};
-            // typename detray::parameter_resetter<
-            //     typename detector_t::algebra_type>::state s3{};
+            typename detray::parameter_resetter<
+                typename detector_t::algebra_type>::state s3{prop_cfg};
             typename detray::momentum_aborter<scalar_type>::state s4{};
             typename ckf_aborter::state s5;
             // Update the actor config
@@ -495,7 +497,8 @@ combinatorial_kalman_filter(
             s5.max_count = config.max_step_counts_for_next_surface;
 
             // Propagate to the next surface
-            propagator.propagate(propagation, detray::tie(s0, s1, s2, s4, s5));
+            propagator.propagate(propagation,
+                                 detray::tie(s0, s1, s2, s3, s4, s5));
 
             // If a surface found, add the parameter for the next
             // step

@@ -110,11 +110,13 @@ class kalman_fitter {
                 track_states,
             const measurement_collection_types::const_device& measurements,
             vecmem::data::vector_view<detray::geometry::barcode>
-                sequence_buffer)
+                sequence_buffer,
+            const detray::propagation::config& prop_cfg)
             : m_fit_actor_state{track, track_states, measurements},
               m_sequencer_state(
                   vecmem::device_vector<detray::geometry::barcode>(
                       sequence_buffer)),
+              m_parameter_resetter{prop_cfg},
               m_fit_res{track},
               m_sequence_buffer(sequence_buffer) {}
 
@@ -122,8 +124,8 @@ class kalman_fitter {
         TRACCC_HOST_DEVICE
         typename forward_actor_chain_type::state_ref_tuple operator()() {
             return detray::tie(m_aborter_state, m_interactor_state,
-                               m_fit_actor_state, m_sequencer_state,
-                               m_step_aborter_state);
+                               m_fit_actor_state, m_parameter_resetter,
+                               m_sequencer_state, m_step_aborter_state);
         }
 
         /// @return the actor chain state
@@ -131,7 +133,8 @@ class kalman_fitter {
         typename backward_actor_chain_type::state_ref_tuple
         backward_actor_state() {
             return detray::tie(m_aborter_state, m_fit_actor_state,
-                               m_interactor_state, m_step_aborter_state);
+                               m_interactor_state, m_parameter_resetter,
+                               m_step_aborter_state);
         }
 
         /// Individual actor states
@@ -140,6 +143,7 @@ class kalman_fitter {
         typename forward_fit_actor::state m_fit_actor_state;
         typename barcode_sequencer::state m_sequencer_state;
         kalman_step_aborter::state m_step_aborter_state{};
+        typename resetter::state m_parameter_resetter{};
 
         /// Fitting result per track
         typename edm::track_collection<algebra_type>::device::proxy_type
