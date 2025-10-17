@@ -27,7 +27,6 @@
 #include "traccc/finding/device/fill_finding_duplicate_removal_sort_keys.hpp"
 #include "traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
 #include "traccc/finding/device/find_tracks.hpp"
-#include "traccc/finding/device/make_barcode_sequence.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
 #include "traccc/finding/device/remove_duplicates.hpp"
 #include "traccc/finding/finding_config.hpp"
@@ -44,8 +43,6 @@
 
 namespace traccc::sycl::details {
 namespace kernels {
-template <typename T>
-struct make_barcode_sequence {};
 template <typename T>
 struct apply_interaction {};
 template <typename T>
@@ -112,52 +109,21 @@ combinatorial_kalman_filter(
     const measurement_collection_types::const_view::size_type n_measurements =
         copy.get_size(measurements);
 
-    // Get copy of barcode uniques
-    measurement_collection_types::buffer uniques_buffer{n_measurements,
-                                                        mr.main};
-    copy.setup(uniques_buffer)->wait();
-    measurement_collection_types::device uniques(uniques_buffer);
+    // Access the detector view as a detector object
+    detector_t device_det(det);
+    const unsigned int n_surfaces{device_det.surfaces().size()};
 
-    measurement_collection_types::device::iterator uniques_end =
-        oneapi::dpl::unique_copy(policy, measurements.ptr(),
-                                 measurements.ptr() + n_measurements,
-                                 uniques.begin(), measurement_equal_comp());
-    const unsigned int n_modules =
-        static_cast<unsigned int>(uniques_end - uniques.begin());
+    // Get upper bounds of measurement ranges per surface
+    vecmem::data::vector_buffer<unsigned int> meas_ranges_buffer{n_surfaces,
+                                                                 mr.main};
+    copy.setup(meas_ranges_buffer)->ignore();
+    vecmem::device_vector<unsigned int> measurement_ranges(meas_ranges_buffer);
 
-    // Get upper bounds of unique elements
-    vecmem::data::vector_buffer<unsigned int> upper_bounds_buffer{n_modules,
-                                                                  mr.main};
-    copy.setup(upper_bounds_buffer)->wait();
-    vecmem::device_vector<unsigned int> upper_bounds(upper_bounds_buffer);
-
-    oneapi::dpl::upper_bound(policy, measurements.ptr(),
-                             measurements.ptr() + n_measurements,
-                             uniques.begin(), uniques.begin() + n_modules,
-                             upper_bounds.begin(), measurement_sort_comp());
+    oneapi::dpl::upper_bound(
+        policy, measurements.ptr(), measurements.ptr() + n_measurements,
+        device_det.surfaces().begin(), device_det.surfaces().end(),
+        measurement_ranges.begin(), measurement_sf_comp());
     queue.wait_and_throw();
-
-    /*****************************************************************
-     * Kernel1: Create barcode sequence
-     *****************************************************************/
-
-    vecmem::data::vector_buffer<detray::geometry::barcode> barcodes_buffer{
-        n_modules, mr.main};
-    copy.setup(barcodes_buffer)->wait();
-
-    queue
-        .submit([&](::sycl::handler& h) {
-            h.parallel_for<kernels::make_barcode_sequence<kernel_t>>(
-                calculate1DimNdRange(n_modules, 64),
-                [uniques_view = vecmem::get_data(uniques_buffer),
-                 barcodes_view = vecmem::get_data(barcodes_buffer)](
-                    ::sycl::nd_item<1> item) {
-                    device::make_barcode_sequence(
-                        details::global_index(item),
-                        {uniques_view, barcodes_view});
-                });
-        })
-        .wait_and_throw();
 
     const unsigned int n_seeds = copy.get_size(seeds);
 
@@ -277,8 +243,7 @@ combinatorial_kalman_filter(
                 .in_params_view = in_params_buffer,
                 .in_params_liveness_view = param_liveness_buffer,
                 .n_in_params = n_in_params,
-                .barcodes_view = barcodes_buffer,
-                .upper_bounds_view = upper_bounds_buffer,
+                .measurement_ranges_view = meas_ranges_buffer,
                 .links_view = links_buffer,
                 .prev_links_idx =
                     (step == 0 ? 0 : step_to_link_idx_map[step - 1]),

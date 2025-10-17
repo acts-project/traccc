@@ -62,13 +62,11 @@ traccc_add_library( traccc_device_common device_common TYPE INTERFACE
    "include/traccc/finding/device/build_tracks.hpp"
    "include/traccc/finding/device/find_tracks.hpp"
    "include/traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
-   "include/traccc/finding/device/make_barcode_sequence.hpp"
    "include/traccc/finding/device/propagate_to_next_surface.hpp"
    "include/traccc/finding/device/impl/apply_interaction.ipp"
    "include/traccc/finding/device/impl/build_tracks.ipp"
    "include/traccc/finding/device/impl/find_tracks.ipp"
    "include/traccc/finding/device/impl/fill_finding_propagation_sort_keys.ipp"
-   "include/traccc/finding/device/impl/make_barcode_sequence.ipp"
    "include/traccc/finding/device/impl/propagate_to_next_surface.ipp"
    # Track fitting funtions(s).
    "include/traccc/fitting/device/fit.hpp"
