@@ -13,6 +13,7 @@
 // Project include(s)
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/host_detector.hpp"
+#include "traccc/seeding/detail/track_params_estimation_config.hpp"
 
 // Command line option include(s).
 #include "traccc/options/clusterization.hpp"
@@ -37,6 +38,7 @@
 #include "traccc/performance/throughput.hpp"
 #include "traccc/performance/timer.hpp"
 #include "traccc/performance/timing_info.hpp"
+#include "traccc/seeding/detail/track_params_estimation_config.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -142,6 +144,7 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
     const traccc::seedfinder_config seedfinder_config(seeding_opts);
     const traccc::seedfilter_config seedfilter_config(seeding_opts);
     const traccc::spacepoint_grid_config spacepoint_grid_config(seeding_opts);
+    const traccc::track_params_estimation_config track_params_estimation_config;
     detray::propagation::config propagation_config(propagation_opts);
     typename FULL_CHAIN_ALG::finding_algorithm::config_type finding_cfg(
         finding_opts);
@@ -155,10 +158,10 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
     std::vector<FULL_CHAIN_ALG> algs;
     algs.reserve(threading_opts.threads + 1);
     for (std::size_t i = 0; i < threading_opts.threads + 1; ++i) {
-        algs.push_back({host_mr, clustering_cfg, seedfinder_config,
-                        spacepoint_grid_config, seedfilter_config, finding_cfg,
-                        fitting_cfg, det_descr, field, &detector,
-                        logger().clone()});
+        algs.push_back(
+            {host_mr, clustering_cfg, seedfinder_config, spacepoint_grid_config,
+             seedfilter_config, track_params_estimation_config, finding_cfg,
+             fitting_cfg, det_descr, field, &detector, logger().clone()});
     }
 
     // Set up a lambda that calls the correct function on the algorithms.
