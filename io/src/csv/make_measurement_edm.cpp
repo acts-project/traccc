@@ -21,6 +21,11 @@ traccc::measurement make_measurement_edm(
     traccc::measurement meas;
     std::array<detray::dsize_type<default_algebra>, 2u> indices{0u, 0u};
     meas.meas_dim = 0u;
+    
+    meas.local[0] = csv_meas.local0;
+    meas.variance[0] = csv_meas.var_local0;
+    meas.local[1] = csv_meas.local1;
+    meas.variance[1] = csv_meas.var_local1;
 
     // Local key is a 8 bit char and first and last bit are dummy value. 2 -
     // 7th bits are for 6 bound track parameters.
@@ -32,13 +37,9 @@ traccc::measurement make_measurement_edm(
 
             switch (ipar) {
                 case e_bound_loc0: {
-                    meas.local[0] = csv_meas.local0;
-                    meas.variance[0] = csv_meas.var_local0;
                     indices[meas.meas_dim++] = ipar;
                 }; break;
                 case e_bound_loc1: {
-                    meas.local[1] = csv_meas.local1;
-                    meas.variance[1] = csv_meas.var_local1;
                     indices[meas.meas_dim++] = ipar;
                 }; break;
             }
