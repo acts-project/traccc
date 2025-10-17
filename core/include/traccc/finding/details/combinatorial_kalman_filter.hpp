@@ -139,6 +139,9 @@ combinatorial_kalman_filter(
 
     std::vector<bound_track_parameters<algebra_type>> out_params;
 
+    std::vector<std::uint8_t> in_is_edge(seeds.size(), false);
+    std::vector<std::uint8_t> out_is_edge;
+
     for (unsigned int step = 0u; step < config.max_track_candidates_per_track;
          step++) {
 
@@ -156,6 +159,7 @@ combinatorial_kalman_filter(
 
         // Rough estimation on out parameters size
         out_params.reserve(n_in_params);
+        out_is_edge.reserve(n_in_params);
 
         // Previous step ID
         std::fill(n_trks_per_seed.begin(), n_trks_per_seed.end(), 0u);
@@ -169,6 +173,8 @@ combinatorial_kalman_filter(
             bound_track_parameters<algebra_type>& in_param =
                 in_params[in_param_id];
 
+            const bool is_edge{in_is_edge[in_param_id] > 0u};
+
             assert(!in_param.is_invalid());
 
             const unsigned int orig_param_id =
@@ -176,6 +182,11 @@ combinatorial_kalman_filter(
                      ? in_param_id
                      : links[step - 1][param_to_link[step - 1][in_param_id]]
                            .seed_idx);
+            const unsigned int n_cand =
+                (step == 0
+                     ? 0
+                     : links[step - 1][param_to_link[step - 1][in_param_id]]
+                           .n_cand);
             const unsigned int skip_counter =
                 (step == 0
                      ? 0
@@ -261,6 +272,7 @@ combinatorial_kalman_filter(
                           .previous_candidate_idx = in_param_id,
                           .meas_idx = meas_id,
                           .seed_idx = orig_param_id,
+                          .n_cand = n_cand + 1,
                           .n_skipped = skip_counter,
                           .chi2 = chi2,
                           .chi2_sum = prev_chi2_sum + chi2,
@@ -306,7 +318,8 @@ combinatorial_kalman_filter(
                      .previous_candidate_idx = in_param_id,
                      .meas_idx = std::numeric_limits<unsigned int>::max(),
                      .seed_idx = orig_param_id,
-                     .n_skipped = skip_counter + 1,
+                     .n_cand = n_cand,
+                     .n_skipped = is_edge ? skip_counter : skip_counter + 1,
                      .chi2 = std::numeric_limits<traccc::scalar>::max(),
                      .chi2_sum = prev_chi2_sum,
                      .ndf_sum = prev_ndf_sum});
@@ -356,7 +369,7 @@ combinatorial_kalman_filter(
                         prob(Lthisbase.chi2_sum,
                              static_cast<scalar>(Lthisbase.ndf_sum - 5));
 
-                    if (step + 1 - Lthisbase.n_skipped <=
+                    if (Lthisbase.n_cand <=
                             config.duplicate_removal_minimum_length ||
                         Lthisbase.ndf_sum <= 5) {
                         continue;
@@ -370,7 +383,7 @@ combinatorial_kalman_filter(
                         auto Lthis = Lthisbase;
                         auto Lthat = links.at(step).at(tracks.at(j));
 
-                        if (step + 1 - Lthat.n_skipped <=
+                        if (Lthat.n_cand <=
                                 config.duplicate_removal_minimum_length ||
                             Lthisbase.ndf_sum <= 5) {
                             continue;
@@ -495,6 +508,8 @@ combinatorial_kalman_filter(
                 assert(!propagation._stepping.bound_params().is_invalid());
 
                 out_params.push_back(propagation._stepping.bound_params());
+                out_is_edge.push_back(
+                    propagation._navigation.is_edge_candidate());
                 param_to_link[step].push_back(link_id);
             }
             // Unless the track found a surface, it is considered a
@@ -513,7 +528,9 @@ combinatorial_kalman_filter(
         }
 
         in_params = std::move(out_params);
+        in_is_edge = std::move(out_is_edge);
         out_params.clear();
+        out_is_edge.clear();
     }
 
     /**********************
@@ -529,7 +546,7 @@ combinatorial_kalman_filter(
         // Get the link corresponding to tip
         auto L = links.at(tip.first).at(tip.second);
 
-        const unsigned int n_cands = tip.first + 1 - L.n_skipped;
+        const unsigned int n_cands = L.n_cand;
 
         // Skip if the number of tracks candidates is too small
         if (n_cands < config.min_track_candidates_per_track ||

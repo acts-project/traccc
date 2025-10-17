@@ -28,6 +28,9 @@ struct candidate_link {
     // Index to the initial seed
     unsigned int seed_idx;
 
+    // How many candidates were added to the track
+    unsigned int n_cand;
+
     // How many times it skipped a surface
     unsigned int n_skipped;
 

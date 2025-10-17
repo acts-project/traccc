@@ -236,6 +236,11 @@ combinatorial_kalman_filter(
     copy.setup(param_liveness_buffer)->wait();
     copy.memset(param_liveness_buffer, 1)->wait();
 
+    // On the first measurement, no parameter can be a hole
+    vecmem::data::vector_buffer<std::uint8_t> is_edges_buffer(n_seeds, mr.main);
+    copy.setup(is_edges_buffer)->wait();
+    copy.memset(is_edges_buffer, 0)->wait();
+
     // Number of tracks per seed
     vecmem::data::vector_buffer<unsigned int> n_tracks_per_seed_buffer(n_seeds,
                                                                        mr.main);
@@ -300,6 +305,11 @@ combinatorial_kalman_filter(
             n_max_candidates, mr.main);
         copy.setup(updated_liveness_buffer)->wait();
 
+        // Updated edges buffer after branching
+        vecmem::data::vector_buffer<std::uint8_t> is_edges_updated_buffer(
+            n_max_candidates, mr.main);
+        copy.setup(is_edges_updated_buffer)->wait();
+
         // Reset the number of tracks per seed
         copy.memset(n_tracks_per_seed_buffer, 0)->wait();
 
@@ -343,6 +353,7 @@ combinatorial_kalman_filter(
                 .in_params_view = in_params_buffer,
                 .in_params_liveness_view = param_liveness_buffer,
                 .n_in_params = n_in_params,
+                .is_edges_view = is_edges_buffer,
                 .measurement_ranges_view = meas_ranges_buffer,
                 .links_view = links_buffer,
                 .prev_links_idx =
@@ -506,6 +517,7 @@ combinatorial_kalman_filter(
                     .params_view = in_params_buffer,
                     .params_liveness_view = param_liveness_buffer,
                     .param_ids_view = param_ids_buffer,
+                    .is_edges_view = is_edges_updated_buffer,
                     .links_view = links_buffer,
                     .prev_links_idx = step_to_link_idx_map[step],
                     .step = step,
@@ -536,6 +548,8 @@ combinatorial_kalman_filter(
                         bfield_t>{},
                     config, device_payload.ptr());
                 ::alpaka::wait(queue);
+
+                std::swap(is_edges_buffer, is_edges_updated_buffer);
             }
         }
 
