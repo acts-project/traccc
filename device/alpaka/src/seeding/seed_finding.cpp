@@ -24,6 +24,8 @@
 #include "traccc/seeding/device/count_triplets.hpp"
 #include "traccc/seeding/device/find_doublets.hpp"
 #include "traccc/seeding/device/find_triplets.hpp"
+#include "traccc/seeding/device/make_mid_bot_lincircles.hpp"
+#include "traccc/seeding/device/make_mid_top_lincircles.hpp"
 #include "traccc/seeding/device/reduce_triplet_counts.hpp"
 #include "traccc/seeding/device/select_seeds.hpp"
 #include "traccc/seeding/device/update_triplet_weights.hpp"
@@ -71,6 +73,42 @@ struct FindDoublets {
     }
 };
 
+// Kernel for running @c traccc::device::make_mid_bot_lincircles
+struct MakeMidBotLinCircles {
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(
+        TAcc const& acc,
+        device::device_doublet_collection_types::const_view mb_doublet_view,
+        device::doublet_counter_collection_types::const_view doublet_count_view,
+        edm::spacepoint_collection::const_view spacepoint_view,
+        traccc::details::spacepoint_grid_types::const_view sp_grid_view,
+        vecmem::data::vector_view<lin_circle> out_view) const {
+        auto const globalThreadIdx =
+            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
+        device::make_mid_bot_lincircles(globalThreadIdx, mb_doublet_view,
+                                        doublet_count_view, spacepoint_view,
+                                        sp_grid_view, out_view);
+    }
+};
+
+// Kernel for running @c traccc::device::make_mid_top_lincircles
+struct MakeMidTopLinCircles {
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(
+        TAcc const& acc,
+        device::device_doublet_collection_types::const_view mt_doublet_view,
+        device::doublet_counter_collection_types::const_view doublet_count_view,
+        edm::spacepoint_collection::const_view spacepoint_view,
+        traccc::details::spacepoint_grid_types::const_view sp_grid_view,
+        vecmem::data::vector_view<lin_circle> out_view) const {
+        auto const globalThreadIdx =
+            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
+        device::make_mid_top_lincircles(globalThreadIdx, mt_doublet_view,
+                                        doublet_count_view, spacepoint_view,
+                                        sp_grid_view, out_view);
+    }
+};
+
 // Kernel for running @c traccc::device::count_triplets
 struct CountTriplets {
     template <typename TAcc>
@@ -82,12 +120,15 @@ struct CountTriplets {
         device::device_doublet_collection_types::const_view mb_doublets,
         device::device_doublet_collection_types::const_view mt_doublets,
         device::triplet_counter_spM_collection_types::view spM_counter,
-        device::triplet_counter_collection_types::view midBot_counter) const {
+        device::triplet_counter_collection_types::view midBot_counter,
+        vecmem::data::vector_view<lin_circle> mb_circles,
+        vecmem::data::vector_view<lin_circle> mt_circles) const {
         auto const globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
         device::count_triplets(globalThreadIdx, config, spacepoints, sp_grid,
                                doublet_counter, mb_doublets, mt_doublets,
-                               spM_counter, midBot_counter);
+                               spM_counter, midBot_counter, mb_circles,
+                               mt_circles);
     }
 };
 
@@ -118,13 +159,16 @@ struct FindTriplets {
         device::device_doublet_collection_types::const_view mt_doublets,
         device::triplet_counter_spM_collection_types::const_view spM_tc,
         device::triplet_counter_collection_types::const_view midBot_tc,
+        vecmem::data::vector_view<lin_circle> mb_circles,
+        vecmem::data::vector_view<lin_circle> mt_circles,
         device::device_triplet_collection_types::view triplet_view) const {
 
         auto const globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
         device::find_triplets(globalThreadIdx, config, filter_config,
                               spacepoints, sp_grid, doublet_counter,
-                              mt_doublets, spM_tc, midBot_tc, triplet_view);
+                              mt_doublets, spM_tc, midBot_tc, mb_circles,
+                              mt_circles, triplet_view);
     }
 };
 
@@ -288,6 +332,37 @@ edm::seed_collection::buffer seed_finding::operator()(
                         vecmem::get_data(doublet_buffer_mb),
                         vecmem::get_data(doublet_buffer_mt));
 
+    vecmem::data::vector_buffer<lin_circle> mid_bot_lin_circles{
+        pBufHost_counter->m_nMidBot, m_mr.main};
+    m_copy.setup(mid_bot_lin_circles)->wait();
+    vecmem::data::vector_buffer<lin_circle> mid_top_lin_circles{
+        pBufHost_counter->m_nMidTop, m_mr.main};
+    m_copy.setup(mid_top_lin_circles)->wait();
+
+    {
+        const unsigned int n_threads = 128;
+        const unsigned int n_mid_bot_blocks =
+            (pBufHost_counter->m_nMidBot + n_threads - 1) / n_threads;
+        const unsigned int n_mid_top_blocks =
+            (pBufHost_counter->m_nMidTop + n_threads - 1) / n_threads;
+        const auto mid_bot_workdiv =
+            makeWorkDiv<Acc>(n_mid_bot_blocks, n_threads);
+        const auto mid_top_workdiv =
+            makeWorkDiv<Acc>(n_mid_top_blocks, n_threads);
+
+        ::alpaka::exec<Acc>(
+            queue, mid_bot_workdiv, kernels::MakeMidBotLinCircles{},
+            vecmem::get_data(doublet_buffer_mb),
+            vecmem::get_data(doublet_counter_buffer), spacepoints_view, g2_view,
+            vecmem::get_data(mid_bot_lin_circles));
+
+        ::alpaka::exec<Acc>(
+            queue, mid_top_workdiv, kernels::MakeMidTopLinCircles{},
+            vecmem::get_data(doublet_buffer_mb),
+            vecmem::get_data(doublet_counter_buffer), spacepoints_view, g2_view,
+            vecmem::get_data(mid_top_lin_circles));
+    }
+
     // Set up the triplet counter buffers
     device::triplet_counter_spM_collection_types::buffer
         triplet_counter_spM_buffer = {doublet_counter_buffer_size, m_mr.main};
@@ -311,7 +386,9 @@ edm::seed_collection::buffer seed_finding::operator()(
                         vecmem::get_data(doublet_buffer_mb),
                         vecmem::get_data(doublet_buffer_mt),
                         vecmem::get_data(triplet_counter_spM_buffer),
-                        vecmem::get_data(triplet_counter_midBot_buffer));
+                        vecmem::get_data(triplet_counter_midBot_buffer),
+                        vecmem::get_data(mid_bot_lin_circles),
+                        vecmem::get_data(mid_top_lin_circles));
 
     // Calculate the number of threads and thread blocks to run the triplet
     // count reduction kernel for.
@@ -353,6 +430,8 @@ edm::seed_collection::buffer seed_finding::operator()(
                         vecmem::get_data(doublet_buffer_mt),
                         vecmem::get_data(triplet_counter_spM_buffer),
                         vecmem::get_data(triplet_counter_midBot_buffer),
+                        vecmem::get_data(mid_bot_lin_circles),
+                        vecmem::get_data(mid_top_lin_circles),
                         vecmem::get_data(triplet_buffer));
 
     blocksPerGrid =
