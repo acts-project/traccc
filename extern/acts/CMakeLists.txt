@@ -12,10 +12,8 @@ include( FetchContent )
 message( STATUS "Building Acts as part of the TRACCC project" )
 
 # Declare where to get Acts from.
-# HACK: Go back to using a real Acts release when a version after
-# v43.3.0 is released that incorporates Acts#4659
 set( TRACCC_ACTS_SOURCE
-   "GIT_REPOSITORY;https://github.com/acts-project/acts.git;GIT_TAG;dfa5b4fd97d1cf9674f3c580e5fc4cd7f0c4103f"
+   "URL;https://github.com/acts-project/acts/archive/refs/tags/v44.0.1.tar.gz;URL_MD5;3c1b1073d5c0e535def2661c81efa1e6"
    CACHE STRING "Source for Acts, when built as part of this project" )
 mark_as_advanced( TRACCC_ACTS_SOURCE )
 FetchContent_Declare( Acts SYSTEM ${TRACCC_ACTS_SOURCE} )
