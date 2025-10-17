@@ -61,10 +61,8 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     vecmem::device_vector<candidate_link> tmp_links(payload.tmp_links_view);
     bound_track_parameters_collection_types::device tmp_params(
         payload.tmp_params_view);
-    vecmem::device_vector<const detray::geometry::barcode> barcodes(
-        payload.barcodes_view);
-    vecmem::device_vector<const unsigned int> upper_bounds(
-        payload.upper_bounds_view);
+    vecmem::device_vector<const unsigned int> meas_ranges(
+        payload.measurement_ranges_view);
     vecmem::device_vector<unsigned int> tips(payload.tips_view);
     vecmem::device_vector<unsigned int> tip_lengths(payload.tip_lengths_view);
     vecmem::device_vector<unsigned int> n_tracks_per_seed(
@@ -102,31 +100,16 @@ TRACCC_HOST_DEVICE inline void find_tracks(
          * Get the barcode of this thread's parameters, then find the first
          * measurement that matches it.
          */
-        const auto bcd = in_params.at(in_param_id).surface_link();
-        const auto lo = thrust::lower_bound(thrust::seq, barcodes.begin(),
-                                            barcodes.end(), bcd);
+        const unsigned int sf_idx{
+            in_params.at(in_param_id).surface_link().index()};
+        init_meas = sf_idx == 0u ? 0u : meas_ranges[sf_idx - 1];
+        num_meas = meas_ranges[sf_idx] - init_meas;
 
         /*
          * If we cannot find any corresponding measurements, set the number of
          * measurements to zero.
          */
-        if (lo == barcodes.end() || *lo != bcd) {
-            init_meas = 0;
-        }
-        /*
-         * If measurements are found, use the previously (outside this kernel)
-         * computed upper bound array to compute the range of measurements for
-         * this thread.
-         */
-        else {
-            const vecmem::device_vector<const unsigned int>::size_type bcd_id =
-                static_cast<
-                    vecmem::device_vector<const unsigned int>::size_type>(
-                    std::distance(barcodes.begin(), lo));
-
-            init_meas = lo == barcodes.begin() ? 0u : upper_bounds[bcd_id - 1];
-            num_meas = upper_bounds[bcd_id] - init_meas;
-        }
+        init_meas = (num_meas == 0u) ? 0u : init_meas;
     }
 
     /*

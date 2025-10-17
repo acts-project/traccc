@@ -25,7 +25,6 @@
 #include "traccc/finding/device/fill_finding_duplicate_removal_sort_keys.hpp"
 #include "traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
 #include "traccc/finding/device/find_tracks.hpp"
-#include "traccc/finding/device/make_barcode_sequence.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
 #include "traccc/finding/device/remove_duplicates.hpp"
 #include "traccc/finding/finding_config.hpp"
@@ -39,19 +38,6 @@
 
 namespace traccc::alpaka::details {
 namespace kernels {
-
-/// Alpaka kernel functor for @c traccc::device::make_barcode_sequence
-struct make_barcode_sequence {
-    template <typename TAcc>
-    ALPAKA_FN_ACC void operator()(
-        TAcc const& acc,
-        const device::make_barcode_sequence_payload payload) const {
-
-        const device::global_index_t globalThreadIdx =
-            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
-        device::make_barcode_sequence(globalThreadIdx, payload);
-    }
-};
 
 /// Alpaka kernel functor for @c traccc::device::apply_interaction
 template <typename detector_t>
@@ -222,48 +208,21 @@ combinatorial_kalman_filter(
     const measurement_collection_types::const_view::size_type n_measurements =
         copy.get_size(measurements);
 
-    // Get copy of barcode uniques
-    measurement_collection_types::buffer uniques_buffer{n_measurements,
-                                                        mr.main};
-    copy.setup(uniques_buffer)->wait();
-    measurement_collection_types::device uniques(uniques_buffer);
+    // Access the detector view as a detector object
+    detector_t device_det(det);
+    const unsigned int n_surfaces{device_det.surfaces().size()};
 
-    measurement_collection_types::device::iterator uniques_end =
-        details::unique_copy(queue, mr, measurements.ptr(),
-                             measurements.ptr() + n_measurements,
-                             uniques.begin(), measurement_equal_comp());
-    const unsigned int n_modules =
-        static_cast<unsigned int>(uniques_end - uniques.begin());
+    // Get upper bounds of measurement ranges per surface
+    vecmem::data::vector_buffer<unsigned int> meas_ranges_buffer{n_surfaces,
+                                                                 mr.main};
+    copy.setup(meas_ranges_buffer)->ignore();
+    vecmem::device_vector<unsigned int> measurement_ranges(meas_ranges_buffer);
 
-    // Get upper bounds of unique elements
-    vecmem::data::vector_buffer<unsigned int> upper_bounds_buffer{n_modules,
-                                                                  mr.main};
-    copy.setup(upper_bounds_buffer)->wait();
-    vecmem::device_vector<unsigned int> upper_bounds(upper_bounds_buffer);
-
-    details::upper_bound(queue, mr, measurements.ptr(),
-                         measurements.ptr() + n_measurements, uniques.begin(),
-                         uniques.begin() + n_modules, upper_bounds.begin(),
-                         measurement_sort_comp());
-
-    /*****************************************************************
-     * Kernel1: Create barcode sequence
-     *****************************************************************/
-
-    vecmem::data::vector_buffer<detray::geometry::barcode> barcodes_buffer{
-        n_modules, mr.main};
-    copy.setup(barcodes_buffer)->wait();
-
-    {
-        Idx blocksPerGrid =
-            (barcodes_buffer.size() + threadsPerBlock - 1) / threadsPerBlock;
-        auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
-
-        ::alpaka::exec<Acc>(queue, workDiv, kernels::make_barcode_sequence{},
-                            device::make_barcode_sequence_payload{
-                                uniques_buffer, barcodes_buffer});
-        ::alpaka::wait(queue);
-    }
+    // Get upper bounds of measurement ranges
+    details::upper_bound(
+        queue, mr, measurements.ptr(), measurements.ptr() + n_measurements,
+        device_det.surfaces().begin(), device_det.surfaces().end(),
+        measurement_ranges.begin(), measurement_sf_comp());
 
     const unsigned int n_seeds = copy.get_size(seeds);
 
@@ -384,8 +343,7 @@ combinatorial_kalman_filter(
                 .in_params_view = in_params_buffer,
                 .in_params_liveness_view = param_liveness_buffer,
                 .n_in_params = n_in_params,
-                .barcodes_view = barcodes_buffer,
-                .upper_bounds_view = upper_bounds_buffer,
+                .measurement_ranges_view = meas_ranges_buffer,
                 .links_view = links_buffer,
                 .prev_links_idx =
                     (step == 0 ? 0 : step_to_link_idx_map[step - 1]),

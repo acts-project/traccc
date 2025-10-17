@@ -96,6 +96,20 @@ struct measurement_sort_comp {
     }
 };
 
+struct measurement_sf_comp {
+    template <typename sf_descriptor_t>
+    TRACCC_HOST_DEVICE bool operator()(const sf_descriptor_t sf_desc,
+                                       const measurement& rhs) {
+        return sf_desc.barcode() < rhs.surface_link;
+    }
+
+    template <typename sf_descriptor_t>
+    TRACCC_HOST_DEVICE bool operator()(const measurement& lhs,
+                                       const sf_descriptor_t sf_desc) {
+        return lhs.surface_link < sf_desc.barcode();
+    }
+};
+
 struct measurement_equal_comp {
     TRACCC_HOST_DEVICE
     bool operator()(const measurement& lhs, const measurement& rhs) const {

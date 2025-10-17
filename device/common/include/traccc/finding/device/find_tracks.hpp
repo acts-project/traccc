@@ -60,15 +60,9 @@ struct find_tracks_payload {
     unsigned int n_in_params;
 
     /**
-     * @brief View object to the vector of barcodes for each measurement
+     * @brief View object to the vector of measurement index ranges per surface
      */
-    vecmem::data::vector_view<const detray::geometry::barcode> barcodes_view;
-
-    /**
-     * @brief View object to the vector of upper bounds of measurement indices
-     * per surface
-     */
-    vecmem::data::vector_view<const unsigned int> upper_bounds_view;
+    vecmem::data::vector_view<const unsigned int> measurement_ranges_view;
 
     /**
      * @brief View object to the link vector
