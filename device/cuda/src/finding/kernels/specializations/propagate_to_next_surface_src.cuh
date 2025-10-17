@@ -19,8 +19,10 @@ namespace kernels {
 
 template <typename propagator_t, typename bfield_t>
 __global__ __launch_bounds__(128) void propagate_to_next_surface(
-    const finding_config cfg,
-    device::propagate_to_next_surface_payload<propagator_t, bfield_t> payload) {
+    const __grid_constant__ finding_config cfg,
+    const __grid_constant__
+        device::propagate_to_next_surface_payload<propagator_t, bfield_t>
+            payload) {
 
     device::propagate_to_next_surface<propagator_t, bfield_t>(
         details::global_index1(), cfg, payload);
@@ -32,7 +34,8 @@ template <typename propagator_t, typename bfield_t>
 void propagate_to_next_surface(
     const dim3& grid_size, const dim3& block_size, std::size_t shared_mem_size,
     const cudaStream_t& stream, const finding_config cfg,
-    device::propagate_to_next_surface_payload<propagator_t, bfield_t> payload) {
+    const device::propagate_to_next_surface_payload<propagator_t, bfield_t>
+        payload) {
 
     kernels::propagate_to_next_surface<<<grid_size, block_size, shared_mem_size,
                                          stream>>>(cfg, payload);

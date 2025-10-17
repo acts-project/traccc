@@ -21,7 +21,7 @@ namespace traccc::cuda {
 namespace kernels {
 
 template <typename detector_t>
-__global__ void find_tracks(const finding_config cfg,
+__global__ void find_tracks(const __grid_constant__ finding_config cfg,
                             device::find_tracks_payload<detector_t> payload) {
     __shared__ unsigned int shared_num_out_params;
     __shared__ unsigned int shared_out_offset;
