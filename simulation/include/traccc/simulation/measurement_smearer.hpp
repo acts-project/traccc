@@ -50,7 +50,7 @@ struct measurement_smearer {
                        ? 0.f
                        : std::normal_distribution<scalar_type>(0.f, sigma)(gen);
         };*/
-        //return {generate_offset(stddev[0]), generate_offset(stddev[1])};
+        // return {generate_offset(stddev[0]), generate_offset(stddev[1])};
         return {0.f, 0.f};
     }
 
@@ -104,10 +104,10 @@ struct measurement_smearer {
                     scalar_type(0.f)));
             } else if constexpr (std::is_same_v<typename mask_t::shape,
                                                 detray::annulus2D>) {
-                iomeas.local0 =
-                    static_cast<float>(bound_params.bound_local()[0] + offset[1]);
+                iomeas.local0 = static_cast<float>(
+                    bound_params.bound_local()[0] + offset[1]);
                 iomeas.local1 = static_cast<float>(
-                    bound_params.bound_local()[1]  + offset[0]);
+                    bound_params.bound_local()[1] + offset[0]);
             } else {
                 iomeas.local0 = static_cast<float>(
                     getter::element(meas, 0u, 0u) + offset[0]);

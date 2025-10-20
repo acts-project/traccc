@@ -85,7 +85,8 @@ auto transcribe_to_trace(const typename detector_t::geometry_context ctx,
     }
 
     // Sort records by intersection distance to origin of the trajectory
-    auto sort_by_path = [&](const candidate_type<detector_t> &a, const candidate_type<detector_t> &b) -> bool {
+    auto sort_by_path = [&](const candidate_type<detector_t>& a,
+                            const candidate_type<detector_t>& b) -> bool {
         return (a.intersection < b.intersection);
     };
 
@@ -137,17 +138,17 @@ auto transcribe_to_trace(
             std::cout << "Before: " << local_1 << std::endl;
             local_1 *= traccc::unit<scalar>::degree;
             std::cout << "After: " << local_1 << std::endl;
-            std::cout << std::boolalpha << "Inside " << sf.is_inside(point3{meas.local[0], local_1, 0.f}, 0.f) << std::endl;
+            std::cout << std::boolalpha << "Inside " <<
+        sf.is_inside(point3{meas.local[0], local_1, 0.f}, 0.f) << std::endl;
         }
         point2 loc{meas.local[0], local_1};*/
         // TODO: Use correct track direction at measurement for line sf.
         const vector3 dir{vector::normalize(ptc.momentum)};
         const point3 glob_pos{sf.local_to_global(ctx, meas.local, dir)};
-        //const point3 glob_pos{sf.local_to_global(ctx, loc, dir)};
+        // const point3 glob_pos{sf.local_to_global(ctx, loc, dir)};
 
         // Rough estimate of intersection distance from origin
         const scalar path{vector::norm(glob_pos)};
-
 
         // Build an intersection
         using nav_link_t = typename intersection_t::nav_link_t;
@@ -162,7 +163,8 @@ auto transcribe_to_trace(
     }
 
     // Sort records by intersection distance to origin of the trajectory
-    auto sort_by_path = [&](const candidate_type<detector_t> &a, const candidate_type<detector_t> &b) -> bool {
+    auto sort_by_path = [&](const candidate_type<detector_t>& a,
+                            const candidate_type<detector_t>& b) -> bool {
         return (a.intersection < b.intersection);
     };
 

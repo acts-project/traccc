@@ -13,7 +13,7 @@ message( STATUS "Building Detray as part of the TRACCC project" )
 
 # Declare where to get Detray from.
 set( TRACCC_DETRAY_SOURCE
-   "GIT_REPOSITORY;https://github.com/niermann999/detray;GIT_TAG;feat-surface_grid-svg"
+   "URL;https://github.com/acts-project/detray/archive/refs/tags/v0.104.0.tar.gz;URL_MD5;330c50e797b8ee52e0addb7d0a9a1839"
    CACHE STRING "Source for Detray, when built as part of this project" )
 mark_as_advanced( TRACCC_DETRAY_SOURCE )
 FetchContent_Declare( Detray SYSTEM ${TRACCC_DETRAY_SOURCE} )

@@ -77,7 +77,8 @@ TEST_P(KF_intergration_test_toy_detector, toy_detector) {
     traccc::host_detector host_det{};
     host_det.template set<detector_traits<typename detector_t::metadata>>(
         std::move(io_det));
-    const auto& det = host_det.template as<traccc::detector_traits<typename detector_t::metadata>>();
+    const auto& det = host_det.template as<
+        traccc::detector_traits<typename detector_t::metadata>>();
 
     // Create B field
     b_field_t field = traccc::construct_const_bfield(B)
@@ -125,12 +126,12 @@ TEST_P(KF_intergration_test_toy_detector, toy_detector) {
     prop_cfg.navigation.n_scattering_stddev = 2;
     prop_cfg.navigation.accumulated_error = 0.f;
     prop_cfg.navigation.estimate_scattering_noise = true;
-    //prop_cfg.navigation.min_mask_tolerance = 0.15f;
-    // Try with a flat tolerance instead
+    // prop_cfg.navigation.min_mask_tolerance = 0.15f;
+    //  Try with a flat tolerance instead
     if (!prop_cfg.navigation.estimate_scattering_noise) {
         prop_cfg.navigation.min_mask_tolerance = std::get<1>(GetParam());
     }
-    //prop_cfg.navigation.mask_tolerance_scalor = 1.f;
+    // prop_cfg.navigation.mask_tolerance_scalor = 1.f;
     prop_cfg.navigation.overstep_tolerance = -1000.f * traccc::unit<float>::um;
     prop_cfg.navigation.max_mask_tolerance =
         std::get<1>(GetParam()) + 3.f * traccc::unit<float>::mm;

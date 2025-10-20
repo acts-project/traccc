@@ -21,7 +21,7 @@ traccc::measurement make_measurement_edm(
     traccc::measurement meas;
     std::array<detray::dsize_type<default_algebra>, 2u> indices{0u, 0u};
     meas.meas_dim = 0u;
-    
+
     meas.local[0] = csv_meas.local0;
     meas.variance[0] = csv_meas.var_local0;
     meas.local[1] = csv_meas.local1;

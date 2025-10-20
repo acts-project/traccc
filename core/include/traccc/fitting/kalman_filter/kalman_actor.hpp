@@ -135,7 +135,8 @@ struct kalman_actor_state {
         auto trk_state = (*this)();
 
         DETRAY_INFO_HOST("Checking: " << navigation.barcode());
-        DETRAY_INFO_HOST("Expected: " << trk_state.filtered_params().surface_link());
+        DETRAY_INFO_HOST(
+            "Expected: " << trk_state.filtered_params().surface_link());
 
         // Surface was found, continue with KF algorithm
         if (navigation.barcode() ==
@@ -145,6 +146,8 @@ struct kalman_actor_state {
                 DETRAY_INFO_HOST_DEVICE("state might be flagged hole");
                 check_if_hole(navigation);
             }
+
+            DETRAY_INFO_HOST_DEVICE("Matched");
             // If track finding did not find measurement on this surface: skip
             return !trk_state.is_hole();
         }
@@ -155,50 +158,51 @@ struct kalman_actor_state {
         // (only relevant if using non-direct navigation, e.g. forward truth
         // fitting or different prop. config between CKF asnd KF)
         // TODO: Remove again
-        using detector_t = typename propagation_state_t::detector_type;
-        using nav_state_t = typename propagation_state_t::navigator_state_type;
-        if constexpr (!std::same_as<nav_state_t,
+        // using detector_t = typename propagation_state_t::detector_type;
+        // using nav_state_t = typename
+        // propagation_state_t::navigator_state_type;
+        /*if constexpr (!std::same_as<nav_state_t,
                                     typename detray::direct_navigator<
-                                        detector_t>::state>) {
-            unsigned int n{1};
-            if (backward_mode) {
-                // If we are on the last state and the navigation surface does
-                // not match, it must be an additional surface
-                // -> continue navigation until matched
-                if (m_idx == 0u) {
-                    check_if_hole(navigation);
-                    return false;
+                                        detector_t>::state>) {*/
+        unsigned int n{1};
+        if (backward_mode) {
+            // If we are on the last state and the navigation surface does
+            // not match, it must be an additional surface
+            // -> continue navigation until matched
+            if (m_idx == 0u) {
+                check_if_hole(navigation);
+                return false;
+            }
+            // Check if the current navigation surfaces can be found on a
+            // later track state. That means the current track state was
+            // skipped by the navigator: Advance the internal iterator
+            for (int i = m_idx + 1; i >= 0; --i) {
+                if (at(i).filtered_params().surface_link() ==
+                    navigation.barcode()) {
+                    assert(m_idx >= n);
+                    m_idx -= n;
+                    return true;
                 }
-                // Check if the current navigation surfaces can be found on a
-                // later track state. That means the current track state was
-                // skipped by the navigator: Advance the internal iterator
-                for (int i = m_idx + 1; i >= 0; --i) {
-                    if (at(i).filtered_params().surface_link() ==
-                        navigation.barcode()) {
-                        assert(m_idx >= n);
-                        m_idx -= n;
-                        return true;
-                    }
-                    ++n;
+                ++n;
+            }
+        } else {
+            if (m_idx + 1 == size()) {
+                DETRAY_INFO_HOST_DEVICE("evaluate last state");
+                check_if_hole(navigation);
+                return false;
+            }
+            DETRAY_INFO_HOST_DEVICE("Check other states for match");
+            for (unsigned int i = m_idx + 1u; i < size(); ++i) {
+                if (at(i).filtered_params().surface_link() ==
+                    navigation.barcode()) {
+                    DETRAY_INFO_HOST_DEVICE("found state: skipped not hole");
+                    m_idx += n;
+                    return true;
                 }
-            } else {
-                if (m_idx + 1 == size()) {
-                    DETRAY_INFO_HOST_DEVICE("evaluate last state");
-                    check_if_hole(navigation);
-                    return false;
-                }
-                DETRAY_INFO_HOST_DEVICE("Check other states for match");
-                for (unsigned int i = m_idx + 1u; i < size(); ++i) {
-                    if (at(i).filtered_params().surface_link() ==
-                        navigation.barcode()) {
-                        DETRAY_INFO_HOST_DEVICE("found state: skipped not hole");
-                        m_idx += n;
-                        return true;
-                    }
-                    ++n;
-                }
+                ++n;
             }
         }
+        //}
 
         // Mismatch was not from missed state: Is a hole
         DETRAY_INFO_HOST_DEVICE("NOT found state: might be hole");
@@ -263,7 +267,7 @@ struct kalman_actor : detray::actor {
         }
 
         // triggered only for sensitive surfaces
-        while (navigation.is_on_sensitive()) {
+        if (navigation.is_on_sensitive()) {
 
             DETRAY_INFO_HOST("\nIn actor: " << navigation.barcode());
 
@@ -340,20 +344,25 @@ struct kalman_actor : detray::actor {
             actor_state.next();
 
             // Flag renavigation of the current candidate
-            navigation.set_high_trust();
+            if (math::fabs(navigation()) > 1.f * unit<float>::um) {
+                navigation.set_high_trust();
+            }
 
             // Need propagation to reach the naext candidate
-            if (math::fabs(navigation()) > 1.f * unit<float>::um) {
+            /*if (math::fabs(navigation()) > 1.f * unit<float>::um) {
                 DETRAY_DEBUG_HOST("DIST: " << math::fabs(navigation()));
                 return;
             } else {
                 DETRAY_DEBUG_HOST("KALMAN ACTOR OVERLAP");
                 // Jump to the next candidate
-                const auto free_track = sf.bound_to_free_vector(propagation._context, bound_param);
-                using navigator_t =  typename propagator_state_t::navigator_state_type::navigator_type ;
+                const auto free_track =
+                    sf.bound_to_free_vector(propagation._context, bound_param);
+                using navigator_t = typename propagator_state_t::
+                    navigator_state_type::navigator_type;
                 constexpr navigator_t navigator{};
-                navigator.update(free_track, navigation, {}, propagation._context);
-            }
+                navigator.update(free_track, navigation, {},
+                                 propagation._context);
+            }*/
         }
     }
 };

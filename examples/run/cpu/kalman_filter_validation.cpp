@@ -84,9 +84,11 @@ int main(int argc, char* argv[]) {
         detray::io::read_detector<detector_t>(host_mr, reader_cfg);
 
     traccc::host_detector host_det{};
-    host_det.template set<traccc::detector_traits<typename detector_t::metadata>>(
-        std::move(io_det));
-    const auto& det = host_det.template as<traccc::detector_traits<typename detector_t::metadata>>();
+    host_det
+        .template set<traccc::detector_traits<typename detector_t::metadata>>(
+            std::move(io_det));
+    const auto& det = host_det.template as<
+        traccc::detector_traits<typename detector_t::metadata>>();
 
     // Vector for the constant magnetic field
     constexpr vector3_t B{0.f, 0.f, 2.f * traccc::unit<traccc::scalar>::T};
@@ -115,8 +117,8 @@ int main(int argc, char* argv[]) {
     // Data dir does not exist, create default directory
     if (!std::filesystem::exists(input_dir)) {
 
-        TRACCC_INFO("Input directory " << input_dir
-                                       << " does not exist: Creating data path");
+        TRACCC_INFO("Input directory "
+                    << input_dir << " does not exist: Creating data path");
 
         if (std::error_code err;
             !std::filesystem::create_directories(input_dir, err)) {

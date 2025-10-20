@@ -8,14 +8,14 @@
 #pragma once
 
 // Project include(s).
+#include <detray/utils/log.hpp>
+
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/definitions/track_parametrization.hpp"
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/measurement_helpers.hpp"
 #include "traccc/edm/track_state_collection.hpp"
 #include "traccc/fitting/status_codes.hpp"
-
-#include <detray/utils/log.hpp>
 
 namespace traccc {
 
@@ -78,7 +78,7 @@ struct gain_matrix_updater {
         edm::get_measurement_local<algebra_t>(
             measurements.at(trk_state.measurement_index()), meas_local);
 
-        //assert((dim > 1) || (getter::element(meas_local, 1u, 0u) == 0.f));
+        // assert((dim > 1) || (getter::element(meas_local, 1u, 0u) == 0.f));
 
         // Predicted vector of bound track parameters
         const bound_vector_type& predicted_vec = bound_params.vector();
@@ -185,7 +185,6 @@ struct gain_matrix_updater {
         wrap_phi(trk_state.filtered_params());
 
         assert(!trk_state.filtered_params().is_invalid());
-
 
         if (dim == 1u && bound_params.bound_local()[0] > 600.f) {
             DETRAY_INFO_HOST("After: " << filtered_vec);

@@ -97,7 +97,8 @@ bool kalman_filter_comparison(
     // Track states containing the result parameters for the KF
     typename edm::track_state_collection<algebra_t>::host track_state_coll{
         host_mr};
-    typename edm::track_state_collection<algebra_t>::host track_states_coll_bw{host_mr};
+    typename edm::track_state_collection<algebra_t>::host track_states_coll_bw{
+        host_mr};
 
     tracks.reserve(n_events * 1000);
     truth_traces_fw.reserve(tracks.capacity());
@@ -109,17 +110,21 @@ bool kalman_filter_comparison(
     for (std::size_t i_event = 0u; i_event < n_events; ++i_event) {
         traccc::event_data evt_data(input_dir, i_event, host_mr, use_acts_geoid,
                                     host_det, data_format::csv);
-        TRACCC_VERBOSE("Event " << i_event << ": Found " << evt_data.m_particle_map.size() << " initial particles");
+        TRACCC_VERBOSE("Event " << i_event << ": Found "
+                                << evt_data.m_particle_map.size()
+                                << " initial particles");
 
         if (evt_data.m_particle_map.empty()) {
-            TRACCC_ERROR("Removing event "
-                        << i_event << ": Found no particles");
+            TRACCC_ERROR("Removing event " << i_event
+                                           << ": Found no particles");
             continue;
         }
 
         if (evt_data.m_ptc_to_meas_map.empty()) {
-            TRACCC_ERROR("Removing event "
-                        << i_event << ": Found no connections between particles and measurements");
+            TRACCC_ERROR(
+                "Removing event "
+                << i_event
+                << ": Found no connections between particles and measurements");
             continue;
         }
 
@@ -131,10 +136,11 @@ bool kalman_filter_comparison(
             // Minimum momentum
             const traccc::scalar pT{vector::perp(ptc.momentum)};
             if (pT <= min_pT) {
-                TRACCC_WARNING("Event " << i_event << ": Removing particle "
-                            << ptc_id << " due to transv. momentum cut (pT was "
-                            << pT / traccc::unit<traccc::scalar>::MeV
-                            << " MeV)");
+                TRACCC_WARNING("Event "
+                               << i_event << ": Removing particle " << ptc_id
+                               << " due to transv. momentum cut (pT was "
+                               << pT / traccc::unit<traccc::scalar>::MeV
+                               << " MeV)");
                 continue;
             }
 
@@ -145,33 +151,38 @@ bool kalman_filter_comparison(
 
             // No meansurements found
             if (truth_trace_fw.empty()) {
-                TRACCC_WARNING("Event " << i_event << ": No measurements found for particle " << ptc_id);
+                TRACCC_WARNING("Event "
+                               << i_event
+                               << ": No measurements found for particle "
+                               << ptc_id);
                 continue;
             }
 
             // Minimum radius (remove secondaries)
-            const traccc::scalar rad{
-                vector::perp(truth_trace_fw.front().pos)};
+            const traccc::scalar rad{vector::perp(truth_trace_fw.front().pos)};
             if (rad >= max_rad) {
-                TRACCC_WARNING("Event " << i_event << ": Removing particle "
-                            << ptc_id << " due to radius cut (radius was "
-                            << rad / traccc::unit<traccc::scalar>::mm
-                            << " mm)");
+                TRACCC_WARNING("Event "
+                               << i_event << ": Removing particle " << ptc_id
+                               << " due to radius cut (radius was "
+                               << rad / traccc::unit<traccc::scalar>::mm
+                               << " mm)");
                 continue;
             }
 
             // Revert the forward trace for the backward propagation
             vecmem::vector<sf_candidate_t> truth_trace_bw(
                 truth_trace_fw.size());
-            std::ranges::reverse_copy(truth_trace_fw,
-                                        truth_trace_bw.begin());
+            std::ranges::reverse_copy(truth_trace_fw, truth_trace_bw.begin());
 
             assert(!truth_trace_bw.empty());
 
             truth_traces_fw.push_back(std::move(truth_trace_fw));
             truth_traces_bw.push_back(std::move(truth_trace_bw));
 
-            TRACCC_DEBUG("Event " << i_event << ": Found " << truth_traces_fw.size() << " truth measurement(s) for track " << tracks.size());
+            TRACCC_DEBUG("Event " << i_event << ": Found "
+                                  << truth_traces_fw.size()
+                                  << " truth measurement(s) for track "
+                                  << tracks.size());
 
             // Transcribe measurements to global collection
             const auto& measurements_per_ptc =
@@ -188,21 +199,21 @@ bool kalman_filter_comparison(
                 vecmem::get_data(measurement_coll)};
 
             track_state_coll.reserve(track_state_coll.size() +
-                                        measurements_per_ptc.size());
+                                     measurements_per_ptc.size());
 
             // Construct initial track parameters for the propagation
             // @TODO: Need volume grid in case of large vertex smearing
             tracks.emplace_back(ptc.vertex, 0.f, ptc.momentum, ptc.charge);
 
-            TRACCC_DEBUG("-> Truth track " << tracks.size() - 1u << ": " << tracks.back());
+            TRACCC_DEBUG("-> Truth track " << tracks.size() - 1u << ": "
+                                           << tracks.back());
 
             // Connect the bound track parameters to the measurements and
             // states
             typename edm::track_fit_collection<algebra_t>::host::object_type
                 track_object{};
 
-            for (unsigned int i = 0u; i < measurements_per_ptc.size();
-                    ++i) {
+            for (unsigned int i = 0u; i < measurements_per_ptc.size(); ++i) {
                 unsigned int meas_idx{meas_offset + i};
 
                 track_object.state_indices().push_back(meas_idx);
@@ -217,9 +228,13 @@ bool kalman_filter_comparison(
         }
 
         if (track_param_coll.size() - n_tracks == 0u) {
-            TRACCC_WARNING("Event " << i_event << ": No eligible tracks in event");
+            TRACCC_WARNING("Event " << i_event
+                                    << ": No eligible tracks in event");
         } else {
-            TRACCC_VERBOSE("Event " << i_event << ": Found " << track_param_coll.size() - n_tracks << " reconstructible truth track(s) in event");
+            TRACCC_VERBOSE("Event "
+                           << i_event << ": Found "
+                           << track_param_coll.size() - n_tracks
+                           << " reconstructible truth track(s) in event");
         }
     }
 
@@ -534,7 +549,8 @@ bool kalman_filter_comparison(
 
         auto track_state_bw_view{vecmem::get_data(track_states_coll_bw)};
         auto track_state_device_container_bw =
-            typename edm::track_state_collection<algebra_t>::device{track_state_bw_view};
+            typename
+        edm::track_state_collection<algebra_t>::device{track_state_bw_view};
 
         vecmem::vector<typename actor_chain_bw_t::state_tuple> state_tuple_bw{};
         vecmem::vector<typename actor_chain_bw_t::state_ref_tuple>
