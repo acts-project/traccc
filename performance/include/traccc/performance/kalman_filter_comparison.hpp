@@ -44,9 +44,11 @@ namespace traccc {
 /// @param min_rad minimum radial distance of the particle vertex position
 ///
 /// @returns whether the validation was successful
+
 bool kalman_filter_comparison(
     const traccc::host_detector* host_det,
     const traccc::default_detector::host::name_map& names,
+    const traccc::magnetic_field& bfield,
     const detray::propagation::config& prop_cfg, const std::string& input_dir,
     const unsigned int n_events, std::unique_ptr<const traccc::Logger> ilogger,
     const bool do_multiple_scattering = true, const bool do_energy_loss = true,
@@ -55,8 +57,6 @@ bool kalman_filter_comparison(
         traccc::muon<traccc::scalar>(),
     const traccc::seed_generator<traccc::default_detector::host>::config&
         smearing_cfg = {},
-    const traccc::vector3& B = {0.f, 0.f,
-                                2.f * traccc::unit<traccc::scalar>::T},
     const traccc::scalar min_pT = 0.9f * traccc::unit<traccc::scalar>::GeV,
     const traccc::scalar max_rad = 10.f * traccc::unit<traccc::scalar>::mm);
 

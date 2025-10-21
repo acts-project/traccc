@@ -39,6 +39,7 @@ namespace traccc {
 bool kalman_filter_comparison(
     const traccc::host_detector* host_det,
     const traccc::default_detector::host::name_map& names,
+    const traccc::magnetic_field& bfield,
     const detray::propagation::config& prop_cfg, const std::string& input_dir,
     const unsigned int n_events, std::unique_ptr<const traccc::Logger> ilogger,
     const bool do_multiple_scattering, const bool do_energy_loss,

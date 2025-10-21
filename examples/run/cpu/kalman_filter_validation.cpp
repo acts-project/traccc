@@ -6,6 +6,7 @@
  */
 
 // Project include(s).
+#include "../common/make_magnetic_field.hpp"
 #include "traccc/bfield/construct_const_bfield.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/fitting/kalman_filter/kalman_actor.hpp"
@@ -24,6 +25,7 @@
 #include "traccc/options/detector.hpp"
 #include "traccc/options/generation.hpp"
 #include "traccc/options/input_data.hpp"
+#include "traccc/options/magnetic_field.hpp"
 #include "traccc/options/program_options.hpp"
 #include "traccc/options/track_propagation.hpp"
 
@@ -51,6 +53,7 @@ int main(int argc, char* argv[]) {
 
     // Program options.
     traccc::opts::detector detector_opts;
+    traccc::opts::magnetic_field bfield_opts;
     traccc::opts::input_data input_opts;
     traccc::opts::generation generation_opts;
     traccc::opts::track_propagation propagation_opts;
@@ -90,8 +93,8 @@ int main(int argc, char* argv[]) {
     const auto& det = host_det.template as<
         traccc::detector_traits<typename detector_t::metadata>>();
 
-    // Vector for the constant magnetic field
-    constexpr vector3_t B{0.f, 0.f, 2.f * traccc::unit<traccc::scalar>::T};
+    // Create B-field
+    const auto field = traccc::details::make_magnetic_field(bfield_opts);
 
     TRACCC_INFO("Preparing input data");
 
