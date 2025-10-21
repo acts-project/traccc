@@ -13,6 +13,7 @@ namespace traccc::alpaka {
 
 /// @brief the standard list of Alpaka bfield types to support
 template <typename scalar_t>
-using bfield_type_list = std::tuple<const_bfield_backend_t<scalar_t> >;
+using bfield_type_list = std::tuple<const_bfield_backend_t<scalar_t>,
+                                    host::inhom_bfield_backend_t<scalar_t>>;
 
 }  // namespace traccc::alpaka
