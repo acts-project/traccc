@@ -114,8 +114,7 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
      *****************************/
 
     // Seed generator
-    seed_generator<host_detector_type> sg(detector.as<detector_traits>(),
-                                          stddevs);
+    seed_generator<host_detector_type> sg(detector.as<detector_traits>());
 
     // Finding algorithm configuration
     traccc::finding_config cfg_no_limit;

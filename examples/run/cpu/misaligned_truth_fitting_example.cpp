@@ -110,15 +110,6 @@ int main(int argc, char* argv[]) {
      * Do the reconstruction
      *****************************/
 
-    /// Standard deviations for seed track parameters
-    static constexpr std::array<scalar, e_bound_size> stddevs = {
-        0.03f * traccc::unit<scalar>::mm,
-        0.03f * traccc::unit<scalar>::mm,
-        0.017f,
-        0.017f,
-        0.001f / traccc::unit<scalar>::GeV,
-        1.f * traccc::unit<scalar>::ns};
-
     // Fitting algorithm objects
     // Alg0
     traccc::fitting_config fit_cfg0(fitting_opts);
@@ -135,9 +126,9 @@ int main(int argc, char* argv[]) {
 
     // Seed generators
     traccc::seed_generator<host_detector_type> sg0(
-        host_det, stddevs, 0, fit_cfg0.propagation.context);
+        host_det, {}, 0, fit_cfg0.propagation.context);
     traccc::seed_generator<host_detector_type> sg1(
-        host_det, stddevs, 0, fit_cfg1.propagation.context);
+        host_det, {}, 0, fit_cfg1.propagation.context);
 
     // Iterate over events
     for (auto event = input_opts.skip;
