@@ -11,6 +11,7 @@
 #include "traccc/geometry/host_detector.hpp"
 #include "traccc/utils/logging.hpp"
 #include "traccc/utils/particle.hpp"
+#include "traccc/utils/seed_generator.hpp"
 
 // Detray include(s)
 #include <detray/propagator/propagation_config.hpp>
@@ -52,16 +53,11 @@ bool kalman_filter_comparison(
     const bool use_acts_geoid = false,
     const traccc::pdg_particle<traccc::scalar> ptc_type =
         traccc::muon<traccc::scalar>(),
-    const std::array<traccc::scalar, traccc::e_bound_size>& stddevs =
-        {1.f * traccc::unit<traccc::scalar>::mm,
-         1.f * traccc::unit<traccc::scalar>::mm,
-         1.f * traccc::unit<traccc::scalar>::degree,
-         1.f * traccc::unit<traccc::scalar>::degree,
-         0.1f / traccc::unit<traccc::scalar>::GeV,
-         1000.f * traccc::unit<traccc::scalar>::ns},
+    const traccc::seed_generator<traccc::default_detector::host>::config&
+        smearing_cfg = {},
     const traccc::vector3& B = {0.f, 0.f,
                                 2.f * traccc::unit<traccc::scalar>::T},
-    const traccc::scalar min_pT = 500.f * traccc::unit<traccc::scalar>::MeV,
-    const traccc::scalar max_rad = 50.f * traccc::unit<traccc::scalar>::mm);
+    const traccc::scalar min_pT = 0.9f * traccc::unit<traccc::scalar>::GeV,
+    const traccc::scalar max_rad = 10.f * traccc::unit<traccc::scalar>::mm);
 
 }  // namespace traccc

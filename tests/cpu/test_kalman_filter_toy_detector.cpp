@@ -138,8 +138,8 @@ TEST_P(KF_intergration_test_toy_detector, toy_detector) {
 
     const bool success = kalman_filter_comparison(
         &host_det, names, prop_cfg, outdir, n_events, logger->clone(),
-        std::get<6>(GetParam()), std::get<7>(GetParam()), false, ptc_type,
-        stddevs, B, min_p, max_r);
+        std::get<6>(GetParam()), std::get<7>(GetParam()), false, ptc_type, {},
+        B, min_p, max_r);
 
     ASSERT_TRUE(success);
 }

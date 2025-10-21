@@ -44,7 +44,8 @@ bool kalman_filter_comparison(
     const bool do_multiple_scattering, const bool do_energy_loss,
     const bool use_acts_geoid,
     const traccc::pdg_particle<traccc::scalar> ptc_type,
-    const std::array<traccc::scalar, traccc::e_bound_size>& stddevs,
+    const traccc::seed_generator<traccc::default_detector::host>::config&
+        smearing_cfg,
     const traccc::vector3& B, const traccc::scalar min_pT,
     const traccc::scalar max_rad) {
 
@@ -80,6 +81,10 @@ bool kalman_filter_comparison(
     b_field_t field = traccc::construct_const_bfield(B)
                           .as_field<traccc::const_bfield_backend_t<scalar_t>>();
     b_field_t::view_t field_view = field;
+
+    // Seed smearing
+    auto param_smearer =
+        seed_generator{det, smearing_cfg, std::mt19937::default_seed, ctx};
 
     // Collect data for comparison
 
@@ -159,7 +164,7 @@ bool kalman_filter_comparison(
             }
 
             // Minimum radius (remove secondaries)
-            const traccc::scalar rad{vector::perp(truth_trace_fw.front().pos)};
+            const traccc::scalar rad{vector::perp(ptc.vertex)};
             if (rad >= max_rad) {
                 TRACCC_WARNING("Event "
                                << i_event << ": Removing particle " << ptc_id
@@ -268,14 +273,6 @@ bool kalman_filter_comparison(
     auto truth_traces_fw_KF = truth_traces_fw;
     auto truth_traces_bw_KF = truth_traces_bw;
 
-    // Initial state uncertainty
-    vecmem::vector<std::array<scalar, e_bound_size>> stddevs_per_track{};
-
-    // Prepare the fitter state for every track
-    for (std::size_t i = 0u; i < tracks.size(); ++i) {
-        stddevs_per_track.push_back(stddevs);
-    }
-
     // Reusable actor states
     resetter::state resetter_state{};
     resetter_state.n_stddev = prop_cfg.navigation.n_scattering_stddev;
@@ -307,7 +304,7 @@ bool kalman_filter_comparison(
             detray::navigation_validator::compare_to_navigation<
                 stepper_t, transporter, interactor, resetter>(
                 test_cfg, host_mr, det, names, ctx, field_view, prop_cfg,
-                truth_traces_fw, tracks, state_ref_tuples, stddevs_per_track);
+                truth_traces_fw, tracks, state_ref_tuples, param_smearer);
 
         std::cout << "BACKWARD - No KF" << std::endl
                   << "-----------------------------------\n";
@@ -327,7 +324,7 @@ bool kalman_filter_comparison(
                 stepper_t, transporter, interactor, resetter, perigee_stopper>(
                 test_cfg, host_mr, det, names, ctx, field_view, prop_cfg,
                 truth_traces_bw, tracks, bw_state_ref_tuples,
-                stddevs_per_track);
+                param_smearer);
 
         // Make sure some data was collected
         assert(trk_stats_fw.n_tracks > 0u);
@@ -477,7 +474,7 @@ bool kalman_filter_comparison(
             detray::navigation_validator::compare_to_navigation<
                 stepper_t, transporter, interactor, fit_actor_fw, resetter>(
                 test_cfg, host_mr, det, names, ctx, field_view, prop_cfg,
-                truth_traces_fw_KF, tracks, state_ref_tuple, stddevs_per_track);
+                truth_traces_fw_KF, tracks, state_ref_tuple, param_smearer);
 
         // Check, how many holes the KF found
         std::size_t n_missed_fw{0u};
@@ -590,7 +587,7 @@ bool kalman_filter_comparison(
                 stepper_t, transporter, fit_actor_bd, interactor, resetter,
                 perigee_stopper>(test_cfg, host_mr, det, names, ctx, field_view,
                                  prop_cfg, truth_traces_bw_KF, tracks,
-                                 state_ref_tuple_bw, stddevs_per_track);
+                                 state_ref_tuple_bw, param_smearer);
 
         // Check, how many tracks were smoothed correctly
         const auto n_tracks = static_cast<double>(trk_stats_bw.n_tracks);

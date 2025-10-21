@@ -134,8 +134,8 @@ struct kalman_actor_state {
         auto& navigation = propagation._navigation;
         auto trk_state = (*this)();
 
-        DETRAY_INFO_HOST("Checking: " << navigation.barcode());
-        DETRAY_INFO_HOST(
+        DETRAY_VERBOSE_HOST("Checking: " << navigation.barcode());
+        DETRAY_VERBOSE_HOST(
             "Expected: " << trk_state.filtered_params().surface_link());
 
         // Surface was found, continue with KF algorithm
@@ -143,16 +143,16 @@ struct kalman_actor_state {
             trk_state.filtered_params().surface_link()) {
             // Count a hole, if track finding did not find a measurement
             if (trk_state.is_hole()) {
-                DETRAY_INFO_HOST_DEVICE("state might be flagged hole");
+                DETRAY_VERBOSE_HOST_DEVICE("state might be flagged hole");
                 check_if_hole(navigation);
             }
 
-            DETRAY_INFO_HOST_DEVICE("Matched");
+            DETRAY_VERBOSE_HOST_DEVICE("Matched");
             // If track finding did not find measurement on this surface: skip
             return !trk_state.is_hole();
         }
 
-        DETRAY_INFO_HOST_DEVICE("state not flagged hole");
+        DETRAY_VERBOSE_HOST_DEVICE("state not flagged hole");
 
         // Skipped surfaces: adjust iterator and remove counted hole
         // (only relevant if using non-direct navigation, e.g. forward truth
@@ -187,15 +187,15 @@ struct kalman_actor_state {
             }
         } else {
             if (m_idx + 1 == size()) {
-                DETRAY_INFO_HOST_DEVICE("evaluate last state");
+                DETRAY_VERBOSE_HOST_DEVICE("evaluate last state");
                 check_if_hole(navigation);
                 return false;
             }
-            DETRAY_INFO_HOST_DEVICE("Check other states for match");
+            DETRAY_VERBOSE_HOST_DEVICE("Check other states for match");
             for (unsigned int i = m_idx + 1u; i < size(); ++i) {
                 if (at(i).filtered_params().surface_link() ==
                     navigation.barcode()) {
-                    DETRAY_INFO_HOST_DEVICE("found state: skipped not hole");
+                    DETRAY_VERBOSE_HOST_DEVICE("found state: skipped not hole");
                     m_idx += n;
                     return true;
                 }
@@ -205,7 +205,7 @@ struct kalman_actor_state {
         //}
 
         // Mismatch was not from missed state: Is a hole
-        DETRAY_INFO_HOST_DEVICE("NOT found state: might be hole");
+        DETRAY_VERBOSE_HOST_DEVICE("NOT found state: might be hole");
         check_if_hole(navigation);
 
         // After additional surface, keep navigating until match is found
@@ -269,7 +269,7 @@ struct kalman_actor : detray::actor {
         // triggered only for sensitive surfaces
         if (navigation.is_on_sensitive()) {
 
-            DETRAY_INFO_HOST("\nIn actor: " << navigation.barcode());
+            DETRAY_VERBOSE_HOST("\nIn actor: " << navigation.barcode());
 
             // Did the navigation switch direction?
             actor_state.backward_mode =

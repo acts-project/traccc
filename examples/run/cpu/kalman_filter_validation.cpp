@@ -42,7 +42,7 @@
 int main(int argc, char* argv[]) {
 
     using detector_t = traccc::default_detector::host;
-    using algebra_t = typename detector_t::algebra_type;
+    // using algebra_t = typename detector_t::algebra_type;
     using vector3_t = typename detector_t::vector3_type;
 
     std::unique_ptr<const traccc::Logger> ilogger = traccc::getDefaultLogger(
@@ -93,21 +93,6 @@ int main(int argc, char* argv[]) {
     // Vector for the constant magnetic field
     constexpr vector3_t B{0.f, 0.f, 2.f * traccc::unit<traccc::scalar>::T};
 
-    /// Measurement smearing parameters for the simulation and initial cov.
-    // TODO: Add options to make this configurable
-    static constexpr std::array<traccc::scalar, 2u> smearing{
-        10.f * traccc::unit<traccc::scalar>::um,
-        25.f * traccc::unit<traccc::scalar>::um};
-
-    /// Standard deviations for truth seed track parameters
-    static constexpr std::array<traccc::scalar, traccc::e_bound_size> stddevs =
-        {smearing[0],
-         smearing[1],
-         1.f * traccc::unit<traccc::scalar>::degree,
-         1.f * traccc::unit<traccc::scalar>::degree,
-         0.01f / traccc::unit<traccc::scalar>::GeV,
-         1000.f * traccc::unit<traccc::scalar>::ns};
-
     TRACCC_INFO("Preparing input data");
 
     // Check input dir
@@ -120,16 +105,21 @@ int main(int argc, char* argv[]) {
         TRACCC_INFO("Input directory "
                     << input_dir << " does not exist: Creating data path");
 
-        if (std::error_code err;
+        /*if (std::error_code err;
             !std::filesystem::create_directories(input_dir, err)) {
             throw std::runtime_error(err.message());
-        }
+        }*/
+        return EXIT_FAILURE;
     }
 
     // No existing truth data: Run fast sim
-    if (std::filesystem::is_empty(input_dir)) {
+    if (!std::filesystem::exists(input_dir) ||
+        std::filesystem::is_empty(input_dir)) {
 
-        TRACCC_INFO("Generating fast sim data for "
+        TRACCC_INFO("Input data does not exist");
+        return EXIT_FAILURE;
+
+        /*TRACCC_INFO("Generating fast sim data for "
                     << input_opts.events << " events (" << input_dir << ")\n");
 
         // Create B field
@@ -181,7 +171,7 @@ int main(int argc, char* argv[]) {
         sim.get_config().min_pT(50.f * traccc::unit<traccc::scalar>::MeV);
 
         // Run the simulation: Produces data files
-        sim.run();
+        sim.run();*/
     } else {
         TRACCC_INFO("Reading truth data in " << input_opts.directory << "\n");
     }
@@ -191,7 +181,7 @@ int main(int argc, char* argv[]) {
         &host_det, names, propagation_opts, input_opts.directory,
         static_cast<unsigned int>(input_opts.events), logger().clone(),
         generation_opts.do_multiple_scattering, generation_opts.do_energy_loss,
-        input_opts.use_acts_geom_source, generation_opts.ptc_type, stddevs, B);
+        input_opts.use_acts_geom_source, generation_opts.ptc_type, {}, B);
 
     if (!success) {
         TRACCC_ERROR("Validation failed for: " << det.name(names));
