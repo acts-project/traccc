@@ -20,10 +20,13 @@
 #include "traccc/edm/device/doublet_counter.hpp"
 #include "traccc/edm/device/seeding_global_counter.hpp"
 #include "traccc/edm/device/triplet_counter.hpp"
+#include "traccc/seeding/detail/spacepoint_type.hpp"
 #include "traccc/seeding/device/count_doublets.hpp"
 #include "traccc/seeding/device/count_triplets.hpp"
 #include "traccc/seeding/device/find_doublets.hpp"
 #include "traccc/seeding/device/find_triplets.hpp"
+#include "traccc/seeding/device/make_mid_bot_lincircles.hpp"
+#include "traccc/seeding/device/make_mid_top_lincircles.hpp"
 #include "traccc/seeding/device/reduce_triplet_counts.hpp"
 #include "traccc/seeding/device/select_seeds.hpp"
 #include "traccc/seeding/device/update_triplet_weights.hpp"
@@ -65,8 +68,32 @@ __global__ void find_doublets(
                           sp_grid, doublet_counter, mb_doublets, mt_doublets);
 }
 
+__global__ void make_mid_bot_lincircles(
+    device::device_doublet_collection_types::const_view mb_doublet_view,
+    device::doublet_counter_collection_types::const_view doublet_count_view,
+    edm::spacepoint_collection::const_view spacepoint_view,
+    traccc::details::spacepoint_grid_types::const_view sp_grid_view,
+    vecmem::data::vector_view<lin_circle> out_view) {
+
+    device::make_mid_bot_lincircles(details::global_index1(), mb_doublet_view,
+                                    doublet_count_view, spacepoint_view,
+                                    sp_grid_view, out_view);
+}
+
+__global__ void make_mid_top_lincircles(
+    device::device_doublet_collection_types::const_view mt_doublet_view,
+    device::doublet_counter_collection_types::const_view doublet_count_view,
+    edm::spacepoint_collection::const_view spacepoint_view,
+    traccc::details::spacepoint_grid_types::const_view sp_grid_view,
+    vecmem::data::vector_view<lin_circle> out_view) {
+
+    device::make_mid_top_lincircles(details::global_index1(), mt_doublet_view,
+                                    doublet_count_view, spacepoint_view,
+                                    sp_grid_view, out_view);
+}
+
 /// CUDA kernel for running @c traccc::device::count_triplets
-__global__ void count_triplets(
+__global__ __launch_bounds__(128) void count_triplets(
     seedfinder_config config,
     edm::spacepoint_collection::const_view spacepoints,
     traccc::details::spacepoint_grid_types::const_view sp_grid,
@@ -74,11 +101,14 @@ __global__ void count_triplets(
     device::device_doublet_collection_types::const_view mb_doublets,
     device::device_doublet_collection_types::const_view mt_doublets,
     device::triplet_counter_spM_collection_types::view spM_counter,
-    device::triplet_counter_collection_types::view midBot_counter) {
+    device::triplet_counter_collection_types::view midBot_counter,
+    vecmem::data::vector_view<const lin_circle> midBot_circles,
+    vecmem::data::vector_view<const lin_circle> midTop_circles) {
 
     device::count_triplets(details::global_index1(), config, spacepoints,
                            sp_grid, doublet_counter, mb_doublets, mt_doublets,
-                           spM_counter, midBot_counter);
+                           spM_counter, midBot_counter, midBot_circles,
+                           midTop_circles);
 }
 
 /// CUDA kernel for running @c traccc::device::reduce_triplet_counts
@@ -92,7 +122,7 @@ __global__ void reduce_triplet_counts(
 }
 
 /// CUDA kernel for running @c traccc::device::find_triplets
-__global__ void find_triplets(
+__global__ __launch_bounds__(128) void find_triplets(
     seedfinder_config config, seedfilter_config filter_config,
     edm::spacepoint_collection::const_view spacepoints,
     traccc::details::spacepoint_grid_types::const_view sp_grid,
@@ -100,11 +130,14 @@ __global__ void find_triplets(
     device::device_doublet_collection_types::const_view mt_doublets,
     device::triplet_counter_spM_collection_types::const_view spM_tc,
     device::triplet_counter_collection_types::const_view midBot_tc,
+    vecmem::data::vector_view<const lin_circle> midBot_circles,
+    vecmem::data::vector_view<const lin_circle> midTop_circles,
     device::device_triplet_collection_types::view triplet_view) {
 
     device::find_triplets(details::global_index1(), config, filter_config,
                           spacepoints, sp_grid, doublet_counter, mt_doublets,
-                          spM_tc, midBot_tc, triplet_view);
+                          spM_tc, midBot_tc, midBot_circles, midTop_circles,
+                          triplet_view);
 }
 
 /// CUDA kernel for running @c traccc::device::update_triplet_weights
@@ -260,6 +293,33 @@ edm::seed_collection::buffer seed_finding::operator()(
             doublet_counter_buffer, doublet_buffer_mb, doublet_buffer_mt);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
+    vecmem::data::vector_buffer<lin_circle> midBotLinCircles{
+        globalCounter_host->m_nMidBot, m_mr.main};
+    m_copy.setup(midBotLinCircles)->wait();
+    vecmem::data::vector_buffer<lin_circle> midTopLinCircles{
+        globalCounter_host->m_nMidTop, m_mr.main};
+    m_copy.setup(midBotLinCircles)->wait();
+
+    {
+        const unsigned int nThreads = 128;
+        const unsigned int nMidBotBlocks =
+            (globalCounter_host->m_nMidBot + nThreads - 1) / nThreads;
+        const unsigned int nMidTopBlocks =
+            (globalCounter_host->m_nMidTop + nThreads - 1) / nThreads;
+
+        kernels::
+            make_mid_bot_lincircles<<<nMidBotBlocks, nThreads, 0, stream>>>(
+                doublet_buffer_mb, doublet_counter_buffer, spacepoints_view,
+                g2_view, midBotLinCircles);
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+        kernels::
+            make_mid_top_lincircles<<<nMidTopBlocks, nThreads, 0, stream>>>(
+                doublet_buffer_mt, doublet_counter_buffer, spacepoints_view,
+                g2_view, midTopLinCircles);
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+    }
+
     // Set up the triplet counter buffers
     device::triplet_counter_spM_collection_types::buffer
         triplet_counter_spM_buffer = {doublet_counter_buffer_size, m_mr.main};
@@ -273,7 +333,7 @@ edm::seed_collection::buffer seed_finding::operator()(
 
     // Calculate the number of threads and thread blocks to run the doublet
     // counting kernel for.
-    const unsigned int nTripletCountThreads = m_warp_size * 2;
+    const unsigned int nTripletCountThreads = 128;
     const unsigned int nTripletCountBlocks =
         (globalCounter_host->m_nMidBot + nTripletCountThreads - 1) /
         nTripletCountThreads;
@@ -283,7 +343,7 @@ edm::seed_collection::buffer seed_finding::operator()(
                               stream>>>(
         m_seedfinder_config, spacepoints_view, g2_view, doublet_counter_buffer,
         doublet_buffer_mb, doublet_buffer_mt, triplet_counter_spM_buffer,
-        triplet_counter_midBot_buffer);
+        triplet_counter_midBot_buffer, midBotLinCircles, midTopLinCircles);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     // Calculate the number of threads and thread blocks to run the triplet
@@ -320,7 +380,7 @@ edm::seed_collection::buffer seed_finding::operator()(
 
     // Calculate the number of threads and thread blocks to run the triplet
     // finding kernel for.
-    const unsigned int nTripletFindThreads = m_warp_size * 2;
+    const unsigned int nTripletFindThreads = 128;
     const unsigned int nTripletFindBlocks =
         (*size_staging_ptr + nTripletFindThreads - 1) / nTripletFindThreads;
 
@@ -330,7 +390,7 @@ edm::seed_collection::buffer seed_finding::operator()(
             m_seedfinder_config, m_seedfilter_config, spacepoints_view, g2_view,
             doublet_counter_buffer, doublet_buffer_mt,
             triplet_counter_spM_buffer, triplet_counter_midBot_buffer,
-            triplet_buffer);
+            midBotLinCircles, midTopLinCircles, triplet_buffer);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     // Calculate the number of threads and thread blocks to run the weight
