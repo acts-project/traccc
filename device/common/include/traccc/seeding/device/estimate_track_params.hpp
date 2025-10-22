@@ -15,6 +15,7 @@
 #include "traccc/edm/seed_collection.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/edm/track_parameters.hpp"
+#include "traccc/seeding/detail/track_params_estimation_config.hpp"
 
 namespace traccc::device {
 
@@ -30,11 +31,10 @@ namespace traccc::device {
 ///
 TRACCC_HOST_DEVICE
 inline void estimate_track_params(
-    global_index_t globalIndex,
+    global_index_t globalIndex, const track_params_estimation_config& config,
     const measurement_collection_types::const_view& measurements_view,
     const edm::spacepoint_collection::const_view& spacepoints_view,
     const edm::seed_collection::const_view& seeds_view, const vector3& bfield,
-    const std::array<traccc::scalar, traccc::e_bound_size>& stddev,
     bound_track_parameters_collection_types::view params_view);
 
 }  // namespace traccc::device

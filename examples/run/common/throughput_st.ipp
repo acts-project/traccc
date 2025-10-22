@@ -13,6 +13,7 @@
 // Project include(s)
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/host_detector.hpp"
+#include "traccc/seeding/detail/track_params_estimation_config.hpp"
 
 // Command line option include(s).
 #include "traccc/options/clusterization.hpp"
@@ -124,6 +125,8 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
     const traccc::seedfilter_config seedfilter_config(seeding_opts);
     const traccc::spacepoint_grid_config spacepoint_grid_config(seeding_opts);
 
+    const traccc::track_params_estimation_config track_params_estimation_config;
+
     typename FULL_CHAIN_ALG::finding_algorithm::config_type finding_cfg(
         finding_opts);
     finding_cfg.propagation = propagation_config;
@@ -135,8 +138,9 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
     // Set up the full-chain algorithm.
     std::unique_ptr<FULL_CHAIN_ALG> alg = std::make_unique<FULL_CHAIN_ALG>(
         host_mr, clustering_cfg, seedfinder_config, spacepoint_grid_config,
-        seedfilter_config, finding_cfg, fitting_cfg, det_descr, field,
-        &detector, logger->clone("FullChainAlg"));
+        seedfilter_config, track_params_estimation_config, finding_cfg,
+        fitting_cfg, det_descr, field, &detector,
+        logger->clone("FullChainAlg"));
 
     // Seed the random number generator.
     if (throughput_opts.random_seed == 0) {
