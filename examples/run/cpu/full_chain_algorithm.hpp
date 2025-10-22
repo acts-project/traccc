@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 #include "traccc/bfield/magnetic_field.hpp"
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
@@ -56,6 +57,9 @@ class full_chain_algorithm
     /// Track finding algorithm type
     using finding_algorithm =
         traccc::host::combinatorial_kalman_filter_algorithm;
+    /// Ambiguity solving algorithm type
+    using ambiguity_solving_algorithm =
+        traccc::host::greedy_ambiguity_resolution_algorithm;
     /// Track fitting algorithm type
     using fitting_algorithm = traccc::host::kalman_fitting_algorithm;
 
@@ -68,17 +72,19 @@ class full_chain_algorithm
     /// @param dummy This is not used anywhere. Allows templating CPU/Device
     /// algorithm.
     ///
-    full_chain_algorithm(vecmem::memory_resource& mr,
-                         const clustering_algorithm::config_type& dummy,
-                         const seedfinder_config& finder_config,
-                         const spacepoint_grid_config& grid_config,
-                         const seedfilter_config& filter_config,
-                         const finding_algorithm::config_type& finding_config,
-                         const fitting_algorithm::config_type& fitting_config,
-                         const silicon_detector_description::host& det_descr,
-                         const magnetic_field& field,
-                         const host_detector* detector,
-                         std::unique_ptr<const traccc::Logger> logger);
+
+    full_chain_algorithm(
+        vecmem::memory_resource& mr,
+        const clustering_algorithm::config_type& dummy,
+        const seedfinder_config& finder_config,
+        const spacepoint_grid_config& grid_config,
+        const seedfilter_config& filter_config,
+        const finding_algorithm::config_type& finding_config,
+        const ambiguity_solving_algorithm::config_type& resolution_config,
+        const fitting_algorithm::config_type& fitting_config,
+        const silicon_detector_description::host& det_descr,
+        const magnetic_field& field, const host_detector* detector,
+        std::unique_ptr<const traccc::Logger> logger);
 
     /// Reconstruct track parameters in the entire detector
     ///
@@ -126,6 +132,8 @@ class full_chain_algorithm
 
     /// Track finding algorithm
     finding_algorithm m_finding;
+    /// Ambiguity solving algorithm
+    ambiguity_solving_algorithm m_ambiguity_solving;
     /// Track fitting algorithm
     fitting_algorithm m_fitting;
 
@@ -143,6 +151,8 @@ class full_chain_algorithm
 
     /// Configuration for the track finding
     finding_algorithm::config_type m_finding_config;
+    /// Configuration for the ambiguity solving
+    ambiguity_solving_algorithm::config_type m_resolution_config;
     /// Configuration for the track fitting
     fitting_algorithm::config_type m_fitting_config;
 

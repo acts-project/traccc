@@ -17,6 +17,7 @@
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
 #include "traccc/alpaka/utils/get_device_info.hpp"
 #include "traccc/alpaka/utils/vecmem_objects.hpp"
+#include "traccc/ambiguity_resolution/ambiguity_resolution_config.hpp"
 #include "traccc/bfield/magnetic_field.hpp"
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
@@ -78,6 +79,7 @@ class full_chain_algorithm
                          const spacepoint_grid_config& grid_config,
                          const seedfilter_config& filter_config,
                          const finding_algorithm::config_type& finding_config,
+                         const ambiguity_resolution_config& resolution_config,
                          const fitting_algorithm::config_type& fitting_config,
                          const silicon_detector_description::host& det_descr,
                          const magnetic_field& field, host_detector* detector,

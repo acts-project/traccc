@@ -16,6 +16,7 @@ full_chain_algorithm::full_chain_algorithm(
     const spacepoint_grid_config& grid_config,
     const seedfilter_config& filter_config,
     const finding_algorithm::config_type& finding_config,
+    const ambiguity_solving_algorithm::config_type& resolution_config,
     const fitting_algorithm::config_type& fitting_config,
     const silicon_detector_description::host& det_descr,
     const magnetic_field& field, const host_detector* detector,
@@ -34,6 +35,8 @@ full_chain_algorithm::full_chain_algorithm(
       m_track_parameter_estimation(mr,
                                    logger->cloneWithSuffix("TrackParamEstAlg")),
       m_finding(finding_config, mr, logger->cloneWithSuffix("TrackFindingAlg")),
+      m_ambiguity_solving(resolution_config, mr,
+                          logger->cloneWithSuffix("AmbiguityResolutionAlg")),
       m_fitting(fitting_config, mr, *m_copy,
                 logger->cloneWithSuffix("TrackFittingAlg")),
       m_finder_config(finder_config),
@@ -78,10 +81,14 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
         const finding_algorithm::output_type track_candidates = m_finding(
             *m_detector, m_field, measurements_view, track_params_view);
 
+        const ambiguity_solving_algorithm::output_type
+            resolved_track_candidates = m_ambiguity_solving(
+                {vecmem::get_data(track_candidates), measurements_view});
+
         // Run the track fitting, and return its results.
-        return m_fitting(
-                   *m_detector, m_field,
-                   {vecmem::get_data(track_candidates), measurements_view})
+        return m_fitting(*m_detector, m_field,
+                         {vecmem::get_data(resolved_track_candidates),
+                          measurements_view})
             .tracks;
     }
     // If not, just return an empty object.
