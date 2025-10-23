@@ -241,9 +241,16 @@ void finding_performance_writer::write_common(
 
     // For each truth particle...
     for (auto const& [pid, ptc] : evt_data.m_particle_map) {
-        std::size_t num_measurements = 0;
+
+        auto ptc_particle =
+            detail::particle_from_pdg_number<scalar>(ptc.particle_type);
+        if (ptc_particle.pdg_num() == 0) {
+            // TODO: Add some debug logging here.
+            continue;
+        }
 
         // Find the number of measurements belonging to this track
+        std::size_t num_measurements = 0;
         if (auto it = evt_data.m_ptc_to_meas_map.find(ptc);
             it != evt_data.m_ptc_to_meas_map.end()) {
             num_measurements = it->second.size();
@@ -273,6 +280,8 @@ void finding_performance_writer::write_common(
             total_matched_truth_particles++;
             n_matched_seeds_for_particle = it->second;
             total_duplicate_tracks += n_matched_seeds_for_particle - 1;
+        } else {
+            TRACCC_DEBUG("Not matched: " << pid);
         }
 
         // Finds how many (fake) tracks were made with at least one hit from the
