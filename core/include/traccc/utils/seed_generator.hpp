@@ -116,6 +116,8 @@ struct seed_generator {
         // Call the smearing operator
         (*this)(bound_param, ptc_type);
 
+        bound_param.set_surface_link(surface_link);
+
         return bound_param;
     }
 
@@ -150,32 +152,34 @@ struct seed_generator {
 
         // Smear the position/time
         // Note that we smear d0 and z0 in the perigee frame
-        const scalar smeared_loc0 =
-            std::normal_distribution<scalar>(pos[0], sigma_loc_0)(m_generator);
-        const scalar smeared_loc1 =
-            std::normal_distribution<scalar>(pos[1], sigma_loc_1)(m_generator);
-        bound_param.set_bound_local({smeared_loc0, smeared_loc1});
+        const double smeared_loc0 =
+            std::normal_distribution<double>(pos[0], sigma_loc_0)(m_generator);
+        const double smeared_loc1 =
+            std::normal_distribution<double>(pos[1], sigma_loc_1)(m_generator);
+        bound_param.set_bound_local({static_cast<scalar>(smeared_loc0),
+                                     static_cast<scalar>(smeared_loc1)});
 
         // Time
-        bound_param.set_time(std::normal_distribution<scalar>(
-            time, m_cfg.sigma_time)(m_generator));
+        bound_param.set_time(
+            static_cast<scalar>(std::normal_distribution<double>(
+                time, m_cfg.sigma_time)(m_generator)));
 
         // Smear direction angles phi,theta ensuring correct bounds
-        const scalar smeared_phi =
-            std::normal_distribution<scalar>(phi, m_cfg.sigma_phi)(m_generator);
-        const scalar smeared_theta = std::normal_distribution<scalar>(
+        const double smeared_phi =
+            std::normal_distribution<double>(phi, m_cfg.sigma_phi)(m_generator);
+        const double smeared_theta = std::normal_distribution<double>(
             theta, m_cfg.sigma_theta)(m_generator);
         const auto [new_phi, new_theta] =
             detail::wrap_phi_theta(smeared_phi, smeared_theta);
-        bound_param.set_phi(new_phi);
-        bound_param.set_theta(new_theta);
+        bound_param.set_phi(static_cast<scalar>(new_phi));
+        bound_param.set_theta(static_cast<scalar>(new_theta));
 
         // Compute smeared q/p
-        bound_param.set_qop(
-            std::normal_distribution<scalar>(qop, sigma_qop)(m_generator));
+        bound_param.set_qop(static_cast<scalar>(
+            std::normal_distribution<double>(qop, sigma_qop)(m_generator)));
 
         // Build the track covariance matrix using the smearing sigmas
-        std::array<scalar, e_bound_size> sigmas{
+        std::array<double, e_bound_size> sigmas{
             sigma_loc_0,       sigma_loc_1, m_cfg.sigma_phi,
             m_cfg.sigma_theta, sigma_qop,   m_cfg.sigma_time};
 
@@ -186,10 +190,14 @@ struct seed_generator {
             // Inflate the initial covariance
             variance *= m_cfg.cov_inflation[i];
 
-            getter::element(bound_param.covariance(), i, i) = variance;
+            getter::element(bound_param.covariance(), i, i) =
+                static_cast<scalar>(variance);
         }
 
         assert(!bound_param.is_invalid());
+
+        // We are not on a surface, but in the curvilinear frame
+        bound_param.set_surface_link(detray::geometry::barcode{});
     }
 
     private:

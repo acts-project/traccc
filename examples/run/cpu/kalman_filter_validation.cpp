@@ -94,7 +94,9 @@ int main(int argc, char* argv[]) {
         traccc::detector_traits<typename detector_t::metadata>>();
 
     // Create B-field
-    const auto field = traccc::details::make_magnetic_field(bfield_opts);
+    const vector3_t B{0.f, 0.f, 2.f * traccc::unit<traccc::scalar>::T};
+    traccc::magnetic_field field = traccc::construct_const_bfield(B);
+    // const auto field = traccc::details::make_magnetic_field(bfield_opts);
 
     TRACCC_INFO("Preparing input data");
 
@@ -181,10 +183,10 @@ int main(int argc, char* argv[]) {
 
     // Run the application.
     const bool success = traccc::kalman_filter_comparison(
-        &host_det, names, propagation_opts, input_opts.directory,
+        &host_det, names, field, propagation_opts, input_opts.directory,
         static_cast<unsigned int>(input_opts.events), logger().clone(),
         generation_opts.do_multiple_scattering, generation_opts.do_energy_loss,
-        input_opts.use_acts_geom_source, generation_opts.ptc_type, {}, B);
+        input_opts.use_acts_geom_source, generation_opts.ptc_type, {});
 
     if (!success) {
         TRACCC_ERROR("Validation failed for: " << det.name(names));

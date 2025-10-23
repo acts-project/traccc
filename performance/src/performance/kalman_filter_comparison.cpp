@@ -47,8 +47,7 @@ bool kalman_filter_comparison(
     const traccc::pdg_particle<traccc::scalar> ptc_type,
     const traccc::seed_generator<traccc::default_detector::host>::config&
         smearing_cfg,
-    const traccc::vector3& B, const traccc::scalar min_pT,
-    const traccc::scalar max_rad) {
+    const traccc::scalar min_pT, const traccc::scalar max_rad) {
 
     using namespace traccc;
 
@@ -79,8 +78,8 @@ bool kalman_filter_comparison(
     const detector_t& det = host_det->template as<traccc::default_detector>();
 
     // Create B field
-    b_field_t field = traccc::construct_const_bfield(B)
-                          .as_field<traccc::const_bfield_backend_t<scalar_t>>();
+    b_field_t field =
+        bfield.template as_field<traccc::const_bfield_backend_t<scalar_t>>();
     b_field_t::view_t field_view = field;
 
     // Seed smearing

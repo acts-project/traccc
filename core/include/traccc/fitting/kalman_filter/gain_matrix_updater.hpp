@@ -141,13 +141,20 @@ struct gain_matrix_updater {
         const matrix_type<D, 1> residual = meas_local - H * filtered_vec;
 
         // Calculate the chi square
-        const matrix_type<D, D> i_minus_hk = I_m - H * K;
+        /*const matrix_type<D, D> i_minus_hk = I_m - H * K;
         // See
-        // https://indico.cern.ch/event/1564924/contributions/6629447/attachments/3113201/5519076/asami_250731_acts.pdf
+        //
+        https://indico.cern.ch/event/1564924/contributions/6629447/attachments/3113201/5519076/asami_250731_acts.pdf
         const matrix_type<D, D> R =
             i_minus_hk * V * matrix::transpose(i_minus_hk) +
             H * i_minus_kh * predicted_cov * matrix::transpose(i_minus_kh) *
                 matrix::transpose(H);
+        const matrix_type<1, 1> chi2 =
+            algebra::matrix::transposed_product<true, false>(
+                residual, matrix::inverse(R)) *
+            residual;*/
+
+        const matrix_type<D, D> R = (I_m - H * K) * V;
         const matrix_type<1, 1> chi2 =
             algebra::matrix::transposed_product<true, false>(
                 residual, matrix::inverse(R)) *
@@ -180,6 +187,11 @@ struct gain_matrix_updater {
         trk_state.filtered_params().set_vector(filtered_vec);
         trk_state.filtered_params().set_covariance(filtered_cov);
         trk_state.filtered_chi2() = getter::element(chi2, 0, 0);
+
+        DETRAY_DEBUG_HOST("MEASUREMENT POS: " << meas_local);
+        DETRAY_DEBUG_HOST("MEASUREMENT VARIANCE: " << V);
+        DETRAY_DEBUG_HOST("FILTERED PARAM: " << trk_state.filtered_params());
+        DETRAY_DEBUG_HOST("CHI2: " << trk_state.filtered_chi2());
 
         // Wrap the phi in the range of [-pi, pi]
         wrap_phi(trk_state.filtered_params());

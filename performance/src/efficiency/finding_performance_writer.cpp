@@ -273,6 +273,8 @@ void finding_performance_writer::write_common(
             total_matched_truth_particles++;
             n_matched_seeds_for_particle = it->second;
             total_duplicate_tracks += n_matched_seeds_for_particle - 1;
+        } else {
+            std::cout << pid << std::endl;
         }
 
         // Finds how many (fake) tracks were made with at least one hit from the

@@ -13,19 +13,18 @@
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 
-
-/// @see https://github.com/acts-project/acts/blob/main/Core/include/Acts/Utilities/detail/periodic.hpp
+/// @see
+/// https://github.com/acts-project/acts/blob/main/Core/include/Acts/Utilities/detail/periodic.hpp
 namespace traccc::detail {
 
 /// Wrap a periodic value back into the nominal range.
 template <typename T>
-TRACCC_HOST_DEVICE
-inline T wrap_periodic(T value, T start, T range) {
-  // only wrap if really necessary
-  T diff = value - start;
-  return ((0 <= diff) && (diff < range))
-             ? value
-             : (value - range * math::floor(diff / range));
+TRACCC_HOST_DEVICE inline T wrap_periodic(T value, T start, T range) {
+    // only wrap if really necessary
+    T diff = value - start;
+    return ((0 <= diff) && (diff < range))
+               ? value
+               : (value - range * math::floor(diff / range));
 }
 
 /// Compute the minimal `lhs - rhs` using the periodicity.
@@ -38,39 +37,36 @@ inline T wrap_periodic(T value, T start, T range) {
 ///
 /// @note The sign of the returned value can be different from `lhs - rhs`
 template <typename T>
-TRACCC_HOST_DEVICE
-inline T difference_periodic(T lhs, T rhs, T range) {
-  T delta = math::fmod(lhs - rhs, range);
-  // check if |delta| is larger than half the range. if that is the case, we
-  // can move either rhs/lhs by one range/period to get a smaller |delta|.
-  if ((2 * delta) < -range) {
-    delta += range;
-  } else if (range <= (2 * delta)) {
-    delta -= range;
-  }
-  return delta;
+TRACCC_HOST_DEVICE inline T difference_periodic(T lhs, T rhs, T range) {
+    T delta = math::fmod(lhs - rhs, range);
+    // check if |delta| is larger than half the range. if that is the case, we
+    // can move either rhs/lhs by one range/period to get a smaller |delta|.
+    if ((2 * delta) < -range) {
+        delta += range;
+    } else if (range <= (2 * delta)) {
+        delta -= range;
+    }
+    return delta;
 }
 
 /// Calculate the equivalent angle in the [0, 2*pi) range.
 template <typename T>
-TRACCC_HOST_DEVICE
-inline T radian_pos(T x) {
-  return wrap_periodic<T>(x, T{0}, T{2 * std::numbers::pi_v<T>});
+TRACCC_HOST_DEVICE inline T radian_pos(T x) {
+    return wrap_periodic<T>(x, T{0}, T{2 * std::numbers::pi_v<T>});
 }
 
 /// Calculate the equivalent angle in the [-pi, pi) range.
 template <typename T>
-TRACCC_HOST_DEVICE
-inline T radian_sym(T x) {
-  return wrap_periodic<T>(x, -std::numbers::pi_v<T>, T{2 * std::numbers::pi_v<T>});
+TRACCC_HOST_DEVICE inline T radian_sym(T x) {
+    return wrap_periodic<T>(x, -std::numbers::pi_v<T>,
+                            T{2 * std::numbers::pi_v<T>});
 }
 
 // Wrap the phi of track parameters to [-pi,pi]
 template <typename T>
 TRACCC_HOST_DEVICE inline T wrap_phi(T x) {
 
-    static constexpr traccc::scalar TWOPI =
-        2.f * std::numbers::pi_v<T>;
+    static constexpr traccc::scalar TWOPI = 2.f * std::numbers::pi_v<T>;
     x = math::fmod(x, TWOPI);
     if (x > std::numbers::pi_v<T>) {
         x -= TWOPI;
@@ -98,18 +94,18 @@ TRACCC_HOST_DEVICE inline T wrap_phi(T x) {
 /// within its nominal range.
 template <typename T>
 inline std::pair<T, T> wrap_phi_theta(T phi, T theta) {
-  // wrap to [0,2pi). while the nominal range of theta is [0,pi], it is
-  // periodic, i.e. describes identical positions, in the full [0,2pi) range.
-  // moving it first to the periodic range simplifies further steps as the
-  // possible range of theta becomes fixed.
-  theta = radian_pos(theta);
-  if (std::numbers::pi_v<T> < theta) {
-    // theta is in the second half of the great circle and outside its nominal
-    // range. need to change both phi and theta to be within range.
-    phi += std::numbers::pi_v<T>;
-    theta = T{2 * std::numbers::pi_v<T>} - theta;
-  }
-  return {radian_sym(phi), theta};
+    // wrap to [0,2pi). while the nominal range of theta is [0,pi], it is
+    // periodic, i.e. describes identical positions, in the full [0,2pi) range.
+    // moving it first to the periodic range simplifies further steps as the
+    // possible range of theta becomes fixed.
+    theta = radian_pos(theta);
+    if (std::numbers::pi_v<T> < theta) {
+        // theta is in the second half of the great circle and outside its
+        // nominal range. need to change both phi and theta to be within range.
+        phi += std::numbers::pi_v<T>;
+        theta = T{2 * std::numbers::pi_v<T>} - theta;
+    }
+    return {radian_sym(phi), theta};
 }
 
 }  // namespace traccc::detail

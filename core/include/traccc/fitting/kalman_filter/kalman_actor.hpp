@@ -288,7 +288,7 @@ struct kalman_actor : detray::actor {
             // Run Kalman Gain Updater
             const auto sf = navigation.get_surface();
 
-            const bool is_line = sf.template visit_mask<is_line_visitor>();
+            const bool is_line = detail::is_line(sf);
 
             kalman_fitter_status res = kalman_fitter_status::SUCCESS;
 
@@ -328,6 +328,8 @@ struct kalman_actor : detray::actor {
             }
 
             // Abort if the Kalman update fails
+            DETRAY_DEBUG_HOST(
+                "KALMAN FITTER STATUS: " << fitter_debug_msg{res}());
             if (res != kalman_fitter_status::SUCCESS) {
                 propagation._heartbeat &=
                     navigation.abort(fitter_debug_msg{res});

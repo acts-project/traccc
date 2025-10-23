@@ -81,8 +81,7 @@ TEST_P(KF_intergration_test_toy_detector, toy_detector) {
         traccc::detector_traits<typename detector_t::metadata>>();
 
     // Create B field
-    b_field_t field = traccc::construct_const_bfield(B)
-                          .as_field<traccc::const_bfield_backend_t<scalar>>();
+    traccc::magnetic_field field = traccc::construct_const_bfield(B);
 
     // Create track generator
     const scalar pT{std::get<0>(GetParam())};
@@ -106,8 +105,10 @@ TEST_P(KF_intergration_test_toy_detector, toy_detector) {
 
     // Create measurement smearer
     measurement_smearer<algebra_t> smearer(smearing[0], smearing[1]);
-    auto sim = simulator_t(ptc_type, n_events, det, field, generator_t{gen_cfg},
-                           writer_t::config{smearer}, full_path.string());
+    auto sim = simulator_t(
+        ptc_type, n_events, det,
+        field.template as_field<traccc::const_bfield_backend_t<scalar>>(),
+        generator_t{gen_cfg}, writer_t::config{smearer}, full_path.string());
 
     // Propagation config for the simulation
     detray::propagation::config prop_cfg{};
@@ -137,9 +138,9 @@ TEST_P(KF_intergration_test_toy_detector, toy_detector) {
         std::get<1>(GetParam()) + 3.f * traccc::unit<float>::mm;
 
     const bool success = kalman_filter_comparison(
-        &host_det, names, prop_cfg, outdir, n_events, logger->clone(),
+        &host_det, names, field, prop_cfg, outdir, n_events, logger->clone(),
         std::get<6>(GetParam()), std::get<7>(GetParam()), false, ptc_type, {},
-        B, min_p, max_r);
+        min_p, max_r);
 
     ASSERT_TRUE(success);
 }
