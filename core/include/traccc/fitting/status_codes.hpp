@@ -8,6 +8,7 @@
 #pragma once
 
 #include <cstdint>
+#include <detray/utils/log.hpp>
 #include <string>
 
 namespace traccc {
@@ -30,6 +31,8 @@ enum class kalman_fitter_status : uint32_t {
 struct fitter_debug_msg {
 
     TRACCC_HOST std::string operator()() const {
+        DETRAY_DEBUG_HOST(
+            "fitter status code: " << static_cast<int>(m_error_code));
         const std::string msg{"Kalman Fitter: "};
         switch (m_error_code) {
             using enum kalman_fitter_status;
@@ -65,7 +68,7 @@ struct fitter_debug_msg {
                 return msg + "Unspecified error";
             }
             default: {
-                return "";
+                return "Unknown error";
             }
         }
     }

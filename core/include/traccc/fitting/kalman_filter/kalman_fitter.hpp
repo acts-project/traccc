@@ -122,8 +122,8 @@ class kalman_fitter {
         TRACCC_HOST_DEVICE
         typename forward_actor_chain_type::state_ref_tuple operator()() {
             return detray::tie(m_aborter_state, m_interactor_state,
-                               m_fit_actor_state, m_sequencer_state,
-                               m_step_aborter_state);
+                               m_fit_actor_state, m_parameter_resetter,
+                               m_sequencer_state, m_step_aborter_state);
         }
 
         /// @return the actor chain state
@@ -131,7 +131,8 @@ class kalman_fitter {
         typename backward_actor_chain_type::state_ref_tuple
         backward_actor_state() {
             return detray::tie(m_aborter_state, m_fit_actor_state,
-                               m_interactor_state, m_step_aborter_state);
+                               m_interactor_state, m_parameter_resetter,
+                               m_step_aborter_state);
         }
 
         /// Individual actor states
@@ -140,6 +141,7 @@ class kalman_fitter {
         typename forward_fit_actor::state m_fit_actor_state;
         typename barcode_sequencer::state m_sequencer_state;
         kalman_step_aborter::state m_step_aborter_state{};
+        typename resetter::state m_parameter_resetter{};
 
         /// Fitting result per track
         typename edm::track_fit_collection<algebra_type>::device::proxy_type
@@ -160,6 +162,8 @@ class kalman_fitter {
     fit(const seed_parameters_t& seed_params, state& fitter_state) const {
         seed_parameters_t params = seed_params;
         fitter_state.m_fit_actor_state.reset();
+        fitter_state.m_fit_actor_state.do_precise_hole_count =
+            m_cfg.do_precise_hole_count;
 
         // Run the kalman filtering for a given number of iterations
         for (std::size_t i = 0; i < m_cfg.n_iterations; i++) {
@@ -195,11 +199,19 @@ class kalman_fitter {
             return res;
         }
 
+        // Reset hole count
+        const unsigned int n_holes_fw{fitter_state.m_fit_actor_state.n_holes};
+        fitter_state.m_fit_actor_state.n_holes = 0u;
+
         // Run smoothing
         if (kalman_fitter_status res = smooth(fitter_state);
             res != kalman_fitter_status::SUCCESS) {
             return res;
         }
+
+        // In case the smoother does not apply hole counting
+        fitter_state.m_fit_actor_state.n_holes =
+            math::max(fitter_state.m_fit_actor_state.n_holes, n_holes_fw);
 
         // Update track fitting qualities
         update_statistics(fitter_state);
@@ -384,7 +396,8 @@ class kalman_fitter {
             for (unsigned int i : fit_res.state_indices()) {
                 auto trk_state = track_states.at(i);
                 // Fitting fails if any of non-hole track states is not smoothed
-                if (!trk_state.is_hole() && !trk_state.is_smoothed()) {
+                if (!trk_state.filtered_params().is_invalid() &&
+                    !trk_state.is_smoothed()) {
                     fit_res.fit_outcome() =
                         track_fit_outcome::FAILURE_NOT_ALL_SMOOTHED;
                     return;

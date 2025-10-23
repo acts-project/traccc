@@ -8,6 +8,8 @@
 #pragma once
 
 // Project include(s).
+#include <detray/utils/log.hpp>
+
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/definitions/track_parametrization.hpp"
 #include "traccc/edm/measurement.hpp"
@@ -63,7 +65,6 @@ struct gain_matrix_updater {
         static constexpr unsigned int D = 2;
 
         assert(dim == 1u || dim == 2u);
-
         assert(!bound_params.is_invalid());
         assert(!bound_params.surface_link().is_invalid());
 
@@ -77,7 +78,7 @@ struct gain_matrix_updater {
         edm::get_measurement_local<algebra_t>(
             measurements.at(trk_state.measurement_index()), meas_local);
 
-        assert((dim > 1) || (getter::element(meas_local, 1u, 0u) == 0.f));
+        // assert((dim > 1) || (getter::element(meas_local, 1u, 0u) == 0.f));
 
         // Predicted vector of bound track parameters
         const bound_vector_type& predicted_vec = bound_params.vector();
@@ -88,6 +89,12 @@ struct gain_matrix_updater {
         matrix_type<D, e_bound_size> H =
             measurements.at(trk_state.measurement_index())
                 .subs.template projector<D>();
+
+        if (dim == 1u && bound_params.bound_local()[0] > 600.f) {
+            DETRAY_INFO_HOST("Before: " << bound_params);
+            DETRAY_INFO_HOST("Meas: " << meas_local[0]);
+            DETRAY_INFO_HOST("Res: " << (meas_local - H * predicted_vec));
+        }
 
         // Flip the sign of projector matrix element in case the first element
         // of line measurement is negative
@@ -105,6 +112,10 @@ struct gain_matrix_updater {
         edm::get_measurement_covariance<algebra_t>(
             measurements.at(trk_state.measurement_index()), V);
 
+        if (dim == 1u && bound_params.bound_local()[0] > 600.f) {
+            DETRAY_INFO_HOST("Variance: " << V);
+        }
+
         if (dim == 1) {
             getter::element(V, 1u, 1u) = 1.f;
         }
@@ -121,12 +132,28 @@ struct gain_matrix_updater {
         // Calculate the filtered track parameters
         const matrix_type<6, 1> filtered_vec =
             predicted_vec + K * (meas_local - H * predicted_vec);
-        const matrix_type<6, 6> filtered_cov = (I66 - K * H) * predicted_cov;
+        const matrix_type<6, 6> i_minus_kh = I66 - K * H;
+        const matrix_type<6, 6> filtered_cov =
+            i_minus_kh * predicted_cov * matrix::transpose(i_minus_kh) +
+            K * V * matrix::transpose(K);
 
         // Residual between measurement and (projected) filtered vector
         const matrix_type<D, 1> residual = meas_local - H * filtered_vec;
 
         // Calculate the chi square
+        /*const matrix_type<D, D> i_minus_hk = I_m - H * K;
+        // See
+        //
+        https://indico.cern.ch/event/1564924/contributions/6629447/attachments/3113201/5519076/asami_250731_acts.pdf
+        const matrix_type<D, D> R =
+            i_minus_hk * V * matrix::transpose(i_minus_hk) +
+            H * i_minus_kh * predicted_cov * matrix::transpose(i_minus_kh) *
+                matrix::transpose(H);
+        const matrix_type<1, 1> chi2 =
+            algebra::matrix::transposed_product<true, false>(
+                residual, matrix::inverse(R)) *
+            residual;*/
+
         const matrix_type<D, D> R = (I_m - H * K) * V;
         const matrix_type<1, 1> chi2 =
             algebra::matrix::transposed_product<true, false>(
@@ -161,10 +188,19 @@ struct gain_matrix_updater {
         trk_state.filtered_params().set_covariance(filtered_cov);
         trk_state.filtered_chi2() = getter::element(chi2, 0, 0);
 
+        DETRAY_DEBUG_HOST("MEASUREMENT POS: " << meas_local);
+        DETRAY_DEBUG_HOST("MEASUREMENT VARIANCE: " << V);
+        DETRAY_DEBUG_HOST("FILTERED PARAM: " << trk_state.filtered_params());
+        DETRAY_DEBUG_HOST("CHI2: " << trk_state.filtered_chi2());
+
         // Wrap the phi in the range of [-pi, pi]
         wrap_phi(trk_state.filtered_params());
 
         assert(!trk_state.filtered_params().is_invalid());
+
+        if (dim == 1u && bound_params.bound_local()[0] > 600.f) {
+            DETRAY_INFO_HOST("After: " << filtered_vec);
+        }
 
         return kalman_fitter_status::SUCCESS;
     }

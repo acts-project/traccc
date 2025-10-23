@@ -179,6 +179,7 @@ GTEST_TEST(traccc_simulation, toy_detector_simulation) {
             local0_diff.push_back(truth_local[0] - measurements[i].local0);
             local1_diff.push_back(truth_local[1] - measurements[i].local1);
 
+            ASSERT_EQ(measurements[i].geometry_id, hits[i].geometry_id);
             ASSERT_EQ(meas_hit_ids[i].hit_id, i);
             ASSERT_EQ(meas_hit_ids[i].measurement_id, i);
         }

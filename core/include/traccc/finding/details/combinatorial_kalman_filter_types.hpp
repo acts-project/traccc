@@ -17,6 +17,7 @@
 #include <detray/navigation/navigator.hpp>
 #include <detray/propagator/actor_chain.hpp>
 #include <detray/propagator/actors/aborters.hpp>
+#include <detray/propagator/actors/parameter_resetter.hpp>
 #include <detray/propagator/actors/parameter_transporter.hpp>
 #include <detray/propagator/actors/pointwise_material_interactor.hpp>
 #include <detray/propagator/constrained_step.hpp>
@@ -44,12 +45,12 @@ using ckf_interactor_t =
     detray::pointwise_material_interactor<traccc::default_algebra>;
 
 /// Actor chain used in the Combinatorial Kalman Filter (CKF)
-using ckf_actor_chain_t =
-    detray::actor_chain<detray::pathlimit_aborter<traccc::scalar>,
-                        detray::parameter_transporter<traccc::default_algebra>,
-                        interaction_register<ckf_interactor_t>,
-                        ckf_interactor_t,
-                        detray::momentum_aborter<traccc::scalar>, ckf_aborter>;
+using ckf_actor_chain_t = detray::actor_chain<
+    detray::pathlimit_aborter<traccc::scalar>,
+    detray::parameter_transporter<traccc::default_algebra>,
+    interaction_register<ckf_interactor_t>, ckf_interactor_t,
+    detray::momentum_aborter<traccc::scalar>,
+    detray::parameter_resetter<traccc::default_algebra>, ckf_aborter>;
 
 /// Propagator type used in the Combinatorial Kalman Filter (CKF)
 ///

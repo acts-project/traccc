@@ -90,15 +90,6 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
      * Do the reconstruction
      *****************************/
 
-    // Standard deviations for seed track parameters
-    static constexpr std::array<traccc::scalar, traccc::e_bound_size> stddevs =
-        {1e-4f * traccc::unit<traccc::scalar>::mm,
-         1e-4f * traccc::unit<traccc::scalar>::mm,
-         1e-3f,
-         1e-3f,
-         1e-4f / traccc::unit<traccc::scalar>::GeV,
-         1e-4f * traccc::unit<traccc::scalar>::ns};
-
     // Propagation configuration
     detray::propagation::config propagation_config(propagation_opts);
 
@@ -136,7 +127,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
             [&]<typename detector_traits_t>(
                 const typename detector_traits_t::host& det) {
                 traccc::seed_generator<typename detector_traits_t::host> sg(
-                    det, stddevs);
+                    det);
                 evt_data.generate_truth_candidates(truth_track_candidates, sg,
                                                    host_mr,
                                                    truth_finding_opts.m_pT_min);
@@ -145,6 +136,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
         // Prepare truth seeds
         traccc::bound_track_parameters_collection_types::host seeds(&host_mr);
         const std::size_t n_tracks = truth_track_candidates.tracks.size();
+        std::cout << "# Truth tracks " << n_tracks << std::endl;
         for (std::size_t i_trk = 0; i_trk < n_tracks; i_trk++) {
             seeds.push_back(truth_track_candidates.tracks.at(i_trk).params());
         }
@@ -158,6 +150,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
             input_opts.format);
 
         // Run finding
+        std::cout << "# Seeds " << seeds.size() << std::endl;
         auto track_candidates = host_finding(
             polymorphic_detector, field,
             vecmem::get_data(measurements_per_event), vecmem::get_data(seeds));
@@ -166,14 +159,14 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                   << std::endl;
 
         // Run fitting
-        auto track_states =
+        /*auto track_states =
             host_fitting(polymorphic_detector, field,
                          {vecmem::get_data(track_candidates),
                           vecmem::get_data(measurements_per_event)});
 
         details::print_fitted_tracks_statistics(track_states, logger());
 
-        const std::size_t n_fitted_tracks = track_states.tracks.size();
+        const std::size_t n_fitted_tracks = track_states.tracks.size();*/
 
         if (performance_opts.run) {
             find_performance_writer.write(
@@ -181,7 +174,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                  vecmem::get_data(measurements_per_event)},
                 evt_data);
 
-            for (std::size_t i = 0; i < n_fitted_tracks; i++) {
+            /*for (std::size_t i = 0; i < n_fitted_tracks; i++) {
                 host_detector_visitor<detector_type_list>(
                     polymorphic_detector,
                     [&]<typename detector_traits_t>(
@@ -190,13 +183,13 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                             track_states.tracks.at(i), track_states.states,
                             measurements_per_event, det, evt_data);
                     });
-            }
+            }*/
         }
     }
 
     if (performance_opts.run) {
         find_performance_writer.finalize();
-        fit_performance_writer.finalize();
+        // fit_performance_writer.finalize();
     }
 
     return EXIT_SUCCESS;

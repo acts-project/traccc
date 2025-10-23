@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/definitions/qualifiers.hpp"
 #include "traccc/simulation/smearing_writer.hpp"
 #include "traccc/utils/particle.hpp"
 #include "traccc/utils/propagation.hpp"
@@ -55,10 +56,10 @@ struct simulator {
     };
 
     using actor_chain_type =
-        detray::actor_chain<detray::momentum_aborter<scalar_type>,
-                            detray::parameter_transporter<algebra_type>,
+        detray::actor_chain<detray::parameter_transporter<algebra_type>,
                             detray::random_scatterer<algebra_type>,
-                            detray::parameter_resetter<algebra_type>, writer_t>;
+                            detray::parameter_resetter<algebra_type>,
+                            detray::momentum_aborter<scalar_type>, writer_t>;
 
     using navigator_type = detray::navigator<detector_t>;
     using stepper_type = detray::rk_stepper<
@@ -67,7 +68,7 @@ struct simulator {
     using propagator_type =
         detray::propagator<stepper_type, navigator_type, actor_chain_type>;
 
-    simulator(const detray::pdg_particle<scalar>& ptc_type, std::size_t events,
+    simulator(const detray::pdg_particle<scalar>& ptc, std::size_t events,
               const detector_t& det, const bfield_type& field,
               track_generator_t&& track_gen,
               typename writer_t::config&& writer_cfg,
@@ -80,8 +81,17 @@ struct simulator {
               std::make_unique<track_generator_t>(std::move(track_gen))),
           m_writer_cfg(writer_cfg) {
 
-        m_cfg.ptc_type = ptc_type;
-        m_track_generator->config().charge(ptc_type.charge());
+        m_cfg.ptc_type = ptc;
+        m_track_generator->config().charge(ptc.charge());
+
+        // Turn off tracking features
+        m_cfg.propagation.stepping.do_covariance_transport = false;
+        m_cfg.propagation.stepping.use_eloss_gradient = false;
+        m_cfg.propagation.stepping.use_field_gradient = false;
+        m_cfg.propagation.navigation.estimate_scattering_noise = false;
+
+        // During simulation, the track direction is known precisely
+        m_resetter.estimate_scattering_noise = false;
     }
 
     config& get_config() { return m_cfg; }
@@ -108,8 +118,8 @@ struct simulator {
             m_scatterer.set_seed(event_id);
             writer_state.set_seed(event_id);
 
-            auto actor_states =
-                detray::tie(m_aborter_state, m_scatterer, writer_state);
+            auto actor_states = detray::tie(m_aborter_state, m_scatterer,
+                                            m_resetter, writer_state);
 
             for (auto track : *m_track_generator.get()) {
 
@@ -122,6 +132,7 @@ struct simulator {
                 propagation.set_particle(
                     detail::correct_particle_hypothesis(m_cfg.ptc_type, track));
 
+                m_cfg.propagation.navigation.estimate_scattering_noise = false;
                 propagator_type p(m_cfg.propagation);
 
                 // Set overstep tolerance and stepper constraint
@@ -149,6 +160,7 @@ struct simulator {
     /// Actor states
     typename detray::momentum_aborter<scalar_type>::state m_aborter_state{};
     typename detray::random_scatterer<algebra_type>::state m_scatterer{};
+    typename detray::parameter_resetter<algebra_type>::state m_resetter{};
 };
 
 }  // namespace traccc
