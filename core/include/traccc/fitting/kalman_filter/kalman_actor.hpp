@@ -212,7 +212,9 @@ struct kalman_actor : detray::actor {
             actor_state.next();
 
             // Flag renavigation of the current candidate
-            navigation.set_high_trust();
+            if (math::fabs(navigation()) > 1.f * unit<float>::um) {
+                navigation.set_high_trust();
+            }
         }
     }
 };
