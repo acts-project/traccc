@@ -38,7 +38,7 @@ struct ckf_aborter : detray::actor {
                                        propagator_state_t &prop_state) const {
 
         auto &navigation = prop_state._navigation;
-        auto &stepping = prop_state._stepping;
+        const auto &stepping = prop_state._stepping;
 
         abrt_state.count++;
         abrt_state.path_from_surface += stepping.step_size();
@@ -47,12 +47,11 @@ struct ckf_aborter : detray::actor {
         if (navigation.is_on_sensitive() &&
             abrt_state.path_from_surface > abrt_state.min_step_length) {
             prop_state._heartbeat &= navigation.pause();
-            abrt_state.success = true;
+            abrt_state.success = navigation.is_alive();
         }
 
         // Reset path from surface
-        if (navigation.is_on_sensitive() ||
-            navigation.encountered_sf_material()) {
+        if (navigation.is_on_sensitive()) {
             abrt_state.path_from_surface = 0.f;
         }
 
@@ -60,6 +59,7 @@ struct ckf_aborter : detray::actor {
             prop_state._heartbeat &= navigation.abort(
                 "CKF: Maximum number of steps to reach next sensitive surface "
                 "exceeded");
+            abrt_state.success = false;
         }
     }
 };

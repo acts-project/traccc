@@ -57,6 +57,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
         payload.in_params_view);
     vecmem::device_vector<const unsigned int> in_params_liveness(
         payload.in_params_liveness_view);
+    vecmem::device_vector<const std::uint8_t> is_edges(payload.is_edges_view);
     vecmem::device_vector<candidate_link> links(payload.links_view);
     vecmem::device_vector<candidate_link> tmp_links(payload.tmp_links_view);
     bound_track_parameters_collection_types::device tmp_params(
@@ -97,8 +98,8 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     if (in_param_id < payload.n_in_params &&
         in_params_liveness.at(in_param_id) > 0u) {
         /*
-         * Get the barcode of this thread's parameters, then find the first
-         * measurement that matches it.
+         * Get the surface index of this thread's parameters, then find the
+         * first measurement that matches it.
          */
         const unsigned int sf_idx{
             in_params.at(in_param_id).surface_link().index()};
@@ -192,14 +193,9 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                                               ? links.at(prev_link_idx).seed_idx
                                               : owner_global_thread_id;
 
-            bool use_measurement = true;
-
-            if (use_measurement) {
-                if (n_tracks_per_seed.at(seed_idx) >=
-                    cfg.max_num_branches_per_seed) {
-                    use_measurement = false;
-                }
-            }
+            // Can we open another branch for this seed?
+            bool use_measurement{n_tracks_per_seed.at(seed_idx) <
+                                 cfg.max_num_branches_per_seed};
 
             if (use_measurement) {
 
@@ -208,8 +204,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                         measurements, meas_idx);
 
                 const detray::tracking_surface sf{det, in_par.surface_link()};
-
-                const bool is_line = sf.template visit_mask<is_line_visitor>();
+                const bool is_line = detail::is_line(sf);
 
                 // Run the Kalman update
                 const kalman_fitter_status res =
@@ -406,6 +401,8 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                      * Now, simply insert the temporary link at the found
                      * position. Different cases for step 0 and other steps.
                      */
+                    const unsigned int n_cand =
+                        payload.step == 0 ? 0 : links.at(prev_link_idx).n_cand;
                     const unsigned int n_skipped =
                         payload.step == 0 ? 0
                                           : links.at(prev_link_idx).n_skipped;
@@ -423,6 +420,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                         .previous_candidate_idx = prev_link_idx,
                         .meas_idx = meas_idx,
                         .seed_idx = seed_idx,
+                        .n_cand = n_cand + 1,
                         .n_skipped = n_skipped,
                         .chi2 = chi2,
                         .chi2_sum = prev_chi2_sum + chi2,
@@ -493,6 +491,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
 
     unsigned int prev_link_idx = std::numeric_limits<unsigned int>::max();
     unsigned int seed_idx = std::numeric_limits<unsigned int>::max();
+    unsigned int n_cand = 0u;
     unsigned int n_skipped = std::numeric_limits<unsigned int>::max();
     unsigned int prev_ndf_sum = 0u;
     scalar prev_chi2_sum = 0.f;
@@ -510,19 +509,18 @@ TRACCC_HOST_DEVICE inline void find_tracks(
         prev_link_idx = payload.prev_links_idx + in_param_id;
         seed_idx =
             payload.step > 0 ? links.at(prev_link_idx).seed_idx : in_param_id;
+        n_cand = payload.step == 0 ? 0 : links.at(prev_link_idx).n_cand;
         n_skipped = payload.step == 0 ? 0 : links.at(prev_link_idx).n_skipped;
         in_param_can_create_hole =
             (n_skipped < cfg.max_num_skipping_per_cand) && (!last_step);
         prev_ndf_sum = payload.step == 0 ? 0 : links.at(prev_link_idx).ndf_sum;
         prev_chi2_sum =
             payload.step == 0 ? 0.f : links.at(prev_link_idx).chi2_sum;
-    }
 
-    /*
-     * Compute the offset at which this block will write, as well as the index
-     * at which this block will write.
-     */
-    if (in_param_is_live) {
+        /*
+         * Compute the offset at which this block will write, as well as the
+         * index at which this block will write.
+         */
         local_num_params = std::get<1>(decode_insertion_mutex(
             shared_payload
                 .shared_insertion_mutex[thread_id.getLocalThreadIdX()]));
@@ -581,12 +579,14 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                 const unsigned int out_offset =
                     shared_payload.shared_out_offset + local_out_offset;
 
+                const bool is_edge{is_edges.at(in_param_id) > 0u};
                 links.at(out_offset) = {
                     .step = payload.step,
                     .previous_candidate_idx = prev_link_idx,
                     .meas_idx = std::numeric_limits<unsigned int>::max(),
                     .seed_idx = seed_idx,
-                    .n_skipped = n_skipped + 1,
+                    .n_cand = n_cand,
+                    .n_skipped = is_edge ? n_skipped : n_skipped + 1,
                     .chi2 = std::numeric_limits<traccc::scalar>::max(),
                     .chi2_sum = prev_chi2_sum,
                     .ndf_sum = prev_ndf_sum};
@@ -597,11 +597,9 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                 out_params_liveness.at(param_pos) =
                     static_cast<unsigned int>(!last_step);
             } else {
-                const unsigned int n_cands = payload.step - n_skipped;
-
-                if (n_cands >= cfg.min_track_candidates_per_track) {
+                if (n_cand >= cfg.min_track_candidates_per_track) {
                     auto tip_pos = tips.push_back(prev_link_idx);
-                    tip_lengths.at(tip_pos) = n_cands;
+                    tip_lengths.at(tip_pos) = n_cand;
                 }
             }
         } else {
@@ -620,12 +618,9 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                     static_cast<unsigned int>(!last_step);
                 links.at(out_offset) = tmp_links.at(in_offset);
 
-                const unsigned int n_cands = payload.step + 1 - n_skipped;
-
-                if (last_step &&
-                    n_cands >= cfg.min_track_candidates_per_track) {
+                if (last_step && n_cand >= cfg.min_track_candidates_per_track) {
                     auto tip_pos = tips.push_back(out_offset);
-                    tip_lengths.at(tip_pos) = n_cands;
+                    tip_lengths.at(tip_pos) = n_cand;
                 }
             }
         }

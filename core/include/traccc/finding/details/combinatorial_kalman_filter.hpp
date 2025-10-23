@@ -7,6 +7,8 @@
 #pragma once
 
 // Project include(s).
+#include <detray/utils/log.hpp>
+
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/track_candidate_collection.hpp"
 #include "traccc/edm/track_state_helpers.hpp"
@@ -139,15 +141,20 @@ combinatorial_kalman_filter(
 
     std::vector<bound_track_parameters<algebra_type>> out_params;
 
+    std::vector<std::uint8_t> in_is_edge(seeds.size(), false);
+    std::vector<std::uint8_t> out_is_edge;
+
     for (unsigned int step = 0u; step < config.max_track_candidates_per_track;
          step++) {
 
+        DETRAY_DEBUG_HOST("PRPGAGATION STEP: " << step);
         TRACCC_VERBOSE("Starting step "
                        << step + 1 << " / "
                        << config.max_track_candidates_per_track);
 
         // Iterate over input parameters
         const std::size_t n_in_params = in_params.size();
+        DETRAY_DEBUG_HOST("# PARAMS: " << n_in_params);
 
         // Terminate if there is no parameter to proceed
         if (n_in_params == 0) {
@@ -156,6 +163,7 @@ combinatorial_kalman_filter(
 
         // Rough estimation on out parameters size
         out_params.reserve(n_in_params);
+        out_is_edge.reserve(n_in_params);
 
         // Previous step ID
         std::fill(n_trks_per_seed.begin(), n_trks_per_seed.end(), 0u);
@@ -169,6 +177,10 @@ combinatorial_kalman_filter(
             bound_track_parameters<algebra_type>& in_param =
                 in_params[in_param_id];
 
+            DETRAY_DEBUG_HOST("PARAMS: " << in_param);
+
+            const bool is_edge{in_is_edge[in_param_id] > 0u};
+
             assert(!in_param.is_invalid());
 
             const unsigned int orig_param_id =
@@ -176,6 +188,11 @@ combinatorial_kalman_filter(
                      ? in_param_id
                      : links[step - 1][param_to_link[step - 1][in_param_id]]
                            .seed_idx);
+            const unsigned int n_cand =
+                (step == 0
+                     ? 0
+                     : links[step - 1][param_to_link[step - 1][in_param_id]]
+                           .n_cand);
             const unsigned int skip_counter =
                 (step == 0
                      ? 0
@@ -234,7 +251,9 @@ combinatorial_kalman_filter(
                 best_links;
 
             // Iterate over the measurements
+            DETRAY_DEBUG_HOST("# MEAS: " << (up - lo));
             for (unsigned int meas_id = lo; meas_id < up; meas_id++) {
+                DETRAY_DEBUG_HOST("TESTING MEAS: " << meas_id);
 
                 // The measurement on surface to handle.
                 const measurement& meas = measurements.at(meas_id);
@@ -243,7 +262,7 @@ combinatorial_kalman_filter(
                 auto trk_state =
                     edm::make_track_state<algebra_type>(measurements, meas_id);
 
-                const bool is_line = sf.template visit_mask<is_line_visitor>();
+                const bool is_line = detail::is_line(sf);
 
                 // Run the Kalman update on a copy of the track parameters
                 const kalman_fitter_status res =
@@ -252,15 +271,20 @@ combinatorial_kalman_filter(
 
                 const traccc::scalar chi2 = trk_state.filtered_chi2();
 
+                DETRAY_DEBUG_HOST("KF STATUS: " << fitter_debug_msg{res}());
+
                 // The chi2 from Kalman update should be less than chi2_max
                 if (res == kalman_fitter_status::SUCCESS &&
                     chi2 < config.chi2_max) {
+
+                    DETRAY_DEBUG_HOST("FOUND MEAS: " << meas_id);
 
                     best_links.push_back(
                         {{.step = step,
                           .previous_candidate_idx = in_param_id,
                           .meas_idx = meas_id,
                           .seed_idx = orig_param_id,
+                          .n_cand = n_cand + 1,
                           .n_skipped = skip_counter,
                           .chi2 = chi2,
                           .chi2_sum = prev_chi2_sum + chi2,
@@ -306,10 +330,13 @@ combinatorial_kalman_filter(
                      .previous_candidate_idx = in_param_id,
                      .meas_idx = std::numeric_limits<unsigned int>::max(),
                      .seed_idx = orig_param_id,
-                     .n_skipped = skip_counter + 1,
+                     .n_cand = n_cand,
+                     .n_skipped = is_edge ? skip_counter : skip_counter + 1,
                      .chi2 = std::numeric_limits<traccc::scalar>::max(),
                      .chi2_sum = prev_chi2_sum,
                      .ndf_sum = prev_ndf_sum});
+
+                DETRAY_DEBUG_HOST("HOLE: " << std::boolalpha << !is_edge);
 
                 updated_params.push_back(in_param);
                 TRACCC_VERBOSE("updated_params["
@@ -356,7 +383,7 @@ combinatorial_kalman_filter(
                         prob(Lthisbase.chi2_sum,
                              static_cast<scalar>(Lthisbase.ndf_sum - 5));
 
-                    if (step + 1 - Lthisbase.n_skipped <=
+                    if (Lthisbase.n_cand <=
                             config.duplicate_removal_minimum_length ||
                         Lthisbase.ndf_sum <= 5) {
                         continue;
@@ -370,7 +397,7 @@ combinatorial_kalman_filter(
                         auto Lthis = Lthisbase;
                         auto Lthat = links.at(step).at(tracks.at(j));
 
-                        if (step + 1 - Lthat.n_skipped <=
+                        if (Lthat.n_cand <=
                                 config.duplicate_removal_minimum_length ||
                             Lthisbase.ndf_sum <= 5) {
                             continue;
@@ -431,6 +458,7 @@ combinatorial_kalman_filter(
                         }
 
                         if (this_is_dominated) {
+                            DETRAY_DEBUG_HOST("Track is DEAD!");
                             param_liveness.at(tracks.at(i)) = 0u;
                             break;
                         }
@@ -458,6 +486,8 @@ combinatorial_kalman_filter(
             // link to be a tip
             if (links.at(step).at(link_id).n_skipped >
                 config.max_num_skipping_per_cand) {
+
+                DETRAY_DEBUG_HOST("MAKE TIP: MAX NO. HOLES");
                 tips.push_back({step, link_id});
                 continue;
             }
@@ -477,43 +507,58 @@ combinatorial_kalman_filter(
             traccc::details::ckf_interactor_t::state s2;
             typename interaction_register<
                 traccc::details::ckf_interactor_t>::state s1{s2};
-            typename detray::momentum_aborter<scalar_type>::state s3{};
-            typename ckf_aborter::state s4;
+            typename detray::parameter_resetter<
+                typename detector_t::algebra_type>::state s3{
+                config.propagation};
+            typename detray::momentum_aborter<scalar_type>::state s4{};
+            typename ckf_aborter::state s5;
             // Update the actor config
-            s4.min_step_length = config.min_step_length_for_next_surface;
-            s4.max_count = config.max_step_counts_for_next_surface;
-            s3.min_pT(static_cast<scalar_type>(config.min_pT));
-            s3.min_p(static_cast<scalar_type>(config.min_p));
+            s4.min_pT(static_cast<scalar_type>(config.min_pT));
+            s4.min_p(static_cast<scalar_type>(config.min_p));
+            s5.min_step_length = config.min_step_length_for_next_surface;
+            s5.max_count = config.max_step_counts_for_next_surface;
 
+            DETRAY_DEBUG_HOST("PROPAGATING... ");
             // Propagate to the next surface
-            propagator.propagate(propagation, detray::tie(s0, s1, s2, s3, s4));
+            propagator.propagate(propagation,
+                                 detray::tie(s0, s1, s2, s3, s4, s5));
+
+            DETRAY_DEBUG_HOST(
+                "FINISHED PROPAGATING. PATH:  " << s5.path_from_surface);
 
             // If a surface found, add the parameter for the next
             // step
-            if (s4.success) {
+            if (s5.success) {
                 assert(propagation._navigation.is_on_sensitive());
                 assert(!propagation._stepping.bound_params().is_invalid());
 
                 out_params.push_back(propagation._stepping.bound_params());
+                out_is_edge.push_back(
+                    propagation._navigation.is_edge_candidate());
                 param_to_link[step].push_back(link_id);
             }
             // Unless the track found a surface, it is considered a
             // tip
-            else if (!s4.success &&
+            else if (!s5.success &&
                      (step >= (config.min_track_candidates_per_track - 1u))) {
+
+                DETRAY_DEBUG_HOST("MAKE TIP: NO SENSITIVE");
                 tips.push_back({step, link_id});
             }
 
             // If no more CKF step is expected, current candidate is
             // kept as a tip
-            if (s4.success &&
+            if (s5.success &&
                 (step == (config.max_track_candidates_per_track - 1u))) {
+                DETRAY_DEBUG_HOST("MAKE TIP: MAX CANDIDATES");
                 tips.push_back({step, link_id});
             }
         }
 
         in_params = std::move(out_params);
+        in_is_edge = std::move(out_is_edge);
         out_params.clear();
+        out_is_edge.clear();
     }
 
     /**********************
@@ -529,7 +574,7 @@ combinatorial_kalman_filter(
         // Get the link corresponding to tip
         auto L = links.at(tip.first).at(tip.second);
 
-        const unsigned int n_cands = tip.first + 1 - L.n_skipped;
+        const unsigned int n_cands = L.n_cand;
 
         // Skip if the number of tracks candidates is too small
         if (n_cands < config.min_track_candidates_per_track ||
