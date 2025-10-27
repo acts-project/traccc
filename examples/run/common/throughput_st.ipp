@@ -18,6 +18,7 @@
 #include "traccc/options/clusterization.hpp"
 #include "traccc/options/detector.hpp"
 #include "traccc/options/input_data.hpp"
+#include "traccc/options/logging.hpp"
 #include "traccc/options/magnetic_field.hpp"
 #include "traccc/options/program_options.hpp"
 #include "traccc/options/throughput.hpp"
@@ -55,7 +56,7 @@ namespace traccc {
 template <typename FULL_CHAIN_ALG>
 int throughput_st(std::string_view description, int argc, char* argv[]) {
 
-    std::unique_ptr<const traccc::Logger> logger = traccc::getDefaultLogger(
+    std::unique_ptr<const traccc::Logger> prelogger = traccc::getDefaultLogger(
         "ThroughputExample", traccc::Logging::Level::INFO);
 
     // Program options.
@@ -68,14 +69,18 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
     opts::track_propagation propagation_opts;
     opts::track_fitting fitting_opts;
     opts::throughput throughput_opts;
+    opts::logging logging_opts;
     opts::program_options program_opts{
         description,
         {detector_opts, bfield_opts, input_opts, clusterization_opts,
          seeding_opts, finding_opts, propagation_opts, fitting_opts,
-         throughput_opts},
+         throughput_opts, logging_opts},
         argc,
         argv,
-        logger->cloneWithSuffix("Options")};
+        prelogger->cloneWithSuffix("Options")};
+
+    TRACCC_LOCAL_LOGGER(
+        prelogger->clone(std::nullopt, traccc::Logging::Level(logging_opts)));
 
     // Set up the timing info holder.
     performance::timing_info times;
@@ -109,7 +114,7 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
             input.emplace_back(host_mr);
             static constexpr bool DEDUPLICATE = true;
             io::read_cells(input.back(), i, input_opts.directory,
-                           logger->clone(), &det_descr, input_opts.format,
+                           logger().clone(), &det_descr, input_opts.format,
                            DEDUPLICATE, input_opts.use_acts_geom_source);
         }
     }
@@ -136,7 +141,7 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
     std::unique_ptr<FULL_CHAIN_ALG> alg = std::make_unique<FULL_CHAIN_ALG>(
         host_mr, clustering_cfg, seedfinder_config, spacepoint_grid_config,
         seedfilter_config, finding_cfg, fitting_cfg, det_descr, field,
-        &detector, logger->clone("FullChainAlg"));
+        &detector, logger().clone("FullChainAlg"));
 
     // Seed the random number generator.
     if (throughput_opts.random_seed == 0) {

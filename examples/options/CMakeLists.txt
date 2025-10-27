@@ -34,6 +34,7 @@ traccc_add_library( traccc_options options TYPE SHARED
   "src/detector.cpp"
   "src/generation.cpp"
   "src/input_data.cpp"
+  "src/logging.cpp"
   "src/magnetic_field.cpp"
   "src/output_data.cpp"
   "src/performance.cpp"
