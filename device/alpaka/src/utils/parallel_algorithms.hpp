@@ -38,7 +38,8 @@ inline auto getExecutionPolicy([[maybe_unused]] Queue &q,
                                [[maybe_unused]] const memory_resource &mr) {
 #if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
     auto stream = ::alpaka::getNativeHandle(q);
-    return thrust::cuda::par_nosync(std::pmr::polymorphic_allocator<std::byte>(&(mr.main)))
+    return thrust::cuda::par_nosync(
+               std::pmr::polymorphic_allocator<std::byte>(&(mr.main)))
         .on(stream);
 #elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
     auto stream = ::alpaka::getNativeHandle(q);
