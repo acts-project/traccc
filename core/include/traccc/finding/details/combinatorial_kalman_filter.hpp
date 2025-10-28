@@ -477,20 +477,22 @@ combinatorial_kalman_filter(
             traccc::details::ckf_interactor_t::state s2;
             typename interaction_register<
                 traccc::details::ckf_interactor_t>::state s1{s2};
-            typename detray::momentum_aborter<scalar_type>::state s3{};
-            typename ckf_aborter::state s4;
+            // typename detray::parameter_resetter<
+            //     typename detector_t::algebra_type>::state s3{};
+            typename detray::momentum_aborter<scalar_type>::state s4{};
+            typename ckf_aborter::state s5;
             // Update the actor config
-            s4.min_step_length = config.min_step_length_for_next_surface;
-            s4.max_count = config.max_step_counts_for_next_surface;
-            s3.min_pT(static_cast<scalar_type>(config.min_pT));
-            s3.min_p(static_cast<scalar_type>(config.min_p));
+            s4.min_pT(static_cast<scalar_type>(config.min_pT));
+            s4.min_p(static_cast<scalar_type>(config.min_p));
+            s5.min_step_length = config.min_step_length_for_next_surface;
+            s5.max_count = config.max_step_counts_for_next_surface;
 
             // Propagate to the next surface
-            propagator.propagate(propagation, detray::tie(s0, s1, s2, s3, s4));
+            propagator.propagate(propagation, detray::tie(s0, s1, s2, s4, s5));
 
             // If a surface found, add the parameter for the next
             // step
-            if (s4.success) {
+            if (s5.success) {
                 assert(propagation._navigation.is_on_sensitive());
                 assert(!propagation._stepping.bound_params().is_invalid());
 
@@ -499,14 +501,14 @@ combinatorial_kalman_filter(
             }
             // Unless the track found a surface, it is considered a
             // tip
-            else if (!s4.success &&
+            else if (!s5.success &&
                      (step >= (config.min_track_candidates_per_track - 1u))) {
                 tips.push_back({step, link_id});
             }
 
             // If no more CKF step is expected, current candidate is
             // kept as a tip
-            if (s4.success &&
+            if (s5.success &&
                 (step == (config.max_track_candidates_per_track - 1u))) {
                 tips.push_back({step, link_id});
             }
