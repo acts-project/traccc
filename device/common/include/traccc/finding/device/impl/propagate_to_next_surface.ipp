@@ -77,25 +77,34 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     // @NOTE: Post material interaction might be required here
     using actor_tuple_type =
         typename propagator_t::actor_chain_type::actor_tuple;
+    // Pathlimit aborter
     typename detray::detail::tuple_element<0, actor_tuple_type>::type::state
         s0{};
+    // CKF-interactor
     typename detray::detail::tuple_element<3, actor_tuple_type>::type::state
         s3{};
+    // Interaction register
     typename detray::detail::tuple_element<2, actor_tuple_type>::type::state s2{
         s3};
-    typename detray::detail::tuple_element<4, actor_tuple_type>::type::state s4;
-
+    // Parameter resetter
+    // typename detray::detail::tuple_element<4, actor_tuple_type>::type::state
+    // s4{
+    //    cfg.propagation};
+    // Momentum aborter
     typename detray::detail::tuple_element<5, actor_tuple_type>::type::state s5;
-    s5.min_step_length = cfg.min_step_length_for_next_surface;
-    s5.max_count = cfg.max_step_counts_for_next_surface;
-    s4.min_pT(static_cast<scalar_t>(cfg.min_pT));
-    s4.min_p(static_cast<scalar_t>(cfg.min_p));
+    // CKF aborter
+    typename detray::detail::tuple_element<6, actor_tuple_type>::type::state s6;
+
+    s6.min_step_length = cfg.min_step_length_for_next_surface;
+    s6.max_count = cfg.max_step_counts_for_next_surface;
+    s5.min_pT(static_cast<scalar_t>(cfg.min_pT));
+    s5.min_p(static_cast<scalar_t>(cfg.min_p));
 
     // Propagate to the next surface
-    propagator.propagate(propagation, detray::tie(s0, s2, s3, s4, s5));
+    propagator.propagate(propagation, detray::tie(s0, s2, s3, s5, s6));
 
     // If a surface found, add the parameter for the next step
-    if (s5.success) {
+    if (s6.success) {
         assert(propagation._navigation.is_on_sensitive());
         assert(!propagation._stepping.bound_params().is_invalid());
 
