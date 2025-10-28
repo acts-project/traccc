@@ -149,6 +149,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
             seeds.push_back(truth_track_candidates.tracks.at(i_trk).params());
         }
 
+        std::cout << "Number of seeds: " << seeds.size() << std::endl;
+
         // Read measurements
         traccc::measurement_collection_types::host measurements_per_event{
             &host_mr};
