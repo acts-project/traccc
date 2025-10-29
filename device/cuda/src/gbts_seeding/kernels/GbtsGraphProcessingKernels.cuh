@@ -16,20 +16,19 @@
 
 namespace traccc::cuda::kernels {
 
-// currently 80 bytes -> 5 v4 loads/stores
-struct __align__(16) edgeState {
+struct edgeState {
 
     __device__ inline void initialize(const float4& node1_params,
                                       const float4& node2_params);
 
     __device__ inline float& m_Cx(const int i, const int j) {
-        return Cx[i + j + 1 * (i == 0) * (j == 0)];
+        return Cx[i + j + 1 * (i != 0) * (j != 0)];
     }
     __device__ inline float& m_Cy(const int i, const int j) {
         return Cy[i + j];
     }
     __device__ inline const float& m_Cx(const int i, const int j) const {
-        return Cx[i + j + 1 * (i == 0) * (j == 0)];
+        return Cx[i + j + 1 * (i != 0) * (j != 0)];
     }
     __device__ inline const float& m_Cy(const int i, const int j) const {
         return Cy[i + j];
@@ -38,17 +37,13 @@ struct __align__(16) edgeState {
     float m_X[3], m_Y[2];
     float m_c, m_s, m_refX, m_refY;
 
-    int m_J : 31;
+    float m_J;
 
-    bool m_head_node_type : 1;
-
-    unsigned int m_mini_idx : 27;
-    unsigned int m_length : 5;
-    int m_edge_idx;
+    bool m_head_node_type;
 
     // upper triangle of the Cov matrix for the parabola in the x,y plane since
     // symetry gives the rest
-    float Cx[5];  //(0,0), (0,1), (0,2), (1,1), (1,2), (2,2)
+    float Cx[6];  //(0,0), (0,1), (0,2), (1,1), (1,2), (2,2)
     // Cov matrix for the linear fit of eta and z
     float Cy[3];  //(0,0), (0,1), (1,1)
 };
@@ -61,22 +56,24 @@ struct Tracklet {
 /** @brief Performs one iteration of the CCA over the graph to calculate
  * potential seed length
  *
- *  This also constructs a level view over the graph edges for use in seed
- * extraction
+ * also counts the size of d_path_store to describe all the paths back
+ * to the inner-most (terminus) edges
  *
  *  @param[in] d_output_graph see comments in device_context.h
  *  @param[in] d_levels is the maximum seed length originating at each edge
  *  @param[in/out] d_active_edges stores the edge_idx for edges that have not
- * reached their level
- *  @param[out] d_level_views / d_level_boundaires together they construct a
- * view over the edges by level for use in seed extraction
+ *  reached their level
+ *  @param[out] d_outgoing_paths [#paths needed, is-terminus]
  *  @param[internal] d_counters[5 and 6] used for counting the last block and
  * for the number of active edges
  */
-__global__ static void CCA_IterationKernel(
-    const int* d_output_graph, char* d_levels, int* d_active_edges,
-    int* d_level_views, int* d_level_boundaries, unsigned int* d_counters,
-    int iter, unsigned int nEdges, unsigned int max_num_neighbours) {
+__global__ static void CCA_IterationKernel(const int* d_output_graph,
+                                           char* d_levels, int* d_active_edges,
+                                           short2* d_outgoing_paths,
+                                           unsigned int* d_counters, int iter,
+                                           unsigned int nEdges,
+                                           unsigned int max_num_neighbours,
+                                           unsigned int minLevel) {
 
     __shared__ unsigned int nEdgesLeft;
     unsigned int edge_size = 2 + 1 + max_num_neighbours;
@@ -117,13 +114,34 @@ __global__ static void CCA_IterationKernel(
             }
         }
         // add all remianing edges to level_views on the last iteration
-        if (localChange &&
-            iter < traccc::device::gbts_consts::max_cca_iter - 1) {
-            // nChanges
-            unsigned int edgesLeftPlace = atomicAdd(&d_counters[4 - toggle], 1);
-            d_active_edges[edgesLeftPlace] = edgeIdx;  // for the next iteration
+        if (localChange) {
+            if (iter == traccc::device::gbts_consts::max_cca_iter - 1) {
+                // shorten paths longer than max_cca_iter
+                d_outgoing_paths[edgeIdx].y = -1;
+            } else {
+                unsigned int edgesLeftPlace =
+                    atomicAdd(&d_counters[4 - toggle], 1);
+                d_active_edges[edgesLeftPlace] =
+                    edgeIdx;  // for the next iteration
+            }
         } else {
-            d_level_views[atomicAdd(&d_counters[6], 1)] = edgeIdx;
+            short out_paths = 0;
+            for (int nIdx = 0; nIdx < nNei; ++nIdx) {
+                int nextEdgeIdx =
+                    d_output_graph[edge_pos +
+                                   traccc::device::gbts_consts::nei_start +
+                                   nIdx];
+                if (next_level == 1 + d_levels[nextEdgeIdx]) {
+                    // calculate the #d_state_store nodes for segment extraction
+                    // starting at this edge
+                    out_paths += 1 + d_outgoing_paths[nextEdgeIdx].x;
+                }
+                // flag as not terminus edge
+                d_outgoing_paths[nextEdgeIdx].y = -1;
+            }
+            // flag as long enough segement to become a seed
+            d_outgoing_paths[edgeIdx] =
+                make_short2(out_paths, (next_level >= minLevel) - 1);
         }
         // store new level and ensure all final
         // levels are on both sides of the array
@@ -134,10 +152,152 @@ __global__ static void CCA_IterationKernel(
     if (threadIdx.x == 0) {
         if (atomicAdd(&d_counters[5], 1) == gridDim.x - 1) {
             // this is the last block
-            d_level_boundaries[iter] = nEdgesLeft;
             d_counters[3 + toggle] = 0;
             d_counters[5] = 0;
         }
+    }
+}
+
+void __global__ count_terminus_edges(int2* d_path_store,
+                                     short2* d_outgoing_paths,
+                                     unsigned int* d_counters,
+                                     unsigned int nEdges) {
+
+    // count in shared first to reduce global atomics
+    __shared__ int outgoingCount;
+
+    if (threadIdx.x == 0) {
+        outgoingCount = 0;
+    }
+    __syncthreads();
+
+    int edge_idx = threadIdx.x + blockIdx.x * blockDim.x;
+    if (edge_idx < nEdges) {
+
+        short2 out_paths = d_outgoing_paths[edge_idx];
+        // only count terminus edges that could lead to a seed
+        // fill the first part of path_store so fitting can skip go-nowhere
+        // paths
+        if (out_paths.y != -1) {
+            d_outgoing_paths[edge_idx].y = atomicAdd(&d_counters[7], 1);
+            atomicAdd(&outgoingCount, out_paths.x);
+        }
+    }
+    __syncthreads();
+    if (threadIdx.x == 0) {
+        atomicAdd(&d_counters[6], outgoingCount);
+    }
+}
+
+void __global__ add_terminus_to_path_store(int2* d_path_store,
+                                           short2* d_outgoing_paths,
+                                           unsigned int* d_counters,
+                                           int nEdges) {
+
+    int edge_idx = threadIdx.x + blockIdx.x * blockDim.x;
+    if (edge_idx >= nEdges) {
+        return;
+    }
+    short2 out_paths = d_outgoing_paths[edge_idx];
+    if (out_paths.y == -1) {
+        return;
+    }
+    // -1 flags as the terminus of a path
+    d_path_store[out_paths.y] = make_int2(edge_idx, -1);
+}
+
+// each node in the path_store defines a unique path through the graph
+// but includes subsets like 0->1->2 and 1->2
+// The paths order the edges in reverse order compared to graph linking
+// extracting all paths here allows for fitting to occor down know paths in
+// registers
+void __global__ fill_path_store(int2* d_path_store, int* d_output_graph,
+                                char* d_levels, unsigned int* d_counters,
+                                unsigned int nTerminus,
+                                unsigned int max_num_neighbours) {
+
+    __shared__ int2 live_paths[traccc::device::gbts_consts::live_path_buffer];
+    __shared__ int n_live_paths;
+
+    if (threadIdx.x == 0) {
+        n_live_paths = 0;
+    }
+    __syncthreads();
+
+    int edge_size = 2 + 1 + max_num_neighbours;
+
+    int path_idx = threadIdx.x + blockIdx.x * 16;
+    // populate live_paths with terminus to start exploration from
+    if (threadIdx.x < 16 && path_idx < nTerminus) {
+        int2 path = d_path_store[path_idx];
+        int nNei = d_output_graph[traccc::device::gbts_consts::nNei +
+                                  edge_size * path.x];
+        char level = d_levels[path.x];
+        for (int nei = 0; nei < nNei; ++nei) {
+            int edge_idx =
+                d_output_graph[traccc::device::gbts_consts::nei_start + nei +
+                               edge_size * path.x];
+            // only search down longest path
+            if (level != d_levels[edge_idx] + 1) {
+                continue;
+            }
+            int live_idx = atomicAdd(&n_live_paths, 1);
+            if (live_idx >= traccc::device::gbts_consts::live_path_buffer) {
+                break;
+            }
+            int new_path_idx = atomicAdd(&d_counters[7], 1);
+            // head edge idx, link back
+            d_path_store[new_path_idx] = make_int2(edge_idx, path_idx);
+            live_paths[live_idx] = make_int2(edge_idx, new_path_idx);
+        }
+    }
+    __syncthreads();
+
+    int2 path = make_int2(0, 0);
+    bool has_path = false;
+
+    while (n_live_paths > 0) {
+        has_path = false;
+        if (threadIdx.x == 0) {
+            n_live_paths = min(n_live_paths,
+                               traccc::device::gbts_consts::live_path_buffer);
+        }
+        __syncthreads();
+        // get path
+        if (threadIdx.x < n_live_paths) {
+            path = live_paths[n_live_paths - threadIdx.x - 1];
+            has_path = true;
+        }
+        __syncthreads();
+        if (threadIdx.x == 0) {
+            n_live_paths =
+                n_live_paths < blockDim.x ? 0 : n_live_paths - blockDim.x;
+        }
+        __syncthreads();
+        if (has_path) {
+            int nNei = d_output_graph[traccc::device::gbts_consts::nNei +
+                                      edge_size * path.x];
+            char level = d_levels[path.x];
+            for (int nei = 0; nei < nNei; ++nei) {
+                int edge_idx =
+                    d_output_graph[traccc::device::gbts_consts::nei_start +
+                                   nei + edge_size * path.x];
+                // only search down longest segments
+                if (level != d_levels[edge_idx] + 1) {
+                    continue;
+                }
+                int live_idx = atomicAdd(&n_live_paths, 1);
+                if (live_idx >= traccc::device::gbts_consts::live_path_buffer) {
+                    break;
+                }
+                path_idx = atomicAdd(&d_counters[7], 1);
+                // head edge idx, link back
+                d_path_store[path_idx] = make_int2(edge_idx, path.y);
+                live_paths[live_idx] = make_int2(edge_idx, path_idx);
+            }
+        }
+        // wait for live_paths to repopulate
+        __syncthreads();
     }
 }
 
@@ -145,13 +305,12 @@ __global__ static void CCA_IterationKernel(
  * edge (2 nodes)
  *
  *  @param[in] node1_params / node2_params the nodes of the starting edge. Node
- * 1 is the inner node and we filter outside in
+ *  1 is the inner node and we filter outside in
  */
 __device__ inline void edgeState::initialize(
     const float4& node1_params, const float4& node2_params) {  // x, y, z,type
 
-    m_J = 0;
-    m_length = 1;
+    m_J = 0.0f;
     m_head_node_type = (node1_params.w < 0);
     // n2->n1
 
@@ -204,51 +363,28 @@ __device__ inline void edgeState::initialize(
  *  Seed extraction goes outside in
  *
  *  @param[out] new_ts output edgeState for the updated seed including node1
- *  @param[in] ts input edgeState is const because it will be re used for each
- * of its head edge's connections
+ *  this is also used for register space
+ *  @param[in] ts input edgeState
  *  @param[in] node1_params params of the inner node of the new edge to be added
- * to the seed
+ *  to the seed
  */
-inline __device__ bool update(
-    edgeState* new_ts, const edgeState* ts,
-    const float4& node1_params) {  // params are x, y, z, type
+inline __device__ bool update(edgeState* new_ts, const edgeState* ts,
+                              const float4& node1_params,
+                              // node params are x, y, z, type
+                              const gbts_seed_extraction_params& KF_params) {
 
-    const float sigma_t = 0.0003f;
-    const float sigma_w = .00009f;
+    float tau2 = ts->m_Y[1] * ts->m_Y[1];
+    float invSin2 = 1 + tau2;
 
-    const float sigmaMS = 0.016f;
+    float lenCorr = (node1_params.w != -1) ? invSin2 : invSin2 / tau2;
+    float minPtFrac = fabsf(ts->m_X[2]) * KF_params.inv_max_curvature;
 
-    const float sigma_x = 0.25f;  // was 0.22
-    const float sigma_y = 2.5f;   // was 1.7
-
-    const float weight_x = 0.5f;
-    const float weight_y = 0.5f;
-
-    const float maxDChi2_x = 60.0f;  // was 35.0;
-    const float maxDChi2_y = 60.0f;  // was 31.0;
-
-    const float add_hit = 14.0f;
-    // m_J is stored in 30 + sign bits so max qual = INT_MAX/2 =
-    // add_hit*max_length*qual_scale
-    const float qual_scale =
-        0.5 * static_cast<float>(INT_MAX) /
-            static_cast<float>(add_hit *
-                               traccc::device::gbts_consts::max_cca_iter) -
-        1;
+    float corrMS = KF_params.sigmaMS * minPtFrac;
+    float sigma2 = KF_params.radLen * lenCorr * corrMS * corrMS;  // /invSin2;
 
     // add ms.
-    float m_Cx22 = ts->m_Cx(2, 2) + sigma_w * sigma_w;
-    float m_Cx11 = ts->m_Cx(1, 1) + sigma_t * sigma_t;
-
-    float t2 = node1_params.w != -1 ? 1 + ts->m_Y[1] * ts->m_Y[1]
-                                    : 1 + 1 / (ts->m_Y[1] * ts->m_Y[1]);
-
-    float s1 = sigmaMS * t2;
-    float s2 = s1 * s1;
-
-    s2 *= sqrtf(t2);
-
-    float m_Cy11 = ts->m_Cy(1, 1) + s2;
+    float m_Cx11 = ts->m_Cx(1, 1) + sigma2;
+    float m_Cy11 = ts->m_Cy(1, 1) + sigma2;
 
     // extrapolation
 
@@ -274,18 +410,20 @@ inline __device__ bool update(
 
     new_ts->m_Cx(0, 0) = ts->m_Cx(0, 0) + 2 * ts->m_Cx(0, 1) * A +
                          2 * ts->m_Cx(0, 2) * B + A * m_Cx11 * A +
-                         2 * A * ts->m_Cx(1, 2) * B + B * m_Cx22 * B;
+                         2 * A * ts->m_Cx(1, 2) * B + B * ts->m_Cx(2, 2) * B;
 
     new_ts->m_Cx(0, 1) = ts->m_Cx(0, 1) + m_Cx11 * A + ts->m_Cx(1, 2) * B +
-                         ts->m_Cx(0, 2) * A + A * A * ts->m_Cx(1, 2) +
-                         A * m_Cx22 * B;
+                         ts->m_Cx(0, 2) * A + A * ts->m_Cx(1, 2) * A +
+                         A * ts->m_Cx(2, 2) * B;
 
-    new_ts->m_Cx(0, 2) = ts->m_Cx(0, 2) + ts->m_Cx(1, 2) * A + m_Cx22 * B;
+    new_ts->m_Cx(0, 2) =
+        ts->m_Cx(0, 2) + ts->m_Cx(1, 2) * A + ts->m_Cx(2, 2) * B;
 
-    new_ts->m_Cx(1, 1) = m_Cx11 + 2 * A * ts->m_Cx(1, 2) + A * m_Cx22 * A;
-    new_ts->m_Cx(1, 2) = ts->m_Cx(1, 2) + m_Cx22 * A;
+    new_ts->m_Cx(1, 1) =
+        m_Cx11 + 2 * A * ts->m_Cx(1, 2) + A * ts->m_Cx(2, 2) * A;
+    new_ts->m_Cx(1, 2) = ts->m_Cx(1, 2) + ts->m_Cx(2, 2) * A;
 
-    new_ts->m_Cx(2, 2) = m_Cx22;
+    new_ts->m_Cx(2, 2) = ts->m_Cx(2, 2);
 
     new_ts->m_Y[0] = ts->m_Y[0] + ts->m_Y[1] * dr;
     new_ts->m_Y[1] = ts->m_Y[1];
@@ -304,47 +442,60 @@ inline __device__ bool update(
 
     if (!ts->m_head_node_type) {
         // barrel TO-DO: split into barrel Pixel and barrel SCT
-        sigma_rz = sigma_y * sigma_y;
+        sigma_rz = KF_params.sigma_y;
     } else {
-        sigma_rz = sigma_y * ts->m_Y[1];
-        sigma_rz = sigma_rz * sigma_rz;
+        sigma_rz = KF_params.sigma_y * ts->m_Y[1];
     }
 
-    float Dx = 1 / (new_ts->m_Cx(0, 0) + sigma_x * sigma_x);
+    float inv_Dx = new_ts->m_Cx(0, 0) + KF_params.sigma_x * KF_params.sigma_x;
+    float Dx = 1 / inv_Dx;
 
-    float Dy = 1 / (new_ts->m_Cy(0, 0) + sigma_rz);
+    float Dy = 1 / (new_ts->m_Cy(0, 0) + sigma_rz * sigma_rz);
 
     float dchi2_x = resid_x * resid_x * Dx;
     float dchi2_y = resid_y * resid_y * Dy;
 
-    if (dchi2_x > maxDChi2_x || dchi2_y > maxDChi2_y) {
+    if (dchi2_x > KF_params.maxDChi2_x || dchi2_y > KF_params.maxDChi2_y) {
         return false;
     }
 
     // state update
-    new_ts->m_J =
-        ts->m_J +
-        static_cast<int>((add_hit - dchi2_x * weight_x - dchi2_y * weight_y) *
-                         qual_scale);
-
-    new_ts->m_length = ts->m_length + 1;
+    new_ts->m_J = ts->m_J + (KF_params.add_hit - dchi2_x * KF_params.weight_x -
+                             dchi2_y * KF_params.weight_y);
 
     for (int i = 0; i < 3; i++) {
         new_ts->m_X[i] += Dx * new_ts->m_Cx(0, i) * resid_x;
     }
+
+    if (fabsf(new_ts->m_X[2]) * KF_params.inv_max_curvature > 1.0f) {
+        return false;
+    }
+
     for (int i = 0; i < 2; i++) {
         new_ts->m_Y[i] += Dx * new_ts->m_Cy(0, i) * resid_y;
     }
-    new_ts->m_Cx(2, 2) -= Dx * new_ts->m_Cx(0, 2) * new_ts->m_Cx(0, 2);
-    new_ts->m_Cx(1, 2) -= Dx * new_ts->m_Cx(0, 1) * new_ts->m_Cx(0, 2);
-    new_ts->m_Cx(1, 1) -= Dx * new_ts->m_Cx(0, 1) * new_ts->m_Cx(0, 1);
-    new_ts->m_Cx(0, 2) -= Dx * new_ts->m_Cx(0, 0) * new_ts->m_Cx(0, 2);
-    new_ts->m_Cx(0, 1) -= Dx * new_ts->m_Cx(0, 0) * new_ts->m_Cx(0, 1);
-    new_ts->m_Cx(0, 0) -= Dx * new_ts->m_Cx(0, 0) * new_ts->m_Cx(0, 0);
 
-    new_ts->m_Cy(1, 1) -= Dx * new_ts->m_Cy(0, 1) * new_ts->m_Cy(0, 1);
-    new_ts->m_Cy(0, 1) -= Dx * new_ts->m_Cy(0, 0) * new_ts->m_Cy(0, 1);
-    new_ts->m_Cy(0, 0) -= Dx * new_ts->m_Cy(0, 0) * new_ts->m_Cy(0, 0);
+    float z0 = new_ts->m_Y[0] - new_ts->m_refY * ts->m_Y[1];
+    if (fabsf(z0) > KF_params.max_z0) {
+        return false;
+    }
+
+    // less loss from float precsion this way (helps prevent sign change)
+    new_ts->m_Cx(2, 2) = Dx * (new_ts->m_Cx(2, 2) * inv_Dx -
+                               new_ts->m_Cx(0, 2) * new_ts->m_Cx(0, 2));
+    new_ts->m_Cx(1, 2) = Dx * (new_ts->m_Cx(1, 2) * inv_Dx -
+                               new_ts->m_Cx(0, 1) * new_ts->m_Cx(0, 2));
+    new_ts->m_Cx(1, 1) = Dx * (new_ts->m_Cx(1, 1) * inv_Dx -
+                               new_ts->m_Cx(0, 1) * new_ts->m_Cx(0, 1));
+    new_ts->m_Cx(0, 2) = Dx * (new_ts->m_Cx(0, 2) * inv_Dx -
+                               new_ts->m_Cx(0, 0) * new_ts->m_Cx(0, 2));
+    new_ts->m_Cx(0, 1) = Dx * (new_ts->m_Cx(0, 1) * inv_Dx -
+                               new_ts->m_Cx(0, 0) * new_ts->m_Cx(0, 1));
+    new_ts->m_Cx(0, 0) *= Dx * (KF_params.sigma_x * KF_params.sigma_x);
+
+    new_ts->m_Cy(1, 1) -= Dy * new_ts->m_Cy(0, 1) * new_ts->m_Cy(0, 1);
+    new_ts->m_Cy(0, 1) -= Dy * new_ts->m_Cy(0, 0) * new_ts->m_Cy(0, 1);
+    new_ts->m_Cy(0, 0) -= Dy * new_ts->m_Cy(0, 0) * new_ts->m_Cy(0, 0);
 
     new_ts->m_c = ts->m_c;
     new_ts->m_s = ts->m_s;
@@ -356,396 +507,216 @@ inline __device__ bool update(
 /** @brief Performs seed disambiguation through seeds biding to use edges with
  * seed quality
  *
- *  @param[in] m_J is the quality metric output by the Kalman filter
- *  @param[in] mini_idx the index of final mini_state, backtracking from this
- * gives the seeds path (edges->nodes)
- *  @param[in] d_mini_states stores the path each seed took through the graph in
- * reverse order
+ *  @param[in] qual is the quality metric output by the Kalman filter
+ *  @param[in] path_idx the index of inital path for this seed
+ *  @param[in] d_path_store stores the path each seed took through the graph in
+ *  reverse order
  *  @param[in] prop_idx the index of this new seeds proposition in
- * d_seed_proposals
+ *  d_seed_proposals
  *  @param[in/out] d_edge_bids is [int_m_J, prop_idx] so that atomicMax will
- * swap it out with higher quality bids. The index is then used to flag the
- * replaced seed as maybe fake
+ *  swap it out with higher quality bids. The index is then used to flag the
+ *  replaced seed as maybe fake
  *  @param[out] d_seed_proposals stores the information needed to construct an
- * output Tracklet for this seed
+ *  output Tracklet for this seed
  *  @param[out] d_seed_ambiguity here is 0 if the seed is the highest quality
- * seed using all of its edges and -1 otherwise
+ *  seed using all of its edges and -1 otherwise
  */
-inline __device__ void add_seed_proposal(const int m_J, const int mini_idx,
+inline __device__ void add_seed_proposal(const int qual, const int path_idx,
                                          const unsigned int prop_idx,
                                          char* d_seed_ambiguity,
                                          int2* d_seed_proposals,
                                          unsigned long long int* d_edge_bids,
-                                         const int2* d_mini_states) {
+                                         const int2* d_path_store,
+                                         char depth = -1) {
 
     // new seed bids for its edges
-    d_seed_proposals[prop_idx] = make_int2(m_J, mini_idx);
+    d_seed_proposals[prop_idx] = make_int2(qual, path_idx);
     d_seed_ambiguity[prop_idx] = 0;
     __threadfence();  // ensure above proposal info is written before biding
 
     unsigned long long int seed_bid =
-        (static_cast<unsigned long long int>(m_J) << 32) |
+        (static_cast<unsigned long long int>(qual) << 32) |
         (static_cast<unsigned long long int>(prop_idx));
 
-    int2 mini_state;
-    for (int next_mini = mini_idx; next_mini >= 0;) {
-        mini_state = d_mini_states[next_mini];
+    // dummy path to start the loop
+    int2 path = make_int2(0, d_seed_proposals[prop_idx].y);
+    while (path.y >= 0 && depth != 0) {
+        path = d_path_store[path.y];
+        depth--;
 
         unsigned long long int competing_offer =
-            atomicMax(&d_edge_bids[mini_state.x], seed_bid);
+            atomicMax(&d_edge_bids[path.x], seed_bid);
         if (competing_offer > seed_bid) {
             d_seed_ambiguity[prop_idx] = -1;
         } else if (competing_offer != 0) {
             d_seed_ambiguity[competing_offer & 0xFFFFFFFFLL] = -1;
         }  // default bids are 0 so no need to replace
-
-        next_mini = mini_state.y;
     }
 }
 
-/** @brief This kerenel extracts the seeds from the graph starting with sets of
- * edges with simmlar levels
- *
- *  We start with higher levels so that the best seeds are found first and
- * pruned from the graph The last block to finsh perfoms disambiguation through
- * iteritive biding and fills d_seeds with the winning seeds with the nodes in
- * inside-out order
- *
- *  @param[in] view_min/view_max the range of input edges in the d_level_views
- * to start forming seeds from
- *  @param[in] d_level_views view on the edges of d_output_graph calculated by
- * the CCA
- *  @param[in/out] d_levels the level of each edge by edge, -1 signifes an edge
- * that is allready used in seed found from a previous iteration and so has been
- * removed from the graph
- *  @param[in] d_sp_params x,y,z,cluster-width for all nodes. Here cluster width
- * denotes if a sp is in the barrel (cw != -1 => barrel)
- *  @param[in] d_output_graph stores the nodes, number of neighbours and
- * self-referential neighbour index.
- *  @param[in] minLevel is length, in edges, of the smallest accepable seed (and
- * is 3 by default so 4 space points)
- *  @param[internal] d_counters[7,8 and 10] are used to track the length of
- * d_mini_state, d_seed_proposals and number of finished blocks
- *  @param[internal] d_seed_ambiguity, d_edge_bids used in seed diambiguation
- * for details see add_seed_proposal
- *  @param[internal] d_mini_states stores the path each seed took through the
- * graph in reverse order (inside out)
- *  @param[internal] d_seed_proposals stores the infomation needed to construct
- * an output Tracklet for this seed
- *  @param[out] d_seeds stores the output seeds after disambiguation. This is
- * what gets transfered back to CPU and is the final output of these kernels
- *  @param[out] d_counters[9] number of seeds in d_seeds
- */
-__global__ void seed_extracting_kernel(
-    int view_min, int view_max, int* d_level_views, char* d_levels,
-    float4* d_sp_params, int* d_output_graph, int2* d_mini_states,
-    edgeState* d_state_store, unsigned long long int* d_edge_bids,
-    char* d_seed_ambiguity, int2* d_seed_proposals, Tracklet* d_seeds,
-    unsigned int* d_counters, const int minLevel, const unsigned int nMaxMini,
-    const unsigned int nMaxProps, const unsigned int nMaxStateStorePerBlock,
-    const unsigned int nMaxSeeds, const unsigned int max_num_neighbours) {
+void __global__
+fit_segments(float4* d_sp_params, int* d_output_graph, int2* d_path_store,
+             int2* d_seed_proposals, unsigned long long int* d_edge_bids,
+             char* d_seed_ambiguity, char* d_levels, unsigned int* d_counters,
+             int nPaths, int nTerminusEdges, int minLevel,
+             unsigned int max_num_neighbours,
+             gbts_seed_extraction_params seed_extraction_params) {
 
-    __shared__ int block_start;
-
-    __shared__ int total_live_states;
-    __shared__ int nStates;
-    __shared__ int nSharedSpace;
-
-    __shared__ edgeState
-        current_states[traccc::device::gbts_consts::shared_state_buffer_size];
-
+    // take an extracted path and fit it to produce a quality score
+    int path_idx = threadIdx.x + blockIdx.x * blockDim.x + nTerminusEdges;
+    if (path_idx >= d_counters[7]) {
+        return;
+    }
     int edge_size = 2 + 1 + max_num_neighbours;
-    if (threadIdx.x == 0) {
-        total_live_states = 0;
 
-        int total_nStates = view_max - view_min;
-        nStates = 1 + (total_nStates - 1) / gridDim.x;
+    char length = 1;
 
-        block_start = view_min + nStates * blockIdx.x;
-        if (block_start >= view_max) {
-            nStates = 0;
-        } else if (block_start + nStates >= view_max) {
-            nStates = view_max - block_start;
-        }
-    }
-    __syncthreads();
-    // assign root edges to blocks and populate shared with inital states
-    // must have less input than shared space
-    for (int root_edge_idx = threadIdx.x; root_edge_idx < nStates;
-         root_edge_idx += blockDim.x) {
+    bool toggle = false;
+    edgeState state1;
+    edgeState state2;
 
-        int edge_idx = d_level_views[block_start + root_edge_idx];
-        char level = d_levels[edge_idx];
-        if (level == -1) {
-            continue;
-        }
-        int edge_pos = edge_size * edge_idx;
+    int2 path = d_path_store[path_idx];
 
-        float4 node1_params =
-            d_sp_params[d_output_graph[edge_pos +
-                                       traccc::device::gbts_consts::node1]];
-        float4 node2_params =
-            d_sp_params[d_output_graph[edge_pos +
-                                       traccc::device::gbts_consts::node2]];
+    int nodeidx =
+        d_output_graph[traccc::device::gbts_consts::node1 + edge_size * path.x];
+    float4 node1 = d_sp_params[nodeidx];
+    nodeidx =
+        d_output_graph[traccc::device::gbts_consts::node2 + edge_size * path.x];
+    float4 node2 = d_sp_params[nodeidx];
 
-        int root_idx = atomicAdd(&total_live_states, 1);
-        current_states[root_idx].initialize(node1_params, node2_params);
-        current_states[root_idx].m_edge_idx = edge_idx;
+    state1.initialize(node2, node1);
+    while (path.y >= 0) {
+        path = d_path_store[path.y];
 
-        unsigned int mini_idx = atomicAdd(&d_counters[7], 1);
-        d_mini_states[mini_idx] =
-            make_int2(edge_idx, -1);  // prev mini -1 for roots with no prev
-        current_states[root_idx].m_mini_idx = mini_idx;
-    }
-    __syncthreads();
-    if (threadIdx.x == 0) {
-        nStates = total_live_states;  // update after removed edges are exculded
-    }
-    edgeState state;
-    edgeState new_state;
-
-    __syncthreads();
-    while (total_live_states > 0) {
-        // propogate to next level
-        bool has_state = false;
-        if (threadIdx.x < nStates) {
-            state = current_states[nStates - 1 - threadIdx.x];
-            has_state = true;
-        } else if (threadIdx.x < total_live_states) {
-            state = d_state_store[total_live_states - 1 - threadIdx.x +
-                                  nMaxStateStorePerBlock * blockIdx.x];
-            has_state = true;
-        }
-        __syncthreads();
-        if (threadIdx.x == 0) {  // update state counts
-            total_live_states = (total_live_states < blockDim.x)
-                                    ? 0
-                                    : total_live_states - blockDim.x;
-
-            nStates = (nStates < blockDim.x) ? 0 : nStates - blockDim.x;
-            nSharedSpace = total_live_states - nStates;
-            // total state count when shared memory is
-            // filled - max shared states
-        }
-        __syncthreads();
-        if (has_state) {
-
-            int edge_idx = state.m_edge_idx;
-
-            int edge_pos = edge_idx * edge_size;
-
-            unsigned char nNei =
-                d_output_graph[edge_pos + traccc::device::gbts_consts::nNei];
-
-            char edge_level = d_levels[edge_idx];
-
-            bool no_updates = true;
-            for (unsigned char nei = 0; nei < nNei; nei++) {
-
-                int nei_idx =
-                    d_output_graph[edge_pos +
-                                   traccc::device::gbts_consts::nei_start +
-                                   nei];
-
-                char nei_level = d_levels[nei_idx];
-                if (edge_level - 1 != nei_level) {
-                    continue;
-                }
-                float4 node1_params = d_sp_params
-                    [d_output_graph[edge_size * nei_idx +
-                                    traccc::device::gbts_consts::node1]];
-                bool success = update(&new_state, &state, node1_params);
-
-                if (!success) {
-                    continue;
-                }
-                no_updates = false;
-
-                new_state.m_edge_idx = nei_idx;
-                new_state.m_mini_idx = atomicAdd(&d_counters[7], 1);
-
-                if (new_state.m_mini_idx < nMaxMini) {
-                    d_mini_states[new_state.m_mini_idx] =
-                        make_int2(nei_idx, state.m_mini_idx);
-                    if (d_output_graph[edge_size * nei_idx +
-                                       traccc::device::gbts_consts::nNei] ==
-                        0) {
-
-                        // no neighbours so will fail next round anyway
-                        // so save shared
-                        if (new_state.m_length >= minLevel) {
-                            unsigned prop_idx = atomicAdd(&d_counters[8], 1);
-                            if (prop_idx < nMaxProps) {
-                                add_seed_proposal(new_state.m_J,
-                                                  new_state.m_mini_idx,
-                                                  prop_idx, d_seed_ambiguity,
-                                                  d_seed_proposals, d_edge_bids,
-                                                  d_mini_states);
-                            }
-                        }
-
-                    } else {
-                        int stateStoreIdx = atomicAdd(&total_live_states, 1) -
-                                            traccc::device::gbts_consts::
-                                                shared_state_buffer_size;
-
-                        if (stateStoreIdx < nSharedSpace) {
-                            current_states[atomicAdd(&nStates, 1)] = new_state;
-                        } else {
-                            if (stateStoreIdx < nMaxStateStorePerBlock) {
-                                d_state_store[stateStoreIdx +
-                                              nMaxStateStorePerBlock *
-                                                  blockIdx.x] = new_state;
-                            } else {
-                                d_counters[10] = stateStoreIdx;
-                            }
-                        }
-                    }
-                }
+        node2 = d_sp_params[d_output_graph[traccc::device::gbts_consts::node2 +
+                                           edge_size * path.x]];
+        if (toggle) {
+            if (!update(&state1, &state2, node2, seed_extraction_params)) {
+                state1 = state2;
+                break;
             }
-            if (no_updates) {
-                if (state.m_length >= minLevel) {
-                    unsigned int prop_idx = atomicAdd(&d_counters[8], 1);
-                    if (prop_idx < nMaxProps) {
-                        add_seed_proposal(state.m_J, state.m_mini_idx, prop_idx,
-                                          d_seed_ambiguity, d_seed_proposals,
-                                          d_edge_bids, d_mini_states);
-                    }
-                }
-            }
-        }  // if has state
-        __syncthreads();  // wait for current_states to repopulate
+        } else if (!update(&state2, &state1, node2, seed_extraction_params)) {
+            break;
+        }
+        toggle = !toggle;
+        length++;
     }
-    __syncthreads();
-    // move remianing seed props to seeds after
-    // all tracking for this set is done
-    if (threadIdx.x == 0) {
-        nStates = atomicAdd(&d_counters[11], 1);
-    }
-    __syncthreads();
-    if (nStates != gridDim.x - 1) {
+    // only keep long enough seeds
+    if (length < minLevel) {
         return;
     }
-    unsigned int nProps = d_counters[8];
-    __syncthreads();
-    // reset for next launch
-    if (threadIdx.x == 0) {
-        // exit if any overflows have occured
-        if (nProps > nMaxProps || d_counters[7] > nMaxMini ||
-            d_counters[10] != 0) {
+    int qual = static_cast<int>(1e5 * state1.m_J);
 
-            nStates = 0;
-        } else {
-            nStates = 1;
-        }
-        d_counters[11] = 0;
-        d_counters[10] = 0;
-        d_counters[7] = 0;
-        d_counters[8] = 0;
-    }
-    __syncthreads();
-    if (nProps == 0 || nStates == 0) {
-        return;
-    }
-    for (int round = 0; round < 5 && nStates > 0; round++) {
-        // re-check maybe seeds that don't clash with a definte seed
-        if (threadIdx.x == 0) {
-            nStates = 0;
-        }
-        __syncthreads();  // fit maybe seeds into unused spaces
-        for (unsigned int prop_idx = threadIdx.x; prop_idx < nProps;
-             prop_idx += blockDim.x) {
+    int prop_idx = atomicAdd(&d_counters[8], 1);
+    // perform first round of bidding for disambiguation
+    // only on the outermost edge
+    add_seed_proposal(qual, path_idx, prop_idx, d_seed_ambiguity,
+                      d_seed_proposals, d_edge_bids, d_path_store, 1);
+}
 
-            char ambiguity = d_seed_ambiguity[prop_idx];
-            if (ambiguity == 0 || ambiguity == -2) {
-                continue;  // is not ambiguous
-            }
-            int2 prop = d_seed_proposals[prop_idx];
+void __global__ reset_edge_bids(int2* d_path_store, int2* d_seed_proposals,
+                                unsigned long long int* d_edge_bids,
+                                char* d_seed_ambiguity,
+                                unsigned int* d_counters, int round) {
 
-            bool isgood = true;
+    int nProps = d_counters[8];
+    // first round find best seed starting at each edge
+    for (int prop_idx = threadIdx.x + blockIdx.x * blockDim.x;
+         prop_idx < nProps; prop_idx += blockDim.x * gridDim.x) {
 
-            int2 mini_state;
-            for (int next_mini = prop.y; next_mini >= 0;) {
-                mini_state = d_mini_states[next_mini];
-                next_mini = mini_state.y;
-
-                unsigned long long int best_bid = d_edge_bids[mini_state.x];
-                if (best_bid == 0) {
-                    continue;  // already reset
-                }
-                if (d_seed_ambiguity[best_bid & 0xFFFFFFFFLL] == 0) {
-                    isgood = false;
-                    break;
-                }  // clashes with definate seed
-                d_edge_bids[mini_state.x] =
-                    0;  // reset edge bid from (possibly) fake seed
-            }
-            if (isgood) {
+        char ambi = d_seed_ambiguity[prop_idx];
+        if (round == -1) {
+            if (ambi == 0) {
+                // rebid 'best seed from edge' in later rounds
                 d_seed_ambiguity[prop_idx] = 1;
-                atomicAdd(&nStates, 1);
-            }  // flag as maybe seed
-            else
-                d_seed_ambiguity[prop_idx] = -2;  // definate fake
-        }
-        __syncthreads();
-        for (unsigned int prop_idx = threadIdx.x; prop_idx < nProps;
-             prop_idx += blockDim.x) {
-            if (d_seed_ambiguity[prop_idx] != 1) {
+                continue;
+            } else {
+                d_seed_ambiguity[prop_idx] = -2;
                 continue;
             }
-            int2 prop = d_seed_proposals[prop_idx];
-
-            add_seed_proposal(prop.x, prop.y, prop_idx, d_seed_ambiguity,
-                              d_seed_proposals, d_edge_bids,
-                              d_mini_states);  // reset and re bid
-        }
-        __syncthreads();
-    }
-    __syncthreads();
-    for (unsigned int prop_idx = threadIdx.x; prop_idx < nProps;
-         prop_idx += blockDim.x) {
-        if (d_seed_ambiguity[prop_idx] != 0) {
+        } else if (ambi == -2 | ambi == 0) {
+            // only reset maybes
             continue;
         }
         int2 prop = d_seed_proposals[prop_idx];
 
-        unsigned int seed_idx = atomicAdd(&d_counters[9], 1);
-        if (seed_idx > nMaxSeeds) {
-            break;
-        }
-        // add good seed to output
-        int2 mini_state;
-        int length = 0;
-        for (int next_mini = prop.y; next_mini >= 0; length++) {
+        bool isgood = true;
 
-            mini_state = d_mini_states[next_mini];
-            next_mini = mini_state.y;
+        // dummy path to start the loop
+        int2 path = make_int2(0, prop.y);
+        while (path.y >= 0) {
+            path = d_path_store[path.y];
 
-            d_seeds[seed_idx].nodes[length] =
-                d_output_graph[mini_state.x * edge_size +
-                               traccc::device::gbts_consts::node1];
-            d_levels[mini_state.x] = -1;  // remove edge from graph
+            unsigned long long int best_bid = d_edge_bids[path.x];
+            if (d_seed_ambiguity[best_bid & 0xFFFFFFFFLL] == 0) {
+                isgood = false;
+                break;
+            }
         }
-        d_seeds[seed_idx].nodes[length] =
-            d_output_graph[mini_state.x * edge_size +
-                           traccc::device::gbts_consts::node2];
-        d_seeds[seed_idx].size = ++length;
+        if (isgood) {
+            d_seed_ambiguity[prop_idx] = 1;
+        }  // flag as maybe seed
+        else {
+            d_seed_ambiguity[prop_idx] = -2;
+            // definate fake (never the best)
+        }
     }
-    __syncthreads();
+}
+
+// TO-DO?: reset prop count each iter and make new props like CCA active_edges
+void __global__ seeds_rebid_for_edges(int2* d_path_store,
+                                      int2* d_seed_proposals,
+                                      unsigned long long int* d_edge_bids,
+                                      char* d_seed_ambiguity,
+                                      unsigned int nProps) {
+
+    for (int prop_idx = threadIdx.x + blockIdx.x * blockDim.x;
+         prop_idx < nProps; prop_idx += blockDim.x * gridDim.x) {
+
+        char ambi = d_seed_ambiguity[prop_idx];
+        if (ambi == -2 | ambi == 0) {
+            // only rebid for maybes
+            continue;
+        }
+        int2 prop = d_seed_proposals[prop_idx];
+
+        add_seed_proposal(prop.x, prop.y, prop_idx, d_seed_ambiguity,
+                          d_seed_proposals, d_edge_bids, d_path_store, -1);
+    }
 }
 
 void __global__ gbts_seed_conversion_kernel(
-    Tracklet* d_seeds, edm::seed_collection::view output_seeds,
-    const unsigned int nSeeds) {
+    int2* d_seed_proposals, char* d_seed_ambiguity, int2* d_path_store,
+    int* d_output_graph, edm::seed_collection::view output_seeds,
+    const unsigned int nProps, const unsigned int max_num_neighbours) {
+
+    int edge_size = 2 + 1 + max_num_neighbours;
 
     edm::seed_collection::device seeds_device(output_seeds);
-    for (int tracklet = threadIdx.x + blockIdx.x * blockDim.x;
-         tracklet < nSeeds; tracklet += blockDim.x * gridDim.x) {
-        int length = d_seeds[tracklet].size;
+    for (int prop_idx = threadIdx.x + blockIdx.x * blockDim.x;
+         prop_idx < nProps; prop_idx += blockDim.x * gridDim.x) {
+
+        if (d_seed_ambiguity[prop_idx] == -2) {
+            // drop seeds that lost the bidding
+            continue;
+        }
+        Tracklet seed;
+        seed.size = 0;
+        // dummy path to start the loop
+        int2 path = make_int2(0, d_seed_proposals[prop_idx].y);
+        while (path.y >= 0) {
+            path = d_path_store[path.y];
+            seed.nodes[seed.size++] =
+                d_output_graph[traccc::device::gbts_consts::node1 +
+                               edge_size * path.x];
+        }
+        seed.nodes[seed.size++] =
+            d_output_graph[traccc::device::gbts_consts::node2 +
+                           edge_size * path.x];
         // sample begining, middle, end sp from tracklet for now
-        seeds_device.push_back({d_seeds[tracklet].nodes[0],
-                                d_seeds[tracklet].nodes[length / 2],
-                                d_seeds[tracklet].nodes[length - 1]});
+        seeds_device.push_back({seed.nodes[seed.size - 1],
+                                seed.nodes[(1 + seed.size) / 2 - 1],
+                                seed.nodes[0]});
     }
 }
 

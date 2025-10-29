@@ -35,7 +35,8 @@ inline __device__ __host__ half4 make_half4(const __half x, const __half y,
 
 __global__ static void graphEdgeMakingKernel(
     const uint4* d_bin_pair_views, const float* d_bin_pair_dphi,
-    const float* d_node_params, const gbts_algo_params* d_algo_params,
+    const float* d_node_params,
+    const gbts_graph_building_params* d_graph_building_params,
     unsigned int* d_counters, int2* d_edge_nodes, half4* d_edge_params,
     int* d_num_outgoing_edges, const unsigned int nMaxEdges,
     const unsigned int nPhiBins) {
@@ -71,15 +72,15 @@ __global__ static void graphEdgeMakingKernel(
         num_nodes1 = views.y - begin_bin1;
         num_nodes2 = views.w - begin_bin2;
 
-        minDeltaRad = d_algo_params->minDeltaRadius;
-        min_z0 = d_algo_params->min_z0;
-        max_z0 = d_algo_params->max_z0;
-        maxOuterRad = d_algo_params->maxOuterRadius;
-        min_zU = d_algo_params->cut_zMinU;
-        max_zU = d_algo_params->cut_zMaxU;
-        max_kappa = d_algo_params->max_Kappa;
-        low_Kappa_d0 = d_algo_params->low_Kappa_d0;
-        high_Kappa_d0 = d_algo_params->high_Kappa_d0;
+        minDeltaRad = d_graph_building_params->minDeltaRadius;
+        min_z0 = d_graph_building_params->min_z0;
+        max_z0 = d_graph_building_params->max_z0;
+        maxOuterRad = d_graph_building_params->maxOuterRadius;
+        min_zU = d_graph_building_params->cut_zMinU;
+        max_zU = d_graph_building_params->cut_zMaxU;
+        max_kappa = d_graph_building_params->max_Kappa;
+        low_Kappa_d0 = d_graph_building_params->low_Kappa_d0;
+        high_Kappa_d0 = d_graph_building_params->high_Kappa_d0;
     }
 
     __syncthreads();
@@ -221,14 +222,15 @@ __global__ static void graphEdgeMakingKernel(
             unsigned int nEdges = atomicAdd(&d_counters[0], 1);
             if (nEdges < nMaxEdges) {
                 __half exp_eta = __float2half(sqrtf(1 + tau * tau) - tau);
-                atomicAdd(&d_num_outgoing_edges[globalIdx2], 1);
+                // edge linking order is inside->out
+                atomicAdd(&d_num_outgoing_edges[begin_bin1 + n1Idx], 1);
 
                 d_edge_nodes[nEdges] =
-                    make_int2(begin_bin1 + n1Idx, globalIdx2);
+                    make_int2(globalIdx2, begin_bin1 + n1Idx);
 
                 d_edge_params[nEdges] = make_half4(
-                    exp_eta, __float2half(curv), __float2half(phi1 + curv * r1),
-                    __float2half(phi2 + curv * r2));
+                    exp_eta, __float2half(curv), __float2half(phi2 + curv * r2),
+                    __float2half(phi1 + curv * r1));
             }
         }
     }
@@ -244,21 +246,21 @@ __global__ static void graphEdgeLinkingKernel(const int2* d_edge_nodes,
     if (edge_idx >= nEdges) {
         return;
     }
-    int n2Idx = d_edge_nodes[edge_idx].y;  // global index of n2
+    int sharedNode = d_edge_nodes[edge_idx].y;
 
     // this converts num_outgoing_edges to the start postion for each node in
     // d_edge_links
-    int pos = atomicSub(&d_num_outgoing_edges[n2Idx], 1);
-    // this edge starts from n2, matching will check edge's n1 and then loop
-    // over edges outgoing from that node
+    int pos = atomicSub(&d_num_outgoing_edges[sharedNode], 1);
+    // provides views of edges leaving the sharedNode for linking
     d_edge_links[pos - 1] = edge_idx;
 }
 
 __global__ static void graphEdgeMatchingKernel(
-    const gbts_algo_params* d_algo_params, const half4* d_edge_params,
-    const int2* d_edge_nodes, const int* d_num_outgoing_edges,
-    const int* d_edge_links, unsigned char* d_num_neighbours, int* d_neighbours,
-    int* d_reIndexer, unsigned int* d_counters, const unsigned int nEdges,
+    const gbts_graph_building_params* d_graph_building_params,
+    const half4* d_edge_params, const int2* d_edge_nodes,
+    const int* d_num_outgoing_edges, const int* d_edge_links,
+    unsigned char* d_num_neighbours, int* d_neighbours, int* d_reIndexer,
+    unsigned int* d_counters, const unsigned int nEdges,
     const unsigned int nMaxNei) {
     __shared__ __half cut_dphi_max;
     __shared__ __half cut_dcurv_max;
@@ -267,9 +269,10 @@ __global__ static void graphEdgeMatchingKernel(
     __shared__ __half PI_2_h;
     __shared__ __half ONE_h;
     if (threadIdx.x == 0) {
-        cut_dphi_max = __float2half(d_algo_params->cut_dphi_max);
-        cut_dcurv_max = __float2half(d_algo_params->cut_dcurv_max);
-        cut_tau_ratio_max = __float2half(d_algo_params->cut_tau_ratio_max);
+        cut_dphi_max = __float2half(d_graph_building_params->cut_dphi_max);
+        cut_dcurv_max = __float2half(d_graph_building_params->cut_dcurv_max);
+        cut_tau_ratio_max =
+            __float2half(d_graph_building_params->cut_tau_ratio_max);
 
         PI_h = __float2half(CUDART_PI_F);
         PI_2_h = __float2half(2 * CUDART_PI_F);
@@ -282,12 +285,12 @@ __global__ static void graphEdgeMatchingKernel(
     if (edge1_idx >= nEdges) {
         return;
     }
-    // global index of n1 node of the edge1
-    int n1Idx = d_edge_nodes[edge1_idx].x;
 
-    int link_begin = d_num_outgoing_edges[n1Idx];
-    // the number of edges which has n1 as their starting node (n2)
-    int nLinks = d_num_outgoing_edges[n1Idx + 1] - link_begin;
+    int sharedNode = d_edge_nodes[edge1_idx].x;
+
+    int link_begin = d_num_outgoing_edges[sharedNode];
+    // the number of edges leaving the sharedNode
+    int nLinks = d_num_outgoing_edges[sharedNode + 1] - link_begin;
     if (nLinks == 0) {
         return;
     }
