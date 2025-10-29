@@ -73,7 +73,7 @@ __global__ static void CCA_IterationKernel(const int* d_output_graph,
                                            unsigned int* d_counters, int iter,
                                            unsigned int nEdges,
                                            unsigned int max_num_neighbours,
-                                           unsigned int minLevel) {
+                                           int minLevel) {
 
     __shared__ unsigned int nEdgesLeft;
     unsigned int edge_size = 2 + 1 + max_num_neighbours;
@@ -192,7 +192,7 @@ void __global__ count_terminus_edges(int2* d_path_store,
 void __global__ add_terminus_to_path_store(int2* d_path_store,
                                            short2* d_outgoing_paths,
                                            unsigned int* d_counters,
-                                           int nEdges) {
+                                           unsigned int nEdges) {
 
     int edge_idx = threadIdx.x + blockIdx.x * blockDim.x;
     if (edge_idx >= nEdges) {
@@ -226,7 +226,7 @@ void __global__ fill_path_store(int2* d_path_store, int* d_output_graph,
 
     int edge_size = 2 + 1 + max_num_neighbours;
 
-    int path_idx = threadIdx.x + blockIdx.x * 16;
+    unsigned int path_idx = threadIdx.x + blockIdx.x * 16;
     // populate live_paths with terminus to start exploration from
     if (threadIdx.x < 16 && path_idx < nTerminus) {
         int2 path = d_path_store[path_idx];
@@ -558,12 +558,12 @@ void __global__
 fit_segments(float4* d_sp_params, int* d_output_graph, int2* d_path_store,
              int2* d_seed_proposals, unsigned long long int* d_edge_bids,
              char* d_seed_ambiguity, char* d_levels, unsigned int* d_counters,
-             int nPaths, int nTerminusEdges, int minLevel,
+             unsigned int nTerminusEdges, int minLevel,
              unsigned int max_num_neighbours,
              gbts_seed_extraction_params seed_extraction_params) {
 
     // take an extracted path and fit it to produce a quality score
-    int path_idx = threadIdx.x + blockIdx.x * blockDim.x + nTerminusEdges;
+    unsigned int path_idx = threadIdx.x + blockIdx.x * blockDim.x + nTerminusEdges;
     if (path_idx >= d_counters[7]) {
         return;
     }
