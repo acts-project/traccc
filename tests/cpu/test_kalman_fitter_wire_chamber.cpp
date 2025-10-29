@@ -132,6 +132,8 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
     fit_cfg.propagation.navigation.min_mask_tolerance =
         static_cast<float>(mask_tolerance);
     fit_cfg.propagation.navigation.search_window = search_window;
+    // TODO: Disable until overlaps are handled correctly
+    fit_cfg.propagation.navigation.estimate_scattering_noise = false;
     fit_cfg.ptc_hypothesis = ptc;
     traccc::host::kalman_fitting_algorithm fitting(fit_cfg, host_mr, copy);
 

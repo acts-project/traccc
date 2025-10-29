@@ -38,11 +38,14 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     const unsigned int link_idx = payload.prev_links_idx + param_id;
     const auto& link = links.at(link_idx);
     assert(link.step == payload.step);
-    const unsigned int n_cands = link.step + 1 - link.n_skipped;
+    const unsigned int n_cands = link.n_cand;
 
     // Parameter liveness
     vecmem::device_vector<unsigned int> params_liveness(
         payload.params_liveness_view);
+
+    // Whether the surface was hit in the tolerance band
+    vecmem::device_vector<std::uint8_t> is_edges(payload.is_edges_view);
 
     // tips
     vecmem::device_vector<unsigned int> tips(payload.tips_view);
@@ -87,9 +90,8 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     typename detray::detail::tuple_element<2, actor_tuple_type>::type::state s2{
         s3};
     // Parameter resetter
-    // typename detray::detail::tuple_element<4, actor_tuple_type>::type::state
-    // s4{
-    //    cfg.propagation};
+    typename detray::detail::tuple_element<4, actor_tuple_type>::type::state s4{
+        cfg.propagation};
     // Momentum aborter
     typename detray::detail::tuple_element<5, actor_tuple_type>::type::state s5;
     // CKF aborter
@@ -101,7 +103,7 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     s5.min_p(static_cast<scalar_t>(cfg.min_p));
 
     // Propagate to the next surface
-    propagator.propagate(propagation, detray::tie(s0, s2, s3, s5, s6));
+    propagator.propagate(propagation, detray::tie(s0, s2, s3, s4, s5, s6));
 
     // If a surface found, add the parameter for the next step
     if (s6.success) {
@@ -110,6 +112,7 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
 
         params[param_id] = propagation._stepping.bound_params();
         params_liveness[param_id] = 1u;
+        is_edges[param_id] = propagation._navigation.is_edge_candidate();
     } else {
         params_liveness[param_id] = 0u;
 

@@ -8,6 +8,8 @@
 #pragma once
 
 // Project include(s).
+#include <detray/utils/log.hpp>
+
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/definitions/track_parametrization.hpp"
 #include "traccc/edm/measurement.hpp"
@@ -160,6 +162,11 @@ struct gain_matrix_updater {
         trk_state.filtered_params().set_vector(filtered_vec);
         trk_state.filtered_params().set_covariance(filtered_cov);
         trk_state.filtered_chi2() = getter::element(chi2, 0, 0);
+
+        DETRAY_DEBUG_HOST("MEASUREMENT POS: " << meas_local);
+        DETRAY_DEBUG_HOST("MEASUREMENT VARIANCE: " << V);
+        DETRAY_DEBUG_HOST("FILTERED PARAM: " << trk_state.filtered_params());
+        DETRAY_DEBUG_HOST("CHI2: " << trk_state.filtered_chi2());
 
         // Wrap the phi in the range of [-pi, pi]
         wrap_phi(trk_state.filtered_params());

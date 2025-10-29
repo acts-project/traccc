@@ -153,8 +153,7 @@ TRACCC_HOST_DEVICE inline void remove_duplicates(
      * and a track cannot be removed if it has too few measurements. Thus, we
      * return early if the thread under study is too short.
      */
-    if (payload.step + 1 - Lthisbase.n_skipped <=
-            cfg.duplicate_removal_minimum_length ||
+    if (Lthisbase.n_cand <= cfg.duplicate_removal_minimum_length ||
         Lthisbase.ndf_sum <= 5) {
         return;
     }
@@ -183,8 +182,7 @@ TRACCC_HOST_DEVICE inline void remove_duplicates(
         auto Lthis = Lthisbase;
         auto Lthat = links.at(payload.curr_links_idx + param_ids.at(i));
 
-        if (payload.step + 1 - Lthat.n_skipped <=
-                cfg.duplicate_removal_minimum_length ||
+        if (Lthat.n_cand <= cfg.duplicate_removal_minimum_length ||
             Lthis.ndf_sum <= 5 || Lthat.ndf_sum <= 5) {
             continue;
         }
