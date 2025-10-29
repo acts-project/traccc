@@ -27,7 +27,7 @@ struct finding_config {
 
     /// Min/Max number of track candidates per track
     unsigned int min_track_candidates_per_track = 3;
-    unsigned int max_track_candidates_per_track = 100;
+    unsigned int max_track_candidates_per_track = 200;
 
     /// Maximum allowed number of skipped steps per candidate
     unsigned int max_num_skipping_per_cand = 3;

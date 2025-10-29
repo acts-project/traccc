@@ -128,6 +128,8 @@ combinatorial_kalman_filter(
     std::vector<std::pair<unsigned int, unsigned int>> tips;
 
     // Create propagator
+    // auto config_alt{config.propagation};
+    // config_alt.navigation.estimate_scattering_noise = false;
     traccc::details::ckf_propagator_t<detector_t, bfield_t> propagator(
         config.propagation);
 
@@ -336,9 +338,9 @@ combinatorial_kalman_filter(
                      .previous_candidate_idx = in_param_id,
                      .meas_idx = std::numeric_limits<unsigned int>::max(),
                      .seed_idx = orig_param_id,
+                     .n_cand = n_cand,
                      .n_skipped = is_edge ? skip_counter : skip_counter + 1,
                      .n_consecutive_skipped = consecutive_skipped + 1,
-                     .n_cand = n_cand,
                      .chi2 = std::numeric_limits<traccc::scalar>::max(),
                      .chi2_sum = prev_chi2_sum,
                      .ndf_sum = prev_ndf_sum});
@@ -519,6 +521,7 @@ combinatorial_kalman_filter(
                 config.propagation};
             typename detray::momentum_aborter<scalar_type>::state s4{};
             typename ckf_aborter::state s5;
+
             // Update the actor config
             s4.min_pT(static_cast<scalar_type>(config.min_pT));
             s4.min_p(static_cast<scalar_type>(config.min_p));

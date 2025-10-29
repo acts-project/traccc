@@ -13,6 +13,7 @@
 
 // detray include(s)
 #include <detray/propagator/base_actor.hpp>
+#include <detray/utils/log.hpp>
 
 // System include(s)
 #include <limits>
@@ -43,9 +44,15 @@ struct ckf_aborter : detray::actor {
         abrt_state.count++;
         abrt_state.path_from_surface += stepping.step_size();
 
+        DETRAY_DEBUG_HOST("Checking CKF aborter...");
+        DETRAY_DEBUG_HOST(
+            "=> path since last sensitive: " << abrt_state.path_from_surface);
+
         // Stop at the next sensitive surface
         if (navigation.is_on_sensitive() &&
-            abrt_state.path_from_surface > abrt_state.min_step_length) {
+            (abrt_state.path_from_surface > abrt_state.min_step_length ||
+             navigation() < 1.f * traccc::unit<float>::um)) {
+            DETRAY_DEBUG_HOST("FOUND");
             prop_state._heartbeat &= navigation.pause();
             abrt_state.success = navigation.is_alive();
         }

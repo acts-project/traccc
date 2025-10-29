@@ -593,9 +593,9 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                     .previous_candidate_idx = prev_link_idx,
                     .meas_idx = std::numeric_limits<unsigned int>::max(),
                     .seed_idx = seed_idx,
+                    .n_cand = n_cand,
                     .n_skipped = is_edge ? n_skipped : n_skipped + 1,
                     .n_consecutive_skipped = n_consecutive_skipped + 1,
-                    .n_cand = n_cand,
                     .chi2 = std::numeric_limits<traccc::scalar>::max(),
                     .chi2_sum = prev_chi2_sum,
                     .ndf_sum = prev_ndf_sum};
