@@ -181,6 +181,11 @@ combinatorial_kalman_filter(
                      ? 0
                      : links[step - 1][param_to_link[step - 1][in_param_id]]
                            .n_skipped);
+            const unsigned int consecutive_skipped =
+                (step == 0
+                     ? 0
+                     : links[step - 1][param_to_link[step - 1][in_param_id]]
+                           .n_consecutive_skipped);
             const scalar prev_chi2_sum =
                 (step == 0
                      ? 0.f
@@ -262,6 +267,7 @@ combinatorial_kalman_filter(
                           .meas_idx = meas_id,
                           .seed_idx = orig_param_id,
                           .n_skipped = skip_counter,
+                          .n_consecutive_skipped = 0,
                           .chi2 = chi2,
                           .chi2_sum = prev_chi2_sum + chi2,
                           .ndf_sum = prev_ndf_sum + meas.meas_dim},
@@ -307,6 +313,7 @@ combinatorial_kalman_filter(
                      .meas_idx = std::numeric_limits<unsigned int>::max(),
                      .seed_idx = orig_param_id,
                      .n_skipped = skip_counter + 1,
+                     .n_consecutive_skipped = consecutive_skipped + 1,
                      .chi2 = std::numeric_limits<traccc::scalar>::max(),
                      .chi2_sum = prev_chi2_sum,
                      .ndf_sum = prev_ndf_sum});

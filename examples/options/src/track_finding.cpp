@@ -61,6 +61,11 @@ track_finding::track_finding() : interface("Track Finding Options") {
         po::value(&m_config.max_num_skipping_per_cand)
             ->default_value(m_config.max_num_skipping_per_cand),
         "Maximum allowed number of skipped steps per candidate");
+    m_desc.add_options()(
+        "max-num-consecutive-skipped",
+        po::value(&m_config.max_num_consecutive_skipped)
+            ->default_value(m_config.max_num_consecutive_skipped),
+        "Maximum allowed number of consecutive skipped steps");
     m_desc.add_options()("particle-hypothesis",
                          po::value(&m_pdg_number)->default_value(m_pdg_number),
                          "PDG number for the particle hypothesis");
