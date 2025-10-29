@@ -176,6 +176,9 @@ void seeding_performance_writer::write(
             ptc.vertex[2] < m_cfg.truth_config.z_min ||
             ptc.vertex[2] > m_cfg.truth_config.z_max ||
             vector::perp(ptc.vertex) > m_cfg.truth_config.r_max ||
+            std::abs(vector::eta(ptc.momentum)) > m_cfg.truth_config.eta_max ||
+            (m_cfg.truth_config.process_id >= 0 &&
+             m_cfg.truth_config.process_id != ptc.process) ||
             num_measurements < m_cfg.truth_config.min_track_candidates) {
             continue;
         }
