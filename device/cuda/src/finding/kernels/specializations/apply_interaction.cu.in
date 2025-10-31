@@ -6,7 +6,7 @@
  */
 
 // Local include(s).
-#include "${SOURCE_DIR}/apply_interaction_src.cuh"
+#include "src/finding/kernels/specializations/apply_interaction_src.cuh"
 
 // Project include(s).
 #include "traccc/geometry/detector.hpp"

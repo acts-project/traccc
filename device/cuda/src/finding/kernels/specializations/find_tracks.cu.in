@@ -6,7 +6,7 @@
  */
 
 // Local include(s).
-#include "${SOURCE_DIR}/find_tracks_src.cuh"
+#include "src/finding/kernels/specializations/find_tracks_src.cuh"
 
 // Project include(s).
 #include "traccc/geometry/detector.hpp"
