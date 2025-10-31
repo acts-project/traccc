@@ -20,6 +20,7 @@
 #include "traccc/edm/device/doublet_counter.hpp"
 #include "traccc/edm/device/seeding_global_counter.hpp"
 #include "traccc/edm/device/triplet_counter.hpp"
+#include "traccc/seeding/detail/singlet.hpp"
 #include "traccc/seeding/device/count_doublets.hpp"
 #include "traccc/seeding/device/count_triplets.hpp"
 #include "traccc/seeding/device/find_doublets.hpp"
@@ -37,6 +38,195 @@
 
 namespace traccc::cuda {
 namespace kernels {
+namespace detail {
+/**
+ * @brief Encode the state of our parameter insertion mutex.
+ */
+TRACCC_HOST_DEVICE inline uint64_t encode_insertion_mutex(const bool locked,
+                                                          const uint32_t size,
+                                                          const float max) {
+
+    // Assert that the MSB of the size is zero
+    assert(size <= 0x7FFFFFFF);
+    const uint32_t hi = size | (locked ? 0x80000000 : 0x0);
+    const uint32_t lo = std::bit_cast<uint32_t>(max);
+    return (static_cast<uint64_t>(hi) << 32) | lo;
+}
+
+/**
+ * @brief Decode the state of our parameter insertion mutex.
+ */
+TRACCC_HOST_DEVICE inline std::tuple<bool, uint32_t, float>
+decode_insertion_mutex(const uint64_t val) {
+    const uint32_t hi = static_cast<uint32_t>(val >> 32);
+    const uint32_t lo = val & 0xFFFFFFFF;
+    return {static_cast<bool>(hi & 0x80000000), (hi & 0x7FFFFFFF),
+            std::bit_cast<float>(lo)};
+}
+}  // namespace detail
+
+__global__ inline void gather_best_triplets_per_spacepoint(
+    const device::device_triplet_collection_types::const_view triplet_view,
+    const traccc::details::spacepoint_grid_types::const_view grid_view,
+    vecmem::data::vector_view<unsigned long long int> insertion_mutex_view,
+    vecmem::data::vector_view<unsigned int> triplet_index_view,
+    vecmem::data::vector_view<float> triplet_weight_view,
+    const unsigned int max_num_triplets_per_spacepoint) {
+
+    const device::device_triplet_collection_types::const_device triplets(
+        triplet_view);
+    const traccc::details::spacepoint_grid_types::const_device grid(grid_view);
+
+    vecmem::device_vector<unsigned long long int> insertion_mutex(
+        insertion_mutex_view);
+    vecmem::device_vector<unsigned int> triplet_index(triplet_index_view);
+    vecmem::device_vector<float> triplet_weight(triplet_weight_view);
+
+    unsigned int triplet_idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+    scalar weight;
+    bool need_to_write = true;
+    unsigned int current_state = 0;
+    unsigned int spacepoint_idx = 0;
+
+    auto get_idx_for_state = [&triplets, &grid,
+                              triplet_idx](unsigned int state) {
+        const device::device_triplet& this_triplet = triplets.at(triplet_idx);
+        if (state == 0) {
+            return this_triplet.spB;
+        } else if (state == 1) {
+            return this_triplet.spM;
+        } else {
+            return this_triplet.spT;
+        }
+    };
+
+    if (triplet_idx < triplets.size()) {
+        weight = triplets.at(triplet_idx).weight;
+        spacepoint_idx = get_idx_for_state(0);
+    } else {
+        need_to_write = false;
+        current_state = 3;
+    }
+
+    while (__syncthreads_or(current_state < 3 || need_to_write)) {
+        if (current_state < 3 || need_to_write) {
+            if (need_to_write) {
+                vecmem::device_atomic_ref<unsigned long long int> mutex(
+                    insertion_mutex.at(spacepoint_idx));
+
+                unsigned long long int assumed = mutex.load();
+                unsigned long long int desired_set;
+
+                auto [locked, size, worst] =
+                    detail::decode_insertion_mutex(assumed);
+
+                if (need_to_write && size >= max_num_triplets_per_spacepoint &&
+                    weight <= worst) {
+                    need_to_write = false;
+                }
+
+                bool holds_lock = false;
+
+                if (need_to_write && !locked) {
+                    desired_set =
+                        detail::encode_insertion_mutex(true, size, worst);
+                    if (mutex.compare_exchange_strong(assumed, desired_set)) {
+                        holds_lock = true;
+                    }
+                }
+
+                if (holds_lock) {
+                    unsigned int new_size;
+                    unsigned int offset =
+                        spacepoint_idx * max_num_triplets_per_spacepoint;
+                    unsigned int out_idx;
+
+                    if (size == max_num_triplets_per_spacepoint) {
+                        new_size = size;
+                        scalar worst_weight =
+                            std::numeric_limits<scalar>::max();
+                        for (unsigned int i = 0; i < size; ++i) {
+                            if (triplet_weight.at(offset + i) < worst_weight) {
+                                worst_weight = triplet_weight.at(offset + i);
+                                out_idx = i;
+                            }
+                        }
+                    } else {
+                        new_size = size + 1;
+                        out_idx = size;
+                    }
+
+                    triplet_index.at(offset + out_idx) = triplet_idx;
+                    triplet_weight.at(offset + out_idx) = weight;
+
+                    scalar new_worst = std::numeric_limits<scalar>::max();
+
+                    for (unsigned int i = 0; i < new_size; ++i) {
+                        new_worst =
+                            std::min(new_worst, triplet_weight.at(offset + i));
+                    }
+
+                    [[maybe_unused]] bool cas_result =
+                        mutex.compare_exchange_strong(
+                            desired_set, detail::encode_insertion_mutex(
+                                             false, new_size, new_worst));
+                    assert(cas_result);
+
+                    need_to_write = false;
+                }
+            }
+
+            if (!need_to_write && current_state < 3) {
+                if (current_state < 2) {
+                    spacepoint_idx = get_idx_for_state(++current_state);
+                    need_to_write = true;
+                } else {
+                    ++current_state;
+                }
+            }
+        }
+    }
+}
+
+__global__ inline void gather_spacepoint_votes(
+    const vecmem::data::vector_view<const unsigned long long int>
+        insertion_mutex_view,
+    const vecmem::data::vector_view<const unsigned int> triplet_index_view,
+    vecmem::data::vector_view<unsigned int> votes_per_triplet_view,
+    const unsigned int max_num_triplets_per_spacepoint) {
+
+    unsigned int thread_idx = blockIdx.x * blockDim.x + threadIdx.x;
+    unsigned int spacepoint_idx = thread_idx / max_num_triplets_per_spacepoint;
+    unsigned int triplet_idx = thread_idx % max_num_triplets_per_spacepoint;
+
+    const vecmem::device_vector<const unsigned long long int> insertion_mutex(
+        insertion_mutex_view);
+    const vecmem::device_vector<const unsigned int> triplet_index(
+        triplet_index_view);
+    vecmem::device_vector<unsigned int> votes_per_triplet(
+        votes_per_triplet_view);
+
+    if (spacepoint_idx >= insertion_mutex.size()) {
+        return;
+    }
+
+    auto [locked, size, worst] =
+        detail::decode_insertion_mutex(insertion_mutex.at(spacepoint_idx));
+
+    if (size == 0) {
+        return;
+    }
+
+    unsigned int num_votes =
+        (size + max_num_triplets_per_spacepoint - 1) / size;
+
+    if (triplet_idx < size) {
+        vecmem::device_atomic_ref<unsigned int>(
+            votes_per_triplet.at(triplet_index.at(thread_idx)))
+            .fetch_add(num_votes);
+    }
+}
 
 /// CUDA kernel for running @c traccc::device::count_doublets
 __global__ void count_doublets(
@@ -134,6 +324,7 @@ __global__ void select_seeds(
     device::triplet_counter_spM_collection_types::const_view spM_tc,
     device::triplet_counter_collection_types::const_view midBot_tc,
     device::device_triplet_collection_types::view triplet_view,
+    const vecmem::data::vector_view<const unsigned int> votes_per_triplet_view,
     edm::seed_collection::view seed_view) {
 
     // Array for temporary storage of triplets for comparing within seed
@@ -145,7 +336,7 @@ __global__ void select_seeds(
 
     device::select_seeds(details::global_index1(), finder_config, filter_config,
                          spacepoints, sp_view, spM_tc, midBot_tc, triplet_view,
-                         dataPos, seed_view);
+                         dataPos, votes_per_triplet_view, seed_view);
 }
 
 }  // namespace kernels
@@ -187,6 +378,10 @@ edm::seed_collection::buffer seed_finding::operator()(
     if (num_spacepoints == 0) {
         return {0, m_mr.main};
     }
+
+    // Number of spacepoints including those not in the grid.
+    const unsigned int num_spacepoints_total =
+        m_copy.get_size(spacepoints_view);
 
     // Set up the doublet counter buffer.
     device::doublet_counter_collection_types::buffer doublet_counter_buffer = {
@@ -350,6 +545,64 @@ edm::seed_collection::buffer seed_finding::operator()(
                   triplet_buffer);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
+    vecmem::data::vector_buffer<unsigned int> votes_per_triplet_buffer(
+        globalCounter_host->m_nTriplets, m_mr.main);
+    m_copy.setup(votes_per_triplet_buffer)->wait();
+    m_copy.memset(votes_per_triplet_buffer, 0)->wait();
+
+    {
+        unsigned int num_votes_per_sp = 3;
+
+        vecmem::data::vector_buffer<unsigned int>
+            best_triplets_per_spacepoint_index_buffer(
+                num_votes_per_sp * num_spacepoints_total, m_mr.main);
+        m_copy.setup(best_triplets_per_spacepoint_index_buffer)->wait();
+
+        vecmem::data::vector_buffer<unsigned long long int>
+            best_triplets_per_spacepoint_insertion_mutex_buffer(
+                num_spacepoints_total, m_mr.main);
+        m_copy.setup(best_triplets_per_spacepoint_insertion_mutex_buffer)
+            ->wait();
+        m_copy.memset(best_triplets_per_spacepoint_insertion_mutex_buffer, 0)
+            ->wait();
+
+        {
+            vecmem::data::vector_buffer<float>
+                best_triplets_per_spacepoint_weight_buffer(
+                    num_votes_per_sp * num_spacepoints_total, m_mr.main);
+            m_copy.setup(best_triplets_per_spacepoint_weight_buffer)->wait();
+
+            unsigned int num_threads = 64;
+            unsigned int num_blocks =
+                (globalCounter_host->m_nTriplets + num_threads - 1) /
+                num_threads;
+
+            kernels::gather_best_triplets_per_spacepoint<<<
+                num_blocks, num_threads, 0, stream>>>(
+                triplet_buffer, g2_view,
+                best_triplets_per_spacepoint_insertion_mutex_buffer,
+                best_triplets_per_spacepoint_index_buffer,
+                best_triplets_per_spacepoint_weight_buffer, num_votes_per_sp);
+
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+        }
+
+        {
+            unsigned int num_threads = 512;
+            unsigned int num_blocks =
+                (num_votes_per_sp * num_spacepoints_total + num_threads - 1) /
+                num_threads;
+
+            kernels::
+                gather_spacepoint_votes<<<num_blocks, num_threads, 0, stream>>>(
+                    best_triplets_per_spacepoint_insertion_mutex_buffer,
+                    best_triplets_per_spacepoint_index_buffer,
+                    votes_per_triplet_buffer, num_votes_per_sp);
+
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+        }
+    }
+
     // Create result object: collection of seeds
     edm::seed_collection::buffer seed_buffer(
         globalCounter_host->m_nTriplets, m_mr.main,
@@ -371,7 +624,7 @@ edm::seed_collection::buffer seed_finding::operator()(
                             stream>>>(
         m_seedfinder_config, m_seedfilter_config, spacepoints_view, g2_view,
         triplet_counter_spM_buffer, triplet_counter_midBot_buffer,
-        triplet_buffer, seed_buffer);
+        triplet_buffer, votes_per_triplet_buffer, seed_buffer);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     return seed_buffer;

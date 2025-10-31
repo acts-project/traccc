@@ -194,9 +194,9 @@ struct seedfilter_config {
     float deltaInvHelixDiameter = 0.00003f / unit<float>::mm;
     // the impact parameters (d0) is multiplied by this factor and subtracted
     // from weight
-    float impactWeightFactor = 1.f;
+    float impactWeightFactor = 0.5f;
     // seed weight increased by this value if a compatible seed has been found.
-    float compatSeedWeight = 200.f;
+    float compatSeedWeight = 2.5f;
     // minimum distance between compatible seeds to be considered for weight
     // boost
     float deltaRMin = 5.f * unit<float>::mm;
