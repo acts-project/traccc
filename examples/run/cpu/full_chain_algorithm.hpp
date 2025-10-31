@@ -68,17 +68,18 @@ class full_chain_algorithm
     /// @param dummy This is not used anywhere. Allows templating CPU/Device
     /// algorithm.
     ///
-    full_chain_algorithm(vecmem::memory_resource& mr,
-                         const clustering_algorithm::config_type& dummy,
-                         const seedfinder_config& finder_config,
-                         const spacepoint_grid_config& grid_config,
-                         const seedfilter_config& filter_config,
-                         const finding_algorithm::config_type& finding_config,
-                         const fitting_algorithm::config_type& fitting_config,
-                         const silicon_detector_description::host& det_descr,
-                         const magnetic_field& field,
-                         const host_detector* detector,
-                         std::unique_ptr<const traccc::Logger> logger);
+    full_chain_algorithm(
+        vecmem::memory_resource& mr,
+        const clustering_algorithm::config_type& dummy,
+        const seedfinder_config& finder_config,
+        const spacepoint_grid_config& grid_config,
+        const seedfilter_config& filter_config,
+        const track_params_estimation_config& track_params_estimation_config,
+        const finding_algorithm::config_type& finding_config,
+        const fitting_algorithm::config_type& fitting_config,
+        const silicon_detector_description::host& det_descr,
+        const magnetic_field& field, const host_detector* detector,
+        std::unique_ptr<const traccc::Logger> logger);
 
     /// Reconstruct track parameters in the entire detector
     ///
@@ -140,6 +141,9 @@ class full_chain_algorithm
     spacepoint_grid_config m_grid_config;
     /// Configuration for the seed filtering
     seedfilter_config m_filter_config;
+
+    /// Configuration for track parameter estimation
+    track_params_estimation_config m_track_params_estimation_config;
 
     /// Configuration for the track finding
     finding_algorithm::config_type m_finding_config;

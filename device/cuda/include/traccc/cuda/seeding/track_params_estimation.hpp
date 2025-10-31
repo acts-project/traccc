@@ -13,6 +13,7 @@
 #include "traccc/edm/seed_collection.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/edm/track_parameters.hpp"
+#include "traccc/seeding/detail/track_params_estimation_config.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
@@ -31,8 +32,7 @@ struct track_params_estimation
     : public algorithm<bound_track_parameters_collection_types::buffer(
           const measurement_collection_types::const_view&,
           const edm::spacepoint_collection::const_view&,
-          const edm::seed_collection::const_view&, const vector3&,
-          const std::array<traccc::scalar, traccc::e_bound_size>&)>,
+          const edm::seed_collection::const_view&, const vector3&)>,
       public messaging {
 
     public:
@@ -43,6 +43,7 @@ struct track_params_estimation
     ///             and host memory blocks
     /// @param str The CUDA stream to perform the operations in
     track_params_estimation(
+        const track_params_estimation_config& config,
         const traccc::memory_resource& mr, vecmem::copy& copy, stream& str,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
@@ -59,16 +60,12 @@ struct track_params_estimation
     output_type operator()(
         const measurement_collection_types::const_view& measurements,
         const edm::spacepoint_collection::const_view& spacepoints,
-        const edm::seed_collection::const_view& seeds, const vector3& bfield,
-        const std::array<traccc::scalar, traccc::e_bound_size>& = {
-            0.02f * traccc::unit<traccc::scalar>::mm,
-            0.03f * traccc::unit<traccc::scalar>::mm,
-            1.f * traccc::unit<traccc::scalar>::degree,
-            1.f * traccc::unit<traccc::scalar>::degree,
-            0.01f / traccc::unit<traccc::scalar>::GeV,
-            1.f * traccc::unit<traccc::scalar>::ns}) const override;
+        const edm::seed_collection::const_view& seeds,
+        const vector3& bfield) const override;
 
     private:
+    const track_params_estimation_config m_config;
+
     /// Memory resource used by the algorithm
     traccc::memory_resource m_mr;
     /// The copy object to use

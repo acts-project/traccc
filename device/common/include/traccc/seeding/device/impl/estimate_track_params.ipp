@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/seeding/detail/track_params_estimation_config.hpp"
 #include "traccc/seeding/device/estimate_track_params.hpp"
 #include "traccc/seeding/track_params_estimation_helper.hpp"
 
@@ -19,10 +20,10 @@ namespace traccc::device {
 TRACCC_HOST_DEVICE
 inline void estimate_track_params(
     const global_index_t globalIndex,
+    const track_params_estimation_config& config,
     const measurement_collection_types::const_view& measurements_view,
     const edm::spacepoint_collection::const_view& spacepoints_view,
     const edm::seed_collection::const_view& seeds_view, const vector3& bfield,
-    const std::array<traccc::scalar, traccc::e_bound_size>& stddev,
     bound_track_parameters_collection_types::view params_view) {
 
     // Check if anything needs to be done.
@@ -46,10 +47,37 @@ inline void estimate_track_params(
     seed_to_bound_param_vector(track_params, measurements_device,
                                spacepoints_device, this_seed, bfield);
 
+    // NOTE: The code below uses the covariance of theta in the calculation of
+    // the calculation of q/p. Thus, theta must be computed first.
+    static_assert(e_bound_qoverp > e_bound_theta);
+
     // Set Covariance
     for (std::size_t i = 0; i < e_bound_size; i++) {
-        getter::element(track_params.covariance(), i, i) =
-            stddev[i] * stddev[i];
+        scalar var = config.initial_sigma[i] * config.initial_sigma[i];
+
+        if (i == e_bound_qoverp) {
+            const scalar var_theta = getter::element(
+                track_params.covariance(), e_bound_theta, e_bound_theta);
+
+            // Contribution from sigma(q/pt)
+            const scalar sigma_qopt = config.initial_sigma_qopt *
+                                      math::sin(track_params[e_bound_theta]);
+            var += sigma_qopt * sigma_qopt;
+
+            // Contribution from sigma(pt)/pt
+            const scalar sigma_pt_rel =
+                config.initial_sigma_pt_rel * track_params[e_bound_qoverp];
+            var += sigma_pt_rel * sigma_pt_rel;
+
+            // Contribution from sigma(theta)
+            scalar sigma_theta = track_params[e_bound_qoverp] /
+                                 math::tan(track_params[e_bound_theta]);
+            var += var_theta * sigma_theta * sigma_theta;
+        }
+
+        var *= config.initial_inflation[i];
+
+        getter::element(track_params.covariance(), i, i) = var;
     }
 }
 

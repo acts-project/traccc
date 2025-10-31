@@ -45,6 +45,7 @@
 #include "traccc/performance/soa_comparator.hpp"
 #include "traccc/performance/timer.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
+#include "traccc/seeding/detail/track_params_estimation_config.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 #include "traccc/utils/propagation.hpp"
@@ -153,8 +154,10 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::host::seeding_algorithm sa(
         seedfinder_config, spacepoint_grid_config, seedfilter_config, host_mr,
         logger().clone("HostSeedingAlg"));
+    const traccc::track_params_estimation_config track_params_estimation_config;
     traccc::host::track_params_estimation tp(
-        host_mr, logger().clone("HostTrackParEstAlg"));
+        track_params_estimation_config, host_mr,
+        logger().clone("HostTrackParEstAlg"));
 
     traccc::cuda::stream stream;
 
@@ -168,7 +171,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                                             stream,
                                             logger().clone("CudaSeedingAlg")};
     traccc::cuda::track_params_estimation tp_cuda{
-        mr, async_copy, stream, logger().clone("CudaTrackParEstAlg")};
+        track_params_estimation_config, mr, async_copy, stream,
+        logger().clone("CudaTrackParEstAlg")};
 
     // Propagation configuration
     detray::propagation::config propagation_config(propagation_opts);
