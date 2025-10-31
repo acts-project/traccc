@@ -16,18 +16,22 @@
 namespace traccc::device {
 
 TRACCC_HOST_DEVICE
-inline void update_triplet_weights(
+inline void find_triplet_confirmations(
     const global_index_t globalIndex, const seedfilter_config& filter_config,
     const edm::spacepoint_collection::const_view& spacepoints_view,
     const triplet_counter_spM_collection_types::const_view& spM_tc_view,
     const triplet_counter_collection_types::const_view& tc_view, scalar* data,
-    device_triplet_collection_types::view triplet_view) {
+    const device_triplet_collection_types::const_view triplet_view,
+    vecmem::data::vector_view<unsigned int> num_confirmations_view) {
 
     // Check if anything needs to be done.
-    device_triplet_collection_types::device triplets(triplet_view);
+    const device_triplet_collection_types::const_device triplets(triplet_view);
     if (globalIndex >= triplets.size()) {
         return;
     }
+
+    vecmem::device_vector<unsigned int> num_confirmations(
+        num_confirmations_view);
 
     // Set up the device containers
     const edm::spacepoint_collection::const_device spacepoints{
@@ -38,7 +42,7 @@ inline void update_triplet_weights(
         tc_view);
 
     // Current work item
-    device_triplet this_triplet = triplets.at(globalIndex);
+    const device_triplet& this_triplet = triplets.at(globalIndex);
 
     const edm::spacepoint_collection::const_device::const_proxy_type
         current_spT = spacepoints.at(this_triplet.spT);
@@ -52,7 +56,7 @@ inline void update_triplet_weights(
         this_triplet.curvature - filter_config.deltaInvHelixDiameter;
     const scalar upperLimitCurv =
         this_triplet.curvature + filter_config.deltaInvHelixDiameter;
-    std::size_t num_compat_seedR = 0;
+    unsigned int num_compat_seedR = 0;
 
     const triplet_counter mb_count =
         triplet_counts.at(static_cast<unsigned int>(this_triplet.counter_link));
@@ -116,7 +120,6 @@ inline void update_triplet_weights(
 
         if (newCompSeed) {
             data[num_compat_seedR] = otherTop_r;
-            this_triplet.weight += filter_config.compatSeedWeight;
             num_compat_seedR++;
         }
 
@@ -125,7 +128,7 @@ inline void update_triplet_weights(
         }
     }
 
-    triplets.at(globalIndex).weight = this_triplet.weight;
+    num_confirmations.at(globalIndex) = num_compat_seedR;
 }
 
 }  // namespace traccc::device
