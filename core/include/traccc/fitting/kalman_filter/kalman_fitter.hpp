@@ -249,6 +249,10 @@ class kalman_fitter {
         // Run forward filtering
         propagator.propagate(propagation, fitter_state());
 
+        if (!fitter_state.m_fit_actor_state.is_complete()) {
+            return kalman_fitter_status::ERROR_NOT_ALL_TRACK_STATES_FOUND;
+        }
+
         return kalman_fitter_status::SUCCESS;
     }
 
@@ -272,14 +276,16 @@ class kalman_fitter {
         // Since the smoothed track parameter of the last surface can be
         // considered to be the filtered one, we can reversly iterate the
         // algorithm to obtain the smoothed parameter of other surfaces
-        while (!fitter_state.m_fit_actor_state.is_complete() &&
-               (!fitter_state.m_fit_actor_state.is_state() ||
-                fitter_state.m_fit_actor_state().is_hole())) {
+        while (
+            !fitter_state.m_fit_actor_state.is_complete() &&
+            (!fitter_state.m_fit_actor_state.is_state() ||
+             fitter_state.m_fit_actor_state().is_hole() ||
+             fitter_state.m_fit_actor_state().filtered_params().is_invalid())) {
             fitter_state.m_fit_actor_state.next();
         }
 
         if (fitter_state.m_fit_actor_state.is_complete()) {
-            return kalman_fitter_status::SUCCESS;
+            return kalman_fitter_status::ERROR_TRACK_STATES_EMPTY;
         }
 
         auto last = fitter_state.m_fit_actor_state();
@@ -351,6 +357,10 @@ class kalman_fitter {
         }
 
         propagator.propagate(propagation, fitter_state.backward_actor_state());
+
+        if (!fitter_state.m_fit_actor_state.is_complete()) {
+            return kalman_fitter_status::ERROR_NOT_ALL_TRACK_STATES_FOUND;
+        }
 
         // Reset the backward mode to false
         fitter_state.m_fit_actor_state.backward_mode = false;

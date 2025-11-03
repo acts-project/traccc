@@ -54,6 +54,8 @@ TRACCC_HOST_DEVICE inline void fit_backward(
 
             track = fitter_state.m_fit_res;
         } else {
+            fitter_state.m_fit_res.fit_outcome() =
+                track_fit_outcome::FAILURE_BACKWARD;
             param_liveness.at(param_id) = 0u;
         }
 

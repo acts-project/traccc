@@ -47,6 +47,8 @@ TRACCC_HOST_DEVICE inline void fit_forward(
     kalman_fitter_status fit_status = fitter.filter(params, fitter_state);
 
     if (fit_status != kalman_fitter_status::SUCCESS) {
+        fitter_state.m_fit_res.fit_outcome() =
+            track_fit_outcome::FAILURE_FORWARD;
         param_liveness.at(param_id) = 0u;
     }
 }
