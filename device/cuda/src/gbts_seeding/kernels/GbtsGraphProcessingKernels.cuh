@@ -67,13 +67,10 @@ struct Tracklet {
  *  @param[internal] d_counters[5 and 6] used for counting the last block and
  * for the number of active edges
  */
-__global__ static void CCA_IterationKernel(const int* d_output_graph,
-                                           char* d_levels, int* d_active_edges,
-                                           short2* d_outgoing_paths,
-                                           unsigned int* d_counters, int iter,
-                                           unsigned int nEdges,
-                                           unsigned int max_num_neighbours,
-                                           int minLevel) {
+__global__ static void CCA_IterationKernel(
+    const int* d_output_graph, char* d_levels, int* d_active_edges,
+    short2* d_outgoing_paths, unsigned int* d_counters, int iter,
+    unsigned int nEdges, unsigned int max_num_neighbours, int minLevel) {
 
     __shared__ unsigned int nEdgesLeft;
     unsigned int edge_size = 2 + 1 + max_num_neighbours;
@@ -554,16 +551,16 @@ inline __device__ void add_seed_proposal(const int qual, const int path_idx,
     }
 }
 
-void __global__
-fit_segments(float4* d_sp_params, int* d_output_graph, int2* d_path_store,
-             int2* d_seed_proposals, unsigned long long int* d_edge_bids,
-             char* d_seed_ambiguity, char* d_levels, unsigned int* d_counters,
-             unsigned int nTerminusEdges, int minLevel,
-             unsigned int max_num_neighbours,
-             gbts_seed_extraction_params seed_extraction_params) {
+void __global__ fit_segments(
+    float4* d_sp_params, int* d_output_graph, int2* d_path_store,
+    int2* d_seed_proposals, unsigned long long int* d_edge_bids,
+    char* d_seed_ambiguity, char* d_levels, unsigned int* d_counters,
+    unsigned int nTerminusEdges, int minLevel, unsigned int max_num_neighbours,
+    gbts_seed_extraction_params seed_extraction_params) {
 
     // take an extracted path and fit it to produce a quality score
-    unsigned int path_idx = threadIdx.x + blockIdx.x * blockDim.x + nTerminusEdges;
+    unsigned int path_idx =
+        threadIdx.x + blockIdx.x * blockDim.x + nTerminusEdges;
     if (path_idx >= d_counters[7]) {
         return;
     }
@@ -605,13 +602,12 @@ fit_segments(float4* d_sp_params, int* d_output_graph, int2* d_path_store,
     if (length < minLevel) {
         return;
     }
-	int qual = 0;
-	if(toggle) {
-		qual = static_cast<int>(seed_extraction_params.qual_scale * state2.m_J);
-	}
-	else {
-		qual = static_cast<int>(seed_extraction_params.qual_scale * state1.m_J);
-	}
+    int qual = 0;
+    if (toggle) {
+        qual = static_cast<int>(seed_extraction_params.qual_scale * state2.m_J);
+    } else {
+        qual = static_cast<int>(seed_extraction_params.qual_scale * state1.m_J);
+    }
     int prop_idx = atomicAdd(&d_counters[8], 1);
     // perform first round of bidding for disambiguation
     // only on the outermost edge
