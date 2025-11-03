@@ -605,8 +605,13 @@ fit_segments(float4* d_sp_params, int* d_output_graph, int2* d_path_store,
     if (length < minLevel) {
         return;
     }
-    int qual = static_cast<int>(1e5 * state1.m_J);
-
+	int qual = 0;
+	if(toggle) {
+		qual = static_cast<int>(seed_extraction_params.qual_scale * state2.m_J);
+	}
+	else {
+		qual = static_cast<int>(seed_extraction_params.qual_scale * state1.m_J);
+	}
     int prop_idx = atomicAdd(&d_counters[8], 1);
     // perform first round of bidding for disambiguation
     // only on the outermost edge

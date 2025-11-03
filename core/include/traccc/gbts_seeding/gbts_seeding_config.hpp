@@ -48,7 +48,7 @@ struct gbts_consts {
     static constexpr unsigned short max_cca_iter = 15;
     // shared memory allocation sizes
     static constexpr unsigned short node_buffer_length = 128;
-    static constexpr unsigned short live_path_buffer = 1048;
+    static constexpr unsigned short live_path_buffer = 1024;
 
     // access into output graph
     static constexpr char node1 = 0;
@@ -118,7 +118,7 @@ struct gbts_seed_extraction_params {
     // max qual = add_hit*max_length*qual_scale
     float qual_scale =
         0.01 * static_cast<float>(INT_MAX) /
-        static_cast<float>(add_hit * traccc::device::gbts_consts::max_cca_iter);
+		(add_hit * static_cast<float>(traccc::device::gbts_consts::max_cca_iter));
 
     float inv_max_curvature = 900.0f;
     float max_z0 = 160.0f;
