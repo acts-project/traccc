@@ -776,7 +776,8 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     cudaMemcpyAsync(&path_sizes, &ctx.d_counters[6], 2 * sizeof(unsigned int),
                     cudaMemcpyDeviceToHost, stream);
 
-    TRACCC_DEBUG(path_sizes[0] << "size of path store | nTerminusEdges " << path_sizes[1]);
+    TRACCC_DEBUG(path_sizes[0] << "size of path store | nTerminusEdges "
+                               << path_sizes[1]);
 
     cudaMalloc(&ctx.d_path_store,
                (path_sizes[0] + path_sizes[1]) * sizeof(int2));
@@ -806,9 +807,8 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     kernels::fit_segments<<<nBlocks, nThreads, 0, stream>>>(
         ctx.d_reducedSP, ctx.d_output_graph, ctx.d_path_store,
         ctx.d_seed_proposals, ctx.d_edge_bids, ctx.d_seed_ambiguity,
-        ctx.d_levels, ctx.d_counters, path_sizes[1],
-        m_config.minLevel, m_config.max_num_neighbours,
-        m_config.seed_extraction_params);
+        ctx.d_levels, ctx.d_counters, path_sizes[1], m_config.minLevel,
+        m_config.max_num_neighbours, m_config.seed_extraction_params);
 
     unsigned int nProps = 0;
     cudaMemcpyAsync(&nProps, &ctx.d_counters[8], sizeof(unsigned int),

@@ -118,7 +118,8 @@ struct gbts_seed_extraction_params {
     // max qual = add_hit*max_length*qual_scale
     float qual_scale =
         0.01f * static_cast<float>(INT_MAX) /
-		(add_hit * static_cast<float>(traccc::device::gbts_consts::max_cca_iter));
+        (add_hit *
+         static_cast<float>(traccc::device::gbts_consts::max_cca_iter));
 
     float inv_max_curvature = 900.0f;
     float max_z0 = 160.0f;
