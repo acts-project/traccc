@@ -9,6 +9,7 @@
 
 // Local include(s).
 #include "traccc/definitions/qualifiers.hpp"
+#include "traccc/edm/track_constituent_link.hpp"
 #include "traccc/edm/track_fit_outcome.hpp"
 #include "traccc/edm/track_parameters.hpp"
 
@@ -20,14 +21,14 @@
 
 namespace traccc::edm {
 
-/// Interface for the @c traccc::edm::track_fit_collection type.
+/// Interface for the @c traccc::edm::track_collection type.
 ///
 /// It provides the API that users would interact with, while using the
 /// columns/arrays of the SoA containers, or the variables of the AoS proxies
 /// created on top of the SoA containers.
 ///
 template <typename BASE>
-class track_fit : public BASE {
+class track : public BASE {
 
     public:
     /// @name Functions inherited from the base class
@@ -40,7 +41,7 @@ class track_fit : public BASE {
 
     /// @}
 
-    /// @name Track Candidate Information
+    /// @name Track Information
     /// @{
 
     /// The outcome of the track fit (non-const)
@@ -121,18 +122,18 @@ class track_fit : public BASE {
     TRACCC_HOST_DEVICE
     const auto& nholes() const { return BASE::template get<5>(); }
 
-    /// The indices of the track states associated to the track fit (non-const)
+    /// Links to the constituents associated with the track (non-const)
     ///
-    /// @return A (non-const) jagged vector of unsigned integers
-    ///
-    TRACCC_HOST_DEVICE
-    auto& state_indices() { return BASE::template get<6>(); }
-    /// The indices of the track states associated to the track fit (const)
-    ///
-    /// @return A (const) jagged vector of unsigned integers
+    /// @return A (non-const) jagged vector of links
     ///
     TRACCC_HOST_DEVICE
-    const auto& state_indices() const { return BASE::template get<6>(); }
+    auto& constituent_links() { return BASE::template get<6>(); }
+    /// Links to the constituents associated with the track (const)
+    ///
+    /// @return A (const) jagged vector of links
+    ///
+    TRACCC_HOST_DEVICE
+    const auto& constituent_links() const { return BASE::template get<6>(); }
 
     /// @}
 
@@ -143,6 +144,17 @@ class track_fit : public BASE {
     TRACCC_HOST_DEVICE
     void reset_quality();
 
+    /// Equality operator
+    ///
+    /// @note This function must only be used on proxy objects, not on
+    ///       containers!
+    ///
+    /// @param[in] other The object to compare with
+    /// @return @c true if the objects are equal, @c false otherwise
+    ///
+    template <typename T>
+    TRACCC_HOST_DEVICE bool operator==(const track<T>& other) const;
+
     /// @}
 
 };  // class track_fit
@@ -152,8 +164,8 @@ class track_fit : public BASE {
 /// @tparam ALGEBRA The algebra type used to describe the tracks
 ///
 template <detray::concepts::algebra ALGEBRA>
-using track_fit_collection = vecmem::edm::container<
-    track_fit,
+using track_collection = vecmem::edm::container<
+    track,
     // fit_outcome
     vecmem::edm::type::vector<track_fit_outcome>,
     // params
@@ -166,10 +178,10 @@ using track_fit_collection = vecmem::edm::container<
     vecmem::edm::type::vector<detray::dscalar<ALGEBRA>>,
     // nholes
     vecmem::edm::type::vector<unsigned int>,
-    // state_indices
-    vecmem::edm::type::jagged_vector<unsigned int>>;
+    // constituent_links
+    vecmem::edm::type::jagged_vector<track_constituent_link>>;
 
 }  // namespace traccc::edm
 
 // Include the implementation.
-#include "traccc/edm/impl/track_fit_collection.ipp"
+#include "traccc/edm/impl/track_collection.ipp"

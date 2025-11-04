@@ -22,8 +22,8 @@ kalman_fitting_algorithm::kalman_fitting_algorithm(
 
 kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
     const host_detector& det, const magnetic_field& bfield,
-    const edm::track_candidate_container<default_algebra>::const_view&
-        track_candidates) const {
+    const edm::track_container<default_algebra>::const_view& track_candidates)
+    const {
 
     // Perform the track fitting using the appropriate templated implementation.
     return host_detector_magnetic_field_visitor<detector_type_list,
