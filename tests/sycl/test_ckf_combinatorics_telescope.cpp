@@ -163,9 +163,13 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
         // Truth Track Candidates
         traccc::event_data evt_data(path, i_evt, host_mr);
 
-        traccc::edm::track_candidate_container<traccc::default_algebra>::host
+        traccc::measurement_collection_types::host truth_measurements{&host_mr};
+        traccc::edm::track_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
-        evt_data.generate_truth_candidates(truth_track_candidates, sg, host_mr);
+        evt_data.generate_truth_candidates(truth_track_candidates,
+                                           truth_measurements, sg, host_mr);
+        truth_track_candidates.measurements =
+            vecmem::get_data(truth_measurements);
 
         ASSERT_EQ(truth_track_candidates.tracks.size(), n_truth_tracks);
 
@@ -203,13 +207,13 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
         auto track_candidates_limit_buffer = device_finding_limit(
             detector_buffer, field, measurements_buffer, seeds_buffer);
 
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+        traccc::edm::track_collection<traccc::default_algebra>::host
             track_candidates{host_mr},
             track_candidates_limit{host_mr};
-        copy(track_candidates_buffer, track_candidates,
+        copy(track_candidates_buffer.tracks, track_candidates,
              vecmem::copy::type::device_to_host)
             ->wait();
-        copy(track_candidates_limit_buffer, track_candidates_limit,
+        copy(track_candidates_limit_buffer.tracks, track_candidates_limit,
              vecmem::copy::type::device_to_host)
             ->wait();
 

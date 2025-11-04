@@ -143,9 +143,13 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
         // Truth Track Candidates
         traccc::event_data evt_data(path, i_evt, host_mr);
 
-        traccc::edm::track_candidate_container<traccc::default_algebra>::host
+        traccc::measurement_collection_types::host truth_measurements{&host_mr};
+        traccc::edm::track_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
-        evt_data.generate_truth_candidates(truth_track_candidates, sg, host_mr);
+        evt_data.generate_truth_candidates(truth_track_candidates,
+                                           truth_measurements, sg, host_mr);
+        truth_track_candidates.measurements =
+            vecmem::get_data(truth_measurements);
 
         ASSERT_EQ(truth_track_candidates.tracks.size(), n_truth_tracks);
 
@@ -173,10 +177,11 @@ TEST_P(CpuCkfCombinatoricsTelescopeTests, Run) {
             host_finding_limit(detector, field, measurements_view, seeds_view);
 
         // Make sure that the number of found tracks = n_track ^ (n_planes + 1)
-        ASSERT_TRUE(track_candidates.size() > track_candidates_limit.size());
-        ASSERT_EQ(track_candidates.size(),
+        ASSERT_TRUE(track_candidates.tracks.size() >
+                    track_candidates_limit.tracks.size());
+        ASSERT_EQ(track_candidates.tracks.size(),
                   std::pow(n_truth_tracks, std::get<11>(GetParam()) + 1));
-        ASSERT_EQ(track_candidates_limit.size(),
+        ASSERT_EQ(track_candidates_limit.tracks.size(),
                   n_truth_tracks * cfg_limit.max_num_branches_per_seed);
     }
 }
