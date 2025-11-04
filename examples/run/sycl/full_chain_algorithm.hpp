@@ -45,7 +45,7 @@ struct full_chain_algorithm_data;
 /// At least as much as is implemented in the project at any given moment.
 ///
 class full_chain_algorithm
-    : public algorithm<edm::track_fit_collection<default_algebra>::host(
+    : public algorithm<edm::track_collection<default_algebra>::host(
           const edm::silicon_cell_collection::host&)>,
       public messaging {
 

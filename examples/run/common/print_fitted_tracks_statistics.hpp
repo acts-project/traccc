@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/track_fit_container.hpp"
+#include "traccc/edm/track_container.hpp"
 #include "traccc/utils/logging.hpp"
 
 namespace traccc::details {
@@ -19,7 +19,7 @@ namespace traccc::details {
 /// @param log    The logger to use for outputting the statistics
 ///
 void print_fitted_tracks_statistics(
-    const edm::track_fit_container<default_algebra>::host& tracks,
+    const edm::track_container<default_algebra>::host& tracks,
     const Logger& log);
 
 }  // namespace traccc::details
