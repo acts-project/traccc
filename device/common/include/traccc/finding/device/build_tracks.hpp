@@ -12,7 +12,7 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/track_candidate_container.hpp"
+#include "traccc/edm/track_container.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/finding_config.hpp"
@@ -43,7 +43,7 @@ struct build_tracks_payload {
     /**
      * @brief View object to the vector of track candidates
      */
-    edm::track_candidate_container<default_algebra>::view track_candidates_view;
+    edm::track_container<default_algebra>::view tracks_view;
 };
 
 /// Function for building full tracks from the link container:

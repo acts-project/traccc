@@ -24,7 +24,7 @@
 
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_candidate_collection.hpp"
+#include "traccc/edm/track_container.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
 #include "traccc/finding/finding_config.hpp"
@@ -70,7 +70,7 @@ namespace traccc::cuda::details {
 /// @return A buffer of the found track candidates
 ///
 template <typename detector_t, typename bfield_t>
-edm::track_candidate_collection<default_algebra>::buffer
+edm::track_container<typename detector_t::algebra_type>::buffer
 combinatorial_kalman_filter(
     const typename detector_t::const_view_type& det, const bfield_t& field,
     const measurement_collection_types::const_view& measurements,
@@ -449,9 +449,10 @@ combinatorial_kalman_filter(
     }
 
     // Create track candidate buffer
-    edm::track_candidate_collection<default_algebra>::buffer
-        track_candidates_buffer{tips_length_host, mr.main, mr.host};
-    copy.setup(track_candidates_buffer)->ignore();
+    typename edm::track_container<typename detector_t::algebra_type>::buffer
+        track_candidates_buffer{
+            {tips_length_host, mr.main, mr.host}, {}, measurements};
+    copy.setup(track_candidates_buffer.tracks)->ignore();
 
     // @Note: nBlocks can be zero in case there is no tip. This happens when
     // chi2_max config is set tightly and no tips are found
@@ -459,11 +460,12 @@ combinatorial_kalman_filter(
         const unsigned int nThreads = warp_size * 2;
         const unsigned int nBlocks = (n_tips_total + nThreads - 1) / nThreads;
 
-        kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(
-            {.seeds_view = seeds,
-             .links_view = links_buffer,
-             .tips_view = tips_buffer,
-             .track_candidates_view = {track_candidates_buffer, measurements}});
+        const device::build_tracks_payload payload{
+            .seeds_view = seeds,
+            .links_view = links_buffer,
+            .tips_view = tips_buffer,
+            .tracks_view = {track_candidates_buffer}};
+        kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(payload);
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
         str.synchronize();

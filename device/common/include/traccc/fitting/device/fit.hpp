@@ -12,7 +12,7 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/track_fit_container.hpp"
+#include "traccc/edm/track_container.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/jagged_vector_view.hpp>
@@ -46,7 +46,7 @@ struct fit_payload {
     /**
      * @brief View object to the output tracks
      */
-    typename edm::track_fit_container<
+    typename edm::track_container<
         typename fitter_t::detector_type::algebra_type>::view tracks_view;
 
     /**

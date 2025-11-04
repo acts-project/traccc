@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s)
-#include "traccc/edm/track_candidate_collection.hpp"
+#include "traccc/edm/track_container.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/jagged_vector_view.hpp>
@@ -23,8 +23,7 @@ struct fill_track_candidates_payload {
     /**
      * @brief View object to the input track candidates
      */
-    edm::track_candidate_collection<default_algebra>::const_view
-        track_candidates_view;
+    edm::track_container<default_algebra>::const_view tracks_view;
 
     /**
      * @brief The number of accepted tracks
@@ -39,8 +38,7 @@ struct fill_track_candidates_payload {
     /**
      * @brief View object to the output track candidates
      */
-    edm::track_candidate_collection<default_algebra>::view
-        res_track_candidates_view;
+    edm::track_container<default_algebra>::view res_tracks_view;
 };
 
 }  // namespace traccc::device

@@ -15,7 +15,7 @@
 
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_candidate_collection.hpp"
+#include "traccc/edm/track_container.hpp"
 #include "traccc/finding/actors/ckf_aborter.hpp"
 #include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/finding/candidate_link.hpp"
@@ -182,7 +182,7 @@ struct build_tracks {
 /// @return A buffer of the found track candidates
 ///
 template <typename detector_t, typename bfield_t>
-edm::track_candidate_collection<default_algebra>::buffer
+edm::track_container<typename detector_t::algebra_type>::buffer
 combinatorial_kalman_filter(
     const typename detector_t::const_view_type& det, const bfield_t& field,
     const measurement_collection_types::const_view& measurements,
@@ -564,9 +564,10 @@ combinatorial_kalman_filter(
     }
 
     // Create track candidate buffer
-    edm::track_candidate_collection<default_algebra>::buffer
-        track_candidates_buffer{tips_length_host, mr.main, mr.host};
-    copy.setup(track_candidates_buffer)->wait();
+    typename edm::track_container<typename detector_t::algebra_type>::buffer
+        track_candidates_buffer{
+            {tips_length_host, mr.main, mr.host}, {}, measurements};
+    copy.setup(track_candidates_buffer.tracks)->wait();
 
     if (n_tips_total > 0) {
         const Idx blocksPerGrid =
@@ -575,10 +576,10 @@ combinatorial_kalman_filter(
 
         ::alpaka::exec<Acc>(queue, workDiv, kernels::build_tracks{},
                             device::build_tracks_payload{
-                                seeds,
-                                links_buffer,
-                                tips_buffer,
-                                {track_candidates_buffer, measurements}});
+                                .seeds_view = seeds,
+                                .links_view = links_buffer,
+                                .tips_view = tips_buffer,
+                                .tracks_view = track_candidates_buffer});
         ::alpaka::wait(queue);
     }
 
