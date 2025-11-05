@@ -150,7 +150,8 @@ int main(int argc, char* argv[]) {
                                     &polymorphic_detector, input_opts.format,
                                     false);
 
-        traccc::edm::track_candidate_container<traccc::default_algebra>::host
+        traccc::measurement_collection_types::host truth_measurements{&host_mr};
+        traccc::edm::track_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
 
         host_detector_visitor<detector_type_list>(
@@ -160,35 +161,37 @@ int main(int argc, char* argv[]) {
                 // Seed generator
                 traccc::seed_generator<typename detector_traits_t::host> sg(
                     det, stddevs);
-                evt_data.generate_truth_candidates(truth_track_candidates, sg,
-                                                   host_mr);
+                evt_data.generate_truth_candidates(
+                    truth_track_candidates, truth_measurements, sg, host_mr);
             });
+        truth_track_candidates.measurements =
+            vecmem::get_data(truth_measurements);
 
         // track candidates buffer
-        traccc::edm::track_candidate_container<traccc::default_algebra>::buffer
+        traccc::measurement_collection_types::buffer truth_measurements_buffer =
+            async_copy.to(vecmem::get_data(truth_measurements), mr.main,
+                          vecmem::copy::type::host_to_device);
+        traccc::edm::track_container<traccc::default_algebra>::buffer
             truth_track_candidates_buffer{
                 async_copy.to(vecmem::get_data(truth_track_candidates.tracks),
                               mr.main, mr.host,
                               vecmem::copy::type::host_to_device),
-                async_copy.to(
-                    vecmem::get_data(truth_track_candidates.measurements),
-                    mr.main, vecmem::copy::type::host_to_device)};
+                {},
+                truth_measurements_buffer};
 
         // Instantiate cuda containers/collections
-        traccc::edm::track_fit_container<traccc::default_algebra>::buffer
+        traccc::edm::track_container<traccc::default_algebra>::buffer
             track_states_cuda_buffer;
 
         {
             traccc::performance::timer t("Track fitting  (cuda)", elapsedTimes);
 
             // Run fitting
-            track_states_cuda_buffer =
-                device_fitting(detector_buffer, device_field,
-                               {truth_track_candidates_buffer.tracks,
-                                truth_track_candidates_buffer.measurements});
+            track_states_cuda_buffer = device_fitting(
+                detector_buffer, device_field, truth_track_candidates_buffer);
         }
 
-        traccc::edm::track_fit_container<traccc::default_algebra>::host
+        traccc::edm::track_container<traccc::default_algebra>::host
             track_states_cuda{host_mr};
         async_copy(track_states_cuda_buffer.tracks, track_states_cuda.tracks,
                    vecmem::copy::type::device_to_host)
@@ -210,8 +213,8 @@ int main(int argc, char* argv[]) {
                 // Run fitting
                 track_states = host_fitting(
                     polymorphic_detector, host_field,
-                    {vecmem::get_data(truth_track_candidates.tracks),
-                     vecmem::get_data(truth_track_candidates.measurements)});
+                    traccc::edm::track_container<traccc::default_algebra>::
+                        const_data(truth_track_candidates));
             }
         }
 
@@ -221,15 +224,14 @@ int main(int argc, char* argv[]) {
 
             // Compare the track parameters made on the host and on the device.
             traccc::soa_comparator<
-                traccc::edm::track_fit_collection<traccc::default_algebra>>
+                traccc::edm::track_collection<traccc::default_algebra>>
                 compare_track_fits{
                     "track fits",
                     traccc::details::comparator_factory<
-                        traccc::edm::track_fit_collection<
-                            traccc::default_algebra>::const_device::
-                            const_proxy_type>{
-                        vecmem::get_data(truth_track_candidates.measurements),
-                        vecmem::get_data(truth_track_candidates.measurements),
+                        traccc::edm::track_collection<traccc::default_algebra>::
+                            const_device::const_proxy_type>{
+                        truth_track_candidates.measurements,
+                        truth_track_candidates.measurements,
                         vecmem::get_data(track_states.states),
                         vecmem::get_data(track_states_cuda.states)}};
             compare_track_fits(vecmem::get_data(track_states.tracks),
@@ -248,8 +250,8 @@ int main(int argc, char* argv[]) {
                         const typename detector_traits_t::host& det) {
                         fit_performance_writer.write(
                             track_states_cuda.tracks.at(i),
-                            track_states_cuda.states,
-                            truth_track_candidates.measurements, det, evt_data);
+                            track_states_cuda.states, truth_measurements, det,
+                            evt_data);
                     });
             }
         }

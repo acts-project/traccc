@@ -16,8 +16,8 @@ namespace traccc::cuda {
 
 kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
     const detector_buffer& det, const magnetic_field& field,
-    const edm::track_candidate_container<default_algebra>::const_view&
-        track_candidates) const {
+    const edm::track_container<default_algebra>::const_view& track_candidates)
+    const {
 
     // Run the track fitting.
     return detector_buffer_magnetic_field_visitor<

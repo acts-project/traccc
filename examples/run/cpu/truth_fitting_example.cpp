@@ -117,7 +117,8 @@ int main(int argc, char* argv[]) {
                                     &polymorphic_detector, input_opts.format,
                                     false);
 
-        traccc::edm::track_candidate_container<traccc::default_algebra>::host
+        traccc::measurement_collection_types::host truth_measurements{&host_mr};
+        traccc::edm::track_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
 
         host_detector_visitor<detector_type_list>(
@@ -127,15 +128,17 @@ int main(int argc, char* argv[]) {
                 // Seed generator
                 traccc::seed_generator<typename detector_traits_t::host> sg(
                     det, stddevs);
-                evt_data.generate_truth_candidates(truth_track_candidates, sg,
-                                                   host_mr);
+                evt_data.generate_truth_candidates(
+                    truth_track_candidates, truth_measurements, sg, host_mr);
             });
+        truth_track_candidates.measurements =
+            vecmem::get_data(truth_measurements);
 
         // Run fitting
         auto track_states = host_fitting(
             polymorphic_detector, field,
-            {vecmem::get_data(truth_track_candidates.tracks),
-             vecmem::get_data(truth_track_candidates.measurements)});
+            traccc::edm::track_container<traccc::default_algebra>::const_data(
+                truth_track_candidates));
 
         details::print_fitted_tracks_statistics(track_states, logger());
 
@@ -150,7 +153,7 @@ int main(int argc, char* argv[]) {
                         const typename detector_traits_t::host& det) {
                         fit_performance_writer.write(
                             track_states.tracks.at(i), track_states.states,
-                            truth_track_candidates.measurements, det, evt_data);
+                            truth_measurements, det, evt_data);
                     });
             }
         }

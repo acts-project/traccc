@@ -17,7 +17,7 @@
 
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_candidate_collection.hpp"
+#include "traccc/edm/track_container.hpp"
 #include "traccc/finding/actors/ckf_aborter.hpp"
 #include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/finding/candidate_link.hpp"
@@ -82,7 +82,7 @@ struct build_tracks {};
 /// @return A buffer of the found track candidates
 ///
 template <typename kernel_t, typename detector_t, typename bfield_t>
-edm::track_candidate_collection<default_algebra>::buffer
+edm::track_container<typename detector_t::algebra_type>::buffer
 combinatorial_kalman_filter(
     const typename detector_t::const_view_type& det, const bfield_t& field,
     const measurement_collection_types::const_view& measurements,
@@ -510,26 +510,27 @@ combinatorial_kalman_filter(
     }
 
     // Create track candidate buffer
-    edm::track_candidate_collection<default_algebra>::buffer
-        track_candidates_buffer{tips_length_host, mr.main, mr.host};
-    copy.setup(track_candidates_buffer)->wait();
+    typename edm::track_container<typename detector_t::algebra_type>::buffer
+        track_candidates_buffer{
+            {tips_length_host, mr.main, mr.host}, {}, measurements};
+    copy.setup(track_candidates_buffer.tracks)->wait();
 
     if (n_tips_total > 0) {
         queue
             .submit([&](::sycl::handler& h) {
                 h.parallel_for<kernels::build_tracks<kernel_t>>(
                     calculate1DimNdRange(n_tips_total, 64),
-                    [measurements, seeds,
-                     links = vecmem::get_data(links_buffer),
+                    [seeds, links = vecmem::get_data(links_buffer),
                      tips = vecmem::get_data(tips_buffer),
-                     track_candidates = vecmem::get_data(
-                         track_candidates_buffer)](::sycl::nd_item<1> item) {
-                        device::build_tracks(
-                            details::global_index(item),
-                            {seeds,
-                             links,
-                             tips,
-                             {track_candidates, measurements}});
+                     tracks = typename edm::track_container<
+                         typename detector_t::algebra_type>::
+                         view(track_candidates_buffer)](
+                        ::sycl::nd_item<1> item) {
+                        device::build_tracks(details::global_index(item),
+                                             {.seeds_view = seeds,
+                                              .links_view = links,
+                                              .tips_view = tips,
+                                              .tracks_view = tracks});
                     });
             })
             .wait_and_throw();

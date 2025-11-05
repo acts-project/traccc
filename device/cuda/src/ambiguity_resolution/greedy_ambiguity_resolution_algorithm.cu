@@ -89,22 +89,21 @@ greedy_ambiguity_resolution_algorithm::greedy_ambiguity_resolution_algorithm(
 
 greedy_ambiguity_resolution_algorithm::output_type
 greedy_ambiguity_resolution_algorithm::operator()(
-    const edm::track_candidate_container<default_algebra>::const_view&
-        track_candidates_view) const {
+    const edm::track_container<default_algebra>::const_view& tracks_view)
+    const {
 
     measurement_collection_types::const_device measurements(
-        track_candidates_view.measurements);
+        tracks_view.measurements);
 
-    auto n_meas_total =
-        m_copy.get().get_size(track_candidates_view.measurements);
+    auto n_meas_total = m_copy.get().get_size(tracks_view.measurements);
 
     // Make sure that max_measurement_id = number_of_measurement -1
     // @TODO: More robust way is to assert that measurement id ranges from 0, 1,
     // ..., number_of_measurement - 1
-    [[maybe_unused]] auto max_meas_it = thrust::max_element(
-        thrust::device, track_candidates_view.measurements.ptr(),
-        track_candidates_view.measurements.ptr() + n_meas_total,
-        measurement_id_comparator{});
+    [[maybe_unused]] auto max_meas_it =
+        thrust::max_element(thrust::device, tracks_view.measurements.ptr(),
+                            tracks_view.measurements.ptr() + n_meas_total,
+                            measurement_id_comparator{});
 
     measurement max_meas;
     cudaMemcpy(&max_meas, thrust::raw_pointer_cast(&(*max_meas_it)),
@@ -124,7 +123,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
         thrust::cuda::par_nosync(std::pmr::polymorphic_allocator(&(m_mr.main)))
             .on(stream);
 
-    const unsigned int n_tracks = track_candidates_view.tracks.capacity();
+    const unsigned int n_tracks = tracks_view.tracks.capacity();
 
     if (n_tracks == 0) {
         return {};
@@ -142,7 +141,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
 
     // Get the sizes of the measurement index vector in each track
     const std::vector<unsigned int> candidate_sizes =
-        m_copy.get().get_sizes(track_candidates_view.tracks);
+        m_copy.get().get_sizes(tracks_view.tracks);
 
     // Declare the buffer for meas_ids which is a jagged vector
     // Each sub-vector of meas_ids represent measurement IDs of each track
@@ -175,7 +174,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
         // Fill the vectors
         kernels::fill_vectors<<<nBlocks, nThreads, 0, stream>>>(
             m_config, device::fill_vectors_payload{
-                          .track_candidates_view = track_candidates_view,
+                          .tracks_view = tracks_view,
                           .meas_ids_view = meas_ids_buffer,
                           .flat_meas_ids_view = flat_meas_ids_buffer,
                           .pvals_view = pvals_buffer,
@@ -683,11 +682,12 @@ greedy_ambiguity_resolution_algorithm::operator()(
     const unsigned int max_cands_size = *max_it;
 
     // Create resolved candidate buffer
-    edm::track_candidate_collection<default_algebra>::buffer
-        res_track_candidates_buffer{
-            std::vector<std::size_t>(n_accepted, max_cands_size), m_mr.main,
-            m_mr.host, vecmem::data::buffer_type::resizable};
-    m_copy.get().setup(res_track_candidates_buffer)->ignore();
+    edm::track_container<default_algebra>::buffer res_track_candidates_buffer{
+        {std::vector<std::size_t>(n_accepted, max_cands_size), m_mr.main,
+         m_mr.host, vecmem::data::buffer_type::resizable},
+        {},
+        tracks_view.measurements};
+    m_copy.get().setup(res_track_candidates_buffer.tracks)->ignore();
 
     // Fill the output track candidates
     {
@@ -695,10 +695,10 @@ greedy_ambiguity_resolution_algorithm::operator()(
             kernels::fill_track_candidates<<<
                 static_cast<unsigned int>((n_accepted + 63) / 64), 64, 0,
                 stream>>>(device::fill_track_candidates_payload{
-                .track_candidates_view = track_candidates_view.tracks,
+                .tracks_view = tracks_view,
                 .n_accepted = n_accepted,
                 .sorted_ids_view = sorted_ids_buffer,
-                .res_track_candidates_view = res_track_candidates_buffer});
+                .res_tracks_view = res_track_candidates_buffer});
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
             m_stream.get().synchronize();

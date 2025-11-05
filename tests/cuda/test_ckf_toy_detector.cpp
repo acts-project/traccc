@@ -159,9 +159,13 @@ TEST_P(CkfToyDetectorTests, Run) {
         // Truth Track Candidates
         traccc::event_data evt_data(path, i_evt, host_mr);
 
-        traccc::edm::track_candidate_container<traccc::default_algebra>::host
+        traccc::measurement_collection_types::host truth_measurements{&host_mr};
+        traccc::edm::track_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
-        evt_data.generate_truth_candidates(truth_track_candidates, sg, host_mr);
+        evt_data.generate_truth_candidates(truth_track_candidates,
+                                           truth_measurements, sg, host_mr);
+        truth_track_candidates.measurements =
+            vecmem::get_data(truth_measurements);
 
         ASSERT_EQ(truth_track_candidates.tracks.size(), n_truth_tracks);
 
@@ -196,38 +200,40 @@ TEST_P(CkfToyDetectorTests, Run) {
             vecmem::get_data(seeds));
 
         // Run device finding
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
+        traccc::edm::track_container<traccc::default_algebra>::buffer
             track_candidates_cuda_buffer = device_finding(
                 detector_buffer, field, measurements_buffer, seeds_buffer);
 
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+        traccc::edm::track_collection<traccc::default_algebra>::host
             track_candidates_cuda{host_mr};
-        copy(track_candidates_cuda_buffer, track_candidates_cuda)->wait();
+        copy(track_candidates_cuda_buffer.tracks, track_candidates_cuda)
+            ->wait();
 
         // Simple check
-        ASSERT_GE(track_candidates.size(), n_truth_tracks)
-            << "No. tracks (host): " << track_candidates.size() << "/"
+        ASSERT_GE(track_candidates.tracks.size(), n_truth_tracks)
+            << "No. tracks (host): " << track_candidates.tracks.size() << "/"
             << n_truth_tracks;
         ASSERT_LE(static_cast<double>(std::llabs(
-                      static_cast<long>(track_candidates.size()) -
+                      static_cast<long>(track_candidates.tracks.size()) -
                       static_cast<long>(track_candidates_cuda.size()))) /
-                      static_cast<double>(track_candidates.size()),
+                      static_cast<double>(track_candidates.tracks.size()),
                   0.001f)
-            << "No. tracks (host): " << track_candidates.size() << "/"
+            << "No. tracks (host): " << track_candidates.tracks.size() << "/"
             << n_truth_tracks
             << "\nNo. tracks (device): " << track_candidates_cuda.size() << "/"
             << n_truth_tracks;
 
         // Make sure that the outputs from cpu and cuda CKF are equivalent
         unsigned int n_matches = 0u;
-        for (unsigned int i = 0u; i < track_candidates.size(); i++) {
+        for (unsigned int i = 0u; i < track_candidates.tracks.size(); i++) {
 
-            traccc::details::is_same_object<
-                traccc::edm::track_candidate_collection<
-                    traccc::default_algebra>::host::const_proxy_type>
-                iso{vecmem::get_data(measurements_per_event),
-                    vecmem::get_data(measurements_per_event),
-                    track_candidates.at(i)};
+            traccc::details::is_same_object<traccc::edm::track_collection<
+                traccc::default_algebra>::host::const_proxy_type>
+                iso{track_candidates.measurements,
+                    track_candidates.measurements,
+                    vecmem::get_data(track_candidates.states),
+                    vecmem::get_data(track_candidates.states),
+                    track_candidates.tracks.at(i)};
 
             for (unsigned int j = 0u; j < track_candidates_cuda.size(); j++) {
                 if (iso(track_candidates_cuda.at(j))) {
@@ -239,7 +245,7 @@ TEST_P(CkfToyDetectorTests, Run) {
 
         float matching_rate =
             float(n_matches) /
-            static_cast<float>(std::max(track_candidates.size(),
+            static_cast<float>(std::max(track_candidates.tracks.size(),
                                         track_candidates_cuda.size()));
         EXPECT_GE(matching_rate, 0.998f);
     }

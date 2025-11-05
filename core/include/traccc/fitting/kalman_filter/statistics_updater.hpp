@@ -10,7 +10,7 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_fit_collection.hpp"
+#include "traccc/edm/track_collection.hpp"
 #include "traccc/edm/track_state_collection.hpp"
 
 namespace traccc {
@@ -29,8 +29,7 @@ struct statistics_updater {
     /// @param fit_res fitting information such as NDoF or Chi2
     /// @param trk_state track state of the current surface
     TRACCC_HOST_DEVICE inline void operator()(
-        typename edm::track_fit_collection<algebra_t>::device::proxy_type&
-            fit_res,
+        typename edm::track_collection<algebra_t>::device::proxy_type& fit_res,
         const typename edm::track_state_collection<
             algebra_t>::const_device::const_proxy_type& trk_state,
         const measurement_collection_types::const_device& measurements) {

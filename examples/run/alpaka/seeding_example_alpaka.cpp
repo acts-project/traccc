@@ -193,19 +193,19 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             &host_mr};
         traccc::host::seeding_algorithm::output_type seeds{host_mr};
         traccc::host::track_params_estimation::output_type params;
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+        traccc::edm::track_container<traccc::default_algebra>::host
             track_candidates{host_mr};
-        traccc::edm::track_fit_container<traccc::default_algebra>::host
+        traccc::edm::track_container<traccc::default_algebra>::host
             track_states{host_mr};
 
         traccc::edm::seed_collection::buffer seeds_alpaka_buffer;
         traccc::bound_track_parameters_collection_types::buffer
             params_alpaka_buffer(0, *mr.host);
 
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
+        traccc::edm::track_container<traccc::default_algebra>::buffer
             track_candidates_alpaka_buffer;
 
-        traccc::edm::track_fit_container<traccc::default_algebra>::buffer
+        traccc::edm::track_container<traccc::default_algebra>::buffer
             track_states_alpaka_buffer;
 
         {  // Start measuring wall time
@@ -318,19 +318,17 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 traccc::performance::timer t("Track fitting with KF (alpaka)",
                                              elapsedTimes);
 
-                track_states_alpaka_buffer =
-                    device_fitting(detector_buffer, field,
-                                   {track_candidates_alpaka_buffer,
-                                    measurements_alpaka_buffer});
+                track_states_alpaka_buffer = device_fitting(
+                    detector_buffer, field, track_candidates_alpaka_buffer);
             }
 
             if (accelerator_opts.compare_with_cpu) {
                 traccc::performance::timer t("Track fitting with KF (cpu)",
                                              elapsedTimes);
-                track_states =
-                    host_fitting(host_det, field,
-                                 {vecmem::get_data(track_candidates),
-                                  vecmem::get_data(measurements_per_event)});
+                track_states = host_fitting(
+                    host_det, field,
+                    traccc::edm::track_container<
+                        traccc::default_algebra>::const_data(track_candidates));
             }
 
         }  // Stop measuring wall time
@@ -347,12 +345,13 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         async_copy(params_alpaka_buffer, params_alpaka)->wait();
 
         // Copy track candidates from device to host
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+        traccc::edm::track_collection<traccc::default_algebra>::host
             track_candidates_alpaka{host_mr};
-        copy(track_candidates_alpaka_buffer, track_candidates_alpaka)->wait();
+        copy(track_candidates_alpaka_buffer.tracks, track_candidates_alpaka)
+            ->wait();
 
         // Copy track states from device to host
-        traccc::edm::track_fit_container<traccc::default_algebra>::host
+        traccc::edm::track_container<traccc::default_algebra>::host
             track_states_alpaka{host_mr};
         async_copy(track_states_alpaka_buffer.tracks,
                    track_states_alpaka.tracks)
@@ -383,17 +382,18 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
             // Compare the track candidates made on the host and on the
             // device
-            traccc::soa_comparator<traccc::edm::track_candidate_collection<
-                traccc::default_algebra>>
+            traccc::soa_comparator<
+                traccc::edm::track_collection<traccc::default_algebra>>
                 compare_track_candidates{
                     "track candidates",
                     traccc::details::comparator_factory<
-                        traccc::edm::track_candidate_collection<
-                            traccc::default_algebra>::const_device::
-                            const_proxy_type>{
+                        traccc::edm::track_collection<traccc::default_algebra>::
+                            const_device::const_proxy_type>{
                         vecmem::get_data(measurements_per_event),
-                        vecmem::get_data(measurements_per_event)}};
-            compare_track_candidates(vecmem::get_data(track_candidates),
+                        vecmem::get_data(measurements_per_event),
+                        {},
+                        {}}};
+            compare_track_candidates(vecmem::get_data(track_candidates.tracks),
                                      vecmem::get_data(track_candidates_alpaka));
         }
 
@@ -405,7 +405,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         n_seeds_alpaka += seeds_alpaka.size();
         n_seeds += seeds.size();
         n_found_tracks_alpaka += track_candidates_alpaka.size();
-        n_found_tracks += track_candidates.size();
+        n_found_tracks += track_candidates.tracks.size();
         n_fitted_tracks_alpaka += track_states_alpaka.tracks.size();
         n_fitted_tracks += track_states.tracks.size();
 

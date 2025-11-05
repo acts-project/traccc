@@ -20,7 +20,7 @@
 #include "traccc/bfield/magnetic_field.hpp"
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
-#include "traccc/edm/track_fit_collection.hpp"
+#include "traccc/edm/track_collection.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/geometry/detector.hpp"
@@ -46,7 +46,7 @@ namespace traccc::alpaka {
 /// At least as much as is implemented in the project at any given moment.
 ///
 class full_chain_algorithm
-    : public algorithm<edm::track_fit_collection<default_algebra>::host(
+    : public algorithm<edm::track_collection<default_algebra>::host(
           const edm::silicon_cell_collection::host&)>,
       public messaging {
 

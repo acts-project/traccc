@@ -10,7 +10,7 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_fit_collection.hpp"
+#include "traccc/edm/track_collection.hpp"
 #include "traccc/edm/track_state_collection.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 #include "traccc/fitting/kalman_filter/is_line_visitor.hpp"
@@ -38,7 +38,7 @@ struct kalman_actor_state {
     /// Constructor with the vector of track states
     TRACCC_HOST_DEVICE
     kalman_actor_state(
-        const typename edm::track_fit_collection<algebra_t>::device::proxy_type&
+        const typename edm::track_collection<algebra_t>::device::proxy_type&
             track,
         const typename edm::track_state_collection<algebra_t>::device&
             track_states,
@@ -54,7 +54,9 @@ struct kalman_actor_state {
     TRACCC_HOST_DEVICE
     typename edm::track_state_collection<algebra_t>::device::proxy_type
     operator()() {
-        return m_track_states.at(m_track.state_indices().at(m_idx));
+        assert(m_track.constituent_links().at(m_idx).type ==
+               edm::track_constituent_link::track_state);
+        return m_track_states.at(m_track.constituent_links().at(m_idx).index);
     }
 
     /// Reset the iterator
@@ -63,7 +65,7 @@ struct kalman_actor_state {
         if (!backward_mode) {
             m_idx = 0;
         } else {
-            m_idx = m_track.state_indices().size() - 1;
+            m_idx = m_track.constituent_links().size() - 1;
         }
     }
 
@@ -80,9 +82,10 @@ struct kalman_actor_state {
     /// @return true if the iterator reaches the end of vector
     TRACCC_HOST_DEVICE
     bool is_complete() {
-        if (!backward_mode && m_idx == m_track.state_indices().size()) {
+        if (!backward_mode && m_idx == m_track.constituent_links().size()) {
             return true;
-        } else if (backward_mode && m_idx > m_track.state_indices().size()) {
+        } else if (backward_mode &&
+                   m_idx > m_track.constituent_links().size()) {
             return true;
         }
         return false;
@@ -90,12 +93,12 @@ struct kalman_actor_state {
 
     TRACCC_HOST_DEVICE
     bool is_state() {
-        return m_track.state_indices().at(m_idx) !=
-               std::numeric_limits<unsigned int>::max();
+        return (m_track.constituent_links().at(m_idx).type ==
+                edm::track_constituent_link::track_state);
     }
 
     /// Object describing the track fit
-    typename edm::track_fit_collection<algebra_t>::device::proxy_type m_track;
+    typename edm::track_collection<algebra_t>::device::proxy_type m_track;
     /// All track states in the event
     typename edm::track_state_collection<algebra_t>::device m_track_states;
     /// All measurements in the event

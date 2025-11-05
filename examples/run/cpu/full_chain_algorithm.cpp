@@ -79,9 +79,9 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
             *m_detector, m_field, measurements_view, track_params_view);
 
         // Run the track fitting, and return its results.
-        return m_fitting(
-                   *m_detector, m_field,
-                   {vecmem::get_data(track_candidates), measurements_view})
+        return m_fitting(*m_detector, m_field,
+                         edm::track_container<default_algebra>::const_data(
+                             track_candidates))
             .tracks;
     }
     // If not, just return an empty object.

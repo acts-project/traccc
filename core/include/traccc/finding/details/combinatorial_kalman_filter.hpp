@@ -8,7 +8,7 @@
 
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_candidate_collection.hpp"
+#include "traccc/edm/track_container.hpp"
 #include "traccc/edm/track_state_helpers.hpp"
 #include "traccc/finding/actors/ckf_aborter.hpp"
 #include "traccc/finding/actors/interaction_register.hpp"
@@ -54,10 +54,10 @@ namespace traccc::host::details {
 /// @param mr                The memory resource to use
 /// @param log               The logger object to use
 ///
-/// @return A container of the found track candidates
+/// @return A container of the found tracks
 ///
 template <typename detector_t, typename bfield_t>
-edm::track_candidate_collection<default_algebra>::host
+edm::track_container<typename detector_t::algebra_type>::host
 combinatorial_kalman_filter(
     const detector_t& det, const bfield_t& field,
     const measurement_collection_types::const_view& measurements_view,
@@ -530,9 +530,9 @@ combinatorial_kalman_filter(
      **********************/
 
     // Number of found tracks = number of tips
-    typename edm::track_candidate_collection<algebra_type>::host
-        output_candidates{mr};
-    output_candidates.reserve(tips.size());
+    typename edm::track_container<algebra_type>::host output_candidates{
+        mr, measurements_view};
+    output_candidates.tracks.reserve(tips.size());
 
     for (const auto& tip : tips) {
         // Get the link corresponding to tip
@@ -549,7 +549,7 @@ combinatorial_kalman_filter(
         // Retrieve tip
         L = links.at(tip.first).at(tip.second);
 
-        vecmem::vector<unsigned int> cands_per_track;
+        vecmem::vector<edm::track_constituent_link> cands_per_track;
         cands_per_track.resize(n_cands);
 
         // Track summary variables
@@ -572,13 +572,13 @@ combinatorial_kalman_filter(
                 break;
             }
 
-            *it = L.meas_idx;
+            *it = {edm::track_constituent_link::measurement, L.meas_idx};
 
             // Sanity check on chi2
             assert(L.chi2 < std::numeric_limits<traccc::scalar>::max());
             assert(L.chi2 >= 0.f);
 
-            ndf_sum += static_cast<scalar>(measurements.at(*it).meas_dim);
+            ndf_sum += static_cast<scalar>(measurements.at(it->index).meas_dim);
             chi2_sum += L.chi2;
 
             // Break the loop if the iterator is at the first candidate and
@@ -590,8 +590,17 @@ combinatorial_kalman_filter(
                 const auto pval = prob(chi2_sum, ndf_sum);
 
                 // Add seed and track candidates to the output container
-                output_candidates.push_back({cand_seed, ndf_sum, chi2_sum, pval,
-                                             L.n_skipped, cands_per_track});
+                output_candidates.tracks.push_back({});
+                auto track = output_candidates.tracks.at(
+                    output_candidates.tracks.size() - 1);
+                track.fit_outcome() = track_fit_outcome::UNKNOWN;
+                track.params() = cand_seed;
+                track.ndf() = ndf_sum;
+                track.chi2() = chi2_sum;
+                track.pval() = pval;
+                track.nholes() = L.n_skipped;
+                track.constituent_links() = cands_per_track;
+
             } else {
                 const auto l_pos =
                     param_to_link.at(L.step - 1u).at(L.previous_candidate_idx);

@@ -12,7 +12,7 @@
 #include "json/write_digitization_config.hpp"
 #include "obj/write_seeds.hpp"
 #include "obj/write_spacepoints.hpp"
-#include "obj/write_track_candidates.hpp"
+#include "obj/write_tracks.hpp"
 #include "traccc/geometry/host_detector.hpp"
 #include "traccc/io/utils.hpp"
 #include "write_binary.hpp"
@@ -124,18 +124,17 @@ void write(std::size_t event, std::string_view directory,
 
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
-           edm::track_candidate_collection<default_algebra>::const_view tracks,
-           measurement_collection_types::const_view measurements,
+           edm::track_container<default_algebra>::const_view tracks,
            const traccc::host_detector& detector) {
 
     switch (format) {
         case data_format::obj:
-            obj::write_track_candidates(
+            obj::write_tracks(
                 get_absolute_path((std::filesystem::path(directory) /
                                    std::filesystem::path(get_event_filename(
                                        event, "-track-candidates.obj")))
                                       .native()),
-                tracks, measurements, detector);
+                tracks, detector);
             break;
         default:
             throw std::invalid_argument("Unsupported data format");

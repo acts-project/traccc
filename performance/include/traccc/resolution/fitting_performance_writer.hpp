@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -15,12 +15,13 @@
 // Project include(s).
 #include "traccc/edm/measurement.hpp"
 #include "traccc/edm/particle.hpp"
-#include "traccc/edm/track_fit_collection.hpp"
+#include "traccc/edm/track_collection.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_state_collection.hpp"
 #include "traccc/utils/event_data.hpp"
 
 // System include(s).
+#include <cassert>
 #include <memory>
 
 namespace traccc {
@@ -60,7 +61,7 @@ class fitting_performance_writer : public messaging {
     /// @param det detector object
     /// @param evt_map event map to find the truth values
     template <typename detector_t>
-    void write(const edm::track_fit_collection<
+    void write(const edm::track_collection<
                    traccc::default_algebra>::host::proxy_type track,
                const edm::track_state_collection<traccc::default_algebra>::host&
                    track_states,
@@ -77,10 +78,14 @@ class fitting_performance_writer : public messaging {
 
         // Get the first smoothed track state
         const unsigned int trk_state_idx =
-            *std::find_if(track.state_indices().begin(),
-                          track.state_indices().end(), [&](unsigned int idx) {
-                              return track_states.at(idx).is_smoothed();
-                          });
+            std::find_if(track.constituent_links().begin(),
+                         track.constituent_links().end(),
+                         [&](const edm::track_constituent_link& link) {
+                             assert(link.type ==
+                                    edm::track_constituent_link::track_state);
+                             return track_states.at(link.index).is_smoothed();
+                         })
+                ->index;
         const auto trk_state = track_states.at(trk_state_idx);
         assert(!trk_state.is_hole());
         assert(trk_state.is_smoothed());
@@ -136,8 +141,8 @@ class fitting_performance_writer : public messaging {
 
     /// Non-templated part of the @c write(...) function
     void write_stat(
-        const edm::track_fit_collection<
-            traccc::default_algebra>::host::proxy_type track,
+        const edm::track_collection<traccc::default_algebra>::host::proxy_type
+            track,
         const edm::track_state_collection<traccc::default_algebra>::host&
             track_states,
         const measurement_collection_types::host& measurements);

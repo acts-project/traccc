@@ -83,7 +83,7 @@ void fitting_performance_writer::write_res(
 }
 
 void fitting_performance_writer::write_stat(
-    const edm::track_fit_collection<traccc::default_algebra>::host::proxy_type
+    const edm::track_collection<traccc::default_algebra>::host::proxy_type
         track,
     const edm::track_state_collection<traccc::default_algebra>::host&
         track_states,
@@ -91,9 +91,11 @@ void fitting_performance_writer::write_stat(
 
     m_data->m_stat_plot_tool.fill(m_data->m_stat_plot_cache, track);
 
-    for (std::size_t i : track.state_indices()) {
+    for (const edm::track_constituent_link& link : track.constituent_links()) {
+        assert(link.type == edm::track_constituent_link::track_state);
         m_data->m_stat_plot_tool.fill(m_data->m_stat_plot_cache,
-                                      track_states.at(i), measurements);
+                                      track_states.at(link.index),
+                                      measurements);
     }
 }
 

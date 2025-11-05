@@ -185,39 +185,32 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                          vecmem::get_data(spacepoints_per_event),
                          vecmem::get_data(seeds), field_vec);
 
-        // Run CKF and KF if we are using a detray geometry
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
-            track_candidates{host_mr};
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
-            track_candidates_ar{host_mr};
-        traccc::edm::track_fit_container<traccc::default_algebra>::host
-            track_states{host_mr};
-
         /*------------------------
            Track Finding with CKF
           ------------------------*/
 
-        track_candidates = host_finding(
+        auto track_candidates = host_finding(
             detector, field, vecmem::get_data(measurements_per_event),
             vecmem::get_data(params));
-        n_found_tracks += track_candidates.size();
+        n_found_tracks += track_candidates.tracks.size();
 
         /*-----------------------------------------
            Ambiguity Resolution with Greedy Solver
           -----------------------------------------*/
 
-        track_candidates_ar = host_ambiguity_resolution(
-            {vecmem::get_data(track_candidates),
-             vecmem::get_data(measurements_per_event)});
-        n_ambiguity_free_tracks += track_candidates_ar.size();
+        auto track_candidates_ar = host_ambiguity_resolution(
+            traccc::edm::track_container<default_algebra>::const_data(
+                track_candidates));
+        n_ambiguity_free_tracks += track_candidates_ar.tracks.size();
 
         /*------------------------
            Track Fitting with KF
           ------------------------*/
 
-        track_states = host_fitting(detector, field,
-                                    {vecmem::get_data(track_candidates_ar),
-                                     vecmem::get_data(measurements_per_event)});
+        auto track_states = host_fitting(
+            detector, field,
+            traccc::edm::track_container<default_algebra>::const_data(
+                track_candidates_ar));
         n_fitted_tracks += track_states.tracks.size();
 
         /*------------
@@ -243,13 +236,13 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 vecmem::get_data(measurements_per_event), evt_data);
 
             find_performance_writer.write(
-                {vecmem::get_data(track_candidates),
-                 vecmem::get_data(measurements_per_event)},
+                traccc::edm::track_container<
+                    traccc::default_algebra>::const_data(track_candidates),
                 evt_data);
 
             ar_performance_writer.write(
-                {vecmem::get_data(track_candidates_ar),
-                 vecmem::get_data(measurements_per_event)},
+                traccc::edm::track_container<
+                    traccc::default_algebra>::const_data(track_candidates_ar),
                 evt_data);
 
             for (unsigned int i = 0; i < track_states.tracks.size(); i++) {

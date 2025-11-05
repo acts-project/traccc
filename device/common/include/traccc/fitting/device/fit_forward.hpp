@@ -22,7 +22,7 @@ TRACCC_HOST_DEVICE inline void fit_forward(
     vecmem::device_vector<const unsigned int> param_ids(payload.param_ids_view);
     vecmem::device_vector<unsigned int> param_liveness(
         payload.param_liveness_view);
-    typename edm::track_fit_container<
+    typename edm::track_container<
         typename fitter_t::detector_type::algebra_type>::device
         tracks(payload.tracks_view);
 

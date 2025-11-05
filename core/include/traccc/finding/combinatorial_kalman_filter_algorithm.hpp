@@ -10,7 +10,7 @@
 // Project include(s).
 #include "traccc/bfield/magnetic_field.hpp"
 #include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_candidate_collection.hpp"
+#include "traccc/edm/track_container.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/geometry/detector.hpp"
@@ -32,7 +32,7 @@ namespace traccc::host {
 /// documentation to be written later...
 ///
 class combinatorial_kalman_filter_algorithm
-    : public algorithm<edm::track_candidate_collection<default_algebra>::host(
+    : public algorithm<edm::track_container<default_algebra>::host(
           const host_detector&, const magnetic_field&,
           const measurement_collection_types::const_view&,
           const bound_track_parameters_collection_types::const_view&)>,
@@ -41,8 +41,6 @@ class combinatorial_kalman_filter_algorithm
     public:
     /// Configuration type
     using config_type = finding_config;
-    /// Output type
-    using output_type = edm::track_candidate_collection<default_algebra>::host;
 
     /// Constructor with the algorithm's configuration
     explicit combinatorial_kalman_filter_algorithm(

@@ -12,7 +12,7 @@
 #include "traccc/edm/particle.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/silicon_cluster_collection.hpp"
-#include "traccc/edm/track_candidate_container.hpp"
+#include "traccc/edm/track_container.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/host_detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
@@ -77,7 +77,8 @@ struct event_data {
     ///
     template <typename detector_type>
     void generate_truth_candidates(
-        edm::track_candidate_container<default_algebra>::host& truth_candidates,
+        edm::track_container<default_algebra>::host& truth_candidates,
+        measurement_collection_types::host& truth_measurements,
         seed_generator<detector_type>& sg, vecmem::memory_resource& resource,
         float pt_cut = 0.f) {
         for (auto const& [ptc, measurements] : m_ptc_to_meas_map) {
@@ -100,19 +101,23 @@ struct event_data {
                 sg(measurements[0].surface_link, free_param, ptc_particle);
 
             // Record the measurements, and remember their indices.
-            vecmem::vector<unsigned int> meas_indices{&resource};
-            truth_candidates.measurements.reserve(
-                truth_candidates.measurements.size() + measurements.size());
-            meas_indices.reserve(measurements.size());
+            vecmem::vector<edm::track_constituent_link> meas_links{&resource};
+            truth_measurements.reserve(truth_measurements.size() +
+                                       measurements.size());
+            meas_links.reserve(measurements.size());
             for (const auto& meas : measurements) {
-                meas_indices.push_back(static_cast<unsigned int>(
-                    truth_candidates.measurements.size()));
-                truth_candidates.measurements.push_back(meas);
+                meas_links.push_back(
+                    {edm::track_constituent_link::measurement,
+                     static_cast<unsigned int>(truth_measurements.size())});
+                truth_measurements.push_back(meas);
             }
 
             // Record the truth track candidate.
-            truth_candidates.tracks.push_back(
-                {seed_params, 0.f, 0.f, 0.f, 0u, meas_indices});
+            edm::track_collection<traccc::default_algebra>::host::object_type
+                track;
+            track.params() = seed_params;
+            track.constituent_links() = meas_links;
+            truth_candidates.tracks.push_back(track);
         }
     }
 

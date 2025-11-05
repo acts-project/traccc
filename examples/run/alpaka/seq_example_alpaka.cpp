@@ -205,9 +205,9 @@ int seq_run(const traccc::opts::detector& detector_opts,
         traccc::edm::seed_collection::buffer seeds_alpaka_buffer;
         traccc::bound_track_parameters_collection_types::buffer
             params_alpaka_buffer(0, *mr.host);
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
+        traccc::edm::track_container<traccc::default_algebra>::buffer
             track_candidates_buffer;
-        traccc::edm::track_fit_container<traccc::default_algebra>::buffer
+        traccc::edm::track_container<traccc::default_algebra>::buffer
             track_states_buffer;
 
         {
@@ -328,18 +328,17 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 traccc::performance::timer timer{"Track fitting (alpaka)",
                                                  elapsedTimes};
                 track_states_buffer = fitting_alg_alpaka(
-                    detector_buffer, field,
-                    {track_candidates_buffer, measurements_alpaka_buffer});
+                    detector_buffer, field, track_candidates_buffer);
             }
 
             // CPU
             if (accelerator_opts.compare_with_cpu) {
                 traccc::performance::timer timer{"Track fitting (cpu)",
                                                  elapsedTimes};
-                track_states =
-                    fitting_alg(host_det, field,
-                                {vecmem::get_data(track_candidates),
-                                 vecmem::get_data(measurements_per_event)});
+                track_states = fitting_alg(
+                    host_det, field,
+                    traccc::edm::track_container<
+                        traccc::default_algebra>::const_data(track_candidates));
             }
         }  // Stop measuring wall time
 
@@ -354,16 +353,16 @@ int seq_run(const traccc::opts::detector& detector_opts,
         traccc::edm::seed_collection::host seeds_alpaka{host_mr};
         traccc::bound_track_parameters_collection_types::host params_alpaka{
             &host_mr};
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+        traccc::edm::track_collection<traccc::default_algebra>::host
             track_candidates_alpaka{host_mr};
-        traccc::edm::track_fit_container<traccc::default_algebra>::host
+        traccc::edm::track_container<traccc::default_algebra>::host
             track_states_alpaka{host_mr};
 
         copy(measurements_alpaka_buffer, measurements_per_event_alpaka)->wait();
         copy(spacepoints_alpaka_buffer, spacepoints_per_event_alpaka)->wait();
         copy(seeds_alpaka_buffer, seeds_alpaka)->wait();
         copy(params_alpaka_buffer, params_alpaka)->wait();
-        copy(track_candidates_buffer, track_candidates_alpaka)->wait();
+        copy(track_candidates_buffer.tracks, track_candidates_alpaka)->wait();
         copy(track_states_buffer.tracks, track_states_alpaka.tracks)->wait();
         copy(track_states_buffer.states, track_states_alpaka.states)->wait();
         queue.synchronize();
@@ -403,28 +402,28 @@ int seq_run(const traccc::opts::detector& detector_opts,
                                      vecmem::get_data(params_alpaka));
 
             // Compare tracks found on the host and on the device.
-            traccc::soa_comparator<traccc::edm::track_candidate_collection<
-                traccc::default_algebra>>
+            traccc::soa_comparator<
+                traccc::edm::track_collection<traccc::default_algebra>>
                 compare_track_candidates{
                     "track candidates",
                     traccc::details::comparator_factory<
-                        traccc::edm::track_candidate_collection<
-                            traccc::default_algebra>::const_device::
-                            const_proxy_type>{
+                        traccc::edm::track_collection<traccc::default_algebra>::
+                            const_device::const_proxy_type>{
                         vecmem::get_data(measurements_per_event),
-                        vecmem::get_data(measurements_per_event_alpaka)}};
-            compare_track_candidates(vecmem::get_data(track_candidates),
+                        vecmem::get_data(measurements_per_event_alpaka),
+                        {},
+                        {}}};
+            compare_track_candidates(vecmem::get_data(track_candidates.tracks),
                                      vecmem::get_data(track_candidates_alpaka));
 
             // Compare tracks fitted on the host and on the device.
             traccc::soa_comparator<
-                traccc::edm::track_fit_collection<traccc::default_algebra>>
+                traccc::edm::track_collection<traccc::default_algebra>>
                 compare_track_fits{
                     "track fits",
                     traccc::details::comparator_factory<
-                        traccc::edm::track_fit_collection<
-                            traccc::default_algebra>::const_device::
-                            const_proxy_type>{
+                        traccc::edm::track_collection<traccc::default_algebra>::
+                            const_device::const_proxy_type>{
                         vecmem::get_data(measurements_per_event),
                         vecmem::get_data(measurements_per_event_alpaka),
                         vecmem::get_data(track_states.states),
@@ -439,7 +438,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
         n_measurements_alpaka += measurements_per_event_alpaka.size();
         n_spacepoints_alpaka += spacepoints_per_event_alpaka.size();
         n_seeds_alpaka += seeds_alpaka.size();
-        n_found_tracks += track_candidates.size();
+        n_found_tracks += track_candidates.tracks.size();
         n_found_tracks_alpaka += track_candidates_alpaka.size();
         n_fitted_tracks += track_states.tracks.size();
         n_fitted_tracks_alpaka += track_states_alpaka.tracks.size();

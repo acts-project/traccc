@@ -71,13 +71,13 @@ class KalmanFittingWireChamberTests
         1.f * traccc::unit<scalar>::ns};
 
     void consistency_tests(
-        const edm::track_fit_collection<
-            default_algebra>::host::const_proxy_type& track,
+        const edm::track_collection<default_algebra>::host::const_proxy_type&
+            track,
         const edm::track_state_collection<default_algebra>::host&) const {
 
         // The nubmer of track states is supposed be greater than or
         // equal to the number of layers
-        ASSERT_GE(track.state_indices().size(), n_wire_layers);
+        ASSERT_GE(track.constituent_links().size(), n_wire_layers);
     }
 
     protected:

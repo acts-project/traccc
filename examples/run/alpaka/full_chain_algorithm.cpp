@@ -172,8 +172,8 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
             m_finding(m_device_detector, m_field, measurements, track_params);
 
         // Run the track fitting (asynchronously).
-        const fitting_algorithm::output_type track_states = m_fitting(
-            m_device_detector, m_field, {track_candidates, measurements});
+        const fitting_algorithm::output_type track_states =
+            m_fitting(m_device_detector, m_field, track_candidates);
 
         // Copy a limited amount of result data back to the host.
         const auto host_tracks = m_vecmem_objects.async_copy().to(
