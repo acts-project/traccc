@@ -23,7 +23,7 @@ namespace traccc::cuda {
 namespace kernels {
 /// CUDA kernel for running @c traccc::device::estimate_track_params
 __global__ void estimate_track_params(
-    measurement_collection_types::const_view measurements_view,
+    edm::measurement_collection<default_algebra>::const_view measurements_view,
     edm::spacepoint_collection::const_view spacepoints_view,
     edm::seed_collection::const_view seed_view, const vector3 bfield,
     const std::array<traccc::scalar, traccc::e_bound_size> stddev,
@@ -45,7 +45,8 @@ track_params_estimation::track_params_estimation(
       m_warp_size(details::get_warp_size(str.device())) {}
 
 track_params_estimation::output_type track_params_estimation::operator()(
-    const measurement_collection_types::const_view& measurements_view,
+    const edm::measurement_collection<default_algebra>::const_view&
+        measurements_view,
     const edm::spacepoint_collection::const_view& spacepoints_view,
     const edm::seed_collection::const_view& seeds_view, const vector3& bfield,
     const std::array<traccc::scalar, traccc::e_bound_size>& stddev) const {

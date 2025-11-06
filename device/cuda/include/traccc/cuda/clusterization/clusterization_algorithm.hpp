@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -14,7 +14,7 @@
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
 #include "traccc/clusterization/device/tags.hpp"
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/silicon_cluster_collection.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
@@ -41,16 +41,16 @@ namespace traccc::cuda {
 /// synchronisation statement is required before destroying the buffer.
 ///
 class clusterization_algorithm
-    : public algorithm<measurement_collection_types::buffer(
+    : public algorithm<edm::measurement_collection<default_algebra>::buffer(
           const edm::silicon_cell_collection::const_view&,
           const silicon_detector_description::const_view&)>,
-      public algorithm<measurement_collection_types::buffer(
+      public algorithm<edm::measurement_collection<default_algebra>::buffer(
           const edm::silicon_cell_collection::const_view&,
           const silicon_detector_description::const_view&,
           device::clustering_discard_disjoint_set&&)>,
       public algorithm<
-          std::pair<measurement_collection_types::buffer,
-                    traccc::edm::silicon_cluster_collection::buffer>(
+          std::pair<edm::measurement_collection<default_algebra>::buffer,
+                    edm::silicon_cluster_collection::buffer>(
               const edm::silicon_cell_collection::const_view&,
               const silicon_detector_description::const_view&,
               device::clustering_keep_disjoint_set&&)>,
@@ -81,26 +81,26 @@ class clusterization_algorithm
     /// @return a measurement collection (buffer)
     ///
     /// @{
-    measurement_collection_types::buffer operator()(
+    edm::measurement_collection<default_algebra>::buffer operator()(
         const edm::silicon_cell_collection::const_view& cells,
         const silicon_detector_description::const_view& det_descr)
         const override;
 
-    measurement_collection_types::buffer operator()(
+    edm::measurement_collection<default_algebra>::buffer operator()(
         const edm::silicon_cell_collection::const_view& cells,
         const silicon_detector_description::const_view& det_descr,
         device::clustering_discard_disjoint_set&&) const override;
 
-    std::pair<measurement_collection_types::buffer,
-              traccc::edm::silicon_cluster_collection::buffer>
+    std::pair<edm::measurement_collection<default_algebra>::buffer,
+              edm::silicon_cluster_collection::buffer>
     operator()(const edm::silicon_cell_collection::const_view& cells,
                const silicon_detector_description::const_view& det_descr,
                device::clustering_keep_disjoint_set&&) const override;
     /// @}
 
     private:
-    std::pair<measurement_collection_types::buffer,
-              std::optional<traccc::edm::silicon_cluster_collection::buffer>>
+    std::pair<edm::measurement_collection<default_algebra>::buffer,
+              std::optional<edm::silicon_cluster_collection::buffer>>
     execute_impl(const edm::silicon_cell_collection::const_view& cells,
                  const silicon_detector_description::const_view& det_descr,
                  bool keep_disjoint_set) const;

@@ -11,7 +11,7 @@
 #include "traccc/cuda/utils/stream.hpp"
 
 // Project include(s).
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/seed_collection.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/utils/algorithm.hpp"
@@ -36,8 +36,8 @@ namespace traccc::cuda {
 ///
 class gbts_seeding_algorithm
     : public algorithm<edm::seed_collection::buffer(
-          const traccc::edm::spacepoint_collection::const_view&,
-          const traccc::measurement_collection_types::const_view&
+          const edm::spacepoint_collection::const_view&,
+          const edm::measurement_collection<default_algebra>::const_view&
               measurements)>,
       public messaging {
 
@@ -54,12 +54,13 @@ class gbts_seeding_algorithm
     /// Operator executing the algorithm.
     ///
     /// @param spacepoints is a view of all spacepoints in the event
+    /// @param measurements is a view of all measurements in the event
     /// @return the buffer of track seeds reconstructed from the spacepoints
     ///
     output_type operator()(
-        const traccc::edm::spacepoint_collection::const_view& spacepoints,
-        const traccc::measurement_collection_types::const_view& measurements)
-        const;
+        const edm::spacepoint_collection::const_view& spacepoints,
+        const edm::measurement_collection<default_algebra>::const_view&
+            measurements) const;
 
     private:
     gbts_seedfinder_config m_config;

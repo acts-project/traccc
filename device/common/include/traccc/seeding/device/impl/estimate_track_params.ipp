@@ -19,7 +19,8 @@ namespace traccc::device {
 TRACCC_HOST_DEVICE
 inline void estimate_track_params(
     const global_index_t globalIndex,
-    const measurement_collection_types::const_view& measurements_view,
+    const edm::measurement_collection<default_algebra>::const_view&
+        measurements_view,
     const edm::spacepoint_collection::const_view& spacepoints_view,
     const edm::seed_collection::const_view& seeds_view, const vector3& bfield,
     const std::array<traccc::scalar, traccc::e_bound_size>& stddev,
@@ -31,8 +32,8 @@ inline void estimate_track_params(
         return;
     }
 
-    const measurement_collection_types::const_device measurements_device(
-        measurements_view);
+    const edm::measurement_collection<default_algebra>::const_device
+        measurements_device(measurements_view);
     const edm::spacepoint_collection::const_device spacepoints_device(
         spacepoints_view);
 

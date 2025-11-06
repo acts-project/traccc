@@ -31,7 +31,8 @@ track_params_estimation::track_params_estimation(
     : messaging(std::move(logger)), m_mr(mr), m_queue(queue), m_copy(copy) {}
 
 track_params_estimation::output_type track_params_estimation::operator()(
-    const measurement_collection_types::const_view& measurements_view,
+    const edm::measurement_collection<default_algebra>::const_view&
+        measurements_view,
     const edm::spacepoint_collection::const_view& spacepoints_view,
     const edm::seed_collection::const_view& seeds_view, const vector3& bfield,
     const std::array<traccc::scalar, traccc::e_bound_size>& stddev) const {

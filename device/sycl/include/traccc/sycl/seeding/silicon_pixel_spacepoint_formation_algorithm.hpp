@@ -8,7 +8,7 @@
 #pragma once
 
 // Library include(s).
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/detector_buffer.hpp"
@@ -33,7 +33,7 @@ namespace traccc::sycl {
 class silicon_pixel_spacepoint_formation_algorithm
     : public algorithm<edm::spacepoint_collection::buffer(
           const detector_buffer&,
-          const measurement_collection_types::const_view&)>,
+          const edm::measurement_collection<default_algebra>::const_view&)>,
       public messaging {
 
     public:
@@ -56,9 +56,10 @@ class silicon_pixel_spacepoint_formation_algorithm
     /// @return A spacepoint buffer, with one spacepoint for every
     ///         silicon pixel measurement
     ///
-    output_type operator()(const detector_buffer& det,
-                           const measurement_collection_types::const_view&
-                               measurements) const override;
+    output_type operator()(
+        const detector_buffer& det,
+        const edm::measurement_collection<default_algebra>::const_view&
+            measurements) const override;
 
     private:
     /// Memory resource used by the algorithm

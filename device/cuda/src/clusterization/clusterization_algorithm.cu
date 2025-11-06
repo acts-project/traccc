@@ -49,14 +49,16 @@ clusterization_algorithm::clusterization_algorithm(
         sizeof(std::remove_extent_t<decltype(m_backup_mutex)::element_type>)));
 }
 
-measurement_collection_types::buffer clusterization_algorithm::operator()(
+edm::measurement_collection<default_algebra>::buffer
+clusterization_algorithm::operator()(
     const edm::silicon_cell_collection::const_view& cells,
     const silicon_detector_description::const_view& det_descr) const {
     return this->operator()(cells, det_descr,
                             device::clustering_discard_disjoint_set{});
 }
 
-measurement_collection_types::buffer clusterization_algorithm::operator()(
+edm::measurement_collection<default_algebra>::buffer
+clusterization_algorithm::operator()(
     const edm::silicon_cell_collection::const_view& cells,
     const silicon_detector_description::const_view& det_descr,
     device::clustering_discard_disjoint_set&&) const {
@@ -65,8 +67,8 @@ measurement_collection_types::buffer clusterization_algorithm::operator()(
     return std::move(res);
 }
 
-std::pair<measurement_collection_types::buffer,
-          traccc::edm::silicon_cluster_collection::buffer>
+std::pair<edm::measurement_collection<default_algebra>::buffer,
+          edm::silicon_cluster_collection::buffer>
 clusterization_algorithm::operator()(
     const edm::silicon_cell_collection::const_view& cells,
     const silicon_detector_description::const_view& det_descr,
@@ -76,8 +78,8 @@ clusterization_algorithm::operator()(
     return {std::move(res), std::move(*djs)};
 }
 
-std::pair<measurement_collection_types::buffer,
-          std::optional<traccc::edm::silicon_cluster_collection::buffer>>
+std::pair<edm::measurement_collection<default_algebra>::buffer,
+          std::optional<edm::silicon_cluster_collection::buffer>>
 clusterization_algorithm::execute_impl(
     const edm::silicon_cell_collection::const_view& cells,
     const silicon_detector_description::const_view& det_descr,
@@ -90,7 +92,7 @@ clusterization_algorithm::execute_impl(
         m_copy.get().get_size(cells);
 
     // Create the result object, overestimating the number of measurements.
-    measurement_collection_types::buffer measurements{
+    edm::measurement_collection<default_algebra>::buffer measurements{
         num_cells, m_mr.main, vecmem::data::buffer_type::resizable};
     m_copy.get().setup(measurements)->ignore();
 

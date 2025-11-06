@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2022-2023 CERN for the benefit of the ACTS project
+# (c) 2022-2025 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -25,13 +25,16 @@ traccc_add_library( traccc_device_common device_common TYPE INTERFACE
    "include/traccc/edm/device/device_doublet.hpp"
    "include/traccc/edm/device/device_triplet.hpp"
    "include/traccc/edm/device/sort_key.hpp"
+   "include/traccc/edm/device/identity_projector.hpp"
    # Clusterization function(s).
    "include/traccc/clusterization/device/reduce_problem_cell.hpp"
    "include/traccc/clusterization/device/impl/reduce_problem_cell.ipp"
    "include/traccc/clusterization/device/aggregate_cluster.hpp"
    "include/traccc/clusterization/device/impl/aggregate_cluster.ipp"
+   "include/traccc/clusterization/device/barcode_based_sorter.hpp"
    "include/traccc/clusterization/device/ccl_kernel_definitions.hpp"
    "include/traccc/clusterization/device/ccl_kernel.hpp"
+   "include/traccc/clusterization/device/sorting_index_filler.hpp"
    # Spacepoint binning function(s).
    "include/traccc/seeding/device/count_grid_capacities.hpp"
    "include/traccc/seeding/device/impl/count_grid_capacities.ipp"
@@ -59,6 +62,7 @@ traccc_add_library( traccc_device_common device_common TYPE INTERFACE
    "include/traccc/seeding/device/impl/estimate_track_params.ipp"
    # Track finding funtions(s).
    "include/traccc/finding/device/apply_interaction.hpp"
+   "include/traccc/finding/device/barcode_surface_comparator.hpp"
    "include/traccc/finding/device/build_tracks.hpp"
    "include/traccc/finding/device/find_tracks.hpp"
    "include/traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
