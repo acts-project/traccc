@@ -371,6 +371,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             ->wait();
         async_copy(track_states_cuda_buffer.states, track_states_cuda.states)
             ->wait();
+        track_states_cuda.measurements =
+            vecmem::get_data(measurements_per_event);
 
         if (accelerator_opts.compare_with_cpu) {
             // Show which event we are currently presenting the results for.
