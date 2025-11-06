@@ -423,6 +423,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
         copy(track_states_buffer.states, track_states_cuda.states,
              vecmem::copy::type::device_to_host)
             ->wait();
+        track_states_cuda.measurements =
+            vecmem::get_data(measurements_per_event_cuda);
         stream.synchronize();
 
         if (accelerator_opts.compare_with_cpu) {
