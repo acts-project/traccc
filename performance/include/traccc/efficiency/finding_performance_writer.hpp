@@ -56,6 +56,8 @@ class finding_performance_writer : public messaging {
         truth_matching_config truth_config;
         track_matching_config track_truth_config;
 
+        bool require_fit = false;
+
         stat_plot_tool_config stat_config{};
     };
 

@@ -12,6 +12,7 @@
 #include "duplication_plot_tool.hpp"
 #include "eff_plot_tool.hpp"
 #include "fake_tracks_plot_tool.hpp"
+#include "traccc/edm/track_fit_outcome.hpp"
 #include "traccc/utils/logging.hpp"
 #include "track_classification.hpp"
 
@@ -90,7 +91,8 @@ namespace {
  * with its corresponding measurements.
  */
 std::vector<std::vector<measurement>> prepare_data(
-    const edm::track_container<default_algebra>::const_view& track_view) {
+    const edm::track_container<default_algebra>::const_view& track_view,
+    bool require_fit = false) {
     std::vector<std::vector<measurement>> result;
 
     // Set up the input containers.
@@ -102,6 +104,10 @@ std::vector<std::vector<measurement>> prepare_data(
     result.reserve(n_tracks);
 
     for (unsigned int i = 0; i < n_tracks; i++) {
+        if (require_fit &&
+            tracks.tracks.at(i).fit_outcome() != track_fit_outcome::SUCCESS) {
+            continue;
+        }
         std::vector<measurement> result_measurements;
         for (const edm::track_constituent_link& link :
              tracks.tracks.constituent_links().at(i)) {
@@ -301,13 +307,18 @@ void finding_performance_writer::write(
 
     const unsigned int n_tracks = tracks.tracks.size();
     for (unsigned int i = 0; i < n_tracks; i++) {
+        if (m_cfg.require_fit &&
+            tracks.tracks.at(i).fit_outcome() != track_fit_outcome::SUCCESS) {
+            continue;
+        }
 
         // Fill stat plots
         m_data->m_stat_plot_tool.fill(m_data->m_stat_plot_cache,
                                       tracks.tracks.at(i));
     }
 
-    std::vector<std::vector<measurement>> prep_data = prepare_data(track_view);
+    std::vector<std::vector<measurement>> prep_data =
+        prepare_data(track_view, m_cfg.require_fit);
     write_common(prep_data, evt_data);
 }
 

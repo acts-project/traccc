@@ -97,6 +97,13 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             .truth_config = truth_finding_opts,
             .track_truth_config = track_matching_opts},
         logger().clone("FindingPerformanceWriter"));
+    traccc::finding_performance_writer postfit_find_performance_writer(
+        traccc::finding_performance_writer::config{
+            .file_path = "performance_track_postfit_finding.root",
+            .truth_config = truth_finding_opts,
+            .track_truth_config = track_matching_opts,
+            .require_fit = true},
+        logger().clone("PostFitFindingPerformanceWriter"));
     traccc::fitting_performance_writer fit_performance_writer(
         traccc::fitting_performance_writer::config{},
         logger().clone("FittingPerformanceWriter"));
@@ -444,6 +451,11 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                     traccc::default_algebra>::const_data(track_candidates_cuda),
                 evt_data);
 
+            postfit_find_performance_writer.write(
+                traccc::edm::track_container<
+                    traccc::default_algebra>::const_data(track_states_cuda),
+                evt_data);
+
             for (unsigned int i = 0; i < track_states_cuda.tracks.size(); i++) {
                 host_detector_visitor<detector_type_list>(
                     host_det, [&]<typename detector_traits_t>(
@@ -461,6 +473,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         sd_performance_writer.finalize();
         nsd_performance_writer.finalize();
         find_performance_writer.finalize();
+        postfit_find_performance_writer.finalize();
         fit_performance_writer.finalize();
         std::cout << nsd_performance_writer.generate_report_str();
     }
