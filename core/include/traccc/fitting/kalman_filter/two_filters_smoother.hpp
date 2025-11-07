@@ -107,7 +107,24 @@ struct two_filters_smoother {
              predicted_cov_inv * predicted_vec);
 
         trk_state.smoothed_params().set_vector(smoothed_vec);
+
+        // Return false if track is parallel to z-axis or phi is not finite
+        if (!std::isfinite(trk_state.smoothed_params().theta())) {
+            return kalman_fitter_status::ERROR_INVERSION;
+        }
+
+        if (!std::isfinite(trk_state.smoothed_params().phi())) {
+            return kalman_fitter_status::ERROR_INVERSION;
+        }
+
+        if (math::fabs(trk_state.smoothed_params().qop()) == 0.f) {
+            return kalman_fitter_status::ERROR_QOP_ZERO;
+        }
+
         trk_state.smoothed_params().set_covariance(smoothed_cov);
+
+        // Wrap the phi and theta angles in their valid ranges
+        normalize_angles(trk_state.smoothed_params());
 
         matrix_type<D, e_bound_size> H =
             measurements.at(trk_state.measurement_index())
@@ -141,11 +158,13 @@ struct two_filters_smoother {
                 residual_smt, matrix::inverse(R_smt)) *
             residual_smt;
 
-        if (getter::element(chi2_smt, 0, 0) < 0.f) {
+        const scalar chi2_smt_value{getter::element(chi2_smt, 0, 0)};
+
+        if (chi2_smt_value < 0.f) {
             return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NEGATIVE;
         }
 
-        if (!std::isfinite(getter::element(chi2_smt, 0, 0))) {
+        if (!std::isfinite(chi2_smt_value)) {
             return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NOT_FINITE;
         }
 
@@ -180,49 +199,56 @@ struct two_filters_smoother {
             predicted_vec + K * (meas_local - H * predicted_vec);
         const matrix_type<6, 6> filtered_cov = (I66 - K * H) * predicted_cov;
 
-        // Residual between measurement and (projected) filtered vector
-        const matrix_type<D, 1> residual = meas_local - H * filtered_vec;
-
-        // Calculate backward chi2
-        const matrix_type<D, D> R = (I_m - H * K) * V;
-        // assert(matrix::determinant(R) != 0.f);
-        assert(std::isfinite(matrix::determinant(R)));
-        const matrix_type<1, 1> chi2 =
-            algebra::matrix::transposed_product<true, false>(
-                residual, matrix::inverse(R)) *
-            residual;
-
         // Update the bound track parameters
         bound_params.set_vector(filtered_vec);
-        bound_params.set_covariance(filtered_cov);
 
         // Return false if track is parallel to z-axis or phi is not finite
-        const scalar theta = bound_params.theta();
-        if (theta <= 0.f || theta >= constant<traccc::scalar>::pi) {
-            return kalman_fitter_status::ERROR_THETA_ZERO;
+        if (!std::isfinite(bound_params.theta())) {
+            return kalman_fitter_status::ERROR_INVERSION;
         }
 
         if (!std::isfinite(bound_params.phi())) {
             return kalman_fitter_status::ERROR_INVERSION;
         }
 
-        if (std::abs(bound_params.qop()) == 0.f) {
+        if (math::fabs(bound_params.qop()) == 0.f) {
             return kalman_fitter_status::ERROR_QOP_ZERO;
         }
 
-        if (getter::element(chi2, 0, 0) < 0.f) {
-            return kalman_fitter_status::ERROR_UPDATER_CHI2_NEGATIVE;
+        bound_params.set_covariance(filtered_cov);
+
+        // Residual between measurement and (projected) filtered vector
+        const matrix_type<D, 1> residual = meas_local - H * filtered_vec;
+
+        // Calculate backward chi2
+        const matrix_type<D, D> R = (I_m - H * K) * V;
+        // assert(matrix::determinant(R) != 0.f); // @TODO: This fails
+        assert(std::isfinite(matrix::determinant(R)));
+        const matrix_type<1, 1> chi2 =
+            algebra::matrix::transposed_product<true, false>(
+                residual, matrix::inverse(R)) *
+            residual;
+
+        const scalar chi2_val{getter::element(chi2, 0, 0)};
+
+        if (chi2_val < 0.f) {
+            return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NEGATIVE;
         }
 
-        if (!std::isfinite(getter::element(chi2, 0, 0))) {
-            return kalman_fitter_status::ERROR_UPDATER_CHI2_NOT_FINITE;
+        if (!std::isfinite(chi2_val)) {
+            return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NOT_FINITE;
         }
 
         // Set backward chi2
-        trk_state.backward_chi2() = getter::element(chi2, 0, 0);
+        trk_state.backward_chi2() = chi2_val;
 
-        // Wrap the phi in the range of [-pi, pi]
-        wrap_phi(bound_params);
+        // Wrap the phi and theta angles in their valid ranges
+        normalize_angles(bound_params);
+
+        const scalar theta = bound_params.theta();
+        if (theta <= 0.f || theta >= 2.f * constant<traccc::scalar>::pi) {
+            return kalman_fitter_status::ERROR_THETA_POLE;
+        }
 
         trk_state.set_smoothed();
 

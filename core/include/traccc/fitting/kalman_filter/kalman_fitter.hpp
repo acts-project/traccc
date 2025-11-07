@@ -281,14 +281,18 @@ class kalman_fitter {
         }
 
         auto last = fitter_state.m_fit_actor_state();
-
         const scalar theta = last.filtered_params().theta();
-        if (theta <= 0.f || theta >= constant<traccc::scalar>::pi) {
-            return kalman_fitter_status::ERROR_THETA_ZERO;
+
+        if (!std::isfinite(last.filtered_params().theta())) {
+            return kalman_fitter_status::ERROR_INVERSION;
         }
 
         if (!std::isfinite(last.filtered_params().phi())) {
             return kalman_fitter_status::ERROR_INVERSION;
+        }
+
+        if (theta <= 0.f || theta >= 2.f * constant<traccc::scalar>::pi) {
+            return kalman_fitter_status::ERROR_THETA_POLE;
         }
 
         last.smoothed_params().set_parameter_vector(last.filtered_params());
@@ -328,6 +332,8 @@ class kalman_fitter {
 
         propagation._navigation.set_direction(
             detray::navigation::direction::e_backward);
+        propagation._navigation.safe_step_size =
+            0.1f * traccc::unit<scalar>::mm;
 
         // Synchronize the current barcode with the input track parameter
         while (propagation._navigation.get_target_barcode() !=
