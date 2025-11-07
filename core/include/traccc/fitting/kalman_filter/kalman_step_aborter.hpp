@@ -56,12 +56,10 @@ struct kalman_step_aborter : public detray::actor {
 
         // Abort if the step count exceeds the maximum allowed
         if (++(abrt_state.step) > abrt_state.max_steps) {
-            TRACCC_ERROR_HOST_DEVICE(
-                "Maximum number of steps to reach next "
-                "sensitive surface exceeded");
-            prop_state._heartbeat &= navigation.abort(
+            navigation.abort(
                 "Kalman Fitter: Maximum number of steps to reach next "
                 "sensitive surface exceeded");
+            prop_state._heartbeat = false;
         }
     }
 

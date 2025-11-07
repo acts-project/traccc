@@ -12,9 +12,9 @@
 #include "traccc/utils/particle.hpp"
 
 // detray include(s).
+#include <detray/definitions/navigation.hpp>  // < navigation::direction
 #include <detray/geometry/barcode.hpp>
 #include <detray/geometry/tracking_surface.hpp>
-#include <detray/navigation/navigator.hpp>  // < navigation::direction
 #include <detray/propagator/actors/pointwise_material_interactor.hpp>
 
 // System include(s).

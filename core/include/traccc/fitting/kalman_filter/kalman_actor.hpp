@@ -138,7 +138,8 @@ struct kalman_actor : detray::actor {
 
         // If the iterator reaches the end, terminate the propagation
         if (actor_state.is_complete()) {
-            propagation._heartbeat &= navigation.exit();
+            navigation.exit();
+            propagation._heartbeat = false;
             return;
         }
 
@@ -146,7 +147,8 @@ struct kalman_actor : detray::actor {
         if (navigation.is_on_sensitive()) {
 
             TRACCC_VERBOSE_HOST_DEVICE("In Kalman actor...");
-            TRACCC_DEBUG_HOST("-> on surface: " << navigation.get_surface());
+            TRACCC_DEBUG_HOST(
+                "-> on surface: " << navigation.current_surface());
 
             typename edm::track_state_collection<algebra_t>::device::proxy_type
                 trk_state = actor_state();
@@ -175,7 +177,7 @@ struct kalman_actor : detray::actor {
             }
 
             // Run Kalman Gain Updater
-            const auto sf = navigation.get_surface();
+            const auto sf = navigation.current_surface();
 
             const bool is_line = detail::is_line(sf);
 
@@ -227,8 +229,8 @@ struct kalman_actor : detray::actor {
                     TRACCC_ERROR_HOST(
                         "Abort forward fit: " << fitter_debug_msg{res}());
                 }
-                propagation._heartbeat &=
-                    navigation.abort(fitter_debug_msg{res});
+                navigation.abort(fitter_debug_msg{res});
+                propagation._heartbeat = false;
                 return;
             }
 

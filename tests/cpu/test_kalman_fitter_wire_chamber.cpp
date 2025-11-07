@@ -129,7 +129,7 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
 
     // Fitting algorithm object
     traccc::fitting_config fit_cfg;
-    fit_cfg.propagation.navigation.min_mask_tolerance =
+    fit_cfg.propagation.navigation.intersection.min_mask_tolerance =
         static_cast<float>(mask_tolerance);
     fit_cfg.propagation.navigation.search_window = search_window;
     // TODO: Disable until overlaps are handled correctly

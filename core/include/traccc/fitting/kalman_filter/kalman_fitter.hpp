@@ -315,9 +315,9 @@ class kalman_fitter {
 
         // Backward propagator for the two-filters method
         detray::propagation::config backward_cfg = m_cfg.propagation;
-        backward_cfg.navigation.min_mask_tolerance =
+        backward_cfg.navigation.intersection.min_mask_tolerance =
             static_cast<float>(m_cfg.backward_filter_mask_tolerance);
-        backward_cfg.navigation.max_mask_tolerance =
+        backward_cfg.navigation.intersection.max_mask_tolerance =
             static_cast<float>(m_cfg.backward_filter_mask_tolerance);
 
         backward_propagator_type propagator(backward_cfg);
@@ -341,14 +341,12 @@ class kalman_fitter {
 
         propagation._navigation.set_direction(
             detray::navigation::direction::e_backward);
-        propagation._navigation.safe_step_size =
-            0.1f * traccc::unit<scalar>::mm;
 
         // Synchronize the current barcode with the input track parameter
         while (propagation._navigation.get_target_barcode() !=
                last.smoothed_params().surface_link()) {
-            assert(!propagation._navigation.is_complete());
-            propagation._navigation.next();
+            assert(!propagation._navigation.finished());
+            propagation._navigation.set_next_external();
         }
 
         propagator.propagate(propagation, fitter_state.backward_actor_state());
