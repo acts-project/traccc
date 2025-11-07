@@ -14,6 +14,7 @@
 #include "traccc/edm/measurement_helpers.hpp"
 #include "traccc/edm/track_state_collection.hpp"
 #include "traccc/fitting/status_codes.hpp"
+#include "traccc/utils/logging.hpp"
 
 namespace traccc {
 
@@ -62,6 +63,9 @@ struct gain_matrix_updater {
 
         static constexpr unsigned int D = 2;
 
+        TRACCC_VERBOSE_HOST_DEVICE("In gain-matrix-updater...");
+        TRACCC_VERBOSE_HOST_DEVICE("Measurement dim: %d", dim);
+
         assert(dim == 1u || dim == 2u);
 
         assert(!bound_params.is_invalid());
@@ -78,6 +82,8 @@ struct gain_matrix_updater {
             measurements.at(trk_state.measurement_index()), meas_local);
 
         assert((dim > 1) || (getter::element(meas_local, 1u, 0u) == 0.f));
+
+        TRACCC_DEBUG_HOST("Predicted param.: " << bound_params);
 
         // Predicted vector of bound track parameters
         const bound_vector_type& predicted_vec = bound_params.vector();
@@ -109,6 +115,11 @@ struct gain_matrix_updater {
             getter::element(V, 1u, 1u) = 1.f;
         }
 
+        TRACCC_DEBUG_HOST("Measurement position: " << meas_local);
+        TRACCC_DEBUG_HOST("Measurement variance:\n" << V);
+        TRACCC_DEBUG_HOST("Predicted residual: " << meas_local -
+                                                        H * predicted_vec);
+
         const matrix_type<e_bound_size, D> projected_cov =
             algebra::matrix::transposed_product<false, true>(predicted_cov, H);
 
@@ -118,22 +129,33 @@ struct gain_matrix_updater {
         assert(matrix::determinant(M) != 0.f);
         const matrix_type<6, D> K = projected_cov * matrix::inverse(M);
 
+        TRACCC_DEBUG_HOST("H:\n" << H);
+        TRACCC_DEBUG_HOST("K:\n" << K);
+
         // Calculate the filtered track parameters
         const matrix_type<6, 1> filtered_vec =
             predicted_vec + K * (meas_local - H * predicted_vec);
         const matrix_type<6, 6> filtered_cov = (I66 - K * H) * predicted_cov;
 
+        TRACCC_DEBUG_HOST("Filtered param:\n" << filtered_vec);
+        TRACCC_DEBUG_HOST("Filtered cov:\n" << filtered_cov);
+
         // Return false if track is parallel to z-axis or phi is not finite
         if (!std::isfinite(getter::element(filtered_vec, e_bound_theta, 0))) {
+            TRACCC_ERROR_HOST_DEVICE(
+                "Theta is infinite after filtering (Matrix inversion)");
             return kalman_fitter_status::ERROR_INVERSION;
         }
 
         if (!std::isfinite(getter::element(filtered_vec, e_bound_phi, 0))) {
+            TRACCC_ERROR_HOST_DEVICE(
+                "Phi is infinite after filtering (Matrix inversion)");
             return kalman_fitter_status::ERROR_INVERSION;
         }
 
         if (math::fabs(getter::element(filtered_vec, e_bound_qoverp, 0)) ==
             0.f) {
+            TRACCC_ERROR_HOST_DEVICE("q/p is zero after filtering");
             return kalman_fitter_status::ERROR_QOP_ZERO;
         }
 
@@ -149,11 +171,19 @@ struct gain_matrix_updater {
 
         const scalar chi2_val{getter::element(chi2, 0, 0)};
 
+        TRACCC_VERBOSE_HOST("Filtered residual: " << residual);
+        TRACCC_DEBUG_HOST("R:\n" << R);
+        TRACCC_DEBUG_HOST_DEVICE("det(R): %f", matrix::determinant(R));
+        TRACCC_DEBUG_HOST("R_inv:\n" << matrix::inverse(R));
+        TRACCC_VERBOSE_HOST_DEVICE("Chi2: %f", chi2_val);
+
         if (chi2_val < 0.f) {
+            TRACCC_ERROR_HOST_DEVICE("Chi2 negative");
             return kalman_fitter_status::ERROR_UPDATER_CHI2_NEGATIVE;
         }
 
         if (!std::isfinite(chi2_val)) {
+            TRACCC_ERROR_HOST_DEVICE("Chi2 infinite");
             return kalman_fitter_status::ERROR_UPDATER_CHI2_NOT_FINITE;
         }
 
@@ -167,6 +197,8 @@ struct gain_matrix_updater {
 
         const scalar theta = trk_state.filtered_params().theta();
         if (theta <= 0.f || theta >= 2.f * constant<traccc::scalar>::pi) {
+            TRACCC_ERROR_HOST_DEVICE("Hit theta pole after filtering : %f",
+                                     theta);
             return kalman_fitter_status::ERROR_THETA_POLE;
         }
 

@@ -16,6 +16,7 @@
 #include "traccc/fitting/kalman_filter/is_line_visitor.hpp"
 #include "traccc/fitting/kalman_filter/two_filters_smoother.hpp"
 #include "traccc/fitting/status_codes.hpp"
+#include "traccc/utils/logging.hpp"
 #include "traccc/utils/particle.hpp"
 
 // detray include(s).
@@ -142,8 +143,16 @@ struct kalman_actor : detray::actor {
         // triggered only for sensitive surfaces
         if (navigation.is_on_sensitive()) {
 
+            TRACCC_VERBOSE_HOST_DEVICE("In Kalman actor...");
+            TRACCC_DEBUG_HOST("-> on surface: " << navigation.get_surface());
+
             typename edm::track_state_collection<algebra_t>::device::proxy_type
                 trk_state = actor_state();
+
+            TRACCC_DEBUG_HOST(
+                "-> expecting: " << actor_state.m_measurements
+                                        .at(trk_state.measurement_index())
+                                        .surface_link);
 
             // Increase the hole counts if the propagator fails to find the next
             // measurement
@@ -155,6 +164,8 @@ struct kalman_actor : detray::actor {
                 }
                 return;
             }
+
+            TRACCC_VERBOSE_HOST_DEVICE("Found next track state to fit");
 
             // This track state is not a hole
             if (!actor_state.backward_mode) {
@@ -177,6 +188,7 @@ struct kalman_actor : detray::actor {
                     normalize_angles(propagation._stepping.bound_params());
 
                     // Forward filter
+                    TRACCC_DEBUG_HOST_DEVICE("Run filtering");
                     res = gain_matrix_updater<algebra_t>{}(
                         trk_state, actor_state.m_measurements,
                         propagation._stepping.bound_params(), is_line);
@@ -192,6 +204,7 @@ struct kalman_actor : detray::actor {
                               direction_e ==
                                   kalman_actor_direction::BIDIRECTIONAL) {
                     // Backward filter for smoothing
+                    TRACCC_DEBUG_HOST_DEVICE("Run smoothing");
                     res = two_filters_smoother<algebra_t>{}(
                         trk_state, actor_state.m_measurements,
                         propagation._stepping.bound_params(), is_line);
@@ -202,6 +215,16 @@ struct kalman_actor : detray::actor {
 
             // Abort if the Kalman update fails
             if (res != kalman_fitter_status::SUCCESS) {
+                if (actor_state.backward_mode) {
+                    TRACCC_ERROR_DEVICE("Abort backward fit: KF status %d",
+                                        res);
+                    TRACCC_ERROR_HOST(
+                        "Abort backward fit: " << fitter_debug_msg{res}());
+                } else {
+                    TRACCC_ERROR_DEVICE("Abort forward fit: KF status %d", res);
+                    TRACCC_ERROR_HOST(
+                        "Abort forward fit: " << fitter_debug_msg{res}());
+                }
                 propagation._heartbeat &=
                     navigation.abort(fitter_debug_msg{res});
                 return;
@@ -217,9 +240,12 @@ struct kalman_actor : detray::actor {
             // Update iterator
             actor_state.next();
 
-            // Flag renavigation of the current candidate
+            // Flag renavigation of the current candidate (unless for overlap)
             if (math::fabs(navigation()) > 1.f * unit<float>::um) {
                 navigation.set_high_trust();
+            } else {
+                TRACCC_DEBUG_HOST_DEVICE(
+                    "Encountered overlap, jump to next surface");
             }
         }
     }

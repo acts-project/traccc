@@ -63,7 +63,7 @@ combinatorial_kalman_filter(
     const measurement_collection_types::const_view& measurements_view,
     const bound_track_parameters_collection_types::const_view& seeds_view,
     const finding_config& config, vecmem::memory_resource& mr,
-    const Logger& log) {
+    const Logger& /*log*/) {
 
     assert(config.min_step_length_for_next_surface >
                math::fabs(config.propagation.navigation.overstep_tolerance) &&
@@ -77,7 +77,8 @@ combinatorial_kalman_filter(
     using scalar_type = detray::dscalar<algebra_type>;
 
     // Create a logger.
-    auto logger = [&log]() -> const Logger& { return log; };
+    // @TODO: Turn back on, once detray can use the ACTS logger
+    // auto logger = [&log]() -> const Logger& { return log; };
 
     /*****************************************************************
      * Measurement Operations
@@ -144,12 +145,13 @@ combinatorial_kalman_filter(
     for (unsigned int step = 0u; step < config.max_track_candidates_per_track;
          step++) {
 
-        TRACCC_VERBOSE("Starting step "
-                       << step + 1 << " / "
-                       << config.max_track_candidates_per_track);
+        TRACCC_VERBOSE_HOST("Starting step "
+                            << step + 1 << " / "
+                            << config.max_track_candidates_per_track);
 
         // Iterate over input parameters
         const std::size_t n_in_params = in_params.size();
+        TRACCC_VERBOSE_HOST("No. Params: " << n_in_params);
 
         // Terminate if there is no parameter to proceed
         if (n_in_params == 0) {
@@ -199,10 +201,13 @@ combinatorial_kalman_filter(
                      : links[step - 1][param_to_link[step - 1][in_param_id]]
                            .ndf_sum);
 
-            TRACCC_VERBOSE("Processing input parameter "
-                           << in_param_id + 1 << " / " << n_in_params << ": "
-                           << in_param << " (orig_param_id=" << orig_param_id
-                           << ", skip_counter=" << skip_counter << ")");
+            TRACCC_VERBOSE_HOST("Processing input parameter "
+                                << in_param_id + 1 << " / " << n_in_params);
+            TRACCC_VERBOSE_HOST("-> orig_param_id="
+                                << orig_param_id << ", skip_counter="
+                                << skip_counter << "\nVec:\n"
+                                << in_param.vector());
+            TRACCC_DEBUG_HOST("Cov:\n" << in_param.covariance());
 
             /*************************
              * Material interaction
@@ -211,8 +216,8 @@ combinatorial_kalman_filter(
             // Get surface corresponding to bound params
             const detray::tracking_surface sf{det, in_param.surface_link()};
 
-            TRACCC_VERBOSE(
-                "  free params: " << sf.bound_to_free_vector({}, in_param));
+            TRACCC_VERBOSE_HOST(" Free params:\n"
+                                << sf.bound_to_free_vector({}, in_param));
 
             // Apply interactor
             if (sf.has_material()) {
@@ -241,7 +246,10 @@ combinatorial_kalman_filter(
                 best_links;
 
             // Iterate over the measurements
+            TRACCC_VERBOSE_HOST("No. measurements: " << (up - lo));
             for (unsigned int meas_id = lo; meas_id < up; meas_id++) {
+                TRACCC_VERBOSE_HOST("Testing measurement: " << meas_id);
+
                 // The measurement on surface to handle.
                 const measurement& meas = measurements.at(meas_id);
 
@@ -258,9 +266,13 @@ combinatorial_kalman_filter(
 
                 const traccc::scalar chi2 = trk_state.filtered_chi2();
 
+                TRACCC_DEBUG_HOST("KF status: " << fitter_debug_msg{res}());
+
                 // The chi2 from Kalman update should be less than chi2_max
                 if (res == kalman_fitter_status::SUCCESS &&
-                    chi2 < config.chi2_max) {
+                    (chi2 < config.chi2_max)) {
+
+                    TRACCC_VERBOSE_HOST("Found measurement: " << meas_id);
 
                     best_links.push_back(
                         {{.step = step,
@@ -285,9 +297,9 @@ combinatorial_kalman_filter(
             const unsigned int n_branches =
                 std::min(config.max_num_branches_per_surface,
                          static_cast<unsigned int>(best_links.size()));
-            TRACCC_VERBOSE("Found " << n_branches << " branches for step "
-                                    << step << " and input parameter "
-                                    << in_param_id);
+            TRACCC_VERBOSE_HOST("Found " << n_branches << " branches for step "
+                                         << step << " and input parameter "
+                                         << in_param_id + 1);
             for (unsigned int i = 0; i < n_branches; ++i) {
                 const auto& [link, filtered_params] = best_links[i];
 
@@ -296,9 +308,9 @@ combinatorial_kalman_filter(
 
                 // Add the updated parameter to the updated parameters
                 updated_params.push_back(filtered_params);
-                TRACCC_VERBOSE("updated_params["
-                               << updated_params.size() - 1
-                               << "] = " << updated_params.back());
+                TRACCC_DEBUG_HOST("updated_params["
+                                  << updated_params.size() - 1
+                                  << "] = " << updated_params.back());
             }
 
             /*****************************************************************
@@ -319,10 +331,12 @@ combinatorial_kalman_filter(
                      .chi2_sum = prev_chi2_sum,
                      .ndf_sum = prev_ndf_sum});
 
+                TRACCC_VERBOSE_HOST("Hole state created");
+
                 updated_params.push_back(in_param);
-                TRACCC_VERBOSE("updated_params["
-                               << updated_params.size() - 1
-                               << "] = " << updated_params.back());
+                TRACCC_DEBUG_HOST("updated_params["
+                                  << updated_params.size() - 1
+                                  << "] = " << updated_params.back());
             }
         }
 
@@ -439,6 +453,8 @@ combinatorial_kalman_filter(
                         }
 
                         if (this_is_dominated) {
+                            TRACCC_VERBOSE_HOST(
+                                "Track is dead (deduplication)!");
                             param_liveness.at(tracks.at(i)) = 0u;
                             break;
                         }
@@ -466,11 +482,15 @@ combinatorial_kalman_filter(
             // link to be a tip
             if (links.at(step).at(link_id).n_skipped >
                 config.max_num_skipping_per_cand) {
+                TRACCC_WARNING_HOST(
+                    "Create tip: Max no. of holes reached! Bound param:\n"
+                    << updated_params[link_id].vector());
                 tips.push_back({step, link_id});
                 continue;
             }
 
             const auto& param = updated_params[link_id];
+
             // Create propagator state
             typename traccc::details::ckf_propagator_t<
                 detector_t, bfield_t>::state propagation(param, field, det);
@@ -489,6 +509,7 @@ combinatorial_kalman_filter(
                 typename detector_t::algebra_type>::state s3{prop_cfg};
             typename detray::momentum_aborter<scalar_type>::state s4{};
             typename ckf_aborter::state s5;
+
             // Update the actor config
             s4.min_pT(static_cast<scalar_type>(config.min_pT));
             s4.min_p(static_cast<scalar_type>(config.min_p));
@@ -496,8 +517,11 @@ combinatorial_kalman_filter(
             s5.max_count = config.max_step_counts_for_next_surface;
 
             // Propagate to the next surface
+            TRACCC_DEBUG_HOST("Propagating... ");
             propagator.propagate(propagation,
                                  detray::tie(s0, s1, s2, s3, s4, s5));
+            TRACCC_DEBUG_HOST("Finished propagation: On surface "
+                              << propagation._navigation.barcode());
 
             // If a surface found, add the parameter for the next
             // step
@@ -511,14 +535,18 @@ combinatorial_kalman_filter(
                 const scalar theta = out_param.theta();
                 if (theta <= 0.f ||
                     theta >= 2.f * constant<traccc::scalar>::pi) {
+                    TRACCC_ERROR_HOST("Theta is hit pole after propagation");
                     valid_track = false;
                 }
 
                 if (!std::isfinite(out_param.phi())) {
+                    TRACCC_ERROR_HOST(
+                        "Phi is infinite after propagation (Matrix inversion)");
                     valid_track = false;
                 }
 
                 if (math::fabs(out_param.qop()) == 0.f) {
+                    TRACCC_ERROR_HOST("q over p is zero after propagation");
                     valid_track = false;
                 }
 
@@ -531,6 +559,11 @@ combinatorial_kalman_filter(
             // tip
             if (!valid_track &&
                 (step >= (config.min_track_candidates_per_track - 1u))) {
+                if (!s5.success) {
+                    TRACCC_VERBOSE_HOST("Create tip: No next sensitive found");
+                } else {
+                    TRACCC_VERBOSE_HOST("Create tip: Encountered error");
+                }
                 tips.push_back({step, link_id});
             }
 
@@ -538,6 +571,7 @@ combinatorial_kalman_filter(
             // kept as a tip
             if (s5.success &&
                 (step == (config.max_track_candidates_per_track - 1u))) {
+                TRACCC_ERROR_HOST("Create tip: Max no. candidates");
                 tips.push_back({step, link_id});
             }
         }
