@@ -209,7 +209,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
 
                 const detray::tracking_surface sf{det, in_par.surface_link()};
 
-                const bool is_line = sf.template visit_mask<is_line_visitor>();
+                const bool is_line = detail::is_line(sf);
 
                 // Run the Kalman update
                 const kalman_fitter_status res =

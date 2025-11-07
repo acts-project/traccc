@@ -62,7 +62,9 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     const bound_track_parameters<> in_par = params.at(param_id);
 
     // Create propagator
-    propagator_t propagator(cfg.propagation);
+    auto prop_cfg{cfg.propagation};
+    prop_cfg.navigation.estimate_scattering_noise = false;
+    propagator_t propagator(prop_cfg);
 
     // Create propagator state
     typename propagator_t::state propagation(in_par, payload.field_data, det);
@@ -87,9 +89,8 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     typename detray::detail::tuple_element<2, actor_tuple_type>::type::state s2{
         s3};
     // Parameter resetter
-    // typename detray::detail::tuple_element<4, actor_tuple_type>::type::state
-    // s4{
-    //    cfg.propagation};
+    typename detray::detail::tuple_element<4, actor_tuple_type>::type::state s4{
+        prop_cfg};
     // Momentum aborter
     typename detray::detail::tuple_element<5, actor_tuple_type>::type::state s5;
     // CKF aborter
@@ -101,7 +102,7 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     s5.min_p(static_cast<scalar_t>(cfg.min_p));
 
     // Propagate to the next surface
-    propagator.propagate(propagation, detray::tie(s0, s2, s3, s5, s6));
+    propagator.propagate(propagation, detray::tie(s0, s2, s3, s4, s5, s6));
 
     // If a surface found, add the parameter for the next step
     if (s6.success) {
