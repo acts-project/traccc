@@ -13,6 +13,7 @@
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/measurement_helpers.hpp"
 #include "traccc/edm/track_state_collection.hpp"
+#include "traccc/fitting/details/regularize_covariance.hpp"
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/utils/logging.hpp"
 
@@ -43,24 +44,10 @@ struct two_filters_smoother {
         bound_track_parameters<algebra_t>& bound_params,
         const bool is_line) const {
 
-        const auto D =
-            measurements.at(trk_state.measurement_index()).dimensions();
-        assert(D == 1u || D == 2u);
-
-        return smoothe(trk_state, measurements, bound_params, D, is_line);
-    }
-
-    // Reference: The Optimun Linear Smoother as a Combination of Two Optimum
-    // Linear Filters
-    [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status smoothe(
-        typename edm::track_state_collection<algebra_t>::device::proxy_type&
-            trk_state,
-        const typename edm::measurement_collection<algebra_t>::const_device&
-            measurements,
-        bound_track_parameters<algebra_t>& bound_params, const unsigned int dim,
-        const bool is_line) const {
-
         static constexpr unsigned int D = 2;
+
+        [[maybe_unused]] const unsigned int dim{
+            measurements.at(trk_state.measurement_index()).dimensions()};
 
         assert(dim == 1u || dim == 2u);
 
@@ -73,7 +60,7 @@ struct two_filters_smoother {
         if (trk_state.filtered_params().is_invalid()) {
             TRACCC_ERROR_HOST_DEVICE("Filtered track state invalid");
             TRACCC_ERROR_HOST(trk_state.filtered_params());
-            return kalman_fitter_status::ERROR_INVALID_TRACK_STATE;
+            return kalman_fitter_status::ERROR_UPDATER_SKIPPED_STATE;
         }
 
         // Measurement data on surface
@@ -102,8 +89,15 @@ struct two_filters_smoother {
             predicted_cov_inv + filtered_cov_inv;
 
         assert(matrix::determinant(smoothed_cov_inv) != 0.f);
-        const matrix_type<e_bound_size, e_bound_size> smoothed_cov =
+        matrix_type<e_bound_size, e_bound_size> smoothed_cov =
             matrix::inverse(smoothed_cov_inv);
+
+        // Check the covariance for consistency
+        if (constexpr traccc::scalar min_var{-0.01f};
+            !details::regularize_covariance<algebra_t>(smoothed_cov, min_var)) {
+            TRACCC_ERROR_HOST_DEVICE("Negative variance after smoothing");
+            return kalman_fitter_status::ERROR_SMOOTHER_INVALID_COVARIANCE;
+        }
 
         // Eq (3.38) of "Pattern Recognition, Tracking and Vertex
         // Reconstruction in Particle Detectors"
@@ -140,7 +134,8 @@ struct two_filters_smoother {
         const subspace<algebra_t, e_bound_size> subs(
             measurements.at(trk_state.measurement_index()).subspace());
         matrix_type<D, e_bound_size> H = subs.template projector<D>();
-        if (dim == 1) {
+        if (getter::element(meas_local, 1u, 0u) == 0.f /*dim == 1*/) {
+
             getter::element(H, 1u, 0u) = 0.f;
             getter::element(H, 1u, 1u) = 0.f;
         }
@@ -151,8 +146,8 @@ struct two_filters_smoother {
         matrix_type<D, D> V;
         edm::get_measurement_covariance<algebra_t>(
             measurements.at(trk_state.measurement_index()), V);
-        if (dim == 1) {
-            getter::element(V, 1u, 1u) = 1.f;
+        if (getter::element(meas_local, 1u, 0u) == 0.f /*dim == 1*/) {
+            getter::element(V, 1u, 1u) = 1000.f;
         }
 
         TRACCC_DEBUG_HOST("Measurement position: " << meas_local);
@@ -180,12 +175,14 @@ struct two_filters_smoother {
         TRACCC_DEBUG_HOST("R_smt:\n" << R_smt);
         TRACCC_DEBUG_HOST_DEVICE("det(R_smt): %f", matrix::determinant(R_smt));
         TRACCC_DEBUG_HOST("R_smt_inv:\n" << matrix::inverse(R_smt));
-        TRACCC_VERBOSE_HOST_DEVICE("Chi2: %f", chi2_smt_value);
+        TRACCC_VERBOSE_HOST_DEVICE("Smoothed chi2: %f", chi2_smt_value);
 
         if (chi2_smt_value < 0.f) {
             TRACCC_ERROR_HOST_DEVICE("Smoothed chi2 negative: %f",
                                      chi2_smt_value);
-            return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NEGATIVE;
+            if (chi2_smt_value < -10.f) {
+                return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NEGATIVE;
+            }
         }
 
         if (!std::isfinite(chi2_smt_value)) {
@@ -226,9 +223,16 @@ struct two_filters_smoother {
         const matrix_type<6, 1> filtered_vec =
             predicted_vec + K * (meas_local - H * predicted_vec);
         const matrix_type<6, 6> i_minus_kh = I66 - K * H;
-        const matrix_type<6, 6> filtered_cov =
+        matrix_type<6, 6> filtered_cov =
             i_minus_kh * predicted_cov * matrix::transpose(i_minus_kh) +
             K * V * matrix::transpose(K);
+
+        // Check the covariance for consistency
+        if (constexpr traccc::scalar min_var{-0.01f};
+            !details::regularize_covariance<algebra_t>(filtered_cov, min_var)) {
+            TRACCC_ERROR_HOST_DEVICE("Negative variance after filtering");
+            return kalman_fitter_status::ERROR_SMOOTHER_INVALID_COVARIANCE;
+        }
 
         // Update the bound track parameters
         bound_params.set_vector(filtered_vec);
@@ -273,15 +277,15 @@ struct two_filters_smoother {
         TRACCC_DEBUG_HOST("R:\n" << R);
         TRACCC_DEBUG_HOST_DEVICE("det(R): %f", matrix::determinant(R));
         TRACCC_DEBUG_HOST("R_inv:\n" << matrix::inverse(R));
-        TRACCC_VERBOSE_HOST_DEVICE("Chi2: %f", chi2_val);
+        TRACCC_VERBOSE_HOST_DEVICE("Filtered chi2: %f", chi2_val);
 
         if (chi2_val < 0.f) {
-            TRACCC_ERROR_HOST_DEVICE("Chi2 negative: %f", chi2_val);
+            TRACCC_ERROR_HOST_DEVICE("Filtered chi2 negative: %f", chi2_val);
             return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NEGATIVE;
         }
 
         if (!std::isfinite(chi2_val)) {
-            TRACCC_ERROR_HOST_DEVICE("Chi2 infinite");
+            TRACCC_ERROR_HOST_DEVICE("Filtered chi2 infinite");
             return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NOT_FINITE;
         }
 

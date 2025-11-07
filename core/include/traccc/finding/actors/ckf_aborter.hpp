@@ -52,14 +52,12 @@ struct ckf_aborter : detray::actor {
             navigation.pause();
             prop_state._heartbeat = false;
             abrt_state.success = true;
-        }
 
-        TRACCC_VERBOSE_HOST_DEVICE("-> Found sensitive surface: %d",
-                                   navigation.barcode().index());
-
-        // Reset path from surface
-        if (navigation.is_on_sensitive()) {
+            // Reset path from surface
             abrt_state.path_from_surface = 0.f;
+
+            TRACCC_VERBOSE_HOST_DEVICE("-> Found sensitive surface: %d",
+                                       navigation.barcode().index());
         }
 
         if (abrt_state.count > abrt_state.max_count) {

@@ -13,6 +13,7 @@
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/measurement_helpers.hpp"
 #include "traccc/edm/track_state_collection.hpp"
+#include "traccc/fitting/details/regularize_covariance.hpp"
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/utils/logging.hpp"
 #include "traccc/utils/subspace.hpp"
@@ -49,23 +50,10 @@ struct gain_matrix_updater {
         const bound_track_parameters<algebra_t>& bound_params,
         const bool is_line) const {
 
-        const auto D =
-            measurements.at(trk_state.measurement_index()).dimensions();
-
-        assert(D == 1u || D == 2u);
-
-        return update(trk_state, measurements, bound_params, D, is_line);
-    }
-
-    template <typename track_state_backend_t>
-    [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status update(
-        typename edm::track_state<track_state_backend_t>& trk_state,
-        const edm::measurement_collection<default_algebra>::const_device&
-            measurements,
-        const bound_track_parameters<algebra_t>& bound_params,
-        const unsigned int dim, const bool is_line) const {
-
         static constexpr unsigned int D = 2;
+
+        [[maybe_unused]] const unsigned int dim{
+            measurements.at(trk_state.measurement_index()).dimensions()};
 
         TRACCC_VERBOSE_HOST_DEVICE("In gain-matrix-updater...");
         TRACCC_VERBOSE_HOST_DEVICE("Measurement dim: %d", dim);
@@ -105,7 +93,7 @@ struct gain_matrix_updater {
             getter::element(H, 0u, e_bound_loc0) = -1;
         }
 
-        if (dim == 1) {
+        if (/*dim == 1*/ getter::element(meas_local, 1u, 0u) == 0.f) {
             getter::element(H, 1u, 0u) = 0.f;
             getter::element(H, 1u, 1u) = 0.f;
         }
@@ -115,8 +103,8 @@ struct gain_matrix_updater {
         edm::get_measurement_covariance<algebra_t>(
             measurements.at(trk_state.measurement_index()), V);
 
-        if (dim == 1) {
-            getter::element(V, 1u, 1u) = 1.f;
+        if (/*dim == 1*/ getter::element(meas_local, 1u, 0u) == 0.f) {
+            getter::element(V, 1u, 1u) = 1000.f;
         }
 
         TRACCC_DEBUG_HOST("Measurement position: " << meas_local);
@@ -140,12 +128,19 @@ struct gain_matrix_updater {
         const matrix_type<6, 1> filtered_vec =
             predicted_vec + K * (meas_local - H * predicted_vec);
         const matrix_type<6, 6> i_minus_kh = I66 - K * H;
-        const matrix_type<6, 6> filtered_cov =
+        matrix_type<6, 6> filtered_cov =
             i_minus_kh * predicted_cov * matrix::transpose(i_minus_kh) +
             K * V * matrix::transpose(K);
 
         TRACCC_DEBUG_HOST("Filtered param:\n" << filtered_vec);
         TRACCC_DEBUG_HOST("Filtered cov:\n" << filtered_cov);
+
+        // Check the covariance for consistency
+        if (constexpr traccc::scalar min_var{-0.01f};
+            !details::regularize_covariance<algebra_t>(filtered_cov, min_var)) {
+            TRACCC_ERROR_HOST_DEVICE("Negative variance after filtering");
+            return kalman_fitter_status::ERROR_UPDATER_INVALID_COVARIANCE;
+        }
 
         // Return false if track is parallel to z-axis or phi is not finite
         if (!std::isfinite(getter::element(filtered_vec, e_bound_theta, 0))) {
@@ -204,7 +199,7 @@ struct gain_matrix_updater {
             TRACCC_ERROR_HOST_DEVICE(
                 "Hit theta pole after filtering : %f (unrecoverable error "
                 "pre-normalization)",
-                theta);
+                trk_state.filtered_params().theta());
             return kalman_fitter_status::ERROR_THETA_POLE;
         }
 

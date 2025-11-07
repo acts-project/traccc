@@ -25,6 +25,9 @@
 #include "traccc/utils/prob.hpp"
 #include "traccc/utils/propagation.hpp"
 
+// detray include(s)
+#include <detray/definitions/navigation.hpp>
+
 // vecmem include(s)
 #include <type_traits>
 #include <vecmem/containers/device_vector.hpp>
@@ -79,7 +82,8 @@ class kalman_fitter {
                             interactor, resetter, kalman_step_aborter>;
 
     // Navigator type for backward propagator
-    using direct_navigator_type = detray::direct_navigator<detector_type>;
+    // using direct_navigator_type = detray::direct_navigator<detector_type>;
+    using direct_navigator_type = navigator_t;
 
     // Propagator type
     using forward_propagator_type =
@@ -197,23 +201,36 @@ class kalman_fitter {
     fit_iteration(seed_parameters_t params, state& fitter_state) const {
         inflate_covariance(params, m_cfg.covariance_inflation_factor);
 
-        if (kalman_fitter_status res = filter(params, fitter_state);
-            res != kalman_fitter_status::SUCCESS) {
-            return res;
-        }
+        const kalman_fitter_status res_fw = filter(params, fitter_state);
+
+        const unsigned int n_holes_fw{fitter_state.m_fit_actor_state.n_holes};
 
         // Run smoothing
-        if (kalman_fitter_status res = smooth(fitter_state);
-            res != kalman_fitter_status::SUCCESS) {
-            return res;
+        kalman_fitter_status res_bw{kalman_fitter_status::ERROR_OTHER};
+        if (res_fw == kalman_fitter_status::SUCCESS) {
+            // Reset hole count after forward filter pass
+            fitter_state.m_fit_actor_state.n_holes = 0u;
+
+            res_bw = smooth(fitter_state);
+
+            // In case the smoother does not apply hole counting
+            fitter_state.m_fit_actor_state.n_holes =
+                math::max(fitter_state.m_fit_actor_state.n_holes, n_holes_fw);
         }
+
+        TRACCC_VERBOSE_HOST_DEVICE("Number of holes after forward fit: %d",
+                                   n_holes_fw);
+        TRACCC_VERBOSE_HOST_DEVICE(
+            "Updated number of holes after smoothing: %d",
+            fitter_state.m_fit_actor_state.n_holes);
 
         // Update track fitting qualities
         update_statistics(fitter_state);
 
-        check_fitting_result(fitter_state);
+        // Check the fit result
+        check_fitting_result(fitter_state, res_fw, res_bw);
 
-        return kalman_fitter_status::SUCCESS;
+        return res_bw;
     }
 
     /// Run the kalman fitter for an iteration
@@ -226,8 +243,13 @@ class kalman_fitter {
     [[nodiscard]] TRACCC_HOST_DEVICE kalman_fitter_status
     filter(const seed_parameters_t& seed_params, state& fitter_state) const {
 
+        TRACCC_VERBOSE_HOST_DEVICE("Run forward fit...");
+
+        detray::propagation::config forward_cfg = m_cfg.propagation;
+        forward_cfg.navigation.estimate_scattering_noise = false;
+
         // Create propagator
-        forward_propagator_type propagator(m_cfg.propagation);
+        forward_propagator_type propagator(forward_cfg);
 
         // Set path limit
         fitter_state.m_aborter_state.set_path_limit(
@@ -250,7 +272,16 @@ class kalman_fitter {
         // Run forward filtering
         propagator.propagate(propagation, fitter_state());
 
-        return kalman_fitter_status::SUCCESS;
+        // Encountered error during fitting?
+        if (fitter_state.m_fit_actor_state.fit_result !=
+            kalman_fitter_status::SUCCESS) {
+            return fitter_state.m_fit_actor_state.fit_result;
+        }
+
+        // Encountered error during propagation?
+        return propagator.finished(propagation)
+                   ? kalman_fitter_status::SUCCESS
+                   : kalman_fitter_status::ERROR_PROPAGATION_FAILURE;
     }
 
     /// Run smoothing after kalman filtering
@@ -261,6 +292,7 @@ class kalman_fitter {
     /// @param fitter_state the state of kalman fitter
     [[nodiscard]] TRACCC_HOST_DEVICE kalman_fitter_status
     smooth(state& fitter_state) const {
+        TRACCC_VERBOSE_HOST_DEVICE("Run smoothing...");
 
         if (fitter_state.m_sequencer_state.overflow) {
             TRACCC_ERROR_HOST_DEVICE("Barcode sequence overlow");
@@ -273,14 +305,14 @@ class kalman_fitter {
         // Since the smoothed track parameter of the last surface can be
         // considered to be the filtered one, we can reversly iterate the
         // algorithm to obtain the smoothed parameter of other surfaces
-        while (!fitter_state.m_fit_actor_state.is_complete() &&
+        while (!fitter_state.m_fit_actor_state.finished() &&
                (!fitter_state.m_fit_actor_state.is_state() ||
                 fitter_state.m_fit_actor_state().is_hole())) {
             fitter_state.m_fit_actor_state.next();
         }
 
-        if (fitter_state.m_fit_actor_state.is_complete()) {
-            return kalman_fitter_status::SUCCESS;
+        if (fitter_state.m_fit_actor_state.finished()) {
+            return kalman_fitter_status::ERROR_UPDATER_SKIPPED_STATE;
         }
 
         auto last = fitter_state.m_fit_actor_state();
@@ -288,18 +320,18 @@ class kalman_fitter {
 
         if (!std::isfinite(last.filtered_params().theta())) {
             TRACCC_ERROR_HOST_DEVICE(
-                "Theta is infinite after filtering (Matrix inversion)");
+                "Theta is infinite after forward fit (Matrix inversion)");
             return kalman_fitter_status::ERROR_INVERSION;
         }
 
         if (!std::isfinite(last.filtered_params().phi())) {
             TRACCC_ERROR_HOST_DEVICE(
-                "Phi is infinite after filtering (Matrix inversion)");
+                "Phi is infinite after forward fit (Matrix inversion)");
             return kalman_fitter_status::ERROR_INVERSION;
         }
 
         if (theta <= 0.f || theta >= 2.f * constant<traccc::scalar>::pi) {
-            TRACCC_ERROR_HOST_DEVICE("Hit theta pole after filtering : %f",
+            TRACCC_ERROR_HOST_DEVICE("Hit theta pole after forward fit : %f",
                                      theta);
             return kalman_fitter_status::ERROR_THETA_POLE;
         }
@@ -309,8 +341,10 @@ class kalman_fitter {
             last.filtered_params().covariance());
         last.smoothed_chi2() = last.filtered_chi2();
 
+        TRACCC_DEBUG_HOST("Start smoothing at: " << last.smoothed_params());
+
         if (fitter_state.m_sequencer_state._sequence.empty()) {
-            return kalman_fitter_status::SUCCESS;
+            return kalman_fitter_status::ERROR_UPDATER_SKIPPED_STATE;
         }
 
         // Backward propagator for the two-filters method
@@ -328,7 +362,7 @@ class kalman_fitter {
 
         typename backward_propagator_type::state propagation(
             last.smoothed_params(), m_field, m_detector,
-            fitter_state.m_sequence_buffer, backward_cfg.context);
+            /*fitter_state.m_sequence_buffer,*/ backward_cfg.context);
         propagation.set_particle(detail::correct_particle_hypothesis(
             m_cfg.ptc_hypothesis, last.smoothed_params()));
 
@@ -343,24 +377,41 @@ class kalman_fitter {
             detray::navigation::direction::e_backward);
 
         // Synchronize the current barcode with the input track parameter
-        while (propagation._navigation.get_target_barcode() !=
+        /*while (propagation._navigation.get_target_barcode() !=
                last.smoothed_params().surface_link()) {
             assert(!propagation._navigation.finished());
             propagation._navigation.set_next_external();
-        }
+        }*/
 
         propagator.propagate(propagation, fitter_state.backward_actor_state());
 
         // Reset the backward mode to false
         fitter_state.m_fit_actor_state.backward_mode = false;
 
-        return kalman_fitter_status::SUCCESS;
+        // Encountered error during smoothing?
+        if (fitter_state.m_fit_actor_state.fit_result !=
+            kalman_fitter_status::SUCCESS) {
+            return fitter_state.m_fit_actor_state.fit_result;
+        }
+
+        // Encountered error during propagation?
+        return propagator.finished(propagation)
+                   ? kalman_fitter_status::SUCCESS
+                   : kalman_fitter_status::ERROR_PROPAGATION_FAILURE;
     }
 
     TRACCC_HOST_DEVICE
     void update_statistics(state& fitter_state) const {
         auto& fit_res = fitter_state.m_fit_res;
         auto& track_states = fitter_state.m_fit_actor_state.m_track_states;
+
+        // Only count statistics for fully fitted tracks
+        if (fitter_state.m_fit_actor_state.fit_result !=
+            kalman_fitter_status::SUCCESS) {
+            return;
+        }
+
+        TRACCC_DEBUG_HOST_DEVICE("Updating fit statistics");
 
         // Fit parameter = smoothed track parameter of the first smoothed track
         // state
@@ -397,10 +448,62 @@ class kalman_fitter {
     }
 
     TRACCC_HOST_DEVICE
-    void check_fitting_result(state& fitter_state) const {
+    void check_fitting_result(state& fitter_state,
+                              const kalman_fitter_status res_fw,
+                              const kalman_fitter_status res_bw) const {
         auto& fit_res = fitter_state.m_fit_res;
         const auto& track_states =
             fitter_state.m_fit_actor_state.m_track_states;
+
+        TRACCC_DEBUG_HOST_DEVICE("Checking fit results...");
+
+        // Check the fitter result code
+        if (res_fw != kalman_fitter_status::SUCCESS) {
+            // Check if track states were skipped
+            if (res_fw == kalman_fitter_status::ERROR_UPDATER_SKIPPED_STATE) {
+                TRACCC_ERROR_HOST_DEVICE(
+                    "Skipped sensitive surfaces during forward fit: %d",
+                    fitter_state.m_fit_actor_state.count_missed_fit());
+                fit_res.fit_outcome() =
+                    track_fit_outcome::FAILURE_NOT_ALL_FITTED;
+                return;
+            }
+
+            // Check for propgation failure, otherwise assume fitter error
+            TRACCC_ERROR_HOST(
+                "Error during fitting: " << fitter_debug_msg{res_fw}());
+            fit_res.fit_outcome() =
+                res_fw == kalman_fitter_status::ERROR_PROPAGATION_FAILURE
+                    ? track_fit_outcome::FAILURE_FORWARD_PROPAGATION
+                    : track_fit_outcome::FAILURE_FITTER;
+            return;
+        }
+
+        if (res_bw != kalman_fitter_status::SUCCESS) {
+            // Check if track states were skipped
+            if (res_bw == kalman_fitter_status::ERROR_SMOOTHER_SKIPPED_STATE) {
+                TRACCC_ERROR_HOST_DEVICE(
+                    "Skipped sensitive surfaces during smoothing: %d",
+                    fitter_state.m_fit_actor_state.count_missed_smoother());
+                fit_res.fit_outcome() =
+                    track_fit_outcome::FAILURE_NOT_ALL_SMOOTHED;
+                return;
+            }
+
+            // Check for propgation failure, otherwise assume fitter error
+            TRACCC_ERROR_HOST(
+                "Error during smoothing: " << fitter_debug_msg{res_bw}());
+            fit_res.fit_outcome() =
+                res_bw == kalman_fitter_status::ERROR_PROPAGATION_FAILURE
+                    ? track_fit_outcome::FAILURE_BACKWARD_PROPAGATION
+                    : track_fit_outcome::FAILURE_SMOOTHER;
+            return;
+        }
+
+        if (const unsigned int n_holes{fitter_state.m_fit_actor_state.n_holes};
+            n_holes > 2u) {
+            TRACCC_WARNING_HOST_DEVICE("Exceeded hole count: %d", n_holes);
+        }
 
         // NDF should always be positive for fitting
         if (fit_res.ndf() > 0) {
@@ -418,6 +521,7 @@ class kalman_fitter {
             }
 
             // Fitting succeeds if any of non-hole track states is not smoothed
+            TRACCC_DEBUG_HOST_DEVICE("Fit status: SUCCESS");
             fit_res.fit_outcome() = track_fit_outcome::SUCCESS;
             return;
         }
