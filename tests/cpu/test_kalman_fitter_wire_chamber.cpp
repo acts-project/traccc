@@ -143,7 +143,8 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
         // Event map
         traccc::event_data evt_data(path, i_evt, host_mr);
         // Truth Track Candidates
-        traccc::measurement_collection_types::host measurements(&host_mr);
+        traccc::edm::measurement_collection<traccc::default_algebra>::host
+            measurements(host_mr);
         traccc::edm::track_container<traccc::default_algebra>::host
             track_candidates{host_mr};
         evt_data.generate_truth_candidates(track_candidates, measurements, sg,

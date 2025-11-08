@@ -102,8 +102,11 @@ TEST_F(io, csv_read_odd_single_muon) {
 
     // Read the truth particles for the first event.
     traccc::particle_container_types::host particles{&mr};
-    traccc::io::read_particles(particles, 0u, "odd/geant4_1muon_1GeV/",
-                               &detector, traccc::data_format::csv);
+    traccc::edm::measurement_collection<traccc::default_algebra>::host
+        measurements{mr};
+    traccc::io::read_particles(particles, measurements, 0u,
+                               "odd/geant4_1muon_1GeV/", &detector,
+                               traccc::data_format::csv);
 
     // Look at the read container.
     ASSERT_EQ(particles.size(), 265u);

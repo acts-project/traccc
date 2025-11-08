@@ -10,7 +10,7 @@
 // Project include(s).
 #include "traccc/bfield/magnetic_field_types.hpp"
 #include "traccc/definitions/common.hpp"
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/track_collection.hpp"
 #include "traccc/edm/track_state_collection.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
@@ -80,7 +80,7 @@ class KalmanFittingTests : public testing::Test {
         const edm::track_collection<default_algebra>::host::const_proxy_type&
             track,
         const edm::track_state_collection<default_algebra>::host& track_states,
-        const measurement_collection_types::host& measurements);
+        const edm::measurement_collection<default_algebra>::host& measurements);
 
     /// Count the number of tracks that were successfully fitted
     ///

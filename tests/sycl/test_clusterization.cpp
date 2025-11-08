@@ -37,12 +37,15 @@ TEST(SYCLClustering, SingleModule) {
 
     // Create cell collection
     traccc::edm::silicon_cell_collection::host cells{shared_mr};
-    cells.resize(8u);
-    cells.channel0() = {1u, 2u, 3u, 6u, 5u, 6u, 7u, 6u};
-    cells.channel1() = {2u, 2u, 2u, 4u, 5u, 5u, 5u, 6u};
-    cells.activation() = {1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f};
-    cells.time() = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
-    cells.module_index() = {0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u};
+    cells.reserve(8u);
+    cells.push_back({1u, 2u, 1.f, 0.f, 0u});
+    cells.push_back({2u, 2u, 1.f, 0.f, 0u});
+    cells.push_back({3u, 2u, 1.f, 0.f, 0u});
+    cells.push_back({6u, 4u, 1.f, 0.f, 0u});
+    cells.push_back({5u, 5u, 1.f, 0.f, 0u});
+    cells.push_back({6u, 5u, 1.f, 0.f, 0u});
+    cells.push_back({7u, 5u, 1.f, 0.f, 0u});
+    cells.push_back({6u, 6u, 1.f, 0.f, 0u});
 
     // Create a dummy detector description.
     traccc::silicon_detector_description::host dd{shared_mr};
@@ -61,23 +64,41 @@ TEST(SYCLClustering, SingleModule) {
     auto measurements_buffer =
         ca_sycl(vecmem::get_data(cells), vecmem::get_data(dd));
 
-    measurement_collection_types::device measurements(measurements_buffer);
+    edm::measurement_collection<default_algebra>::device measurements(
+        measurements_buffer);
 
     // Check the results
     EXPECT_EQ(copy.get_size(measurements_buffer), 2u);
 
-    measurement_collection_types::host references;
-    references.push_back(
-        {{2.5f, 2.5f}, {0.75f, 0.0833333f}, detray::geometry::barcode{0u}});
-    references.push_back(
-        {{6.5f, 5.5f}, {0.483333f, 0.483333f}, detray::geometry::barcode{0u}});
+    edm::measurement_collection<default_algebra>::host references{shared_mr};
+    references.push_back({{2.5f, 2.5f},
+                          {0.75f, 0.0833333f},
+                          2u,
+                          0.f,
+                          0.f,
+                          0u,
+                          detray::geometry::barcode{0u},
+                          {1u, 1u},
+                          0u});
+    references.push_back({{6.5f, 5.5f},
+                          {0.483333f, 0.483333f},
+                          2u,
+                          0.f,
+                          0.f,
+                          0u,
+                          detray::geometry::barcode{0u},
+                          {1u, 1u},
+                          1u});
 
-    for (const auto& test : measurements) {
+    for (unsigned int i = 0; i < measurements.size(); ++i) {
+        const auto test = measurements.at(i);
         // 0.01 % uncertainty
-        auto iso = traccc::details::is_same_object<measurement>(test, 0.0001f);
+        auto iso = traccc::details::is_same_object<edm::measurement_collection<
+            default_algebra>::const_device::object_type>(test, 0.0001f);
         bool matched = false;
 
-        for (const auto& ref : references) {
+        for (std::size_t j = 0; j < references.size(); ++j) {
+            const auto ref = references.at(j);
             if (iso(ref)) {
                 matched = true;
                 break;
