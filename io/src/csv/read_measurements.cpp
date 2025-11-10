@@ -20,6 +20,7 @@ namespace traccc::io::csv {
 std::vector<measurement_id_type> read_measurements(
     edm::measurement_collection<default_algebra>::host& measurements,
     std::string_view filename, const traccc::host_detector* detector,
+    const traccc::silicon_detector_description::host* detector_description,
     const bool do_sort) {
 
     // Construct the measurement reader object.
@@ -27,6 +28,8 @@ std::vector<measurement_id_type> read_measurements(
 
     // For Acts data, build a map of acts->detray geometry IDs
     std::map<geometry_id, geometry_id> acts_to_detray_id;
+    std::map<geometry_id, std::size_t>
+        geometry_id_to_detector_description_index;
 
     if (detector) {
         host_detector_visitor<detector_type_list>(
@@ -38,6 +41,14 @@ std::vector<measurement_id_type> read_measurements(
             });
     }
 
+    if (detector_description) {
+        for (std::size_t i = 0; i < detector_description->geometry_id().size();
+             ++i) {
+            geometry_id_to_detector_description_index
+                [detector_description->geometry_id().at(i).value()] = i;
+        }
+    }
+
     // Read the measurements from the input file.
     csv::measurement iomeas;
     while (reader.read(iomeas)) {
@@ -46,7 +57,11 @@ std::vector<measurement_id_type> read_measurements(
         measurements.resize(measurements.size() + 1u);
         auto meas = measurements.at(measurements.size() - 1u);
         make_measurement_edm(
-            iomeas, meas, (detector == nullptr ? nullptr : &acts_to_detray_id));
+            iomeas, meas, (detector == nullptr ? nullptr : &acts_to_detray_id),
+            detector_description,
+            (detector_description == nullptr
+                 ? nullptr
+                 : &geometry_id_to_detector_description_index));
     }
 
     // Contains the index of the new position at the entry of the old position

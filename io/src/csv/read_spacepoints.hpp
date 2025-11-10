@@ -12,6 +12,7 @@
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/host_detector.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 // System include(s).
 #include <string_view>
@@ -34,6 +35,8 @@ void read_spacepoints(
     std::string_view hit_filename, std::string_view meas_filename,
     std::string_view meas_hit_map_filename,
     const traccc::host_detector* detector = nullptr,
+    const traccc::silicon_detector_description::host* detector_description =
+        nullptr,
     const bool sort_measurements = true);
 
 }  // namespace traccc::io::csv

@@ -12,6 +12,7 @@
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/host_detector.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 // System include(s).
 #include <string_view>
@@ -29,6 +30,8 @@ namespace traccc::io::csv {
 std::vector<measurement_id_type> read_measurements(
     edm::measurement_collection<default_algebra>::host& measurements,
     std::string_view filename, const traccc::host_detector* detector = nullptr,
+    const traccc::silicon_detector_description::host* detector_description =
+        nullptr,
     const bool do_sort = true);
 
 }  // namespace traccc::io::csv
