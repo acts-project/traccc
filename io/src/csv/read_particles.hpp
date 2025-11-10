@@ -12,6 +12,7 @@
 #include "traccc/edm/particle.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/host_detector.hpp"
+#include "traccc/geometry/silicon_detector_description.hpp"
 
 // System include(s).
 #include <string_view>
@@ -41,6 +42,9 @@ void read_particles(
     edm::measurement_collection<default_algebra>::host& measurements,
     std::string_view particles_file, std::string_view hits_file,
     std::string_view measurements_file, std::string_view hit_map_file,
-    const traccc::host_detector* detector, const bool sort_measurements = true);
+    const traccc::host_detector* detector,
+    const traccc::silicon_detector_description::host* detector_description =
+        nullptr,
+    const bool sort_measurements = true);
 
 }  // namespace traccc::io::csv

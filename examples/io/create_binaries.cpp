@@ -54,7 +54,7 @@ int create_binaries(const traccc::opts::detector& detector_opts,
             measurements{host_mr};
         traccc::edm::spacepoint_collection::host spacepoints{host_mr};
         traccc::io::read_spacepoints(spacepoints, measurements, event,
-                                     input_opts.directory, nullptr,
+                                     input_opts.directory, nullptr, nullptr,
                                      input_opts.format);
 
         // Write binary file(s)
