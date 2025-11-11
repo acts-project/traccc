@@ -16,7 +16,6 @@ namespace traccc::alpaka {
 ///
 /// @param bfield The magnetic field to be copied
 //
-magnetic_field make_magnetic_field(const magnetic_field& bfield
-                                  queue& queue );
+magnetic_field make_magnetic_field(const magnetic_field& bfield queue& queue);
 
 }  // namespace traccc::alpaka
