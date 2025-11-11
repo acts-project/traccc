@@ -27,6 +27,7 @@ traccc_add_library( traccc_options options TYPE SHARED
   "include/traccc/options/track_propagation.hpp"
   "include/traccc/options/track_resolution.hpp"
   "include/traccc/options/track_seeding.hpp"
+  "include/traccc/options/track_gbts_seeding.hpp"
   # source files
   "src/details/interface.cpp"
   "src/accelerator.cpp"
@@ -48,7 +49,8 @@ traccc_add_library( traccc_options options TYPE SHARED
   "src/track_matching.cpp"
   "src/track_propagation.cpp"
   "src/track_resolution.cpp"
-  "src/track_seeding.cpp"
+  "src/track_seeding.cpp" 
+  "src/track_gbts_seeding.cpp"
   "src/truth_finding.cpp"
   )
 target_link_libraries( traccc_options

@@ -28,6 +28,7 @@
 #include "traccc/options/track_fitting.hpp"
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/options/track_seeding.hpp"
+#include "traccc/options/track_gbts_seeding.hpp"
 
 // I/O include(s).
 #include "traccc/io/read_cells.hpp"
@@ -77,6 +78,7 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
     opts::input_data input_opts;
     opts::clusterization clusterization_opts;
     opts::track_seeding seeding_opts;
+    opts::track_gbts_seeding gbts_seeding_opts;
     opts::track_finding finding_opts;
     opts::track_propagation propagation_opts;
     opts::track_fitting fitting_opts;
@@ -86,12 +88,12 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
     opts::program_options program_opts{
         description,
         {detector_opts, bfield_opts, input_opts, clusterization_opts,
-         seeding_opts, finding_opts, propagation_opts, fitting_opts,
-         throughput_opts, threading_opts, logging_opts},
+         seeding_opts, gbts_seeding_opts, finding_opts, propagation_opts,
+	 fitting_opts, throughput_opts, threading_opts, logging_opts},
         argc,
         argv,
         prelogger->cloneWithSuffix("Options")};
-
+    
     TRACCC_LOCAL_LOGGER(
         prelogger->clone(std::nullopt, traccc::Logging::Level(logging_opts)));
 
