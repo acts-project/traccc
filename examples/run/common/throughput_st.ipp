@@ -26,6 +26,7 @@
 #include "traccc/options/track_fitting.hpp"
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/options/track_seeding.hpp"
+#include "traccc/options/track_gbts_seeding.hpp"
 
 // I/O include(s).
 #include "traccc/io/read_cells.hpp"
@@ -128,8 +129,10 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
     const traccc::seedfinder_config seedfinder_config(seeding_opts);
     const traccc::seedfilter_config seedfilter_config(seeding_opts);
     const traccc::spacepoint_grid_config spacepoint_grid_config(seeding_opts);
-
-    typename FULL_CHAIN_ALG::finding_algorithm::config_type finding_cfg(
+	
+	traccc::gbts_seedfinder_config gbts_config;
+    
+	typename FULL_CHAIN_ALG::finding_algorithm::config_type finding_cfg(
         finding_opts);
     finding_cfg.propagation = propagation_config;
 
@@ -140,8 +143,8 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
     // Set up the full-chain algorithm.
     std::unique_ptr<FULL_CHAIN_ALG> alg = std::make_unique<FULL_CHAIN_ALG>(
         host_mr, clustering_cfg, seedfinder_config, spacepoint_grid_config,
-        seedfilter_config, finding_cfg, fitting_cfg, det_descr, field,
-        &detector, logger().clone("FullChainAlg"));
+        seedfilter_config, gbts_config, finding_cfg, fitting_cfg, det_descr, field,
+        &detector, logger().clone("FullChainAlg"), false);
 
     // Seed the random number generator.
     if (throughput_opts.random_seed == 0) {
