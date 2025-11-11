@@ -63,10 +63,10 @@ void TripletFittingTests::pull_value_tests(
 
         // Set the mean seed to 0
         gaus.SetParameters(1, 0.);
-        gaus.SetParLimits(1, -1., 1.);
+        gaus.SetParLimits(1, -5., 5.); // -1., 1.
         // Set the standard deviation seed to 1
         gaus.SetParameters(2, 1.0);
-        gaus.SetParLimits(2, 0.5, 2.);
+        gaus.SetParLimits(2, 0.1, 5.); // 0.5, 2.
 
         auto res = pull_dist->Fit("gaus", "Q0S");
 

@@ -21,6 +21,9 @@
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/utils/copy.hpp>
 
+#include <iostream>
+#include <fstream>
+
 namespace traccc::host::details {
 
 /// Templated implementation of the track fitting algorithm.
@@ -46,6 +49,10 @@ track_state_container_types::host fit_tracks(
     fitter_t& fitter,
     const track_candidate_container_types::const_view& track_candidates_view,
     vecmem::memory_resource& mr, vecmem::copy& copy) {
+
+    // Open a file
+    std::ofstream file_out;
+    file_out.open("/home/atlas/nandi/fit_out.csv", std::ios_base::app);
 
     // Create the output container.
     track_state_container_types::host result{&mr};
@@ -80,6 +87,16 @@ track_state_container_types::host fit_tracks(
         // Run the fitter.
         kalman_fitter_status fit_status = fitter.fit(
             track_candidates.get_headers()[i].seed_params, fitter_state);
+
+        // file_out << fitter_state.m_fit_res.fit_params.bound_local()[0] << ", " << fitter_state.m_fit_res.fit_params.bound_local()[1] << ", " << fitter_state.m_fit_res.fit_params.phi() << ", " << fitter_state.m_fit_res.fit_params.theta() << ", " << fitter_state.m_fit_res.fit_params.qop() << ", " << fitter_state.m_fit_res.fit_params.time() << ", " << fitter_state.m_fit_res.trk_quality.chi2 << ", " << fitter_state.m_fit_res.trk_quality.ndf << std::endl;
+
+        // std::cout << "input_states[0].smoothed "  << input_states[0].smoothed().vector() << std::endl;
+        // std::cout << "fit params : " << fitter_state.m_fit_res.fit_params.vector() << std::endl;
+
+        file_out << input_states[0].smoothed()[0] << ", " << input_states[0].smoothed()[1] << ", " << input_states[0].smoothed()[2] << ", " << input_states[0].smoothed()[3] << ", " << input_states[0].smoothed()[4] << ", " << input_states[0].smoothed()[5] << ", " << fitter_state.m_fit_res.trk_quality.chi2 << ", " << fitter_state.m_fit_res.trk_quality.ndf << std::endl;
+
+        
+        file_out << getter::element(input_states[0].smoothed().covariance(), 0u, 0u) << ", " << getter::element(input_states[0].smoothed().covariance(), 1u, 1u) << ", " << getter::element(input_states[0].smoothed().covariance(), 2u, 2u) << ", " << getter::element(input_states[0].smoothed().covariance(), 3u, 3u) << ", " << getter::element(input_states[0].smoothed().covariance(), 4u, 4u) << ", " << getter::element(input_states[0].smoothed().covariance(), 5u, 5u) << std::endl;
 
         if (fit_status == kalman_fitter_status::SUCCESS) {
             // Save the results into the output container.
@@ -119,6 +136,10 @@ inline track_state_container_types::host fit_tracks<>(
     const track_candidate_container_types::const_view& track_candidates_view,
     vecmem::memory_resource& mr, vecmem::copy& copy) {
 
+    // Open a file
+    std::ofstream file_out;
+    file_out.open("/home/atlas/nandi/fit_out.csv", std::ios_base::app);
+
     // Algebra type
     using algebra_type = traccc::triplet_fitter<
         const traccc::default_detector::host,
@@ -151,7 +172,7 @@ inline track_state_container_types::host fit_tracks<>(
         vecmem::vector<track_state<algebra_type>> fitted_states;
 
         // Initialize fitter
-        fitter.init_fitter(input_states);
+        fitter.init_fitter(std::move(input_states));
 
         // Make triplets of measurements
         fitter.make_triplets();
@@ -161,7 +182,15 @@ inline track_state_container_types::host fit_tracks<>(
 
         // Save the results into the output container.
         result.push_back(std::move(fit_res), std::move(fitted_states));
+
+        // file_out << "track candidate " << i << std::endl;            
+        
+        file_out << fit_res.fit_params.bound_local()[0] << ", " << fit_res.fit_params.bound_local()[1] << ", " << fit_res.fit_params.phi() << ", " << fit_res.fit_params.theta() << ", " << fit_res.fit_params.qop() << ", " << fit_res.fit_params.time() << ", " << fit_res.trk_quality.chi2 << ", " << fit_res.trk_quality.ndf << ", " << fit_res.c_3D << ", " << fit_res.sig_c_3D << std::endl;
+        
+        file_out << getter::element(fit_res.fit_params.covariance(), 0u, 0u) << ", " << getter::element(fit_res.fit_params.covariance(), 1u, 1u) << ", " << getter::element(fit_res.fit_params.covariance(), 2u, 2u) << ", " << getter::element(fit_res.fit_params.covariance(), 3u, 3u) << ", " << getter::element(fit_res.fit_params.covariance(), 4u, 4u) << ", " << getter::element(fit_res.fit_params.covariance(), 5u, 5u) << std::endl;
     }
+
+    // file_out.close();
 
     // Return the fitted track states.
     return result;

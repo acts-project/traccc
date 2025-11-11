@@ -58,6 +58,58 @@ class triplet_fitter {
                    const config_type& cfg)
         : m_detector(det), m_field(field), m_cfg(cfg) {}
 
+    // Convenience function: wrap angle between -Pi and Pi
+    static inline scalar wrap_pi_mpi(scalar angle) {
+        while (angle > static_cast<scalar>(M_PI))
+            angle = angle - 2.f * static_cast<scalar>(M_PI);
+
+        while (angle < -1.f * static_cast<scalar>(M_PI))
+            angle = angle + 2.f * static_cast<scalar>(M_PI);
+
+        return angle;
+    }
+
+    // Convenience function: difference of two azimuthal angles
+    static inline scalar delta_phi(scalar phi_a, scalar phi_b) {
+        scalar dphi =
+            math::fmod(phi_a - phi_b, 2.f * static_cast<scalar>(M_PI));
+
+        if (dphi > static_cast<scalar>(M_PI)) dphi -= 2.f * static_cast<scalar>(M_PI);
+        if (dphi < -1.f * static_cast<scalar>(M_PI)) dphi += 2.f * static_cast<scalar>(M_PI);
+        return dphi;
+    }
+
+    // Segment parameters
+    struct segment_par {
+        scalar phi;
+        scalar theta;
+        scalar rho_phi;
+        scalar rho_theta;
+        scalar nu;
+        scalar tau;
+    };
+
+    // Hit gradients of segment parameters
+    struct segment_grad {
+
+        // Construct in-place for containers
+        segment_grad(scalar grad_phi, scalar grad_theta, scalar grad_rho_phi,
+                     scalar grad_rho_theta, scalar grad_nu, scalar grad_tau)
+            : f_phi{grad_phi},
+              f_theta{grad_theta},
+              f_rho_phi{grad_rho_phi},
+              f_rho_theta{grad_rho_theta},
+              f_nu{grad_nu},
+              f_tau{grad_tau} {}
+
+        scalar f_phi;
+        scalar f_theta;
+        scalar f_rho_phi;
+        scalar f_rho_theta;
+        scalar f_nu;
+        scalar f_tau;
+    };
+
     // Triplet struct
     struct triplet {
 
@@ -70,30 +122,75 @@ class triplet_fitter {
         /// @param hit_1 position of second hit
         /// @param hit_2 position of third hit
         triplet(const point3& hit_0, const point3& hit_1, const point3& hit_2)
-            : m_hit_0(hit_0), m_hit_1(hit_1), m_hit_2(hit_2) {}
+            : m_hit_pos{hit_0, hit_1, hit_2} {}
 
-        // global positions of three hits
-        point3 m_hit_0;
-        point3 m_hit_1;
-        point3 m_hit_2;
+        /// Custom copy
+        ///
+        /// (only hit positions and measurements copied)
+        triplet(const triplet& t) : m_hit_pos{t.m_hit_pos}, m_meas{t.m_meas} {}
 
-        // triplet parameters
+        /// Shift a hit by measurement uncertainty
+        ///
+        /// @param hit_idx hit index
+        /// @param dir_idx direction index
+        /// @param multipler multipler
+        /// @param detector detector
+        void shiftHit(const unsigned& hit_idx, const unsigned& dir_idx,
+                      const scalar& multipler, const detector_t& detector) {
+            // The shifts are applied to the global
+            // positions of the hits
+
+            // Get local positions and variances of measurement
+            point2 loc_pos{};
+            point2 loc_var{};
+            for (std::size_t dim : m_meas[hit_idx].subs.get_indices()) {
+                loc_pos[dim] = m_meas[hit_idx].local[dim];
+                loc_var[dim] = m_meas[hit_idx].variance[dim];
+            }
+
+            // Shift local position
+            assert(dir_idx <= m_meas[hit_idx].meas_dim);
+            loc_pos[dir_idx] += multipler * math::sqrt(loc_var[dir_idx]);
+
+            // Surface
+            detray::tracking_surface sf{detector, m_meas[hit_idx].surface_link};
+
+            // Convert shifted position to global coordinates
+            point3 glob_pos = sf.local_to_global({}, loc_pos, {});
+
+            // Save shifted position in triplet object
+            this->m_hit_pos[hit_idx] = glob_pos;
+        }
+
+        // Hit positions
+        std::array<point3, 3u> m_hit_pos;
+
+        // Triplet parameters
         scalar m_phi_0{};
         scalar m_theta_0{};
         scalar m_rho_phi{};
         scalar m_rho_theta{};
 
-        // hit position derivatives
-        vecmem::vector<scalar> m_h_thet;
-        vecmem::vector<scalar> m_h_phi;
+        // Segment parameters
+        segment_par m_seg_1;
+        segment_par m_seg_2;
 
-        // Measurements for getting variances (hit shifts)
-        // and surface orientation (scattering estimation)
-        std::array<measurement, 3u> m_meas;
-
-        // Estimated values
         scalar m_sigma_MS{};  // MS uncertainty
         scalar m_theta{};     // Polar angle
+
+        // Triplet hit position derivatives
+        // (h * sqrt(Dinv))
+        // (per hit per uncertainty direction)
+        vecmem::vector<scalar> m_hd_theta;
+        vecmem::vector<scalar> m_hd_phi;
+
+        // Triplet segment gradients
+        vecmem::vector<segment_grad> m_fseg_1;
+        vecmem::vector<segment_grad> m_fseg_2;
+
+        // Measurements for getting position uncertainties (hit shifts)
+        // and surface orientation (scattering estimation)
+        std::array<measurement, 3u> m_meas;
     };
 
     /// Helper function - Initialize fitter
@@ -102,9 +199,9 @@ class triplet_fitter {
     ///
     TRACCC_HOST_DEVICE
     void init_fitter(
-        const vecmem::vector<track_state<algebra_type>>& in_track_states) {
+        vecmem::vector<track_state<algebra_type>>&& in_track_states) {
 
-        m_track_states = in_track_states;
+        m_track_states = std::move(in_track_states);
 
         // Clear triplets from the last track
         m_triplets.clear();
@@ -159,6 +256,10 @@ class triplet_fitter {
             point3 glob_3d_1 = meas_1_sf.local_to_global({}, loc_2d_1, {});
             point3 glob_3d_2 = meas_2_sf.local_to_global({}, loc_2d_2, {});
 
+            std::cout << "x_0 : " << glob_3d_0[0] << ", " << glob_3d_0[1] << ", " << glob_3d_0[2] << std::endl;
+            std::cout << "x_1 : " << glob_3d_1[0] << ", " << glob_3d_1[1] << ", " << glob_3d_1[2] << std::endl;
+            std::cout << "x_2 : " << glob_3d_2[0] << ", " << glob_3d_2[1] << ", " << glob_3d_2[2] << std::endl;
+
             // Make triplet
             triplet t(glob_3d_0, glob_3d_1, glob_3d_2);
 
@@ -172,6 +273,80 @@ class triplet_fitter {
         }
     }
 
+    /// Estimate track direction at the scattering plane
+    /// using hits 0, 2 and the circle solution
+    ///
+    /// @param t triplet
+    /// @param c_perp curvature of circle
+    /// @param dir track direction (output)
+    void estimateTrackDirection(const triplet& t, const scalar& c_perp,
+                                vector3& dir) {
+
+        // Mid-point between hits 0 & 2
+        vector2 m{0.5f * (t.m_hit_pos[0][0] + t.m_hit_pos[2][0]),
+                  0.5f * (t.m_hit_pos[0][1] + t.m_hit_pos[2][1])};
+
+        vector3 x_02{t.m_hit_pos[2] - t.m_hit_pos[0]};
+        scalar d_02 = algebra::cmath::perp(x_02);
+
+        // Direction perpendicular to vector joining hits 0 & 2
+        vector2 n{(t.m_hit_pos[2][1] - t.m_hit_pos[0][1]) / d_02,
+                  (t.m_hit_pos[0][0] - t.m_hit_pos[2][0]) / d_02};
+
+        scalar perp_d =
+            math::sqrt(1.f / (c_perp * c_perp) - 0.25f * (d_02 * d_02));
+
+        // Centre can be on either side of line joining hits 0 & 2
+        std::array<vector2, 2u> c;
+
+        c[0] = vector2{m[0] + n[0] * perp_d, m[1] + n[1] * perp_d};
+        c[1] = vector2{m[0] - n[0] * perp_d, m[1] - n[1] * perp_d};
+
+        vector2 x1{t.m_hit_pos[1][0], t.m_hit_pos[1][1]};
+
+        // Choose the correct centre
+        vector2 c_correct{0.f, 0.f};
+        for (const vector2& c_i : c) {
+            // Centre of the circle cannot be
+            // on the same side of the line
+            // connecting hits 0 & 2 as hit 1
+            if (vector::dot(x1 - m, c_i - m) < 0.f) {
+                c_correct = c_i;
+                break;
+            }
+        }
+
+        if (algebra::cmath::norm(c_correct) == 0.f or
+            algebra::cmath::norm(x1 - m) == 0.f) {
+            // Use vector joining hits
+            // 0 and 2 as track direction if
+            // center calculation fails or three
+            // hits lie on a straight line
+            dir = vector::normalize(x_02);
+        }
+
+        else {
+            // Use circle solution to get track direction
+
+            vector2 r1 = x1 - c_correct;
+            vector2 tangent2D{r1[1], -1.f * r1[0]};
+
+            // tangent direction along trajectory
+            vector3 x_12{t.m_hit_pos[2] - t.m_hit_pos[1]};
+            if (vector::dot(tangent2D, vector2{x_12[0], x_12[1]}) < 0.f)
+                tangent2D = -1.f * tangent2D;
+
+            vector2 tangent2D_norm = math::sin(t.m_theta) /
+                                     algebra::cmath::norm(tangent2D) *
+                                     tangent2D;
+
+            // track tangent normalized to 1
+            dir[0] = tangent2D_norm[0];
+            dir[1] = tangent2D_norm[1];
+            dir[2] = math::cos(t.m_theta);
+        }
+    }
+
     /// Helper function - Linearize triplet
     ///
     /// Calculates triplet parameters by linearizing around circle solution
@@ -181,20 +356,33 @@ class triplet_fitter {
     ///
     TRACCC_HOST_DEVICE void linearize_triplet(triplet& t) {
 
-        // std::cout << "Linearization:\n";
+        // std::cout << "Linearization new\n";
+
         // Vectors joining hits
-        vector3 x_01{t.m_hit_1 - t.m_hit_0};
-        vector3 x_12{t.m_hit_2 - t.m_hit_1};
-        vector3 x_02{t.m_hit_2 - t.m_hit_0};
+        vector3 x_01{t.m_hit_pos[1] - t.m_hit_pos[0]};
+        vector3 x_12{t.m_hit_pos[2] - t.m_hit_pos[1]};
+        vector3 x_02{t.m_hit_pos[2] - t.m_hit_pos[0]};
 
         // Transverse distances
         scalar d_01 = algebra::cmath::perp(x_01);
         scalar d_12 = algebra::cmath::perp(x_12);
         scalar d_02 = algebra::cmath::perp(x_02);
 
+        // std::cout << "\nd_01 : " << d_01 << " d_12 : " << d_12 << " d_02 : " << d_02 << std::endl;
+
         // Longitudinal distances
         scalar z_01 = x_01[2];
         scalar z_12 = x_12[2];
+
+        // std::cout << "z_01 : " << z_01 << " z_12 : " << z_12 << std::endl;
+
+        // Azimuthal angles of transverse vectors
+        scalar phi_01 = math::atan2(x_01[1], x_01[0]);
+        scalar phi_12 = math::atan2(x_12[1], x_12[0]);
+
+        // scalar dphi = triplet_fitter::delta_phi(phi_12, phi_01);
+        // scalar phi_3C = 2.f * dphi;
+        // std::cout << "phi12 : " << phi_12 << " phi01 : " << phi_01 << " dphi : " << dphi << std::endl;
 
         // Calculation of circle curvature and hence the entire
         // linearization will fail for very low (or 0) transverse
@@ -213,102 +401,88 @@ class triplet_fitter {
             return;
         }
 
-        // Parameters of the arc segments
+        // std::cout << "c_perp : " << c_perp << std::endl;
 
-        // Bending angles
-        scalar phi_1C = 2.f * math::asin(0.5f * d_01 * c_perp);
-        scalar phi_2C = 2.f * math::asin(0.5f * d_12 * c_perp);
+        // Parameters of the arc segments //
+
+        // Transverse bending angles
+        // (with the assumption that smaller of the two
+        // transverse bending angles has |PHI_xC| < PI)
+        // 1, 2: segment
+        // C: circle solution in transverse plane 
+
+        scalar sin_phiHalf_1C = 0.5f * d_01 * c_perp;
+        scalar sin_phiHalf_2C = 0.5f * d_12 * c_perp;
+
+        scalar phi_1C, phi_2C;
+
+        phi_1C = 2.f * math::asin(sin_phiHalf_1C);
+        phi_2C = 2.f * math::asin(sin_phiHalf_2C);
+
+        /*if (d_01 < d_12) {
+            phi_1C = 2.f * math::asin(sin_phiHalf_1C);
+            std::cout << "sin_phiHalf_1C : " << sin_phiHalf_1C << " math::asin : " << math::asin(sin_phiHalf_1C)
+            << " std::asin : " << std::asin(sin_phiHalf_1C) << std::endl;
+            phi_2C = phi_3C - phi_1C;
+        } else {
+            phi_2C = 2.f * math::asin(sin_phiHalf_2C);
+            phi_1C = phi_3C - phi_2C;
+        }*/
+
+        // std::cout << "phi1 : " << phi_1C << " phi2 : " << phi_2C << " phi3 : " << phi_3C << std::endl;
+
+        // Bending parameters
+        scalar Xphi_1C = 1.f;
+        scalar Xphi_2C = 1.f;
+        if (d_01 > 0.f)
+            Xphi_1C = 0.5f * phi_1C / sin_phiHalf_1C;
+        if (d_12 > 0.f)
+            Xphi_2C = 0.5f * phi_2C / sin_phiHalf_2C;
+
+        scalar cos_phiHalf_1C =
+            math::sqrt(1.f - sin_phiHalf_1C * sin_phiHalf_1C);
+        scalar cos_phiHalf_2C =
+            math::sqrt(1.f - sin_phiHalf_2C * sin_phiHalf_2C);
+
+        // Transverse arc lengths
+        scalar t_1C, t_2C;
+
+        if (c_perp == 0.f) {
+            t_1C = d_01;
+            t_2C = d_12;
+        } else {
+            t_1C = phi_1C / c_perp;
+            t_2C = phi_2C / c_perp;
+        }
+
+        // Total arc lengths
+        scalar s_1C_2 = z_01 * z_01 + t_1C * t_1C;
+        scalar s_2C_2 = z_12 * z_12 + t_2C * t_2C;
 
         // Polar angles
-        scalar theta_1C =
-            math::atan2(d_01 * 0.5f * phi_1C, z_01 * math::sin(0.5f * phi_1C));
-        scalar theta_2C =
-            math::atan2(d_12 * 0.5f * phi_2C, z_12 * math::sin(0.5f * phi_2C));
+        scalar theta_1C = math::atan2(t_1C, z_01);
+        scalar theta_2C = math::atan2(t_2C, z_12);
 
-        // Adapt for c_perp = 0 case
-        if (c_perp == 0.f) {
-            theta_1C = math::atan2(d_01, z_01);
-            theta_2C = math::atan2(d_12, z_12);
-        }
+        // std::cout << "theta1 : " << theta_1C << " theta2 : " << theta_2C << std::endl;
+
+        scalar cot_th_1C = z_01 / t_1C;
+        scalar cot_th_2C = z_12 / t_2C;
+
+        scalar cos_th_1C_2 = z_01 * z_01 / s_1C_2;
+        scalar cos_th_2C_2 = z_12 * z_12 / s_2C_2;
+
+        scalar sin_th_1C_2 = 1.f - cos_th_1C_2;
+        scalar sin_th_2C_2 = 1.f - cos_th_2C_2;
+
+        scalar sin_th_1C = math::sqrt(sin_th_1C_2);
+        scalar sin_th_2C = math::sqrt(sin_th_2C_2);
 
         // Estimate polar angle of the triplet
-        // from the polar angles of the two segments
         t.m_theta = 0.5f * (theta_1C + theta_2C);
 
-        // Store frequently used trigonometric expressions
-        // theta_1C
-        scalar sin_theta1C = math::sin(theta_1C);
-        scalar cos_theta1C = math::cos(theta_1C);
-        scalar sin2_theta1C = sin_theta1C * sin_theta1C;
-        // theta_2C
-        scalar sin_theta2C = math::sin(theta_2C);
-        scalar cos_theta2C = math::cos(theta_2C);
-        scalar sin2_theta2C = sin_theta2C * sin_theta2C;
-
-        // Find direction of track at scattering plane
-        // (using hits 0, 2 and the circle solution)
+        // Track direction at scattering surface
         vector3 tangent3D;
-
-        // Mid-point
-        vector2 m{0.5f * (t.m_hit_0[0] + t.m_hit_2[0]),
-                  0.5f * (t.m_hit_0[1] + t.m_hit_2[1])};
-
-        // Direction perpendicular to vector joining hits 0 & 2
-        vector2 n{(t.m_hit_2[1] - t.m_hit_0[1]) / d_02,
-                  (t.m_hit_0[0] - t.m_hit_2[0]) / d_02};
-
-        scalar perp_d =
-            math::sqrt(1.f / (c_perp * c_perp) - 0.25f * (d_02 * d_02));
-
-        // Two centres possible
-        std::array<vector2, 2u> c;
-
-        c[0] = vector2{m[0] + n[0] * perp_d, m[1] + n[1] * perp_d};
-        c[1] = vector2{m[0] - n[0] * perp_d, m[1] - n[1] * perp_d};
-
-        vector2 x1{t.m_hit_1[0], t.m_hit_1[1]};
-
-        // Choose the correct centre
-        vector2 c_correct{0.f, 0.f};
-        for (const vector2& c_i : c) {
-            // Centre of the circle cannot be
-            // on the same side of the line
-            // connecting hits 0 & 2 as hit 1
-            if (vector::dot(x1 - m, c_i - m) < 0.f) {
-                c_correct = c_i;
-                break;
-            }
-        }
-
-        // Check if centre calculation was successful
-        if (algebra::cmath::norm(c_correct) == 0.f or
-            algebra::cmath::norm(x1 - m) == 0.f) {
-            // Use vector joining hits
-            // 0 and 2 as track direction if
-            // center calculation fails or three
-            // hits lie on a straight line
-            tangent3D = vector::normalize(x_02);
-        }
-
-        else {
-            // Use circle solution to get track direction
-
-            vector2 r1 = x1 - c_correct;
-            vector2 tangent2D{r1[1], -1.f * r1[0]};
-
-            // tangent direction along trajectory
-            if (vector::dot(tangent2D, vector2{x_12[0], x_12[1]}) < 0.f)
-                tangent2D = -1.f * tangent2D;
-
-            vector2 tangent2D_norm = math::sin(t.m_theta) /
-                                     algebra::cmath::norm(tangent2D) *
-                                     tangent2D;
-
-            // track tangent normalized to 1
-            tangent3D[0] = tangent2D_norm[0];
-            tangent3D[1] = tangent2D_norm[1];
-            tangent3D[2] = math::cos(t.m_theta);
-        }
+        estimateTrackDirection(t, c_perp, tangent3D);
 
         // Estimate MS-uncertainty
         // (track direction used here
@@ -317,184 +491,172 @@ class triplet_fitter {
         detray::tracking_surface scat_sf(m_detector, t.m_meas[1].surface_link);
 
         // effective thickness
-        scalar t_eff = mat_scatter / detray::cos_angle({}, scat_sf, tangent3D, t.m_meas[1].local);
+        scalar t_eff = mat_scatter / detray::cos_angle({}, scat_sf, tangent3D,
+                                                       t.m_meas[1].local);
+
+        // std::cout << "t_eff : " << t_eff << std::endl;
 
         auto scattering_unc = [](scalar curvature_3D, scalar eff_thickness,
                                  vector3 field_strength_vector) {
-            return math::fabs(curvature_3D) * 45.f * math::sqrt(eff_thickness) *
+            return math::fabs(curvature_3D) * 45.0311528518f * math::sqrt(eff_thickness) *
                    unit<scalar>::T / field_strength_vector[2] *
                    (1.f + 0.038f * math::log(eff_thickness));
         };
 
         const auto B_field =
-            m_field.at(t.m_hit_1[0], t.m_hit_1[1], t.m_hit_1[2]);
+            m_field.at(t.m_hit_pos[1][0], t.m_hit_pos[1][1], t.m_hit_pos[1][2]);
         vector3 B_vec;
         B_vec[0u] = B_field[0u];
         B_vec[1u] = B_field[1u];
         B_vec[2u] = B_field[2u];
+        // std::cout << "\tB-field " << B_vec[0u] << ", " << B_vec[1u] << ", "
+        // << B_vec[2u] << std::endl;
 
-        scalar c3D_lin = 0.5f * c_perp * (sin_theta1C + sin_theta2C);
+        
+
+        // 3D curvatures of segments
+        scalar c_3D_1C = c_perp * sin_th_1C;
+        scalar c_3D_2C = c_perp * sin_th_2C;
+
+        scalar c3D_lin = 0.5f * (c_3D_1C + c_3D_2C);
         t.m_sigma_MS = scattering_unc(c3D_lin, t_eff, B_vec);
 
         // Index parameters
-
         scalar n_1C =
-            1.f / (sin2_theta1C *
-                       (0.5f * phi_1C * 1.f / math::tan(0.5f * phi_1C) - 1.f) +
-                   1.f);
-
+            1.f / (Xphi_1C * cos_phiHalf_1C * sin_th_1C_2 + cos_th_1C_2);
         scalar n_2C =
-            1.f / (sin2_theta2C *
-                       (0.5f * phi_2C * 1.f / math::tan(0.5f * phi_2C) - 1.f) +
-                   1.f);
+            1.f / (Xphi_2C * cos_phiHalf_2C * sin_th_2C_2 + cos_th_2C_2);
 
-        // Adapt for c_perp = 0
-        if (c_perp == 0.f) {
-            n_1C = 1.f;
-            n_2C = 1.f;
+        // std::cout << "n_1C : " << n_1C << " n_2C : " << n_2C << std::endl;
+
+        // Segment parameters
+
+        // rho_phi
+        t.m_seg_1.rho_phi = t_1C * n_1C / sin_th_1C;
+        t.m_seg_2.rho_phi = t_2C * n_2C / sin_th_2C;
+
+        // tau
+        t.m_seg_1.tau = (1.f - n_1C) * cot_th_1C;
+        t.m_seg_2.tau = (1.f - n_2C) * cot_th_2C;
+
+        // rho_theta
+        if (c_perp != 0.f) {
+            t.m_seg_1.rho_theta = -t.m_seg_1.tau / c_3D_1C;
+            t.m_seg_2.rho_theta = -t.m_seg_2.tau / c_3D_2C;
+        } else {
+            t.m_seg_1.rho_theta = 0.f;
+            t.m_seg_2.rho_theta = 0.f;
         }
+
+        // theta
+        t.m_seg_1.theta = theta_1C;
+        t.m_seg_2.theta = theta_2C;
+
+        // phi
+        t.m_seg_1.phi = phi_01;
+        t.m_seg_2.phi = phi_12;
+
+        // nu
+        t.m_seg_1.nu = (1.f - n_1C) * phi_1C;
+        t.m_seg_2.nu = (1.f - n_2C) * phi_2C;
 
         // Triplet parameters
 
-        // Account for c_perp = 0
-        if (c_perp == 0.f) {
-            t.m_phi_0 = algebra::cmath::phi(x_12) - algebra::cmath::phi(x_01);
-            t.m_theta_0 = theta_2C - theta_1C;
-            t.m_rho_phi = -0.5f * algebra::cmath::norm(x_02);
-            t.m_rho_theta = 0.f;
-
-            return;
-        }
-
         t.m_phi_0 = 0.5f * (phi_1C * n_1C + phi_2C * n_2C);
         t.m_theta_0 = theta_2C - theta_1C +
-                      (1.f - n_2C) * cos_theta2C / sin_theta2C -
-                      (1.f - n_1C) * cos_theta1C / sin_theta1C;
-        t.m_rho_phi =
-            -0.5f / c_perp *
-            (phi_1C * n_1C / sin_theta1C + phi_2C * n_2C / sin_theta2C);
-        t.m_rho_theta = 1.f / c_perp *
-                        ((1.f - n_1C) * cos_theta1C / sin2_theta1C -
-                         (1.f - n_2C) * cos_theta2C / sin2_theta2C);
+                      ((1.f - n_2C) * cot_th_2C - (1.f - n_1C) * cot_th_1C);
+        t.m_rho_phi = -0.5f * (t.m_seg_1.rho_phi + t.m_seg_2.rho_phi);
+        t.m_rho_theta = t.m_seg_2.rho_theta - t.m_seg_1.rho_theta;
     }
 
-    /// Helper function - Quick Linearize
+    /// Helper function - Hit gradients
     ///
-    /// Faster calculation of theta_0 & phi_0
-    /// using straight line trajectories
-    ///
-    /// @param pos0 Position of hit0 (in global frame)
-    /// @param pos1 Hit1
-    /// @param pos2 Hit2
-    ///
-    TRACCC_HOST_DEVICE void quick_linearize(const vector3& pos0,
-                                            const vector3& pos1,
-                                            const vector3& pos2, scalar& phi_0,
-                                            scalar& theta_0) {
-
-        // make 2D vector from X, Y components of 3D vector
-        auto perp_comp = [](const vector3& vec) {
-            return vector2{vec[0], vec[1]};
-        };
-
-        // Z-component magnitude of x-prod of 2D vectors
-        auto cross_2d_z = [](const vector2& v1, const vector2& v2) {
-            return math::fabs(v1[0] * v2[1] - v2[0] * v1[1]);
-        };
-
-        vector2 x_01 = perp_comp(pos1 - pos0);
-        vector2 x_12 = perp_comp(pos2 - pos1);
-
-        scalar d_01 = algebra::cmath::norm(x_01);
-        scalar d_12 = algebra::cmath::norm(x_12);
-
-        // Using cross product
-        scalar arg = cross_2d_z(x_01, x_12) / (d_01 * d_12);
-
-        phi_0 = math::asin(std::clamp(arg, -1.f, 1.f));
-
-        vector2 x_0_L{pos0[2], 0.f};
-        vector2 x_1_L{pos1[2], d_01};
-        vector2 x_2_L{pos2[2], d_01 + d_12};
-
-        vector2 x_01_L = x_1_L - x_0_L;
-        vector2 x_12_L = x_2_L - x_1_L;
-
-        theta_0 = math::asin(
-            cross_2d_z(x_01_L, x_12_L) /
-            (algebra::cmath::norm(x_01_L) * algebra::cmath::norm(x_12_L)));
-    }
-
-    /// Helper function - Hit Position Derivatives
-    ///
-    /// Calulation of directional derivatives of
-    /// triplet kinks w.r.t hit position shifts
+    /// Calculation of directional derivatives of
+    /// triplet and segment parameters w.r.t hit
+    /// position shifts
     ///
     /// @param t Triplet
     ///
     TRACCC_HOST_DEVICE void calculate_pos_derivs(triplet& t) {
 
-        scalar phi_0_before = t.m_phi_0;
-        scalar theta_0_before = t.m_theta_0;
-        scalar phi_0_after;
-        scalar theta_0_after;
+        // Hits shifted by multiplier * sigma in every direction
+        scalar multiplier = 1.f;
+
+        // Curvature of reference solution in bending plane
+        scalar c_perp = - t.m_phi_0 / t.m_rho_phi;
 
         // Reserve space for derivative containers
-        constexpr size_t max_dims = 2u;
-        t.m_h_phi.reserve(3u * max_dims);  // hits * max dims/hit
-        t.m_h_thet.reserve(3u * max_dims);
+        t.m_hd_phi.reserve(3u * m_max_dims);
+        t.m_hd_theta.reserve(3u * m_max_dims);
+        t.m_fseg_1.reserve(3u * m_max_dims);
+        t.m_fseg_2.reserve(3u * m_max_dims);
 
-        // Loop over measurements in triplet
+        // Loop over hits
         for (unsigned hit = 0; hit < 3; ++hit) {
 
-            vector2 pos_loc = t.m_meas[hit].local;
-            vector2 var_loc = t.m_meas[hit].variance;
-
-            std::array<vector3, 3u> global_shifted_positions{
-                t.m_hit_0, t.m_hit_1, t.m_hit_2};
-
-            // Surface
-            detray::tracking_surface sf(m_detector, t.m_meas[hit].surface_link);
-
-            // over dimensions
-            for (unsigned i = 0; i < max_dims; ++i) {
+            // Over dimensions
+            for (unsigned dir = 0; dir < m_max_dims; ++dir) {
 
                 // Default derivative 0 for dimensions
                 // which don't exist for this measurement
-                if (i >= t.m_meas[hit].meas_dim) {
-                    t.m_h_phi.push_back(0.f);
-                    t.m_h_thet.push_back(0.f);
+                if (dir >= t.m_meas[hit].meas_dim) {
+                    t.m_hd_phi.push_back(0.f);
+                    t.m_hd_theta.push_back(0.f);
                     continue;
                 }
 
-                scalar sigma_i = math::sqrt(var_loc[i]);
+                // Make a copy to shift
+                triplet t_shift{t};
 
-                vector2 pos_shifted_loc = pos_loc;
+                t_shift.shiftHit(hit, dir, multiplier, m_detector);
 
-                // Shift (by the sigma in that direction)
-                pos_shifted_loc[i] = pos_loc[i] + sigma_i;
+                // Calculate triplet and segment parameters
+                linearize_triplet(t_shift);
 
-                // In global frame
-                vector3 pos_shifted_glob =
-                    sf.local_to_global({}, pos_shifted_loc, {});
+                // Calculate derivatives
 
-                global_shifted_positions[hit] = pos_shifted_glob;
+                // Triplet parameters
+                scalar dphi = t_shift.m_phi_0 + c_perp * t_shift.m_rho_phi;
+                scalar dtheta = (t_shift.m_theta_0 - t.m_theta_0) +
+                                c_perp * (t_shift.m_rho_theta - t.m_rho_theta);
+                t.m_hd_phi.push_back(dphi / multiplier);
+                t.m_hd_theta.push_back(dtheta / multiplier);
 
-                // Get parameters with shifted hit
-                quick_linearize(
-                    global_shifted_positions[0], global_shifted_positions[1],
-                    global_shifted_positions[2], phi_0_after, theta_0_after);
 
-                t.m_h_phi.push_back((phi_0_after - phi_0_before) / sigma_i);
-                t.m_h_thet.push_back((theta_0_after - theta_0_before) /
-                                     sigma_i);
+                // Segment parameters
+                t.m_fseg_1.emplace_back(
+                    t_shift.m_seg_1.phi - t.m_seg_1.phi,
+                    t_shift.m_seg_1.theta - t.m_seg_1.theta,
+                    t_shift.m_seg_1.rho_phi - t.m_seg_1.rho_phi,
+                    t_shift.m_seg_1.rho_theta - t.m_seg_1.rho_theta,
+                    t_shift.m_seg_1.nu - t.m_seg_1.nu,
+                    t_shift.m_seg_1.tau - t.m_seg_1.tau);
+
+                t.m_fseg_2.emplace_back(
+                    t_shift.m_seg_2.phi - t.m_seg_2.phi,
+                    t_shift.m_seg_2.theta - t.m_seg_2.theta,
+                    t_shift.m_seg_2.rho_phi - t.m_seg_2.rho_phi,
+                    t_shift.m_seg_2.rho_theta - t.m_seg_2.rho_theta,
+                    t_shift.m_seg_2.nu - t.m_seg_2.nu,
+                    t_shift.m_seg_2.tau - t.m_seg_2.tau);
             }
         }
+    
+        // std::cout << "\n Hd_phi: \n";
+        // for (auto phi : t.m_hd_phi) {
+        //     std::cout << phi << " ";
+        // }
+        // std::cout << "\n Hd_theta: \n";
+        // for (auto theta : t.m_hd_theta) {
+        //     std::cout << theta << " ";
+        // }
+        // std::cout << "\n";
     }
+
 
     /// Helper function - Global Fit
     ///
-    /// Global fit of hit triplets on track
+    /// Global fit of processed hit triplets on track
     ///
     /// @param fitting_res result of the fit for this track
     /// @param track_states fitted track states at the measurement surfaces
@@ -506,11 +668,10 @@ class triplet_fitter {
         vecmem::vector<track_state<algebra_type>>& track_states) {
 
         // Allocate matrices with max possible sizes
-        constexpr size_t max_dims = 2u;
         constexpr size_t max_nhits =
             20u;  // Assumption about max number of hits in track candidate
         constexpr size_t max_ntrips = max_nhits - 2u;
-        constexpr size_t max_ndirs = max_dims * max_nhits;
+        constexpr size_t max_ndirs = m_max_dims * max_nhits;
 
         // Actual number in this track
         const size_t N_triplets = m_triplets.size();
@@ -525,16 +686,12 @@ class triplet_fitter {
         matrix_type<2u * max_ntrips, 1u> psi =
             matrix::zero<matrix_type<2u * max_ntrips, 1u>>();
 
-        // Scattering & hit precision matrices
-        // (directly the covariance matrices as
-        // D_hit or D_MS are never used as they are)
+        // Scattering covariance matrix
         matrix_type<2u * max_ntrips, 2u * max_ntrips> D_MS_inv =
             matrix::identity<matrix_type<2u * max_ntrips, 2u * max_ntrips>>();
-        matrix_type<max_ndirs, max_ndirs> D_hit_inv =
-            matrix::zero<matrix_type<max_ndirs, max_ndirs>>();
 
-        // Hit gradient (Jacobian) matrix
-        matrix_type<2u * max_ntrips, max_ndirs> H =
+        // Scaled hit gradient (Jacobian) matrix
+        matrix_type<2u * max_ntrips, max_ndirs> Hd =
             matrix::zero<matrix_type<2u * max_ntrips, max_ndirs>>();
 
         // Fill matrices/vectors
@@ -544,10 +701,10 @@ class triplet_fitter {
             const triplet& t_i = m_triplets[i];
 
             getter::element(rho, i, 0u) = t_i.m_rho_theta;
-            getter::element(rho, i + N_triplets, 0u) = t_i.m_rho_phi;
+            getter::element(rho, i + max_ntrips, 0u) = t_i.m_rho_phi;
 
             getter::element(psi, i, 0u) = t_i.m_theta_0;
-            getter::element(psi, i + N_triplets, 0u) = t_i.m_phi_0;
+            getter::element(psi, i + max_ntrips, 0u) = t_i.m_phi_0;
 
             // Only update elements when linearization
             // has been done for this triplet
@@ -557,189 +714,313 @@ class triplet_fitter {
                 scalar sin2_theta = math::sin(t_i.m_theta);
                 sin2_theta *= sin2_theta;
                 getter::element(D_MS_inv, i, i) = sigma2_MS;
-                getter::element(D_MS_inv, i + N_triplets, i + N_triplets) =
+                getter::element(D_MS_inv, i + max_ntrips, i + max_ntrips) =
                     sigma2_MS / sin2_theta;
             }
 
-            // (after unrolling loop over hits & uncertainty dimensions)
+            // Hd_theta & phi
+            // Loop unrolled over hits and uncertainty directions (assuming 2)
+            // -----------------------------------------------
+            // hd_theta and phi has the structure
+            // hit0-dir0, hit0-dir1, hit1-dir0, hit1-dir1, ...
+            // -----------------------------------------------
+            
+            // Theta derivatives
             // 1st Hit in triplet
-            getter::element(H, i, i) = t_i.m_h_thet[0u];
-            getter::element(H, i, max_nhits + i) = t_i.m_h_thet[1u];
+            getter::element(Hd, i, i) = t_i.m_hd_theta[0u];
+            getter::element(Hd, i, max_nhits + i) = t_i.m_hd_theta[1u];
+            
             // 2nd Hit
-            getter::element(H, i, i + 1u) = t_i.m_h_thet[max_dims * 1u];
-            getter::element(H, i, max_nhits + i + 1u) =
-                t_i.m_h_thet[max_dims * 1u + 1u];
+            getter::element(Hd, i, i + 1u) = t_i.m_hd_theta[m_max_dims * 1u];
+            getter::element(Hd, i, max_nhits + i + 1u) =
+                t_i.m_hd_theta[m_max_dims * 1u + 1u];
+            
             // 3rd Hit
-            getter::element(H, i, i + 2u) = t_i.m_h_thet[max_dims * 2u];
-            getter::element(H, i, max_nhits + i + 2u) =
-                t_i.m_h_thet[max_dims * 2u + 1u];
+            getter::element(Hd, i, i + 2u) = t_i.m_hd_theta[m_max_dims * 2u];
+            getter::element(Hd, i, max_nhits + i + 2u) =
+                t_i.m_hd_theta[m_max_dims * 2u + 1u];
 
+
+            // Phi derivatives 
             // 1st Hit
-            getter::element(H, i + N_triplets, i) = t_i.m_h_phi[0u];
-            getter::element(H, i + N_triplets, max_nhits + i) = t_i.m_h_phi[1u];
+            getter::element(Hd, i + max_ntrips, i) = t_i.m_hd_phi[0u];
+            getter::element(Hd, i + max_ntrips, max_nhits + i) = t_i.m_hd_phi[1u];
+            
             // 2nd Hit
-            getter::element(H, i + N_triplets, i + 1u) =
-                t_i.m_h_phi[max_dims * 1u];
-            getter::element(H, i + N_triplets, max_nhits + i + 1u) =
-                t_i.m_h_phi[max_dims * 1u + 1u];
+            getter::element(Hd, i + max_ntrips, i + 1u) =
+                t_i.m_hd_phi[m_max_dims * 1u];
+            getter::element(Hd, i + max_ntrips, max_nhits + i + 1u) =
+                t_i.m_hd_phi[m_max_dims * 1u + 1u];
+            
             // 3rd Hit
-            getter::element(H, i + N_triplets, i + 2u) =
-                t_i.m_h_phi[max_dims * 2u];
-            getter::element(H, i + N_triplets, max_nhits + i + 2u) =
-                t_i.m_h_phi[max_dims * 2u + 1u];
-
-            // 1st Hit in triplet
-            getter::element(D_hit_inv, i, i) = t_i.m_meas[0u].variance[0u];
-            getter::element(D_hit_inv, i + max_nhits, i + max_nhits) =
-                t_i.m_meas[0u].variance[1u];
-
-            // Only use the other two hits
-            // for the last triplet to prevent
-            // reassigning elements in matrix
-            if (i == N_triplets - 1u) {
-                // 2nd hit
-                getter::element(D_hit_inv, i + 1u, i + 1u) =
-                    t_i.m_meas[1u].variance[0u];
-                getter::element(D_hit_inv, i + max_nhits + 1u,
-                                i + max_nhits + 1u) =
-                    t_i.m_meas[1u].variance[1u];
-
-                // 3rd hit
-                getter::element(D_hit_inv, i + 2u, i + 2u) =
-                    t_i.m_meas[2u].variance[0u];
-                getter::element(D_hit_inv, i + max_nhits + 2u,
-                                i + max_nhits + 2u) =
-                    t_i.m_meas[2u].variance[1u];
-            }
+            getter::element(Hd, i + max_ntrips, i + 2u) =
+                t_i.m_hd_phi[m_max_dims * 2u];
+            getter::element(Hd, i + max_ntrips, max_nhits + i + 2u) =
+                t_i.m_hd_phi[m_max_dims * 2u + 1u];
 
         }  // done filling
+
+        // std::cout << "rho:\n";
+        // for (size_t r = 0u; r < 2 * max_ntrips; ++r) {
+        //     std::cout << std::setw(12);
+        //     std::cout << getter::element(rho, r, 0u) << "\n";
+        // }
+
+        // std::cout << "phi:\n";
+        // for (size_t r = 0u; r < 2 * max_ntrips; ++r) {
+        //     std::cout << std::setw(12);
+        //     std::cout << getter::element(psi, r, 0u) << "\n";
+        // }
+
+        // std::cout << "Hd:\n";
+        // for (size_t r = 0u; r < 2 * max_ntrips; ++r) {
+        //     for (size_t c = 0u; c < max_ndirs; ++c) {
+        //         std::cout << std::setw(12);
+        //         std::cout << getter::element(Hd, r, c) << " ";
+        //     }
+        //     std::cout << std::endl;
+        // }
+
+        // std::cout << "D_MS_inv:\n";
+        // for (size_t r = 0u; r < 2 * max_ntrips; ++r) {
+        //     for (size_t c = 0u; c < 2 * max_ntrips; ++c) {
+        //         std::cout << std::setw(12);
+        //         std::cout << getter::element(D_MS_inv, r, c) << " ";
+        //     }
+        //     std::cout << std::endl;
+        // }
 
         // Triplet precision matrix
         // Note: diagonal elements in K_inv are 1
         // corresponding to unused 'objects', since
         // the same is true in D_MS_inv and those in
-        // H * D_hit^-1 * H^T are 0
+        // Hd * Hd^T are 0
+
+        matrix_type<max_ndirs, 2u * max_ntrips> HdT = matrix::transpose(Hd);
 
         matrix_type<2u * max_ntrips, 2u * max_ntrips> K_inv =
-            D_MS_inv + H * D_hit_inv * matrix::transpose(H);
+            D_MS_inv + Hd * HdT;
 
         // Matrix inversion
         matrix_type<2u * max_ntrips, 2u * max_ntrips> K =
             matrix::inverse(K_inv);
 
-        matrix_type<1u, 1u> num = -1.f * matrix::transpose(rho) * K * psi;
-        matrix_type<1u, 1u> den = matrix::transpose(rho) * K * rho;
-        matrix_type<1u, 1u> psiT_K_psi = matrix::transpose(psi) * K * psi;
+        matrix_type<2u * max_ntrips, 1u> K_psi = K * psi;
+        matrix_type<2u * max_ntrips, 1u> K_rho = K * rho;
 
-        // Calculation of curvature, uncertainty, fit quality
+        matrix_type<1u, 1u> rhoT_K_psi = matrix::transpose(rho) * K_psi;
+        matrix_type<1u, 1u> rhoT_K_rho = matrix::transpose(rho) * K_rho;
+        matrix_type<1u, 1u> psiT_K_psi = matrix::transpose(psi) * K_psi;
+
+        // -------------------------------------------------- //
+        // Calculation of curvature, uncertainty, fit quality //
+        // -------------------------------------------------- //
 
         scalar c_3D =
-            getter::element(num, 0u, 0u) / getter::element(den, 0u, 0u);
+            -1.f * getter::element(rhoT_K_psi, 0u, 0u) / getter::element(rhoT_K_rho, 0u, 0u);
 
-        // scalar sigma_c_3D = 1.f / math::sqrt(getter::element(den, 0u, 0u));
-        // // not used now
+        scalar var_c_3D = 1.f / getter::element(rhoT_K_rho, 0u, 0u);
+
+        // For debugging
+        fitting_res.c_3D = c_3D;
+        fitting_res.sig_c_3D = math::sqrt(var_c_3D);
+
+        std::cout << "--------------------------------------------" << std::endl;
+
+        std::cout << "c_3D : " << c_3D << "\t var : " << var_c_3D << std::endl;
 
         scalar chi2 =
-            getter::element(psiT_K_psi, 0u, 0u) -
-            (getter::element(num, 0u, 0u) * getter::element(num, 0u, 0u)) /
-                getter::element(den, 0u, 0u);
+            getter::element(psiT_K_psi, 0u, 0u) + c_3D *
+            getter::element(rhoT_K_psi, 0u, 0u);
 
-        // Calculation of hit residuals
+        // --------------------------------------------------- //
+        // Calculation of correlation matrices & hit residuals //
+        // --------------------------------------------------- //
 
-        matrix_type<2u * max_ntrips, 2u * max_ntrips> K_rho =
-            K - (1.f / getter::element(den, 0u, 0u)) * K * rho *
-                    matrix::transpose(rho) * K;
+        matrix_type<max_ndirs, 1u> HdT_K_psi = (HdT * K_psi);
+        matrix_type<max_ndirs, 1u> HdT_K_rho = (HdT * K_rho);
+        matrix_type<max_ndirs, 1u> HdT_K_rho_norm = (1.f / getter::element(rhoT_K_rho, 0u, 0u)) * HdT_K_rho;
 
-        matrix_type<max_ndirs, 1u> delta_fit =
-            D_hit_inv * matrix::transpose(H) * K_rho * psi;
+        // Hit pull vector (local), all hits
+        // Structure:
+        // (h0,d0), (h1,d0), (h2,d0), ... , (hmax_nhits-1,d0), 
+        // (h0,d1), (h1,d1), (h2,d1), ... , (hmax_nhits-1,d1),
+        // .
+        // .
+        // .
+        // (h0,m_max_dims - 1), (h1,m_max_dims - 1), (h2,m_max_dims - 1), ... , (hmax_nhits-1,m_max_dims - 1)
+        
+        matrix_type<max_ndirs, 1u> hit_loc_pulls = HdT_K_psi - HdT_K_rho_norm * getter::element(rhoT_K_psi, 0u, 0u);  // to be stored ...
 
-        // Track parameters at the first measurement surface
-        auto fitted_params =
-            [&delta_fit, &c_3D](
-                const vecmem::vector<track_state<algebra_type>>& input_states,
-                const vecmem::vector<triplet>& triplets,
-                const detector_t& detector, const bfield_t& field)
-            -> detray::bound_parameters_vector<algebra_type> {
-            // Get the (post-fit) global positions of
-            // the first and the second measurement
+        // Hit matrix
+        matrix_type<max_ndirs, max_ndirs> HdT_K_Hd = matrix::transpose(Hd) * K * Hd;
 
-            // First measurement
-            auto m0 = input_states[0].get_measurement();
+        // Hit correlation matrix (local)
+        matrix_type<max_ndirs, max_ndirs> hit_loc_corrmatrix = matrix::identity<matrix_type<max_ndirs, max_ndirs>>() - HdT_K_Hd + HdT_K_rho_norm * matrix::transpose(HdT_K_rho); // to be stored ...
 
-            point2 loc0{m0.local[0], m0.local[1]};
-            point2 loc0_post_fit =
-                loc0 + point2{getter::element(delta_fit, 0u, 0u),
-                              getter::element(delta_fit, max_nhits, 0u)};
+        // Mixed hit position - curvature correlations (local)
+        matrix_type<max_ndirs, 1u> hit_loc_corr_mixed = HdT_K_rho_norm; // to be stored ...
 
-            detray::tracking_surface sf0(detector, m0.surface_link);
 
-            point3 glob0 = sf0.local_to_global({}, loc0_post_fit, {});
+        // ------------------------------------------------------- //
+        // Calculation of track state vector and covariance matrix //
+        // ------------------------------------------------------- //
 
-            // Second measurement
-            auto m1 = input_states[1].get_measurement();
+        // At the first measurement surface (first triplet, first segement)
 
-            point2 loc1{m1.local[0], m1.local[1]};
-            point2 loc1_post_fit =
-                loc1 + point2{getter::element(delta_fit, 1u, 0u),
-                              getter::element(delta_fit, 1u + max_nhits, 0u)};
+        const triplet& triplet_first = m_triplets[0u];
+        
+        scalar theta = triplet_first.m_seg_1.theta + (triplet_first.m_seg_1.tau + c_3D * triplet_first.m_seg_1.rho_theta);
+        
+        scalar phi = triplet_first.m_seg_1.phi - 0.5f * (triplet_first.m_seg_1.nu + c_3D * triplet_first.m_seg_1.rho_phi);
 
-            detray::tracking_surface sf1(detector, m1.surface_link);
+        // grads_theta & phi have the same structure as
+        // position and segment derivative containers
+        constexpr unsigned grads_size = 3u * m_max_dims;
+        std::array<scalar, grads_size> grads_theta{};
+        std::array<scalar, grads_size> grads_phi{};
 
-            point3 glob1 = sf1.local_to_global({}, loc1_post_fit, {});
+        // delta-theta & phi, delta-rho_theta & phi from hit position shifts
+        scalar d_theta{};
+        scalar d_phi{};
+        scalar d_rho_theta{};
+        scalar d_rho_phi{};
 
-            point3 r01 = glob1 - glob0;
+        for (unsigned i = 0; i < grads_size; ++i) {
+            const segment_grad& grad = triplet_first.m_fseg_1[i];
+            
+            grads_theta[i] = grad.f_theta + grad.f_tau + c_3D * grad.f_rho_theta;
+            grads_phi[i] = grad.f_phi + 0.5f * (grad.f_nu + c_3D * grad.f_rho_phi);
+            
+            unsigned idx = i/static_cast<unsigned>(m_max_dims) + static_cast<unsigned>(max_nhits) * (i%static_cast<unsigned>(m_max_dims));
+            
+            d_theta -= getter::element(hit_loc_pulls, idx, 0u) * grads_theta[i];
+            d_phi -= getter::element(hit_loc_pulls, idx, 0u) * grads_phi[i];
 
-            // Calculation of track parameters at the first
-            // measurement with the first two hits assuming
-            // small bending
+            d_rho_theta += getter::element(hit_loc_pulls, idx, 0u) * grad.f_rho_theta;
+            d_rho_phi += getter::element(hit_loc_pulls, idx, 0u) * grad.f_rho_phi;
+        }
+        
+        // Apply track angle corrections from hit shifts
+        theta += d_theta;
+        phi = delta_phi(phi + d_phi, 0.f);
 
-            scalar bending_angle = c_3D * algebra::cmath::norm(r01);
+        // To rho_theta/phi
+        scalar rho_theta = triplet_first.m_seg_1.rho_theta - d_rho_theta;
+        scalar rho_phi = -0.5f * (triplet_first.m_seg_1.rho_phi - d_rho_phi);
 
-            // Magnetic field at first measurement
-            const auto B_field =
-                field.at(triplets[0].m_hit_0[0u], triplets[0].m_hit_0[1u],
-                         triplets[0].m_hit_0[2u]);
-            vector3 B_vec;
-            B_vec[0u] = B_field[0u];
-            B_vec[1u] = B_field[1u];
-            B_vec[2u] = B_field[2u];
+        std::cout << "theta : " << theta << "  phi : " << phi << std::endl;
 
-            // Momentum - TODO: handling of magnetic field
-            // Units: B [T], p [MeV]
-            scalar p = 0.3f * algebra::cmath::norm(B_vec) /
-                       (c_3D * unit<scalar>::T) * unit<scalar>::MeV;
+        // Track parameters at first measurement surface
+        detray::bound_parameters_vector<algebra_type> fitted_params;
 
-            // Wrap angle between -Pi and Pi
-            auto wrap_pi_mpi = [](scalar angle) -> scalar {
-                if (angle > static_cast<scalar>(M_PI))
-                    return angle - 2.f * static_cast<scalar>(M_PI);
+        fitted_params.set_theta(theta);
+        fitted_params.set_phi(phi);
+        fitted_params.set_time(0.f);
 
-                else if (angle < -1.f * static_cast<scalar>(M_PI))
-                    return angle + 2.f * static_cast<scalar>(M_PI);
+        // Set momentum (q/p)
 
-                else
-                    return angle;
-            };
+        const auto B_field = m_field.at(triplet_first.m_hit_pos[0][0u],
+                                triplet_first.m_hit_pos[0][1u],
+                                triplet_first.m_hit_pos[0][2u]);
+        vector3 B_vec;
+        B_vec[0u] = B_field[0u];
+        B_vec[1u] = B_field[1u];
+        B_vec[2u] = B_field[2u];
 
-            // Set parameters
-            const scalar q = 1.f;
-            detray::bound_parameters_vector<algebra_type> params_vec{};
-            params_vec.set_bound_local(loc0_post_fit);
+        // Units: B [T], p [MeV - NO !!], c_3D in native units [mm]
+        // Magentic field obtained from traccc is NOT in units of Tesla !!
+        // but it must be converted to Tesla for the expression
+        scalar p = mom_conv * algebra::cmath::norm(B_vec) /
+                    (c_3D * unit<scalar>::mm * unit<scalar>::T);
 
-            params_vec.set_phi(
-                wrap_pi_mpi(algebra::cmath::phi(r01) + 0.5f * bending_angle));
-            scalar theta =
-                math::atan2(algebra::cmath::perp(r01) * 0.5f * bending_angle,
-                            r01[2u] * math::sin(0.5f * bending_angle));
-            params_vec.set_theta(math::fabs(theta));
-            params_vec.set_qop(q / p);
-            params_vec.set_time(0.f);
+        std::cout << "B : " << B_vec[0] << ", " << B_vec[1] << ", " << B_vec[2] << "\t p [MeV]: " << p << std::endl;
 
-            return params_vec;
-        }(m_track_states, m_triplets, m_detector, m_field);
+        const scalar q = 1.f;
+        fitted_params.set_qop(q / p);
 
+        
+        // Post-fit position of first hit
+
+        const auto& m0 = triplet_first.m_meas[0];
+
+        point2 loc0{m0.local[0], m0.local[1]};
+        point2 loc0_post_fit = loc0 + point2{getter::element(hit_loc_pulls, 0u, 0u), getter::element(hit_loc_pulls, max_nhits, 0u)}; // check sign: - ??
+
+        fitted_params.set_bound_local(loc0_post_fit);
+        std::cout << "local pos : " << loc0[0] << ", " << loc0[1] << std::endl;
+        std::cout << "local post fit : " << loc0_post_fit[0] << ", " << loc0_post_fit[1] << std::endl;
+
+        
+        // Track angle covariances
+        scalar sum_thth{};
+        scalar sum_phph{};
+        scalar sum_thph{};
+        // Track angle - curvature covariances
+        scalar sum_c3D_th{};
+        scalar sum_c3D_ph{};
+        
+        
+        for (unsigned h1 = 0; h1 < grads_size; ++h1) {
+            
+            unsigned idx1 = h1/static_cast<unsigned>(m_max_dims) + static_cast<unsigned>(max_nhits) * (h1%static_cast<unsigned>(m_max_dims));
+            
+            sum_c3D_th += getter::element(hit_loc_corr_mixed, idx1, 0u) * grads_theta[h1];
+            sum_c3D_ph += getter::element(hit_loc_corr_mixed, idx1, 0u) * grads_phi[h1];
+            
+            for (unsigned h2 = 0u; h2 < grads_size; ++h2) {
+
+                unsigned idx2 = h2/static_cast<unsigned>(m_max_dims) + static_cast<unsigned>(max_nhits) * (h2%static_cast<unsigned>(m_max_dims));
+
+                sum_thth += getter::element(hit_loc_corrmatrix, idx1, idx2) * grads_theta[h1] * grads_theta[h2];
+                sum_thph += getter::element(hit_loc_corrmatrix, idx1, idx2) * grads_theta[h1] * grads_phi[h2];
+                sum_phph += getter::element(hit_loc_corrmatrix, idx1, idx2) * grads_phi[h1] * grads_phi[h2];
+
+            }
+        }
+        
+        // Theta and Phi variance
+        scalar var_theta = sum_thth - 2.f * sum_c3D_th * rho_theta + var_c_3D * rho_theta * rho_theta;
+        scalar var_phi = sum_phph - 2.f * sum_c3D_ph * rho_phi + var_c_3D * rho_phi * rho_phi;
+        
+        // Theta-Phi covariance
+        // scalar cov_theta_phi = sum_thph - sum_c3D_th * rho_phi - sum_c3D_ph * rho_theta + rho_theta * rho_phi * var_c_3D;
+        
+        // Curvature-Theta/Phi covariance
+        // scalar cov_c3D_theta = var_c_3D * rho_theta - sum_c3D_th;
+        // scalar cov_c3D_phi = var_c_3D * rho_phi - sum_c3D_ph; 
+        
+        // Covariance delta with theta/phi
+        
+        // variance of hit positions (for 1st hit)
+        std::array<scalar, m_max_dims> var_pos_postFit;
+        
+        for (unsigned dir_i = 0; dir_i < m_max_dims; ++dir_i) {
+            unsigned idx = dir_i * max_nhits; // hit_i = 0
+            var_pos_postFit[dir_i] = getter::element(hit_loc_corrmatrix, idx, idx) * triplet_first.m_meas[0].variance[dir_i]; 
+        }
+        
+        // Covariance matrix
+        matrix_type<6u, 6u> fit_cov{};
+
+        getter::element(fit_cov, e_bound_loc0, e_bound_loc0) = var_pos_postFit[0u];
+        getter::element(fit_cov, e_bound_loc1, e_bound_loc1) = var_pos_postFit[1u];
+
+        getter::element(fit_cov, e_bound_phi, e_bound_phi) = var_phi;
+        getter::element(fit_cov, e_bound_theta, e_bound_theta) = var_theta;
+
+        getter::element(fit_cov, e_bound_qoverp, e_bound_qoverp) = var_c_3D * unit<scalar>::mm2 / math::pow( (0.3f * algebra::cmath::norm(B_vec))/ unit<scalar>::T, 2.f);
+        getter::element(fit_cov, e_bound_time, e_bound_time) = 0;
+
+
+        std::cout << "var pos : " << var_pos_postFit[0u] << ", " << var_pos_postFit[1u]
+        << " var phi : " << var_phi << " var_theta : " << var_theta << std::endl;
+        
+
+        // Store track parameters
         fitting_res.trk_quality.chi2 = chi2;
         fitting_res.fit_params.set_vector(fitted_params.vector());
+        fitting_res.fit_params.set_covariance(fit_cov);
         fitting_res.trk_quality.ndf =
             [](const vecmem::vector<track_state<algebra_type>>& states)
             -> scalar {
@@ -766,6 +1047,7 @@ class triplet_fitter {
         // see fitting_performance_writer
         track_states[0].smoothed_chi2() = chi2;
         track_states[0].smoothed().set_vector(fitted_params.vector());
+        track_states[0].smoothed().set_covariance(fit_cov);
         track_states[0].is_hole = false;
         track_states[0].is_smoothed = true;
     }
@@ -784,6 +1066,9 @@ class triplet_fitter {
         for (triplet& t : m_triplets) {
 
             linearize_triplet(t);
+            std::cout << "parameters new:\n";
+            std::cout << "phi_0 : " << t.m_phi_0 << "  theta_0 : " << t.m_theta_0 << std::endl;
+            std::cout << "rho_phi : " << t.m_rho_phi << " rho_theta : " << t.m_rho_theta << std::endl;
             calculate_pos_derivs(t);
         }
 
@@ -805,11 +1090,18 @@ class triplet_fitter {
     // TODO: get from surface after re-mapping
     scalar mat_scatter = 0.01f;
 
+    // Conversion factor c_3D - p
+    static constexpr scalar mom_conv = 0.299792458f;
+
+    // Maximum number of uncertainty directions / hit
+    static constexpr size_t m_max_dims = 2u;
+
     // Detector context type
     using context = typename detector_t::geometry_context;
 
     // Detector object
     const detector_t& m_detector;
+
     // Field object
     const bfield_t m_field;
 

@@ -190,6 +190,22 @@ TEST_P(TripletFittingTelescopeTests, Run) {
     ASSERT_FLOAT_EQ(success_rate, 1.00f);
 }
 
+/// Test parameters:
+/// (1) name
+/// (2) origin
+/// (3) origin stddev
+/// (4) momentum range
+/// (5) eta range
+/// (6) phi range
+/// (7) particle type
+/// (8) number of tracks per event
+/// (9) number of events
+/// (10) random charge
+/// (11) offset from origin of the first plane in mm
+/// (12) Number of planes
+/// (13) Spacing between planes in mm
+/// (14) Magnetic field
+
 INSTANTIATE_TEST_SUITE_P(
     TripletFitTelescopeValidation0, TripletFittingTelescopeTests,
     ::testing::Values(std::make_tuple(
