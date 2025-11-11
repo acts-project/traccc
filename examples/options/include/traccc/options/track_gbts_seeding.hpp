@@ -9,6 +9,7 @@
 
 // Project include(s).
 #include "traccc/options/details/interface.hpp"
+#include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 
 // System include(s).
 #include <cstddef>
@@ -24,8 +25,12 @@ class track_gbts_seeding : public interface {
 
     bool useGBTS = false;
     std::string config_dir = "DEFAULT";
-
+	
     /// @}
+	// config info from file
+	std::vector<std::pair<uint64_t, short>> barcodeBinning;
+	std::vector<std::pair<int, std::vector<int>>> binTables;
+	traccc::device::gbts_layerInfo layerInfo;
 
     /// Constructor
     track_gbts_seeding();

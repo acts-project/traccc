@@ -29,7 +29,7 @@ usage() {
    echo "  -r <repetitions>     The number of repetitions in the test"
    echo "  -e <eventMultiplier> Multiplier for the number of events per thread"
    echo "  -c <csvFile>         Name of the output CSV file"
-   echo "  -y <throughputType>  Type of throughput test to run (traccc/g200/g100)"
+   echo "  -y <throughputType>  Type of throughput test to run (traccc/g200/g100, or with GBTS, g230/g130)"
    echo "  -h                   Print this help"
    echo ""
 }
@@ -43,8 +43,7 @@ TRACCC_THREAD_STEP=${TRACCC_THREAD_STEP:-1}
 TRACCC_REPETITIONS=${TRACCC_REPETITIONS:-5}
 TRACCC_CSV_FILE=${TRACCC_CSV_FILE:-"output.csv"}
 TRACCC_THROUGPUT_TYPE=${TRACCC_THROUGPUT_TYPE:-"traccc"}
-TRACCC_USE_GBTS=${TRACCC_USE_GBTS:="false"}
-while getopts ":x:i:m:t:r:c:y:g:h" opt; do
+while getopts ":x:i:m:t:r:c:y:h" opt; do
    case $opt in
       x)
          TRACCC_EXECUTABLE=$OPTARG
@@ -69,9 +68,6 @@ while getopts ":x:i:m:t:r:c:y:g:h" opt; do
          ;;
       y)
          TRACCC_THROUGPUT_TYPE=$OPTARG
-         ;;
-      g)
-	 TRACCC_USE_GBTS=$OPTARG
          ;;
       h)
          usage
@@ -100,7 +96,6 @@ echo "   THREAD_STEP     : ${TRACCC_THREAD_STEP}"
 echo "   REPETITIONS     : ${TRACCC_REPETITIONS}"
 echo "   CSV_FILE        : ${TRACCC_CSV_FILE}"
 echo "   THROUGHPUT_TYPE : ${TRACCC_THROUGPUT_TYPE}"
-echo "   USE_GBTS        : ${TRACCC_USE_GBTS}"
 
 # Check whether the output file already exists. Refuse to overwrite existing
 # files.
@@ -151,6 +146,12 @@ if [[ "${TRACCC_THROUGPUT_TYPE}" == "g200" ]]; then
    TRACCC_CUTS=${G200_CUTS[@]}
 elif [[ "${TRACCC_THROUGPUT_TYPE}" == "g100" ]]; then
    TRACCC_CUTS=${G100_CUTS[@]}
+elif [[ "${TRACCC_THROUGPUT_TYPE}" == "g230" ]]; then
+   TRACCC_CUTS=${G200_CUTS[@]}
+   TRACCC_CUTS+=(--useGBTS --gbts_config_dir="${TRACCC_INPUT_DIR}") 
+elif [[ "${TRACCC_THROUGPUT_TYPE}" == "g130" ]]; then
+   TRACCC_CUTS=${G100_CUTS[@]} 
+   TRACCC_CUTS+=(--useGBTS --gbts_config_dir="${TRACCC_INPUT_DIR}") 
 elif [[ "${TRACCC_THROUGPUT_TYPE}" != "traccc" ]]; then
    echo "***"
    echo "*** Unknown throughput type: '${TRACCC_THROUGPUT_TYPE}'"
@@ -196,9 +197,7 @@ for NTHREAD in $(seq ${TRACCC_MIN_THREADS} ${TRACCC_THREAD_STEP} ${TRACCC_MAX_TH
             --cold-run-events=$((5*${NTHREAD}))                                     \
             --processed-events=$((10*${NTHREAD}))                                   \
             --log-file="${TRACCC_CSV_FILE}"                                         \
-            ${TRACCC_CUTS[@]}                                                       \
-            --useGBTS="${TRACCC_USE_GBTS}"	                                     \
-            --gbts_config_dir="${TRACCC_INPUT_DIR}"	                            
+            ${TRACCC_CUTS[@]}                                                       
       done
    done
 done

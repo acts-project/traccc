@@ -47,7 +47,7 @@ class gbts_seeding_algorithm
     /// @param str The CUDA stream to perform the operations in
     ///
     gbts_seeding_algorithm(
-        const gbts_seedfinder_config& cfg, traccc::memory_resource& mr,
+        const gbts_seedfinder_config& cfg, const traccc::memory_resource& mr,
         vecmem::copy& copy, stream& str,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
