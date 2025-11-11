@@ -43,7 +43,8 @@ TRACCC_THREAD_STEP=${TRACCC_THREAD_STEP:-1}
 TRACCC_REPETITIONS=${TRACCC_REPETITIONS:-5}
 TRACCC_CSV_FILE=${TRACCC_CSV_FILE:-"output.csv"}
 TRACCC_THROUGPUT_TYPE=${TRACCC_THROUGPUT_TYPE:-"traccc"}
-while getopts ":x:i:m:t:r:c:y:h" opt; do
+TRACCC_USE_GBTS=${TRACCC_USE_GBTS:="false"}
+while getopts ":x:i:m:t:r:c:y:g:h" opt; do
    case $opt in
       x)
          TRACCC_EXECUTABLE=$OPTARG
@@ -68,6 +69,9 @@ while getopts ":x:i:m:t:r:c:y:h" opt; do
          ;;
       y)
          TRACCC_THROUGPUT_TYPE=$OPTARG
+         ;;
+      g)
+	 TRACCC_USE_GBTS=$OPTARG
          ;;
       h)
          usage
@@ -96,6 +100,7 @@ echo "   THREAD_STEP     : ${TRACCC_THREAD_STEP}"
 echo "   REPETITIONS     : ${TRACCC_REPETITIONS}"
 echo "   CSV_FILE        : ${TRACCC_CSV_FILE}"
 echo "   THROUGHPUT_TYPE : ${TRACCC_THROUGPUT_TYPE}"
+echo "   USE_GBTS        : ${TRACCC_USE_GBTS}"
 
 # Check whether the output file already exists. Refuse to overwrite existing
 # files.
@@ -154,7 +159,7 @@ elif [[ "${TRACCC_THROUGPUT_TYPE}" != "traccc" ]]; then
 fi
 
 # The input directories to use.
-TRACCC_INPUT_DIRS=("ttbar_mu140/hits" "ttbar_mu200/hits")
+TRACCC_INPUT_DIRS=("ttbar_mu200/hits") #("ttbar_mu140/hits" "ttbar_mu200/hits")
 
 # Put a header on the CSV file.
 echo "directory,threads,loaded_events,cold_run_events,processed_events,warm_up_time,processing_time" \
@@ -192,7 +197,9 @@ for NTHREAD in $(seq ${TRACCC_MIN_THREADS} ${TRACCC_THREAD_STEP} ${TRACCC_MAX_TH
             --cold-run-events=$((5*${NTHREAD}))                                \
             --processed-events=$((100*${NTHREAD}))                             \
             --log-file="${TRACCC_CSV_FILE}"                                    \
-            ${TRACCC_CUTS[@]}
+            ${TRACCC_CUTS[@]}                                                  \
+            --useGBTS="${TRACCC_USE_GBTS}"	                                  \
+            --gbts_config_dir="${TRACCC_INPUT_DIR}"
       done
    done
 done
