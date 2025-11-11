@@ -7,18 +7,19 @@
 
 // Local include(s).
 #include "traccc/options/track_gbts_seeding.hpp"
-
 #include "traccc/examples/utils/printable.hpp"
 
 // System include(s).
 #include <stdexcept>
-#include <iostream>
+#include <fstream>
+#include <filesystem>
+
 namespace traccc::opts {
 
 track_gbts_seeding::track_gbts_seeding() : interface("GBTS Options") {
     m_desc.add_options()(
         "useGBTS",
-        boost::program_options::value(&useGBTS)->default_value(useGBTS),
+        boost::program_options::bool_switch(&useGBTS),
         "use gbts algorithm");
     
     m_desc.add_options()(
@@ -28,7 +29,55 @@ track_gbts_seeding::track_gbts_seeding() : interface("GBTS Options") {
 }
 
 void track_gbts_seeding::read(const boost::program_options::variables_map &) {
-	// where make config
+	// fill config
+	if(!useGBTS) {
+		return;
+	}
+	std::ifstream barcodeBinningFile(
+            std::filesystem::path(config_dir + "/barcodeBinning.txt"));
+	
+	int nBarcodes = 0;
+	barcodeBinningFile >> nBarcodes;
+	barcodeBinning.reserve(nBarcodes);
+	
+	std::pair<uint64_t, short> barcodeLayerPair;
+	for(;nBarcodes>=0;--nBarcodes) {
+		barcodeBinningFile >> barcodeLayerPair.first;
+		barcodeBinningFile >> barcodeLayerPair.second;
+		
+		barcodeBinning.push_back(barcodeLayerPair);
+	}
+
+    std::ifstream binTablesFile(
+		std::filesystem::path(config_dir + "/binTables.txt"));
+	
+	int nBinPairs = 0;
+	barcodeBinningFile >> nBinPairs;
+	binTables.reserve(nBinPairs);
+	std::pair<int, std::vector<int>> binPair;
+	int bin2 = 0;
+	for(;nBinPairs>=0;--nBinPairs) {
+		binTablesFile >> binPair.first;
+		binTablesFile >> bin2;
+		binPair.second.push_back(bin2);
+	}
+
+	std::ifstream layerInfoFile(
+		std::filesystem::path(config_dir + "/layerInfo.txt"));
+	
+	int nLayers	= 0;
+	layerInfoFile >> nLayers;
+	layerInfo.reserve(nLayers);
+	int type = 0;
+	int info[2] = {0, 0};
+	float geo[2] = {0, 0};
+	for(;nLayers>=0;--nLayers) {
+		layerInfoFile >> type;
+		layerInfoFile >> info[0] >> info[1];
+		layerInfoFile >> geo[0] >> geo[1];
+		
+		layerInfo.addLayer(type, info[0], info[1], geo[0], geo[1]);
+	}
 }
 
 std::unique_ptr<configuration_printable> track_gbts_seeding::as_printable() const {
