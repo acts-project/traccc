@@ -84,6 +84,27 @@ struct two_filters_smoother {
         const matrix_type<e_bound_size, 1>& predicted_vec =
             bound_params.vector();
 
+        matrix_type<D, e_bound_size> H =
+            measurements.at(trk_state.measurement_index())
+                .subs.template projector<D>();
+        if (dim == 1) {
+            getter::element(H, 1u, 0u) = 0.f;
+            getter::element(H, 1u, 1u) = 0.f;
+        }
+
+        // Spatial resolution (Measurement covariance)
+        matrix_type<D, D> V;
+        edm::get_measurement_covariance<algebra_t>(
+            measurements.at(trk_state.measurement_index()), V);
+        if (dim == 1) {
+            getter::element(V, 1u, 1u) = 1.f;
+        }
+
+        TRACCC_DEBUG_HOST("Measurement position: " << meas_local);
+        TRACCC_DEBUG_HOST("Measurement variance:\n" << V);
+        TRACCC_DEBUG_HOST("Predicted residual: " << meas_local -
+                                                        H * predicted_vec);
+
         // Predicted covaraince of bound track parameters
         const matrix_type<e_bound_size, e_bound_size>& predicted_cov =
             bound_params.covariance();
@@ -134,28 +155,7 @@ struct two_filters_smoother {
         // Wrap the phi and theta angles in their valid ranges
         normalize_angles(trk_state.smoothed_params());
 
-        matrix_type<D, e_bound_size> H =
-            measurements.at(trk_state.measurement_index())
-                .subs.template projector<D>();
-        if (dim == 1) {
-            getter::element(H, 1u, 0u) = 0.f;
-            getter::element(H, 1u, 1u) = 0.f;
-        }
-
         const matrix_type<D, 1> residual_smt = meas_local - H * smoothed_vec;
-
-        // Spatial resolution (Measurement covariance)
-        matrix_type<D, D> V;
-        edm::get_measurement_covariance<algebra_t>(
-            measurements.at(trk_state.measurement_index()), V);
-        if (dim == 1) {
-            getter::element(V, 1u, 1u) = 1.f;
-        }
-
-        TRACCC_DEBUG_HOST("Measurement position: " << meas_local);
-        TRACCC_DEBUG_HOST("Measurement variance:\n" << V);
-        TRACCC_DEBUG_HOST("Predicted residual: " << meas_local -
-                                                        H * predicted_vec);
 
         // Eq (3.39) of "Pattern Recognition, Tracking and Vertex
         // Reconstruction in Particle Detectors"
@@ -204,7 +204,6 @@ struct two_filters_smoother {
 
         const auto I66 =
             matrix::identity<matrix_type<e_bound_size, e_bound_size>>();
-        const auto I_m = matrix::identity<matrix_type<D, D>>();
 
         const matrix_type<e_bound_size, D> projected_cov =
             algebra::matrix::transposed_product<false, true>(predicted_cov, H);
@@ -252,38 +251,37 @@ struct two_filters_smoother {
 
         bound_params.set_covariance(filtered_cov);
 
-        // Residual between measurement and (projected) filtered vector
-        const matrix_type<D, 1> residual = meas_local - H * filtered_vec;
+        {
+            // Calculate the chi square
+            const matrix_type<D, D> R =
+                V - (H * predicted_cov * algebra::matrix::transpose(H));
+            // Residual between measurement and predicted vector
+            const matrix_type<D, 1> residual = meas_local - H * predicted_vec;
+            const matrix_type<1, 1> chi2_mat =
+                algebra::matrix::transposed_product<true, false>(
+                    residual, matrix::inverse(R)) *
+                residual;
+            const scalar chi2_val = getter::element(chi2_mat, 0, 0);
 
-        // Calculate backward chi2
-        const matrix_type<D, D> R = (I_m - H * K) * V;
-        // assert(matrix::determinant(R) != 0.f); // @TODO: This fails
-        assert(std::isfinite(matrix::determinant(R)));
-        const matrix_type<1, 1> chi2 =
-            algebra::matrix::transposed_product<true, false>(
-                residual, matrix::inverse(R)) *
-            residual;
+            TRACCC_VERBOSE_HOST("Predicted residual: " << residual);
+            TRACCC_DEBUG_HOST("R:\n" << R);
+            TRACCC_DEBUG_HOST_DEVICE("det(R): %f", matrix::determinant(R));
+            TRACCC_DEBUG_HOST("R_inv:\n" << matrix::inverse(R));
+            TRACCC_VERBOSE_HOST_DEVICE("Chi2: %f", chi2_val);
 
-        const scalar chi2_val{getter::element(chi2, 0, 0)};
+            if (chi2_val < 0.f) {
+                TRACCC_ERROR_HOST_DEVICE("Chi2 negative: %f", chi2_val);
+                return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NEGATIVE;
+            }
 
-        TRACCC_VERBOSE_HOST("Filtered residual: " << residual);
-        TRACCC_DEBUG_HOST("R:\n" << R);
-        TRACCC_DEBUG_HOST_DEVICE("det(R): %f", matrix::determinant(R));
-        TRACCC_DEBUG_HOST("R_inv:\n" << matrix::inverse(R));
-        TRACCC_VERBOSE_HOST_DEVICE("Chi2: %f", chi2_val);
+            if (!std::isfinite(chi2_val)) {
+                TRACCC_ERROR_HOST_DEVICE("Chi2 infinite");
+                return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NOT_FINITE;
+            }
 
-        if (chi2_val < 0.f) {
-            TRACCC_ERROR_HOST_DEVICE("Chi2 negative: %f", chi2_val);
-            return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NEGATIVE;
+            // Set backward chi2
+            trk_state.backward_chi2() = chi2_val;
         }
-
-        if (!std::isfinite(chi2_val)) {
-            TRACCC_ERROR_HOST_DEVICE("Chi2 infinite");
-            return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NOT_FINITE;
-        }
-
-        // Set backward chi2
-        trk_state.backward_chi2() = chi2_val;
 
         // Wrap the phi and theta angles in their valid ranges
         normalize_angles(bound_params);
