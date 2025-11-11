@@ -150,7 +150,8 @@ int main(int argc, char* argv[]) {
                                     &polymorphic_detector, input_opts.format,
                                     false);
 
-        traccc::measurement_collection_types::host truth_measurements{&host_mr};
+        traccc::edm::measurement_collection<traccc::default_algebra>::host
+            truth_measurements{host_mr};
         traccc::edm::track_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
 
@@ -168,9 +169,9 @@ int main(int argc, char* argv[]) {
             vecmem::get_data(truth_measurements);
 
         // track candidates buffer
-        traccc::measurement_collection_types::buffer truth_measurements_buffer =
+        auto truth_measurements_buffer =
             async_copy.to(vecmem::get_data(truth_measurements), mr.main,
-                          vecmem::copy::type::host_to_device);
+                          mr.host, vecmem::copy::type::host_to_device);
         traccc::edm::track_container<traccc::default_algebra>::buffer
             truth_track_candidates_buffer{
                 async_copy.to(vecmem::get_data(truth_track_candidates.tracks),

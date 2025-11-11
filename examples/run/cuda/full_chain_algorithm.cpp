@@ -163,9 +163,10 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     m_copy(vecmem::get_data(cells), cells_buffer)->ignore();
 
     // Run the clusterization (asynchronously).
-    const measurement_collection_types::buffer measurements =
+    const auto unsorted_measurements =
         m_clusterization(cells_buffer, m_device_det_descr);
-    m_measurement_sorting(measurements);
+    const measurement_sorting_algorithm::output_type measurements =
+        m_measurement_sorting(unsorted_measurements);
 
     // If we have a Detray detector, run the seeding, track finding and fitting.
     if (m_detector != nullptr) {
@@ -199,7 +200,8 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     else {
 
         // Copy the measurements back to the host.
-        measurement_collection_types::host measurements_host(&m_host_mr);
+        edm::measurement_collection<default_algebra>::host measurements_host(
+            m_host_mr);
         m_copy(measurements, measurements_host)->wait();
 
         // Return an empty object.
@@ -216,9 +218,10 @@ bound_track_parameters_collection_types::host full_chain_algorithm::seeding(
     m_copy(vecmem::get_data(cells), cells_buffer)->ignore();
 
     // Run the clusterization (asynchronously).
-    const measurement_collection_types::buffer measurements =
+    const auto unsorted_measurements =
         m_clusterization(cells_buffer, m_device_det_descr);
-    m_measurement_sorting(measurements);
+    const measurement_sorting_algorithm::output_type measurements =
+        m_measurement_sorting(unsorted_measurements);
 
     // If we have a Detray detector, run the seeding, track finding and fitting.
     if (m_detector != nullptr) {
@@ -244,7 +247,8 @@ bound_track_parameters_collection_types::host full_chain_algorithm::seeding(
     else {
 
         // Copy the measurements back to the host.
-        measurement_collection_types::host measurements_host(&m_host_mr);
+        edm::measurement_collection<default_algebra>::host measurements_host(
+            m_host_mr);
         m_copy(measurements, measurements_host)->wait();
 
         // Return an empty object.

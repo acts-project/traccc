@@ -206,7 +206,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
          event < input_opts.events + input_opts.skip; ++event) {
         // Instantiate host containers/collections
         traccc::host::clusterization_algorithm::output_type
-            measurements_per_event{&host_mr};
+            measurements_per_event{host_mr};
         traccc::host::silicon_pixel_spacepoint_formation_algorithm::output_type
             spacepoints_per_event{host_mr};
         traccc::host::seeding_algorithm::output_type seeds{host_mr};
@@ -253,9 +253,9 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 traccc::performance::timer t("Clusterization (sycl)",
                                              elapsedTimes);
                 // Reconstruct it into spacepoints on the device.
-                measurements_sycl_buffer =
+                auto unsorted_measurements =
                     ca_sycl(cells_buffer, device_det_descr);
-                ms_sycl(measurements_sycl_buffer);
+                measurements_sycl_buffer = ms_sycl(unsorted_measurements);
                 q.wait_and_throw();
             }  // stop measuring clusterization sycl timer
 
@@ -344,8 +344,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
           compare cpu and sycl result
           ----------------------------------*/
 
-        traccc::measurement_collection_types::host measurements_per_event_sycl{
-            &host_mr};
+        traccc::edm::measurement_collection<traccc::default_algebra>::host
+            measurements_per_event_sycl{host_mr};
         traccc::edm::spacepoint_collection::host spacepoints_per_event_sycl{
             host_mr};
         traccc::edm::seed_collection::host seeds_sycl{host_mr};
@@ -368,7 +368,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
             TRACCC_INFO("===>>> Event " << event << " <<<===");
 
             // Compare the measurements made on the host and on the device.
-            traccc::collection_comparator<traccc::measurement>
+            traccc::soa_comparator<
+                traccc::edm::measurement_collection<traccc::default_algebra>>
                 compare_measurements{"measurements"};
             compare_measurements(vecmem::get_data(measurements_per_event),
                                  vecmem::get_data(measurements_per_event_sycl));
