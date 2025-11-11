@@ -131,8 +131,7 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
     // Seed generator
-    seed_generator<host_detector_type> sg(detector.as<detector_traits>(),
-                                          stddevs);
+    seed_generator<host_detector_type> sg(detector.as<detector_traits>());
 
     // Finding algorithm configuration
     typename traccc::cuda::combinatorial_kalman_filter_algorithm::config_type
