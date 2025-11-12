@@ -23,6 +23,10 @@ if( "${CMAKE_CUDA_COMPILER_ID}" MATCHES "NVIDIA" )
    traccc_add_flag( CMAKE_CUDA_FLAGS "-Wall" )
    traccc_add_flag( CMAKE_CUDA_FLAGS "-Wextra" )
    traccc_add_flag( CMAKE_CUDA_FLAGS "-Wconversion" )
+	   traccc_add_flag( CMAKE_CUDA_FLAGS "-Wfloat-conversion" )
+	   traccc_add_flag( CMAKE_CUDA_FLAGS "-Wsign-conversion" )
+	   traccc_add_flag( CMAKE_CUDA_FLAGS "-Wall" )
+	   traccc_add_flag( CMAKE_CUDA_FLAGS "-Wextra" )
 endif()
 
 # Allow to use functions in device code that are constexpr, even if they are
