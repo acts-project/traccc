@@ -27,6 +27,9 @@ if( ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" ) OR
    traccc_add_flag( CMAKE_CXX_FLAGS "-Wold-style-cast" )
    if(PROJECT_IS_TOP_LEVEL)
      traccc_add_flag( CMAKE_CXX_FLAGS "-Wconversion" )
+	   traccc_add_flag( CMAKE_CXX_FLAGS "-Wint-conversion" )
+	   traccc_add_flag( CMAKE_CXX_FLAGS "-Wfloat-conversion" )
+	   traccc_add_flag( CMAKE_CXX_FLAGS "-Wsign-conversion" )
    endif()
 
    # Fail on warnings, if asked for that behaviour.
