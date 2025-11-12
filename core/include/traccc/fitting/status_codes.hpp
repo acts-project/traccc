@@ -18,8 +18,10 @@ enum class kalman_fitter_status : uint32_t {
     ERROR_INVERSION,
     ERROR_SMOOTHER_CHI2_NEGATIVE,
     ERROR_SMOOTHER_CHI2_NOT_FINITE,
+    ERROR_SMOOTHER_INVALID_COVARIANCE,
     ERROR_UPDATER_CHI2_NEGATIVE,
     ERROR_UPDATER_CHI2_NOT_FINITE,
+    ERROR_UPDATER_INVALID_COVARIANCE,
     ERROR_BARCODE_SEQUENCE_OVERFLOW,
     ERROR_INVALID_TRACK_STATE,
     ERROR_OTHER,
@@ -48,11 +50,17 @@ struct fitter_debug_msg {
             case ERROR_SMOOTHER_CHI2_NOT_FINITE: {
                 return msg + "Invalid chi2 in smoother";
             }
+            case ERROR_SMOOTHER_INVALID_COVARIANCE: {
+                return msg + "Invalid track covariance during smoothing";
+            }
             case ERROR_UPDATER_CHI2_NEGATIVE: {
                 return msg + "Negative chi2 in gain matrix updater";
             }
             case ERROR_UPDATER_CHI2_NOT_FINITE: {
                 return msg + "Invalid chi2 in gain matrix updater";
+            }
+            case ERROR_UPDATER_INVALID_COVARIANCE: {
+                return msg + "Invalid track covariance in forward fit";
             }
             case ERROR_BARCODE_SEQUENCE_OVERFLOW: {
                 return msg + "Barcode sequence overflow in direct navigator";
@@ -65,7 +73,8 @@ struct fitter_debug_msg {
                 return msg + "Unspecified error";
             }
             default: {
-                return "";
+                return "Not a defined error code: " +
+                       std::to_string(static_cast<int>(m_error_code));
             }
         }
     }
