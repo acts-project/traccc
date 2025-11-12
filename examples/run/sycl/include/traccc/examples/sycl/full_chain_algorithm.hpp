@@ -24,6 +24,8 @@
 #include "traccc/sycl/seeding/triplet_seeding_algorithm.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/propagation.hpp"
+// GBTS include for placeholder input (not implemented)
+#include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/binary_page_memory_resource.hpp>
@@ -72,6 +74,7 @@ class full_chain_algorithm
     /// @param mr The memory resource to use for the intermediate and result
     ///           objects
     ///
+<<<<<<< HEAD
     full_chain_algorithm(
         vecmem::memory_resource& host_mr,
         const clustering_config& clustering_config,
@@ -85,6 +88,19 @@ class full_chain_algorithm
         const detector_conditions_description::host& det_cond,
         const magnetic_field& field, host_detector* detector,
         std::unique_ptr<const traccc::Logger> logger);
+=======
+    full_chain_algorithm(vecmem::memory_resource& host_mr,
+                         const clustering_config& clustering_config,
+                         const seedfinder_config& finder_config,
+                         const spacepoint_grid_config& grid_config,
+                         const seedfilter_config& filter_config,
+                         const gbts_seedfinder_config& gbts_config,
+						 const finding_algorithm::config_type& finding_config,
+                         const fitting_algorithm::config_type& fitting_config,
+                         const silicon_detector_description::host& det_descr,
+                         const magnetic_field& field, host_detector* detector,
+                         std::unique_ptr<const traccc::Logger> logger);
+>>>>>>> 9181282c (adding placeholders for backends without GBTS impl)
 
     /// Copy constructor
     ///
@@ -182,12 +198,17 @@ class full_chain_algorithm
     spacepoint_grid_config m_grid_config;
     /// Configuration for the seed filtering
     seedfilter_config m_filter_config;
+	/// placeholder GBTS config
+	m_gbts_seedfinder_config m_gbts_config;
     /// Configuration for track parameter estimation
     track_params_estimation_config m_track_params_estimation_config;
-    /// Configuration for the track finding
+    
+	/// Configuration for the track finding
     finding_algorithm::config_type m_finding_config;
     /// Configuration for the track fitting
     fitting_algorithm::config_type m_fitting_config;
+	
+	bool usingGBTS;
 
     /// @}
 };  // class full_chain_algorithm
