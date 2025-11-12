@@ -20,8 +20,10 @@ full_chain_algorithm::full_chain_algorithm(
     const seedfinder_config& finder_config,
     const spacepoint_grid_config& grid_config,
     const seedfilter_config& filter_config,
+    const gbts_seedfinder_config& gbts_config,
     const track_params_estimation_config& track_params_estimation_config,
     const finding_algorithm::config_type& finding_config,
+	const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
     const silicon_detector_description::host& det_descr,
     const magnetic_field& field, host_detector* detector,
@@ -68,8 +70,10 @@ full_chain_algorithm::full_chain_algorithm(
       m_finder_config(finder_config),
       m_grid_config(grid_config),
       m_filter_config(filter_config),
+      m_gbts_config(gbts_config),
       m_track_params_estimation_config(track_params_estimation_config),
       m_finding_config(finding_config),
+	  m_finding_config(finding_config),
       m_fitting_config(fitting_config) {
 
     std::cout << traccc::alpaka::get_device_info() << std::endl;
@@ -131,8 +135,10 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_finder_config(parent.m_finder_config),
       m_grid_config(parent.m_grid_config),
       m_filter_config(parent.m_filter_config),
+      m_gbts_config(parent.m_gbts_config),
       m_track_params_estimation_config(parent.m_track_params_estimation_config),
       m_finding_config(parent.m_finding_config),
+	  m_finding_config(parent.m_finding_config),
       m_fitting_config(parent.m_fitting_config) {
 
     // Copy the detector (description) to the device.

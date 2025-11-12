@@ -144,13 +144,13 @@ class full_chain_algorithm
     spacepoint_grid_config m_grid_config;
     /// Configuration for the seed filtering
     seedfilter_config m_filter_config;
-	// placeholder GBTS config
+	/// placeholder GBTS config
 	gbts_seedfinder_config m_gbts_config;
 
     /// Configuration for track parameter estimation
     track_params_estimation_config m_track_params_estimation_config;
 
-    /// Configuration for the track finding
+	/// Configuration for the track finding
     finding_algorithm::config_type m_finding_config;
     /// Configuration for the track fitting
     fitting_algorithm::config_type m_fitting_config;
