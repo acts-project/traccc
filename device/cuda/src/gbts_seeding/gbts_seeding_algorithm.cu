@@ -281,7 +281,6 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
         nNodesPerBlock, ctx.nNodes, m_config.n_phi_bins);
 
     cudaStreamSynchronize(stream);
-
     error = cudaGetLastError();
 
     if (error != cudaSuccess) {
