@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/seed_collection.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
@@ -49,10 +49,10 @@ void write(std::size_t event, std::string_view directory,
 /// @param spacepoints is the spacepoint collection to write
 /// @param measurements is the measurement collection to write
 ///
-void write(std::size_t event, std::string_view directory,
-           traccc::data_format format,
-           edm::spacepoint_collection::const_view spacepoints,
-           measurement_collection_types::const_view measurements);
+void write(
+    std::size_t event, std::string_view directory, traccc::data_format format,
+    edm::spacepoint_collection::const_view spacepoints,
+    edm::measurement_collection<default_algebra>::const_view measurements);
 
 /// Function for measurement file writing
 ///
@@ -61,9 +61,9 @@ void write(std::size_t event, std::string_view directory,
 /// @param format is the data format (e.g. csv or binary) of output file
 /// @param measurements is the measurement collection to write
 ///
-void write(std::size_t event, std::string_view directory,
-           traccc::data_format format,
-           measurement_collection_types::const_view measurements);
+void write(
+    std::size_t event, std::string_view directory, traccc::data_format format,
+    edm::measurement_collection<default_algebra>::const_view measurements);
 
 /// Function for seed writing
 ///

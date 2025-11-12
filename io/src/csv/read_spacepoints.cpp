@@ -22,13 +22,12 @@
 
 namespace traccc::io::csv {
 
-void read_spacepoints(edm::spacepoint_collection::host& spacepoints,
-                      measurement_collection_types::host& measurements,
-                      std::string_view hit_filename,
-                      std::string_view meas_filename,
-                      std::string_view meas_hit_map_filename,
-                      const traccc::host_detector* detector,
-                      const bool sort_measurements) {
+void read_spacepoints(
+    edm::spacepoint_collection::host& spacepoints,
+    edm::measurement_collection<default_algebra>::host& measurements,
+    std::string_view hit_filename, std::string_view meas_filename,
+    std::string_view meas_hit_map_filename,
+    const traccc::host_detector* detector, const bool sort_measurements) {
 
     // Read all measurements.
     const std::vector<measurement_id_type> new_idx_map = read_measurements(

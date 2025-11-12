@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/track_collection.hpp"
 #include "traccc/edm/track_state_collection.hpp"
 
@@ -25,8 +25,10 @@ class comparator_factory<edm::track<T>> {
     public:
     /// Constructor with all necessary arguments
     comparator_factory(
-        const measurement_collection_types::const_view& ref_meas,
-        const measurement_collection_types::const_view& test_meas,
+        const edm::measurement_collection<default_algebra>::const_view&
+            ref_meas,
+        const edm::measurement_collection<default_algebra>::const_view&
+            test_meas,
         const edm::track_state_collection<default_algebra>::const_view&
             ref_states,
         const edm::track_state_collection<default_algebra>::const_view&
@@ -46,9 +48,9 @@ class comparator_factory<edm::track<T>> {
 
     private:
     /// Measurement container for the reference track candidates
-    const measurement_collection_types::const_view m_ref_meas;
+    const edm::measurement_collection<default_algebra>::const_view m_ref_meas;
     /// Measurement container for the test track candidates
-    const measurement_collection_types::const_view m_test_meas;
+    const edm::measurement_collection<default_algebra>::const_view m_test_meas;
     /// States for the reference object
     const edm::track_state_collection<default_algebra>::const_view m_ref_states;
     /// States for the test object

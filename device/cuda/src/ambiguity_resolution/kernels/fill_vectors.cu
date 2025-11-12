@@ -49,9 +49,9 @@ __global__ void fill_vectors(const ambiguity_resolution_config cfg,
             assert(type == edm::track_constituent_link::measurement);
             meas_ids.at(globalIndex)
                 .push_back(
-                    track_candidates.measurements.at(meas_idx).measurement_id);
+                    track_candidates.measurements.at(meas_idx).identifier());
             flat_meas_ids.push_back(
-                track_candidates.measurements.at(meas_idx).measurement_id);
+                track_candidates.measurements.at(meas_idx).identifier());
         }
         n_meas.at(globalIndex) = track.constituent_links().size();
     }

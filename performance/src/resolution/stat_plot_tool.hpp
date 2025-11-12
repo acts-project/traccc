@@ -12,6 +12,7 @@
 #include "traccc/resolution/stat_plot_tool_config.hpp"
 
 // Project include(s).
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/track_collection.hpp"
 #include "traccc/edm/track_state_collection.hpp"
 
@@ -75,7 +76,8 @@ class stat_plot_tool {
     template <typename track_state_backend_t>
     void fill(stat_plot_cache& cache,
               const edm::track_state<track_state_backend_t>& trk_state,
-              const measurement_collection_types::host& measurements) const;
+              const edm::measurement_collection<default_algebra>::host&
+                  measurements) const;
 
     /// @brief fill the cache
     /// @param cache the cache for statistics plots

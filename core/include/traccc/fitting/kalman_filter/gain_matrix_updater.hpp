@@ -10,11 +10,12 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/definitions/track_parametrization.hpp"
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/measurement_helpers.hpp"
 #include "traccc/edm/track_state_collection.hpp"
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/utils/logging.hpp"
+#include "traccc/utils/subspace.hpp"
 
 namespace traccc {
 
@@ -43,11 +44,13 @@ struct gain_matrix_updater {
     template <typename track_state_backend_t>
     [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status operator()(
         typename edm::track_state<track_state_backend_t>& trk_state,
-        const measurement_collection_types::const_device& measurements,
+        const edm::measurement_collection<default_algebra>::const_device&
+            measurements,
         const bound_track_parameters<algebra_t>& bound_params,
         const bool is_line) const {
 
-        const auto D = measurements.at(trk_state.measurement_index()).meas_dim;
+        const auto D =
+            measurements.at(trk_state.measurement_index()).dimensions();
 
         assert(D == 1u || D == 2u);
 
@@ -57,7 +60,8 @@ struct gain_matrix_updater {
     template <typename track_state_backend_t>
     [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status update(
         typename edm::track_state<track_state_backend_t>& trk_state,
-        const measurement_collection_types::const_device& measurements,
+        const edm::measurement_collection<default_algebra>::const_device&
+            measurements,
         const bound_track_parameters<algebra_t>& bound_params,
         const unsigned int dim, const bool is_line) const {
 
@@ -91,9 +95,9 @@ struct gain_matrix_updater {
         // Predicted covaraince of bound track parameters
         const bound_matrix_type& predicted_cov = bound_params.covariance();
 
-        matrix_type<D, e_bound_size> H =
-            measurements.at(trk_state.measurement_index())
-                .subs.template projector<D>();
+        const subspace<algebra_t, e_bound_size> subs(
+            measurements.at(trk_state.measurement_index()).subspace());
+        matrix_type<D, e_bound_size> H = subs.template projector<D>();
 
         // Flip the sign of projector matrix element in case the first element
         // of line measurement is negative

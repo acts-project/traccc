@@ -11,7 +11,7 @@
 #include "traccc/alpaka/utils/queue.hpp"
 
 // Project include(s).
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/geometry/detector_buffer.hpp"
 #include "traccc/utils/algorithm.hpp"
@@ -34,7 +34,7 @@ namespace traccc::alpaka {
 class spacepoint_formation_algorithm
     : public algorithm<edm::spacepoint_collection::buffer(
           const detector_buffer&,
-          const measurement_collection_types::const_view&)>,
+          const edm::measurement_collection<default_algebra>::const_view&)>,
       public messaging {
 
     public:
@@ -58,8 +58,8 @@ class spacepoint_formation_algorithm
     ///
     edm::spacepoint_collection::buffer operator()(
         const detector_buffer& det,
-        const measurement_collection_types::const_view& measurements_view)
-        const override;
+        const edm::measurement_collection<default_algebra>::const_view&
+            measurements) const override;
 
     private:
     /// The memory resource(s) to use

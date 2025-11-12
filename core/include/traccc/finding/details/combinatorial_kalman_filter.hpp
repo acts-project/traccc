@@ -7,7 +7,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/track_container.hpp"
 #include "traccc/edm/track_state_helpers.hpp"
 #include "traccc/finding/actors/ckf_aborter.hpp"
@@ -22,7 +22,6 @@
 #include "traccc/utils/logging.hpp"
 #include "traccc/utils/particle.hpp"
 #include "traccc/utils/prob.hpp"
-#include "traccc/utils/projections.hpp"
 #include "traccc/utils/propagation.hpp"
 
 // VecMem include(s).
@@ -60,7 +59,8 @@ template <typename detector_t, typename bfield_t>
 edm::track_container<typename detector_t::algebra_type>::host
 combinatorial_kalman_filter(
     const detector_t& det, const bfield_t& field,
-    const measurement_collection_types::const_view& measurements_view,
+    const typename edm::measurement_collection<
+        typename detector_t::algebra_type>::const_view& measurements_view,
     const bound_track_parameters_collection_types::const_view& seeds_view,
     const finding_config& config, vecmem::memory_resource& mr,
     const Logger& /*log*/) {
@@ -85,11 +85,12 @@ combinatorial_kalman_filter(
      *****************************************************************/
 
     // Create the measurement container.
-    measurement_collection_types::const_device measurements{measurements_view};
+    typename edm::measurement_collection<algebra_type>::const_device
+        measurements{measurements_view};
 
     // Check contiguity of the measurements
-    assert(
-        host::is_contiguous_on(measurement_module_projection(), measurements));
+    assert(is_contiguous_on([](const auto& value) { return value; },
+                            measurements.surface_link()));
 
     // Get index ranges in the measurement container per detector surface
     std::vector<unsigned int> meas_ranges;
@@ -109,14 +110,15 @@ combinatorial_kalman_filter(
             continue;
         }
 
-        auto up = std::upper_bound(measurements.begin(), measurements.end(),
-                                   sf_desc, measurement_sf_comp());
-        meas_ranges.push_back(
-            static_cast<unsigned int>(std::distance(measurements.begin(), up)));
+        auto up = std::upper_bound(measurements.surface_link().begin(),
+                                   measurements.surface_link().end(),
+                                   sf_desc.barcode());
+        meas_ranges.push_back(static_cast<unsigned int>(
+            std::distance(measurements.surface_link().begin(), up)));
     }
 
-    const measurement_collection_types::const_device::size_type n_meas =
-        measurements.size();
+    const typename edm::measurement_collection<
+        algebra_type>::const_device::size_type n_meas = measurements.size();
 
     std::vector<std::vector<candidate_link>> links;
     links.resize(config.max_track_candidates_per_track);
@@ -251,7 +253,7 @@ combinatorial_kalman_filter(
                 TRACCC_VERBOSE_HOST("Testing measurement: " << meas_id);
 
                 // The measurement on surface to handle.
-                const measurement& meas = measurements.at(meas_id);
+                const auto meas = measurements.at(meas_id);
 
                 // Create a standalone track state object.
                 auto trk_state =
@@ -283,7 +285,7 @@ combinatorial_kalman_filter(
                           .n_consecutive_skipped = 0,
                           .chi2 = chi2,
                           .chi2_sum = prev_chi2_sum + chi2,
-                          .ndf_sum = prev_ndf_sum + meas.meas_dim},
+                          .ndf_sum = prev_ndf_sum + meas.dimensions()},
                          trk_state.filtered_params()});
                 }
             }
@@ -633,7 +635,8 @@ combinatorial_kalman_filter(
             assert(L.chi2 < std::numeric_limits<traccc::scalar>::max());
             assert(L.chi2 >= 0.f);
 
-            ndf_sum += static_cast<scalar>(measurements.at(it->index).meas_dim);
+            ndf_sum +=
+                static_cast<scalar>(measurements.at(it->index).dimensions());
             chi2_sum += L.chi2;
 
             // Break the loop if the iterator is at the first candidate and

@@ -63,8 +63,8 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
     state_t& state) const {
 
     // Create a measurement collection to interact with.
-    measurement_collection_types::const_device measurements(
-        track_states.measurements);
+    const edm::measurement_collection<default_algebra>::const_device
+        measurements(track_states.measurements);
 
     // For each track of the input container
     std::size_t n_track_states = track_states.tracks.size();
@@ -85,7 +85,7 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
         for (const auto& [type, meas_idx] : track.constituent_links()) {
             assert(type == edm::track_constituent_link::measurement);
 
-            std::size_t mid = measurements.at(meas_idx).measurement_id;
+            std::size_t mid = measurements.at(meas_idx).identifier();
 
             // If the same measurement is found multiple times in a single
             // track: remove duplicates.

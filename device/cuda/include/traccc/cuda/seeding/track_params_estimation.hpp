@@ -9,7 +9,7 @@
 
 // Project include(s)
 #include "traccc/cuda/utils/stream.hpp"
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/seed_collection.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/edm/track_parameters.hpp"
@@ -29,7 +29,7 @@ namespace traccc::cuda {
 ///
 struct track_params_estimation
     : public algorithm<bound_track_parameters_collection_types::buffer(
-          const measurement_collection_types::const_view&,
+          const edm::measurement_collection<default_algebra>::const_view&,
           const edm::spacepoint_collection::const_view&,
           const edm::seed_collection::const_view&, const vector3&,
           const std::array<traccc::scalar, traccc::e_bound_size>&)>,
@@ -57,7 +57,8 @@ struct track_params_estimation
     /// @return A vector of bound track parameters
     ///
     output_type operator()(
-        const measurement_collection_types::const_view& measurements,
+        const edm::measurement_collection<default_algebra>::const_view&
+            measurements,
         const edm::spacepoint_collection::const_view& spacepoints,
         const edm::seed_collection::const_view& seeds, const vector3& bfield,
         const std::array<traccc::scalar, traccc::e_bound_size>& = {

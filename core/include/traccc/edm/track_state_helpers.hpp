@@ -8,6 +8,7 @@
 #pragma once
 
 // Local include(s).
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/track_state_collection.hpp"
 
 namespace traccc::edm {
@@ -22,9 +23,9 @@ namespace traccc::edm {
 template <typename algebra_t>
 TRACCC_HOST_DEVICE
     typename track_state_collection<algebra_t>::device::object_type
-    make_track_state(
-        const measurement_collection_types::const_device& measurements,
-        unsigned int mindex);
+    make_track_state(const typename measurement_collection<
+                         algebra_t>::const_device& measurements,
+                     unsigned int mindex);
 
 }  // namespace traccc::edm
 

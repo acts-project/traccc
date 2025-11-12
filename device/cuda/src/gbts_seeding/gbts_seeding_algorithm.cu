@@ -125,8 +125,8 @@ gbts_seeding_algorithm::gbts_seeding_algorithm(
 
 gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     const traccc::edm::spacepoint_collection::const_view& spacepoints,
-    const traccc::measurement_collection_types::const_view& measurements)
-    const {
+    const edm::measurement_collection<default_algebra>::const_view&
+        measurements) const {
 
     gbts_ctx ctx;
 

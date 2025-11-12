@@ -9,7 +9,7 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/track_collection.hpp"
 #include "traccc/edm/track_state_collection.hpp"
 
@@ -32,13 +32,14 @@ struct statistics_updater {
         typename edm::track_collection<algebra_t>::device::proxy_type& fit_res,
         const typename edm::track_state_collection<
             algebra_t>::const_device::const_proxy_type& trk_state,
-        const measurement_collection_types::const_device& measurements) {
+        const typename edm::measurement_collection<algebra_t>::const_device&
+            measurements) {
 
         if (!trk_state.is_hole()) {
 
             // Measurement dimension
             const unsigned int D =
-                measurements.at(trk_state.measurement_index()).meas_dim;
+                measurements.at(trk_state.measurement_index()).dimensions();
 
             if (trk_state.is_smoothed()) {
                 // NDoF = NDoF + number of coordinates per measurement

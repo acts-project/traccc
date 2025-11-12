@@ -14,7 +14,7 @@
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/finding_config.hpp"
@@ -41,7 +41,7 @@ struct find_tracks_payload {
      *
      * @warning Measurements on the same surface must be adjacent
      */
-    measurement_collection_types::const_view measurements_view;
+    edm::measurement_collection<default_algebra>::const_view measurements_view;
 
     /**
      * @brief View object to the vector of track parameters
