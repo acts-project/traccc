@@ -4,6 +4,9 @@
 #
 # Mozilla Public License Version 2.0
 
+#Ignore .csv files
+*.csv
+
 # Prerequisites
 *.d
 
