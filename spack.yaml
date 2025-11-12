@@ -19,7 +19,6 @@ spack:
     - "alpaka"
     - "boost@1.85.0: +log+program_options"
     - "indicators"
-    - "benchmark ~performance_counters"
     # SYCL dependencies
     - "intel-oneapi-dpl"
     # Examples and test dependencies
