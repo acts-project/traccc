@@ -79,7 +79,8 @@ class kalman_fitter {
                             interactor, resetter, kalman_step_aborter>;
 
     // Navigator type for backward propagator
-    using direct_navigator_type = detray::direct_navigator<detector_type>;
+    // using direct_navigator_type = detray::direct_navigator<detector_type>;
+    using direct_navigator_type = detray::navigator<detector_type>;
 
     // Propagator type
     using forward_propagator_type =
@@ -362,7 +363,7 @@ class kalman_fitter {
 
         typename backward_propagator_type::state propagation(
             last.smoothed_params(), m_field, m_detector,
-            fitter_state.m_sequence_buffer, backward_cfg.context);
+            /*fitter_state.m_sequence_buffer,*/ backward_cfg.context);
         propagation.set_particle(detail::correct_particle_hypothesis(
             m_cfg.ptc_hypothesis, last.smoothed_params()));
 
@@ -375,15 +376,15 @@ class kalman_fitter {
 
         propagation._navigation.set_direction(
             detray::navigation::direction::e_backward);
-        propagation._navigation.safe_step_size =
-            0.1f * traccc::unit<scalar>::mm;
+        /*propagation._navigation.safe_step_size =
+            0.1f * traccc::unit<scalar>::mm;*/
 
         // Synchronize the current barcode with the input track parameter
-        while (propagation._navigation.get_target_barcode() !=
+        /*while (propagation._navigation.get_target_barcode() !=
                last.smoothed_params().surface_link()) {
             assert(!propagation._navigation.is_complete());
             propagation._navigation.next();
-        }
+        }*/
 
         propagator.propagate(propagation, fitter_state.backward_actor_state());
 
