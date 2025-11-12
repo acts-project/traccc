@@ -26,9 +26,9 @@
 #include "traccc/options/throughput.hpp"
 #include "traccc/options/track_finding.hpp"
 #include "traccc/options/track_fitting.hpp"
+#include "traccc/options/track_gbts_seeding.hpp"
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/options/track_seeding.hpp"
-#include "traccc/options/track_gbts_seeding.hpp"
 
 // I/O include(s).
 #include "traccc/io/read_cells.hpp"
@@ -89,7 +89,7 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
         description,
         {detector_opts, bfield_opts, input_opts, clusterization_opts,
          seeding_opts, seeding_gbts_opts, finding_opts, propagation_opts,
-	 fitting_opts, throughput_opts, threading_opts, logging_opts},
+         fitting_opts, throughput_opts, threading_opts, logging_opts},
         argc,
         argv,
         prelogger->cloneWithSuffix("Options")};
@@ -150,18 +150,21 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
     typename FULL_CHAIN_ALG::clustering_algorithm::config_type clustering_cfg(
         clusterization_opts);
 
-	const traccc::seedfinder_config seedfinder_config(seeding_opts);
+    const traccc::seedfinder_config seedfinder_config(seeding_opts);
     const traccc::seedfilter_config seedfilter_config(seeding_opts);
     const traccc::spacepoint_grid_config spacepoint_grid_config(seeding_opts);
     const traccc::track_params_estimation_config track_params_estimation_config;
 
-	traccc::gbts_seedfinder_config gbts_config;
-	if(seeding_gbts_opts.useGBTS) {
-		if(!gbts_config.setLinkingScheme(seeding_gbts_opts.binTables, seeding_gbts_opts.layerInfo, seeding_gbts_opts.barcodeBinning, 900.0f, prelogger->clone("GBTSconfig"))) {
-			TRACCC_ERROR("faliure in setting gbts linking scheme");
-			return -1;
-		}
-	}
+    traccc::gbts_seedfinder_config gbts_config;
+    if (seeding_gbts_opts.useGBTS) {
+        if (!gbts_config.setLinkingScheme(
+                seeding_gbts_opts.binTables, seeding_gbts_opts.layerInfo,
+                seeding_gbts_opts.barcodeBinning, 900.0f,
+                prelogger->clone("GBTSconfig"))) {
+            TRACCC_ERROR("failure in setting gbts linking scheme");
+            return -1;
+        }
+    }
 
     detray::propagation::config propagation_config(propagation_opts);
     typename FULL_CHAIN_ALG::finding_algorithm::config_type finding_cfg(
