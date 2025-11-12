@@ -74,6 +74,7 @@ class full_chain_algorithm
     /// @param mr The memory resource to use for the intermediate and result
     ///           objects
     ///
+<<<<<<< HEAD
     full_chain_algorithm(
         vecmem::memory_resource& host_mr,
         const clustering_config& clustering_config,
@@ -87,6 +88,19 @@ class full_chain_algorithm
         const silicon_detector_description::host& det_descr,
         const magnetic_field& field, host_detector* detector,
         std::unique_ptr<const traccc::Logger> logger);
+=======
+    full_chain_algorithm(vecmem::memory_resource& host_mr,
+                         const clustering_config& clustering_config,
+                         const seedfinder_config& finder_config,
+                         const spacepoint_grid_config& grid_config,
+                         const seedfilter_config& filter_config,
+                         const gbts_seedfinder_config& gbts_config,
+                         const finding_algorithm::config_type& finding_config,
+                         const fitting_algorithm::config_type& fitting_config,
+                         const silicon_detector_description::host& det_descr,
+                         const magnetic_field& field, host_detector* detector,
+                         std::unique_ptr<const traccc::Logger> logger);
+>>>>>>> 0ac700c4 (formatting and placeholders for sycl alpaka)
 
     /// Copy constructor
     ///

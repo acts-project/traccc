@@ -148,10 +148,10 @@ elif [[ "${TRACCC_THROUGPUT_TYPE}" == "g100" ]]; then
    TRACCC_CUTS=${G100_CUTS[@]}
 elif [[ "${TRACCC_THROUGPUT_TYPE}" == "g230" ]]; then
    TRACCC_CUTS=${G200_CUTS[@]}
-   TRACCC_CUTS+=(--useGBTS --gbts_config_dir="${TRACCC_INPUT_DIR}") 
+   TRACCC_CUTS+=(--useGBTS --gbts_config_dir="${TRACCC_INPUT_DIR}")
 elif [[ "${TRACCC_THROUGPUT_TYPE}" == "g130" ]]; then
-   TRACCC_CUTS=${G100_CUTS[@]} 
-   TRACCC_CUTS+=(--useGBTS --gbts_config_dir="${TRACCC_INPUT_DIR}") 
+   TRACCC_CUTS=${G100_CUTS[@]}
+   TRACCC_CUTS+=(--useGBTS --gbts_config_dir="${TRACCC_INPUT_DIR}")
 elif [[ "${TRACCC_THROUGPUT_TYPE}" != "traccc" ]]; then
    echo "***"
    echo "*** Unknown throughput type: '${TRACCC_THROUGPUT_TYPE}'"
@@ -197,7 +197,7 @@ for NTHREAD in $(seq ${TRACCC_MIN_THREADS} ${TRACCC_THREAD_STEP} ${TRACCC_MAX_TH
             --cold-run-events=$((5*${NTHREAD}))                                     \
             --processed-events=$((10*${NTHREAD}))                                   \
             --log-file="${TRACCC_CSV_FILE}"                                         \
-            ${TRACCC_CUTS[@]}                                                       
+            ${TRACCC_CUTS[@]}
       done
    done
 done

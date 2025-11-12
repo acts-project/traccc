@@ -44,7 +44,8 @@ full_chain_algorithm::full_chain_algorithm(
       m_gbts_config(gbts_config),
       m_track_params_estimation_config(track_params_estimation_config),
       m_finding_config(finding_config),
-      m_fitting_config(fitting_config) {}
+      m_fitting_config(fitting_config),
+      usingGBTS(useGBTS) {}
 
 full_chain_algorithm::output_type full_chain_algorithm::operator()(
     const edm::silicon_cell_collection::host& cells) const {
