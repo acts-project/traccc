@@ -29,6 +29,16 @@ set( ROCM_WARN_TOOLCHAIN_VAR FALSE CACHE BOOL "Don't print ROCm warnings" )
 set( ROCM_ERROR_TOOLCHAIN_VAR FALSE CACHE BOOL "Don't print ROCm errors" )
 mark_as_advanced( ROCM_WARN_TOOLCHAIN_VAR ROCM_ERROR_TOOLCHAIN_VAR )
 
+# The following is pretty horrendous. :-( If we let HIP_PLATFORM="amd" propagate
+# to the ROCm CMake files, at least with ROCm 6.0, the hip::device target gets
+# set up such that linking against it automatically adds "-x hip" to the
+# compiler flags of the client. Whether or not the source file is HIP or not.
+# I worked around this by telling rocThrust to "always use the NVIDIA platform".
+# In which case it doesn't try to be cute about such compiler flags. And then I
+# let the higher level configs (from CMake or Alpaka) sort out how
+# they would configure the build of various source files.
+set( HIP_PLATFORM "nvidia" )
+
 # Get it into the current directory.
 FetchContent_MakeAvailable( rocThrust )
 
