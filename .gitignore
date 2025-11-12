@@ -6,6 +6,8 @@
 
 #Ignore .csv files
 *.csv
+#ignore files
+example_ACTS.json
 
 # Prerequisites
 *.d
