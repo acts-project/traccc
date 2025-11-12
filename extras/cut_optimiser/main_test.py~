@@ -252,6 +252,11 @@ def main():
                     "--input-events=1",
                     "--check-performance",
                     "--use-acts-geom-source=off", #Always do it if using ITk geometry
+                    "--truth-finding-process-id=1",
+                    "--truth-finding-max-eta=4",
+                    "--truth-finding-max-r=300",
+                    "--truth-finding-min-pt=1.0",
+                    "--track-double-matching=0",
                 ]
 
                 for k, v in params["config"].items():

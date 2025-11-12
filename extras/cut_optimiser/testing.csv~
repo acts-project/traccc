@@ -1,0 +1,6 @@
+seedfinder-impactMax,seedfinder-maxPtScattering,seedfinder-minPt,seedfinder-maxSeedsPerSpM,truth-finding-min-z,truth-finding-max-z,seedfinder-compatSeedWeight,seedfinder-compatSeedLimit,success,rec_throughput,efficiency,fake_rate,duplicate_rate,seeding_efficiency,seed_fake_rate,seed_duplicate_rate
+30,200000,1,3,-150,150,10100,4,1,0.8254756324410812,0.78,469.94,7.23077,0.952381,969.222,9.78333
+30,200000,1,3,-150,150,10100,4,1,0.8999948952951875,0.78,528.86,7.07692,0.952381,1025.68,9.73333
+30,200000,1,3,-150,150,10100,4,1,1.072216988682247,0.78,578.92,7.07692,0.952381,1103.21,9.63333
+30,200000,1,3,-150,150,10100,4,1,0.9909647521791689,0.78,519.18,7.25641,0.952381,1051.67,9.75
+30,200000,0.9,3,-150,150,10100,4,0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
