@@ -210,8 +210,7 @@ struct gain_matrix_updater {
 
         const scalar theta = trk_state.filtered_params().theta();
         if (theta <= 0.f || theta >= 2.f * constant<traccc::scalar>::pi) {
-            TRACCC_ERROR_HOST_DEVICE("Hit theta pole after filtering : %f",
-                                     theta);
+            TRACCC_ERROR_HOST_DEVICE("Hit theta pole in filtering : %f", theta);
             return kalman_fitter_status::ERROR_THETA_POLE;
         }
 

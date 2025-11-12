@@ -522,8 +522,7 @@ combinatorial_kalman_filter(
             TRACCC_DEBUG_HOST("Propagating... ");
             propagator.propagate(propagation,
                                  detray::tie(s0, s1, s2, s3, s4, s5));
-            TRACCC_DEBUG_HOST("Finished propagation: On surface "
-                              << propagation._navigation.barcode());
+            TRACCC_DEBUG_HOST("Finished propagation");
 
             // If a surface found, add the parameter for the next
             // step
@@ -531,6 +530,8 @@ combinatorial_kalman_filter(
             if (valid_track) {
                 assert(propagation._navigation.is_on_sensitive());
                 assert(!propagation._stepping.bound_params().is_invalid());
+                TRACCC_DEBUG_HOST(
+                    "On surface: " << propagation._navigation.barcode());
 
                 const auto& out_param = propagation._stepping.bound_params();
 
