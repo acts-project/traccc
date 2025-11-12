@@ -154,9 +154,11 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
     const traccc::track_params_estimation_config track_params_estimation_config;
 	
 	traccc::gbts_seedfinder_config gbts_config;
-	if(!gbts_config.setLinkingScheme(seeding_gbts_opts.binTables, seeding_gbts_opts.layerInfo, seeding_gbts_opts.barcodeBinning, 900.0f, prelogger->clone("GBTSconfig"))) {
-		TRACCC_ERROR("faliure in setting gbts linking scheme");
-		return -1;
+	if(seeding_gbts_opts.useGBTS) {
+		if(!gbts_config.setLinkingScheme(seeding_gbts_opts.binTables, seeding_gbts_opts.layerInfo, seeding_gbts_opts.barcodeBinning, 900.0f, prelogger->clone("GBTSconfig"))) {
+			TRACCC_ERROR("faliure in setting gbts linking scheme");
+			return -1;
+		}
 	}
 
     detray::propagation::config propagation_config(propagation_opts);
