@@ -16,7 +16,7 @@ full_chain_algorithm::full_chain_algorithm(
     const spacepoint_grid_config& grid_config,
     const seedfilter_config& filter_config,
     const gbts_seedfinder_config& gbts_config,
-	const finding_algorithm::config_type& finding_config,
+    const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
     const silicon_detector_description::host& det_descr,
     const magnetic_field& field, const host_detector* detector,
@@ -41,9 +41,9 @@ full_chain_algorithm::full_chain_algorithm(
       m_grid_config(grid_config),
       m_filter_config(filter_config),
       m_gbts_config(gbts_config),
-	  m_finding_config(finding_config),
+      m_finding_config(finding_config),
       m_fitting_config(fitting_config),
-	  usingGBTS(useGBTS) {}
+      usingGBTS(useGBTS) {}
 
 full_chain_algorithm::output_type full_chain_algorithm::operator()(
     const edm::silicon_cell_collection::host& cells) const {
