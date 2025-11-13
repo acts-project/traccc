@@ -60,7 +60,7 @@ struct two_filters_smoother {
         if (trk_state.filtered_params().is_invalid()) {
             TRACCC_ERROR_HOST_DEVICE("Filtered track state invalid");
             TRACCC_ERROR_HOST(trk_state.filtered_params());
-            return kalman_fitter_status::ERROR_INVALID_TRACK_STATE;
+            return kalman_fitter_status::ERROR_UPDATER_SKIPPED_STATE;
         }
 
         // Measurement data on surface

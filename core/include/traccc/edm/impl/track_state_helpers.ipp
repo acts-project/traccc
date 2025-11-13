@@ -19,8 +19,9 @@ TRACCC_HOST_DEVICE
     // Create the result object.
     typename track_state_collection<algebra_t>::device::object_type state;
 
-    // Set it to be a hole by default, with the appropriate (measurement) index.
-    state.set_hole();
+    // Set it not to be a hole by default, with the appropriate (measurement)
+    // index.
+    state.set_hole(false);
     state.measurement_index() = mindex;
 
     // Set the correct surface link for the track parameters.

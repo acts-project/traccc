@@ -44,14 +44,14 @@ TRACCC_HOST_DEVICE inline void fit_backward(
 
         kalman_fitter_status fit_status = fitter.smooth(fitter_state);
 
+        fitter.update_statistics(fitter_state);
+
+        // Assume that this branch is only called if the forward fit was
+        // successfull (track param are alive)
+        fitter.check_fitting_result(fitter_state, kalman_fitter_status::SUCCESS,
+                                    fit_status);
+
         if (fit_status == kalman_fitter_status::SUCCESS) {
-
-            fitter.update_statistics(fitter_state);
-
-            fitter.check_fitting_result(fitter_state);
-
-            assert(fit_status == kalman_fitter_status::SUCCESS);
-
             track = fitter_state.m_fit_res;
         } else {
             param_liveness.at(param_id) = 0u;

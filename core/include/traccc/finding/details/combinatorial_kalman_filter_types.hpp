@@ -14,15 +14,7 @@
 #include "traccc/finding/actors/interaction_register.hpp"
 
 // Detray include(s).
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/actor_chain.hpp>
-#include <detray/propagator/actors/aborters.hpp>
-#include <detray/propagator/actors/parameter_resetter.hpp>
-#include <detray/propagator/actors/parameter_transporter.hpp>
-#include <detray/propagator/actors/pointwise_material_interactor.hpp>
-#include <detray/propagator/constrained_step.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
+#include "traccc/utils/propagation.hpp"
 
 // System include(s).
 #include <type_traits>
