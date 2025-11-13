@@ -11,7 +11,8 @@
 #include "traccc/utils/particle.hpp"
 
 // Detray include(s).
-#include <detray/navigation/navigator.hpp>
+#include <detray/definitions/navigation.hpp>
+#include <detray/geometry/tracking_surface.hpp>
 #include <detray/propagator/actors/pointwise_material_interactor.hpp>
 
 namespace traccc::device {

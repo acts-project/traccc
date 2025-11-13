@@ -11,7 +11,7 @@
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 
 // Detray include(s).
-#include <detray/navigation/navigator.hpp>
+#include <detray/navigation/caching_navigator.hpp>
 #include <detray/propagator/constrained_step.hpp>
 #include <detray/propagator/rk_stepper.hpp>
 
@@ -34,6 +34,6 @@ using kalman_fitter_t = kalman_fitter<
         detray::stepping::void_inspector,
         static_cast<std::uint32_t>(
             detray::rk_stepper_flags::e_allow_covariance_transport)>,
-    detray::navigator<std::add_const_t<detector_t>>>;
+    detray::caching_navigator<std::add_const_t<detector_t>>>;
 
 }  // namespace traccc::details

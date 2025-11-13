@@ -60,7 +60,7 @@ struct simulator {
                             detray::random_scatterer<algebra_type>,
                             detray::parameter_resetter<algebra_type>, writer_t>;
 
-    using navigator_type = detray::navigator<detector_t>;
+    using navigator_type = detray::caching_navigator<detector_t>;
     using stepper_type = detray::rk_stepper<
         typename bfield_type::view_t, algebra_type,
         detray::constrained_step<detray::dscalar<algebra_type>>>;

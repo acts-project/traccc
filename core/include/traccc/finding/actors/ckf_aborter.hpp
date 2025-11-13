@@ -49,7 +49,8 @@ struct ckf_aborter : detray::actor {
         // Stop at the next sensitive surface
         if (navigation.is_on_sensitive() &&
             abrt_state.path_from_surface > abrt_state.min_step_length) {
-            prop_state._heartbeat &= navigation.pause();
+            navigation.pause();
+            prop_state._heartbeat = false;
             abrt_state.success = true;
             abrt_state.path_from_surface = 0.f;
 
@@ -58,9 +59,10 @@ struct ckf_aborter : detray::actor {
         }
 
         if (abrt_state.count > abrt_state.max_count) {
-            prop_state._heartbeat &= navigation.abort(
+            navigation.abort(
                 "CKF: Maximum number of steps to reach next sensitive surface "
                 "exceeded");
+            prop_state._heartbeat = false;
         }
     }
 };
