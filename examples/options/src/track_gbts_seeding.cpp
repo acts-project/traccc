@@ -7,6 +7,7 @@
 
 // Local include(s).
 #include "traccc/options/track_gbts_seeding.hpp"
+
 #include "traccc/examples/utils/printable.hpp"
 
 // System include(s).
