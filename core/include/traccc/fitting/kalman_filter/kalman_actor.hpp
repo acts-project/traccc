@@ -52,13 +52,29 @@ struct kalman_actor_state {
         reset();
     }
 
+    /// Get the track state at a given position along the track
+    TRACCC_HOST_DEVICE
+    typename edm::track_state_collection<algebra_t>::device::proxy_type at(
+        unsigned int i) {
+        assert(m_track.constituent_links().at(i).type ==
+               edm::track_constituent_link::track_state);
+        return m_track_states.at(m_track.constituent_links().at(i).index);
+    }
+
+    /// Get the track state at a given position along the track
+    TRACCC_HOST_DEVICE
+    auto at(unsigned int i) const {
+        assert(m_track.constituent_links().at(i).type ==
+               edm::track_constituent_link::track_state);
+        return m_track_states.at(m_track.constituent_links().at(i).index);
+    }
+
     /// @return the reference of track state pointed by the iterator
     TRACCC_HOST_DEVICE
     typename edm::track_state_collection<algebra_t>::device::proxy_type
     operator()() {
-        assert(m_track.constituent_links().at(m_idx).type ==
-               edm::track_constituent_link::track_state);
-        return m_track_states.at(m_track.constituent_links().at(m_idx).index);
+        assert(m_idx >= 0);
+        return at(static_cast<unsigned int>(m_idx));
     }
 
     /// Reset the iterator
@@ -67,8 +83,9 @@ struct kalman_actor_state {
         if (!backward_mode) {
             m_idx = 0;
         } else {
-            m_idx = m_track.constituent_links().size() - 1;
+            m_idx = static_cast<int>(size()) - 1;
         }
+        n_holes = 0u;
     }
 
     /// Advance the iterator
@@ -81,22 +98,65 @@ struct kalman_actor_state {
         }
     }
 
+    /// @TODO: Const-correctness broken due to a vecmem bug
+    /// @returns the number of track states
+    TRACCC_HOST_DEVICE
+    unsigned int size() /*const*/ { return m_track.constituent_links().size(); }
+
     /// @return true if the iterator reaches the end of vector
     TRACCC_HOST_DEVICE
-    bool is_complete() {
-        if (!backward_mode && m_idx == m_track.constituent_links().size()) {
-            return true;
-        } else if (backward_mode &&
-                   m_idx > m_track.constituent_links().size()) {
-            return true;
-        }
-        return false;
+    bool is_complete() /*const*/ {
+        return (!backward_mode && m_idx == static_cast<int>(size())) ||
+               (backward_mode && m_idx == -1);
     }
 
+    /// @TODO: Const-correctness broken due to a vecmem bug
     TRACCC_HOST_DEVICE
-    bool is_state() {
-        return (m_track.constituent_links().at(m_idx).type ==
-                edm::track_constituent_link::track_state);
+    bool is_state() /* const*/ {
+        assert(m_idx >= 0);
+        return (m_track.constituent_links()
+                    .at(static_cast<unsigned int>(m_idx))
+                    .type == edm::track_constituent_link::track_state);
+    }
+
+    /// @TODO: Const-correctness broken due to a vecmem bug
+    /// @returns the current number of missed states during forward fit
+    TRACCC_HOST_DEVICE
+    unsigned int count_missed_fit() /*const*/ {
+        unsigned int n_missed{0u};
+
+        for (unsigned int i = 0u; i < size(); ++i) {
+            const auto trk_state = at(i);
+            if (!trk_state.is_hole() &&
+                trk_state.filtered_params().is_invalid()) {
+                TRACCC_DEBUG_HOST_DEVICE(
+                    "Missed track state %d/%d on surface %d during forward fit",
+                    i, size(), at(i).filtered_params().surface_link().index());
+                ++n_missed;
+            }
+        }
+
+        return n_missed;
+    }
+
+    /// @TODO: Const-correctness broken due to a vecmem bug
+    /// @returns the current number of missed states during smoothing
+    TRACCC_HOST_DEVICE
+    unsigned int count_missed_smoother() /*const*/ {
+        unsigned int n_missed{0u};
+
+        for (unsigned int i = 0u; i < size(); ++i) {
+            const auto trk_state = at(i);
+            if (!trk_state.is_hole() &&
+                trk_state.smoothed_params().is_invalid()) {
+                TRACCC_DEBUG_HOST_DEVICE(
+                    "Missed track state %d/%d on surface %d during smoothing",
+                    i, size(), at(i).smoothed_params().surface_link().index());
+                ++n_missed;
+            }
+        }
+
+        return n_missed;
     }
 
     /// Object describing the track fit
@@ -108,14 +168,17 @@ struct kalman_actor_state {
         m_measurements;
 
     /// Index of the current track state
-    unsigned int m_idx;
+    int m_idx;
 
-    // The number of holes (The number of sensitive surfaces which do not
-    // have a measurement for the track pattern)
+    /// The number of holes (The number of sensitive surfaces which do not
+    /// have a measurement for the track pattern)
     unsigned int n_holes{0u};
 
-    // Run back filtering for smoothing, if true
+    /// Run back filtering for smoothing, if true
     bool backward_mode = false;
+
+    /// Result of the fitter pass
+    kalman_fitter_status fit_result = kalman_fitter_status::SUCCESS;
 };
 
 /// Detray actor for Kalman filtering
@@ -142,19 +205,17 @@ struct kalman_actor : detray::actor {
             return;
         }
 
+        TRACCC_VERBOSE_HOST_DEVICE("In Kalman actor...");
+        TRACCC_VERBOSE_HOST(
+            "Expected: " << actor_state().filtered_params().surface_link());
+
         // triggered only for sensitive surfaces
         if (navigation.is_on_sensitive()) {
 
-            TRACCC_VERBOSE_HOST_DEVICE("In Kalman actor...");
             TRACCC_DEBUG_HOST("-> on surface: " << navigation.get_surface());
 
             typename edm::track_state_collection<algebra_t>::device::proxy_type
                 trk_state = actor_state();
-
-            TRACCC_DEBUG_HOST(
-                "-> expecting: " << actor_state.m_measurements
-                                        .at(trk_state.measurement_index())
-                                        .surface_link);
 
             // Increase the hole counts if the propagator fails to find the next
             // measurement
@@ -167,19 +228,11 @@ struct kalman_actor : detray::actor {
                 return;
             }
 
-            TRACCC_VERBOSE_HOST_DEVICE("Found next track state to fit");
-
-            // This track state is not a hole
-            if (!actor_state.backward_mode) {
-                trk_state.set_hole(false);
-            }
+            auto& bound_param = stepping.bound_params();
 
             // Run Kalman Gain Updater
             const auto sf = navigation.get_surface();
-
             const bool is_line = detail::is_line(sf);
-
-            kalman_fitter_status res = kalman_fitter_status::SUCCESS;
 
             if (!actor_state.backward_mode) {
                 if constexpr (direction_e ==
@@ -187,16 +240,16 @@ struct kalman_actor : detray::actor {
                               direction_e ==
                                   kalman_actor_direction::BIDIRECTIONAL) {
                     // Wrap the phi and theta angles in their valid ranges
-                    normalize_angles(propagation._stepping.bound_params());
+                    normalize_angles(bound_param);
 
                     // Forward filter
-                    TRACCC_DEBUG_HOST_DEVICE("Run filtering");
-                    res = gain_matrix_updater<algebra_t>{}(
-                        trk_state, actor_state.m_measurements,
-                        propagation._stepping.bound_params(), is_line);
+                    TRACCC_DEBUG_HOST_DEVICE("Run filtering...");
+                    actor_state.fit_result = gain_matrix_updater<algebra_t>{}(
+                        trk_state, actor_state.m_measurements, bound_param,
+                        is_line);
 
                     // Update the propagation flow
-                    stepping.bound_params() = trk_state.filtered_params();
+                    bound_param = trk_state.filtered_params();
                 } else {
                     assert(false);
                 }
@@ -205,30 +258,42 @@ struct kalman_actor : detray::actor {
                                   kalman_actor_direction::BACKWARD_ONLY ||
                               direction_e ==
                                   kalman_actor_direction::BIDIRECTIONAL) {
-                    // Backward filter for smoothing
-                    TRACCC_DEBUG_HOST_DEVICE("Run smoothing");
-                    res = two_filters_smoother<algebra_t>{}(
-                        trk_state, actor_state.m_measurements,
-                        propagation._stepping.bound_params(), is_line);
+                    TRACCC_DEBUG_HOST_DEVICE("Run smoothing...");
+
+                    // Forward filter did not find this state: cannot smoothe
+                    if (trk_state.filtered_params().is_invalid()) {
+                        TRACCC_ERROR_HOST_DEVICE(
+                            "Track state not filtered by forward fit. "
+                            "Skipping");
+                        actor_state.fit_result =
+                            kalman_fitter_status::ERROR_UPDATER_SKIPPED_STATE;
+                    } else {
+                        actor_state.fit_result =
+                            two_filters_smoother<algebra_t>{}(
+                                trk_state, actor_state.m_measurements,
+                                bound_param, is_line);
+                    }
                 } else {
                     assert(false);
                 }
             }
 
             // Abort if the Kalman update fails
-            if (res != kalman_fitter_status::SUCCESS) {
+            if (actor_state.fit_result != kalman_fitter_status::SUCCESS) {
                 if (actor_state.backward_mode) {
                     TRACCC_ERROR_DEVICE("Abort backward fit: KF status %d",
-                                        res);
+                                        actor_state.fit_result);
                     TRACCC_ERROR_HOST(
-                        "Abort backward fit: " << fitter_debug_msg{res}());
+                        "Abort backward fit: "
+                        << fitter_debug_msg{actor_state.fit_result}());
                 } else {
-                    TRACCC_ERROR_DEVICE("Abort forward fit: KF status %d", res);
-                    TRACCC_ERROR_HOST(
-                        "Abort forward fit: " << fitter_debug_msg{res}());
+                    TRACCC_ERROR_DEVICE("Abort forward fit: KF status %d",
+                                        actor_state.fit_result);
+                    TRACCC_ERROR_HOST("Abort forward fit: " << fitter_debug_msg{
+                                          actor_state.fit_result}());
                 }
                 propagation._heartbeat &=
-                    navigation.abort(fitter_debug_msg{res});
+                    navigation.abort(fitter_debug_msg{actor_state.fit_result});
                 return;
             }
 
@@ -236,8 +301,7 @@ struct kalman_actor : detray::actor {
             // is changed (This rarely happens when qop is set with a poor seed
             // resolution)
             propagation.set_particle(detail::correct_particle_hypothesis(
-                stepping.particle_hypothesis(),
-                propagation._stepping.bound_params()));
+                stepping.particle_hypothesis(), bound_param));
 
             // Update iterator
             actor_state.next();

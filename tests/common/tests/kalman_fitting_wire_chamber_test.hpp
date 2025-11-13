@@ -88,10 +88,6 @@ class KalmanFittingWireChamberTests
         wire_chamber_cfg.n_layers(n_wire_layers);
         wire_chamber_cfg.half_z(half_z);
 
-        //@NOTE: 2 GeV test fails in pull check with the following setup
-        // wire_chamber_cfg.mapped_material(detray::beryllium<scalar>());
-        // wire_chamber_cfg.m_thickness = 100.f * traccc::unit<scalar>::um;
-
         // Create telescope detector
         auto [det, name_map] = build_wire_chamber<traccc::default_algebra>(
             host_mr, wire_chamber_cfg);
