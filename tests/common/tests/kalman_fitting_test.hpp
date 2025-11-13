@@ -44,10 +44,12 @@ class KalmanFittingTests : public testing::Test {
     using rk_stepper_type =
         detray::rk_stepper<b_field_t::view_t, traccc::default_algebra,
                            detray::constrained_step<scalar_type>>;
-    using host_navigator_type = detray::navigator<const host_detector_type>;
+    using host_navigator_type =
+        detray::caching_navigator<const host_detector_type>;
     using host_fitter_type =
         kalman_fitter<rk_stepper_type, host_navigator_type>;
-    using device_navigator_type = detray::navigator<const device_detector_type>;
+    using device_navigator_type =
+        detray::caching_navigator<const device_detector_type>;
     using device_fitter_type =
         kalman_fitter<rk_stepper_type, device_navigator_type>;
 

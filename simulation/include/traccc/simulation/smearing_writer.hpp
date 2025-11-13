@@ -139,7 +139,7 @@ struct smearing_writer : detray::actor {
             const auto pos = track.pos();
             const auto mom = track.mom(stepping.particle_hypothesis().charge());
 
-            const auto sf = navigation.get_surface();
+            const auto sf = navigation.current_surface();
 
             hit.particle_id = writer_state.particle_id;
             hit.geometry_id = sf.barcode().value();

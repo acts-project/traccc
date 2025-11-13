@@ -79,7 +79,8 @@ class kalman_fitter {
                             interactor, resetter, kalman_step_aborter>;
 
     // Navigator type for backward propagator
-    using direct_navigator_type = detray::direct_navigator<detector_type>;
+    // using direct_navigator_type = detray::direct_navigator<detector_type>;
+    using direct_navigator_type = detray::caching_navigator<detector_type>;
 
     // Propagator type
     using forward_propagator_type =
@@ -272,7 +273,7 @@ class kalman_fitter {
             return fitter_state.m_fit_actor_state.fit_result;
         }
         // Encountered error during propagation?
-        if (!propagator.is_complete(propagation)) {
+        if (!propagator.finished(propagation)) {
             return kalman_fitter_status::ERROR_PROPAGATION_FAILURE;
         }
         // Are all track states updated in the fit?
@@ -304,13 +305,13 @@ class kalman_fitter {
         // Since the smoothed track parameter of the last surface can be
         // considered to be the filtered one, we can reversly iterate the
         // algorithm to obtain the smoothed parameter of other surfaces
-        while (!fitter_state.m_fit_actor_state.is_complete() &&
+        while (!fitter_state.m_fit_actor_state.finished() &&
                (!fitter_state.m_fit_actor_state.is_state() ||
                 fitter_state.m_fit_actor_state().is_hole())) {
             fitter_state.m_fit_actor_state.next();
         }
 
-        if (fitter_state.m_fit_actor_state.is_complete()) {
+        if (fitter_state.m_fit_actor_state.finished()) {
             return kalman_fitter_status::ERROR_UPDATER_SKIPPED_STATE;
         }
 
@@ -349,9 +350,9 @@ class kalman_fitter {
 
         // Backward propagator for the two-filters method
         detray::propagation::config backward_cfg = m_cfg.propagation;
-        backward_cfg.navigation.min_mask_tolerance =
+        backward_cfg.navigation.intersection.min_mask_tolerance =
             static_cast<float>(m_cfg.backward_filter_mask_tolerance);
-        backward_cfg.navigation.max_mask_tolerance =
+        backward_cfg.navigation.intersection.max_mask_tolerance =
             static_cast<float>(m_cfg.backward_filter_mask_tolerance);
 
         backward_propagator_type propagator(backward_cfg);
@@ -362,7 +363,7 @@ class kalman_fitter {
 
         typename backward_propagator_type::state propagation(
             last.smoothed_params(), m_field, m_detector,
-            fitter_state.m_sequence_buffer, backward_cfg.context);
+            /*fitter_state.m_sequence_buffer,*/ backward_cfg.context);
         propagation.set_particle(detail::correct_particle_hypothesis(
             m_cfg.ptc_hypothesis, last.smoothed_params()));
 
@@ -375,15 +376,15 @@ class kalman_fitter {
 
         propagation._navigation.set_direction(
             detray::navigation::direction::e_backward);
-        propagation._navigation.safe_step_size =
-            0.1f * traccc::unit<scalar>::mm;
+        /*propagation._navigation.safe_step_size =
+            0.1f * traccc::unit<scalar>::mm;*/
 
         // Synchronize the current barcode with the input track parameter
-        while (propagation._navigation.get_target_barcode() !=
+        /*while (propagation._navigation.get_target_barcode() !=
                last.smoothed_params().surface_link()) {
-            assert(!propagation._navigation.is_complete());
-            propagation._navigation.next();
-        }
+            assert(!propagation._navigation.finished());
+            propagation._navigation.set_next_external();
+        }*/
 
         propagator.propagate(propagation, fitter_state.backward_actor_state());
 
@@ -396,7 +397,7 @@ class kalman_fitter {
             return fitter_state.m_fit_actor_state.fit_result;
         }
         // Encountered error during propagation?
-        if (!propagator.is_complete(propagation)) {
+        if (!propagator.finished(propagation)) {
             return kalman_fitter_status::ERROR_PROPAGATION_FAILURE;
         }
         // Are all track states updated during smoothing?
