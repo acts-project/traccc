@@ -6,8 +6,14 @@
 
 #Ignore .csv files
 *.csv
+*.csv~
 #ignore files
 example_ACTS.json
+example_ACTS.json~
+example.json~
+main_test.py
+main_test.py~
+seeding_param.json
 
 # Prerequisites
 *.d

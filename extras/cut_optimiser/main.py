@@ -75,7 +75,7 @@ def main():
     parser.add_argument(
         "--timeout",
         help="timeout in seconds for benchmarks",
-        default=1000,
+        default=120,
         type=int,
     )
 
@@ -108,7 +108,6 @@ def main():
 
     parameter_space = params["parameters"]
     parameter_names = list(parameter_space)
-    set_skip = True #Variable to skip the grid point scan if the parameter set has already been ran
 
     log.info(
         "Running optimisation for %d parameters: %s",
@@ -167,10 +166,10 @@ def main():
         functools.reduce(operator.mul, [len(x) for x in parameter_space.values()], 1),
     )
 
-    #if "TRACCC_TEST_DATA_DIR" not in os.environ:
-    #    e = 'Environment variable "TRACCC_TEST_DATA_DIR" is not set; aborting!'
-    #    log.fatal(e)
-    #    raise RuntimeError(e)
+    if "TRACCC_TEST_DATA_DIR" not in os.environ:
+        e = 'Environment variable "TRACCC_TEST_DATA_DIR" is not set; aborting!'
+        log.fatal(e)
+        raise RuntimeError(e)
 
     for exec in ["ncu"]:
         if shutil.which(exec) is None:
@@ -190,7 +189,7 @@ def main():
             param_list = tuple(param_dict.values())
             if param_list in parameters:
                 random_retry_count += 1
-                if random_retry_count > 10:
+                if random_retry_count < 10:
                     log.info(
                         "Configuration is already known; continuing with random abort counter %d",
                         random_retry_count,
@@ -200,7 +199,7 @@ def main():
                     log.info(
                         "Configuration is already known and max retry counter is reached; aborting"
                     )
-                    continue
+                    break
             else:
                 random_retry_count = 0
         else:
@@ -250,8 +249,7 @@ def main():
                     "--grid-file=%s" % params["input"]["grid_file"],
                     "--material-file=%s" % params["input"]["material_file"],
                     "--input-events=1",
-                    "--check-performance",
-                    "--use-acts-geom-source=off", #Always do it if using ITk geometry
+                    "--check-performance", 
                 ]
 
                 for k, v in params["config"].items():
@@ -326,12 +324,12 @@ def main():
 
                 
                 log.info(
-                    "Physics performance was %(efficiency).1f%% efficiency, %(fake).1f fake rate, %(duplicate).1f duplicate rate, %(seed_efficiency).1f%% seeding efficiency, %(seed_fake).1f seed fake rate, %(seed_duplicate).1f seed duplicate rate",
+                    "Physics performance was %(efficiency).1f%% efficiency, %(fake).1f fake rate, %(duplicate).1f duplicate rate, %(seeding_efficiency).1f%% seeding efficiency, %(seed_fake).1f seed fake rate, %(seed_duplicate).1f seed duplicate rate",
                     {
                         "efficiency": result_efficiency * 100.0,
                         "fake": result_fake_rate,
                         "duplicate": result_duplicate_rate,
-                        "seed_efficiency": result_seeding_efficiency * 100.0,
+                        "seeding_efficiency": result_seeding_efficiency * 100.0,
 			"seed_fake": result_seed_fake_rate,
                         "seed_duplicate": result_seed_duplicate_rate,
                     },
