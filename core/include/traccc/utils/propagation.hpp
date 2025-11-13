@@ -11,8 +11,8 @@
 #include "traccc/edm/track_parameters.hpp"
 
 // Detray include(s).
+#include <detray/navigation/caching_navigator.hpp>
 #include <detray/navigation/direct_navigator.hpp>
-#include <detray/navigation/navigator.hpp>
 #include <detray/propagator/actors.hpp>
 #include <detray/propagator/line_stepper.hpp>
 #include <detray/propagator/propagator.hpp>

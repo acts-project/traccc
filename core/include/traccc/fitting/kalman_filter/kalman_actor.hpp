@@ -105,7 +105,7 @@ struct kalman_actor_state {
 
     /// @return true if the iterator reaches the end of vector
     TRACCC_HOST_DEVICE
-    bool is_complete() /*const*/ {
+    bool finished() /*const*/ {
         return (!backward_mode && m_idx == static_cast<int>(size())) ||
                (backward_mode && m_idx == -1);
     }
@@ -200,8 +200,9 @@ struct kalman_actor : detray::actor {
         auto& navigation = propagation._navigation;
 
         // If the iterator reaches the end, terminate the propagation
-        if (actor_state.is_complete()) {
-            propagation._heartbeat &= navigation.exit();
+        if (actor_state.finished()) {
+            navigation.exit();
+            propagation._heartbeat = false;
             return;
         }
 
@@ -212,7 +213,8 @@ struct kalman_actor : detray::actor {
         // triggered only for sensitive surfaces
         if (navigation.is_on_sensitive()) {
 
-            TRACCC_DEBUG_HOST("-> on surface: " << navigation.get_surface());
+            TRACCC_DEBUG_HOST(
+                "-> on surface: " << navigation.current_surface());
 
             typename edm::track_state_collection<algebra_t>::device::proxy_type
                 trk_state = actor_state();
@@ -231,7 +233,7 @@ struct kalman_actor : detray::actor {
             auto& bound_param = stepping.bound_params();
 
             // Run Kalman Gain Updater
-            const auto sf = navigation.get_surface();
+            const auto sf = navigation.current_surface();
             const bool is_line = detail::is_line(sf);
 
             if (!actor_state.backward_mode) {
@@ -292,8 +294,8 @@ struct kalman_actor : detray::actor {
                     TRACCC_ERROR_HOST("Abort forward fit: " << fitter_debug_msg{
                                           actor_state.fit_result}());
                 }
-                propagation._heartbeat &=
-                    navigation.abort(fitter_debug_msg{actor_state.fit_result});
+                navigation.abort(fitter_debug_msg{actor_state.fit_result});
+                propagation._heartbeat = false;
                 return;
             }
 

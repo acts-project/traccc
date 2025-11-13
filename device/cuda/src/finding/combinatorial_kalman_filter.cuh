@@ -86,7 +86,8 @@ combinatorial_kalman_filter(
         measurements_view};
 
     assert(config.min_step_length_for_next_surface >
-               math::fabs(config.propagation.navigation.overstep_tolerance) &&
+               math::fabs(config.propagation.navigation.intersection
+                              .overstep_tolerance) &&
            "Min step length for the next surface should be higher than the "
            "overstep tolerance");
     assert(is_contiguous_on<

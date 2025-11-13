@@ -52,7 +52,7 @@ using ckf_actor_chain_t =
 template <typename detector_t, typename bfield_t>
 using ckf_propagator_t =
     detray::propagator<ckf_stepper_t<bfield_t>,
-                       detray::navigator<std::add_const_t<detector_t>>,
+                       detray::caching_navigator<std::add_const_t<detector_t>>,
                        ckf_actor_chain_t>;
 
 }  // namespace traccc::details

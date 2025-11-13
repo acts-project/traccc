@@ -32,21 +32,24 @@ track_propagation::track_propagation()
                          "The constrained step size [mm]");
     m_desc.add_options()(
         "overstep-tolerance-um",
-        po::value(&(m_config.navigation.overstep_tolerance))
-            ->default_value(m_config.navigation.overstep_tolerance /
-                            traccc::unit<float>::um),
+        po::value(&(m_config.navigation.intersection.overstep_tolerance))
+            ->default_value(
+                m_config.navigation.intersection.overstep_tolerance /
+                traccc::unit<float>::um),
         "The overstep tolerance [um]");
     m_desc.add_options()(
         "min-mask-tolerance-mm",
-        po::value(&(m_config.navigation.min_mask_tolerance))
-            ->default_value(m_config.navigation.min_mask_tolerance /
-                            traccc::unit<float>::mm),
+        po::value(&(m_config.navigation.intersection.min_mask_tolerance))
+            ->default_value(
+                m_config.navigation.intersection.min_mask_tolerance /
+                traccc::unit<float>::mm),
         "The minimum mask tolerance [mm]");
     m_desc.add_options()(
         "max-mask-tolerance-mm",
-        po::value(&(m_config.navigation.max_mask_tolerance))
-            ->default_value(m_config.navigation.max_mask_tolerance /
-                            traccc::unit<float>::mm),
+        po::value(&(m_config.navigation.intersection.max_mask_tolerance))
+            ->default_value(
+                m_config.navigation.intersection.max_mask_tolerance /
+                traccc::unit<float>::mm),
         "The maximum mask tolerance [mm]");
     m_desc.add_options()(
         "search-window",
@@ -54,8 +57,9 @@ track_propagation::track_propagation()
         "Size of the grid surface search window");
     m_desc.add_options()(
         "mask-tolerance-scaling",
-        po::value(&(m_config.navigation.mask_tolerance_scalor))
-            ->default_value(m_config.navigation.mask_tolerance_scalor),
+        po::value(&(m_config.navigation.intersection.mask_tolerance_scalor))
+            ->default_value(
+                m_config.navigation.intersection.mask_tolerance_scalor),
         "Scale factor between min. and max. mask tolerance with surface "
         "distance");
 
@@ -116,9 +120,12 @@ void track_propagation::read(const po::variables_map &) {
 
     m_config.stepping.step_constraint *= traccc::unit<float>::mm;
     m_config.stepping.rk_error_tol *= traccc::unit<float>::mm;
-    m_config.navigation.overstep_tolerance *= traccc::unit<float>::um;
-    m_config.navigation.min_mask_tolerance *= traccc::unit<float>::mm;
-    m_config.navigation.max_mask_tolerance *= traccc::unit<float>::mm;
+    m_config.navigation.intersection.overstep_tolerance *=
+        traccc::unit<float>::um;
+    m_config.navigation.intersection.min_mask_tolerance *=
+        traccc::unit<float>::mm;
+    m_config.navigation.intersection.max_mask_tolerance *=
+        traccc::unit<float>::mm;
     m_config.navigation.search_window = m_search_window;
     m_config.navigation.accumulated_error /= 100.f;
 
@@ -136,24 +143,26 @@ std::unique_ptr<configuration_printable> track_propagation::as_printable()
 
     cat_nav->add_child(std::make_unique<configuration_kv_pair>(
         "Min mask tolerance",
-        std::to_string(m_config.navigation.min_mask_tolerance /
+        std::to_string(m_config.navigation.intersection.min_mask_tolerance /
                        traccc::unit<float>::mm) +
             " mm"));
     cat_nav->add_child(std::make_unique<configuration_kv_pair>(
         "Max mask tolerance",
-        std::to_string(m_config.navigation.max_mask_tolerance /
+        std::to_string(m_config.navigation.intersection.max_mask_tolerance /
                        traccc::unit<float>::mm) +
             " mm"));
     cat_nav->add_child(std::make_unique<configuration_kv_pair>(
         "Mask tolerance scaling",
-        std::to_string(m_config.navigation.mask_tolerance_scalor)));
+        std::to_string(
+            m_config.navigation.intersection.mask_tolerance_scalor)));
     cat_nav->add_child(std::make_unique<configuration_kv_pair>(
-        "Path tolerance", std::to_string(m_config.navigation.path_tolerance /
-                                         traccc::unit<float>::um) +
-                              " um"));
+        "Path tolerance",
+        std::to_string(m_config.navigation.intersection.path_tolerance /
+                       traccc::unit<float>::um) +
+            " um"));
     cat_nav->add_child(std::make_unique<configuration_kv_pair>(
         "Overstep tolerance",
-        std::to_string(m_config.navigation.overstep_tolerance /
+        std::to_string(m_config.navigation.intersection.overstep_tolerance /
                        traccc::unit<float>::um) +
             " um"));
     cat_nav->add_child(std::make_unique<configuration_kv_pair>(
