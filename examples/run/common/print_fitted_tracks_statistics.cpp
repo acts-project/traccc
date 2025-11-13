@@ -11,7 +11,7 @@
 namespace traccc::details {
 
 void print_fitted_tracks_statistics(
-    const edm::track_fit_container<default_algebra>::host& tracks,
+    const edm::track_container<default_algebra>::host& tracks,
     const Logger& log) {
 
     std::size_t success = 0;

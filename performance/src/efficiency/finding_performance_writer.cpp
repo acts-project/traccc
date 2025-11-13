@@ -12,6 +12,7 @@
 #include "duplication_plot_tool.hpp"
 #include "eff_plot_tool.hpp"
 #include "fake_tracks_plot_tool.hpp"
+#include "traccc/edm/track_fit_outcome.hpp"
 #include "traccc/utils/logging.hpp"
 #include "track_classification.hpp"
 
@@ -50,7 +51,7 @@ struct finding_performance_writer_data {
     fake_tracks_plot_tool m_fake_tracks_plot_tool;
     fake_tracks_plot_tool::fake_tracks_plot_cache m_fake_tracks_plot_cache;
 
-    std::map<measurement, std::map<particle, std::size_t>>
+    std::map<event_data::measurement_proxy, std::map<particle, std::size_t>>
         m_measurement_particle_map;
     std::map<std::uint64_t, particle> m_particle_map;
 
@@ -82,69 +83,42 @@ finding_performance_writer::~finding_performance_writer() {}
 namespace {
 
 /**
- * @brief For track finding only. Associates each reconstructed track with its
- * measurements.
- *
- * @param track_candidates_view the track candidates found by the finding
- * algorithm.
- * @return std::vector<std::vector<measurement>> Associates each track index
- * with its corresponding measurements.
- */
-std::vector<std::vector<measurement>> prepare_data(
-    const edm::track_candidate_container<default_algebra>::const_view&
-        track_candidates_view) {
-    std::vector<std::vector<measurement>> result;
-
-    // Iterate over the tracks.
-    const edm::track_candidate_container<default_algebra>::const_device
-        track_candidates(track_candidates_view);
-
-    const unsigned int n_tracks = track_candidates.tracks.size();
-    result.reserve(n_tracks);
-
-    for (unsigned int i = 0; i < n_tracks; i++) {
-        std::vector<measurement> m;
-        m.reserve(track_candidates.tracks.at(i).measurement_indices().size());
-        const edm::track_candidate_collection<
-            default_algebra>::const_device::const_proxy_type track =
-            track_candidates.tracks.at(i);
-        for (unsigned int midx : track.measurement_indices()) {
-            m.push_back(track_candidates.measurements.at(midx));
-        }
-        result.push_back(std::move(m));
-    }
-    return result;
-}
-
-/**
  * @brief For ambiguity resolution only. Associates each reconstructed track
  * with its measurements.
  *
- * @param track_candidates_view the track candidates found by the finding
- * algorithm.
+ * @param track_view the track candidates found by the finding algorithm.
  * @return std::vector<std::vector<measurement>> Associates each track index
  * with its corresponding measurements.
  */
-std::vector<std::vector<measurement>> prepare_data(
-    const edm::track_fit_container<default_algebra>::const_view&
-        track_fit_view) {
-    std::vector<std::vector<measurement>> result;
+std::vector<std::vector<event_data::measurement_proxy>> prepare_data(
+    const edm::track_container<default_algebra>::const_view& track_view,
+    bool require_fit = false) {
+
+    std::vector<std::vector<event_data::measurement_proxy>> result;
 
     // Set up the input containers.
-    const edm::track_fit_container<default_algebra>::const_device track_fits(
-        track_fit_view);
+    const edm::track_container<default_algebra>::const_device tracks(
+        track_view);
 
     // Iterate over the tracks.
-    const unsigned int n_tracks = track_fits.tracks.size();
+    const unsigned int n_tracks = tracks.tracks.size();
     result.reserve(n_tracks);
 
     for (unsigned int i = 0; i < n_tracks; i++) {
-        std::vector<measurement> result_measurements;
-        result_measurements.reserve(
-            track_fits.tracks.at(i).state_indices().size());
-        for (unsigned int st_idx : track_fits.tracks.state_indices().at(i)) {
-            result_measurements.push_back(track_fits.measurements.at(
-                track_fits.states.at(st_idx).measurement_index()));
+        if (require_fit &&
+            tracks.tracks.at(i).fit_outcome() != track_fit_outcome::SUCCESS) {
+            continue;
+        }
+        std::vector<event_data::measurement_proxy> result_measurements;
+        for (const edm::track_constituent_link& link :
+             tracks.tracks.constituent_links().at(i)) {
+            if (link.type == edm::track_constituent_link::measurement) {
+                result_measurements.push_back(
+                    tracks.measurements.at(link.index));
+            } else if (link.type == edm::track_constituent_link::track_state) {
+                result_measurements.push_back(tracks.measurements.at(
+                    tracks.states.at(link.index).measurement_index()));
+            }
         }
         result.push_back(std::move(result_measurements));
     }
@@ -154,7 +128,7 @@ std::vector<std::vector<measurement>> prepare_data(
 }  // namespace
 
 void finding_performance_writer::write_common(
-    const std::vector<std::vector<measurement>>& tracks,
+    const std::vector<std::vector<event_data::measurement_proxy>>& tracks,
     const event_data& evt_data) {
 
     // Associates truth particle_ids with the number of tracks made entirely of
@@ -172,7 +146,8 @@ void finding_performance_writer::write_common(
 
     for (std::size_t i = 0; i < n_tracks; i++) {
 
-        const std::vector<measurement>& found_measurements = tracks[i];
+        const std::vector<event_data::measurement_proxy>& found_measurements =
+            tracks[i];
 
         // Check which particle matches this seed.
         // Input :
@@ -199,7 +174,7 @@ void finding_performance_writer::write_common(
         const auto n_major_hits = particle_hit_counts.at(0).hit_counts;
 
         // Truth measureemnt from the particle
-        const std::vector<measurement> truth_measurements =
+        const std::vector<event_data::measurement_proxy> truth_measurements =
             evt_data.m_ptc_to_meas_map.at(major_ptc);
 
         // Consider it being matched if hit counts is larger than the half
@@ -264,6 +239,9 @@ void finding_performance_writer::write_common(
             ptc.vertex[2] < m_cfg.truth_config.z_min ||
             ptc.vertex[2] > m_cfg.truth_config.z_max ||
             vector::perp(ptc.vertex) > m_cfg.truth_config.r_max ||
+            std::abs(vector::eta(ptc.momentum)) > m_cfg.truth_config.eta_max ||
+            (m_cfg.truth_config.process_id >= 0 &&
+             m_cfg.truth_config.process_id != ptc.process) ||
             num_measurements < m_cfg.truth_config.min_track_candidates) {
             continue;
         }
@@ -320,37 +298,29 @@ void finding_performance_writer::write_common(
                     static_cast<double>(total_truth_particles)));
 }
 
-/// For track finding
+/// For ambiguity resolution
 void finding_performance_writer::write(
-    const edm::track_candidate_container<default_algebra>::const_view&
-        track_candidates_view,
+    const edm::track_container<default_algebra>::const_view& track_view,
     const event_data& evt_data) {
 
     // Set up the input containers.
-    const edm::track_candidate_collection<default_algebra>::const_device
-        track_candidates(track_candidates_view.tracks);
+    const edm::track_container<default_algebra>::const_device tracks{
+        track_view};
 
-    const unsigned int n_tracks = track_candidates.size();
-
+    const unsigned int n_tracks = tracks.tracks.size();
     for (unsigned int i = 0; i < n_tracks; i++) {
+        if (m_cfg.require_fit &&
+            tracks.tracks.at(i).fit_outcome() != track_fit_outcome::SUCCESS) {
+            continue;
+        }
 
-        // Fill stat plot
+        // Fill stat plots
         m_data->m_stat_plot_tool.fill(m_data->m_stat_plot_cache,
-                                      track_candidates.at(i));
+                                      tracks.tracks.at(i));
     }
 
-    std::vector<std::vector<measurement>> tracks =
-        prepare_data(track_candidates_view);
-    write_common(tracks, evt_data);
-}
-
-/// For ambiguity resolution
-void finding_performance_writer::write(
-    const edm::track_fit_container<default_algebra>::const_view& track_fit_view,
-    const event_data& evt_data) {
-
-    std::vector<std::vector<measurement>> tracks = prepare_data(track_fit_view);
-    write_common(tracks, evt_data);
+    auto prep_data = prepare_data(track_view, m_cfg.require_fit);
+    write_common(prep_data, evt_data);
 }
 
 void finding_performance_writer::finalize() {

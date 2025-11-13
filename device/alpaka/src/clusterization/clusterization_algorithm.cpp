@@ -38,7 +38,7 @@ struct CCLKernel {
         uint32_t* backup_mutex_ptr,
         vecmem::data::vector_view<unsigned int> disjoint_set_view,
         vecmem::data::vector_view<unsigned int> cluster_size_view,
-        measurement_collection_types::view measurements_view,
+        edm::measurement_collection<default_algebra>::view measurements_view,
         vecmem::data::vector_view<unsigned int> cell_links) const {
 
         details::thread_id1 thread_id(acc);
@@ -114,7 +114,7 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         m_copy.get().get_size(cells);
 
     // Create the result object, overestimating the number of measurements.
-    measurement_collection_types::buffer measurements{
+    edm::measurement_collection<default_algebra>::buffer measurements{
         num_cells, m_mr.main, vecmem::data::buffer_type::resizable};
     m_copy.get().setup(measurements)->ignore();
 

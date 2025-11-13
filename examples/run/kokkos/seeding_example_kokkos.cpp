@@ -90,8 +90,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     for (std::size_t event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
 
-        traccc::measurement_collection_types::host measurements_per_event{
-            &host_mr};
+        traccc::edm::measurement_collection<traccc::default_algebra>::host
+            measurements_per_event{host_mr};
         traccc::edm::spacepoint_collection::host spacepoints_per_event{host_mr};
         traccc::host::seeding_algorithm::output_type seeds{host_mr};
         traccc::host::track_params_estimation::output_type params{&host_mr};

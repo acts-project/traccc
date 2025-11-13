@@ -67,24 +67,14 @@ class KalmanFittingTelescopeTests
         0.05f / traccc::unit<scalar>::GeV,
         1.f * traccc::unit<scalar>::ns};
 
-    void consistency_tests(const edm::track_candidate_collection<
-                           traccc::default_algebra>::host::const_proxy_type&
-                               track_candidate) const {
-
-        // The nubmer of measurements is supposed be equal to the number
-        // of planes
-        ASSERT_EQ(track_candidate.measurement_indices().size(),
-                  std::get<11>(GetParam()));
-    }
-
     void consistency_tests(
-        const edm::track_fit_collection<
-            default_algebra>::host::const_proxy_type& track,
+        const edm::track_collection<default_algebra>::host::const_proxy_type&
+            track,
         const edm::track_state_collection<default_algebra>::host&) const {
 
         // The nubmer of track states is supposed be equal to the number
         // of planes
-        ASSERT_EQ(track.state_indices().size(), std::get<11>(GetParam()));
+        ASSERT_EQ(track.constituent_links().size(), std::get<11>(GetParam()));
     }
 
     protected:

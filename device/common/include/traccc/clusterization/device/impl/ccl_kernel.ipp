@@ -144,7 +144,7 @@ TRACCC_DEVICE inline void ccl_core(
     unsigned char* adjc,
     const edm::silicon_cell_collection::const_device& cells_device,
     const silicon_detector_description::const_device& det_descr,
-    measurement_collection_types::device measurements_device,
+    edm::measurement_collection<default_algebra>::device measurements_device,
     const barrier_t& barrier, vecmem::device_vector<unsigned int>& disjoint_set,
     vecmem::device_vector<unsigned int>& cluster_size) {
     const auto size =
@@ -202,8 +202,9 @@ TRACCC_DEVICE inline void ccl_core(
         if (f.at(cid) == cid) {
             // Add a new measurement to the output buffer. Remembering its
             // position inside of the container.
-            const measurement_collection_types::device::size_type meas_pos =
-                measurements_device.push_back({});
+            const edm::measurement_collection<
+                default_algebra>::device::size_type meas_pos =
+                measurements_device.push_back_default();
             // Set up the measurement under the appropriate index.
             aggregate_cluster(
                 cfg, cells_device, det_descr, f,
@@ -236,13 +237,14 @@ TRACCC_DEVICE inline void ccl_kernel(
     vecmem::data::vector_view<unsigned int> disjoint_set_view,
     vecmem::data::vector_view<unsigned int> cluster_size_view,
     const barrier_t& barrier,
-    measurement_collection_types::view measurements_view,
+    edm::measurement_collection<default_algebra>::view measurements_view,
     vecmem::data::vector_view<unsigned int> cell_links) {
 
     // Construct device containers around the views.
     const edm::silicon_cell_collection::const_device cells_device(cells_view);
     const silicon_detector_description::const_device det_descr(det_descr_view);
-    measurement_collection_types::device measurements_device(measurements_view);
+    edm::measurement_collection<default_algebra>::device measurements_device(
+        measurements_view);
     vecmem::device_vector<details::index_t> f_primary(f_view);
     vecmem::device_vector<details::index_t> gf_primary(gf_view);
     vecmem::device_vector<details::index_t> f_backup(f_backup_view);

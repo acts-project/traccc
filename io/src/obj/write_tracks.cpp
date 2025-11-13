@@ -6,7 +6,7 @@
  */
 
 // Local include(s).
-#include "write_track_candidates.hpp"
+#include "write_tracks.hpp"
 
 // Detray include(s)
 #include <detray/geometry/tracking_surface.hpp>
@@ -14,14 +14,13 @@
 // System include(s).
 #include <cassert>
 #include <fstream>
+#include <stdexcept>
 
 namespace traccc::io::obj {
 
-void write_track_candidates(
-    std::string_view filename,
-    edm::track_candidate_collection<default_algebra>::const_view tracks_view,
-    measurement_collection_types::const_view measurements_view,
-    const traccc::host_detector& detector) {
+void write_tracks(std::string_view filename,
+                  edm::track_container<default_algebra>::const_view tracks_view,
+                  const traccc::host_detector& detector) {
 
     // Open the output file.
     std::ofstream file{filename.data()};
@@ -31,38 +30,44 @@ void write_track_candidates(
     }
 
     // Create a device collection around the track container view.
-    const edm::track_candidate_collection<default_algebra>::const_device tracks{
+    const edm::track_container<default_algebra>::const_device tracks{
         tracks_view};
-    const measurement_collection_types::const_device measurements{
-        measurements_view};
 
     // Convenience type.
-    using size_type = edm::track_candidate_collection<
-        default_algebra>::const_device::size_type;
+    using size_type =
+        edm::track_collection<default_algebra>::const_device::size_type;
 
     // First write out the measurements / spacepoints that the tracks are
     // made from. Don't try to resolve the overlaps, just write out duplicate
     // measurements if needed.
     file << "# Measurements / spacepoints that the tracks are made out of\n";
-    for (size_type i = 0; i < tracks.size(); ++i) {
+    for (size_type i = 0; i < tracks.tracks.size(); ++i) {
 
-        // The track candidate in question.
-        const edm::track_candidate_collection<
-            default_algebra>::const_device::const_proxy_type track =
-            tracks.at(i);
+        // Loop over the measurements that the track is made out of.
+        for (const auto& [type, idx] :
+             tracks.tracks.constituent_links().at(i)) {
 
-        // Loop over the measurements that the track candidate is made out of.
-        for (unsigned int midx : track.measurement_indices()) {
-
-            // The measurement in question.
-            const measurement& m = measurements.at(midx);
+            // Find the measurement of this constituent.
+            edm::measurement_collection<
+                default_algebra>::const_device::object_type meas;
+            if (type == edm::track_constituent_link::measurement) {
+                meas = tracks.measurements.at(idx);
+            } else if (type == edm::track_constituent_link::track_state) {
+                meas = tracks.measurements.at(
+                    tracks.states.at(idx).measurement_index());
+            } else {
+                // This should not happen...
+                throw std::runtime_error(
+                    "Unknown track constituent type found");
+            }
 
             // Find the detector surface that this measurement sits on.
             const auto global = host_detector_visitor<detector_type_list>(
-                detector, [&m]<typename detector_traits_t>(
+                detector, [meas]<typename detector_traits_t>(
                               const typename detector_traits_t::host& d) {
-                    detray::tracking_surface surface{d, m.surface_link};
-                    return surface.local_to_global({}, m.local, {});
+                    detray::tracking_surface surface{d, meas.surface_link()};
+                    return surface.local_to_global({}, meas.local_position(),
+                                                   {});
                 });
 
             // Write the 3D coordinates of the measurement / spacepoint.
@@ -76,16 +81,12 @@ void write_track_candidates(
     // of them using the measurements / spacepoints written out earlier.
     file << "# Track candidates\n";
     std::size_t vertex_counter = 1;
-    for (size_type i = 0; i < tracks.size(); ++i) {
-
-        // The track candidate in question.
-        const edm::track_candidate_collection<
-            default_algebra>::const_device::const_proxy_type track =
-            tracks.at(i);
+    for (size_type i = 0; i < tracks.tracks.size(); ++i) {
 
         // Construct the lines.
         file << "l";
-        for (size_type j = 0; j < track.measurement_indices().size(); ++j) {
+        for (size_type j = 0;
+             j < tracks.tracks.at(i).constituent_links().size(); ++j) {
             file << " " << vertex_counter++;
         }
         file << "\n";

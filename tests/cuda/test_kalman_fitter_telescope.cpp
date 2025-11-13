@@ -9,7 +9,7 @@
 #include "traccc/bfield/construct_const_bfield.hpp"
 #include "traccc/bfield/magnetic_field_types.hpp"
 #include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
-#include "traccc/edm/track_fit_container.hpp"
+#include "traccc/edm/track_container.hpp"
 #include "traccc/geometry/host_detector.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/performance/details/is_same_object.hpp"
@@ -155,28 +155,34 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
         traccc::event_data evt_data(path, i_evt, host_mr);
 
         // Truth Track Candidates
-        traccc::edm::track_candidate_container<traccc::default_algebra>::host
+        traccc::edm::measurement_collection<traccc::default_algebra>::host
+            measurements(host_mr);
+        traccc::edm::track_container<traccc::default_algebra>::host
             track_candidates{host_mr};
-        evt_data.generate_truth_candidates(track_candidates, sg, host_mr);
+        evt_data.generate_truth_candidates(track_candidates, measurements, sg,
+                                           host_mr);
+        track_candidates.measurements = vecmem::get_data(measurements);
 
         // n_trakcs = 100
         ASSERT_EQ(track_candidates.tracks.size(), n_truth_tracks);
 
         // track candidates buffer
-        traccc::edm::track_candidate_container<traccc::default_algebra>::buffer
+        traccc::edm::measurement_collection<traccc::default_algebra>::buffer
+            measurements_buffer =
+                copy.to(track_candidates.measurements, mr.main, mr.host,
+                        vecmem::copy::type::host_to_device);
+        traccc::edm::track_container<traccc::default_algebra>::buffer
             track_candidates_buffer{
                 copy.to(vecmem::get_data(track_candidates.tracks), mr.main,
                         mr.host, vecmem::copy::type::host_to_device),
-                copy.to(vecmem::get_data(track_candidates.measurements),
-                        mr.main, vecmem::copy::type::host_to_device)};
+                {},
+                measurements_buffer};
 
         // Run fitting
         auto track_states_cuda_buffer =
-            device_fitting(detector_buffer, field,
-                           {track_candidates_buffer.tracks,
-                            track_candidates_buffer.measurements});
+            device_fitting(detector_buffer, field, track_candidates_buffer);
 
-        traccc::edm::track_fit_container<traccc::default_algebra>::host
+        traccc::edm::track_container<traccc::default_algebra>::host
             track_states_cuda{host_mr};
         copy(track_states_cuda_buffer.tracks, track_states_cuda.tracks,
              vecmem::copy::type::device_to_host)
@@ -197,12 +203,12 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
                               track_states_cuda.states);
 
             ndf_tests(track_states_cuda.tracks.at(i_trk),
-                      track_states_cuda.states, track_candidates.measurements);
+                      track_states_cuda.states, measurements);
 
             fit_performance_writer.write(
                 track_states_cuda.tracks.at(i_trk), track_states_cuda.states,
-                track_candidates.measurements,
-                polymorphic_detector.as<detector_traits>(), evt_data);
+                measurements, polymorphic_detector.as<detector_traits>(),
+                evt_data);
         }
     }
 

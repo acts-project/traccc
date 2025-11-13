@@ -22,15 +22,16 @@ template <typename detector_t>
 struct FormSpacepointsKernel {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        TAcc const& acc, typename detector_t::view det_view,
-        measurement_collection_types::const_view measurements_view,
+        TAcc const& acc, const typename detector_t::view* det_view,
+        edm::measurement_collection<default_algebra>::const_view
+            measurements_view,
         edm::spacepoint_collection::view spacepoints_view) const {
 
         auto const globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
 
         device::form_spacepoints<detector_t>(
-            globalThreadIdx, det_view, measurements_view, spacepoints_view);
+            globalThreadIdx, *det_view, measurements_view, spacepoints_view);
     }
 };
 
@@ -41,14 +42,14 @@ spacepoint_formation_algorithm::spacepoint_formation_algorithm(
 
 edm::spacepoint_collection::buffer spacepoint_formation_algorithm::operator()(
     const detector_buffer& det,
-    const measurement_collection_types::const_view& measurements_view) const {
+    const edm::measurement_collection<default_algebra>::const_view&
+        measurements_view) const {
 
     // Get a convenience variable for the queue that we'll be using.
     auto queue = details::get_queue(m_queue);
 
     // Get the number of measurements.
-    const measurement_collection_types::const_view::size_type num_measurements =
-        m_copy.get().get_size(measurements_view);
+    const auto num_measurements = m_copy.get().get_size(measurements_view);
 
     // Create the result buffer.
     edm::spacepoint_collection::buffer spacepoints(
@@ -69,10 +70,20 @@ edm::spacepoint_collection::buffer spacepoint_formation_algorithm::operator()(
     detector_buffer_visitor<detector_type_list>(
         det, [&]<typename detector_traits_t>(
                  const typename detector_traits_t::view& det_view) {
+            // Put the detector view into device memory.
+            vecmem::data::vector_buffer<typename detector_traits_t::view>
+                device_det_view(1u, m_mr.main);
+            m_copy.get().setup(device_det_view)->wait();
+            m_copy
+                .get()(
+                    vecmem::data::vector_view<
+                        const typename detector_traits_t::view>(1u, &det_view),
+                    device_det_view)
+                ->wait();
             // Launch the spacepoint formation kernel.
-            ::alpaka::exec<Acc>(queue, workDiv,
-                                FormSpacepointsKernel<detector_traits_t>{},
-                                det_view, measurements_view, spacepoints_view);
+            ::alpaka::exec<Acc>(
+                queue, workDiv, FormSpacepointsKernel<detector_traits_t>{},
+                device_det_view.ptr(), measurements_view, spacepoints_view);
         });
 
     // Return the reconstructed spacepoints.

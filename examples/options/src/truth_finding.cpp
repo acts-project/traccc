@@ -31,6 +31,14 @@ truth_finding::truth_finding() : interface("Truth Track Finding Options") {
         "truth-finding-max-r",
         boost::program_options::value(&m_r_max)->default_value(m_r_max),
         "Candidate particle max r cut [mm]");
+    m_desc.add_options()(
+        "truth-finding-max-eta",
+        boost::program_options::value(&m_eta_max)->default_value(m_eta_max),
+        "Candidate particle max eta cut");
+    m_desc.add_options()("truth-finding-process-id",
+                         boost::program_options::value(&m_process_id)
+                             ->default_value(m_process_id),
+                         "Candidate particle is from a selected process");
     m_desc.add_options()("truth-finding-min-track-candidates",
                          boost::program_options::value(&m_min_track_candidates)
                              ->default_value(m_min_track_candidates),
@@ -50,6 +58,8 @@ truth_finding::operator truth_matching_config() const {
         .z_min = m_z_min,
         .z_max = m_z_max,
         .r_max = m_r_max,
+        .eta_max = m_eta_max,
+        .process_id = m_process_id,
         .min_track_candidates = m_min_track_candidates};
 }
 
@@ -64,6 +74,10 @@ std::unique_ptr<configuration_printable> truth_finding::as_printable() const {
         "Maximum z", std::format("{} mm", m_z_max / unit<float>::mm)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Maximum r", std::format("{} mm", m_r_max / unit<float>::mm)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Maximum eta", std::format("{}", m_eta_max)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Process ID", std::format("{}", m_process_id)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Minimum track candidates", std::format("{}", m_min_track_candidates)));
 

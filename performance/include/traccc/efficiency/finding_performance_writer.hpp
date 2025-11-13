@@ -15,8 +15,7 @@
 #include "traccc/utils/truth_matching_config.hpp"
 
 // Project include(s).
-#include "traccc/edm/track_candidate_container.hpp"
-#include "traccc/edm/track_fit_container.hpp"
+#include "traccc/edm/track_container.hpp"
 #include "traccc/utils/event_data.hpp"
 
 // System include(s).
@@ -57,6 +56,8 @@ class finding_performance_writer : public messaging {
         truth_matching_config truth_config;
         track_matching_config track_truth_config;
 
+        bool require_fit = false;
+
         stat_plot_tool_config stat_config{};
     };
 
@@ -69,13 +70,9 @@ class finding_performance_writer : public messaging {
     /// Destructor
     ~finding_performance_writer();
 
-    void write(const edm::track_candidate_container<
-                   default_algebra>::const_view& track_candidates_view,
-               const event_data& evt_data);
-
-    void write(const edm::track_fit_container<default_algebra>::const_view&
-                   track_fit_view,
-               const event_data& evt_data);
+    void write(
+        const edm::track_container<default_algebra>::const_view& track_view,
+        const event_data& evt_data);
 
     void finalize();
 
@@ -87,8 +84,9 @@ class finding_performance_writer : public messaging {
     std::unique_ptr<details::finding_performance_writer_data> m_data;
 
     /// Common method to both track finding and ambiguity resolution
-    void write_common(const std::vector<std::vector<measurement>>& tracks,
-                      const event_data& evt_data);
+    void write_common(
+        const std::vector<std::vector<event_data::measurement_proxy>>& tracks,
+        const event_data& evt_data);
 
 };  // class finding_performance_writer
 

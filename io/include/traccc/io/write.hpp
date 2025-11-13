@@ -8,11 +8,11 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/seed_collection.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
-#include "traccc/edm/track_candidate_collection.hpp"
+#include "traccc/edm/track_container.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/host_detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
@@ -49,10 +49,10 @@ void write(std::size_t event, std::string_view directory,
 /// @param spacepoints is the spacepoint collection to write
 /// @param measurements is the measurement collection to write
 ///
-void write(std::size_t event, std::string_view directory,
-           traccc::data_format format,
-           edm::spacepoint_collection::const_view spacepoints,
-           measurement_collection_types::const_view measurements);
+void write(
+    std::size_t event, std::string_view directory, traccc::data_format format,
+    edm::spacepoint_collection::const_view spacepoints,
+    edm::measurement_collection<default_algebra>::const_view measurements);
 
 /// Function for measurement file writing
 ///
@@ -61,9 +61,9 @@ void write(std::size_t event, std::string_view directory,
 /// @param format is the data format (e.g. csv or binary) of output file
 /// @param measurements is the measurement collection to write
 ///
-void write(std::size_t event, std::string_view directory,
-           traccc::data_format format,
-           measurement_collection_types::const_view measurements);
+void write(
+    std::size_t event, std::string_view directory, traccc::data_format format,
+    edm::measurement_collection<default_algebra>::const_view measurements);
 
 /// Function for seed writing
 ///
@@ -82,13 +82,12 @@ void write(std::size_t event, std::string_view directory,
 /// @param event is the event index
 /// @param directory is the directory for the output seed file
 /// @param format is the data format (obj only right now) of output file
-/// @param tracks is the track candidate container to write
+/// @param tracks is the track container to write
 /// @param detector is the Detray detector describing the geometry
 ///
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
-           edm::track_candidate_collection<default_algebra>::const_view tracks,
-           measurement_collection_types::const_view measurements,
+           edm::track_container<default_algebra>::const_view tracks,
            const traccc::host_detector& detector);
 
 /// Write a digitization configuration to a file

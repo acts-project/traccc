@@ -91,11 +91,10 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
     mean = mean + offset;
 }
 
-template <typename T>
+template <typename T1, typename T2>
 TRACCC_HOST_DEVICE inline void fill_measurement(
-    measurement_collection_types::device& measurements,
-    measurement_collection_types::device::size_type index,
-    const edm::silicon_cluster<T>& cluster,
+    edm::measurement<T1>& measurement, const edm::silicon_cluster<T2>& cluster,
+    const unsigned int index,
     const edm::silicon_cell_collection::const_device& cells,
     const silicon_detector_description::const_device& det_descr) {
 
@@ -129,9 +128,6 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
 
     assert(totalWeight > 0.f);
 
-    // Access the measurement in question.
-    measurement& m = measurements[index];
-
     // The index of the module the cluster is on.
     const unsigned int module_idx =
         cells.module_index().at(cluster.cell_indices().front());
@@ -139,27 +135,29 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
     const auto module_dd = det_descr.at(module_idx);
 
     // Fill the measurement object.
-    m.surface_link = module_dd.geometry_id();
+    measurement.surface_link() = module_dd.geometry_id();
     // normalize the cell position
-    m.local = mean;
+    measurement.local_position() = mean;
 
     // plus pitch^2 / 12
     const scalar pitch_x = module_dd.pitch_x();
     const scalar pitch_y = module_dd.pitch_y();
-    m.variance = var + point2{pitch_x * pitch_x / static_cast<scalar>(12.),
-                              pitch_y * pitch_y / static_cast<scalar>(12.)};
+    measurement.local_variance() =
+        var + point2{pitch_x * pitch_x / static_cast<scalar>(12.),
+                     pitch_y * pitch_y / static_cast<scalar>(12.)};
 
     // For the ambiguity resolution algorithm, give a unique measurement ID
-    m.measurement_id = index;
+    measurement.identifier() = index;
+    measurement.cluster_index() = index;
 
     // Set the measurement dimensionality.
-    m.meas_dim = module_dd.dimensions();
+    measurement.dimensions() = module_dd.dimensions();
 
     // Set the measurement's subspace.
-    m.subs = module_dd.subspace();
+    measurement.subspace() = module_dd.subspace();
 
     // Save the index of the cluster that produced this measurement
-    m.cluster_index = static_cast<unsigned int>(index);
+    measurement.cluster_index() = static_cast<unsigned int>(index);
 }
 
 }  // namespace traccc::details

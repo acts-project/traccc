@@ -10,8 +10,8 @@
 // Project include(s).
 #include "kalman_actor.hpp"
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_fit_collection.hpp"
+#include "traccc/edm/measurement_collection.hpp"
+#include "traccc/edm/track_collection.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_state_collection.hpp"
 #include "traccc/fitting/fitting_config.hpp"
@@ -20,6 +20,7 @@
 #include "traccc/fitting/kalman_filter/statistics_updater.hpp"
 #include "traccc/fitting/kalman_filter/two_filters_smoother.hpp"
 #include "traccc/fitting/status_codes.hpp"
+#include "traccc/utils/logging.hpp"
 #include "traccc/utils/particle.hpp"
 #include "traccc/utils/prob.hpp"
 #include "traccc/utils/propagation.hpp"
@@ -104,17 +105,20 @@ class kalman_fitter {
         /// @param track_states the vector of track states
         TRACCC_HOST_DEVICE
         explicit state(
-            const typename edm::track_fit_collection<
+            const typename edm::track_collection<
                 algebra_type>::device::proxy_type& track,
             const typename edm::track_state_collection<algebra_type>::device&
                 track_states,
-            const measurement_collection_types::const_device& measurements,
+            const typename edm::measurement_collection<
+                algebra_type>::const_device& measurements,
             vecmem::data::vector_view<detray::geometry::barcode>
-                sequence_buffer)
+                sequence_buffer,
+            const detray::propagation::config& prop_cfg)
             : m_fit_actor_state{track, track_states, measurements},
               m_sequencer_state(
                   vecmem::device_vector<detray::geometry::barcode>(
                       sequence_buffer)),
+              m_parameter_resetter{prop_cfg},
               m_fit_res{track},
               m_sequence_buffer(sequence_buffer) {}
 
@@ -122,8 +126,8 @@ class kalman_fitter {
         TRACCC_HOST_DEVICE
         typename forward_actor_chain_type::state_ref_tuple operator()() {
             return detray::tie(m_aborter_state, m_interactor_state,
-                               m_fit_actor_state, m_sequencer_state,
-                               m_step_aborter_state);
+                               m_fit_actor_state, m_parameter_resetter,
+                               m_sequencer_state, m_step_aborter_state);
         }
 
         /// @return the actor chain state
@@ -131,7 +135,8 @@ class kalman_fitter {
         typename backward_actor_chain_type::state_ref_tuple
         backward_actor_state() {
             return detray::tie(m_aborter_state, m_fit_actor_state,
-                               m_interactor_state, m_step_aborter_state);
+                               m_interactor_state, m_parameter_resetter,
+                               m_step_aborter_state);
         }
 
         /// Individual actor states
@@ -140,9 +145,10 @@ class kalman_fitter {
         typename forward_fit_actor::state m_fit_actor_state;
         typename barcode_sequencer::state m_sequencer_state;
         kalman_step_aborter::state m_step_aborter_state{};
+        typename resetter::state m_parameter_resetter{};
 
         /// Fitting result per track
-        typename edm::track_fit_collection<algebra_type>::device::proxy_type
+        typename edm::track_collection<algebra_type>::device::proxy_type
             m_fit_res;
 
         /// View object for barcode sequence
@@ -173,11 +179,12 @@ class kalman_fitter {
             // state. If the first track state is a hole, we need to back
             // extrapolate from the filtered or smoothed state of next valid
             // track state.
-            params =
-                fitter_state.m_fit_actor_state.m_track_states
-                    .at(fitter_state.m_fit_actor_state.m_track.state_indices()
-                            .at(0))
-                    .filtered_params();
+            params = fitter_state.m_fit_actor_state.m_track_states
+                         .at(fitter_state.m_fit_actor_state.m_track
+                                 .constituent_links()
+                                 .at(0)
+                                 .index)
+                         .filtered_params();
             // Reset the iterator of kalman actor
             fitter_state.m_fit_actor_state.reset();
         }
@@ -256,6 +263,7 @@ class kalman_fitter {
     smooth(state& fitter_state) const {
 
         if (fitter_state.m_sequencer_state.overflow) {
+            TRACCC_ERROR_HOST_DEVICE("Barcode sequence overlow");
             return kalman_fitter_status::ERROR_BARCODE_SEQUENCE_OVERFLOW;
         }
 
@@ -276,14 +284,24 @@ class kalman_fitter {
         }
 
         auto last = fitter_state.m_fit_actor_state();
-
         const scalar theta = last.filtered_params().theta();
-        if (theta <= 0.f || theta >= constant<traccc::scalar>::pi) {
-            return kalman_fitter_status::ERROR_THETA_ZERO;
+
+        if (!std::isfinite(last.filtered_params().theta())) {
+            TRACCC_ERROR_HOST_DEVICE(
+                "Theta is infinite after filtering (Matrix inversion)");
+            return kalman_fitter_status::ERROR_INVERSION;
         }
 
         if (!std::isfinite(last.filtered_params().phi())) {
+            TRACCC_ERROR_HOST_DEVICE(
+                "Phi is infinite after filtering (Matrix inversion)");
             return kalman_fitter_status::ERROR_INVERSION;
+        }
+
+        if (theta <= 0.f || theta >= 2.f * constant<traccc::scalar>::pi) {
+            TRACCC_ERROR_HOST_DEVICE("Hit theta pole after filtering : %f",
+                                     theta);
+            return kalman_fitter_status::ERROR_THETA_POLE;
         }
 
         last.smoothed_params().set_parameter_vector(last.filtered_params());
@@ -323,6 +341,8 @@ class kalman_fitter {
 
         propagation._navigation.set_direction(
             detray::navigation::direction::e_backward);
+        propagation._navigation.safe_step_size =
+            0.1f * traccc::unit<scalar>::mm;
 
         // Synchronize the current barcode with the input track parameter
         while (propagation._navigation.get_target_barcode() !=
@@ -346,20 +366,25 @@ class kalman_fitter {
 
         // Fit parameter = smoothed track parameter of the first smoothed track
         // state
-        for (unsigned int i : fit_res.state_indices()) {
-            if (track_states.at(i).is_smoothed()) {
-                fit_res.params() = track_states.at(i).smoothed_params();
+        for (const edm::track_constituent_link& link :
+             fit_res.constituent_links()) {
+            assert(link.type == edm::track_constituent_link::track_state);
+            if (track_states.at(link.index).is_smoothed()) {
+                fit_res.params() =
+                    track_states.at(link.index).smoothed_params();
                 break;
             }
         }
 
-        for (unsigned int i : fit_res.state_indices()) {
+        for (const edm::track_constituent_link& link :
+             fit_res.constituent_links()) {
 
-            auto trk_state = track_states.at(i);
+            assert(link.type == edm::track_constituent_link::track_state);
+            auto trk_state = track_states.at(link.index);
             const detray::tracking_surface sf{
                 m_detector, fitter_state.m_fit_actor_state.m_measurements
                                 .at(trk_state.measurement_index())
-                                .surface_link};
+                                .surface_link()};
             statistics_updater<algebra_type>{}(
                 fit_res, trk_state,
                 fitter_state.m_fit_actor_state.m_measurements);
@@ -381,10 +406,13 @@ class kalman_fitter {
 
         // NDF should always be positive for fitting
         if (fit_res.ndf() > 0) {
-            for (unsigned int i : fit_res.state_indices()) {
-                auto trk_state = track_states.at(i);
+            for (const edm::track_constituent_link& link :
+                 fit_res.constituent_links()) {
+                assert(link.type == edm::track_constituent_link::track_state);
+                auto trk_state = track_states.at(link.index);
                 // Fitting fails if any of non-hole track states is not smoothed
                 if (!trk_state.is_hole() && !trk_state.is_smoothed()) {
+                    TRACCC_ERROR_HOST_DEVICE("Not all smoothed");
                     fit_res.fit_outcome() =
                         track_fit_outcome::FAILURE_NOT_ALL_SMOOTHED;
                     return;
@@ -396,6 +424,7 @@ class kalman_fitter {
             return;
         }
 
+        TRACCC_ERROR_HOST_DEVICE("Negative NDF");
         fit_res.fit_outcome() = track_fit_outcome::FAILURE_NON_POSITIVE_NDF;
         return;
     }

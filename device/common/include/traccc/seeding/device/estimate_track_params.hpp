@@ -11,7 +11,7 @@
 #include "traccc/device/global_index.hpp"
 
 // Project include(s).
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/seed_collection.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/edm/track_parameters.hpp"
@@ -31,7 +31,8 @@ namespace traccc::device {
 TRACCC_HOST_DEVICE
 inline void estimate_track_params(
     global_index_t globalIndex,
-    const measurement_collection_types::const_view& measurements_view,
+    const edm::measurement_collection<default_algebra>::const_view&
+        measurements_view,
     const edm::spacepoint_collection::const_view& spacepoints_view,
     const edm::seed_collection::const_view& seeds_view, const vector3& bfield,
     const std::array<traccc::scalar, traccc::e_bound_size>& stddev,

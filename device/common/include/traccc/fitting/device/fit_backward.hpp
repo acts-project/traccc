@@ -22,7 +22,7 @@ TRACCC_HOST_DEVICE inline void fit_backward(
     vecmem::device_vector<const unsigned int> param_ids(payload.param_ids_view);
     vecmem::device_vector<unsigned int> param_liveness(
         payload.param_liveness_view);
-    typename edm::track_fit_container<
+    typename edm::track_container<
         typename fitter_t::detector_type::algebra_type>::device
         tracks(payload.tracks_view);
 
@@ -39,7 +39,8 @@ TRACCC_HOST_DEVICE inline void fit_backward(
     if (param_liveness.at(param_id) > 0u) {
         typename fitter_t::state fitter_state(
             track, tracks.states, tracks.measurements,
-            *(payload.barcodes_view.ptr() + param_id));
+            *(payload.barcodes_view.ptr() + param_id),
+            fitter.config().propagation);
 
         kalman_fitter_status fit_status = fitter.smooth(fitter_state);
 

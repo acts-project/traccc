@@ -13,22 +13,6 @@
 
 namespace traccc::details {
 
-/// @name Implementation for @c traccc::details::is_same_object<measurement>
-/// @{
-
-is_same_object<measurement>::is_same_object(const measurement& ref, scalar unc)
-    : m_ref(ref), m_unc(unc) {}
-
-bool is_same_object<measurement>::operator()(const measurement& obj) const {
-
-    return (is_same_scalar(obj.local[0], m_ref.get().local[0], m_unc) &&
-            is_same_scalar(obj.local[1], m_ref.get().local[1], m_unc) &&
-            is_same_scalar(obj.variance[0], m_ref.get().variance[0], m_unc) &&
-            is_same_scalar(obj.variance[1], m_ref.get().variance[1], m_unc));
-}
-
-/// @}
-
 /// @name Implementation for
 ///       @c traccc::details::is_same_object<bound_track_parameters>
 /// @{

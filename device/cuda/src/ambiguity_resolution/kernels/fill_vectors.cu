@@ -21,17 +21,15 @@ namespace traccc::cuda::kernels {
 __global__ void fill_vectors(const ambiguity_resolution_config cfg,
                              device::fill_vectors_payload payload) {
 
-    const edm::track_candidate_collection<default_algebra>::const_device
-        track_candidates(payload.track_candidates_view.tracks);
+    const edm::track_container<default_algebra>::const_device track_candidates(
+        payload.tracks_view);
 
     const auto globalIndex = details::global_index1();
-    if (globalIndex >= track_candidates.size()) {
+    if (globalIndex >= track_candidates.tracks.size()) {
         return;
     }
 
-    const measurement_collection_types::const_device measurements(
-        payload.track_candidates_view.measurements);
-    const auto track = track_candidates.at(globalIndex);
+    const auto track = track_candidates.tracks.at(globalIndex);
 
     vecmem::jagged_device_vector<measurement_id_type> meas_ids(
         payload.meas_ids_view);
@@ -43,16 +41,19 @@ __global__ void fill_vectors(const ambiguity_resolution_config cfg,
 
     pvals.at(globalIndex) = track.pval();
 
-    if (track.measurement_indices().size() < cfg.min_meas_per_track) {
+    if (track.constituent_links().size() < cfg.min_meas_per_track) {
         status.at(globalIndex) = 0;
     } else {
-        for (const unsigned int meas_idx :
-             track_candidates.measurement_indices().at(globalIndex)) {
+        for (const auto& [type, meas_idx] :
+             track_candidates.tracks.constituent_links().at(globalIndex)) {
+            assert(type == edm::track_constituent_link::measurement);
             meas_ids.at(globalIndex)
-                .push_back(measurements.at(meas_idx).measurement_id);
-            flat_meas_ids.push_back(measurements.at(meas_idx).measurement_id);
+                .push_back(
+                    track_candidates.measurements.at(meas_idx).identifier());
+            flat_meas_ids.push_back(
+                track_candidates.measurements.at(meas_idx).identifier());
         }
-        n_meas.at(globalIndex) = track.measurement_indices().size();
+        n_meas.at(globalIndex) = track.constituent_links().size();
     }
 }
 }  // namespace traccc::cuda::kernels

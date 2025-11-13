@@ -23,10 +23,12 @@
 #include "./kernels/remove_duplicates.cuh"
 
 // Project include(s).
-#include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_candidate_collection.hpp"
+#include "traccc/edm/device/identity_projector.hpp"
+#include "traccc/edm/measurement_collection.hpp"
+#include "traccc/edm/track_container.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
+#include "traccc/finding/device/barcode_surface_comparator.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/utils/logging.hpp"
 #include "traccc/utils/memory_resource.hpp"
@@ -70,20 +72,27 @@ namespace traccc::cuda::details {
 /// @return A buffer of the found track candidates
 ///
 template <typename detector_t, typename bfield_t>
-edm::track_candidate_collection<default_algebra>::buffer
+edm::track_container<typename detector_t::algebra_type>::buffer
 combinatorial_kalman_filter(
     const typename detector_t::const_view_type& det, const bfield_t& field,
-    const measurement_collection_types::const_view& measurements,
+    const typename edm::measurement_collection<
+        typename detector_t::algebra_type>::const_view& measurements_view,
     const bound_track_parameters_collection_types::const_view& seeds,
     const finding_config& config, const memory_resource& mr, vecmem::copy& copy,
     const Logger& log, stream& str, unsigned int warp_size) {
+
+    const typename edm::measurement_collection<
+        typename detector_t::algebra_type>::const_device measurements{
+        measurements_view};
 
     assert(config.min_step_length_for_next_surface >
                math::fabs(config.propagation.navigation.overstep_tolerance) &&
            "Min step length for the next surface should be higher than the "
            "overstep tolerance");
-    assert(is_contiguous_on<measurement_collection_types::const_device>(
-        measurement_module_projection(), mr.main, copy, str, measurements));
+    assert(is_contiguous_on<
+           vecmem::device_vector<const detray::geometry::barcode>>(
+        device::identity_projector{}, mr.main, copy, str,
+        measurements_view.template get<6>()));
 
     // Create a logger.
     auto logger = [&log]() -> const Logger& { return log; };
@@ -103,8 +112,7 @@ combinatorial_kalman_filter(
      * Measurement Operations
      *****************************************************************/
 
-    const measurement_collection_types::const_view::size_type n_measurements =
-        copy.get_size(measurements);
+    const auto n_measurements = copy.get_size(measurements_view);
 
     // Access the detector view as a detector object
     detector_t device_det(det);
@@ -116,10 +124,14 @@ combinatorial_kalman_filter(
     copy.setup(meas_ranges_buffer)->ignore();
     vecmem::device_vector<unsigned int> measurement_ranges(meas_ranges_buffer);
 
-    thrust::upper_bound(
-        thrust_policy, measurements.ptr(), measurements.ptr() + n_measurements,
-        device_det.surfaces().begin(), device_det.surfaces().end(),
-        measurement_ranges.begin(), measurement_sf_comp());
+    thrust::upper_bound(thrust_policy, measurements.surface_link().begin(),
+                        // We have to use this ugly form here, because if the
+                        // measurement collection is resizable (which it often
+                        // is), the end() function cannot be used in host code.
+                        measurements.surface_link().begin() + n_measurements,
+                        device_det.surfaces().begin(),
+                        device_det.surfaces().end(), measurement_ranges.begin(),
+                        device::barcode_surface_comparator{});
 
     const unsigned int n_seeds = copy.get_size(seeds);
 
@@ -239,7 +251,7 @@ combinatorial_kalman_filter(
             using payload_t = device::find_tracks_payload<detector_t>;
             const payload_t host_payload{
                 .det_data = det,
-                .measurements_view = measurements,
+                .measurements_view = measurements_view,
                 .in_params_view = in_params_buffer,
                 .in_params_liveness_view = param_liveness_buffer,
                 .n_in_params = n_in_params,
@@ -449,9 +461,10 @@ combinatorial_kalman_filter(
     }
 
     // Create track candidate buffer
-    edm::track_candidate_collection<default_algebra>::buffer
-        track_candidates_buffer{tips_length_host, mr.main, mr.host};
-    copy.setup(track_candidates_buffer)->ignore();
+    typename edm::track_container<typename detector_t::algebra_type>::buffer
+        track_candidates_buffer{
+            {tips_length_host, mr.main, mr.host}, {}, measurements_view};
+    copy.setup(track_candidates_buffer.tracks)->ignore();
 
     // @Note: nBlocks can be zero in case there is no tip. This happens when
     // chi2_max config is set tightly and no tips are found
@@ -459,11 +472,12 @@ combinatorial_kalman_filter(
         const unsigned int nThreads = warp_size * 2;
         const unsigned int nBlocks = (n_tips_total + nThreads - 1) / nThreads;
 
-        kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(
-            {.seeds_view = seeds,
-             .links_view = links_buffer,
-             .tips_view = tips_buffer,
-             .track_candidates_view = {track_candidates_buffer, measurements}});
+        const device::build_tracks_payload payload{
+            .seeds_view = seeds,
+            .links_view = links_buffer,
+            .tips_view = tips_buffer,
+            .tracks_view = {track_candidates_buffer}};
+        kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(payload);
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
         str.synchronize();

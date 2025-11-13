@@ -76,8 +76,8 @@ traccc_add_library( traccc_io io TYPE SHARED
   "src/obj/write_seeds.cpp"
   "src/obj/write_spacepoints.hpp"
   "src/obj/write_spacepoints.cpp"
-  "src/obj/write_track_candidates.hpp"
-  "src/obj/write_track_candidates.cpp"
+  "src/obj/write_tracks.hpp"
+  "src/obj/write_tracks.cpp"
   )
 target_link_libraries( traccc_io
   PUBLIC vecmem::core traccc::core Acts::Core dfelibs::dfelibs

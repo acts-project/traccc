@@ -14,7 +14,7 @@
 #include <vector_functions.h>
 
 // Project include(s)
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 
@@ -25,15 +25,16 @@ namespace traccc::cuda::kernels {
 
 __global__ void count_sp_by_layer(
     const traccc::edm::spacepoint_collection::const_view spacepoints_view,
-    const traccc::measurement_collection_types::const_view measurements_view,
+    const edm::measurement_collection<default_algebra>::const_view
+        measurements_view,
     const short* volumeToLayerMap, const uint2* surfaceToLayerMap,
     const char* d_layerType, float4* reducedSP, int* d_layerCounts,
     short* spacepointsLayer, const float type1_max_width,
     const unsigned int nSp, const long unsigned int volumeMapSize,
     const long unsigned int surfaceMapSize, bool doTauCut = true) {
 
-    const traccc::measurement_collection_types::const_device measurements(
-        measurements_view);
+    const edm::measurement_collection<default_algebra>::const_device
+        measurements(measurements_view);
     const traccc::edm::spacepoint_collection::const_device spacepoints(
         spacepoints_view);
 
@@ -42,10 +43,10 @@ __global__ void count_sp_by_layer(
         // get the layer of the spacepoint
         const traccc::edm::spacepoint_collection::const_device::const_proxy_type
             spacepoint = spacepoints.at(spIdx);
-        const traccc::measurement measurement =
+        const auto measurement =
             measurements.at(spacepoint.measurement_index_1());
 
-        detray::geometry::barcode barcode = measurement.surface_link;
+        detray::geometry::barcode barcode = measurement.surface_link();
 
         // some volume_ids map one to one with layer others need searching
         if (barcode.volume() > volumeMapSize) {
@@ -72,7 +73,7 @@ __global__ void count_sp_by_layer(
         } else {
             layerIdx = static_cast<unsigned int>(begin_or_bin);
         }
-        float cluster_diameter = measurement.diameter;
+        float cluster_diameter = measurement.diameter();
         int type = static_cast<int>(d_layerType[layerIdx]);
         if (type == 1 && cluster_diameter > type1_max_width) {
             //-ve cluster_diameter to skip cot(theta) prediction

@@ -8,7 +8,6 @@
 // Project include(s).
 #include "traccc/clusterization/measurement_creation_algorithm.hpp"
 #include "traccc/clusterization/sparse_ccl_algorithm.hpp"
-#include "traccc/edm/measurement.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/silicon_cluster_collection.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"

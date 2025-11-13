@@ -132,6 +132,8 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
     fit_cfg.propagation.navigation.min_mask_tolerance =
         static_cast<float>(mask_tolerance);
     fit_cfg.propagation.navigation.search_window = search_window;
+    // TODO: Disable until overlaps are handled correctly
+    fit_cfg.propagation.navigation.estimate_scattering_noise = false;
     fit_cfg.ptc_hypothesis = ptc;
     traccc::host::kalman_fitting_algorithm fitting(fit_cfg, host_mr, copy);
 
@@ -141,18 +143,22 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
         // Event map
         traccc::event_data evt_data(path, i_evt, host_mr);
         // Truth Track Candidates
-        traccc::edm::track_candidate_container<traccc::default_algebra>::host
+        traccc::edm::measurement_collection<traccc::default_algebra>::host
+            measurements(host_mr);
+        traccc::edm::track_container<traccc::default_algebra>::host
             track_candidates{host_mr};
-        evt_data.generate_truth_candidates(track_candidates, sg, host_mr);
+        evt_data.generate_truth_candidates(track_candidates, measurements, sg,
+                                           host_mr);
+        track_candidates.measurements = vecmem::get_data(measurements);
 
         // n_trakcs = 100
         ASSERT_EQ(track_candidates.tracks.size(), n_truth_tracks);
 
         // Run fitting
-        auto track_states =
-            fitting(detector, field,
-                    {vecmem::get_data(track_candidates.tracks),
-                     vecmem::get_data(track_candidates.measurements)});
+        auto track_states = fitting(
+            detector, field,
+            traccc::edm::track_container<traccc::default_algebra>::const_data(
+                track_candidates));
 
         // Iterator over tracks
         const std::size_t n_tracks = track_states.tracks.size();
@@ -177,12 +183,11 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
                               track_states.states);
 
             ndf_tests(track_states.tracks.at(i_trk), track_states.states,
-                      track_candidates.measurements);
+                      measurements);
 
             fit_performance_writer.write(
                 track_states.tracks.at(i_trk), track_states.states,
-                track_candidates.measurements, detector.as<detector_traits>(),
-                evt_data);
+                measurements, detector.as<detector_traits>(), evt_data);
         }
     }
 

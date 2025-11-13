@@ -10,7 +10,7 @@
 // Project include(s).
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/definitions/primitives.hpp"
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/silicon_cluster_collection.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
@@ -38,11 +38,12 @@
 #include <sstream>
 #include <string>
 
-using cca_function_t = std::function<std::pair<
-    std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>,
-    std::optional<traccc::edm::silicon_cluster_collection::host>>(
-    const traccc::edm::silicon_cell_collection::host &,
-    const traccc::silicon_detector_description::host &)>;
+using cca_function_t = std::function<
+    std::pair<std::map<traccc::geometry_id, traccc::edm::measurement_collection<
+                                                traccc::default_algebra>::host>,
+              std::optional<traccc::edm::silicon_cluster_collection::host>>(
+        const traccc::edm::silicon_cell_collection::host &,
+        const traccc::silicon_detector_description::host &)>;
 
 inline traccc::clustering_config default_ccl_test_config() {
     traccc::clustering_config rv;
@@ -179,26 +180,31 @@ class ConnectedComponentAnalysisTests
         while (truth_reader.read(io_truth)) {
             ASSERT_TRUE(result.find(io_truth.geometry_id) != result.end());
 
-            const vecmem::vector<traccc::measurement> &meas =
+            const traccc::edm::measurement_collection<
+                traccc::default_algebra>::host &meas =
                 result.at(io_truth.geometry_id);
 
             const traccc::scalar tol = 0.0001f;
 
-            auto match = std::find_if(
-                meas.begin(), meas.end(),
-                [&io_truth, tol](const traccc::measurement &i) {
-                    return std::abs(i.local[0] - io_truth.channel0) < tol &&
-                           std::abs(i.local[1] - io_truth.channel1) < tol;
-                });
+            std::size_t meas_idx = static_cast<std::size_t>(-1);
+            for (std::size_t i = 0; i < meas.size(); ++i) {
+                if ((std::abs(meas.at(i).local_position()[0] -
+                              io_truth.channel0) < tol) &&
+                    (std::abs(meas.at(i).local_position()[1] -
+                              io_truth.channel1) < tol)) {
+                    meas_idx = i;
+                    break;
+                }
+            }
+            ASSERT_TRUE(meas_idx < meas.size());
 
-            ASSERT_TRUE(match != meas.end());
-
-            EXPECT_NEAR(match->local[0], io_truth.channel0, tol);
-            EXPECT_NEAR(match->local[1], io_truth.channel1, tol);
-            EXPECT_NEAR(match->variance[0], io_truth.variance0 + var_adjustment,
-                        tol);
-            EXPECT_NEAR(match->variance[1], io_truth.variance1 + var_adjustment,
-                        tol);
+            const auto match = meas.at(meas_idx);
+            EXPECT_NEAR(match.local_position()[0], io_truth.channel0, tol);
+            EXPECT_NEAR(match.local_position()[1], io_truth.channel1, tol);
+            EXPECT_NEAR(match.local_variance()[0],
+                        io_truth.variance0 + var_adjustment, tol);
+            EXPECT_NEAR(match.local_variance()[1],
+                        io_truth.variance1 + var_adjustment, tol);
 
             ++total_truth;
         }

@@ -127,7 +127,9 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                                     &polymorphic_detector, input_opts.format,
                                     false);
 
-        traccc::edm::track_candidate_container<traccc::default_algebra>::host
+        traccc::edm::measurement_collection<traccc::default_algebra>::host
+            truth_measurements{host_mr};
+        traccc::edm::track_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
 
         // Seed generator
@@ -137,10 +139,12 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                 const typename detector_traits_t::host& det) {
                 traccc::seed_generator<typename detector_traits_t::host> sg(
                     det, stddevs);
-                evt_data.generate_truth_candidates(truth_track_candidates, sg,
-                                                   host_mr,
-                                                   truth_finding_opts.m_pT_min);
+                evt_data.generate_truth_candidates(
+                    truth_track_candidates, truth_measurements, sg, host_mr,
+                    truth_finding_opts.m_pT_min);
             });
+        truth_track_candidates.measurements =
+            vecmem::get_data(truth_measurements);
 
         // Prepare truth seeds
         traccc::bound_track_parameters_collection_types::host seeds(&host_mr);
@@ -152,8 +156,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
         std::cout << "Number of seeds: " << seeds.size() << std::endl;
 
         // Read measurements
-        traccc::measurement_collection_types::host measurements_per_event{
-            &host_mr};
+        traccc::edm::measurement_collection<traccc::default_algebra>::host
+            measurements_per_event{host_mr};
         traccc::io::read_measurements(
             measurements_per_event, event, input_opts.directory,
             (input_opts.use_acts_geom_source ? &polymorphic_detector : nullptr),
@@ -164,14 +168,14 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
             polymorphic_detector, field,
             vecmem::get_data(measurements_per_event), vecmem::get_data(seeds));
 
-        std::cout << "Number of found tracks: " << track_candidates.size()
-                  << std::endl;
+        std::cout << "Number of found tracks: "
+                  << track_candidates.tracks.size() << std::endl;
 
         // Run fitting
-        auto track_states =
-            host_fitting(polymorphic_detector, field,
-                         {vecmem::get_data(track_candidates),
-                          vecmem::get_data(measurements_per_event)});
+        auto track_states = host_fitting(
+            polymorphic_detector, field,
+            traccc::edm::track_container<traccc::default_algebra>::const_data(
+                track_candidates));
 
         details::print_fitted_tracks_statistics(track_states, logger());
 
@@ -179,8 +183,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
 
         if (performance_opts.run) {
             find_performance_writer.write(
-                {vecmem::get_data(track_candidates),
-                 vecmem::get_data(measurements_per_event)},
+                traccc::edm::track_container<
+                    traccc::default_algebra>::const_data(track_candidates),
                 evt_data);
 
             for (std::size_t i = 0; i < n_fitted_tracks; i++) {

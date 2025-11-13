@@ -57,8 +57,8 @@ class KalmanFittingMomentumResolutionTests
         1.f * traccc::unit<scalar>::ns};
 
     void consistency_tests(
-        const edm::track_fit_collection<
-            default_algebra>::host::const_proxy_type& track,
+        const edm::track_collection<default_algebra>::host::const_proxy_type&
+            track,
         const edm::track_state_collection<default_algebra>::host& track_states)
         const;
 

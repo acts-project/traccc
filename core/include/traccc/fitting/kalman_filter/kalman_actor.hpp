@@ -9,13 +9,14 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_fit_collection.hpp"
+#include "traccc/edm/measurement_collection.hpp"
+#include "traccc/edm/track_collection.hpp"
 #include "traccc/edm/track_state_collection.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 #include "traccc/fitting/kalman_filter/is_line_visitor.hpp"
 #include "traccc/fitting/kalman_filter/two_filters_smoother.hpp"
 #include "traccc/fitting/status_codes.hpp"
+#include "traccc/utils/logging.hpp"
 #include "traccc/utils/particle.hpp"
 
 // detray include(s).
@@ -38,11 +39,12 @@ struct kalman_actor_state {
     /// Constructor with the vector of track states
     TRACCC_HOST_DEVICE
     kalman_actor_state(
-        const typename edm::track_fit_collection<algebra_t>::device::proxy_type&
+        const typename edm::track_collection<algebra_t>::device::proxy_type&
             track,
         const typename edm::track_state_collection<algebra_t>::device&
             track_states,
-        const measurement_collection_types::const_device& measurements)
+        const typename edm::measurement_collection<algebra_t>::const_device&
+            measurements)
         : m_track{track},
           m_track_states{track_states},
           m_measurements{measurements} {
@@ -54,7 +56,9 @@ struct kalman_actor_state {
     TRACCC_HOST_DEVICE
     typename edm::track_state_collection<algebra_t>::device::proxy_type
     operator()() {
-        return m_track_states.at(m_track.state_indices().at(m_idx));
+        assert(m_track.constituent_links().at(m_idx).type ==
+               edm::track_constituent_link::track_state);
+        return m_track_states.at(m_track.constituent_links().at(m_idx).index);
     }
 
     /// Reset the iterator
@@ -63,7 +67,7 @@ struct kalman_actor_state {
         if (!backward_mode) {
             m_idx = 0;
         } else {
-            m_idx = m_track.state_indices().size() - 1;
+            m_idx = m_track.constituent_links().size() - 1;
         }
     }
 
@@ -80,9 +84,10 @@ struct kalman_actor_state {
     /// @return true if the iterator reaches the end of vector
     TRACCC_HOST_DEVICE
     bool is_complete() {
-        if (!backward_mode && m_idx == m_track.state_indices().size()) {
+        if (!backward_mode && m_idx == m_track.constituent_links().size()) {
             return true;
-        } else if (backward_mode && m_idx > m_track.state_indices().size()) {
+        } else if (backward_mode &&
+                   m_idx > m_track.constituent_links().size()) {
             return true;
         }
         return false;
@@ -90,16 +95,17 @@ struct kalman_actor_state {
 
     TRACCC_HOST_DEVICE
     bool is_state() {
-        return m_track.state_indices().at(m_idx) !=
-               std::numeric_limits<unsigned int>::max();
+        return (m_track.constituent_links().at(m_idx).type ==
+                edm::track_constituent_link::track_state);
     }
 
     /// Object describing the track fit
-    typename edm::track_fit_collection<algebra_t>::device::proxy_type m_track;
+    typename edm::track_collection<algebra_t>::device::proxy_type m_track;
     /// All track states in the event
     typename edm::track_state_collection<algebra_t>::device m_track_states;
     /// All measurements in the event
-    measurement_collection_types::const_device m_measurements;
+    typename edm::measurement_collection<algebra_t>::const_device
+        m_measurements;
 
     /// Index of the current track state
     unsigned int m_idx;
@@ -139,19 +145,29 @@ struct kalman_actor : detray::actor {
         // triggered only for sensitive surfaces
         if (navigation.is_on_sensitive()) {
 
+            TRACCC_VERBOSE_HOST_DEVICE("In Kalman actor...");
+            TRACCC_DEBUG_HOST("-> on surface: " << navigation.get_surface());
+
             typename edm::track_state_collection<algebra_t>::device::proxy_type
                 trk_state = actor_state();
+
+            TRACCC_DEBUG_HOST(
+                "-> expecting: " << actor_state.m_measurements
+                                        .at(trk_state.measurement_index())
+                                        .surface_link);
 
             // Increase the hole counts if the propagator fails to find the next
             // measurement
             if (navigation.barcode() !=
                 actor_state.m_measurements.at(trk_state.measurement_index())
-                    .surface_link) {
+                    .surface_link()) {
                 if (!actor_state.backward_mode) {
                     actor_state.n_holes++;
                 }
                 return;
             }
+
+            TRACCC_VERBOSE_HOST_DEVICE("Found next track state to fit");
 
             // This track state is not a hole
             if (!actor_state.backward_mode) {
@@ -161,7 +177,7 @@ struct kalman_actor : detray::actor {
             // Run Kalman Gain Updater
             const auto sf = navigation.get_surface();
 
-            const bool is_line = sf.template visit_mask<is_line_visitor>();
+            const bool is_line = detail::is_line(sf);
 
             kalman_fitter_status res = kalman_fitter_status::SUCCESS;
 
@@ -170,7 +186,11 @@ struct kalman_actor : detray::actor {
                                   kalman_actor_direction::FORWARD_ONLY ||
                               direction_e ==
                                   kalman_actor_direction::BIDIRECTIONAL) {
+                    // Wrap the phi and theta angles in their valid ranges
+                    normalize_angles(propagation._stepping.bound_params());
+
                     // Forward filter
+                    TRACCC_DEBUG_HOST_DEVICE("Run filtering");
                     res = gain_matrix_updater<algebra_t>{}(
                         trk_state, actor_state.m_measurements,
                         propagation._stepping.bound_params(), is_line);
@@ -186,6 +206,7 @@ struct kalman_actor : detray::actor {
                               direction_e ==
                                   kalman_actor_direction::BIDIRECTIONAL) {
                     // Backward filter for smoothing
+                    TRACCC_DEBUG_HOST_DEVICE("Run smoothing");
                     res = two_filters_smoother<algebra_t>{}(
                         trk_state, actor_state.m_measurements,
                         propagation._stepping.bound_params(), is_line);
@@ -196,6 +217,16 @@ struct kalman_actor : detray::actor {
 
             // Abort if the Kalman update fails
             if (res != kalman_fitter_status::SUCCESS) {
+                if (actor_state.backward_mode) {
+                    TRACCC_ERROR_DEVICE("Abort backward fit: KF status %d",
+                                        res);
+                    TRACCC_ERROR_HOST(
+                        "Abort backward fit: " << fitter_debug_msg{res}());
+                } else {
+                    TRACCC_ERROR_DEVICE("Abort forward fit: KF status %d", res);
+                    TRACCC_ERROR_HOST(
+                        "Abort forward fit: " << fitter_debug_msg{res}());
+                }
                 propagation._heartbeat &=
                     navigation.abort(fitter_debug_msg{res});
                 return;
@@ -211,8 +242,13 @@ struct kalman_actor : detray::actor {
             // Update iterator
             actor_state.next();
 
-            // Flag renavigation of the current candidate
-            navigation.set_high_trust();
+            // Flag renavigation of the current candidate (unless for overlap)
+            if (math::fabs(navigation()) > 1.f * unit<float>::um) {
+                navigation.set_high_trust();
+            } else {
+                TRACCC_DEBUG_HOST_DEVICE(
+                    "Encountered overlap, jump to next surface");
+            }
         }
     }
 };

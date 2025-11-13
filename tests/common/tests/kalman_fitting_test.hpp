@@ -10,9 +10,8 @@
 // Project include(s).
 #include "traccc/bfield/magnetic_field_types.hpp"
 #include "traccc/definitions/common.hpp"
-#include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_candidate_collection.hpp"
-#include "traccc/edm/track_fit_collection.hpp"
+#include "traccc/edm/measurement_collection.hpp"
+#include "traccc/edm/track_collection.hpp"
 #include "traccc/edm/track_state_collection.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/geometry/detector.hpp"
@@ -71,15 +70,6 @@ class KalmanFittingTests : public testing::Test {
     ///
     void p_value_tests(std::string_view file_name) const;
 
-    /// Validadte the NDF for track finding output
-    ///
-    /// @param track_candidate The track candidate to test
-    /// @param measurements All measurements in the event
-    ///
-    void ndf_tests(const edm::track_candidate_collection<default_algebra>::
-                       host::const_proxy_type& track_candidate,
-                   const measurement_collection_types::host& measurements);
-
     /// Validadte the NDF for track fitting output
     ///
     /// @param track Fitting statistics result of a track
@@ -87,10 +77,10 @@ class KalmanFittingTests : public testing::Test {
     /// @param measurements All measurements in the event
     ///
     void ndf_tests(
-        const edm::track_fit_collection<
-            default_algebra>::host::const_proxy_type& track,
+        const edm::track_collection<default_algebra>::host::const_proxy_type&
+            track,
         const edm::track_state_collection<default_algebra>::host& track_states,
-        const measurement_collection_types::host& measurements);
+        const edm::measurement_collection<default_algebra>::host& measurements);
 
     /// Count the number of tracks that were successfully fitted
     ///
@@ -98,7 +88,7 @@ class KalmanFittingTests : public testing::Test {
     /// @return The number of tracks that were successfully fitted
     ///
     std::size_t count_successfully_fitted_tracks(
-        const edm::track_fit_collection<default_algebra>::host& tracks) const;
+        const edm::track_collection<default_algebra>::host& tracks) const;
 
     // The number of tracks successful with KF
     std::size_t n_success{0u};

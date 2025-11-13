@@ -15,8 +15,8 @@ namespace traccc::device {
 TRACCC_HOST_DEVICE inline void build_tracks(
     const global_index_t globalIndex, const build_tracks_payload& payload) {
 
-    const measurement_collection_types::const_device measurements(
-        payload.track_candidates_view.measurements);
+    const edm::measurement_collection<default_algebra>::const_device
+        measurements(payload.tracks_view.measurements);
 
     const bound_track_parameters_collection_types::const_device seeds(
         payload.seeds_view);
@@ -25,16 +25,15 @@ TRACCC_HOST_DEVICE inline void build_tracks(
 
     const vecmem::device_vector<const unsigned int> tips(payload.tips_view);
 
-    edm::track_candidate_collection<default_algebra>::device track_candidates(
-        payload.track_candidates_view.tracks);
+    edm::track_collection<default_algebra>::device track_candidates(
+        payload.tracks_view.tracks);
 
     if (globalIndex >= tips.size()) {
         return;
     }
 
     const auto tip = tips.at(globalIndex);
-    edm::track_candidate_collection<default_algebra>::device::proxy_type track =
-        track_candidates.at(globalIndex);
+    auto track = track_candidates.at(globalIndex);
 
     // Get the link corresponding to tip
     auto L = links.at(tip);
@@ -45,8 +44,8 @@ TRACCC_HOST_DEVICE inline void build_tracks(
     scalar chi2_sum = 0.f;
 
     // Reversely iterate to fill the track candidates
-    for (auto it = track.measurement_indices().rbegin();
-         it != track.measurement_indices().rend(); it++) {
+    for (auto it = track.constituent_links().rbegin();
+         it != track.constituent_links().rend(); it++) {
 
         while (L.meas_idx >= n_meas && L.step != 0u) {
 
@@ -55,18 +54,19 @@ TRACCC_HOST_DEVICE inline void build_tracks(
 
         assert(L.meas_idx < n_meas);
 
-        *it = L.meas_idx;
+        *it = {edm::track_constituent_link::measurement, L.meas_idx};
 
         // Sanity check on chi2
         assert(L.chi2 < std::numeric_limits<traccc::scalar>::max());
         assert(L.chi2 >= 0.f);
 
-        ndf_sum += static_cast<scalar>(measurements.at(*it).meas_dim);
+        ndf_sum += static_cast<scalar>(measurements.at(it->index).dimensions());
         chi2_sum += L.chi2;
 
         // Break the loop if the iterator is at the first candidate and fill the
         // seed and track quality
-        if (it == track.measurement_indices().rend() - 1) {
+        if (it == track.constituent_links().rend() - 1) {
+            track.fit_outcome() = track_fit_outcome::UNKNOWN;
             track.params() = seeds.at(L.seed_idx);
             track.ndf() = ndf_sum - 5.f;
             track.chi2() = chi2_sum;
@@ -79,12 +79,14 @@ TRACCC_HOST_DEVICE inline void build_tracks(
 
 #ifndef NDEBUG
     // Assert that we did not make any duplicate track states.
-    for (unsigned int i : track.measurement_indices()) {
-        for (unsigned int j : track.measurement_indices()) {
-            if (i != j) {
+    for (const auto& i : track.constituent_links()) {
+        assert(i.type == edm::track_constituent_link::measurement);
+        for (const auto& j : track.constituent_links()) {
+            assert(j.type == edm::track_constituent_link::measurement);
+            if (i.index != j.index) {
                 // TODO: Re-enable me!
-                // assert(measurements.at(i).measurement_id !=
-                //       measurement.at(j).measurement_id);
+                // assert(measurements.at(i->index).identifier() !=
+                //       measurement.at(j->index).identifier());
             }
         }
     }

@@ -8,11 +8,11 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/particle.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/silicon_cluster_collection.hpp"
-#include "traccc/edm/track_candidate_container.hpp"
+#include "traccc/edm/track_container.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/host_detector.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
@@ -66,7 +66,8 @@ struct event_data {
     void fill_cca_result(
         const edm::silicon_cell_collection::host& cells,
         const edm::silicon_cluster_collection::host& cca_clusters,
-        const measurement_collection_types::host& cca_measurements,
+        const edm::measurement_collection<default_algebra>::host&
+            cca_measurements,
         const silicon_detector_description::host& dd);
 
     /// Generate truth candidate used for truth fitting
@@ -77,7 +78,8 @@ struct event_data {
     ///
     template <typename detector_type>
     void generate_truth_candidates(
-        edm::track_candidate_container<default_algebra>::host& truth_candidates,
+        edm::track_container<default_algebra>::host& truth_candidates,
+        edm::measurement_collection<default_algebra>::host& truth_measurements,
         seed_generator<detector_type>& sg, vecmem::memory_resource& resource,
         float pt_cut = 0.f) {
         for (auto const& [ptc, measurements] : m_ptc_to_meas_map) {
@@ -97,40 +99,52 @@ struct event_data {
             }
 
             auto seed_params =
-                sg(measurements[0].surface_link, free_param, ptc_particle);
+                sg(measurements[0].surface_link(), free_param, ptc_particle);
 
             // Record the measurements, and remember their indices.
-            vecmem::vector<unsigned int> meas_indices{&resource};
-            truth_candidates.measurements.reserve(
-                truth_candidates.measurements.size() + measurements.size());
-            meas_indices.reserve(measurements.size());
+            vecmem::vector<edm::track_constituent_link> meas_links{&resource};
+            truth_measurements.reserve(truth_measurements.size() +
+                                       measurements.size());
+            meas_links.reserve(measurements.size());
             for (const auto& meas : measurements) {
-                meas_indices.push_back(static_cast<unsigned int>(
-                    truth_candidates.measurements.size()));
-                truth_candidates.measurements.push_back(meas);
+                meas_links.push_back(
+                    {edm::track_constituent_link::measurement,
+                     static_cast<unsigned int>(truth_measurements.size())});
+                truth_measurements.push_back(meas);
             }
 
             // Record the truth track candidate.
-            truth_candidates.tracks.push_back(
-                {seed_params, 0.f, 0.f, 0.f, 0u, meas_indices});
+            edm::track_collection<traccc::default_algebra>::host::object_type
+                track;
+            track.params() = seed_params;
+            track.constituent_links() = meas_links;
+            truth_candidates.tracks.push_back(track);
         }
     }
 
+    /// All internally defined measurements
+    edm::measurement_collection<default_algebra>::host m_measurements;
+    /// Proxy type for the following maps
+    using measurement_proxy =
+        edm::measurement_collection<default_algebra>::host::object_type;
+
     // Measurement map
-    std::map<measurement_id_type, measurement> m_measurement_map;
+    std::map<measurement_id_type, measurement_proxy> m_measurement_map;
     // Particle map
     std::map<particle_id, particle> m_particle_map;
     // Measurement to the contributing particle map
-    std::map<measurement, std::map<particle, std::size_t>> m_meas_to_ptc_map;
+    std::map<measurement_proxy, std::map<particle, std::size_t>>
+        m_meas_to_ptc_map;
     // CCA measurement to the contributing particle map
-    std::map<measurement, std::map<particle, std::size_t>>
+    std::map<measurement_proxy, std::map<particle, std::size_t>>
         m_found_meas_to_ptc_map;
     // Particle to its Measurements map
-    std::map<particle, std::vector<measurement>> m_ptc_to_meas_map;
+    std::map<particle, std::vector<measurement_proxy>> m_ptc_to_meas_map;
     // Measurement to its track parameter map
-    std::map<measurement, std::pair<point3, point3>> m_meas_to_param_map;
+    std::map<measurement_proxy, std::pair<point3, point3>> m_meas_to_param_map;
     // CCA measurement to its track parameter map
-    std::map<measurement, std::pair<point3, point3>> m_found_meas_to_param_map;
+    std::map<measurement_proxy, std::pair<point3, point3>>
+        m_found_meas_to_param_map;
     // Cell to particle map
     std::map<io::csv::cell, particle> m_cell_to_particle_map;
 

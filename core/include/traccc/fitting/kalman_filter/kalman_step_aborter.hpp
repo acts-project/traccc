@@ -9,6 +9,7 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
+#include "traccc/utils/logging.hpp"
 
 // Detray include(s).
 #include <detray/propagator/base_actor.hpp>
@@ -55,7 +56,9 @@ struct kalman_step_aborter : public detray::actor {
 
         // Abort if the step count exceeds the maximum allowed
         if (++(abrt_state.step) > abrt_state.max_steps) {
-            VECMEM_DEBUG_MSG(1, "Kalman fitter step aborter triggered");
+            TRACCC_ERROR_HOST_DEVICE(
+                "Maximum number of steps to reach next "
+                "sensitive surface exceeded");
             prop_state._heartbeat &= navigation.abort(
                 "Kalman Fitter: Maximum number of steps to reach next "
                 "sensitive surface exceeded");

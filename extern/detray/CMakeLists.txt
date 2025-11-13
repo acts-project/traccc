@@ -13,7 +13,7 @@ message( STATUS "Building Detray as part of the TRACCC project" )
 
 # Declare where to get Detray from.
 set( TRACCC_DETRAY_SOURCE
-   "URL;https://github.com/acts-project/detray/archive/refs/tags/v0.103.0.tar.gz;URL_MD5;7df38072d676b63ee3f0f88bd84c0106"
+   "URL;https://github.com/acts-project/detray/archive/refs/tags/v0.104.1.tar.gz;URL_MD5;2233a3b9945122e1b3f16ac973c7d1be"
    CACHE STRING "Source for Detray, when built as part of this project" )
 mark_as_advanced( TRACCC_DETRAY_SOURCE )
 FetchContent_Declare( Detray SYSTEM ${TRACCC_DETRAY_SOURCE} )
@@ -21,6 +21,10 @@ FetchContent_Declare( Detray SYSTEM ${TRACCC_DETRAY_SOURCE} )
 # Options used in the build of Detray.
 set( DETRAY_CUSTOM_SCALARTYPE "${TRACCC_CUSTOM_SCALARTYPE}" CACHE STRING
    "Scalar type to use in the Detray code" )
+
+set( DETRAY_SET_LOGGING "${TRACCC_DEVICE_LOG_LVL}" CACHE STRING
+   "Log level to use in device code" FORCE)
+message( STATUS "Setting DETRAY and TRACCC device log level to ${DETRAY_SET_LOGGING}" )
 
 set( DETRAY_BUILD_UNITTESTS FALSE CACHE BOOL
    "Turn off the build of the Detray unit tests" )

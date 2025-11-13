@@ -66,11 +66,10 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
         m_copy.get().get_size(cells_view);
 
     // Create the result object, overestimating the number of measurements.
-    measurement_collection_types::buffer measurements{
+    edm::measurement_collection<default_algebra>::buffer measurements{
         num_cells, m_mr.main, vecmem::data::buffer_type::resizable};
     vecmem::copy::event_type measurements_setup_event =
         m_copy.get().setup(measurements);
-    measurement_collection_types::view measurements_view(measurements);
 
     // If there are no cells, return right away.
     if (num_cells == 0) {
@@ -132,8 +131,8 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
             h.parallel_for<kernels::ccl_kernel>(
                 cclKernelRange,
                 [shared_uint, shared_idx, cells_view, det_descr,
-                 measurements_view, cell_links_view,
-                 f_backup_view = vecmem::get_data(m_f_backup),
+                 measurements_view = vecmem::get_data(measurements),
+                 cell_links_view, f_backup_view = vecmem::get_data(m_f_backup),
                  gf_backup_view = vecmem::get_data(m_gf_backup),
                  adjc_backup_view = vecmem::get_data(m_adjc_backup),
                  adjv_backup_view = vecmem::get_data(m_adjv_backup),

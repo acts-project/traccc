@@ -151,9 +151,14 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
         // Truth Track Candidates
         traccc::event_data evt_data(path, i_evt, host_mr);
 
-        traccc::edm::track_candidate_container<traccc::default_algebra>::host
+        traccc::edm::measurement_collection<traccc::default_algebra>::host
+            truth_measurements{host_mr};
+        traccc::edm::track_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
-        evt_data.generate_truth_candidates(truth_track_candidates, sg, host_mr);
+        evt_data.generate_truth_candidates(truth_track_candidates,
+                                           truth_measurements, sg, host_mr);
+        truth_track_candidates.measurements =
+            vecmem::get_data(truth_measurements);
 
         ASSERT_EQ(truth_track_candidates.tracks.size(), n_truth_tracks);
 
@@ -165,8 +170,8 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
         ASSERT_EQ(seeds.size(), n_truth_tracks);
 
         // Read measurements
-        traccc::measurement_collection_types::host measurements_per_event{
-            &host_mr};
+        traccc::edm::measurement_collection<traccc::default_algebra>::host
+            measurements_per_event{host_mr};
         traccc::io::read_measurements(measurements_per_event, i_evt, path);
 
         // Run finding
@@ -174,20 +179,22 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
             detector, field, vecmem::get_data(measurements_per_event),
             vecmem::get_data(seeds));
 
-        ASSERT_EQ(track_candidates.size(), n_truth_tracks);
+        ASSERT_EQ(track_candidates.tracks.size(), n_truth_tracks);
 
         for (unsigned int i_trk = 0; i_trk < n_truth_tracks; i_trk++) {
 
-            consistency_tests(track_candidates.at(i_trk));
+            consistency_tests(track_candidates.tracks.at(i_trk),
+                              track_candidates.states);
 
-            ndf_tests(track_candidates.at(i_trk), measurements_per_event);
+            ndf_tests(track_candidates.tracks.at(i_trk),
+                      track_candidates.states, measurements_per_event);
         }
 
         // Run fitting
-        auto track_states =
-            host_fitting(detector, field,
-                         {vecmem::get_data(track_candidates),
-                          vecmem::get_data(measurements_per_event)});
+        auto track_states = host_fitting(
+            detector, field,
+            traccc::edm::track_container<traccc::default_algebra>::const_data(
+                track_candidates));
         const std::size_t n_fitted_tracks =
             count_successfully_fitted_tracks(track_states.tracks);
 

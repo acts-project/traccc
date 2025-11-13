@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2024 CERN for the benefit of the ACTS project
+ * (c) 2021-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -32,9 +32,12 @@ traccc::host::measurement_creation_algorithm mc(resource);
 cca_function_t f = [](const traccc::edm::silicon_cell_collection::host& cells,
                       const traccc::silicon_detector_description::host& dd)
     -> std::pair<
-        std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>,
+        std::map<traccc::geometry_id, traccc::edm::measurement_collection<
+                                          traccc::default_algebra>::host>,
         std::optional<traccc::edm::silicon_cluster_collection::host>> {
-    std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>> result;
+    std::map<traccc::geometry_id,
+             traccc::edm::measurement_collection<traccc::default_algebra>::host>
+        result;
 
     const traccc::edm::silicon_cell_collection::const_data cells_data =
         vecmem::get_data(cells);
@@ -46,8 +49,14 @@ cca_function_t f = [](const traccc::edm::silicon_cell_collection::host& cells,
     auto measurements = mc(cells_data, clusters_data, dd_data);
 
     for (std::size_t i = 0; i < measurements.size(); i++) {
-        result[measurements.at(i).surface_link.value()].push_back(
-            measurements.at(i));
+        if (result.contains(measurements.at(i).surface_link().value()) ==
+            false) {
+            result.insert({measurements.at(i).surface_link().value(),
+                           traccc::edm::measurement_collection<
+                               traccc::default_algebra>::host{resource}});
+        }
+        result.at(measurements.at(i).surface_link().value())
+            .push_back(measurements.at(i));
     }
 
     return {std::move(result), std::nullopt};

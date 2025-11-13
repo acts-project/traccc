@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/utils/logging.hpp"
 #include "traccc/utils/particle.hpp"
 
 // Detray include(s).
@@ -62,7 +63,9 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     const bound_track_parameters<> in_par = params.at(param_id);
 
     // Create propagator
-    propagator_t propagator(cfg.propagation);
+    auto prop_cfg{cfg.propagation};
+    prop_cfg.navigation.estimate_scattering_noise = false;
+    propagator_t propagator(prop_cfg);
 
     // Create propagator state
     typename propagator_t::state propagation(in_par, payload.field_data, det);
@@ -87,21 +90,20 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     typename detray::detail::tuple_element<2, actor_tuple_type>::type::state s2{
         s3};
     // Parameter resetter
-    // typename detray::detail::tuple_element<4, actor_tuple_type>::type::state
-    // s4{
-    //    cfg.propagation};
+    typename detray::detail::tuple_element<4, actor_tuple_type>::type::state s4{
+        prop_cfg};
     // Momentum aborter
     typename detray::detail::tuple_element<5, actor_tuple_type>::type::state s5;
     // CKF aborter
     typename detray::detail::tuple_element<6, actor_tuple_type>::type::state s6;
 
-    s6.min_step_length = cfg.min_step_length_for_next_surface;
-    s6.max_count = cfg.max_step_counts_for_next_surface;
     s5.min_pT(static_cast<scalar_t>(cfg.min_pT));
     s5.min_p(static_cast<scalar_t>(cfg.min_p));
+    s6.min_step_length = cfg.min_step_length_for_next_surface;
+    s6.max_count = cfg.max_step_counts_for_next_surface;
 
     // Propagate to the next surface
-    propagator.propagate(propagation, detray::tie(s0, s2, s3, s5, s6));
+    propagator.propagate(propagation, detray::tie(s0, s2, s3, s4, s5, s6));
 
     // If a surface found, add the parameter for the next step
     if (s6.success) {
@@ -110,13 +112,32 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
 
         params[param_id] = propagation._stepping.bound_params();
         params_liveness[param_id] = 1u;
+
+        const scalar theta = params[param_id].theta();
+        if (theta <= 0.f || theta >= 2.f * constant<traccc::scalar>::pi) {
+            TRACCC_ERROR_DEVICE("Theta is zero after propagation");
+            params_liveness[param_id] = 0u;
+        }
+
+        if (!std::isfinite(params[param_id].phi())) {
+            TRACCC_ERROR_DEVICE(
+                "Phi is infinite after propagation (Matrix inversion)");
+            params_liveness[param_id] = 0u;
+        }
+
+        if (math::fabs(params[param_id].qop()) == 0.f) {
+            TRACCC_ERROR_DEVICE("q/p is zero after propagation");
+            params_liveness[param_id] = 0u;
+        }
     } else {
         params_liveness[param_id] = 0u;
+    }
 
-        if (n_cands >= cfg.min_track_candidates_per_track) {
-            auto tip_pos = tips.push_back(link_idx);
-            tip_lengths.at(tip_pos) = n_cands;
-        }
+    if (params_liveness[param_id] == 0 &&
+        n_cands >= cfg.min_track_candidates_per_track) {
+        TRACCC_VERBOSE_DEVICE("Create tip: No next sensitive found");
+        auto tip_pos = tips.push_back(link_idx);
+        tip_lengths.at(tip_pos) = n_cands;
     }
 }
 
