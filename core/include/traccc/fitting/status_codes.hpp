@@ -24,6 +24,8 @@ enum class kalman_fitter_status : uint32_t {
     ERROR_UPDATER_INVALID_COVARIANCE,
     ERROR_BARCODE_SEQUENCE_OVERFLOW,
     ERROR_INVALID_TRACK_STATE,
+    ERROR_TRACK_STATES_EMPTY,
+    ERROR_NOT_ALL_TRACK_STATES_FOUND,
     ERROR_OTHER,
     MAX_STATUS
 };
@@ -68,6 +70,12 @@ struct fitter_debug_msg {
             case ERROR_INVALID_TRACK_STATE: {
                 return msg +
                        "Invalid track state in forward pass (skipped or error)";
+            }
+            case ERROR_TRACK_STATES_EMPTY: {
+                return msg + "List of track states was empty";
+            }
+            case ERROR_NOT_ALL_TRACK_STATES_FOUND: {
+                return msg + "Not all track states were recovered in fit";
             }
             case ERROR_OTHER: {
                 return msg + "Unspecified error";

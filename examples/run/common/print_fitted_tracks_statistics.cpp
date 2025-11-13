@@ -14,9 +14,12 @@ void print_fitted_tracks_statistics(
     const edm::track_container<default_algebra>::host& tracks,
     const Logger& log) {
 
+    std::size_t unknown = 0;
     std::size_t success = 0;
     std::size_t non_positive_ndf = 0;
     std::size_t not_all_smoothed = 0;
+    std::size_t forward = 0;
+    std::size_t backward = 0;
 
     for (track_fit_outcome outcome : tracks.tracks.fit_outcome()) {
         if (outcome == track_fit_outcome::SUCCESS) {
@@ -25,6 +28,12 @@ void print_fitted_tracks_statistics(
             ++non_positive_ndf;
         } else if (outcome == track_fit_outcome::FAILURE_NOT_ALL_SMOOTHED) {
             ++not_all_smoothed;
+        } else if (outcome == track_fit_outcome::FAILURE_FORWARD) {
+            ++forward;
+        } else if (outcome == track_fit_outcome::FAILURE_BACKWARD) {
+            ++backward;
+        } else {
+            ++unknown;
         }
     }
 
@@ -32,6 +41,9 @@ void print_fitted_tracks_statistics(
     TRACCC_INFO("Success: " << success
                             << "  Non positive NDF: " << non_positive_ndf
                             << "  Not all smoothed: " << not_all_smoothed
+                            << "  Forward failure: " << forward
+                            << "  Backward failure: " << backward
+                            << "  Unknown: " << unknown
                             << "  Total: " << tracks.tracks.size());
 }
 

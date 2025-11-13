@@ -18,6 +18,10 @@ enum class track_fit_outcome : std::uint16_t {
     SUCCESS,
     FAILURE_NON_POSITIVE_NDF,
     FAILURE_NOT_ALL_SMOOTHED,
+    // Failure in the forward fit, not otherwise specified.
+    FAILURE_FORWARD,
+    // Failure in the backward fit, not otherwise specified.
+    FAILURE_BACKWARD,
     MAX_OUTCOME
 };
 
