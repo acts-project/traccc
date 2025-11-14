@@ -6,8 +6,8 @@
  */
 
 // Local include(s).
-#include "${SOURCE_DIR}/../../../utils/magnetic_field_types.hpp"
-#include "${SOURCE_DIR}/fit_forward_src.cuh"
+#include "src/utils/magnetic_field_types.hpp"
+#include "src/fitting/kernels/specializations/fit_forward_src.cuh"
 
 // Project include(s).
 #include "traccc/bfield/magnetic_field_types.hpp"
