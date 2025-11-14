@@ -184,19 +184,19 @@ for NTHREAD in $(seq ${TRACCC_MIN_THREADS} ${TRACCC_THREAD_STEP} ${TRACCC_MAX_TH
 
          # Run the throughput test.
          ${TRACCC_EXECUTABLE}                                                        \
-	    --detector-file="${TRACCC_INPUT_DIR}/detray_detector_geometry.json"     \
-            --material-file="${TRACCC_INPUT_DIR}/detray_detector_material_maps.json"\
-            --grid-file="${TRACCC_INPUT_DIR}/detray_detector_surface_grids.json"    \
-            --digitization-file="${TRACCC_INPUT_DIR}/ITk_digitization_config.json"  \
-            --read-bfield-from-file                                                 \
-            --bfield-file="${TRACCC_INPUT_DIR}/ITk_bfield.cvf"                      \
-            --input-directory="${TRACCC_INPUT_DIR}/${EVTDIR}/"                      \
-            --use-acts-geom-source=0                                                \
-            --input-events=10                                                       \
-            --cpu-threads=${NTHREAD}                                                \
-            --cold-run-events=$((5*${NTHREAD}))                                     \
-            --processed-events=$((10*${NTHREAD}))                                   \
-            --log-file="${TRACCC_CSV_FILE}"                                         \
+	    --detector-file="${TRACCC_INPUT_DIR}/detray_detector_geometry.json"          \
+            --material-file="${TRACCC_INPUT_DIR}/detray_detector_material_maps.json" \
+            --grid-file="${TRACCC_INPUT_DIR}/detray_detector_surface_grids.json"     \
+            --digitization-file="${TRACCC_INPUT_DIR}/ITk_digitization_config.json"   \
+            --read-bfield-from-file                                                  \
+            --bfield-file="${TRACCC_INPUT_DIR}/ITk_bfield.cvf"                       \
+            --input-directory="${TRACCC_INPUT_DIR}/${EVTDIR}/"                       \
+            --use-acts-geom-source=0                                                 \
+            --input-events=100                                                       \
+            --cpu-threads=${NTHREAD}                                                 \
+            --cold-run-events=$((5*${NTHREAD}))                                      \
+            --processed-events=$((100*${NTHREAD}))                                   \
+            --log-file="${TRACCC_CSV_FILE}"                                          \
             ${TRACCC_CUTS[@]}
       done
    done
