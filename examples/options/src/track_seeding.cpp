@@ -58,7 +58,7 @@ track_seeding::track_seeding() : interface("Track Seeding Options") {
 	"seedfinder-deltaZMax",
         po::value(&m_seedfinder.deltaZMax)
             ->default_value(m_seedfinder.impactMax / unit<float>::mm),
-        "Maximum deltaZ parameter [mm]");
+        "Maximum Z distance between measurements [mm]");
 
     m_desc.add_options()("seedfinder-sigmaScattering",
                          po::value(&m_seedfinder.sigmaScattering)
@@ -178,7 +178,7 @@ std::unique_ptr<configuration_printable> track_seeding::as_printable() const {
         "Maximum impact parameter",
         std::format("{:.2f} mm", m_seedfinder.impactMax / unit<float>::mm)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
-        "Maximum deltaZ parameter",
+        "Maximum Z distance between measurements",
         std::format("{:.2f} mm", m_seedfinder.deltaZMax / unit<float>::mm)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Scattering angle sigma",
