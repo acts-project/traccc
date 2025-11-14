@@ -160,7 +160,7 @@ elif [[ "${TRACCC_THROUGPUT_TYPE}" != "traccc" ]]; then
 fi
 
 # The input directories to use.
-TRACCC_INPUT_DIRS=("ttbar_mu200/hits") #("ttbar_mu140/hits" "ttbar_mu200/hits")
+TRACCC_INPUT_DIRS=("ttbar_mu140/hits" "ttbar_mu200/hits")
 
 # Put a header on the CSV file.
 echo "directory,threads,loaded_events,cold_run_events,processed_events,warm_up_time,processing_time" \
