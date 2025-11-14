@@ -36,11 +36,12 @@ full_chain_algorithm::full_chain_algorithm(
     const seedfinder_config& finder_config,
     const spacepoint_grid_config& grid_config,
     const seedfilter_config& filter_config,
+    const gbts_seedfinder_config& gbts_config,
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
     const silicon_detector_description::host& det_descr,
     const magnetic_field& field, host_detector* detector,
-    std::unique_ptr<const traccc::Logger> logger)
+    std::unique_ptr<const traccc::Logger> logger, bool useGBTS)
     : messaging(logger->clone()),
       m_host_mr(host_mr),
       m_pinned_host_mr(),
@@ -68,6 +69,9 @@ full_chain_algorithm::full_chain_algorithm(
       m_seeding(finder_config, grid_config, filter_config,
                 {m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy,
                 m_stream, logger->cloneWithSuffix("SeedingAlg")),
+      m_gbts_seeding(gbts_config,
+                     {m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy,
+                     m_stream, logger->cloneWithSuffix("GbtsAlg")),
       m_track_parameter_estimation(
           {m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy, m_stream,
           logger->cloneWithSuffix("TrackParEstAlg")),
@@ -79,8 +83,10 @@ full_chain_algorithm::full_chain_algorithm(
       m_finder_config(finder_config),
       m_grid_config(grid_config),
       m_filter_config(filter_config),
+      m_gbts_config(gbts_config),
       m_finding_config(finding_config),
-      m_fitting_config(fitting_config) {
+      m_fitting_config(fitting_config),
+      usingGBTS(useGBTS) {
 
     // Tell the user what device is being used.
     int device = 0;
@@ -128,6 +134,9 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
                 parent.m_filter_config,
                 {m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy,
                 m_stream, parent.logger().cloneWithSuffix("SeedingAlg")),
+      m_gbts_seeding(parent.m_gbts_config,
+                     {m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy,
+                     m_stream, parent.logger().cloneWithSuffix("GbtsAlg")),
       m_track_parameter_estimation(
           {m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy, m_stream,
           parent.logger().cloneWithSuffix("TrackParamEstAlg")),
@@ -141,8 +150,10 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_finder_config(parent.m_finder_config),
       m_grid_config(parent.m_grid_config),
       m_filter_config(parent.m_filter_config),
+      m_gbts_config(parent.m_gbts_config),
       m_finding_config(parent.m_finding_config),
-      m_fitting_config(parent.m_fitting_config) {
+      m_fitting_config(parent.m_fitting_config),
+      usingGBTS(parent.usingGBTS) {
 
     // Copy the detector (description) to the device.
     m_copy(vecmem::get_data(m_det_descr.get()), m_device_det_descr)->ignore();
@@ -173,9 +184,17 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
         // Run the seed-finding (asynchronously).
         const spacepoint_formation_algorithm::output_type spacepoints =
             m_spacepoint_formation(m_device_detector, measurements);
+
+        seeding_algorithm::output_type seeds;
+
+        if (usingGBTS) {
+            seeds = m_gbts_seeding(spacepoints, measurements);
+        } else {
+            seeds = m_seeding(spacepoints);
+        }
         const track_params_estimation::output_type track_params =
-            m_track_parameter_estimation(measurements, spacepoints,
-                                         m_seeding(spacepoints), m_field_vec);
+            m_track_parameter_estimation(measurements, spacepoints, seeds,
+                                         m_field_vec);
 
         // Run the track finding (asynchronously).
         const finding_algorithm::output_type track_candidates =
