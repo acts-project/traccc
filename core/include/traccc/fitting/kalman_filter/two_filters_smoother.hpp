@@ -135,8 +135,7 @@ struct two_filters_smoother {
         const subspace<algebra_t, e_bound_size> subs(
             measurements.at(trk_state.measurement_index()).subspace());
         matrix_type<D, e_bound_size> H = subs.template projector<D>();
-        // @TODO: Fix properly
-        if (getter::element(meas_local, 1u, 0u) == 0.f /*dim == 1*/) {
+        if (dim == 1) {
             getter::element(H, 1u, 0u) = 0.f;
             getter::element(H, 1u, 1u) = 0.f;
         }
@@ -147,8 +146,7 @@ struct two_filters_smoother {
         matrix_type<D, D> V;
         edm::get_measurement_covariance<algebra_t>(
             measurements.at(trk_state.measurement_index()), V);
-        // @TODO: Fix properly
-        if (getter::element(meas_local, 1u, 0u) == 0.f /*dim == 1*/) {
+        if (dim == 1) {
             getter::element(V, 1u, 1u) = 1000.f;
         }
 

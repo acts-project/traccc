@@ -93,8 +93,7 @@ struct gain_matrix_updater {
             getter::element(H, 0u, e_bound_loc0) = -1;
         }
 
-        // @TODO: Fix properly
-        if (/*dim == 1*/ getter::element(meas_local, 1u, 0u) == 0.f) {
+        if (dim == 1) {
             getter::element(H, 1u, 0u) = 0.f;
             getter::element(H, 1u, 1u) = 0.f;
         }
@@ -103,8 +102,7 @@ struct gain_matrix_updater {
         matrix_type<D, D> V;
         edm::get_measurement_covariance<algebra_t>(
             measurements.at(trk_state.measurement_index()), V);
-        // @TODO: Fix properly
-        if (/*dim == 1*/ getter::element(meas_local, 1u, 0u) == 0.f) {
+        if (dim == 1) {
             getter::element(V, 1u, 1u) = 1000.f;
         }
 
