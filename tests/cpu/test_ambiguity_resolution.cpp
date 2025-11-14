@@ -26,13 +26,14 @@ namespace {
 vecmem::host_memory_resource host_mr;
 }  // namespace
 
-void fill_measurements(measurement_collection_types::host& measurements,
-                       const measurement_id_type max_meas_id) {
+void fill_measurements(
+    edm::measurement_collection<default_algebra>::host& measurements,
+    const measurement_id_type max_meas_id) {
 
     measurements.reserve(max_meas_id + 1);
     for (measurement_id_type i = 0; i <= max_meas_id; i++) {
-        measurements.emplace_back();
-        measurements.back().measurement_id = i;
+        measurements.push_back({});
+        measurements.at(measurements.size() - 1).identifier() = i;
     }
 }
 
@@ -43,17 +44,16 @@ void fill_pattern(edm::track_container<default_algebra>::host& track_candidates,
     track_candidates.tracks.resize(track_candidates.tracks.size() + 1u);
     track_candidates.tracks.pval().back() = pval;
 
-    measurement_collection_types::const_device measurements{
+    edm::measurement_collection<default_algebra>::const_device measurements{
         track_candidates.measurements};
 
     for (const auto& meas_id : pattern) {
-        const auto meas_iter = std::lower_bound(
-            measurements.begin(), measurements.end(), meas_id,
-            [](const measurement& m, const measurement_id_type id) {
-                return m.measurement_id < id;
-            });
+        const auto meas_iter =
+            std::lower_bound(measurements.identifier().begin(),
+                             measurements.identifier().end(), meas_id);
 
-        const auto meas_idx = std::distance(measurements.begin(), meas_iter);
+        const auto meas_idx =
+            std::distance(measurements.identifier().begin(), meas_iter);
         track_candidates.tracks.constituent_links().back().push_back(
             {edm::track_constituent_link::measurement,
              static_cast<measurement_id_type>(meas_idx)});
@@ -64,7 +64,7 @@ std::vector<std::size_t> get_pattern(
     const edm::track_container<default_algebra>::host& track_candidates,
     const std::size_t idx) {
 
-    measurement_collection_types::const_device measurements{
+    edm::measurement_collection<default_algebra>::const_device measurements{
         track_candidates.measurements};
     std::vector<std::size_t> ret;
     // A const reference would be fine here. But GCC fears that that would lead
@@ -72,7 +72,7 @@ std::vector<std::size_t> get_pattern(
     const auto meas_links = track_candidates.tracks.at(idx).constituent_links();
     for (const auto& [type, meas_idx] : meas_links) {
         assert(type == edm::track_constituent_link::measurement);
-        ret.push_back(measurements.at(meas_idx).measurement_id);
+        ret.push_back(measurements.at(meas_idx).identifier());
     }
 
     return ret;
@@ -80,7 +80,7 @@ std::vector<std::size_t> get_pattern(
 
 TEST(AmbiguitySolverTests, GreedyResolverTest0) {
 
-    measurement_collection_types::host measurements{&host_mr};
+    edm::measurement_collection<default_algebra>::host measurements{host_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -157,7 +157,7 @@ TEST(AmbiguitySolverTests, GreedyResolverTest0) {
 
 TEST(AmbiguitySolverTests, GreedyResolverTest1) {
 
-    measurement_collection_types::host measurements{&host_mr};
+    edm::measurement_collection<default_algebra>::host measurements{host_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -205,7 +205,7 @@ TEST(AmbiguitySolverTests, GreedyResolverTest1) {
 
 TEST(AmbiguitySolverTests, GreedyResolverTest2) {
 
-    measurement_collection_types::host measurements{&host_mr};
+    edm::measurement_collection<default_algebra>::host measurements{host_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -232,7 +232,7 @@ TEST(AmbiguitySolverTests, GreedyResolverTest2) {
 
 TEST(AmbiguitySolverTests, GreedyResolverTest3) {
 
-    measurement_collection_types::host measurements{&host_mr};
+    edm::measurement_collection<default_algebra>::host measurements{host_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -280,7 +280,7 @@ TEST(AmbiguitySolverTests, GreedyResolverTest3) {
 // Comparison to the legacy algorithm.
 TEST(AmbiguitySolverTests, GreedyResolverTest4) {
 
-    measurement_collection_types::host measurements{&host_mr};
+    edm::measurement_collection<default_algebra>::host measurements{host_mr};
     const measurement_id_type max_meas_id = 10000;
     fill_measurements(measurements, max_meas_id);
 
@@ -365,7 +365,7 @@ TEST(AmbiguitySolverTests, GreedyResolverTest4) {
 
 TEST(AmbiguitySolverTests, GreedyResolverTest5) {
 
-    measurement_collection_types::host measurements{&host_mr};
+    edm::measurement_collection<default_algebra>::host measurements{host_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -395,7 +395,7 @@ TEST(AmbiguitySolverTests, GreedyResolverTest5) {
 
 TEST(AmbiguitySolverTests, GreedyResolverTest6) {
 
-    measurement_collection_types::host measurements{&host_mr};
+    edm::measurement_collection<default_algebra>::host measurements{host_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{

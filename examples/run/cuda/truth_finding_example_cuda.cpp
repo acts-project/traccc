@@ -165,7 +165,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                                     &polymorphic_detector, input_opts.format,
                                     false);
 
-        traccc::measurement_collection_types::host truth_measurements{&host_mr};
+        traccc::edm::measurement_collection<traccc::default_algebra>::host
+            truth_measurements{host_mr};
         traccc::edm::track_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
 
@@ -200,15 +201,17 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
             ->wait();
 
         // Read measurements
-        traccc::measurement_collection_types::host measurements_per_event{
-            mr.host};
+        traccc::edm::measurement_collection<traccc::default_algebra>::host
+            measurements_per_event{host_mr};
         traccc::io::read_measurements(
             measurements_per_event, event, input_opts.directory,
             (input_opts.use_acts_geom_source ? &polymorphic_detector : nullptr),
-            input_opts.format);
+            nullptr, input_opts.format);
 
-        traccc::measurement_collection_types::buffer measurements_cuda_buffer(
-            static_cast<unsigned int>(measurements_per_event.size()), mr.main);
+        traccc::edm::measurement_collection<traccc::default_algebra>::buffer
+            measurements_cuda_buffer(
+                static_cast<unsigned int>(measurements_per_event.size()),
+                mr.main);
         async_copy.setup(measurements_cuda_buffer)->wait();
         async_copy(vecmem::get_data(measurements_per_event),
                    measurements_cuda_buffer)

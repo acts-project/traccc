@@ -127,7 +127,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
                                     &polymorphic_detector, input_opts.format,
                                     false);
 
-        traccc::measurement_collection_types::host truth_measurements{&host_mr};
+        traccc::edm::measurement_collection<traccc::default_algebra>::host
+            truth_measurements{host_mr};
         traccc::edm::track_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
 
@@ -155,12 +156,12 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
         std::cout << "Number of seeds: " << seeds.size() << std::endl;
 
         // Read measurements
-        traccc::measurement_collection_types::host measurements_per_event{
-            &host_mr};
+        traccc::edm::measurement_collection<traccc::default_algebra>::host
+            measurements_per_event{host_mr};
         traccc::io::read_measurements(
             measurements_per_event, event, input_opts.directory,
             (input_opts.use_acts_geom_source ? &polymorphic_detector : nullptr),
-            input_opts.format);
+            nullptr, input_opts.format);
 
         // Run finding
         auto track_candidates = host_finding(

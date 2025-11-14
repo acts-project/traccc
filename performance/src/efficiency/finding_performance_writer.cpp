@@ -51,7 +51,7 @@ struct finding_performance_writer_data {
     fake_tracks_plot_tool m_fake_tracks_plot_tool;
     fake_tracks_plot_tool::fake_tracks_plot_cache m_fake_tracks_plot_cache;
 
-    std::map<measurement, std::map<particle, std::size_t>>
+    std::map<event_data::measurement_proxy, std::map<particle, std::size_t>>
         m_measurement_particle_map;
     std::map<std::uint64_t, particle> m_particle_map;
 
@@ -90,10 +90,11 @@ namespace {
  * @return std::vector<std::vector<measurement>> Associates each track index
  * with its corresponding measurements.
  */
-std::vector<std::vector<measurement>> prepare_data(
+std::vector<std::vector<event_data::measurement_proxy>> prepare_data(
     const edm::track_container<default_algebra>::const_view& track_view,
     bool require_fit = false) {
-    std::vector<std::vector<measurement>> result;
+
+    std::vector<std::vector<event_data::measurement_proxy>> result;
 
     // Set up the input containers.
     const edm::track_container<default_algebra>::const_device tracks(
@@ -108,7 +109,7 @@ std::vector<std::vector<measurement>> prepare_data(
             tracks.tracks.at(i).fit_outcome() != track_fit_outcome::SUCCESS) {
             continue;
         }
-        std::vector<measurement> result_measurements;
+        std::vector<event_data::measurement_proxy> result_measurements;
         for (const edm::track_constituent_link& link :
              tracks.tracks.constituent_links().at(i)) {
             if (link.type == edm::track_constituent_link::measurement) {
@@ -127,7 +128,7 @@ std::vector<std::vector<measurement>> prepare_data(
 }  // namespace
 
 void finding_performance_writer::write_common(
-    const std::vector<std::vector<measurement>>& tracks,
+    const std::vector<std::vector<event_data::measurement_proxy>>& tracks,
     const event_data& evt_data) {
 
     // Associates truth particle_ids with the number of tracks made entirely of
@@ -145,7 +146,8 @@ void finding_performance_writer::write_common(
 
     for (std::size_t i = 0; i < n_tracks; i++) {
 
-        const std::vector<measurement>& found_measurements = tracks[i];
+        const std::vector<event_data::measurement_proxy>& found_measurements =
+            tracks[i];
 
         // Check which particle matches this seed.
         // Input :
@@ -172,7 +174,7 @@ void finding_performance_writer::write_common(
         const auto n_major_hits = particle_hit_counts.at(0).hit_counts;
 
         // Truth measureemnt from the particle
-        const std::vector<measurement> truth_measurements =
+        const std::vector<event_data::measurement_proxy> truth_measurements =
             evt_data.m_ptc_to_meas_map.at(major_ptc);
 
         // Consider it being matched if hit counts is larger than the half
@@ -317,8 +319,7 @@ void finding_performance_writer::write(
                                       tracks.tracks.at(i));
     }
 
-    std::vector<std::vector<measurement>> prep_data =
-        prepare_data(track_view, m_cfg.require_fit);
+    auto prep_data = prepare_data(track_view, m_cfg.require_fit);
     write_common(prep_data, evt_data);
 }
 

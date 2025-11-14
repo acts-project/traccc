@@ -32,7 +32,7 @@ __global__ void ccl_kernel(
     const clustering_config cfg,
     const edm::silicon_cell_collection::const_view cells_view,
     const silicon_detector_description::const_view det_descr_view,
-    measurement_collection_types::view measurements_view,
+    edm::measurement_collection<default_algebra>::view measurements_view,
     vecmem::data::vector_view<unsigned int> cell_links,
     vecmem::data::vector_view<device::details::index_t> f_backup_view,
     vecmem::data::vector_view<device::details::index_t> gf_backup_view,

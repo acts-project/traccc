@@ -20,14 +20,15 @@ track_params_estimation::track_params_estimation(
     : messaging(std::move(logger)), m_mr(mr) {}
 
 track_params_estimation::output_type track_params_estimation::operator()(
-    const measurement_collection_types::const_view& measurements_view,
+    const edm::measurement_collection<default_algebra>::const_view&
+        measurements_view,
     const edm::spacepoint_collection::const_view& spacepoints_view,
     const edm::seed_collection::const_view& seeds_view, const vector3& bfield,
     const std::array<traccc::scalar, traccc::e_bound_size>& stddev) const {
 
     // Set up the input / output objects.
-    const measurement_collection_types::const_device measurements(
-        measurements_view);
+    const edm::measurement_collection<default_algebra>::const_device
+        measurements(measurements_view);
     const edm::spacepoint_collection::const_device spacepoints(
         spacepoints_view);
     const edm::seed_collection::const_device seeds(seeds_view);

@@ -20,10 +20,10 @@ namespace traccc::cuda {
 namespace kernels {
 
 template <typename detector_t>
-__global__ void __launch_bounds__(1024, 1)
-    form_spacepoints(typename detector_t::view det_view,
-                     measurement_collection_types::const_view measurements_view,
-                     edm::spacepoint_collection::view spacepoints_view)
+__global__ void __launch_bounds__(1024, 1) form_spacepoints(
+    typename detector_t::view det_view,
+    edm::measurement_collection<default_algebra>::const_view measurements_view,
+    edm::spacepoint_collection::view spacepoints_view)
     requires(traccc::is_detector_traits<detector_t>)
 {
 
@@ -40,7 +40,8 @@ spacepoint_formation_algorithm::spacepoint_formation_algorithm(
 
 edm::spacepoint_collection::buffer spacepoint_formation_algorithm::operator()(
     const detector_buffer& detector,
-    const measurement_collection_types::const_view& measurements_view) const {
+    const edm::measurement_collection<default_algebra>::const_view&
+        measurements_view) const {
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
@@ -50,8 +51,7 @@ edm::spacepoint_collection::buffer spacepoint_formation_algorithm::operator()(
         vecmem::make_unique_alloc<unsigned int>(*(m_mr.host));
 
     // Get the number of measurements.
-    const measurement_collection_types::const_view::size_type num_measurements =
-        get_size(measurements_view, size_staging_ptr.get(), stream);
+    const auto num_measurements = m_copy.get().get_size(measurements_view);
 
     // Create the result buffer.
     edm::spacepoint_collection::buffer spacepoints(

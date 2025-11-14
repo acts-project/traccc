@@ -15,8 +15,8 @@ namespace traccc::device {
 TRACCC_HOST_DEVICE inline void build_tracks(
     const global_index_t globalIndex, const build_tracks_payload& payload) {
 
-    const measurement_collection_types::const_device measurements(
-        payload.tracks_view.measurements);
+    const edm::measurement_collection<default_algebra>::const_device
+        measurements(payload.tracks_view.measurements);
 
     const bound_track_parameters_collection_types::const_device seeds(
         payload.seeds_view);
@@ -60,7 +60,7 @@ TRACCC_HOST_DEVICE inline void build_tracks(
         assert(L.chi2 < std::numeric_limits<traccc::scalar>::max());
         assert(L.chi2 >= 0.f);
 
-        ndf_sum += static_cast<scalar>(measurements.at(it->index).meas_dim);
+        ndf_sum += static_cast<scalar>(measurements.at(it->index).dimensions());
         chi2_sum += L.chi2;
 
         // Break the loop if the iterator is at the first candidate and fill the
@@ -85,8 +85,8 @@ TRACCC_HOST_DEVICE inline void build_tracks(
             assert(j.type == edm::track_constituent_link::measurement);
             if (i.index != j.index) {
                 // TODO: Re-enable me!
-                // assert(measurements.at(i->index).measurement_id !=
-                //       measurement.at(j->index).measurement_id);
+                // assert(measurements.at(i->index).identifier() !=
+                //       measurement.at(j->index).identifier());
             }
         }
     }

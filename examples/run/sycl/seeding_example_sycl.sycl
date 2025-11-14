@@ -127,8 +127,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
          event < input_opts.events + input_opts.skip; ++event) {
 
         // Instantiate host containers/collections
-        traccc::measurement_collection_types::host measurements_per_event{
-            &host_mr};
+        traccc::edm::measurement_collection<traccc::default_algebra>::host
+            measurements_per_event{host_mr};
         traccc::edm::spacepoint_collection::host spacepoints_per_event{host_mr};
         traccc::host::seeding_algorithm::output_type seeds{host_mr};
         traccc::host::track_params_estimation::output_type params{&host_mr};
@@ -153,7 +153,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                     spacepoints_per_event, measurements_per_event, event,
                     input_opts.directory,
                     (input_opts.use_acts_geom_source ? &host_det : nullptr),
-                    input_opts.format);
+                    nullptr, input_opts.format);
 
             }  // stop measuring hit reading timer
 
@@ -165,7 +165,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
             // Copy the measurements and spacepoint and module data to the
             // device.
-            traccc::measurement_collection_types::buffer
+            traccc::edm::measurement_collection<traccc::default_algebra>::buffer
                 measurements_sycl_buffer(
                     static_cast<unsigned int>(measurements_per_event.size()),
                     mr.main);

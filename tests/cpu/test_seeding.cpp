@@ -7,7 +7,7 @@
 
 // Project include(s).
 #include "traccc/definitions/common.hpp"
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
@@ -45,7 +45,7 @@ TEST(seeding, case1) {
     traccc::host::seeding_algorithm sa(finder_config, grid_config,
                                        filter_config, host_mr);
 
-    measurement_collection_types::host measurements(&host_mr);
+    edm::measurement_collection<default_algebra>::host measurements(host_mr);
     edm::spacepoint_collection::host spacepoints{host_mr};
 
     // Spacepoints from 16.62 GeV muon
@@ -117,7 +117,7 @@ TEST(seeding, case2) {
     traccc::host::seeding_algorithm sa(finder_config, grid_config,
                                        filter_config, host_mr);
 
-    measurement_collection_types::host measurements(&host_mr);
+    edm::measurement_collection<default_algebra>::host measurements(host_mr);
     edm::spacepoint_collection::host spacepoints{host_mr};
 
     // Spacepoints from 1.85 GeV muon

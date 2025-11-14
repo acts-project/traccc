@@ -189,8 +189,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
         // Instantiate host containers/collections
         traccc::edm::spacepoint_collection::host spacepoints_per_event{host_mr};
-        traccc::measurement_collection_types::host measurements_per_event{
-            &host_mr};
+        traccc::edm::measurement_collection<traccc::default_algebra>::host
+            measurements_per_event{host_mr};
         traccc::host::seeding_algorithm::output_type seeds{host_mr};
         traccc::host::track_params_estimation::output_type params;
         traccc::edm::track_container<traccc::default_algebra>::host
@@ -222,7 +222,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                     spacepoints_per_event, measurements_per_event, event,
                     input_opts.directory,
                     (input_opts.use_acts_geom_source ? &host_det : nullptr),
-                    input_opts.format);
+                    nullptr, input_opts.format);
 
             }  // stop measuring hit reading timer
 
@@ -242,7 +242,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                        spacepoints_alpaka_buffer)
                 ->wait();
 
-            traccc::measurement_collection_types::buffer
+            traccc::edm::measurement_collection<traccc::default_algebra>::buffer
                 measurements_alpaka_buffer(
                     static_cast<unsigned int>(measurements_per_event.size()),
                     mr.main);

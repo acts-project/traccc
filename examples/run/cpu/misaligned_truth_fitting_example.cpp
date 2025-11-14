@@ -151,8 +151,8 @@ int main(int argc, char* argv[]) {
 
         // For the first half of events run Alg0
         if ((event - input_opts.skip) / (input_opts.events / 2) == 0) {
-            traccc::measurement_collection_types::host truth_measurements{
-                &host_mr};
+            traccc::edm::measurement_collection<traccc::default_algebra>::host
+                truth_measurements{host_mr};
             traccc::edm::track_container<default_algebra>::host
                 truth_track_candidates{host_mr};
             evt_data.generate_truth_candidates(
@@ -180,8 +180,8 @@ int main(int argc, char* argv[]) {
                 }
             }
         } else {
-            traccc::measurement_collection_types::host truth_measurements{
-                &host_mr};
+            traccc::edm::measurement_collection<traccc::default_algebra>::host
+                truth_measurements{host_mr};
             traccc::edm::track_container<default_algebra>::host
                 truth_track_candidates{host_mr};
             evt_data.generate_truth_candidates(

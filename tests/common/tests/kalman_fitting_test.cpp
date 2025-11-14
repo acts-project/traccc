@@ -136,7 +136,7 @@ void KalmanFittingTests::p_value_tests(
 void KalmanFittingTests::ndf_tests(
     const edm::track_collection<default_algebra>::host::const_proxy_type& track,
     const edm::track_state_collection<default_algebra>::host& track_states,
-    const measurement_collection_types::host& measurements) {
+    const edm::measurement_collection<default_algebra>::host& measurements) {
 
     scalar dim_sum = 0;
     std::size_t n_effective_states = 0;
@@ -150,12 +150,12 @@ void KalmanFittingTests::ndf_tests(
             if (!state.is_hole() && state.is_smoothed()) {
 
                 dim_sum += static_cast<scalar>(
-                    measurements.at(state.measurement_index()).meas_dim);
+                    measurements.at(state.measurement_index()).dimensions());
                 n_effective_states++;
             }
 
         } else if (type == edm::track_constituent_link::measurement) {
-            dim_sum += static_cast<scalar>(measurements.at(index).meas_dim);
+            dim_sum += static_cast<scalar>(measurements.at(index).dimensions());
         } else {
             GTEST_FAIL();
         }

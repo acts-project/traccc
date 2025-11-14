@@ -14,13 +14,14 @@
 #include "../utils/utils.hpp"
 
 // Project include(s).
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/track_container.hpp"
 #include "traccc/finding/actors/ckf_aborter.hpp"
 #include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
 #include "traccc/finding/device/apply_interaction.hpp"
+#include "traccc/finding/device/barcode_surface_comparator.hpp"
 #include "traccc/finding/device/build_tracks.hpp"
 #include "traccc/finding/device/fill_finding_duplicate_removal_sort_keys.hpp"
 #include "traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
@@ -184,13 +185,19 @@ template <typename detector_t, typename bfield_t>
 edm::track_container<typename detector_t::algebra_type>::buffer
 combinatorial_kalman_filter(
     const typename detector_t::const_view_type& det, const bfield_t& field,
-    const measurement_collection_types::const_view& measurements,
+    const typename edm::measurement_collection<
+        typename detector_t::algebra_type>::const_view& measurements_view,
     const bound_track_parameters_collection_types::const_view& seeds,
     const finding_config& config, const memory_resource& mr, vecmem::copy& copy,
     const Logger& log, Queue& queue) {
 
+    const typename edm::measurement_collection<
+        typename detector_t::algebra_type>::const_device measurements{
+        measurements_view};
+
     assert(config.min_step_length_for_next_surface >
-               math::fabs(config.propagation.navigation.overstep_tolerance) &&
+               math::fabs(config.propagation.navigation.intersection
+                              .overstep_tolerance) &&
            "Min step length for the next surface should be higher than the "
            "overstep tolerance");
 
@@ -204,8 +211,7 @@ combinatorial_kalman_filter(
      * Measurement Operations
      *****************************************************************/
 
-    const measurement_collection_types::const_view::size_type n_measurements =
-        copy.get_size(measurements);
+    const auto n_measurements = copy.get_size(measurements_view);
 
     // Access the detector view as a detector object
     detector_t device_det(det);
@@ -219,9 +225,13 @@ combinatorial_kalman_filter(
 
     // Get upper bounds of measurement ranges
     details::upper_bound(
-        queue, mr, measurements.ptr(), measurements.ptr() + n_measurements,
+        queue, mr, measurements.surface_link().begin(),
+        // We have to use this ugly form here, because if the
+        // measurement collection is resizable (which it often
+        // is), the end() function cannot be used in host code.
+        measurements.surface_link().begin() + n_measurements,
         device_det.surfaces().begin(), device_det.surfaces().end(),
-        measurement_ranges.begin(), measurement_sf_comp());
+        measurement_ranges.begin(), device::barcode_surface_comparator{});
 
     const unsigned int n_seeds = copy.get_size(seeds);
 
@@ -338,7 +348,7 @@ combinatorial_kalman_filter(
             using payload_t = device::find_tracks_payload<detector_t>;
             const payload_t host_payload{
                 .det_data = det,
-                .measurements_view = measurements,
+                .measurements_view = measurements_view,
                 .in_params_view = in_params_buffer,
                 .in_params_liveness_view = param_liveness_buffer,
                 .n_in_params = n_in_params,
@@ -565,7 +575,7 @@ combinatorial_kalman_filter(
     // Create track candidate buffer
     typename edm::track_container<typename detector_t::algebra_type>::buffer
         track_candidates_buffer{
-            {tips_length_host, mr.main, mr.host}, {}, measurements};
+            {tips_length_host, mr.main, mr.host}, {}, measurements_view};
     copy.setup(track_candidates_buffer.tracks)->wait();
 
     if (n_tips_total > 0) {

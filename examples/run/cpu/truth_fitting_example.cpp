@@ -117,7 +117,8 @@ int main(int argc, char* argv[]) {
                                     &polymorphic_detector, input_opts.format,
                                     false);
 
-        traccc::measurement_collection_types::host truth_measurements{&host_mr};
+        traccc::edm::measurement_collection<traccc::default_algebra>::host
+            truth_measurements{host_mr};
         traccc::edm::track_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
 

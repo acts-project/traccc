@@ -65,7 +65,7 @@ auto greedy_ambiguity_resolution_algorithm::operator()(
             for (const auto& [type, idx] : measurement_links) {
                 assert(type == edm::track_constituent_link::measurement);
                 meas_ids[i].push_back(
-                    input_tracks.measurements.at(idx).measurement_id);
+                    input_tracks.measurements.at(idx).identifier());
             }
             n_meas[i] = n_cands;
             assert(n_cands == meas_ids[i].size());
@@ -80,7 +80,7 @@ auto greedy_ambiguity_resolution_algorithm::operator()(
         for (const auto& [type, idx] : measurement_links) {
             assert(type == edm::track_constituent_link::measurement);
             unique_meas_set.insert(
-                input_tracks.measurements.at(idx).measurement_id);
+                input_tracks.measurements.at(idx).identifier());
         }
     }
 

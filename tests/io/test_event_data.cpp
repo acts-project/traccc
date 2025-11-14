@@ -221,9 +221,9 @@ TEST(event_data, mock_data) {
     bool has_second_param = false;
 
     for (auto const& [meas, param] : evt_data.m_found_meas_to_param_map) {
-        if (meas.measurement_id == 0u) {
+        if (meas.identifier() == 0u) {
             has_first_param = true;
-        } else if (meas.measurement_id == 1u) {
+        } else if (meas.identifier() == 1u) {
             has_second_param = true;
         }
     }

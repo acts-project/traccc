@@ -13,7 +13,7 @@
 // Project include(s).
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/utils/algorithm.hpp"
@@ -37,7 +37,7 @@ namespace traccc::alpaka {
 /// synchronisation statement is required before destroying this buffer.
 ///
 class clusterization_algorithm
-    : public algorithm<measurement_collection_types::buffer(
+    : public algorithm<edm::measurement_collection<default_algebra>::buffer(
           const edm::silicon_cell_collection::const_view&,
           const silicon_detector_description::const_view&)>,
       public messaging {

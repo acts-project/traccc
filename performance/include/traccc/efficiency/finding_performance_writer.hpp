@@ -84,8 +84,9 @@ class finding_performance_writer : public messaging {
     std::unique_ptr<details::finding_performance_writer_data> m_data;
 
     /// Common method to both track finding and ambiguity resolution
-    void write_common(const std::vector<std::vector<measurement>>& tracks,
-                      const event_data& evt_data);
+    void write_common(
+        const std::vector<std::vector<event_data::measurement_proxy>>& tracks,
+        const event_data& evt_data);
 
 };  // class finding_performance_writer
 

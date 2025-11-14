@@ -41,7 +41,7 @@ struct seeding_performance_writer_data {
     duplication_plot_tool m_duplication_plot_tool;
     duplication_plot_tool::duplication_plot_cache m_duplication_plot_cache;
 
-    std::map<measurement, std::map<particle, std::size_t>>
+    std::map<event_data::measurement_proxy, std::map<particle, std::size_t>>
         m_measurement_particle_map;
     std::map<std::uint64_t, particle> m_particle_map;
 
@@ -65,7 +65,8 @@ seeding_performance_writer::~seeding_performance_writer() {}
 void seeding_performance_writer::write(
     const edm::seed_collection::const_view& seeds_view,
     const edm::spacepoint_collection::const_view& spacepoints_view,
-    const measurement_collection_types::const_view& measurements_view,
+    const edm::measurement_collection<default_algebra>::const_view&
+        measurements_view,
     const event_data& evt_data) {
 
     std::map<particle_id, std::size_t> match_counter;
@@ -74,8 +75,8 @@ void seeding_performance_writer::write(
     const edm::seed_collection::const_device seeds(seeds_view);
     const edm::spacepoint_collection::const_device spacepoints(
         spacepoints_view);
-    const measurement_collection_types::const_device measurements(
-        measurements_view);
+    const edm::measurement_collection<default_algebra>::const_device
+        measurements(measurements_view);
 
     const std::size_t n_seeds = seeds.size();
 
@@ -126,7 +127,7 @@ void seeding_performance_writer::write(
                edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX);
         assert(spacepoints.at(sd.top_index()).measurement_index_2() ==
                edm::spacepoint_collection::host::INVALID_MEASUREMENT_INDEX);
-        std::array<measurement, 3> seed_measurements{
+        std::array<event_data::measurement_proxy, 3> seed_measurements{
             measurements.at(
                 spacepoints.at(sd.bottom_index()).measurement_index_1()),
             measurements.at(

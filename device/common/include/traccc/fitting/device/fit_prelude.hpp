@@ -50,8 +50,8 @@ TRACCC_HOST_DEVICE inline void fit_prelude(
     const auto track_candidate = track_candidates.at(param_id);
     const auto track_candidate_constituent_links =
         track_candidate.constituent_links();
-    const measurement_collection_types::const_device measurements{
-        track_candidates_view.measurements};
+    const typename edm::measurement_collection<algebra_t>::const_device
+        measurements{track_candidates_view.measurements};
     for (const edm::track_constituent_link& link :
          track_candidate_constituent_links) {
         assert(link.type == edm::track_constituent_link::measurement);

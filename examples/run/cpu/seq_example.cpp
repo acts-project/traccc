@@ -189,7 +189,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
         traccc::host::sparse_ccl_algorithm::output_type clusters_per_event{
             host_mr};
         traccc::host::measurement_creation_algorithm::output_type
-            measurements_per_event{&host_mr};
+            measurements_per_event{host_mr};
         spacepoint_formation_algorithm::output_type spacepoints_per_event{
             host_mr};
         traccc::host::seeding_algorithm::output_type seeds{host_mr};

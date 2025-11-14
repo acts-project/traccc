@@ -65,13 +65,29 @@ TEST(SYCLSpacepointFormation, sycl) {
                                           copy);
 
     // Prepare measurement collection
-    measurement_collection_types::host measurements{&shared_mr};
+    edm::measurement_collection<default_algebra>::host measurements{shared_mr};
 
     // Add a measurement at the first plane
-    measurements.push_back({{7.f, 2.f}, {0.f, 0.f}, surfaces[0].barcode()});
+    measurements.push_back({{7.f, 2.f},
+                            {0.f, 0.f},
+                            2,
+                            0.f,
+                            0.f,
+                            0u,
+                            surfaces[0].barcode(),
+                            {1u, 1u},
+                            0u});
 
     // Add a measurement at the last plane
-    measurements.push_back({{10.f, 15.f}, {0.f, 0.f}, surfaces[8u].barcode()});
+    measurements.push_back({{10.f, 15.f},
+                            {0.f, 0.f},
+                            2u,
+                            0.f,
+                            0.f,
+                            0u,
+                            surfaces[8u].barcode(),
+                            {1u, 1u},
+                            1u});
 
     // Run spacepoint formation
     traccc::sycl::silicon_pixel_spacepoint_formation_algorithm sp_formation(

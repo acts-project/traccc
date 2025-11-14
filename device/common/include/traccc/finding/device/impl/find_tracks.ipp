@@ -52,7 +52,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
      * Initialize all of the device vectors from their vecmem views.
      */
     detector_t det(payload.det_data);
-    measurement_collection_types::const_device measurements(
+    edm::measurement_collection<default_algebra>::const_device measurements(
         payload.measurements_view);
     bound_track_parameters_collection_types::const_device in_params(
         payload.in_params_view);
@@ -437,7 +437,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                             prev_ndf_sum +
                             measurements
                                 .at(std::get<0>(*result).measurement_index())
-                                .meas_dim};
+                                .dimensions()};
 
                     tmp_params.at(p_offset + l_pos) =
                         std::get<0>(*result).filtered_params();

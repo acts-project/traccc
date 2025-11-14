@@ -160,13 +160,13 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
          event < input_opts.events + input_opts.skip; ++event) {
 
         // Read the hits from the relevant event file
-        traccc::measurement_collection_types::host measurements_per_event{
-            &host_mr};
+        traccc::edm::measurement_collection<traccc::default_algebra>::host
+            measurements_per_event{host_mr};
         traccc::edm::spacepoint_collection::host spacepoints_per_event{host_mr};
         traccc::io::read_spacepoints(
             spacepoints_per_event, measurements_per_event, event,
             input_opts.directory,
-            (input_opts.use_acts_geom_source ? &detector : nullptr),
+            (input_opts.use_acts_geom_source ? &detector : nullptr), nullptr,
             input_opts.format);
         n_measurements += measurements_per_event.size();
         n_spacepoints += spacepoints_per_event.size();

@@ -87,7 +87,7 @@ void fitting_performance_writer::write_stat(
         track,
     const edm::track_state_collection<traccc::default_algebra>::host&
         track_states,
-    const measurement_collection_types::host& measurements) {
+    const edm::measurement_collection<default_algebra>::host& measurements) {
 
     m_data->m_stat_plot_tool.fill(m_data->m_stat_plot_cache, track);
 
