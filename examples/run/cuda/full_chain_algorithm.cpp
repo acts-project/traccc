@@ -10,6 +10,7 @@
 
 // Project include(s).
 #include "traccc/cuda/utils/make_magnetic_field.hpp"
+#include "traccc/seeding/detail/track_params_estimation_config.hpp"
 
 // CUDA include(s).
 #include <cuda_runtime_api.h>
@@ -36,6 +37,7 @@ full_chain_algorithm::full_chain_algorithm(
     const seedfinder_config& finder_config,
     const spacepoint_grid_config& grid_config,
     const seedfilter_config& filter_config,
+    const track_params_estimation_config& track_params_estimation_config,
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
     const silicon_detector_description::host& det_descr,
@@ -69,6 +71,7 @@ full_chain_algorithm::full_chain_algorithm(
                 {m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy,
                 m_stream, logger->cloneWithSuffix("SeedingAlg")),
       m_track_parameter_estimation(
+          track_params_estimation_config,
           {m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy, m_stream,
           logger->cloneWithSuffix("TrackParEstAlg")),
       m_finding(finding_config, {m_cached_device_mr, &m_cached_pinned_host_mr},
@@ -79,6 +82,7 @@ full_chain_algorithm::full_chain_algorithm(
       m_finder_config(finder_config),
       m_grid_config(grid_config),
       m_filter_config(filter_config),
+      m_track_params_estimation_config(track_params_estimation_config),
       m_finding_config(finding_config),
       m_fitting_config(fitting_config) {
 
@@ -129,6 +133,7 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
                 {m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy,
                 m_stream, parent.logger().cloneWithSuffix("SeedingAlg")),
       m_track_parameter_estimation(
+          parent.m_track_params_estimation_config,
           {m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy, m_stream,
           parent.logger().cloneWithSuffix("TrackParamEstAlg")),
       m_finding(parent.m_finding_config,
@@ -141,6 +146,7 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_finder_config(parent.m_finder_config),
       m_grid_config(parent.m_grid_config),
       m_filter_config(parent.m_filter_config),
+      m_track_params_estimation_config(parent.m_track_params_estimation_config),
       m_finding_config(parent.m_finding_config),
       m_fitting_config(parent.m_fitting_config) {
 

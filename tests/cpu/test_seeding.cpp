@@ -88,7 +88,9 @@ TEST(seeding, case1) {
     // The number of seeds should be eqaul to one
     ASSERT_EQ(seeds.size(), 1u);
 
-    traccc::host::track_params_estimation tp(host_mr);
+    traccc::track_params_estimation_config track_params_estimation_config;
+    traccc::host::track_params_estimation tp(track_params_estimation_config,
+                                             host_mr);
 
     auto bound_params =
         tp(vecmem::get_data(measurements), vecmem::get_data(spacepoints),
@@ -160,7 +162,9 @@ TEST(seeding, case2) {
     // The number of seeds should be eqaul to one
     ASSERT_EQ(seeds.size(), 1u);
 
-    traccc::host::track_params_estimation tp(host_mr);
+    traccc::track_params_estimation_config track_params_estimation_config;
+    traccc::host::track_params_estimation tp(track_params_estimation_config,
+                                             host_mr);
 
     auto bound_params =
         tp(vecmem::get_data(measurements), vecmem::get_data(spacepoints),

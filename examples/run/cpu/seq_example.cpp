@@ -8,6 +8,7 @@
 // core
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/host_detector.hpp"
+#include "traccc/seeding/detail/track_params_estimation_config.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/propagation.hpp"
 
@@ -148,7 +149,9 @@ int seq_run(const traccc::opts::input_data& input_opts,
     traccc::host::seeding_algorithm sa(
         seedfinder_config, spacepoint_grid_config, seedfilter_config, host_mr,
         logger().clone("SeedingAlg"));
-    traccc::host::track_params_estimation tp(host_mr,
+    traccc::track_params_estimation_config track_params_estimation_config;
+    traccc::host::track_params_estimation tp(track_params_estimation_config,
+                                             host_mr,
                                              logger().clone("TrackParEstAlg"));
 
     finding_algorithm finding_alg(finding_cfg, host_mr,

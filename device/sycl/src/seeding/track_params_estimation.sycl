@@ -26,16 +26,21 @@ class estimate_track_params;
 }  // namespace kernels
 
 track_params_estimation::track_params_estimation(
+    const track_params_estimation_config& config,
     const traccc::memory_resource& mr, vecmem::copy& copy, queue_wrapper queue,
     std::unique_ptr<const Logger> logger)
-    : messaging(std::move(logger)), m_mr(mr), m_queue(queue), m_copy(copy) {}
+    : messaging(std::move(logger)),
+      m_config(config),
+      m_mr(mr),
+      m_queue(queue),
+      m_copy(copy) {}
 
 track_params_estimation::output_type track_params_estimation::operator()(
     const edm::measurement_collection<default_algebra>::const_view&
         measurements_view,
     const edm::spacepoint_collection::const_view& spacepoints_view,
-    const edm::seed_collection::const_view& seeds_view, const vector3& bfield,
-    const std::array<traccc::scalar, traccc::e_bound_size>& stddev) const {
+    const edm::seed_collection::const_view& seeds_view,
+    const vector3& bfield) const {
 
     // Get the size of the seeds view
     auto seeds_size = m_copy.get_size(seeds_view);
@@ -65,12 +70,11 @@ track_params_estimation::output_type track_params_estimation::operator()(
         .submit([&](::sycl::handler& h) {
             h.parallel_for<kernels::estimate_track_params>(
                 trackParamsNdRange,
-                [measurements_view, spacepoints_view, seeds_view, bfield,
-                 stddev, params_view](::sycl::nd_item<1> item) {
-                    device::estimate_track_params(details::global_index(item),
-                                                  measurements_view,
-                                                  spacepoints_view, seeds_view,
-                                                  bfield, stddev, params_view);
+                [config = m_config, measurements_view, spacepoints_view,
+                 seeds_view, bfield, params_view](::sycl::nd_item<1> item) {
+                    device::estimate_track_params(
+                        details::global_index(item), config, measurements_view,
+                        spacepoints_view, seeds_view, bfield, params_view);
                 });
         })
         .wait_and_throw();
