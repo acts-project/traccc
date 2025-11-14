@@ -166,7 +166,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         traccc::io::read_spacepoints(
             spacepoints_per_event, measurements_per_event, event,
             input_opts.directory,
-            (input_opts.use_acts_geom_source ? &detector : nullptr),
+            (input_opts.use_acts_geom_source ? &detector : nullptr), nullptr,
             input_opts.format);
         n_measurements += measurements_per_event.size();
         n_spacepoints += spacepoints_per_event.size();

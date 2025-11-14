@@ -153,7 +153,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                     spacepoints_per_event, measurements_per_event, event,
                     input_opts.directory,
                     (input_opts.use_acts_geom_source ? &host_det : nullptr),
-                    input_opts.format);
+                    nullptr, input_opts.format);
 
             }  // stop measuring hit reading timer
 

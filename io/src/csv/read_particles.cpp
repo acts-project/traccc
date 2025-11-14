@@ -45,7 +45,9 @@ void read_particles(
     edm::measurement_collection<default_algebra>::host& measurements,
     std::string_view particles_file, std::string_view hits_file,
     std::string_view measurements_file, std::string_view hit_map_file,
-    const traccc::host_detector* detector, const bool sort_measurements) {
+    const traccc::host_detector* detector,
+    const traccc::silicon_detector_description::host* detector_description,
+    const bool sort_measurements) {
 
     // Memory resource used by the temporary collections.
     vecmem::host_memory_resource mr;
@@ -60,8 +62,9 @@ void read_particles(
     read_particles(temp_particles, particles_file);
 
     // Read in all measurements.
-    const std::vector<measurement_id_type> new_idx_map = read_measurements(
-        measurements, measurements_file, detector, sort_measurements);
+    const std::vector<measurement_id_type> new_idx_map =
+        read_measurements(measurements, measurements_file, detector,
+                          detector_description, sort_measurements);
 
     // Make a hit to measurement map.
     std::unordered_map<std::size_t, measurement_id_type> hit_to_measurement;
