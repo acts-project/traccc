@@ -14,6 +14,7 @@ example.json~
 main_test.py
 main_test.py~
 seeding_param.json
+seeding_param.json~
 
 # Prerequisites
 *.d
