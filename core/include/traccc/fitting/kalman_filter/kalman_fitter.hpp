@@ -25,6 +25,9 @@
 #include "traccc/utils/prob.hpp"
 #include "traccc/utils/propagation.hpp"
 
+// detray include(s)
+#include <detray/definitions/navigation.hpp>
+
 // vecmem include(s)
 #include <type_traits>
 #include <vecmem/containers/device_vector.hpp>
