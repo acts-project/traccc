@@ -1,0 +1,33 @@
+{
+    "input": {
+        "event_dir": "/eos/user/s/sosarkar/TRACCC_STANDALONE_FILES/ttbar_mu200/",
+        "digitization_file": "/eos/project/a/atlas-eftracking/GPU/ITk_data/ATLAS-P2-RUN4-03-00-01/ITk_digitization_config.json",
+        "detector_file": "/eos/project/a/atlas-eftracking/GPU/ITk_data/ATLAS-P2-RUN4-03-00-01/detray_detector_geometry.json",
+        "grid_file": "/eos/project/a/atlas-eftracking/GPU/ITk_data/ATLAS-P2-RUN4-03-00-01/detray_detector_surface_grids.json",
+        "material_file": "/eos/project/a/atlas-eftracking/GPU/ITk_data/ATLAS-P2-RUN4-03-00-01/detray_detector_material_maps.json"
+    },
+    "config": {
+        "seedfinder-deltaR-range": "20:120",
+        "seedfinder-vertex-range": "-114:114",
+        "seedfinder-r-range": "33:320",
+	"truth-finding-process-id": 1,
+        "truth-finding-max-eta": 4,
+        "truth-finding-max-r": 300,
+        "truth-finding-min-pt": 1.0,
+        "track-double-matching": 0,
+        "use-acts-geom-source": off
+
+    },
+    "parameters": {
+        "seedfinder-impactMax": [2,10,20],
+        "seedfinder-maxPtScattering": [10,20,50,100,200000],
+        "seedfinder-minPt": [0.9,1,2],
+        "seedfinder-maxSeedsPerSpM": [2,3,4,5,10,20],
+        "truth-finding-min-z": [-150],
+        "truth-finding-max-z": [150],
+        "seedfinder-deltaInvHelixDiameter": [0.00002,0.00003,0.00004],
+        "seedfinder-compatSeedWeight": [100,200,2000,10000,10100],
+        "seedfinder-compatSeedLimit": [1,2,3,4,5],
+	"seedfinder-deltaZMax": [200,300,450,800,1000]
+    }
+}
