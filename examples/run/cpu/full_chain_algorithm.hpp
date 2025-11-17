@@ -70,7 +70,6 @@ class full_chain_algorithm
     /// @param dummy This is not used anywhere. Allows templating CPU/Device
     /// algorithm.
     ///
-<<<<<<< HEAD
     full_chain_algorithm(
         vecmem::memory_resource& mr,
         const clustering_algorithm::config_type& dummy,
@@ -83,22 +82,7 @@ class full_chain_algorithm
         const fitting_algorithm::config_type& fitting_config,
         const silicon_detector_description::host& det_descr,
         const magnetic_field& field, const host_detector* detector,
-        std::unique_ptr<const traccc::Logger> logger);
-=======
-    full_chain_algorithm(vecmem::memory_resource& mr,
-                         const clustering_algorithm::config_type& dummy,
-                         const seedfinder_config& finder_config,
-                         const spacepoint_grid_config& grid_config,
-                         const seedfilter_config& filter_config,
-                         const gbts_seedfinder_config& gbts_config,
-                         const finding_algorithm::config_type& finding_config,
-                         const fitting_algorithm::config_type& fitting_config,
-                         const silicon_detector_description::host& det_descr,
-                         const magnetic_field& field,
-                         const host_detector* detector,
-                         std::unique_ptr<const traccc::Logger> logger,
-                         const bool useGBTS);
->>>>>>> 0ac700c4 (formatting and placeholders for sycl alpaka)
+        std::unique_ptr<const traccc::Logger> logger, const bool useGBTS);
 
     /// Reconstruct track parameters in the entire detector
     ///

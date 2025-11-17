@@ -85,7 +85,7 @@ class full_chain_algorithm
         const silicon_detector_description::host& det_descr,
         const magnetic_field& field, host_detector* detector,
         std::unique_ptr<const traccc::Logger> logger
-		bool usingGBTS = false);
+		bool useGBTS = false);
 
     /// Copy constructor
     ///
