@@ -26,7 +26,8 @@ full_chain_algorithm::full_chain_algorithm(
     const fitting_algorithm::config_type& fitting_config,
     const silicon_detector_description::host& det_descr,
     const magnetic_field& field, host_detector* detector,
-    std::unique_ptr<const traccc::Logger> logger)
+    std::unique_ptr<const traccc::Logger> logger,
+	bool useGBTS = false)
     : messaging(logger->clone()),
       m_queue(),
       m_vecmem_objects(m_queue),
@@ -70,14 +71,10 @@ full_chain_algorithm::full_chain_algorithm(
       m_grid_config(grid_config),
       m_filter_config(filter_config),
       m_gbts_config(gbts_config),
-<<<<<<< HEAD
       m_track_params_estimation_config(track_params_estimation_config),
       m_finding_config(finding_config),
-	  m_finding_config(finding_config),
-=======
-      m_finding_config(finding_config),
->>>>>>> 0ac700c4 (formatting and placeholders for sycl alpaka)
-      m_fitting_config(fitting_config) {
+      m_fitting_config(fitting_config),
+	  usingGBTS(useGBTS) {
 
     std::cout << traccc::alpaka::get_device_info() << std::endl;
 
@@ -141,7 +138,8 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_gbts_config(parent.m_gbts_config),
       m_track_params_estimation_config(parent.m_track_params_estimation_config),
       m_finding_config(parent.m_finding_config),
-      m_fitting_config(parent.m_fitting_config) {
+      m_fitting_config(parent.m_fitting_config),
+	  usingGBTS(parent.usingGBTS) {
 
     // Copy the detector (description) to the device.
     m_vecmem_objects

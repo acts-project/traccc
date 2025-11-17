@@ -74,7 +74,6 @@ class full_chain_algorithm
     /// @param mr The memory resource to use for the intermediate and result
     ///           objects
     ///
-<<<<<<< HEAD
     full_chain_algorithm(
         vecmem::memory_resource& host_mr,
         const clustering_config& clustering_config,
@@ -87,20 +86,8 @@ class full_chain_algorithm
         const fitting_algorithm::config_type& fitting_config,
         const silicon_detector_description::host& det_descr,
         const magnetic_field& field, host_detector* detector,
-        std::unique_ptr<const traccc::Logger> logger);
-=======
-    full_chain_algorithm(vecmem::memory_resource& host_mr,
-                         const clustering_config& clustering_config,
-                         const seedfinder_config& finder_config,
-                         const spacepoint_grid_config& grid_config,
-                         const seedfilter_config& filter_config,
-                         const gbts_seedfinder_config& gbts_config,
-                         const finding_algorithm::config_type& finding_config,
-                         const fitting_algorithm::config_type& fitting_config,
-                         const silicon_detector_description::host& det_descr,
-                         const magnetic_field& field, host_detector* detector,
-                         std::unique_ptr<const traccc::Logger> logger);
->>>>>>> 0ac700c4 (formatting and placeholders for sycl alpaka)
+        std::unique_ptr<const traccc::Logger> logger,
+		useGBTS = false);
 
     /// Copy constructor
     ///
@@ -196,9 +183,15 @@ class full_chain_algorithm
 	gbts_seedfinder_config m_gbts_config; 
     /// Configuration for track parameter estimation
     track_params_estimation_config m_track_params_estimation_config;
+    
+	/// Configuration for the track finding
+    finding_algorithm::config_type m_finding_config;
+    /// Configuration for the track fitting
+    fitting_algorithm::config_type m_fitting_config;
 	
 	bool usingGBTS;
-    /// @}
+    
+	/// @}
 
 };  // class full_chain_algorithm
 
