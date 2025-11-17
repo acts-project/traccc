@@ -8,6 +8,9 @@
 // Local include(s).
 #include "full_chain_algorithm.hpp"
 
+// Project include(s).
+#include "traccc/alpaka/utils/make_magnetic_field.hpp"
+
 // System include(s).
 #include <iostream>
 #include <stdexcept>
@@ -32,7 +35,7 @@ full_chain_algorithm::full_chain_algorithm(
       m_cached_pinned_host_mr(m_vecmem_objects.host_mr()),
       m_cached_device_mr(m_vecmem_objects.device_mr()),
       m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
-      m_field(field),
+      m_field(make_magnetic_field(field, m_queue)),
       m_det_descr(det_descr),
       m_device_det_descr(
           static_cast<silicon_detector_description::buffer::size_type>(

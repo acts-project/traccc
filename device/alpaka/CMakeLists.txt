@@ -27,7 +27,9 @@ traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   # Utility definitions.
   "include/traccc/alpaka/utils/get_device_info.hpp"
   "include/traccc/alpaka/utils/make_prefix_sum_buff.hpp"
+  "include/traccc/alpaka/utils/make_magnetic_field.hpp"
   "src/utils/make_prefix_sum_buff.cpp"
+  "src/utils/make_magnetic_field.cpp"
   "src/utils/get_device_info.cpp"
   "include/traccc/alpaka/utils/queue.hpp"
   "src/utils/queue.cpp"
