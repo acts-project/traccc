@@ -11,9 +11,10 @@
 #include "magnetic_field_types.hpp"
 
 // Project include(s).
+#include "traccc/definitions/primitives.hpp"
 #include "traccc/bfield/magnetic_field_types.hpp"
 #if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
-#include "traccc/cuda/make_magnetic_field.hpp"
+#include "traccc/cuda/utils/make_magnetic_field.hpp"
 #elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
 //
 #elif defined(ALPAKA_ACC_SYCL_ENABLED)
