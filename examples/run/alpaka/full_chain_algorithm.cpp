@@ -30,8 +30,7 @@ full_chain_algorithm::full_chain_algorithm(
     const detector_design_description::host& det_descr,
     const detector_conditions_description::host& det_cond,
     const magnetic_field& field, host_detector* detector,
-    std::unique_ptr<const traccc::Logger> logger,
-	bool useGBTS = false)
+    std::unique_ptr<const traccc::Logger> logger, bool useGBTS = false)
     : messaging(logger->clone()),
       m_queue(),
       m_vecmem_objects(m_queue),
@@ -96,7 +95,7 @@ full_chain_algorithm::full_chain_algorithm(
       m_track_params_estimation_config(track_params_estimation_config),
       m_finding_config(finding_config),
       m_fitting_config(fitting_config),
-	  usingGBTS(useGBTS) {
+      usingGBTS(useGBTS) {
 
     std::cout << traccc::alpaka::get_device_info() << std::endl;
 
@@ -180,7 +179,7 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_track_params_estimation_config(parent.m_track_params_estimation_config),
       m_finding_config(parent.m_finding_config),
       m_fitting_config(parent.m_fitting_config),
-	  usingGBTS(parent.usingGBTS) {
+      usingGBTS(parent.usingGBTS) {
 
     // Copy the detector (description) to the device.
     m_vecmem_objects
