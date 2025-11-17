@@ -60,10 +60,6 @@ set( TRACCC_DEVICE_LOG_LVL "NONE" CACHE STRING
 option( TRACCC_BUILD_CUDA "Build the CUDA sources included in traccc" FALSE )
 option( TRACCC_BUILD_HIP "Build the HIP sources included in traccc" FALSE)
 option( TRACCC_BUILD_SYCL "Build the SYCL sources included in traccc" FALSE )
-option( TRACCC_BUILD_FUTHARK "Build the Futhark sources included in traccc"
-   FALSE )
-option( TRACCC_BUILD_KOKKOS "Build the Kokkos sources included in traccc"
-   FALSE )
 option( TRACCC_BUILD_ALPAKA "Build the Alpaka sources included in traccc"
    FALSE )
 option( TRACCC_BUILD_IO "Build the IO module (needed by examples, performance, testing)" TRUE )
@@ -267,32 +263,6 @@ if( TRACCC_SETUP_DPL )
    endif()
 endif()
 
-# Set up Kokkos.
-option( TRACCC_SETUP_KOKKOS
-   "Set up the Kokkos library" ${TRACCC_BUILD_KOKKOS} )
-if (TRACCC_USE_SYSTEM_LIBS OR TRACCC_USE_SPACK_LIBS)
-   set(TRACCC_USE_SYSTEM_KOKKOS_DEFAULT ON)
-else()
-   set(TRACCC_USE_SYSTEM_KOKKOS_DEFAULT OFF)
-endif()
-option( TRACCC_USE_SYSTEM_KOKKOS
-   "Pick up an existing installation of Kokkos from the build environment"
-   ${TRACCC_USE_SYSTEM_KOKKOS_DEFAULT} )
-unset(TRACCC_USE_SYSTEM_KOKKOS_DEFAULT)
-if( TRACCC_SETUP_KOKKOS )
-   if( TRACCC_USE_SYSTEM_KOKKOS )
-      find_package( Kokkos REQUIRED )
-      # Kokkos likes to determine the host architecture at installation time
-      # and propagate the corresponding `-march` flag through the CMake
-      # configuration which cases compiler errors when we use e.g. ICPX which
-      # dislikes it when you set two different microarchitectures (traccc sets
-      # a generic x86 target).
-      set_target_properties(Kokkos::kokkoscore PROPERTIES INTERFACE_COMPILE_OPTIONS "")
-   else()
-      add_subdirectory( extern/kokkos )
-   endif()
-endif()
-
 # Set up Alpaka.
 option( TRACCC_SETUP_ALPAKA
    "Set up the Alpaka library" ${TRACCC_BUILD_ALPAKA})
@@ -454,9 +424,6 @@ add_subdirectory( device/common )
 if( TRACCC_BUILD_CUDA )
    add_subdirectory( device/cuda )
 endif()
-if( TRACCC_BUILD_KOKKOS )
-   add_subdirectory( device/kokkos )
-endif()
 if( TRACCC_BUILD_SYCL )
    add_subdirectory( device/sycl )
 endif()
@@ -488,10 +455,6 @@ if( BUILD_TESTING AND TRACCC_BUILD_TESTING )
       message(FATAL_ERROR "traccc::io is disabled, but it is required to build the tests.")
    endif()
    add_subdirectory( tests )
-endif()
-
-if(TRACCC_BUILD_FUTHARK)
-   add_subdirectory(device/futhark)
 endif()
 
 # Set up the packaging of the project.

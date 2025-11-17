@@ -40,10 +40,6 @@ jobs:
             container: ghcr.io/acts-project/ubuntu2404_oneapi:69
             options: --preset sycl-fp32
             run_tests: true
-          - name: KOKKOS
-            container: ghcr.io/acts-project/ubuntu2404:69
-            options: --preset kokkos-fp32
-            run_tests: false
         build:
           - Release
           - Debug
