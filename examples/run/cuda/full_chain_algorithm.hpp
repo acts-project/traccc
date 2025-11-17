@@ -78,14 +78,13 @@ class full_chain_algorithm
         const seedfinder_config& finder_config,
         const spacepoint_grid_config& grid_config,
         const seedfilter_config& filter_config,
-		const gbts_seedfinder_config& gbts_config,
+        const gbts_seedfinder_config& gbts_config,
         const track_params_estimation_config& track_params_estimation_config,
         const finding_algorithm::config_type& finding_config,
         const fitting_algorithm::config_type& fitting_config,
         const silicon_detector_description::host& det_descr,
         const magnetic_field& field, host_detector* detector,
-        std::unique_ptr<const traccc::Logger> logger
-		bool useGBTS = false);
+        std::unique_ptr<const traccc::Logger> logger, bool useGBTS = false);
 
     /// Copy constructor
     ///

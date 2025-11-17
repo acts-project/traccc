@@ -152,7 +152,7 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
     const traccc::seedfilter_config seedfilter_config(seeding_opts);
     const traccc::spacepoint_grid_config spacepoint_grid_config(seeding_opts);
     const traccc::track_params_estimation_config track_params_estimation_config;
-	
+
     traccc::gbts_seedfinder_config gbts_config;
     if (seeding_gbts_opts.useGBTS) {
         if (!gbts_config.setLinkingScheme(
@@ -177,11 +177,12 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
     std::vector<FULL_CHAIN_ALG> algs;
     algs.reserve(threading_opts.threads + 1);
     for (std::size_t i = 0; i < threading_opts.threads + 1; ++i) {
-		algs.push_back({host_mr, clustering_cfg, seedfinder_config,
-			spacepoint_grid_config, seedfilter_config, gbts_config, track_params_estimation_config,
-			finding_cfg, fitting_cfg, det_descr, field, &detector,
-			logger().clone(), seeding_gbts_opts.useGBTS});
-	}
+        algs.push_back({host_mr, clustering_cfg, seedfinder_config,
+                        spacepoint_grid_config, seedfilter_config, gbts_config,
+                        track_params_estimation_config, finding_cfg,
+                        fitting_cfg, det_descr, field, &detector,
+                        logger().clone(), seeding_gbts_opts.useGBTS});
+    }
 
     // Set up a lambda that calls the correct function on the algorithms.
     std::function<std::size_t(int, const edm::silicon_cell_collection::host&)>

@@ -37,8 +37,8 @@ full_chain_algorithm::full_chain_algorithm(
     const seedfinder_config& finder_config,
     const spacepoint_grid_config& grid_config,
     const seedfilter_config& filter_config,
-	const gbts_seedfinder_config& gbts_config,
-	const track_params_estimation_config& track_params_estimation_config,
+    const gbts_seedfinder_config& gbts_config,
+    const track_params_estimation_config& track_params_estimation_config,
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
     const silicon_detector_description::host& det_descr,
@@ -86,7 +86,7 @@ full_chain_algorithm::full_chain_algorithm(
       m_finder_config(finder_config),
       m_grid_config(grid_config),
       m_filter_config(filter_config),
-	  m_gbts_config(gbts_config),
+      m_gbts_config(gbts_config),
       m_track_params_estimation_config(track_params_estimation_config),
       m_finding_config(finding_config),
       m_fitting_config(fitting_config),
@@ -155,7 +155,7 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_finder_config(parent.m_finder_config),
       m_grid_config(parent.m_grid_config),
       m_filter_config(parent.m_filter_config),
-	  m_gbts_config(parent.m_gbts_config),
+      m_gbts_config(parent.m_gbts_config),
       m_track_params_estimation_config(parent.m_track_params_estimation_config),
       m_finding_config(parent.m_finding_config),
       m_fitting_config(parent.m_fitting_config),
@@ -253,8 +253,8 @@ bound_track_parameters_collection_types::host full_chain_algorithm::seeding(
         // Run the seed-finding (asynchronously).
         const spacepoint_formation_algorithm::output_type spacepoints =
             m_spacepoint_formation(m_device_detector, measurements);
-        
-		seeding_algorithm::output_type seeds;
+
+        seeding_algorithm::output_type seeds;
         if (usingGBTS) {
             seeds = m_gbts_seeding(spacepoints, measurements);
         } else {

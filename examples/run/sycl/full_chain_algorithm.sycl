@@ -121,11 +121,11 @@ full_chain_algorithm::full_chain_algorithm(
       m_finder_config(finder_config),
       m_grid_config(grid_config),
       m_filter_config(filter_config),
-	  m_gbts_config(gbts_config),
+      m_gbts_config(gbts_config),
       m_track_params_estimation_config(track_params_estimation_config),
       m_finding_config(finding_config),
       m_fitting_config(fitting_config),
-	  usingGBTS = useGBTS {
+      usingGBTS = useGBTS {
 
     // Tell the user what device is being used.
     std::cout
@@ -198,12 +198,12 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_clustering_config(parent.m_clustering_config),
       m_finder_config(parent.m_finder_config),
       m_grid_config(parent.m_grid_config),
-	  m_gbts_config(parent.m_gbts_config),
+      m_gbts_config(parent.m_gbts_config),
       m_filter_config(parent.m_filter_config),
       m_track_params_estimation_config(parent.m_track_params_estimation_config),
       m_finding_config(parent.m_finding_config),
       m_fitting_config(parent.m_fitting_config),
-	  usingGBTS = parent.usingGBTS {
+      usingGBTS = parent.usingGBTS {
 
     // Copy the detector (description) to the device.
     m_copy(vecmem::get_data(m_det_descr.get()), m_device_det_descr)->wait();
