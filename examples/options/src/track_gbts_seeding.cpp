@@ -36,12 +36,12 @@ void track_gbts_seeding::read(const boost::program_options::variables_map &) {
     std::ifstream barcodeBinningFile(
         std::filesystem::path(config_dir + "/barcodeBinning.txt"));
 
-    int nBarcodes = 0;
+    unsigned int nBarcodes = 0;
     barcodeBinningFile >> nBarcodes;
     barcodeBinning.reserve(nBarcodes);
 
     std::pair<uint64_t, short> barcodeLayerPair;
-    for (; nBarcodes > 0; --nBarcodes) {
+    for (; nBarcodes > 0u; --nBarcodes) {
         barcodeBinningFile >> barcodeLayerPair.first;
         barcodeBinningFile >> barcodeLayerPair.second;
 
@@ -51,7 +51,7 @@ void track_gbts_seeding::read(const boost::program_options::variables_map &) {
     std::ifstream binTablesFile(
         std::filesystem::path(config_dir + "/binTables.txt"));
 
-    int nBinPairs = 0;
+    unsigned int nBinPairs = 0;
     binTablesFile >> nBinPairs;
     binTables.reserve(nBinPairs);
     int bin1 = 0;
@@ -59,19 +59,19 @@ void track_gbts_seeding::read(const boost::program_options::variables_map &) {
     for (; nBinPairs > 0; --nBinPairs) {
         binTablesFile >> bin1;
         binTablesFile >> bin2[0];
-        binTables.push_back(std::make_pair(bin1, bin2));
+        binTables.emplace_back(std::make_pair(bin1, bin2));
     }
 
     std::ifstream layerInfoFile(
         std::filesystem::path(config_dir + "/layerInfo.txt"));
 
-    int nLayers = 0;
+    unsigned int nLayers = 0;
     layerInfoFile >> nLayers;
     layerInfo.reserve(nLayers);
     char type = 0;
-    int info[2] = {0, 0};
-    float geo[2] = {0, 0};
-    for (; nLayers > 0; --nLayers) {
+    std::array<int, 2> info = {0, 0};
+    std::array<float, 2> geo = {0, 0};
+    for (; nLayers > 0u; --nLayers) {
         layerInfoFile >> type;
         layerInfoFile >> info[0] >> info[1];
         layerInfoFile >> geo[0] >> geo[1];
