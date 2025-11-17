@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/definitions/primitives.hpp"
+#include "traccc/bfield/magnetic_field.hpp"
 
 #include "traccc/alpaka/utils/queue.hpp"
 
