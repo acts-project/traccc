@@ -17,8 +17,8 @@
 #elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
 //
 #elif defined(ALPAKA_ACC_SYCL_ENABLED)
-#include "traccc/sycl/utils/make_magnetic_field.hpp"
 #include "../utils/get_queue.hpp"
+#include "traccc/sycl/utils/make_magnetic_field.hpp"
 #endif
 
 // System include(s).

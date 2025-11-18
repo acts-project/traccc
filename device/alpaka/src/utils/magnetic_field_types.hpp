@@ -45,8 +45,9 @@ using inhom_bfield_backend_t =
 #endif
 
 // Test that the type is a valid backend for a field
-static_assert(covfie::concepts::field_backend<inhom_bfield_backend_t<float>>,
-              "alpaka::inhom_bfield_backend_t is not a valid field backend type");
+static_assert(
+    covfie::concepts::field_backend<inhom_bfield_backend_t<float>>,
+    "alpaka::inhom_bfield_backend_t is not a valid field backend type");
 /// @brief the standard list of Alpaka bfield types to support
 template <typename scalar_t>
 using bfield_type_list = std::tuple<const_bfield_backend_t<scalar_t>,
