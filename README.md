@@ -4,24 +4,23 @@ Demonstrator tracking chain for accelerators.
 
 ## Features
 
-| Category                  | Algorithms             | CPU | CUDA | SYCL | Alpaka | Kokkos | Futhark |
-| ------------------------- | ---------------------- | --- | ---- | ---- | ------ | ------ | ------- |
-| **Clusterization**        | CCL / FastSv / etc.    | ✅  | ✅   | ✅   | ✅     | ⚪     | ✅      |
-|                           | Measurement creation   | ✅  | ✅   | ✅   | ✅     | ⚪     | ✅      |
-| **Seeding**               | Spacepoint formation   | ✅  | ✅   | ✅   | ✅     | ⚪     | ⚪      |
-|                           | Spacepoint binning     | ✅  | ✅   | ✅   | ✅     | ✅     | ⚪      |
-|                           | Seed finding           | ✅  | ✅   | ✅   | ✅     | ⚪     | ⚪      |
-|                           | Track param estimation | ✅  | ✅   | ✅   | ✅     | ⚪     | ⚪      |
-| **Track finding**         | Combinatorial KF       | ✅  | ✅   | ✅   | ✅     | ⚪     | ⚪      |
-| **Ambiguity resolution**  | Greedy resolver        | ✅  | 🟡   | ⚪   | ⚪     | ⚪     | ⚪      |
-| **Track fitting**         | KF                     | ✅  | ✅   | 🟡   | ✅     | ⚪     | ⚪      |
+| Category                  | Algorithms             | CPU | CUDA | SYCL | Alpaka |
+| ------------------------- | ---------------------- | --- | ---- | ---- | ------ |
+| **Clusterization**        | CCL / FastSv / etc.    | ✅  | ✅   | ✅   | ✅     |
+|                           | Measurement creation   | ✅  | ✅   | ✅   | ✅     |
+| **Seeding**               | Spacepoint formation   | ✅  | ✅   | ✅   | ✅     |
+|                           | Spacepoint binning     | ✅  | ✅   | ✅   | ✅     |
+|                           | Seed finding           | ✅  | ✅   | ✅   | ✅     |
+|                           | Track param estimation | ✅  | ✅   | ✅   | ✅     |
+| **Track finding**         | Combinatorial KF       | ✅  | ✅   | ✅   | ✅     |
+| **Ambiguity resolution**  | Greedy resolver        | ✅  | 🟡   | ⚪   | ⚪     |
+| **Track fitting**         | KF                     | ✅  | ✅   | 🟡   | ✅     |
 
 ✅: exists, 🟡: work started, ⚪: work not started yet
 
 The relations between datatypes and algorithms is given in the (approximately
 commutative) diagram shown below. Black lines indicate CPU algorithms, green
-lines indicate CUDA algorithms, blue lines indicate SYCL algorithms, and brown
-lines indicate Futhark algorithms. Solid algorithms are ready for use, dashed
+lines indicate CUDA algorithms, blue lines indicate SYCL algorithms. Solid algorithms are ready for use, dashed
 algorithms are in development or future goals. Data types for different
 heterogeneous platforms are contracted for legibility, and identities are
 hidden.
@@ -210,7 +209,7 @@ spack env activate traccc
 ```
 
 This way, Spack will automatically download and install all dependencies
-necessary to use traccc with the CUDA, SYCL, Kokkos, and Alpaka programming
+necessary to use traccc with the CUDA, SYCL, and Alpaka programming
 models. When using Spack to manage your dependencies, make sure to compile
 traccc with the `-DTRACCC_USE_SPACK_LIBS=ON` flag.
 
