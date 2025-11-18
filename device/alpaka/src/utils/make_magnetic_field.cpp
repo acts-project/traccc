@@ -48,6 +48,8 @@ magnetic_field make_magnetic_field(const magnetic_field& bfield,
     traccc::sycl::queue_wrapper qw{&q};
     return traccc::sycl::make_magnetic_field(bfield, qw);
 #endif
+#else
+    return bfield;
 }
 
 }  // namespace traccc::alpaka
