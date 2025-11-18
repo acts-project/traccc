@@ -17,7 +17,8 @@
 #elif defined(ALPAKA_ACC_GPU_HIP_ENABLED)
 //
 #elif defined(ALPAKA_ACC_SYCL_ENABLED)
-#include "traccc/sycl/make_magnetic_field.hpp"
+#include "traccc/sycl/utils/make_magnetic_field.hpp"
+#include "../utils/get_queue.hpp"
 #endif
 
 // System include(s).
@@ -44,7 +45,7 @@ magnetic_field make_magnetic_field(const magnetic_field& bfield,
     }
 #elif defined(ALPAKA_ACC_SYCL_ENABLED)
     ::sycl::queue q(::alpaka::getNativeHandle(details::get_queue(queue)));
-    traccc::sycl::queue_wrapper qw{&queue};
+    traccc::sycl::queue_wrapper qw{&q};
     return traccc::sycl::make_magnetic_field(bfield, qw);
 #endif
 }
