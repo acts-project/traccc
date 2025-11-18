@@ -8,9 +8,8 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/bfield/magnetic_field.hpp"
-
 #include "traccc/alpaka/utils/queue.hpp"
+#include "traccc/bfield/magnetic_field.hpp"
 
 namespace traccc::alpaka {
 
@@ -18,6 +17,6 @@ namespace traccc::alpaka {
 ///
 /// @param bfield The magnetic field to be copied
 //
-magnetic_field make_magnetic_field(const magnetic_field& bfield, queue& queue);
+magnetic_field make_magnetic_field(const magnetic_field& bfield, const queue& queue);
 
 }  // namespace traccc::alpaka

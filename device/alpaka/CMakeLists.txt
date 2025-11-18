@@ -14,7 +14,7 @@ set(PRIVATE_LIBRARIES alpaka::alpaka)
 traccc_enable_language_alpaka()
 
 if(alpaka_ACC_GPU_CUDA_ENABLE)
-  list(APPEND PRIVATE_LIBRARIES CUDA::cudart vecmem::cuda traccc::cuda)
+  list(APPEND PRIVATE_LIBRARIES CUDA::cudart vecmem::cuda traccc::cuda covfie::cuda)
 elseif(alpaka_ACC_GPU_HIP_ENABLE)
   find_package( HIPToolkit REQUIRED )
   list(APPEND PRIVATE_LIBRARIES HIP::hiprt vecmem::hip covfie::hip)
