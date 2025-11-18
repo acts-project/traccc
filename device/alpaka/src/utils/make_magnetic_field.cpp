@@ -27,7 +27,7 @@
 namespace traccc::alpaka {
 
 magnetic_field make_magnetic_field(const magnetic_field& bfield,
-                                   const queue& queue) {
+                                   [[maybe_unused]] const queue& queue) {
 #if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
     return traccc::cuda::make_magnetic_field(
         bfield, traccc::cuda::magnetic_field_storage::global_memory);
@@ -47,9 +47,9 @@ magnetic_field make_magnetic_field(const magnetic_field& bfield,
     ::sycl::queue q(::alpaka::getNativeHandle(details::get_queue(queue)));
     traccc::sycl::queue_wrapper qw{&q};
     return traccc::sycl::make_magnetic_field(bfield, qw);
-#endif
 #else
     return bfield;
+#endif
 }
 
 }  // namespace traccc::alpaka

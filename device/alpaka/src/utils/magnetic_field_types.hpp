@@ -42,6 +42,9 @@ using inhom_bfield_backend_t =
         covfie::backend::strided<covfie::vector::vector_d<std::size_t, 3>,
                                  covfie::backend::sycl_device_array<
                                      covfie::vector::vector_d<scalar_t, 3>>>>>>;
+#else
+template <typename scalar_t>
+using inhom_bfield_backend_t = traccc::host::inhom_bfield_backend_t<scalar_t>;
 #endif
 
 // Test that the type is a valid backend for a field
