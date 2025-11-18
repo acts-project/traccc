@@ -11,7 +11,6 @@
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/finding/actors/ckf_aborter.hpp"
-#include "traccc/finding/actors/interaction_register.hpp"
 
 // Detray include(s).
 #include "traccc/utils/propagation.hpp"
@@ -40,7 +39,6 @@ using ckf_interactor_t =
 using ckf_actor_chain_t =
     detray::actor_chain<detray::pathlimit_aborter<traccc::scalar>,
                         detray::parameter_transporter<traccc::default_algebra>,
-                        interaction_register<ckf_interactor_t>,
                         ckf_interactor_t,
                         detray::parameter_resetter<traccc::default_algebra>,
                         detray::momentum_aborter<traccc::scalar>, ckf_aborter>;
