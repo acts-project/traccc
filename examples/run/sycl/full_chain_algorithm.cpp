@@ -36,7 +36,7 @@ full_chain_algorithm::full_chain_algorithm(
     const detector_design_description::host& det_descr,
     const detector_conditions_description::host& det_cond,
     const magnetic_field& field, host_detector* detector,
-    std::unique_ptr<const traccc::Logger> log)
+    std::unique_ptr<const traccc::Logger> log, bool useGBTS)
     : messaging(log->clone()),
       m_data(std::make_unique<details::full_chain_algorithm_data>()),
       m_host_mr(host_mr),
@@ -115,8 +115,9 @@ full_chain_algorithm::full_chain_algorithm(
       m_track_params_estimation_config(track_params_estimation_config),
       m_finding_config(finding_config),
       m_fitting_config(fitting_config),
-      usingGBTS = useGBTS {
+      usingGBTS(useGBTS) {
 
+    assert(!usingGBTS && "GBTS not implemented for sycl");
     // Tell the user what device is being used.
     TRACCC_INFO("Using SYCL device: " << m_data->m_queue.device_name());
 
@@ -208,7 +209,7 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_track_params_estimation_config(parent.m_track_params_estimation_config),
       m_finding_config(parent.m_finding_config),
       m_fitting_config(parent.m_fitting_config),
-      usingGBTS = parent.usingGBTS {
+      usingGBTS(parent.usingGBTS) {
 
     // Copy the detector (description) to the device.
     m_copy(vecmem::get_data(m_det_descr.get()), m_device_det_descr)->wait();
