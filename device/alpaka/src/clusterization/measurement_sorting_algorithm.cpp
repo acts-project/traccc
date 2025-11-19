@@ -69,6 +69,11 @@ measurement_sorting_algorithm::operator()(
     const edm::measurement_collection<default_algebra>::const_view&
         measurements_view) const {
 
+    // Exit early if there are no measurements.
+    if (measurements_view.capacity() == 0) {
+        return {};
+    }
+
     // Get a convenience variable for the queue that we'll be using.
     auto queue = details::get_queue(m_queue);
 

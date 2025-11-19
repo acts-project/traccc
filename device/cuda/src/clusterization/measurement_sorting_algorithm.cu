@@ -68,6 +68,11 @@ measurement_sorting_algorithm::operator()(
     const edm::measurement_collection<default_algebra>::const_view&
         measurements_view) const {
 
+    // Exit early if there are no measurements.
+    if (measurements_view.capacity() == 0) {
+        return {};
+    }
+
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
     // Set up the Thrust execution policy.
