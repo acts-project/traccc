@@ -31,6 +31,8 @@ traccc_add_executable( truth_fitting_example_cuda "truth_fitting_example_cuda.cp
 # Set up the "throughput applications".
 #
 add_library( traccc_examples_cuda STATIC
+   "algorithm_maker.hpp"
+   "algorithm_maker.cpp"
    "full_chain_algorithm.hpp"
    "full_chain_algorithm.cpp" )
 target_link_libraries( traccc_examples_cuda
@@ -49,3 +51,7 @@ traccc_add_executable( throughput_mt_cuda "throughput_mt.cpp"
                   detray::detectors detray::io traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::cuda
                   traccc::options traccc_examples_cuda )
+
+traccc_add_executable( track_finding_validation_cuda
+   "track_finding_validation.cpp"
+   LINK_LIBRARIES traccc_examples_common traccc_examples_cuda )
