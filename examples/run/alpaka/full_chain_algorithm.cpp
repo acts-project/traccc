@@ -26,7 +26,7 @@ full_chain_algorithm::full_chain_algorithm(
     const fitting_algorithm::config_type& fitting_config,
     const silicon_detector_description::host& det_descr,
     const magnetic_field& field, host_detector* detector,
-    std::unique_ptr<const traccc::Logger> logger, bool useGBTS = false)
+    std::unique_ptr<const traccc::Logger> logger, bool useGBTS)
     : messaging(logger->clone()),
       m_queue(),
       m_vecmem_objects(m_queue),
@@ -75,6 +75,7 @@ full_chain_algorithm::full_chain_algorithm(
       m_fitting_config(fitting_config),
       usingGBTS(useGBTS) {
 
+    assert(!usingGBTS && "GBTS not implemented for alpaka");
     std::cout << traccc::alpaka::get_device_info() << std::endl;
 
     // Copy the detector (description) to the device.
