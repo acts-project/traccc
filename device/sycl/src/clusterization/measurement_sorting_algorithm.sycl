@@ -36,6 +36,11 @@ measurement_sorting_algorithm::operator()(
     const edm::measurement_collection<default_algebra>::const_view&
         measurements_view) const {
 
+    // Exit early if there are no measurements.
+    if (measurements_view.capacity() == 0) {
+        return {};
+    }
+
     // Get the SYCL queue to use for the algorithm.
     ::sycl::queue& queue = details::get_queue(m_queue.get());
 
