@@ -6,7 +6,7 @@
  */
 
 // Local include(s).
-#include "algorithm_maker.hpp"
+#include "device_backend.hpp"
 
 // Project include(s).
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
@@ -25,7 +25,7 @@
 
 namespace traccc::cuda {
 
-struct algorithm_maker::impl {
+struct device_backend::impl {
 
     /// CUDA stream to use
     stream m_stream;
@@ -40,27 +40,29 @@ struct algorithm_maker::impl {
     /// (Asynchronous) Memory copy object
     vecmem::cuda::async_copy m_copy{m_stream.cudaStream()};
 
-};  // struct algorithm_maker::impl
+};  // struct device_backend::impl
 
-algorithm_maker::algorithm_maker(std::unique_ptr<const Logger> logger)
+device_backend::device_backend(std::unique_ptr<const Logger> logger)
     : messaging(std::move(logger)), m_impl{std::make_unique<impl>()} {}
 
-vecmem::copy& algorithm_maker::copy() const {
+device_backend::~device_backend() = default;
+
+vecmem::copy& device_backend::copy() const {
 
     return m_impl->m_copy;
 }
 
-memory_resource& algorithm_maker::mr() const {
+memory_resource& device_backend::mr() const {
 
     return m_impl->m_mr;
 }
 
-void algorithm_maker::synchronize() const {
+void device_backend::synchronize() const {
 
     m_impl->m_stream.synchronize();
 }
 
-magnetic_field algorithm_maker::make_magnetic_field(
+magnetic_field device_backend::make_magnetic_field(
     const magnetic_field& bfield, const bool texture_memory) const {
 
     return cuda::make_magnetic_field(
@@ -71,7 +73,7 @@ magnetic_field algorithm_maker::make_magnetic_field(
 std::unique_ptr<algorithm<edm::measurement_collection<default_algebra>::buffer(
     const edm::silicon_cell_collection::const_view&,
     const silicon_detector_description::const_view&)>>
-algorithm_maker::make_clusterization_algorithm(
+device_backend::make_clusterization_algorithm(
     const clustering_config& config) const {
 
     TRACCC_VERBOSE("Constructing cuda::clusterization_algorithm");
@@ -83,7 +85,7 @@ algorithm_maker::make_clusterization_algorithm(
 std::unique_ptr<algorithm<edm::spacepoint_collection::buffer(
     const detector_buffer&,
     const edm::measurement_collection<default_algebra>::const_view&)>>
-algorithm_maker::make_spacepoint_formation_algorithm() const {
+device_backend::make_spacepoint_formation_algorithm() const {
 
     TRACCC_VERBOSE("Constructing cuda::spacepoint_formation_algorithm");
     return std::make_unique<cuda::spacepoint_formation_algorithm>(
@@ -93,7 +95,7 @@ algorithm_maker::make_spacepoint_formation_algorithm() const {
 
 std::unique_ptr<algorithm<edm::seed_collection::buffer(
     const edm::spacepoint_collection::const_view&)>>
-algorithm_maker::make_seeding_algorithm(
+device_backend::make_seeding_algorithm(
     const seedfinder_config& finder_config,
     const spacepoint_grid_config& grid_config,
     const seedfilter_config& filter_config) const {
@@ -108,7 +110,7 @@ std::unique_ptr<algorithm<bound_track_parameters_collection_types::buffer(
     const edm::measurement_collection<default_algebra>::const_view&,
     const edm::spacepoint_collection::const_view&,
     const edm::seed_collection::const_view&, const vector3&)>>
-algorithm_maker::make_track_params_estimation_algorithm(
+device_backend::make_track_params_estimation_algorithm(
     const track_params_estimation_config& config) const {
 
     TRACCC_VERBOSE("Constructing cuda::track_params_estimation");
@@ -121,7 +123,7 @@ std::unique_ptr<algorithm<edm::track_container<default_algebra>::buffer(
     const detector_buffer&, const magnetic_field&,
     const edm::measurement_collection<default_algebra>::const_view&,
     const bound_track_parameters_collection_types::const_view&)>>
-algorithm_maker::make_finding_algorithm(const finding_config& config) const {
+device_backend::make_finding_algorithm(const finding_config& config) const {
 
     TRACCC_VERBOSE("Constructing cuda::combinatorial_kalman_filter_algorithm");
     return std::make_unique<cuda::combinatorial_kalman_filter_algorithm>(
@@ -132,7 +134,7 @@ algorithm_maker::make_finding_algorithm(const finding_config& config) const {
 std::unique_ptr<algorithm<edm::track_container<default_algebra>::buffer(
     const detector_buffer&, const magnetic_field&,
     const edm::track_container<default_algebra>::const_view&)>>
-algorithm_maker::make_fitting_algorithm(const fitting_config& config) const {
+device_backend::make_fitting_algorithm(const fitting_config& config) const {
 
     TRACCC_VERBOSE("Constructing cuda::kalman_fitting_algorithm");
     return std::make_unique<cuda::kalman_fitting_algorithm>(

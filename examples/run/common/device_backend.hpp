@@ -35,11 +35,11 @@
 
 namespace traccc {
 
-/// Interface for an algorithm maker object
-struct device_algorithm_maker {
+/// Interface for a "device backend"
+struct device_backend {
 
     /// Virtual destructor
-    virtual ~device_algorithm_maker() {}
+    virtual ~device_backend() {}
 
     /// Access a copy object for the used device
     virtual vecmem::copy& copy() const = 0;
@@ -102,10 +102,9 @@ struct device_algorithm_maker {
 
 namespace concepts {
 
-/// Concept specifying a maker of device reconstruction algorithms
+/// Concept specifying a device backend
 template <typename T>
-concept device_algorithm_maker =
-    std::derived_from<T, traccc::device_algorithm_maker>;
+concept device_backend = std::derived_from<T, traccc::device_backend>;
 
 }  // namespace concepts
 }  // namespace traccc

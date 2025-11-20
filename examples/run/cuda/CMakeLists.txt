@@ -31,8 +31,8 @@ traccc_add_executable( truth_fitting_example_cuda "truth_fitting_example_cuda.cp
 # Set up the "throughput applications".
 #
 add_library( traccc_examples_cuda STATIC
-   "algorithm_maker.hpp"
-   "algorithm_maker.cpp"
+   "device_backend.hpp"
+   "device_backend.cpp"
    "full_chain_algorithm.hpp"
    "full_chain_algorithm.cpp" )
 target_link_libraries( traccc_examples_cuda
