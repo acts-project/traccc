@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "../common/device_algorithm_maker.hpp"
+#include "../common/device_backend.hpp"
 #include "traccc/utils/messaging.hpp"
 
 // System include(s).
@@ -16,20 +16,20 @@
 
 namespace traccc::cuda {
 
-/// CUDA Algorithm Maker
-class algorithm_maker : public device_algorithm_maker, public messaging {
+/// CUDA Device Backend
+class device_backend : public traccc::device_backend, public messaging {
 
     public:
     /// Constructor
     ///
     /// @param logger The logger to use
     ///
-    algorithm_maker(
+    device_backend(
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
     /// Destructor
-    ~algorithm_maker();
+    ~device_backend();
 
-    /// @name Function(s) implemented from @c device_algorithm_maker
+    /// @name Function(s) implemented from @c traccc::device_backend
     /// @{
 
     /// Access a copy object for the used device
@@ -97,6 +97,6 @@ class algorithm_maker : public device_algorithm_maker, public messaging {
     /// PIMPL data object
     std::unique_ptr<impl> m_impl;
 
-};  // class algorithm_maker
+};  // class device_backend
 
 }  // namespace traccc::cuda

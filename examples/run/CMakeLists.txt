@@ -9,6 +9,9 @@ include( traccc-compiler-options-cpp )
 
 # Create the common library.
 add_library(traccc_examples_common STATIC
+   "common/device_backend.hpp"
+   "common/device_track_finding_validation.hpp"
+   "common/device_track_finding_validation.ipp"
    "common/make_magnetic_field.hpp"
    "common/make_magnetic_field.cpp"
    "common/print_fitted_tracks_statistics.hpp"
@@ -18,8 +21,8 @@ add_library(traccc_examples_common STATIC
    "common/throughput_st.hpp"
    "common/throughput_st.ipp")
 target_link_libraries(traccc_examples_common
-   PUBLIC traccc::core traccc::options
-   PRIVATE traccc::io)
+   PUBLIC vecmem::core traccc::core traccc::options traccc::io
+          traccc::performance )
 
 # Add all the subdirectories that can be built.
 add_subdirectory(cpu)

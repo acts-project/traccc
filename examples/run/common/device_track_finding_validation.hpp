@@ -8,7 +8,7 @@
 #pragma once
 
 // Local include(s).
-#include "device_algorithm_maker.hpp"
+#include "device_backend.hpp"
 
 // System include(s).
 #include <string_view>
@@ -17,7 +17,7 @@ namespace traccc {
 
 /// Helper function implementing a device track finding validation application
 ///
-/// @tparam ALG_MAKER The device algorithm maker type
+/// @tparam backend_t The device backend type to use
 ///
 /// @param logger_name The name to use for the logger
 /// @param description A description for the application
@@ -26,7 +26,7 @@ namespace traccc {
 ///
 /// @return The value to be returned from @c main(...)
 ///
-template <concepts::device_algorithm_maker ALG_MAKER>
+template <concepts::device_backend backend_t>
 int device_track_finding_validation(std::string_view logger_name,
                                     std::string_view description, int argc,
                                     char* argv[]);

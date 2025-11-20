@@ -9,12 +9,12 @@
 #include "../common/device_track_finding_validation.hpp"
 
 // Local include(s).
-#include "algorithm_maker.hpp"
+#include "device_backend.hpp"
 
 int main(int argc, char* argv[]) {
 
     return traccc::device_track_finding_validation<
-        traccc::cuda::algorithm_maker>("track_finding_validation_cuda",
-                                       "CUDA Track Finding Validation", argc,
-                                       argv);
+        traccc::cuda::device_backend>("track_finding_validation_cuda",
+                                      "CUDA Track Finding Validation", argc,
+                                      argv);
 }
