@@ -117,7 +117,11 @@ full_chain_algorithm::full_chain_algorithm(
       m_fitting_config(fitting_config),
       usingGBTS(useGBTS) {
 
-    assert(!usingGBTS && "GBTS not implemented for sycl");
+    if (usingGBTS) {
+        std::cout << "ERROR: GBTS not implemented for sycl, this will run with "
+                     "default seeding"
+                  << std::endl;
+    }
     // Tell the user what device is being used.
     TRACCC_INFO("Using SYCL device: " << m_data->m_queue.device_name());
 
