@@ -6,7 +6,7 @@
  */
 
 // Local include(s).
-#include "traccc/edm/MultiTrajectory.hpp"
+#include "traccc/edm/DeviceMultiTrajectory.hpp"
 
 // System include(s).
 #include <stdexcept>
@@ -14,7 +14,7 @@
 
 namespace traccc::edm {
 
-MultiTrajectory::MultiTrajectory(
+DeviceMultiTrajectory::DeviceMultiTrajectory(
     const track_container<default_algebra>::const_view& tracks,
     const Acts::TrackingGeometry& actsGeometry,
     const host_detector& detrayGeometry)
@@ -22,12 +22,13 @@ MultiTrajectory::MultiTrajectory(
       m_actsGeometry{actsGeometry},
       m_detrayGeometry(detrayGeometry) {}
 
-auto MultiTrajectory::size_impl() const -> IndexType {
+auto DeviceMultiTrajectory::size_impl() const -> IndexType {
 
     return static_cast<IndexType>(m_tracks.states.size());
 }
 
-auto MultiTrajectory::calibratedSize_impl(IndexType istate) const -> IndexType {
+auto DeviceMultiTrajectory::calibratedSize_impl(IndexType istate) const
+    -> IndexType {
 
     // Access the measurement and return its dimensions.
     return static_cast<IndexType>(
@@ -35,12 +36,12 @@ auto MultiTrajectory::calibratedSize_impl(IndexType istate) const -> IndexType {
             .dimensions());
 }
 
-bool MultiTrajectory::has_impl(Acts::HashedString key, IndexType) const {
+bool DeviceMultiTrajectory::has_impl(Acts::HashedString key, IndexType) const {
 
     return hasColumn_impl(key);
 }
 
-bool MultiTrajectory::hasColumn_impl(Acts::HashedString key) const {
+bool DeviceMultiTrajectory::hasColumn_impl(Acts::HashedString key) const {
 
     // Use the hashing literal from Acts.
     using namespace Acts::HashedStringLiteral;
@@ -55,8 +56,8 @@ bool MultiTrajectory::hasColumn_impl(Acts::HashedString key) const {
     }
 }
 
-std::any MultiTrajectory::component_impl(Acts::HashedString key,
-                                         IndexType istate) const {
+std::any DeviceMultiTrajectory::component_impl(Acts::HashedString key,
+                                               IndexType istate) const {
 
     // Use the hashing literal from Acts.
     using namespace Acts::HashedStringLiteral;
@@ -71,13 +72,13 @@ std::any MultiTrajectory::component_impl(Acts::HashedString key,
                          .dimensions());
         default:
             throw std::runtime_error(
-                "traccc::edm::MultiTrajectory::component_impl no such "
+                "traccc::edm::DeviceMultiTrajectory::component_impl no such "
                 "component: " +
                 std::to_string(key));
     }
 }
 
-auto MultiTrajectory::parameters_impl(IndexType index) const
+auto DeviceMultiTrajectory::parameters_impl(IndexType index) const
     -> ConstTrackStateProxy::ConstParameters {
 
     // Access the track state's parameters.
@@ -95,7 +96,7 @@ auto MultiTrajectory::parameters_impl(IndexType index) const
     return ConstTrackStateProxy::ConstParameters{actsParams.data()};
 }
 
-auto MultiTrajectory::covariance_impl(IndexType index) const
+auto DeviceMultiTrajectory::covariance_impl(IndexType index) const
     -> ConstTrackStateProxy::ConstCovariance {
 
     // Access the track state's parameters.
@@ -116,15 +117,15 @@ auto MultiTrajectory::covariance_impl(IndexType index) const
     return ConstTrackStateProxy::ConstCovariance{covariance.data()};
 }
 
-auto MultiTrajectory::jacobian_impl(IndexType) const
+auto DeviceMultiTrajectory::jacobian_impl(IndexType) const
     -> ConstTrackStateProxy::ConstCovariance {
 
     // Currently not supported in traccc.
     throw std::runtime_error(
-        "traccc::edm::MultiTrajectory::jacobian_impl is not supported");
+        "traccc::edm::DeviceMultiTrajectory::jacobian_impl is not supported");
 }
 
-const Acts::Surface* MultiTrajectory::referenceSurface_impl(
+const Acts::Surface* DeviceMultiTrajectory::referenceSurface_impl(
     IndexType index) const {
 
     // Get the Detray surface barcode belonging to the requested track state.
@@ -147,7 +148,7 @@ const Acts::Surface* MultiTrajectory::referenceSurface_impl(
     return m_actsGeometry.get().findSurface(acts_surface_id);
 }
 
-const std::vector<Acts::HashedString>& MultiTrajectory::dynamicKeys_impl()
+const std::vector<Acts::HashedString>& DeviceMultiTrajectory::dynamicKeys_impl()
     const {
 
     // There are no dynamic keys in traccc multi-trajectories.
@@ -155,7 +156,7 @@ const std::vector<Acts::HashedString>& MultiTrajectory::dynamicKeys_impl()
     return empty_keys;
 }
 
-Acts::SourceLink MultiTrajectory::getUncalibratedSourceLink_impl(
+Acts::SourceLink DeviceMultiTrajectory::getUncalibratedSourceLink_impl(
     IndexType) const {
 
     return Acts::SourceLink{nullptr};
