@@ -43,6 +43,12 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/edm/track_collection.hpp"
   "include/traccc/edm/impl/track_collection.ipp"
   "include/traccc/edm/track_container.hpp"
+  "include/traccc/edm/DeviceMultiTrajectory.hpp"
+  "include/traccc/edm/impl/DeviceMultiTrajectory.ipp"
+  "src/edm/DeviceMultiTrajectory.cpp"
+  "include/traccc/edm/DeviceTrackBackend.hpp"
+  "src/edm/DeviceTrackBackend.cpp"
+  "include/traccc/edm/DeviceTrackContainer.hpp"
   # Magnetic field description.
   "include/traccc/bfield/magnetic_field_types.hpp"
   "include/traccc/bfield/magnetic_field.hpp"
