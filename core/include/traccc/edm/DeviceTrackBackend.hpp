@@ -12,11 +12,11 @@
 #include "traccc/geometry/host_detector.hpp"
 
 // Acts include(s).
-#include "Acts/EventData/MultiTrajectory.hpp"
-#include "Acts/EventData/TrackContainer.hpp"
-#include "Acts/EventData/TrackContainerBackendConcept.hpp"
-#include "Acts/EventData/TrackStateProxy.hpp"
-#include "Acts/Geometry/TrackingGeometry.hpp"
+#include <Acts/EventData/MultiTrajectory.hpp>
+#include <Acts/EventData/TrackContainer.hpp>
+#include <Acts/EventData/TrackContainerBackendConcept.hpp>
+#include <Acts/EventData/TrackStateProxy.hpp>
+#include <Acts/Geometry/TrackingGeometry.hpp>
 
 // System include(s).
 #include <any>
@@ -24,7 +24,9 @@
 
 namespace traccc::edm {
 
-class TrackContainerBackend {
+/// Implementation of the @c Acts::ConstTrackContainerBackend concept for traccc
+/// produced tracks
+class DeviceTrackBackend {
 
     public:
     /// Constructor from a track container and Acts/Detray tracking geometries
@@ -35,15 +37,15 @@ class TrackContainerBackend {
     /// @param detrayGeometry The Detray tracking geometry associated with the
     ///                       trajectories
     ///
-    explicit TrackContainerBackend(
+    explicit DeviceTrackBackend(
         const track_container<default_algebra>::const_view& tracks,
         const Acts::TrackingGeometry& actsGeometry,
         const host_detector& detrayGeometry);
     /// Copy constructor
-    TrackContainerBackend(const TrackContainerBackend&) = default;
+    DeviceTrackBackend(const DeviceTrackBackend&) = default;
 
     /// Copy assignment operator
-    TrackContainerBackend& operator=(const TrackContainerBackend&) = default;
+    DeviceTrackBackend& operator=(const DeviceTrackBackend&) = default;
 
     /// Track index type
     using IndexType = Acts::MultiTrajectoryTraits::IndexType;
@@ -125,19 +127,19 @@ class TrackContainerBackend {
     /// The Detray tracking geometry associated with the trajectories
     std::reference_wrapper<const host_detector> m_detrayGeometry;
 
-};  // class TrackContainerBackend
+};  // class DeviceTrackBackend
 
-/// Make sure that @c TrackContainerBackend meets the concept requirements
-static_assert(Acts::ConstTrackContainerBackend<TrackContainerBackend>);
+/// Make sure that @c DeviceTrackBackend meets the concept requirements
+static_assert(Acts::ConstTrackContainerBackend<DeviceTrackBackend>);
 
 }  // namespace traccc::edm
 
 namespace Acts {
 
-/// Declare that @c traccc::edm::TrackContainerBackend is a read-only track
+/// Declare that @c traccc::edm::DeviceTrackBackend is a read-only track
 /// container
 template <>
-struct IsReadOnlyTrackContainer<traccc::edm::TrackContainerBackend>
+struct IsReadOnlyTrackContainer<traccc::edm::DeviceTrackBackend>
     : std::true_type {};
 
 }  // namespace Acts

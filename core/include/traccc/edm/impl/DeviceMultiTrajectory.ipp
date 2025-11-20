@@ -10,7 +10,7 @@
 namespace traccc::edm {
 
 template <std::size_t MEASDIM>
-auto MultiTrajectory::calibrated_impl(IndexType istate) const
+auto DeviceMultiTrajectory::calibrated_impl(IndexType istate) const
     -> ConstTrackStateProxy::Calibrated<MEASDIM> {
 
     return ConstTrackStateProxy::Calibrated<MEASDIM>{
@@ -20,12 +20,12 @@ auto MultiTrajectory::calibrated_impl(IndexType istate) const
 }
 
 template <std::size_t MEASDIM>
-auto MultiTrajectory::calibratedCovariance_impl(IndexType) const
+auto DeviceMultiTrajectory::calibratedCovariance_impl(IndexType) const
     -> ConstTrackStateProxy::CalibratedCovariance<MEASDIM> {
 
     // We don't provide this at the moment.
     throw std::runtime_error(
-        "traccc::edm::MultiTrajectory::calibratedCovariance_impl is not "
+        "traccc::edm::DeviceMultiTrajectory::calibratedCovariance_impl is not "
         "supported");
 }
 

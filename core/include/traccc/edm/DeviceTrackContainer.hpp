@@ -8,17 +8,17 @@
 #pragma once
 
 // Local include(s).
-#include "traccc/edm/MultiTrajectory.hpp"
-#include "traccc/edm/TrackContainerBackend.hpp"
+#include "traccc/edm/DeviceMultiTrajectory.hpp"
+#include "traccc/edm/DeviceTrackBackend.hpp"
 
 // Acts include(s).
-#include "Acts/EventData/TrackContainer.hpp"
+#include <Acts/EventData/TrackContainer.hpp>
 
 namespace traccc::edm {
 
 /// @c Acts::TrackContainer specialisation for traccc produced tracks
-using TrackContainer =
-    Acts::TrackContainer<TrackContainerBackend, MultiTrajectory,
+using DeviceTrackContainer =
+    Acts::TrackContainer<DeviceTrackBackend, DeviceMultiTrajectory,
                          Acts::detail::ValueHolder>;
 
 }  // namespace traccc::edm

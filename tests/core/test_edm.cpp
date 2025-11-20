@@ -7,7 +7,7 @@
  */
 
 // Project include(s).
-#include "traccc/edm/TrackContainer.hpp"
+#include "traccc/edm/DeviceTrackContainer.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
@@ -26,11 +26,11 @@ TEST(edm, track_container_creation) {
     traccc::host_detector dummyDetrayGeometry;
 
     // Create the track container.
-    traccc::edm::TrackContainer trackContainer{
-        traccc::edm::TrackContainerBackend{tracksData, *dummyActsGeometry,
-                                           dummyDetrayGeometry},
-        traccc::edm::MultiTrajectory{tracksData, *dummyActsGeometry,
-                                     dummyDetrayGeometry}};
+    traccc::edm::DeviceTrackContainer trackContainer{
+        traccc::edm::DeviceTrackBackend{tracksData, *dummyActsGeometry,
+                                        dummyDetrayGeometry},
+        traccc::edm::DeviceMultiTrajectory{tracksData, *dummyActsGeometry,
+                                           dummyDetrayGeometry}};
 
     // Check that the size is zero.
     ASSERT_EQ(trackContainer.size(), 0u);

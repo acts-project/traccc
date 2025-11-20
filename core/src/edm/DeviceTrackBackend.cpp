@@ -6,7 +6,7 @@
  */
 
 // Local include(s).
-#include "traccc/edm/TrackContainerBackend.hpp"
+#include "traccc/edm/DeviceTrackBackend.hpp"
 
 // System include(s).
 #include <stdexcept>
@@ -14,7 +14,7 @@
 
 namespace traccc::edm {
 
-TrackContainerBackend::TrackContainerBackend(
+DeviceTrackBackend::DeviceTrackBackend(
     const track_container<default_algebra>::const_view& tracks,
     const Acts::TrackingGeometry& actsGeometry,
     const host_detector& detrayGeometry)
@@ -22,13 +22,12 @@ TrackContainerBackend::TrackContainerBackend(
       m_actsGeometry{actsGeometry},
       m_detrayGeometry(detrayGeometry) {}
 
-std::size_t TrackContainerBackend::size_impl() const {
+std::size_t DeviceTrackBackend::size_impl() const {
 
     return static_cast<std::size_t>(m_tracks.tracks.size());
 }
 
-auto TrackContainerBackend::parameters(IndexType index) const
-    -> ConstParameters {
+auto DeviceTrackBackend::parameters(IndexType index) const -> ConstParameters {
 
     // Access the track's parameters.
     const bound_track_parameters<default_algebra>& deviceParams =
@@ -45,8 +44,7 @@ auto TrackContainerBackend::parameters(IndexType index) const
     return ConstParameters{actsParams.data()};
 }
 
-auto TrackContainerBackend::covariance(IndexType index) const
-    -> ConstCovariance {
+auto DeviceTrackBackend::covariance(IndexType index) const -> ConstCovariance {
 
     // Access the track's parameters.
     const bound_track_parameters<default_algebra>& params =
@@ -66,7 +64,7 @@ auto TrackContainerBackend::covariance(IndexType index) const
     return ConstCovariance{covariance.data()};
 }
 
-bool TrackContainerBackend::hasColumn_impl(Acts::HashedString key) const {
+bool DeviceTrackBackend::hasColumn_impl(Acts::HashedString key) const {
 
     // Use the hashing literal from Acts.
     using namespace Acts::HashedStringLiteral;
@@ -85,8 +83,8 @@ bool TrackContainerBackend::hasColumn_impl(Acts::HashedString key) const {
     }
 }
 
-std::any TrackContainerBackend::component_impl(Acts::HashedString key,
-                                               IndexType itrack) const {
+std::any DeviceTrackBackend::component_impl(Acts::HashedString key,
+                                            IndexType itrack) const {
 
     // Use the hashing literal from Acts.
     using namespace Acts::HashedStringLiteral;
@@ -107,20 +105,20 @@ std::any TrackContainerBackend::component_impl(Acts::HashedString key,
             return &(m_tracks.tracks.nholes().at(itrack));
         default:
             throw std::runtime_error(
-                "TrackContainerBackend::component_impl: Requested track "
-                "component does not exist: " +
+                "traccc::edm::DeviceTrackBackend::component_impl: Requested "
+                "track component does not exist: " +
                 std::to_string(key));
     }
 }
 
-Acts::ParticleHypothesis TrackContainerBackend::particleHypothesis_impl(
+Acts::ParticleHypothesis DeviceTrackBackend::particleHypothesis_impl(
     IndexType) const {
 
     // traccc tracks do not have per-track particle hypotheses; return a default
     return Acts::ParticleHypothesis::muon();
 }
 
-const Acts::Surface* TrackContainerBackend::referenceSurface_impl(
+const Acts::Surface* DeviceTrackBackend::referenceSurface_impl(
     IndexType index) const {
 
     // Get the Detray surface barcode belonging to the first track state of the
@@ -137,8 +135,8 @@ const Acts::Surface* TrackContainerBackend::referenceSurface_impl(
             m_tracks.tracks.constituent_links().at(index).at(0u).index);
     } else {
         throw std::runtime_error(
-            "TrackContainerBackend::referenceSurface_impl: Invalid track "
-            "constituent link type encountered");
+            "traccc::edm::DeviceTrackBackend::referenceSurface_impl: Invalid "
+            "track constituent link type encountered");
     }
 
     // With this barcode, look up the Acts surface using the Detray geometry.
@@ -156,7 +154,7 @@ const Acts::Surface* TrackContainerBackend::referenceSurface_impl(
     return m_actsGeometry.get().findSurface(acts_surface_id);
 }
 
-const std::vector<Acts::HashedString>& TrackContainerBackend::dynamicKeys_impl()
+const std::vector<Acts::HashedString>& DeviceTrackBackend::dynamicKeys_impl()
     const {
 
     static const std::vector<Acts::HashedString> emptyKeys{};

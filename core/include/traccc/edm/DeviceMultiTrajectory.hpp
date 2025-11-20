@@ -12,9 +12,9 @@
 #include "traccc/geometry/host_detector.hpp"
 
 // Acts include(s).
-#include "Acts/EventData/MultiTrajectory.hpp"
-#include "Acts/EventData/MultiTrajectoryBackendConcept.hpp"
-#include "Acts/Geometry/TrackingGeometry.hpp"
+#include <Acts/EventData/MultiTrajectory.hpp>
+#include <Acts/EventData/MultiTrajectoryBackendConcept.hpp>
+#include <Acts/Geometry/TrackingGeometry.hpp>
 
 // System include(s).
 #include <any>
@@ -23,7 +23,8 @@
 namespace traccc::edm {
 
 /// @c Acts::MultiTrajectory specialisation for traccc produced tracks
-class MultiTrajectory : public Acts::MultiTrajectory<MultiTrajectory> {
+class DeviceMultiTrajectory
+    : public Acts::MultiTrajectory<DeviceMultiTrajectory> {
 
     public:
     /// Constructor from a track container and Acts/Detray tracking geometries
@@ -34,15 +35,15 @@ class MultiTrajectory : public Acts::MultiTrajectory<MultiTrajectory> {
     /// @param detrayGeometry The Detray tracking geometry associated with the
     ///                       trajectories
     ///
-    explicit MultiTrajectory(
+    explicit DeviceMultiTrajectory(
         const track_container<default_algebra>::const_view& tracks,
         const Acts::TrackingGeometry& actsGeometry,
         const host_detector& detrayGeometry);
     /// Copy constructor
-    MultiTrajectory(const MultiTrajectory&) = default;
+    DeviceMultiTrajectory(const DeviceMultiTrajectory&) = default;
 
     /// Copy assignment operator
-    MultiTrajectory& operator=(const MultiTrajectory&) = default;
+    DeviceMultiTrajectory& operator=(const DeviceMultiTrajectory&) = default;
 
     /// @name Functions required by @c Acts::MultiTrajectory
     /// @{
@@ -161,19 +162,20 @@ class MultiTrajectory : public Acts::MultiTrajectory<MultiTrajectory> {
 
 };  // class DeviceMultiTrajectory
 
-/// Make sure that @c MultiTrajectory meets the concept requirements
-static_assert(Acts::ConstMultiTrajectoryBackend<MultiTrajectory>);
+/// Make sure that @c DeviceMultiTrajectory meets the concept requirements
+static_assert(Acts::ConstMultiTrajectoryBackend<DeviceMultiTrajectory>);
 
 }  // namespace traccc::edm
 
 namespace Acts {
 
-/// Declare that @c traccc::edm::MultiTrajectory is a read-only multi-trajectory
+/// Declare that @c traccc::edm::DeviceMultiTrajectory is a read-only
+/// multi-trajectory
 template <>
-struct IsReadOnlyMultiTrajectory<traccc::edm::MultiTrajectory>
+struct IsReadOnlyMultiTrajectory<traccc::edm::DeviceMultiTrajectory>
     : std::true_type {};
 
 }  // namespace Acts
 
 // Include the template implementation.
-#include "traccc/edm/impl/MultiTrajectory.ipp"
+#include "traccc/edm/impl/DeviceMultiTrajectory.ipp"
