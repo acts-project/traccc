@@ -45,7 +45,14 @@ full_chain_algorithm::full_chain_algorithm(
       m_track_params_estimation_config(track_params_estimation_config),
       m_finding_config(finding_config),
       m_fitting_config(fitting_config),
-      usingGBTS(useGBTS) {}
+      usingGBTS(useGBTS) {
+
+    if (usingGBTS) {
+        std::cout << "ERROR: GBTS not implemented for cpu, this will run with "
+                     "default seeding"
+                  << std::endl;
+    }
+}
 
 full_chain_algorithm::output_type full_chain_algorithm::operator()(
     const edm::silicon_cell_collection::host& cells) const {

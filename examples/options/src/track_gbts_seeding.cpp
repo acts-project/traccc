@@ -59,7 +59,7 @@ void track_gbts_seeding::read(const boost::program_options::variables_map &) {
     for (; nBinPairs > 0; --nBinPairs) {
         binTablesFile >> bin1;
         binTablesFile >> bin2[0];
-        binTables.emplace_back(std::make_pair(bin1, bin2));
+        binTables.emplace_back(bin1, bin2);
     }
 
     std::ifstream layerInfoFile(

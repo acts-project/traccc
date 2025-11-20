@@ -75,7 +75,11 @@ full_chain_algorithm::full_chain_algorithm(
       m_fitting_config(fitting_config),
       usingGBTS(useGBTS) {
 
-    assert(!usingGBTS && "GBTS not implemented for alpaka");
+    if (usingGBTS) {
+        std::cout << "ERROR: GBTS not implemented for alpaka, this will run "
+                     "with default seeding"
+                  << std::endl;
+    }
     std::cout << traccc::alpaka::get_device_info() << std::endl;
 
     // Copy the detector (description) to the device.
