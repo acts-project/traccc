@@ -46,6 +46,225 @@
 #include <thrust/sort.h>
 #include <thrust/unique.h>
 
+#include <iterator>
+#include <limits>
+
+namespace traccc::cuda {
+
+__global__ inline void gather_best_tips_per_measurement(
+    const vecmem::data::vector_view<const unsigned int> tips_view,
+    const vecmem::data::vector_view<const candidate_link> links_view,
+    const edm::measurement_collection<default_algebra>::const_view
+        measurements_view,
+    vecmem::data::vector_view<unsigned long long int> insertion_mutex_view,
+    vecmem::data::vector_view<unsigned int> tip_index_view,
+    vecmem::data::vector_view<float> tip_pval_view,
+    const unsigned int max_num_tracks_per_measurement) {
+    unsigned int tip_idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+    const vecmem::device_vector<const unsigned int> tips(tips_view);
+    const vecmem::device_vector<const candidate_link> links(links_view);
+    const edm::measurement_collection<default_algebra>::const_device
+        measurements(measurements_view);
+    vecmem::device_vector<unsigned long long int> insertion_mutex(
+        insertion_mutex_view);
+    vecmem::device_vector<unsigned int> tip_index(tip_index_view);
+    vecmem::device_vector<float> tip_pval(tip_pval_view);
+    const unsigned int n_meas = measurements.size();
+
+    scalar pval = 0.f;
+    unsigned int link_idx = 0;
+    unsigned int num_states = 0;
+
+    bool need_to_write = true;
+    candidate_link L;
+
+    if (tip_idx < tips.size()) {
+        link_idx = tips.at(tip_idx);
+        const auto link = links.at(link_idx);
+        pval = prob(link.chi2_sum, static_cast<scalar>(link.ndf_sum) - 5.f);
+        num_states = link.step + 1 - link.n_skipped;
+
+        L = link;
+
+        // Skip any holes at the start; there shouldn't be any.
+        while (L.meas_idx >= n_meas && L.step != 0u) {
+            L = links.at(L.previous_candidate_idx);
+        }
+    } else {
+        need_to_write = false;
+    }
+
+    unsigned int current_state = 0;
+
+    while (__syncthreads_or(current_state < num_states || need_to_write)) {
+        if (current_state < num_states || need_to_write) {
+            assert(L.meas_idx < n_meas);
+
+            if (need_to_write) {
+                vecmem::device_atomic_ref<unsigned long long int> mutex(
+                    insertion_mutex.at(L.meas_idx));
+
+                unsigned long long int assumed = mutex.load();
+                unsigned long long int desired_set;
+                auto [locked, size, worst] =
+                    device::decode_insertion_mutex(assumed);
+
+                if (need_to_write && size >= max_num_tracks_per_measurement &&
+                    pval <= worst) {
+                    need_to_write = false;
+                }
+
+                bool holds_lock = false;
+
+                if (need_to_write && !locked) {
+                    desired_set =
+                        device::encode_insertion_mutex(true, size, worst);
+
+                    if (mutex.compare_exchange_strong(assumed, desired_set)) {
+                        holds_lock = true;
+                    }
+                }
+
+                if (holds_lock) {
+                    unsigned int new_size;
+                    unsigned int offset =
+                        L.meas_idx * max_num_tracks_per_measurement;
+                    unsigned int out_idx;
+
+                    if (size == max_num_tracks_per_measurement) {
+                        new_size = size;
+
+                        scalar worst_pval = std::numeric_limits<scalar>::max();
+
+                        for (unsigned int i = 0; i < size; ++i) {
+                            if (tip_pval.at(offset + i) < worst_pval) {
+                                worst_pval = tip_pval.at(offset + i);
+                                out_idx = i;
+                            }
+                        }
+                    } else {
+                        new_size = size + 1;
+                        out_idx = size;
+                    }
+
+                    tip_index.at(offset + out_idx) = tip_idx;
+                    tip_pval.at(offset + out_idx) = pval;
+
+                    scalar new_worst = std::numeric_limits<scalar>::max();
+
+                    for (unsigned int i = 0; i < new_size; ++i) {
+                        new_worst =
+                            std::min(new_worst, tip_pval.at(offset + i));
+                    }
+
+                    [[maybe_unused]] bool cas_result =
+                        mutex.compare_exchange_strong(
+                            desired_set, device::encode_insertion_mutex(
+                                             false, new_size, new_worst));
+
+                    assert(cas_result);
+
+                    need_to_write = false;
+                }
+            }
+
+            if (!need_to_write) {
+                if (current_state < num_states - 1) {
+                    L = links.at(L.previous_candidate_idx);
+                    while (L.meas_idx >= n_meas && L.step != 0u) {
+                        L = links.at(L.previous_candidate_idx);
+                    }
+                    need_to_write = true;
+                } else {
+#ifndef NDEBUG
+                    if (L.step != 0) {
+                        do {
+                            L = links.at(L.previous_candidate_idx);
+                        } while (L.meas_idx >= n_meas && L.step != 0u);
+                        assert(L.meas_idx >= n_meas);
+                    }
+                    assert(L.step == 0);
+#endif
+                }
+
+                current_state++;
+            }
+        }
+    }
+}
+
+__global__ inline void gather_measurement_votes(
+    const vecmem::data::vector_view<const unsigned long long int>
+        insertion_mutex_view,
+    const vecmem::data::vector_view<const unsigned int> tip_index_view,
+    vecmem::data::vector_view<unsigned int> votes_per_tip_view,
+    const unsigned int max_num_tracks_per_measurement) {
+    unsigned int thread_idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+    unsigned int measurement_idx = thread_idx / max_num_tracks_per_measurement;
+    unsigned int tip_idx = thread_idx % max_num_tracks_per_measurement;
+
+    const vecmem::device_vector<const unsigned long long int> insertion_mutex(
+        insertion_mutex_view);
+    const vecmem::device_vector<const unsigned int> tip_index(tip_index_view);
+    vecmem::device_vector<unsigned int> votes_per_tip(votes_per_tip_view);
+
+    if (measurement_idx >= insertion_mutex.size()) {
+        return;
+    }
+
+    auto [locked, size, worst] =
+        device::decode_insertion_mutex(insertion_mutex.at(measurement_idx));
+
+    if (tip_idx < size) {
+        vecmem::device_atomic_ref<unsigned int>(
+            votes_per_tip.at(tip_index.at(thread_idx)))
+            .fetch_add(1u);
+    }
+}
+
+__global__ inline void update_tip_length_buffer(
+    const vecmem::data::vector_view<const unsigned int> old_tip_length_view,
+    vecmem::data::vector_view<unsigned int> new_tip_length_view,
+    const vecmem::data::vector_view<const unsigned int> measurement_votes_view,
+    unsigned int* tip_to_output_map, unsigned int* tip_to_output_map_idx,
+    float min_measurement_voting_fraction) {
+    const unsigned int thread_idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+    assert(tip_to_output_map != nullptr);
+    assert(tip_to_output_map_idx != nullptr);
+
+    const vecmem::device_vector<const unsigned int> old_tip_length(
+        old_tip_length_view);
+    vecmem::device_vector<unsigned int> new_tip_length(new_tip_length_view);
+    const vecmem::device_vector<const unsigned int> measurement_votes(
+        measurement_votes_view);
+
+    if (thread_idx >= measurement_votes_view.size()) {
+        return;
+    }
+
+    const unsigned int total_measurements = old_tip_length.at(thread_idx);
+    const unsigned int total_votes = measurement_votes.at(thread_idx);
+
+    assert(total_votes <= total_measurements);
+
+    const scalar vote_fraction = static_cast<scalar>(total_votes) /
+                                 static_cast<scalar>(total_measurements);
+
+    if (vote_fraction < min_measurement_voting_fraction) {
+        tip_to_output_map[thread_idx] =
+            std::numeric_limits<unsigned int>::max();
+    } else {
+        const auto new_idx =
+            vecmem::device_atomic_ref(*tip_to_output_map_idx).fetch_add(1u);
+        new_tip_length.at(new_idx) = total_measurements;
+        tip_to_output_map[thread_idx] = new_idx;
+    }
+}
+}  // namespace traccc::cuda
+
 namespace traccc::cuda::details {
 
 /// Templated implementation of the track finding algorithm.
@@ -455,11 +674,118 @@ combinatorial_kalman_filter(
     auto n_tips_total = get_size(tips_buffer, size_staging_ptr.get(), stream);
 
     vecmem::vector<unsigned int> tips_length_host(mr.host);
+    vecmem::unique_alloc_ptr<unsigned int[]> tip_to_output_map = nullptr;
 
-    if (n_tips_total > 0) {
-        copy(tip_length_buffer, tips_length_host)->wait();
-        tips_length_host.resize(n_tips_total);
+    TRACCC_INFO("Before pruning we have " << n_tips_total << " tips");
+
+    unsigned int n_tips_total_filtered = n_tips_total;
+
+    if (n_tips_total > 0 && config.max_num_tracks_per_measurement > 0) {
+        // TODO: DOCS
+
+        vecmem::data::vector_buffer<unsigned int>
+            best_tips_per_measurement_index_buffer(
+                config.max_num_tracks_per_measurement * n_measurements,
+                mr.main);
+        copy.setup(best_tips_per_measurement_index_buffer)->wait();
+
+        vecmem::data::vector_buffer<unsigned long long int>
+            best_tips_per_measurement_insertion_mutex_buffer(n_measurements,
+                                                             mr.main);
+        copy.setup(best_tips_per_measurement_insertion_mutex_buffer)->wait();
+
+        // NOTE: This memset assumes that an all-zero bit vector interpreted
+        // as a floating point value has value zero, which is true for IEEE
+        // 754 but might not be true for arbitrary float formats.
+        copy.memset(best_tips_per_measurement_insertion_mutex_buffer, 0)
+            ->wait();
+
+        {
+            vecmem::data::vector_buffer<float>
+                best_tips_per_measurement_pval_buffer(
+                    config.max_num_tracks_per_measurement * n_measurements,
+                    mr.main);
+            copy.setup(best_tips_per_measurement_pval_buffer)->wait();
+
+            // NOTE: Normally, launching small blocks is a performance
+            // antipattern, but there is little use to having larger blocks
+            // here.
+            const unsigned int num_threads = 32;
+            const unsigned int num_blocks =
+                (n_tips_total + num_threads - 1) / num_threads;
+
+            gather_best_tips_per_measurement<<<num_blocks, num_threads, 0,
+                                               stream>>>(
+                tips_buffer, links_buffer, measurements_view,
+                best_tips_per_measurement_insertion_mutex_buffer,
+                best_tips_per_measurement_index_buffer,
+                best_tips_per_measurement_pval_buffer,
+                config.max_num_tracks_per_measurement);
+
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+        }
+
+        vecmem::data::vector_buffer<unsigned int> votes_per_tip_buffer(
+            n_tips_total, mr.main);
+        copy.setup(votes_per_tip_buffer)->wait();
+        copy.memset(votes_per_tip_buffer, 0)->wait();
+
+        {
+            const unsigned int num_threads = 512;
+            const unsigned int num_blocks =
+                (config.max_num_tracks_per_measurement * n_measurements +
+                 num_threads - 1) /
+                num_threads;
+
+            gather_measurement_votes<<<num_blocks, num_threads, 0, stream>>>(
+                best_tips_per_measurement_insertion_mutex_buffer,
+                best_tips_per_measurement_index_buffer, votes_per_tip_buffer,
+                config.max_num_tracks_per_measurement);
+
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+        }
+
+        tip_to_output_map =
+            vecmem::make_unique_alloc<unsigned int[]>(mr.main, n_tips_total);
+
+        {
+            const unsigned int num_threads = 512;
+            const unsigned int num_blocks =
+                (n_tips_total + num_threads - 1) / num_threads;
+
+            vecmem::data::vector_buffer<unsigned int> new_tip_length_buffer{
+                n_tips_total, mr.main};
+            copy.setup(new_tip_length_buffer)->wait();
+
+            auto tip_to_output_map_idx =
+                vecmem::make_unique_alloc<unsigned int>(mr.main);
+
+            TRACCC_CUDA_ERROR_CHECK(cudaMemsetAsync(
+                tip_to_output_map_idx.get(), 0, sizeof(unsigned int), stream));
+
+            update_tip_length_buffer<<<num_blocks, num_threads, 0, stream>>>(
+                tip_length_buffer, new_tip_length_buffer, votes_per_tip_buffer,
+                tip_to_output_map.get(), tip_to_output_map_idx.get(),
+                config.min_measurement_voting_fraction);
+
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+            str.synchronize();
+
+            TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
+                &n_tips_total_filtered, tip_to_output_map_idx.get(),
+                sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
+
+            tip_length_buffer = std::move(new_tip_length_buffer);
+
+            str.synchronize();
+        }
     }
+
+    TRACCC_INFO("After pruning we have " << n_tips_total_filtered << " tips");
+
+    copy(tip_length_buffer, tips_length_host)->wait();
+    tips_length_host.resize(n_tips_total_filtered);
 
     // Create track candidate buffer
     typename edm::track_container<typename detector_t::algebra_type>::buffer
@@ -477,7 +803,8 @@ combinatorial_kalman_filter(
             .seeds_view = seeds,
             .links_view = links_buffer,
             .tips_view = tips_buffer,
-            .tracks_view = {track_candidates_buffer}};
+            .tracks_view = {track_candidates_buffer},
+            .tip_to_output_map = tip_to_output_map.get()};
         kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(payload);
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
