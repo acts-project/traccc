@@ -146,7 +146,7 @@ class full_chain_algorithm
     /// Configuration for the seed filtering
     seedfilter_config m_filter_config;
     /// placeholder GBTS config
-    gbts_seedfinder_config m_gbts_config;
+    [[maybe_unused]] gbts_seedfinder_config m_gbts_config;
     /// Configuration for track parameter estimation
     track_params_estimation_config m_track_params_estimation_config;
 
