@@ -13,6 +13,8 @@
 // Detray include(s).
 #include <detray/core/detector.hpp>
 #include <detray/detectors/default_metadata.hpp>
+#include <detray/detectors/itk_metadata.hpp>
+#include <detray/detectors/odd_metadata.hpp>
 #include <detray/detectors/telescope_metadata.hpp>
 #include <detray/detectors/toy_metadata.hpp>
 
@@ -87,5 +89,14 @@ using telescope_detector = detector_traits<
 using toy_detector =
     detector_traits<detray::toy_metadata<traccc::default_algebra>>;
 
-using detector_type_list = std::tuple<default_detector, telescope_detector>;
+/// ITk detector
+using itk_detector =
+    detector_traits<detray::itk_metadata<traccc::default_algebra>>;
+
+/// ITk detector
+using odd_detector =
+    detector_traits<detray::odd_metadata<traccc::default_algebra>>;
+
+using detector_type_list = std::tuple<default_detector, telescope_detector,
+                                      itk_detector, odd_detector>;
 }  // namespace traccc
