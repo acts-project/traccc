@@ -10,6 +10,7 @@
 
 // Project include(s).
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
+#include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/alpaka/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/alpaka/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/alpaka/seeding/seeding_algorithm.hpp"
@@ -70,6 +71,16 @@ device_backend::make_clusterization_algorithm(
         logger().clone("alpaka::clusterization_algorithm"));
 }
 
+std::unique_ptr<algorithm<edm::measurement_collection<default_algebra>::buffer(
+    const edm::measurement_collection<default_algebra>::const_view&)>>
+device_backend::make_measurement_sorting_algorithm() const {
+
+    TRACCC_VERBOSE("Constructing alpaka::measurement_sorting_algorithm");
+    return std::make_unique<alpaka::measurement_sorting_algorithm>(
+        m_impl->m_mr, m_impl->m_vo.async_copy(), m_impl->m_queue,
+        logger().clone("alpaka::measurement_sorting_algorithm"));
+}
+
 std::unique_ptr<algorithm<edm::spacepoint_collection::buffer(
     const detector_buffer&,
     const edm::measurement_collection<default_algebra>::const_view&)>>
@@ -119,6 +130,16 @@ device_backend::make_finding_algorithm(const finding_config& config) const {
     return std::make_unique<alpaka::combinatorial_kalman_filter_algorithm>(
         config, m_impl->m_mr, m_impl->m_vo.async_copy(), m_impl->m_queue,
         logger().clone("alpaka::combinatorial_kalman_filter_algorithm"));
+}
+
+std::unique_ptr<algorithm<edm::track_container<default_algebra>::buffer(
+    const edm::track_container<default_algebra>::const_view&)>>
+device_backend::make_ambiguity_resolution_algorithm(
+    const ambiguity_resolution_config&) const {
+
+    TRACCC_DEBUG(
+        "No ambiguity resolution algorithm implemented for the Alpaka backend");
+    return {};
 }
 
 std::unique_ptr<algorithm<edm::track_container<default_algebra>::buffer(

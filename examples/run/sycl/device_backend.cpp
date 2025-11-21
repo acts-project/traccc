@@ -10,6 +10,7 @@
 
 // Project include(s).
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
+#include "traccc/sycl/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/sycl/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/sycl/seeding/seeding_algorithm.hpp"
@@ -83,6 +84,16 @@ device_backend::make_clusterization_algorithm(
         logger().clone("sycl::clusterization_algorithm"));
 }
 
+std::unique_ptr<algorithm<edm::measurement_collection<default_algebra>::buffer(
+    const edm::measurement_collection<default_algebra>::const_view&)>>
+device_backend::make_measurement_sorting_algorithm() const {
+
+    TRACCC_VERBOSE("Constructing sycl::measurement_sorting_algorithm");
+    return std::make_unique<sycl::measurement_sorting_algorithm>(
+        m_impl->m_mr, m_impl->m_copy, m_impl->m_traccc_queue,
+        logger().clone("sycl::measurement_sorting_algorithm"));
+}
+
 std::unique_ptr<algorithm<edm::spacepoint_collection::buffer(
     const detector_buffer&,
     const edm::measurement_collection<default_algebra>::const_view&)>>
@@ -131,6 +142,16 @@ device_backend::make_finding_algorithm(const finding_config& config) const {
     return std::make_unique<sycl::combinatorial_kalman_filter_algorithm>(
         config, m_impl->m_mr, m_impl->m_copy, m_impl->m_traccc_queue,
         logger().clone("sycl::combinatorial_kalman_filter_algorithm"));
+}
+
+std::unique_ptr<algorithm<edm::track_container<default_algebra>::buffer(
+    const edm::track_container<default_algebra>::const_view&)>>
+device_backend::make_ambiguity_resolution_algorithm(
+    const ambiguity_resolution_config&) const {
+
+    TRACCC_DEBUG(
+        "No ambiguity resolution algorithm implemented for the SYCL backend");
+    return {};
 }
 
 std::unique_ptr<algorithm<edm::track_container<default_algebra>::buffer(

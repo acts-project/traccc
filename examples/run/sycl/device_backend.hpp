@@ -54,6 +54,12 @@ class device_backend : public traccc::device_backend, public messaging {
     make_clusterization_algorithm(
         const clustering_config& config) const override;
 
+    /// Construct a measurement sorting algorithm instance
+    std::unique_ptr<
+        algorithm<edm::measurement_collection<default_algebra>::buffer(
+            const edm::measurement_collection<default_algebra>::const_view&)>>
+    make_measurement_sorting_algorithm() const override;
+
     /// Construct a spacepoint formation algorithm instance
     std::unique_ptr<algorithm<edm::spacepoint_collection::buffer(
         const detector_buffer&,
@@ -82,6 +88,12 @@ class device_backend : public traccc::device_backend, public messaging {
         const edm::measurement_collection<default_algebra>::const_view&,
         const bound_track_parameters_collection_types::const_view&)>>
     make_finding_algorithm(const finding_config& config) const override;
+
+    /// Construct an ambiguity resolution algorithm instance
+    std::unique_ptr<algorithm<edm::track_container<default_algebra>::buffer(
+        const edm::track_container<default_algebra>::const_view&)>>
+    make_ambiguity_resolution_algorithm(
+        const ambiguity_resolution_config& config) const override;
 
     /// Construct a track fitting algorithm instance
     std::unique_ptr<algorithm<edm::track_container<default_algebra>::buffer(
