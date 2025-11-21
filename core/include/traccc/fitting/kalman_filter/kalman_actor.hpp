@@ -213,7 +213,7 @@ struct kalman_actor_state {
                 return false;
             }
             TRACCC_VERBOSE_HOST_DEVICE(
-                "--> fw: Check other states on track for a match");
+                "--> bw: Check other states on track for a match");
             // Check if the current navigation surfaces can be found on a
             // later track state. That means the current track state was
             // skipped by the navigator: Advance the internal iterator
@@ -270,8 +270,7 @@ struct kalman_actor_state {
                                   << at(i).filtered_params().surface_link());
             }
         } else if (navigation.current().is_edge()) {
-
-            TRACCC_DEBUG_HOST_DEVICE("--> Hit surface edge: Not a hole");
+            TRACCC_VERBOSE_HOST_DEVICE("--> Hit surface edge: Not a hole");
         }
 
         // After additional surface, keep navigating until match is found

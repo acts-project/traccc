@@ -279,10 +279,6 @@ class kalman_fitter {
         if (!propagator.finished(propagation)) {
             return kalman_fitter_status::ERROR_PROPAGATION_FAILURE;
         }
-        // Are all track states updated in the fit?
-        if (fitter_state.m_fit_actor_state.count_missed_fit() > 0u) {
-            return kalman_fitter_status::ERROR_UPDATER_SKIPPED_STATE;
-        }
 
         return kalman_fitter_status::SUCCESS;
     }
@@ -361,8 +357,11 @@ class kalman_fitter {
         backward_propagator_type propagator(backward_cfg);
 
         // Set path limit
+        const detray::tracking_surface last_sf{
+            m_detector, last.filtered_params().surface_link()};
         fitter_state.m_aborter_state.set_path_limit(
-            m_cfg.propagation.stepping.path_limit);
+            1.2f * vector::norm(
+                       last_sf.transform(backward_cfg.context).translation()));
 
         typename backward_propagator_type::state propagation(
             last.smoothed_params(), m_field, m_detector,
@@ -402,10 +401,6 @@ class kalman_fitter {
         // Encountered error during propagation?
         if (!propagator.finished(propagation)) {
             return kalman_fitter_status::ERROR_PROPAGATION_FAILURE;
-        }
-        // Are all track states updated during smoothing?
-        if (fitter_state.m_fit_actor_state.count_missed_smoother() > 0u) {
-            return kalman_fitter_status::ERROR_SMOOTHER_SKIPPED_STATE;
         }
 
         return kalman_fitter_status::SUCCESS;
