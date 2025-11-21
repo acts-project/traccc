@@ -52,3 +52,7 @@ traccc_add_executable( throughput_mt_sycl "throughput_mt.cpp"
 traccc_add_executable( track_finding_validation_sycl
    "track_finding_validation.cpp"
    LINK_LIBRARIES traccc_examples_common traccc_examples_sycl )
+
+traccc_add_executable( reconstruction_validation_sycl
+   "reconstruction_validation.cpp"
+   LINK_LIBRARIES traccc_examples_common traccc_examples_sycl )

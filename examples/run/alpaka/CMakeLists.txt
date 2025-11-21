@@ -49,3 +49,7 @@ traccc_add_executable( throughput_mt_alpaka "throughput_mt.cpp"
 traccc_add_executable( track_finding_validation_alpaka
    "track_finding_validation.cpp"
    LINK_LIBRARIES traccc_examples_common traccc_examples_alpaka )
+
+traccc_add_executable( reconstruction_validation_alpaka
+   "reconstruction_validation.cpp"
+   LINK_LIBRARIES traccc_examples_common traccc_examples_alpaka )

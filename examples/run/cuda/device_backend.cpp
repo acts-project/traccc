@@ -9,7 +9,9 @@
 #include "device_backend.hpp"
 
 // Project include(s).
+#include "traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
+#include "traccc/cuda/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
@@ -82,6 +84,16 @@ device_backend::make_clusterization_algorithm(
         logger().clone("cuda::clusterization_algorithm"));
 }
 
+std::unique_ptr<algorithm<edm::measurement_collection<default_algebra>::buffer(
+    const edm::measurement_collection<default_algebra>::const_view&)>>
+device_backend::make_measurement_sorting_algorithm() const {
+
+    TRACCC_VERBOSE("Constructing cuda::measurement_sorting_algorithm");
+    return std::make_unique<cuda::measurement_sorting_algorithm>(
+        m_impl->m_mr, m_impl->m_copy, m_impl->m_stream,
+        logger().clone("cuda::measurement_sorting_algorithm"));
+}
+
 std::unique_ptr<algorithm<edm::spacepoint_collection::buffer(
     const detector_buffer&,
     const edm::measurement_collection<default_algebra>::const_view&)>>
@@ -129,6 +141,17 @@ device_backend::make_finding_algorithm(const finding_config& config) const {
     return std::make_unique<cuda::combinatorial_kalman_filter_algorithm>(
         config, m_impl->m_mr, m_impl->m_copy, m_impl->m_stream,
         logger().clone("cuda::combinatorial_kalman_filter_algorithm"));
+}
+
+std::unique_ptr<algorithm<edm::track_container<default_algebra>::buffer(
+    const edm::track_container<default_algebra>::const_view&)>>
+device_backend::make_ambiguity_resolution_algorithm(
+    const ambiguity_resolution_config& config) const {
+
+    TRACCC_VERBOSE("Constructing cuda::greedy_ambiguity_resolution_algorithm");
+    return std::make_unique<cuda::greedy_ambiguity_resolution_algorithm>(
+        config, m_impl->m_mr, m_impl->m_copy, m_impl->m_stream,
+        logger().clone("cuda::greedy_ambiguity_resolution_algorithm"));
 }
 
 std::unique_ptr<algorithm<edm::track_container<default_algebra>::buffer(

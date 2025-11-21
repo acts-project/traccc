@@ -15,10 +15,10 @@
 
 namespace traccc {
 
-/// Helper function implementing a device track finding validation application
+/// Helper function implementing a device reconstruction validation application
 ///
-/// Applications that used to be called "traccc_seeding_example_<platform>" in
-/// the past.
+/// Applications that used to be called "traccc_seq_example_<platform>" in the
+/// past.
 ///
 /// @tparam backend_t The device backend type to use
 ///
@@ -30,11 +30,11 @@ namespace traccc {
 /// @return The value to be returned from @c main(...)
 ///
 template <concepts::device_backend backend_t>
-int device_track_finding_validation(std::string_view logger_name,
-                                    std::string_view description, int argc,
-                                    char* argv[]);
+int device_reconstruction_validation(std::string_view logger_name,
+                                     std::string_view description, int argc,
+                                     char* argv[]);
 
 }  // namespace traccc
 
 // Include the implementation.
-#include "device_track_finding_validation.ipp"
+#include "device_reconstruction_validation.ipp"

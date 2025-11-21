@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/ambiguity_resolution/ambiguity_resolution_config.hpp"
 #include "traccc/bfield/magnetic_field.hpp"
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/definitions/primitives.hpp"
@@ -61,6 +62,12 @@ struct device_backend {
             const silicon_detector_description::const_view&)>>
     make_clusterization_algorithm(const clustering_config& config) const = 0;
 
+    /// Construct a measurement sorting algorithm instance
+    virtual std::unique_ptr<
+        algorithm<edm::measurement_collection<default_algebra>::buffer(
+            const edm::measurement_collection<default_algebra>::const_view&)>>
+    make_measurement_sorting_algorithm() const = 0;
+
     /// Construct a spacepoint formation algorithm instance
     virtual std::unique_ptr<algorithm<edm::spacepoint_collection::buffer(
         const detector_buffer&,
@@ -90,6 +97,13 @@ struct device_backend {
             const edm::measurement_collection<default_algebra>::const_view&,
             const bound_track_parameters_collection_types::const_view&)>>
     make_finding_algorithm(const finding_config& config) const = 0;
+
+    /// Construct an ambiguity resolution algorithm instance
+    virtual std::unique_ptr<
+        algorithm<edm::track_container<default_algebra>::buffer(
+            const edm::track_container<default_algebra>::const_view&)>>
+    make_ambiguity_resolution_algorithm(
+        const ambiguity_resolution_config& config) const = 0;
 
     /// Construct a track fitting algorithm instance
     virtual std::unique_ptr<
