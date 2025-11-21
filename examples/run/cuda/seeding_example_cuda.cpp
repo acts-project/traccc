@@ -7,6 +7,7 @@
 
 // Project include(s).
 #include "../common/make_magnetic_field.hpp"
+#include "../common/print_fitted_tracks_statistics.hpp"
 #include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
@@ -432,6 +433,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
              Statistics
           ---------------*/
 
+        details::print_fitted_tracks_statistics(track_states_cuda, logger());
         n_spacepoints += spacepoints_per_event.size();
         n_seeds_cuda += seeds_cuda.size();
         n_seeds += seeds.size();
