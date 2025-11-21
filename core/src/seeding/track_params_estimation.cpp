@@ -57,33 +57,33 @@ track_params_estimation::output_type track_params_estimation::operator()(
                        << spacepoints.at(seeds.at(i).top_index()).radius());
 
         // Calculate the track parameter vector.
-        bound_track_parameters<>& track_params = result[i];
+        bound_track_parameters<>& track_params = result.at(i);
         seed_to_bound_param_vector(track_params, measurements, spacepoints,
-                                   seeds[i], bfield);
+                                   seeds.at(i), bfield);
 
         // Set Covariance
-        for (std::size_t j = 0; j < e_bound_size; ++j) {
-            scalar var = m_config.initial_sigma[i] * m_config.initial_sigma[i];
+        for (std::size_t j = 0u; j < e_bound_size; ++j) {
+            scalar var =
+                m_config.initial_sigma.at(j) * m_config.initial_sigma.at(j);
 
-            if (i == e_bound_qoverp) {
+            if (j == e_bound_qoverp) {
                 scalar var_theta = getter::element(
                     track_params.covariance(), e_bound_theta, e_bound_theta);
 
                 var += math::pow(m_config.initial_sigma_qopt *
-                                     math::sin(track_params[e_bound_theta]),
+                                     math::sin(track_params.theta()),
                                  2.f);
-                var += math::pow(m_config.initial_sigma_pt_rel *
-                                     track_params[e_bound_qoverp],
-                                 2.f);
+                var += math::pow(
+                    m_config.initial_sigma_pt_rel * track_params.qop(), 2.f);
                 var += var_theta *
-                       math::pow(track_params[e_bound_qoverp] /
-                                     math::tan(track_params[e_bound_theta]),
-                                 2.f);
+                       math::pow(
+                           track_params.qop() / math::tan(track_params.theta()),
+                           2.f);
             }
 
-            var *= m_config.initial_inflation[i];
+            var *= m_config.initial_inflation.at(j);
 
-            getter::element(track_params.covariance(), i, i) = var;
+            getter::element(track_params.covariance(), j, j) = var;
         }
     }
 
