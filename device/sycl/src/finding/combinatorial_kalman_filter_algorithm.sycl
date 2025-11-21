@@ -14,6 +14,7 @@
 
 // Project include(s).
 #include "traccc/bfield/magnetic_field_types.hpp"
+#include "traccc/geometry/detector_type_list.hpp"
 #include "traccc/utils/detector_buffer_bfield_visitor.hpp"
 #include "traccc/utils/propagation.hpp"
 
@@ -35,7 +36,7 @@ combinatorial_kalman_filter_algorithm::operator()(
 
     // Perform the track finding using the templated implementation.
     return detector_buffer_magnetic_field_visitor<
-        detector_type_list, sycl::bfield_type_list<scalar>>(
+        traccc::detector_type_list, sycl::bfield_type_list<scalar>>(
         detector, field,
         [&]<typename detector_t, typename bfield_view_t>(
             const typename detector_t::view& det, const bfield_view_t& bfield) {
