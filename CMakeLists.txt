@@ -87,7 +87,7 @@ endif()
 # In order to generate specializations for our kernels, we need to have both
 # a working Python interpreter, and a list of supported detectors.
 find_package (Python COMPONENTS Interpreter REQUIRED)
-set(TRACCC_SUPPORTED_DETECTORS "default_detector;telescope_detector;toy_detector")
+set(TRACCC_SUPPORTED_DETECTORS "default_detector;telescope_detector;toy_detector;itk_detector;odd_detector")
 
 # Set up build profiling for the project.
 if( CTEST_USE_LAUNCHERS )
