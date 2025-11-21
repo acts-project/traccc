@@ -28,6 +28,8 @@ traccc_add_executable( seq_example_sycl "seq_example_sycl.sycl"
 # Set up the "throughput applications".
 #
 add_library( traccc_examples_sycl OBJECT
+   "device_backend.hpp"
+   "device_backend.cpp"
    "full_chain_algorithm.hpp"
    "full_chain_algorithm.sycl" )
 target_link_libraries( traccc_examples_sycl
@@ -46,3 +48,7 @@ traccc_add_executable( throughput_mt_sycl "throughput_mt.cpp"
                   detray::detectors detray::io traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::sycl
                   traccc::options traccc_examples_sycl )
+
+traccc_add_executable( track_finding_validation_sycl
+   "track_finding_validation.cpp"
+   LINK_LIBRARIES traccc_examples_common traccc_examples_sycl )

@@ -32,6 +32,8 @@ traccc_add_executable( seeding_example_alpaka "seeding_example_alpaka.cpp"
 # Set up the "throughput applications".
 #
 add_library( traccc_examples_alpaka STATIC
+   "device_backend.hpp"
+   "device_backend.cpp"
    "full_chain_algorithm.hpp"
    "full_chain_algorithm.cpp" )
 target_link_libraries( traccc_examples_alpaka
@@ -43,3 +45,7 @@ traccc_add_executable( throughput_st_alpaka "throughput_st.cpp"
 
 traccc_add_executable( throughput_mt_alpaka "throughput_mt.cpp"
    LINK_LIBRARIES TBB::tbb indicators::indicators ${LIBRARIES} ${DETRAY} traccc_examples_alpaka )
+
+traccc_add_executable( track_finding_validation_alpaka
+   "track_finding_validation.cpp"
+   LINK_LIBRARIES traccc_examples_common traccc_examples_alpaka )
