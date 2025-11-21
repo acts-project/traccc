@@ -59,8 +59,11 @@ void read_detector(host_detector& detector, vecmem::memory_resource& mr,
 
     // TODO: Update this
     if (header.detector == "Cylindrical detector from DD4hep blueprint") {
-        ::read_detector<default_detector>(detector, mr, geometry_file,
-                                          material_file, grid_file);
+        ::read_detector<odd_detector>(detector, mr, geometry_file,
+                                      material_file, grid_file);
+    } else if (header.detector == "detray_detector") {
+        ::read_detector<itk_detector>(detector, mr, geometry_file,
+                                      material_file, grid_file);
     } else {
         // TODO: Warning here
         ::read_detector<default_detector>(detector, mr, geometry_file,
