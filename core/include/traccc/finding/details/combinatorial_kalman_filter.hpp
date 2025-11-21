@@ -260,12 +260,51 @@ combinatorial_kalman_filter(
                 auto trk_state =
                     edm::make_track_state<algebra_type>(measurements, meas_id);
 
-                const bool is_line = detail::is_line(sf);
+                kalman_fitter_status res{kalman_fitter_status::ERROR_OTHER};
+                // Check if the measurement is even remotely close to the track
+                if (step == 0 && !sf.has_material()) {
+                    detray::dmatrix<algebra_type, 2, 1> meas_local;
+                    edm::get_measurement_local<algebra_type>(meas, meas_local);
 
-                // Run the Kalman update on a copy of the track parameters
-                const kalman_fitter_status res =
-                    gain_matrix_updater<algebra_type>{}(trk_state, measurements,
-                                                        in_param, is_line);
+                    const subspace<algebra_type, e_bound_size> subs(
+                        meas.subspace());
+                    detray::dmatrix<algebra_type, 2, e_bound_size> H =
+                        subs.template projector<2>();
+                    const auto residual = meas_local - H * in_param.vector();
+
+                    const scalar_type res_0{getter::element(residual, 0, 0)};
+                    const scalar_type res_1{
+                        meas.dimensions() == 1
+                            ? 0.f
+                            : getter::element(residual, 1, 0)};
+                    const scalar_type search_rad =
+                        math::sqrt(res_0 * res_0 + res_1 * res_1);
+                    if (search_rad > 0.f) {
+                        TRACCC_VERBOSE_HOST(
+                            "Measurement outside search radius: "
+                            << search_rad << " mm for meas. " << meas_id);
+                        continue;
+                    }
+                    res = kalman_fitter_status::SUCCESS;
+                    trk_state.filtered_params() = in_param;
+                    trk_state.filtered_chi2() = 0.f;
+
+                    // Set the covariance to the measurement variance
+                    detray::dmatrix<algebra_type, 2, 2> V;
+                    edm::get_measurement_covariance<algebra_type>(meas, V);
+                    auto& filtered_cov =
+                        trk_state.filtered_params().covariance();
+                    getter::element(filtered_cov, e_bound_loc0, e_bound_loc0) =
+                        getter::element(V, 0, 0);
+                    getter::element(filtered_cov, e_bound_loc1, e_bound_loc1) =
+                        getter::element(V, 1, 1);
+                } else {
+                    const bool is_line = detail::is_line(sf);
+
+                    // Run the Kalman update on a copy of the track parameters
+                    res = gain_matrix_updater<algebra_type>{}(
+                        trk_state, measurements, in_param, is_line);
+                }
 
                 const traccc::scalar chi2 = trk_state.filtered_chi2();
 
