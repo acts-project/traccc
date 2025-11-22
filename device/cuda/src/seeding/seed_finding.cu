@@ -134,6 +134,7 @@ __global__ void select_seeds(
     device::triplet_counter_spM_collection_types::const_view spM_tc,
     device::triplet_counter_collection_types::const_view midBot_tc,
     device::device_triplet_collection_types::view triplet_view,
+    vecmem::data::vector_view<const scalar> highest_weight_view,
     edm::seed_collection::view seed_view) {
 
     // Array for temporary storage of triplets for comparing within seed
@@ -145,9 +146,65 @@ __global__ void select_seeds(
 
     device::select_seeds(details::global_index1(), finder_config, filter_config,
                          spacepoints, sp_view, spM_tc, midBot_tc, triplet_view,
-                         dataPos, seed_view);
+                         highest_weight_view, dataPos, seed_view);
 }
 
+__global__ void collect_highest_weight_per_spacepoint(
+    vecmem::data::vector_view<scalar> highest_weight_view,
+    device::device_triplet_collection_types::const_view triplet_view) {
+    vecmem::device_vector<scalar> highest_weights(highest_weight_view);
+    const device::device_triplet_collection_types::const_device triplets(
+        triplet_view);
+
+    const unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    const unsigned int seed_idx = tid / 3;
+    const unsigned int local_spacepoint_idx = tid % 3;
+
+    if (seed_idx >= triplets.size()) {
+        return;
+    }
+
+    unsigned int global_spacepoint_idx;
+
+    if (local_spacepoint_idx == 0) {
+        global_spacepoint_idx = triplets.at(seed_idx).spB;
+    } else if (local_spacepoint_idx == 1) {
+        global_spacepoint_idx = triplets.at(seed_idx).spM;
+    } else if (local_spacepoint_idx == 2) {
+        global_spacepoint_idx = triplets.at(seed_idx).spT;
+    } else {
+        __builtin_unreachable();
+    }
+
+    static_assert(sizeof(scalar) == 4 || sizeof(scalar) == 8);
+    using cas_type = std::conditional_t<sizeof(scalar) == 4, unsigned int,
+                                        unsigned long long int>;
+
+    /*
+     * The following is simply an implementation of atomic max.
+     */
+    scalar& weight_loc = highest_weights.at(global_spacepoint_idx);
+    cas_type* weight_raw = reinterpret_cast<cas_type*>(&weight_loc);
+
+    vecmem::device_atomic_ref<cas_type> atomic(*weight_raw);
+
+    cas_type current_weight_raw = atomic.load();
+    scalar current_weight = std::bit_cast<scalar>(current_weight_raw);
+    const scalar own_weight = triplets.at(seed_idx).weight;
+    const cas_type own_weight_raw = std::bit_cast<cas_type>(own_weight);
+
+    while (own_weight > current_weight) {
+        const bool res =
+            atomic.compare_exchange_strong(current_weight_raw, own_weight_raw);
+
+        if (res) {
+            return;
+        } else {
+            current_weight = std::bit_cast<scalar>(current_weight_raw);
+        }
+    }
+}
 }  // namespace kernels
 
 namespace details {
@@ -187,6 +244,9 @@ edm::seed_collection::buffer seed_finding::operator()(
     if (num_spacepoints == 0) {
         return {0, m_mr.main};
     }
+
+    // Total number of spacepoints, including those not in the grid.
+    const auto total_num_spacepoints = m_copy.get_size(spacepoints_view);
 
     // Set up the doublet counter buffer.
     device::doublet_counter_collection_types::buffer doublet_counter_buffer = {
@@ -349,6 +409,32 @@ edm::seed_collection::buffer seed_finding::operator()(
                   triplet_counter_spM_buffer, triplet_counter_midBot_buffer,
                   triplet_buffer);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+    TRACCC_CUDA_ERROR_CHECK(cudaStreamSynchronize(stream));
+
+    vecmem::data::vector_buffer<scalar> highest_weight_buffer(0, m_mr.main);
+
+    if (m_seedfilter_config.minNumTimesWeightCompatible > 0) {
+        highest_weight_buffer = {total_num_spacepoints, m_mr.main};
+
+        /*
+         * NOTE: The value 0b11100000 is chosen because it, when repeated four
+         * times to create a 32-bit floating point value, evaluates to the
+         * number 0b11100000111000001110000011100000 which is very small, much
+         * smaller than any seed weight should ever be. When broadcast eight
+         * times to a 64-bit number it also produces an incredibly small value.
+         */
+        m_copy.memset(highest_weight_buffer, 0b11100000)->wait();
+
+        const unsigned int num_votes = 3 * globalCounter_host->m_nTriplets;
+        const unsigned int num_threads = 256;
+        const unsigned int num_blocks =
+            (num_votes + num_threads - 1) / num_threads;
+
+        kernels::collect_highest_weight_per_spacepoint<<<
+            num_blocks, num_threads, 0, stream>>>(highest_weight_buffer,
+                                                  triplet_buffer);
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+    }
 
     // Create result object: collection of seeds
     edm::seed_collection::buffer seed_buffer(
@@ -371,7 +457,7 @@ edm::seed_collection::buffer seed_finding::operator()(
                             stream>>>(
         m_seedfinder_config, m_seedfilter_config, spacepoints_view, g2_view,
         triplet_counter_spM_buffer, triplet_counter_midBot_buffer,
-        triplet_buffer, seed_buffer);
+        triplet_buffer, highest_weight_buffer, seed_buffer);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     return seed_buffer;
