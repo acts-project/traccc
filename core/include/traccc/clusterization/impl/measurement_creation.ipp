@@ -24,7 +24,8 @@ TRACCC_HOST_DEVICE inline vector2 position_from_cell(
     vector2* cell_lower_position) {
 
     // The detector description for the module that the cell is on.
-    const auto module_dd = det_descr.at(cell.module_index());
+    const silicon_detector_description_interface module_dd =
+        det_descr.at(cell.module_index());
     // Calculate / construct the local cell position.
     vector2 upper_position = {
         module_dd.reference_x() +
@@ -55,7 +56,7 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
     for (const unsigned int cell_idx : cluster.cell_indices()) {
 
         // The cell object.
-        const auto cell = cells.at(cell_idx);
+        const edm::silicon_cell cell = cells.at(cell_idx);
 
         // Translate the cell readout value into a weight.
         const scalar weight =
@@ -132,7 +133,8 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
     const unsigned int module_idx =
         cells.module_index().at(cluster.cell_indices().front());
     // The detector description for the module that the cluster is on.
-    const auto module_dd = det_descr.at(module_idx);
+    const silicon_detector_description_interface module_dd =
+        det_descr.at(module_idx);
 
     // Fill the measurement object.
     measurement.surface_link() = module_dd.geometry_id();

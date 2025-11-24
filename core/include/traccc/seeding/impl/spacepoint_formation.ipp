@@ -31,7 +31,7 @@ TRACCC_HOST_DEVICE inline void fill_pixel_spacepoint(
 
     // Get the global position of this silicon pixel measurement.
     const detray::tracking_surface sf{det, meas.surface_link()};
-    const auto global = sf.local_to_global(gctx, meas.local_position(), {});
+    const point3 global = sf.local_to_global(gctx, meas.local_position(), {});
 
     // Fill the spacepoint with the global position and the measurement.
     sp.x() = global[0];
