@@ -10,6 +10,7 @@
 #include <detray/geometry/mask.hpp>
 #include <detray/geometry/shapes/line.hpp>
 #include <detray/geometry/surface.hpp>
+#include <detray/utils/type_registry.hpp>
 
 #include "traccc/definitions/qualifiers.hpp"
 
@@ -23,12 +24,12 @@ template <typename detector_t>
     using straw_tube = detray::mask<detray::line<false>, algebra_t>;
     using wire_cell = detray::mask<detray::line<true>, algebra_t>;
 
-    if constexpr (detector_t::masks::template is_defined<straw_tube>() ||
-                  detector_t::masks::template is_defined<wire_cell>()) {
+    using mask_registry_t = typename detector_t::masks;
+    if constexpr (detray::types::contains<mask_registry_t, straw_tube> ||
+                  detray::types::contains<mask_registry_t, wire_cell>) {
         return (sf.shape_id() ==
-                detector_t::masks::template get_id<straw_tube>()) ||
-               (sf.shape_id() ==
-                detector_t::masks::template get_id<wire_cell>());
+                detray::types::id<mask_registry_t, straw_tube>) ||
+               (sf.shape_id() == detray::types::id<mask_registry_t, wire_cell>);
     } else {
         return false;
     }

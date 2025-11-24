@@ -15,6 +15,7 @@
 
 // Detray include(s)
 #include <detray/geometry/tracking_surface.hpp>
+#include <detray/utils/type_registry.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -80,11 +81,15 @@ void read_json_dd_impl(traccc::silicon_detector_description::host& dd,
         dd.measurement_translation().back() = {0.f, 0.f};
         dd.subspace().back() = {0, 1};
 
+        // ITk specific type
         using annulus_t =
             detray::mask<detray::annulus2D, traccc::default_algebra>;
-        if (surface_desc.mask().id() ==
-            detector_traits_t::host::masks::template get_id<annulus_t>()) {
-            dd.subspace().back() = {1, 0};
+        using mask_registry_t = typename detector_traits_t::host::masks;
+        if constexpr (detray::types::contains<mask_registry_t, annulus_t>) {
+            if (surface_desc.mask().id() ==
+                detray::types::id<mask_registry_t, annulus_t>) {
+                dd.subspace().back() = {1, 0};
+            }
         }
 
         // Find the module's digitization configuration.
