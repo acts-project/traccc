@@ -110,7 +110,8 @@ inline TRACCC_HOST_DEVICE void seed_to_bound_param_vector(
     // The measured loc0 and loc1
     assert(spB.measurement_index_2() ==
            edm::spacepoint_collection::device::INVALID_MEASUREMENT_INDEX);
-    const auto meas_for_spB = measurements.at(spB.measurement_index_1());
+    const edm::measurement meas_for_spB =
+        measurements.at(spB.measurement_index_1());
     params.set_surface_link(meas_for_spB.surface_link());
     params.set_bound_local(
         {meas_for_spB.local_position()[0], meas_for_spB.local_position()[1]});

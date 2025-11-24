@@ -45,11 +45,11 @@ edm::spacepoint_collection::host silicon_pixel_spacepoint_formation(
 
     // Set up each spacepoint in the result container.
     for (unsigned int i = 0; i < measurements.size(); ++i) {
-        const auto meas = measurements.at(i);
+        const edm::measurement meas = measurements.at(i);
         if (traccc::details::is_valid_measurement(meas)) {
             const std::size_t sp_index = result.size();
             result.resize(sp_index + 1u);
-            auto sp = result.at(sp_index);
+            edm::spacepoint sp = result.at(sp_index);
             traccc::details::fill_pixel_spacepoint(sp, det, meas);
             sp.measurement_index_1() = i;
             sp.measurement_index_2() =
