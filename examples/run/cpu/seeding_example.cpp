@@ -7,6 +7,7 @@
 
 // Project include(s).
 #include "../common/make_magnetic_field.hpp"
+#include "../common/print_fitted_tracks_statistics.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/geometry/detector.hpp"
@@ -219,6 +220,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
            Statistics
           ------------*/
 
+        details::print_fitted_tracks_statistics(track_states, logger());
         n_spacepoints += spacepoints_per_event.size();
         n_seeds += seeds.size();
 
