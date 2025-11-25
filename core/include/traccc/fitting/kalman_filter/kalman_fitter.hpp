@@ -357,8 +357,12 @@ class kalman_fitter {
         backward_propagator_type propagator(backward_cfg);
 
         // Set path limit
+        const detray::tracking_surface last_sf{
+            m_detector, last.filtered_params().surface_link()};
+        const auto& last_state_pos =
+            last_sf.transform(backward_cfg.context).translation();
         fitter_state.m_aborter_state.set_path_limit(
-            m_cfg.propagation.stepping.path_limit);
+            1.5f * vector::norm(last_state_pos));
 
         typename backward_propagator_type::state propagation(
             last.smoothed_params(), m_field, m_detector,
