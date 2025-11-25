@@ -59,7 +59,7 @@ void read_spacepoints(
         // Find the index of the measurement that this hit/spacepoint belongs
         // to. Which may not be valid, as some simulated hits are not associated
         // with a measurement.
-        auto const measurement_id_it =
+        const auto measurement_id_it =
             measurement_hit_ids.find(spacepoints.size());
         const unsigned int measurement_index =
             (measurement_id_it != measurement_hit_ids.end())
