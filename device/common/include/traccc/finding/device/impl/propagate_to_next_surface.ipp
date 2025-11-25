@@ -38,7 +38,7 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     vecmem::device_vector<const candidate_link> links(payload.links_view);
 
     const unsigned int link_idx = payload.prev_links_idx + param_id;
-    const auto& link = links.at(link_idx);
+    const candidate_link link = links.at(link_idx);
     assert(link.step == payload.step);
     const unsigned int n_cands = link.step + 1 - link.n_skipped;
 
@@ -64,7 +64,7 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     const bound_track_parameters<> in_par = params.at(param_id);
 
     // Create propagator
-    auto prop_cfg{cfg.propagation};
+    detray::propagation::config prop_cfg{cfg.propagation};
     prop_cfg.navigation.estimate_scattering_noise = false;
     propagator_t propagator(prop_cfg);
 

@@ -73,7 +73,7 @@ traccc::details::spacepoint_grid_types::buffer spacepoint_binning::operator()(
     auto queue = details::get_queue(m_queue);
 
     // Get the spacepoint sizes from the view
-    auto sp_size = m_copy.get_size(spacepoints_view);
+    const unsigned int sp_size = m_copy.get_size(spacepoints_view);
 
     if (sp_size == 0) {
         return {m_axes.first, m_axes.second, {}, m_mr.main, m_mr.host};

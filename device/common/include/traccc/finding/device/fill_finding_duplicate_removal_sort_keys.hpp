@@ -95,7 +95,7 @@ TRACCC_HOST_DEVICE inline void fill_finding_duplicate_removal_sort_keys(
          * sort key.
          */
         else {
-            auto L = links.at(payload.curr_links_idx + gid);
+            candidate_link L = links.at(payload.curr_links_idx + gid);
 
             while (L.meas_idx >= payload.n_measurements && L.step != 0u) {
                 L = links.at(L.previous_candidate_idx);

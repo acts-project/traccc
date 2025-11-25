@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -45,21 +45,21 @@ TRACCC_HOST_DEVICE inline void build_tracks(
         return;
     }
 
-    const auto output_idx = payload.tip_to_output_map != nullptr
-                                ? payload.tip_to_output_map[globalIndex]
-                                : globalIndex;
+    const unsigned int output_idx = payload.tip_to_output_map != nullptr
+                                        ? payload.tip_to_output_map[globalIndex]
+                                        : globalIndex;
 
-    if (output_idx ==
-        std::numeric_limits<std::decay_t<decltype(output_idx)>>::max()) {
+    if (output_idx == std::numeric_limits<unsigned int>::max()) {
         return;
     }
 
-    const auto tip = tips.at(globalIndex);
-    auto track = track_candidates.at(output_idx);
+    const unsigned int tip = tips.at(globalIndex);
+    edm::track track = track_candidates.at(output_idx);
 
     // Get the link corresponding to tip
     unsigned int link_idx = tip;
-    auto L = links.at(link_idx);
+    candidate_link L = links.at(link_idx);
+
     const unsigned int n_meas = measurements.size();
 
     // Track summary variables
@@ -105,11 +105,15 @@ TRACCC_HOST_DEVICE inline void build_tracks(
             track_state.smoothed_chi2() = L.chi2;
             track_state.backward_chi2() = L.chi2;
 
-            const auto& predicted_params = link_predicted_params.at(link_idx);
-            const auto& filtered_params = link_filtered_params.at(link_idx);
+            const bound_track_parameters<>& predicted_params =
+                link_predicted_params.at(link_idx);
+            const bound_track_parameters<>& filtered_params =
+                link_filtered_params.at(link_idx);
 
-            const auto& predicted_vec = predicted_params.vector();
-            const auto& predicted_covariance = predicted_params.covariance();
+            const bound_track_parameters<>::vector_type& predicted_vec =
+                predicted_params.vector();
+            const bound_track_parameters<>::covariance_type&
+                predicted_covariance = predicted_params.covariance();
 
             bound_vector<default_algebra> small_lambda_hat;
             bound_matrix<default_algebra> big_lambda_hat;

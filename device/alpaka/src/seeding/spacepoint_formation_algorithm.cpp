@@ -49,7 +49,8 @@ edm::spacepoint_collection::buffer spacepoint_formation_algorithm::operator()(
     auto queue = details::get_queue(m_queue);
 
     // Get the number of measurements.
-    const auto num_measurements = m_copy.get().get_size(measurements_view);
+    const unsigned int num_measurements =
+        m_copy.get().get_size(measurements_view);
 
     // Create the result buffer.
     edm::spacepoint_collection::buffer spacepoints(

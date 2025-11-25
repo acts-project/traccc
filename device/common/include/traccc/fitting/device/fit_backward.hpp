@@ -31,7 +31,7 @@ TRACCC_HOST_DEVICE inline void fit_backward(
     }
 
     const unsigned int param_id = param_ids.at(globalIndex);
-    auto track = tracks.tracks.at(param_id);
+    edm::track track = tracks.tracks.at(param_id);
 
     // Run fitting
     fitter_t fitter(det, payload.field_data, cfg);
