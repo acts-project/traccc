@@ -46,7 +46,7 @@ edm::spacepoint_collection::buffer silicon_pixel_spacepoint_formation(
     vecmem::memory_resource& mr, vecmem::copy& copy, ::sycl::queue& queue) {
 
     // Get the number of measurements.
-    const auto n_measurements = copy.get_size(measurements_view);
+    const unsigned int n_measurements = copy.get_size(measurements_view);
     if (n_measurements == 0) {
         return {};
     }
@@ -58,7 +58,8 @@ edm::spacepoint_collection::buffer silicon_pixel_spacepoint_formation(
 
     // Calculate the range to run the spacepoint formation for.
     static constexpr unsigned int localSize = 32 * 2;
-    auto countRange = calculate1DimNdRange(n_measurements, localSize);
+    const ::sycl::nd_range countRange =
+        calculate1DimNdRange(n_measurements, localSize);
 
     // Put the detector view into device memory.
     vecmem::data::vector_buffer<typename detector_t::view> device_det_view(1u,

@@ -151,7 +151,8 @@ clusterization_algorithm::execute_impl(
     if (keep_disjoint_set) {
         assert(m_mr.host != nullptr);
 
-        auto num_measurements = m_copy.get().get_size(measurements);
+        const unsigned int num_measurements =
+            m_copy.get().get_size(measurements);
 
         // This could be further optimized by only copying the number of
         // elements necessary. But since cluster making is mainly meant for

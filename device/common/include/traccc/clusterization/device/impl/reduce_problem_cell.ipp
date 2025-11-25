@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -28,7 +28,7 @@ inline void reduce_problem_cell(
     const unsigned int pos = cid + start;
 
     // Load the "reference cell" into a local variable.
-    const auto reference_cell = cells.at(pos);
+    const edm::silicon_cell reference_cell = cells.at(pos);
 
     /*
      * First, we traverse the cells backwards, starting from the current
