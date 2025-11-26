@@ -10,9 +10,7 @@
 // Project include(s).
 #include "kalman_fitting_test.hpp"
 #include "test_detectors.hpp"
-
-// Detray include(s).
-#include <detray/io/frontend/detector_writer.hpp>
+#include "traccc/geometry/host_detector.hpp"
 
 // System include(s)
 #include <array>
@@ -46,6 +44,12 @@ class KalmanFittingWireChamberTests
 
     /// Half z of cylinder
     static const inline scalar half_z{2000.f * traccc::unit<scalar>::mm};
+
+    /// The host memory resource
+    vecmem::host_memory_resource host_mr;
+
+    /// The polymorphic test detector
+    traccc::host_detector detector;
 
     /// B field value and its type
     static constexpr vector3 B{0, 0, 2 * traccc::unit<scalar>::T};
@@ -82,8 +86,6 @@ class KalmanFittingWireChamberTests
 
     protected:
     virtual void SetUp() override {
-        vecmem::host_memory_resource host_mr;
-
         detray::wire_chamber_config<scalar> wire_chamber_cfg;
         wire_chamber_cfg.n_layers(n_wire_layers);
         wire_chamber_cfg.half_z(half_z);
@@ -92,14 +94,7 @@ class KalmanFittingWireChamberTests
         auto [det, name_map] = build_wire_chamber<traccc::default_algebra>(
             host_mr, wire_chamber_cfg);
 
-        // Write detector file
-        auto writer_cfg = detray::io::detector_writer_config{}
-                              .format(detray::io::format::json)
-                              .replace_files(true)
-                              .write_grids(true)
-                              .write_material(true)
-                              .path(std::get<0>(GetParam()));
-        detray::io::write_detector(det, name_map, writer_cfg);
+        detector.set<traccc::default_detector>(std::move(det));
     }
 };
 

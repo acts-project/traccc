@@ -67,7 +67,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
                                                  traccc::Logging::Level::INFO));
 
     /*****************************
-     * Build a telescope geometry
+     * Build the magnetic field
      *****************************/
 
     // Creating SYCL queue object
@@ -82,22 +82,12 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     std::cout << "Running on device: " << vecmem_queue.device_name() << "\n";
 
     // Memory resources used by the application.
-    vecmem::host_memory_resource host_mr;
     vecmem::sycl::device_memory_resource device_mr{vecmem_queue};
     traccc::memory_resource mr{device_mr, &host_mr};
     vecmem::sycl::shared_memory_resource shared_mr{vecmem_queue};
 
     // Read back detector file
     const std::string path = name + "/";
-    detray::io::detector_reader_config reader_cfg{};
-    reader_cfg.add_file(path + "telescope_detector_geometry.json")
-        .add_file(path + "telescope_detector_homogeneous_material.json");
-
-    auto [host_det, names] =
-        detray::io::read_detector<host_detector_type>(shared_mr, reader_cfg);
-
-    traccc::host_detector polymorphic_detector;
-    polymorphic_detector.set<detector_traits>(std::move(host_det));
 
     const auto field = traccc::construct_const_bfield(std::get<13>(GetParam()));
 
@@ -133,7 +123,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     std::filesystem::create_directories(full_path);
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
                                  writer_type>(
-        ptc, n_events, polymorphic_detector.as<detector_traits>(),
+        ptc, n_events, detector.as<detector_traits>(),
         field.as_field<traccc::const_bfield_backend_t<traccc::scalar>>(),
         std::move(generator), std::move(smearer_writer_cfg), full_path);
     sim.run();
@@ -145,8 +135,8 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     vecmem::sycl::copy copy{vecmem_queue};
 
     // Seed generator
-    seed_generator<host_detector_type> sg(
-        polymorphic_detector.as<detector_traits>(), stddevs);
+    seed_generator<host_detector_type> sg(detector.as<detector_traits>(),
+                                          stddevs);
 
     // Fitting algorithm object
     typename traccc::sycl::kalman_fitting_algorithm::config_type fit_cfg;
@@ -155,8 +145,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
                                                           traccc_queue);
 
     const traccc::detector_buffer detector_buffer =
-        traccc::buffer_from_host_detector(polymorphic_detector, device_mr,
-                                          copy);
+        traccc::buffer_from_host_detector(detector, device_mr, copy);
 
     // Iterate over events
     for (std::size_t i_evt = 0; i_evt < n_events; i_evt++) {
@@ -219,8 +208,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
 
             fit_performance_writer.write(
                 track_states_sycl.tracks.at(i_trk), track_states_sycl.states,
-                measurements, polymorphic_detector.as<detector_traits>(),
-                evt_data);
+                measurements, detector.as<detector_traits>(), evt_data);
         }
     }
 

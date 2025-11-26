@@ -124,7 +124,12 @@ void read_json_dd(traccc::silicon_detector_description::host& dd,
     const auto header = detray::io::detail::deserialize_json_header(
         traccc::io::get_absolute_path(geometry_file));
 
-    if (header.detector == "Cylindrical detector from DD4hep blueprint") {
+    if (header.detector == "telescope_detector") {
+        read_json_dd_impl<traccc::telescope_detector>(dd, detector, digi);
+    } else if (header.detector == "toy_detector") {
+        read_json_dd_impl<traccc::toy_detector>(dd, detector, digi);
+    } else if (header.detector ==
+               "Cylindrical detector from DD4hep blueprint") {
         read_json_dd_impl<traccc::odd_detector>(dd, detector, digi);
     } else if (header.detector == "detray_detector") {
         read_json_dd_impl<traccc::itk_detector>(dd, detector, digi);

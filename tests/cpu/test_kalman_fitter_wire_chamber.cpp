@@ -54,28 +54,15 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
                                                  traccc::Logging::Level::INFO));
 
     /*****************************
-     * Build a drift chamber
+     * Build the magnetic field
      *****************************/
-    // Memory resources used by the application.
-    vecmem::host_memory_resource host_mr;
+
     // Copy obejct
     vecmem::copy copy;
 
     // Read back detector file
     const std::string path = name + "/";
-    traccc::host_detector detector;
-    traccc::io::read_detector(
-        detector, host_mr,
-        std::filesystem::absolute(
-            std::filesystem::path(path + "wire_chamber_geometry.json"))
-            .native(),
-        std::filesystem::absolute(
-            std::filesystem::path(path +
-                                  "wire_chamber_homogeneous_material.json"))
-            .native(),
-        std::filesystem::absolute(
-            std::filesystem::path(path + "wire_chamber_surface_grids.json"))
-            .native());
+
     const auto field = traccc::construct_const_bfield(B);
 
     /***************************

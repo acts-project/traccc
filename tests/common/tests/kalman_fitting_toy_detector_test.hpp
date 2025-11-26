@@ -10,9 +10,7 @@
 // Project include(s).
 #include "kalman_fitting_test.hpp"
 #include "test_detectors.hpp"
-
-// Detray include(s).
-#include <detray/io/frontend/detector_writer.hpp>
+#include "traccc/geometry/host_detector.hpp"
 
 // System include(s)
 #include <array>
@@ -47,6 +45,12 @@ class KalmanFittingToyDetectorTests
     /// Number of endcap layers
     static constexpr inline unsigned int n_endcaps{7u};
 
+    /// The host memory resource
+    vecmem::host_memory_resource host_mr;
+
+    /// The polymorphic test detector
+    traccc::host_detector detector;
+
     /// B field value and its type
     static constexpr vector3 B{0, 0, 2 * traccc::unit<scalar>::T};
 
@@ -71,8 +75,6 @@ class KalmanFittingToyDetectorTests
 
     protected:
     virtual void SetUp() override {
-        vecmem::host_memory_resource host_mr;
-
         detray::toy_det_config<scalar> toy_cfg{};
         toy_cfg.n_brl_layers(n_barrels).n_edc_layers(n_endcaps).do_check(false);
 
@@ -81,14 +83,7 @@ class KalmanFittingToyDetectorTests
             detray::build_toy_detector<traccc::default_algebra>(host_mr,
                                                                 toy_cfg);
 
-        // Write detector file
-        auto writer_cfg = detray::io::detector_writer_config{}
-                              .format(detray::io::format::json)
-                              .replace_files(true)
-                              .write_grids(true)
-                              .write_material(true)
-                              .path(std::get<0>(GetParam()));
-        detray::io::write_detector(det, name_map, writer_cfg);
+        detector.set<traccc::toy_detector>(std::move(det));
     }
 };
 

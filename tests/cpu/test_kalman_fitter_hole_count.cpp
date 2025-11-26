@@ -57,26 +57,15 @@ TEST_P(KalmanFittingHoleCountTests, Run) {
     ASSERT_EQ(n_events, 1u);
 
     /*****************************
-     * Build a telescope geometry
+     * Build the magnetic field
      *****************************/
 
-    // Memory resources used by the application.
-    vecmem::host_memory_resource host_mr;
     // Copy obejct
     vecmem::copy copy;
 
     // Read back detector file
     const std::string path = name + "/";
-    traccc::host_detector detector;
-    traccc::io::read_detector(
-        detector, host_mr,
-        std::filesystem::absolute(
-            std::filesystem::path(path + "telescope_detector_geometry.json"))
-            .native(),
-        std::filesystem::absolute(
-            std::filesystem::path(
-                path + "telescope_detector_homogeneous_material.json"))
-            .native());
+
     auto field = traccc::construct_const_bfield(std::get<13>(GetParam()));
 
     /***************************
