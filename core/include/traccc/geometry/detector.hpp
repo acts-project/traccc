@@ -77,7 +77,7 @@ concept is_detector_traits = requires {
     typename T::buffer;
 };
 
-/// Default detector (also used for ODD)
+/// Default detector (Can hold the data of any detector)
 using default_detector =
     detector_traits<detray::default_metadata<traccc::default_algebra>>;
 
@@ -93,10 +93,14 @@ using toy_detector =
 using itk_detector =
     detector_traits<detray::itk_metadata<traccc::default_algebra>>;
 
-/// ITk detector
+/// ODD detector
 using odd_detector =
     detector_traits<detray::odd_metadata<traccc::default_algebra>>;
 
-using detector_type_list = std::tuple<default_detector, telescope_detector,
-                                      itk_detector, odd_detector>;
+// The metadata list is generated during build configuration
+// using detector_type_list = std::tuple<TRACCC_METADATA_LIST>;
+
+using detector_type_list = std::tuple<default_detector, toy_detector,
+                                      telescope_detector, odd_detector>;
+
 }  // namespace traccc
