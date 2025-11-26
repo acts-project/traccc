@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2024 CERN for the benefit of the ACTS project
+# (c) 2024-2025 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -27,6 +27,15 @@ FetchContent_Declare( rocThrust SYSTEM
 set( BUILD_TESTING FALSE )
 set( HIP_COMPILER "clang" )
 set( HIP_CXX_COMPILER "hipcc" )
+# The following is pretty horrendous. :-( If we let HIP_PLATFORM="amd" propagate
+# to the ROCm CMake files, at least with ROCm 6.0, the hip::device target gets
+# set up such that linking against it automatically adds "-x hip" to the
+# compiler flags of the client. Whether or not the source file is HIP or not.
+# I worked around this by telling rocThrust to "always use the NVIDIA platform".
+# In which case it doesn't try to be cute about such compiler flags. And then I
+# let the higher level configs (from vecmem/hip or Alpaka) sort out how
+# they would configure the build of various source files.
+set( HIP_PLATFORM "nvidia" )
 
 # Get it into the current directory.
 FetchContent_MakeAvailable( rocThrust )
