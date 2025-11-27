@@ -10,9 +10,7 @@
 // Project include(s).
 #include "kalman_fitting_test.hpp"
 #include "test_detectors.hpp"
-
-// Detray include(s).
-#include <detray/io/frontend/detector_writer.hpp>
+#include "traccc/geometry/host_detector.hpp"
 
 namespace traccc {
 
@@ -54,6 +52,12 @@ class KalmanFittingTelescopeTests
     static constexpr detray::mask<detray::rectangle2D, traccc::default_algebra>
         rectangle{0u, 100000.f, 100000.f};
 
+    /// The host memory resource
+    vecmem::host_memory_resource host_mr;
+
+    /// The polymorphic test detector
+    traccc::host_detector detector;
+
     /// Measurement smearing parameters
     static constexpr std::array<scalar, 2u> smearing{
         50 * traccc::unit<scalar>::um, 50 * traccc::unit<scalar>::um};
@@ -80,8 +84,6 @@ class KalmanFittingTelescopeTests
     protected:
     virtual void SetUp() override {
 
-        vecmem::host_memory_resource host_mr;
-
         const scalar offset = std::get<10>(GetParam());
         const unsigned int n_planes = std::get<11>(GetParam());
         const scalar spacing = std::get<12>(GetParam());
@@ -103,13 +105,7 @@ class KalmanFittingTelescopeTests
         // Create telescope detector
         auto [det, name_map] = build_telescope_detector(host_mr, tel_cfg);
 
-        // Write detector file
-        auto writer_cfg = detray::io::detector_writer_config{}
-                              .format(detray::io::format::json)
-                              .replace_files(true)
-                              .write_material(true)
-                              .path(std::get<0>(GetParam()));
-        detray::io::write_detector(det, name_map, writer_cfg);
+        detector.set<traccc::telescope_detector>(std::move(det));
     }
 };
 

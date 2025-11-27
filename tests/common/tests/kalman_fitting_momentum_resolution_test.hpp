@@ -10,9 +10,7 @@
 // Project include(s).
 #include "kalman_fitting_test.hpp"
 #include "test_detectors.hpp"
-
-// Detray include(s).
-#include <detray/io/frontend/detector_writer.hpp>
+#include "traccc/geometry/host_detector.hpp"
 
 namespace traccc {
 
@@ -44,6 +42,12 @@ class KalmanFittingMomentumResolutionTests
           detray::material<scalar>, std::array<scalar, 2u>>> {
 
     public:
+    /// The host memory resource
+    vecmem::host_memory_resource host_mr;
+
+    /// The polymorphic test detector
+    traccc::host_detector detector;
+
     /// Plane thickness
     static constexpr scalar thickness = 0.5f * traccc::unit<scalar>::mm;
 

@@ -51,11 +51,10 @@ TEST_P(CkfToyDetectorTests, Run) {
     const bool random_charge = std::get<9>(GetParam());
 
     /*****************************
-     * Build a toy detector
+     * Build the magnetic field
      *****************************/
 
     // Memory resources used by the application.
-    vecmem::host_memory_resource host_mr;
     vecmem::cuda::device_memory_resource device_mr;
     traccc::memory_resource mr{device_mr, &host_mr};
     vecmem::cuda::managed_memory_resource mng_mr;
@@ -63,23 +62,9 @@ TEST_P(CkfToyDetectorTests, Run) {
 
     // Read back detector file
     const std::string path = name + "/";
-    traccc::host_detector detector;
-    traccc::io::read_detector(
-        detector, mng_mr,
-        std::filesystem::absolute(
-            std::filesystem::path(path + "toy_detector_geometry.json"))
-            .native(),
-        std::filesystem::absolute(
-            std::filesystem::path(path +
-                                  "toy_detector_homogeneous_material.json"))
-            .native(),
-        std::filesystem::absolute(
-            std::filesystem::path(path + "toy_detector_surface_grids.json"))
-            .native());
 
     traccc::detector_buffer detector_buffer =
         traccc::buffer_from_host_detector(detector, mng_mr, host_copy);
-    ;
 
     const auto field = traccc::construct_const_bfield(B);
 
