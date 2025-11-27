@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2023 CERN for the benefit of the ACTS project
+# (c) 2021-2025 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -20,6 +20,8 @@ if( "${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC" )
 endif()
 
 if( "${CMAKE_CUDA_COMPILER_ID}" MATCHES "NVIDIA" )
+   traccc_add_flag( CMAKE_CUDA_FLAGS "-Wall" )
+   traccc_add_flag( CMAKE_CUDA_FLAGS "-Wextra" )
    traccc_add_flag( CMAKE_CUDA_FLAGS "-Wconversion" )
 endif()
 

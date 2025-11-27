@@ -279,10 +279,6 @@ class kalman_fitter {
         if (!propagator.finished(propagation)) {
             return kalman_fitter_status::ERROR_PROPAGATION_FAILURE;
         }
-        // Are all track states updated in the fit?
-        if (fitter_state.m_fit_actor_state.count_missed_fit() > 0u) {
-            return kalman_fitter_status::ERROR_UPDATER_SKIPPED_STATE;
-        }
 
         return kalman_fitter_status::SUCCESS;
     }
@@ -402,10 +398,6 @@ class kalman_fitter {
         // Encountered error during propagation?
         if (!propagator.finished(propagation)) {
             return kalman_fitter_status::ERROR_PROPAGATION_FAILURE;
-        }
-        // Are all track states updated during smoothing?
-        if (fitter_state.m_fit_actor_state.count_missed_smoother() > 0u) {
-            return kalman_fitter_status::ERROR_SMOOTHER_SKIPPED_STATE;
         }
 
         return kalman_fitter_status::SUCCESS;

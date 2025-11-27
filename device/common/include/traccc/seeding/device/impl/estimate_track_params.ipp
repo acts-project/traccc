@@ -61,18 +61,18 @@ inline void estimate_track_params(
                 track_params.covariance(), e_bound_theta, e_bound_theta);
 
             // Contribution from sigma(q/pt)
-            const scalar sigma_qopt = config.initial_sigma_qopt *
-                                      math::sin(track_params[e_bound_theta]);
+            const scalar sigma_qopt =
+                config.initial_sigma_qopt * math::sin(track_params.theta());
             var += sigma_qopt * sigma_qopt;
 
             // Contribution from sigma(pt)/pt
             const scalar sigma_pt_rel =
-                config.initial_sigma_pt_rel * track_params[e_bound_qoverp];
+                config.initial_sigma_pt_rel * track_params.qop();
             var += sigma_pt_rel * sigma_pt_rel;
 
             // Contribution from sigma(theta)
-            scalar sigma_theta = track_params[e_bound_qoverp] /
-                                 math::tan(track_params[e_bound_theta]);
+            scalar sigma_theta =
+                track_params.qop() / math::tan(track_params.theta());
             var += var_theta * sigma_theta * sigma_theta;
         }
 
