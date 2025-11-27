@@ -67,6 +67,7 @@ inline void select_seeds(
     const triplet_counter_spM_collection_types::const_view& spM_tc_view,
     const triplet_counter_collection_types::const_view& tc_view,
     const device_triplet_collection_types::const_view& triplet_view,
+    vecmem::data::vector_view<const scalar> highest_weight_view,
     device_triplet* data, edm::seed_collection::view seed_view) {
 
     // Check if anything needs to be done.
@@ -85,6 +86,10 @@ inline void select_seeds(
         sp_view);
 
     const device_triplet_collection_types::const_device triplets(triplet_view);
+
+    const vecmem::device_vector<const scalar> highest_weights(
+        highest_weight_view);
+
     edm::seed_collection::device seeds_device(seed_view);
 
     // Current work item = middle spacepoint
@@ -110,6 +115,36 @@ inline void select_seeds(
         const unsigned int spT_idx = aTriplet.spT;
         const edm::spacepoint_collection::const_device::const_proxy_type spT =
             spacepoints.at(spT_idx);
+
+        if (filter_config.minNumTimesWeightCompatible > 0) {
+            assert(highest_weights.capacity() > 0);
+            assert(aTriplet.weight >= 0.f);
+            assert(highest_weights.at(spB_idx) >= 0.f);
+            assert(highest_weights.at(spM_idx) >= 0.f);
+            assert(highest_weights.at(spT_idx) >= 0.f);
+
+            unsigned int highest_for_n_spacepoints = 0;
+            if (aTriplet.weight >=
+                filter_config.minWeightCompatibilityFraction *
+                    highest_weights.at(spB_idx)) {
+                highest_for_n_spacepoints++;
+            }
+            if (aTriplet.weight >=
+                filter_config.minWeightCompatibilityFraction *
+                    highest_weights.at(spM_idx)) {
+                highest_for_n_spacepoints++;
+            }
+            if (aTriplet.weight >=
+                filter_config.minWeightCompatibilityFraction *
+                    highest_weights.at(spT_idx)) {
+                highest_for_n_spacepoints++;
+            }
+
+            if (highest_for_n_spacepoints <
+                filter_config.minNumTimesWeightCompatible) {
+                continue;
+            }
+        }
 
         // update weight of triplet
         seed_selecting_helper::seed_weight(filter_config, spM, spB, spT,

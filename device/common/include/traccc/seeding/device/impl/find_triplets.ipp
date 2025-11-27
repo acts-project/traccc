@@ -112,11 +112,22 @@ inline void find_triplets(
                 spM, lb, lt, config, iSinTheta2, scatteringInRegion2, curvature,
                 impact_parameter)) {
 
+            // Compute the weight attributed by the impact factor as the PDF of
+            // a half-Gaussian distribution.
+            scalar impactParameterProb =
+                constant<scalar>::sqrt2 /
+                (filter_config.impactSigma * constants::sqrt_pi) *
+                math::exp(-(impact_parameter * impact_parameter) /
+                          (2.f * filter_config.impactSigma *
+                           filter_config.impactSigma));
+
+            scalar weight =
+                impactParameterProb * filter_config.impactWeightFactor;
+
             // Add triplet to jagged vector
-            triplets.at(posTriplets++) = device_triplet(
-                {spB_idx, spM_idx, spT_idx, globalIndex, curvature,
-                 -impact_parameter * filter_config.impactWeightFactor,
-                 lb.Zo()});
+            triplets.at(posTriplets++) =
+                device_triplet({spB_idx, spM_idx, spT_idx, globalIndex,
+                                curvature, weight, lb.Zo()});
         }
     }
 }
