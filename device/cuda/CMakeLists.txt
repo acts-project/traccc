@@ -66,7 +66,6 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/finding/combinatorial_kalman_filter_algorithm.cpp"
   "src/finding/combinatorial_kalman_filter_algorithm.cu"
   "src/finding/combinatorial_kalman_filter.cuh"
-  "src/finding/kernels/apply_interaction.hpp"
   "src/finding/kernels/fill_finding_propagation_sort_keys.cu"
   "src/finding/kernels/fill_finding_propagation_sort_keys.cuh"
   "src/finding/kernels/fill_finding_duplicate_removal_sort_keys.cu"
@@ -134,25 +133,6 @@ foreach(DETECTOR_NAME ${TRACCC_SUPPORTED_DETECTORS})
             --detector "${DETECTOR_NAME}"
         DEPENDS "${KERNEL_SPECIALIZATION_PY}" "${TEMPLATE_SOURCE}"
         COMMENT "Generating kernel specialization of `find_tracks` for ${DETECTOR_NAME}"
-    )
-    target_sources(traccc_cuda PRIVATE ${GENERATED_SOURCE})
-endforeach()
-
-# Generate specializations for apply_interaction
-foreach(DETECTOR_NAME ${TRACCC_SUPPORTED_DETECTORS})
-    set(GENERATED_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/src/finding/kernels/specializations/apply_interaction_${DETECTOR_NAME}.cu")
-    set(TEMPLATE_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/src/finding/kernels/specializations/apply_interaction.cu.template")
-    add_custom_command(
-        OUTPUT "${GENERATED_SOURCE}"
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/src/finding/kernels/specializations/"
-        COMMAND
-            Python::Interpreter
-            "${KERNEL_SPECIALIZATION_PY}"
-            "${TEMPLATE_SOURCE}"
-            -o "${GENERATED_SOURCE}"
-            --detector "${DETECTOR_NAME}"
-        DEPENDS "${KERNEL_SPECIALIZATION_PY}" "${TEMPLATE_SOURCE}"
-        COMMENT "Generating kernel specialization of `apply_interaction` for ${DETECTOR_NAME}"
     )
     target_sources(traccc_cuda PRIVATE ${GENERATED_SOURCE})
 endforeach()

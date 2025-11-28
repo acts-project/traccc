@@ -14,7 +14,6 @@
 #include "../utils/get_size.hpp"
 #include "../utils/thread_id.hpp"
 #include "../utils/utils.hpp"
-#include "./kernels/apply_interaction.hpp"
 #include "./kernels/build_tracks.cuh"
 #include "./kernels/fill_finding_duplicate_removal_sort_keys.cuh"
 #include "./kernels/fill_finding_propagation_sort_keys.cuh"
@@ -174,25 +173,6 @@ combinatorial_kalman_filter(
     for (unsigned int step = 0;
          step < config.max_track_candidates_per_track && n_in_params > 0;
          step++) {
-
-        /*****************************************************************
-         * Kernel2: Apply material interaction
-         ****************************************************************/
-
-        {
-            const unsigned int nThreads = warp_size * 2;
-            const unsigned int nBlocks =
-                (n_in_params + nThreads - 1) / nThreads;
-
-            apply_interaction<detector_t>(
-                nBlocks, nThreads, 0, stream, config,
-                device::apply_interaction_payload<detector_t>{
-                    .det_data = det,
-                    .n_params = n_in_params,
-                    .params_view = in_params_buffer,
-                    .params_liveness_view = param_liveness_buffer});
-            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
-        }
 
         /*****************************************************************
          * Kernel3: Find valid tracks
