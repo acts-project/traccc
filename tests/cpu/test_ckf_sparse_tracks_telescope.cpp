@@ -126,8 +126,7 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
      *****************************/
 
     // Seed generator
-    seed_generator<host_detector_type> sg(detector.as<detector_traits>(),
-                                          stddevs);
+    seed_generator<host_detector_type> sg(detector.as<detector_traits>());
 
     // Finding algorithm configuration
     typename traccc::finding_config cfg;

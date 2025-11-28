@@ -146,7 +146,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
 
     // Seed generator
     seed_generator<host_detector_type> sg(
-        polymorphic_detector.as<detector_traits>(), stddevs);
+        polymorphic_detector.as<detector_traits>());
 
     // Fitting algorithm object
     typename traccc::sycl::kalman_fitting_algorithm::config_type fit_cfg;
