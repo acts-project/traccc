@@ -82,7 +82,6 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/finding/candidate_link.hpp"
   "include/traccc/finding/finding_config.hpp"
   "include/traccc/finding/actors/ckf_aborter.hpp"
-  "include/traccc/finding/actors/interaction_register.hpp"
   "include/traccc/finding/details/combinatorial_kalman_filter_types.hpp"
   "include/traccc/finding/details/combinatorial_kalman_filter.hpp"
   "include/traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
