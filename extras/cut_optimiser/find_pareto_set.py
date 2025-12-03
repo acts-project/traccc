@@ -59,6 +59,10 @@ def main():
                 and n["efficiency"] >= m["efficiency"]
                 and n["fake_rate"] <= m["fake_rate"]
                 and n["duplicate_rate"] <= m["duplicate_rate"]
+                and n["seeding_efficiency"] >= m["seeding_efficiency"]
+                and n["seed_fake_rate"] <= m["seed_fake_rate"]
+                and n["seed_duplicate_rate"] <= m["seed_duplicate_rate"]
+
             ):
                 log.debug(
                     "Removing %s from the Pareto set because %s is superior",
@@ -73,11 +77,14 @@ def main():
 
     for i in sorted(pareto_set, key=lambda x: x["rec_throughput"], reverse=True):
         log.info(
-            "  Eff. %.2f, fake rate %.2f, duplicate rate %.2f with reciprocal througput %.1fms is achieved by setup {%s}",
+            "  Eff. %.2f, fake rate %.2f, duplicate rate %.2f with reciprocal througput %.1fms and  Seeding Eff. %.2f, Seed fake rate %.2f, Seed duplicate rate %.2f is achieved by setup {%s}",
             100.0 * i["efficiency"],
             i["fake_rate"],
             i["duplicate_rate"],
             i["rec_throughput"] * 1000.0,
+            i["seeding_efficiency"],
+            i["seed_fake_rate"],
+            i["seed_duplicate_rate"],
             ", ".join(
                 "%s: %s" % (k, str(v))
                 for k, v in i.items()
@@ -87,6 +94,9 @@ def main():
                     "fake_rate",
                     "duplicate_rate",
                     "rec_throughput",
+                    "seeding_efficiency",
+                    "seed_fake_rate",
+                    "seed_duplicate_rate",
                     "success",
                 ]
             ),
