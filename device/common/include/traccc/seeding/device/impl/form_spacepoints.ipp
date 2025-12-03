@@ -37,7 +37,7 @@ TRACCC_HOST_DEVICE inline void form_spacepoints(
     // Set up the output container(s).
     edm::spacepoint_collection::device spacepoints(spacepoints_view);
 
-    const auto meas = measurements.at(globalIndex);
+    const edm::measurement meas = measurements.at(globalIndex);
 
     // Fill the spacepoint using the common function.
     if (details::is_valid_measurement(meas)) {

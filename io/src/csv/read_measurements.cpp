@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -55,7 +55,7 @@ std::vector<measurement_id_type> read_measurements(
 
         // Construct the measurement object.
         measurements.resize(measurements.size() + 1u);
-        auto meas = measurements.at(measurements.size() - 1u);
+        edm::measurement meas = measurements.at(measurements.size() - 1u);
         make_measurement_edm(
             iomeas, meas, (detector == nullptr ? nullptr : &acts_to_detray_id),
             detector_description,

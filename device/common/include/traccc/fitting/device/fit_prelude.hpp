@@ -43,11 +43,11 @@ TRACCC_HOST_DEVICE inline void fit_prelude(
 
     const unsigned int param_id = param_ids.at(globalIndex);
 
-    auto track = tracks.at(param_id);
+    edm::track track = tracks.at(param_id);
 
     const typename edm::track_collection<algebra_t>::const_device
         track_candidates{track_candidates_view.tracks};
-    const auto track_candidate = track_candidates.at(param_id);
+    const edm::track track_candidate = track_candidates.at(param_id);
     const auto track_candidate_constituent_links =
         track_candidate.constituent_links();
     const typename edm::measurement_collection<algebra_t>::const_device

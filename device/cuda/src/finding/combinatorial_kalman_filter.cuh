@@ -113,7 +113,7 @@ combinatorial_kalman_filter(
      * Measurement Operations
      *****************************************************************/
 
-    const auto n_measurements = copy.get_size(measurements_view);
+    const unsigned int n_measurements = copy.get_size(measurements_view);
 
     // Access the detector view as a detector object
     detector_t device_det(det);
@@ -452,7 +452,8 @@ combinatorial_kalman_filter(
      *****************************************************************/
 
     // Get the number of tips
-    auto n_tips_total = get_size(tips_buffer, size_staging_ptr.get(), stream);
+    const unsigned int n_tips_total =
+        get_size(tips_buffer, size_staging_ptr.get(), stream);
 
     vecmem::vector<unsigned int> tips_length_host(mr.host);
 

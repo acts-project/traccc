@@ -31,7 +31,7 @@ void write_spacepoints(
     // Write the spacepoints.
     for (edm::spacepoint_collection::const_device::size_type i = 0u;
          i < spacepoints.size(); ++i) {
-        const auto sp = spacepoints.at(i);
+        const edm::spacepoint sp = spacepoints.at(i);
         file << "v " << sp.x() << " " << sp.y() << " " << sp.z() << "\n";
     }
 }

@@ -32,11 +32,11 @@ TRACCC_HOST_DEVICE inline void build_tracks(
         return;
     }
 
-    const auto tip = tips.at(globalIndex);
-    auto track = track_candidates.at(globalIndex);
+    const unsigned int tip = tips.at(globalIndex);
+    edm::track track = track_candidates.at(globalIndex);
 
     // Get the link corresponding to tip
-    auto L = links.at(tip);
+    candidate_link L = links.at(tip);
     const unsigned int n_meas = measurements.size();
 
     // Track summary variables

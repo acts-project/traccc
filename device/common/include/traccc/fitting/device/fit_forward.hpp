@@ -34,8 +34,8 @@ TRACCC_HOST_DEVICE inline void fit_forward(
 
     fitter_t fitter(det, payload.field_data, cfg);
 
-    auto track = tracks.tracks.at(param_id);
-    auto params = track.params();
+    edm::track track = tracks.tracks.at(param_id);
+    bound_track_parameters<> params = track.params();
 
     // TODO: Merge into filter?
     inflate_covariance(params, fitter.config().covariance_inflation_factor);

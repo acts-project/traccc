@@ -67,7 +67,7 @@ class nseed_performance_writer {
                     assert(spacepoints.at(l).measurement_index_2() ==
                            edm::spacepoint_collection::host::
                                INVALID_MEASUREMENT_INDEX);
-                    auto meas = measurements.at(
+                    const edm::measurement meas = measurements.at(
                         spacepoints
                             .at(static_cast<edm::measurement_collection<
                                     default_algebra>::const_device::size_type>(
