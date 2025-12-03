@@ -9,6 +9,7 @@
 
 // Local include(s).
 #include "make_magnetic_field.hpp"
+#include "print_fitted_tracks_statistics.hpp"
 
 // Core include(s).
 #include "traccc/geometry/detector_buffer.hpp"
@@ -518,6 +519,10 @@ int device_reconstruction_validation(std::string_view logger_name,
                 vecmem::get_data(host_fitted_tracks.tracks),
                 vecmem::get_data(device_host_fitted_tracks.tracks));
         }
+
+        // Print information about the fitted tracks.
+        details::print_fitted_tracks_statistics(device_host_fitted_tracks,
+                                                logger());
 
         // Collect overall statistics.
         n_cells += host_cells.size();
