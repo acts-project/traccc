@@ -25,6 +25,10 @@ struct fitting_config {
     /// Propagation configuration
     detray::propagation::config propagation{};
 
+    /// Minimum momentum for reconstructed tracks
+    float min_p = 100.f * traccc::unit<float>::MeV;
+    float min_pT = 600.f * traccc::unit<float>::MeV;
+
     /// Particle hypothesis
     traccc::pdg_particle<traccc::scalar> ptc_hypothesis =
         traccc::muon<traccc::scalar>();

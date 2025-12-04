@@ -55,7 +55,8 @@ class kalman_fitter {
     using bfield_type = typename stepper_t::magnetic_field_type;
 
     // Actor types
-    using aborter = detray::pathlimit_aborter<scalar_type>;
+    using pathlimit_aborter = detray::pathlimit_aborter<scalar_type>;
+    using momentum_aborter = detray::momentum_aborter<scalar_type>;
     using transporter = detray::parameter_transporter<algebra_type>;
     using interactor = detray::pointwise_material_interactor<algebra_type>;
     using forward_fit_actor =
@@ -71,12 +72,14 @@ class kalman_fitter {
                                  typename backward_fit_actor::state>);
 
     using forward_actor_chain_type =
-        detray::actor_chain<aborter, transporter, interactor, forward_fit_actor,
-                            resetter, surface_sequencer, kalman_step_aborter>;
+        detray::actor_chain<momentum_aborter, pathlimit_aborter, transporter,
+                            interactor, forward_fit_actor, resetter,
+                            surface_sequencer, kalman_step_aborter>;
 
     using backward_actor_chain_type =
-        detray::actor_chain<aborter, transporter, backward_fit_actor,
-                            interactor, resetter, kalman_step_aborter>;
+        detray::actor_chain<momentum_aborter, pathlimit_aborter, transporter,
+                            backward_fit_actor, interactor, resetter,
+                            kalman_step_aborter>;
 
     // Navigator type for backward propagator
     // using direct_navigator_type = detray::direct_navigator<detector_type>;
@@ -124,7 +127,8 @@ class kalman_fitter {
         /// @return the actor chain state
         TRACCC_HOST_DEVICE
         typename forward_actor_chain_type::state_ref_tuple operator()() {
-            return detray::tie(m_aborter_state, m_interactor_state,
+            return detray::tie(m_momentum_aborter_state,
+                               m_pathlimit_aborter_state, m_interactor_state,
                                m_fit_actor_state, m_parameter_resetter,
                                m_sequencer_state, m_step_aborter_state);
         }
@@ -133,13 +137,15 @@ class kalman_fitter {
         TRACCC_HOST_DEVICE
         typename backward_actor_chain_type::state_ref_tuple
         backward_actor_state() {
-            return detray::tie(m_aborter_state, m_fit_actor_state,
+            return detray::tie(m_momentum_aborter_state,
+                               m_pathlimit_aborter_state, m_fit_actor_state,
                                m_interactor_state, m_parameter_resetter,
                                m_step_aborter_state);
         }
 
         /// Individual actor states
-        typename aborter::state m_aborter_state{};
+        typename pathlimit_aborter::state m_pathlimit_aborter_state{};
+        typename momentum_aborter::state m_momentum_aborter_state{};
         typename interactor::state m_interactor_state{};
         typename forward_fit_actor::state m_fit_actor_state;
         typename surface_sequencer::state m_sequencer_state;
@@ -244,8 +250,14 @@ class kalman_fitter {
         // Create propagator
         forward_propagator_type propagator(forward_cfg);
 
+        // Set minimum momentum
+        fitter_state.m_momentum_aborter_state.min_pT(
+            static_cast<scalar_type>(m_cfg.min_pT));
+        fitter_state.m_momentum_aborter_state.min_p(
+            static_cast<scalar_type>(m_cfg.min_p));
+
         // Set path limit
-        fitter_state.m_aborter_state.set_path_limit(
+        fitter_state.m_pathlimit_aborter_state.set_path_limit(
             m_cfg.propagation.stepping.path_limit);
 
         // Create propagator state
@@ -352,7 +364,7 @@ class kalman_fitter {
         backward_propagator_type propagator(backward_cfg);
 
         // Set path limit
-        fitter_state.m_aborter_state.set_path_limit(
+        fitter_state.m_pathlimit_aborter_state.set_path_limit(
             m_cfg.propagation.stepping.path_limit);
 
         typename backward_propagator_type::state propagation(
