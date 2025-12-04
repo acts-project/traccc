@@ -42,7 +42,7 @@ TRACCC_HOST_DEVICE inline void fit_forward(
 
     typename fitter_t::state fitter_state(
         track, tracks.states, tracks.measurements,
-        *(payload.barcodes_view.ptr() + param_id), fitter.config().propagation);
+        *(payload.surfaces_view.ptr() + param_id), fitter.config().propagation);
 
     kalman_fitter_status fit_status = fitter.filter(params, fitter_state);
 

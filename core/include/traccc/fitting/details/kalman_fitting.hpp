@@ -67,13 +67,14 @@ typename edm::track_container<algebra_t>::host kalman_fitting(
                 tracks.measurements, link.index));
         }
 
-        vecmem::data::vector_buffer<detray::geometry::barcode> seqs_buffer{
-            static_cast<vecmem::data::vector_buffer<
-                detray::geometry::barcode>::size_type>(
-                std::max(fitted_track.constituent_links().size() *
-                             fitter.config().barcode_sequence_size_factor,
-                         fitter.config().min_barcode_sequence_capacity)),
-            mr, vecmem::data::buffer_type::resizable};
+        vecmem::data::vector_buffer<typename fitter_t::surface_type>
+            seqs_buffer{
+                static_cast<vecmem::data::vector_buffer<
+                    typename fitter_t::surface_type>::size_type>(
+                    std::max(fitted_track.constituent_links().size() *
+                                 fitter.config().barcode_sequence_size_factor,
+                             fitter.config().min_barcode_sequence_capacity)),
+                mr, vecmem::data::buffer_type::resizable};
         copy.setup(seqs_buffer)->wait();
 
         // Make a fitter state

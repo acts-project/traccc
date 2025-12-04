@@ -52,7 +52,8 @@ struct fit_payload {
     /**
      * @brief View object to the output barcode sequence
      */
-    vecmem::data::jagged_vector_view<detray::geometry::barcode> barcodes_view;
+    vecmem::data::jagged_vector_view<typename fitter_t::surface_type>
+        surfaces_view;
 };
 
 }  // namespace traccc::device
