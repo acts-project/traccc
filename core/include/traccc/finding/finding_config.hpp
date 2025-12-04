@@ -62,7 +62,7 @@ struct finding_config {
 
     /// Particle hypothesis
     traccc::pdg_particle<traccc::scalar> ptc_hypothesis =
-        traccc::muon<traccc::scalar>();
+        traccc::pion_plus<traccc::scalar>();
 
     /// Minimum track length in order for a track to be a candidate for
     /// duplicate removal.
