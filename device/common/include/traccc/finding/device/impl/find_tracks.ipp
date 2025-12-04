@@ -207,58 +207,57 @@ TRACCC_HOST_DEVICE inline void find_tracks(
 
             if (use_measurement) {
 
+                const detray::tracking_surface sf{det, in_par.surface_link()};
+                const bool is_line = detail::is_line(sf);
+
+                measurement_selector::config calib_cfg{};
+
+                const edm::measurement meas = measurements.at(meas_idx);
+
+                // The filtered track state
                 auto trk_state =
                     edm::make_track_state<algebra_t>(measurements, meas_idx);
 
-                const detray::tracking_surface sf{det, in_par.surface_link()};
+                const traccc::scalar chi2 =
+                    measurement_selector::predicted_chi2(meas, in_par,
+                                                         calib_cfg, is_line);
 
+                trk_state.filtered_chi2() = chi2;
+
+                // If the measurement is outside the chi2 cut, skip it
+                if (chi2 > cfg.chi2_max) {
+                    use_measurement = false;
+                }
+
+                // Kalman filter status code
                 kalman_fitter_status res{kalman_fitter_status::ERROR_OTHER};
-                // Check if the measurement is even remotely close to the track
-                if (payload.step == 0 && !sf.has_material()) {
-                    const auto& meas = measurements.at(meas_idx);
 
-                    detray::dmatrix<algebra_t, 2, 1> meas_local;
-                    edm::get_measurement_local<algebra_t>(meas, meas_local);
+                if (use_measurement) {
+                    if (payload.step == 0 && chi2 == 0.f &&
+                        !sf.has_material()) {
+                        res = kalman_fitter_status::SUCCESS;
 
-                    const subspace<algebra_t, e_bound_size> subs(
-                        meas.subspace());
-                    detray::dmatrix<algebra_t, 2, e_bound_size> H =
-                        subs.template projector<2>();
+                        trk_state.filtered_params() = in_par;
 
-                    const auto residual =
-                        meas_local -
-                        H * in_params.at(owner_global_thread_id).vector();
+                        // Update measurement covariance
+                        const auto V = measurement_selector::
+                            calibrated_measurement_covariance<algebra_t, 2>(
+                                meas, calib_cfg);
 
-                    const traccc::scalar res_0{getter::element(residual, 0, 0)};
-                    const traccc::scalar res_1{
-                        meas.dimensions() == 1
-                            ? 0.f
-                            : getter::element(residual, 1, 0)};
-                    const traccc::scalar search_rad =
-                        math::sqrt(res_0 * res_0 + res_1 * res_1);
-                    if (search_rad > 0.f) {
-                        use_measurement = false;
+                        auto& filtered_cov =
+                            trk_state.filtered_params().covariance();
+                        getter::element(filtered_cov, e_bound_loc0,
+                                        e_bound_loc0) =
+                            getter::element(V, 0, 0);
+                        getter::element(filtered_cov, e_bound_loc1,
+                                        e_bound_loc1) =
+                            getter::element(V, 1, 1);
+                    } else {
+                        // Run the Kalman update on a copy of the track
+                        // parameters
+                        res = gain_matrix_updater<algebra_t>{}(trk_state, meas,
+                                                               in_par, is_line);
                     }
-                    res = kalman_fitter_status::SUCCESS;
-                    trk_state.filtered_params() =
-                        in_params.at(owner_global_thread_id);
-                    trk_state.filtered_chi2() = 0.f;
-
-                    // Set the covariance to the measurement variance
-                    detray::dmatrix<algebra_t, 2, 2> V;
-                    edm::get_measurement_covariance<algebra_t>(meas, V);
-                    auto& filtered_cov =
-                        trk_state.filtered_params().covariance();
-                    getter::element(filtered_cov, e_bound_loc0, e_bound_loc0) =
-                        getter::element(V, 0, 0);
-                    getter::element(filtered_cov, e_bound_loc1, e_bound_loc1) =
-                        getter::element(V, 1, 1);
-                } else {
-                    const bool is_line = detail::is_line(sf);
-
-                    // Run the Kalman update on a copy of the track parameters
-                    res = gain_matrix_updater<algebra_t>{}(
-                        trk_state, measurements, in_par, is_line);
                 }
 
                 TRACCC_DEBUG_DEVICE("KF status: %d", res);
@@ -274,13 +273,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                  * but, more importantly, allows us to more easily use
                  * block-wide synchronization primitives.
                  */
-                if (const traccc::scalar chi2 = trk_state.filtered_chi2();
-                    res != kalman_fitter_status::SUCCESS ||
-                    chi2 >= cfg.chi2_max) {
-                    use_measurement = false;
-                }
-
-                if (use_measurement) {
+                if (use_measurement && res == kalman_fitter_status::SUCCESS) {
                     TRACCC_VERBOSE_DEVICE("Found measurement: %d", meas_idx);
                     result.emplace(trk_state, meas_idx, owner_local_thread_id);
                 }
