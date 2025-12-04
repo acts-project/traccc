@@ -44,11 +44,8 @@ class kalman_fitter {
     public:
     // Detector type
     using detector_type = typename navigator_t::detector_type;
-
-    // Algebra type
+    using surface_type = typename detector_type::surface_type;
     using algebra_type = typename detector_type::algebra_type;
-
-    // scalar type
     using scalar_type = detray::dscalar<algebra_type>;
 
     /// Configuration type
@@ -68,14 +65,14 @@ class kalman_fitter {
         traccc::kalman_actor<algebra_type,
                              kalman_actor_direction::BACKWARD_ONLY>;
     using resetter = detray::parameter_resetter<algebra_type>;
-    using barcode_sequencer = detray::barcode_sequencer;
+    using surface_sequencer = detray::surface_sequencer<surface_type>;
 
     static_assert(std::is_same_v<typename forward_fit_actor::state,
                                  typename backward_fit_actor::state>);
 
     using forward_actor_chain_type =
         detray::actor_chain<aborter, transporter, interactor, forward_fit_actor,
-                            resetter, barcode_sequencer, kalman_step_aborter>;
+                            resetter, surface_sequencer, kalman_step_aborter>;
 
     using backward_actor_chain_type =
         detray::actor_chain<aborter, transporter, backward_fit_actor,
@@ -115,13 +112,11 @@ class kalman_fitter {
                 track_states,
             const typename edm::measurement_collection<
                 algebra_type>::const_device& measurements,
-            vecmem::data::vector_view<detray::geometry::barcode>
-                sequence_buffer,
+            vecmem::data::vector_view<surface_type> sequence_buffer,
             const detray::propagation::config& prop_cfg)
             : m_fit_actor_state{track, track_states, measurements},
               m_sequencer_state(
-                  vecmem::device_vector<detray::geometry::barcode>(
-                      sequence_buffer)),
+                  vecmem::device_vector<surface_type>(sequence_buffer)),
               m_parameter_resetter{prop_cfg},
               m_fit_res{track},
               m_sequence_buffer(sequence_buffer) {}
@@ -147,7 +142,7 @@ class kalman_fitter {
         typename aborter::state m_aborter_state{};
         typename interactor::state m_interactor_state{};
         typename forward_fit_actor::state m_fit_actor_state;
-        typename barcode_sequencer::state m_sequencer_state;
+        typename surface_sequencer::state m_sequencer_state;
         kalman_step_aborter::state m_step_aborter_state{};
         typename resetter::state m_parameter_resetter{};
 
@@ -156,7 +151,7 @@ class kalman_fitter {
             m_fit_res;
 
         /// View object for barcode sequence
-        vecmem::data::vector_view<detray::geometry::barcode> m_sequence_buffer;
+        vecmem::data::vector_view<surface_type> m_sequence_buffer;
     };
 
     /// Run the kalman fitter for a given number of iterations
@@ -293,7 +288,7 @@ class kalman_fitter {
     smooth(state& fitter_state) const {
         TRACCC_VERBOSE_HOST_DEVICE("Run smoothing...");
 
-        if (fitter_state.m_sequencer_state.overflow) {
+        if (fitter_state.m_sequencer_state.overflow()) {
             TRACCC_ERROR_HOST_DEVICE("Barcode sequence overlow");
             return kalman_fitter_status::ERROR_BARCODE_SEQUENCE_OVERFLOW;
         }
@@ -343,7 +338,7 @@ class kalman_fitter {
 
         TRACCC_DEBUG_HOST("Start smoothing at: " << last.smoothed_params());
 
-        if (fitter_state.m_sequencer_state._sequence.empty()) {
+        if (fitter_state.m_sequencer_state.sequence().empty()) {
             return kalman_fitter_status::ERROR_UPDATER_SKIPPED_STATE;
         }
 
