@@ -25,6 +25,7 @@
 #include "traccc/utils/propagation.hpp"
 
 // VecMem include(s).
+#include <detray/propagator/actors/parameter_transporter.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 
 // System include(s).
@@ -504,30 +505,43 @@ combinatorial_kalman_filter(
                 .template set_constraint<detray::step::constraint::e_accuracy>(
                     config.propagation.stepping.step_constraint);
 
-            typename detray::pathlimit_aborter<scalar_type>::state s0;
-            traccc::details::ckf_interactor_t::state s2;
-            typename interaction_register<
-                traccc::details::ckf_interactor_t>::state s1{s2};
+            typename detray::pathlimit_aborter<scalar_type>::state
+                aborter_state;
+            typename detray::parameter_transporter<
+                typename detector_t::algebra_type>::state transporter_state;
+            traccc::details::ckf_interactor_t::state interactor_state;
+            typename interaction_register<traccc::details::ckf_interactor_t>::
+                state interaction_register_state{interactor_state};
             typename detray::parameter_resetter<
-                typename detector_t::algebra_type>::state s3{prop_cfg};
-            typename detray::momentum_aborter<scalar_type>::state s4{};
-            typename ckf_aborter::state s5;
+                typename detector_t::algebra_type>::state resetter_state{
+                prop_cfg};
+            typename detray::momentum_aborter<scalar_type>::state
+                momentum_aborter_state{};
+            typename ckf_aborter::state ckf_aborter_state;
 
             // Update the actor config
-            s4.min_pT(static_cast<scalar_type>(config.min_pT));
-            s4.min_p(static_cast<scalar_type>(config.min_p));
-            s5.min_step_length = config.min_step_length_for_next_surface;
-            s5.max_count = config.max_step_counts_for_next_surface;
+            momentum_aborter_state.min_pT(
+                static_cast<scalar_type>(config.min_pT));
+            momentum_aborter_state.min_p(
+                static_cast<scalar_type>(config.min_p));
+            ckf_aborter_state.min_step_length =
+                config.min_step_length_for_next_surface;
+            ckf_aborter_state.max_count =
+                config.max_step_counts_for_next_surface;
 
             // Propagate to the next surface
             TRACCC_DEBUG_HOST("Propagating... ");
-            propagator.propagate(propagation,
-                                 detray::tie(s0, s1, s2, s3, s4, s5));
+            propagator.propagate(
+                propagation,
+                detray::tie(aborter_state, transporter_state,
+                            interaction_register_state, interactor_state,
+                            resetter_state, momentum_aborter_state,
+                            ckf_aborter_state));
             TRACCC_DEBUG_HOST("Finished propagation");
 
             // If a surface found, add the parameter for the next
             // step
-            bool valid_track{s5.success};
+            bool valid_track{ckf_aborter_state.success};
             if (valid_track) {
                 assert(propagation._navigation.is_on_sensitive());
                 assert(!propagation._stepping.bound_params().is_invalid());
@@ -563,7 +577,7 @@ combinatorial_kalman_filter(
             // tip
             if (!valid_track &&
                 (step >= (config.min_track_candidates_per_track - 1u))) {
-                if (!s5.success) {
+                if (!ckf_aborter_state.success) {
                     TRACCC_VERBOSE_HOST("Create tip: No next sensitive found");
                 } else {
                     TRACCC_VERBOSE_HOST("Create tip: Encountered error");
@@ -573,7 +587,7 @@ combinatorial_kalman_filter(
 
             // If no more CKF step is expected, current candidate is
             // kept as a tip
-            if (s5.success &&
+            if (ckf_aborter_state.success &&
                 (step == (config.max_track_candidates_per_track - 1u))) {
                 TRACCC_ERROR_HOST("Create tip: Max no. candidates");
                 tips.push_back({step, link_id});
