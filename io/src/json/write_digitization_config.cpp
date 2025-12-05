@@ -9,9 +9,15 @@
 #include "write_digitization_config.hpp"
 
 // Acts include(s).
+#if __has_include(<ActsPlugins/Json/ActsJson.hpp>)
+#include <ActsPlugins/Json/ActsJson.hpp>
+#include <ActsPlugins/Json/GeometryHierarchyMapJsonConverter.hpp>
+#include <ActsPlugins/Json/UtilitiesJsonConverter.hpp>
+#else
 #include <Acts/Plugins/Json/ActsJson.hpp>
 #include <Acts/Plugins/Json/GeometryHierarchyMapJsonConverter.hpp>
 #include <Acts/Plugins/Json/UtilitiesJsonConverter.hpp>
+#endif
 
 // System include(s).
 #include <fstream>
