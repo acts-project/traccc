@@ -150,11 +150,12 @@ struct propagate_to_next_surface {
 struct build_tracks {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        TAcc const& acc, const device::build_tracks_payload payload) const {
+        TAcc const& acc, bool run_mbf,
+        const device::build_tracks_payload payload) const {
 
         device::global_index_t globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
-        device::build_tracks(globalThreadIdx, payload);
+        device::build_tracks(globalThreadIdx, run_mbf, payload);
     }
 };
 
@@ -255,6 +256,11 @@ combinatorial_kalman_filter(
     vecmem::data::vector_buffer<candidate_link> links_buffer(
         link_buffer_capacity, mr.main, vecmem::data::buffer_type::resizable);
     copy.setup(links_buffer)->wait();
+
+    bound_track_parameters_collection_types::buffer
+        link_predicted_parameter_buffer(0, mr.main);
+    bound_track_parameters_collection_types::buffer
+        link_filtered_parameter_buffer(0, mr.main);
 
     // Create a buffer of tip links
     vecmem::data::vector_buffer<unsigned int> tips_buffer{
@@ -364,7 +370,12 @@ combinatorial_kalman_filter(
                 .tip_lengths_view = tip_length_buffer,
                 .n_tracks_per_seed_view = n_tracks_per_seed_buffer,
                 .tmp_params_view = tmp_params_buffer,
-                .tmp_links_view = tmp_links_buffer};
+                .tmp_links_view = tmp_links_buffer,
+                .jacobian_ptr = nullptr,
+                .tmp_jacobian_ptr = nullptr,
+                .link_predicted_parameter_view =
+                    link_predicted_parameter_buffer,
+                .link_filtered_parameter_view = link_filtered_parameter_buffer};
             // Now copy it to device memory.
             vecmem::data::vector_buffer<payload_t> device_payload(1u, mr.main);
             copy.setup(device_payload)->wait();
@@ -520,7 +531,8 @@ combinatorial_kalman_filter(
                     .step = step,
                     .n_in_params = n_candidates,
                     .tips_view = tips_buffer,
-                    .tip_lengths_view = tip_length_buffer};
+                    .tip_lengths_view = tip_length_buffer,
+                    .tmp_jacobian_ptr = nullptr};
                 // Now copy it to device memory.
                 vecmem::data::vector_buffer<payload_t> device_payload(1u,
                                                                       mr.main);
@@ -583,12 +595,19 @@ combinatorial_kalman_filter(
             (n_tips_total + threadsPerBlock - 1) / threadsPerBlock;
         const auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
 
-        ::alpaka::exec<Acc>(queue, workDiv, kernels::build_tracks{},
-                            device::build_tracks_payload{
-                                .seeds_view = seeds,
-                                .links_view = links_buffer,
-                                .tips_view = tips_buffer,
-                                .tracks_view = track_candidates_buffer});
+        ::alpaka::exec<Acc>(
+            queue, workDiv, kernels::build_tracks{}, config.run_mbf_smoother,
+            device::build_tracks_payload{
+                .seeds_view = seeds,
+                .links_view = links_buffer,
+                .tips_view = tips_buffer,
+                .tracks_view = track_candidates_buffer,
+                .tip_to_output_map = nullptr,
+                .jacobian_ptr = nullptr,
+                .link_predicted_parameter_view =
+                    link_predicted_parameter_buffer,
+                .link_filtered_parameter_view = link_filtered_parameter_buffer,
+            });
         ::alpaka::wait(queue);
     }
 

@@ -160,6 +160,11 @@ combinatorial_kalman_filter(
         link_buffer_capacity, mr.main, vecmem::data::buffer_type::resizable);
     copy.setup(links_buffer)->wait();
 
+    bound_track_parameters_collection_types::buffer
+        link_predicted_parameter_buffer(0, mr.main);
+    bound_track_parameters_collection_types::buffer
+        link_filtered_parameter_buffer(0, mr.main);
+
     // Create a buffer of tip links
     vecmem::data::vector_buffer<unsigned int> tips_buffer{
         config.max_num_branches_per_seed * n_seeds, mr.main,
@@ -267,7 +272,12 @@ combinatorial_kalman_filter(
                 .tip_lengths_view = tip_length_buffer,
                 .n_tracks_per_seed_view = n_tracks_per_seed_buffer,
                 .tmp_params_view = tmp_params_buffer,
-                .tmp_links_view = tmp_links_buffer};
+                .tmp_links_view = tmp_links_buffer,
+                .jacobian_ptr = nullptr,
+                .tmp_jacobian_ptr = nullptr,
+                .link_predicted_parameter_view =
+                    link_predicted_parameter_buffer,
+                .link_filtered_parameter_view = link_filtered_parameter_buffer};
             // Now copy it to device memory.
             vecmem::data::vector_buffer<payload_t> device_payload(1u, mr.main);
             copy.setup(device_payload)->wait();
@@ -474,7 +484,8 @@ combinatorial_kalman_filter(
                     .step = step,
                     .n_in_params = n_candidates,
                     .tips_view = tips_buffer,
-                    .tip_lengths_view = tip_length_buffer};
+                    .tip_lengths_view = tip_length_buffer,
+                    .tmp_jacobian_ptr = nullptr};
                 // Now copy it to device memory.
                 vecmem::data::vector_buffer<payload_t> device_payload(1u,
                                                                       mr.main);
@@ -532,17 +543,26 @@ combinatorial_kalman_filter(
             .submit([&](::sycl::handler& h) {
                 h.parallel_for<kernels::build_tracks<kernel_t>>(
                     calculate1DimNdRange(n_tips_total, 64),
-                    [seeds, links = vecmem::get_data(links_buffer),
+                    [config, seeds, links = vecmem::get_data(links_buffer),
                      tips = vecmem::get_data(tips_buffer),
                      tracks = typename edm::track_container<
                          typename detector_t::algebra_type>::
-                         view(track_candidates_buffer)](
+                         view(track_candidates_buffer),
+                     link_predicted_parameters =
+                         vecmem::get_data(link_predicted_parameter_buffer),
+                     link_filtered_parameters =
+                         vecmem::get_data(link_filtered_parameter_buffer)](
                         ::sycl::nd_item<1> item) {
                         device::build_tracks(details::global_index(item),
+                                             config.run_mbf_smoother,
                                              {.seeds_view = seeds,
                                               .links_view = links,
                                               .tips_view = tips,
-                                              .tracks_view = tracks});
+                                              .tracks_view = tracks,
+                                              .link_predicted_parameter_view =
+                                                  link_predicted_parameters,
+                                              .link_filtered_parameter_view =
+                                                  link_filtered_parameters});
                     });
             })
             .wait_and_throw();

@@ -79,6 +79,9 @@ struct propagate_to_next_surface_payload {
      * @brief Vector to hold the number of track states per tip
      */
     vecmem::data::vector_view<unsigned int> tip_lengths_view;
+
+    bound_matrix<typename propagator_t::detector_type::algebra_type>*
+        tmp_jacobian_ptr;
 };
 
 /// Function for propagating the kalman-updated tracks to the next surface

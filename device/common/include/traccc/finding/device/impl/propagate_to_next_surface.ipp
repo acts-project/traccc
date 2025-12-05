@@ -12,6 +12,7 @@
 #include "traccc/utils/particle.hpp"
 
 // Detray include(s).
+#include <detray/plugins/algebra/array_definitions.hpp>
 #include <detray/propagator/constrained_step.hpp>
 #include <detray/utils/tuple_helpers.hpp>
 
@@ -83,6 +84,8 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     // Pathlimit aborter
     typename detray::detail::tuple_element<0, actor_tuple_type>::type::state
         s0{};
+    typename detray::detail::tuple_element<1, actor_tuple_type>::type::state
+        s1{};
     // CKF-interactor
     typename detray::detail::tuple_element<3, actor_tuple_type>::type::state
         s3{};
@@ -97,13 +100,21 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     // CKF aborter
     typename detray::detail::tuple_element<6, actor_tuple_type>::type::state s6;
 
+    if (cfg.run_mbf_smoother) {
+        assert(payload.tmp_jacobian_ptr != nullptr);
+
+        payload.tmp_jacobian_ptr[param_id] = matrix::identity<
+            bound_matrix<typename propagator_t::detector_type::algebra_type>>();
+        s1._full_jacobian_ptr = &payload.tmp_jacobian_ptr[param_id];
+    }
+
     s5.min_pT(static_cast<scalar_t>(cfg.min_pT));
     s5.min_p(static_cast<scalar_t>(cfg.min_p));
     s6.min_step_length = cfg.min_step_length_for_next_surface;
     s6.max_count = cfg.max_step_counts_for_next_surface;
 
     // Propagate to the next surface
-    propagator.propagate(propagation, detray::tie(s0, s2, s3, s4, s5, s6));
+    propagator.propagate(propagation, detray::tie(s0, s1, s2, s3, s4, s5, s6));
 
     // If a surface found, add the parameter for the next step
     if (s6.success) {
