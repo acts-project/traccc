@@ -106,8 +106,8 @@ kalman_fitting(
     std::vector<unsigned int> seqs_sizes(candidate_sizes.size());
     std::transform(candidate_sizes.begin(), candidate_sizes.end(),
                    seqs_sizes.begin(), [&config](const unsigned int sz) {
-                       return std::max(sz * config.barcode_sequence_size_factor,
-                                       config.min_barcode_sequence_capacity);
+                       return std::max(sz * config.surface_sequence_size_factor,
+                                       config.min_surface_sequence_capacity);
                    });
     vecmem::data::jagged_vector_buffer<typename detector_t::surface_type>
         seqs_buffer{seqs_sizes, mr.main, mr.host,
