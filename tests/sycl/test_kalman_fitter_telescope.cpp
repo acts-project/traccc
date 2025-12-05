@@ -151,6 +151,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     // Fitting algorithm object
     typename traccc::sycl::kalman_fitting_algorithm::config_type fit_cfg;
     fit_cfg.ptc_hypothesis = ptc;
+    fit_cfg.min_pT = 100.f * traccc::unit<float>::MeV;
     traccc::sycl::kalman_fitting_algorithm device_fitting(fit_cfg, mr, copy,
                                                           traccc_queue);
 

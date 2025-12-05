@@ -21,6 +21,12 @@ class track_fitting : public interface, public config_provider<fitting_config> {
     /// Constructor
     track_fitting();
 
+    /// Read/process the command line options
+    ///
+    /// @param vm The command line options to interpret/read
+    ///
+    void read(const boost::program_options::variables_map& vm) override;
+
     /// Configuration conversion operators
     operator fitting_config() const override;
 

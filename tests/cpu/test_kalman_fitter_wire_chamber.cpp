@@ -135,6 +135,7 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
     // TODO: Disable until overlaps are handled correctly
     fit_cfg.propagation.navigation.estimate_scattering_noise = false;
     fit_cfg.ptc_hypothesis = ptc;
+    fit_cfg.min_pT = 100.f * traccc::unit<float>::MeV;
     traccc::host::kalman_fitting_algorithm fitting(fit_cfg, host_mr, copy);
 
     // Iterate over events

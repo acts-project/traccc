@@ -128,6 +128,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
     // Fitting algorithm object
     traccc::fitting_config fit_cfg;
     fit_cfg.ptc_hypothesis = ptc;
+    fit_cfg.min_pT = 100.f * traccc::unit<float>::MeV;
     traccc::host::kalman_fitting_algorithm fitting(fit_cfg, host_mr, copy);
 
     // Iterate over events
