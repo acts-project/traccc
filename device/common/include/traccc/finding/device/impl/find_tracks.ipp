@@ -68,6 +68,10 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     vecmem::device_vector<unsigned int> tip_lengths(payload.tip_lengths_view);
     vecmem::device_vector<unsigned int> n_tracks_per_seed(
         payload.n_tracks_per_seed_view);
+    bound_track_parameters_collection_types::device link_predicted_parameters(
+        payload.link_predicted_parameter_view);
+    bound_track_parameters_collection_types::device link_filtered_parameters(
+        payload.link_filtered_parameter_view);
 
     /*
      * Initialize the block-shared data; in particular, set the total size of
@@ -606,6 +610,22 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                     .chi2_sum = prev_chi2_sum,
                     .ndf_sum = prev_ndf_sum};
 
+                if (payload.tmp_jacobian_ptr != nullptr) {
+                    assert(payload.jacobian_ptr != nullptr);
+                    payload.jacobian_ptr[out_offset] =
+                        payload.tmp_jacobian_ptr[in_param_id];
+                }
+
+                if (link_filtered_parameters.capacity() > 0) {
+                    link_filtered_parameters.at(out_offset) =
+                        in_params.at(in_param_id);
+                }
+
+                if (link_predicted_parameters.capacity() > 0) {
+                    link_predicted_parameters.at(out_offset) =
+                        in_params.at(in_param_id);
+                }
+
                 TRACCC_VERBOSE_DEVICE("Hole state created");
 
                 unsigned int param_pos = out_offset - payload.curr_links_idx;
@@ -642,6 +662,22 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                 out_params_liveness.at(param_pos) =
                     static_cast<unsigned int>(!last_step);
                 links.at(out_offset) = tmp_links.at(in_offset);
+
+                if (payload.tmp_jacobian_ptr != nullptr) {
+                    assert(payload.jacobian_ptr != nullptr);
+                    payload.jacobian_ptr[out_offset] =
+                        payload.tmp_jacobian_ptr[in_param_id];
+                }
+
+                if (link_filtered_parameters.capacity() > 0) {
+                    link_filtered_parameters.at(out_offset) =
+                        tmp_params.at(in_offset);
+                }
+
+                if (link_predicted_parameters.capacity() > 0) {
+                    link_predicted_parameters.at(out_offset) =
+                        in_params.at(in_param_id);
+                }
 
                 const unsigned int n_cands = payload.step + 1 - n_skipped;
 
