@@ -15,6 +15,7 @@
 
 // Detray include(s)
 #include <detray/geometry/tracking_surface.hpp>
+#include <detray/io/frontend/impl/json_readers.hpp>
 #include <detray/utils/type_registry.hpp>
 
 // VecMem include(s).
@@ -49,8 +50,8 @@ void read_json_dd_impl(traccc::silicon_detector_description::host& dd,
                        const traccc::digitization_config& digi)
     requires(traccc::is_detector_traits<detector_traits_t>)
 {
-    const traccc::default_detector::host& detector_host =
-        detector.as<traccc::default_detector>();
+    const typename detector_traits_t::host& detector_host =
+        detector.as<detector_traits_t>();
 
     // Iterate over the surfaces of the detector.
     const typename detector_traits_t::host::surface_lookup_container& surfaces =
@@ -118,8 +119,19 @@ void read_json_dd(traccc::silicon_detector_description::host& dd,
     traccc::host_detector detector;
     traccc::io::read_detector(detector, mr, geometry_file);
 
-    read_json_dd_impl<traccc::default_detector>(dd, detector, digi);
-    // detector_buffer_visitor
+    // TODO: Implement detector visitor!
+    // Peek at the header to determine the kind of detector that is needed
+    const auto header = detray::io::detail::deserialize_json_header(
+        traccc::io::get_absolute_path(geometry_file));
+
+    if (header.detector == "Cylindrical detector from DD4hep blueprint") {
+        read_json_dd_impl<traccc::odd_detector>(dd, detector, digi);
+    } else if (header.detector == "detray_detector") {
+        read_json_dd_impl<traccc::itk_detector>(dd, detector, digi);
+    } else {
+        // TODO: Warning here
+        read_json_dd_impl<traccc::default_detector>(dd, detector, digi);
+    }
 }
 
 }  // namespace

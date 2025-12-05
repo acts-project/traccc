@@ -13,6 +13,8 @@
 // Detray include(s).
 #include <detray/core/detector.hpp>
 #include <detray/detectors/default_metadata.hpp>
+#include <detray/detectors/itk_metadata.hpp>
+#include <detray/detectors/odd_metadata.hpp>
 #include <detray/detectors/telescope_metadata.hpp>
 #include <detray/detectors/toy_metadata.hpp>
 
@@ -75,17 +77,24 @@ concept is_detector_traits = requires {
     typename T::buffer;
 };
 
-/// Default detector (also used for ODD)
+/// Default detector (can contain any detector data)
 using default_detector =
     detector_traits<detray::default_metadata<traccc::default_algebra>>;
 
-/// Telescope detector
+/// ATLAS Inner Tracker (ITk) detector
+using itk_detector =
+    detector_traits<detray::itk_metadata<traccc::default_algebra>>;
+
+/// Open Data Detector (ODD) detector
+using odd_detector =
+    detector_traits<detray::odd_metadata<traccc::default_algebra>>;
+
+/// Detray telescope detector (test detector)
 using telescope_detector = detector_traits<
     detray::telescope_metadata<traccc::default_algebra, detray::rectangle2D>>;
 
-/// Toy detector
+/// Detray toy detector (test detector)
 using toy_detector =
     detector_traits<detray::toy_metadata<traccc::default_algebra>>;
 
-using detector_type_list = std::tuple<default_detector, telescope_detector>;
 }  // namespace traccc
