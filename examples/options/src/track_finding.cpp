@@ -21,9 +21,6 @@ namespace traccc::opts {
 namespace po = boost::program_options;
 
 track_finding::track_finding() : interface("Track Finding Options") {
-    m_pdg_number = m_config.ptc_hypothesis.pdg_num();
-    m_track_candidates_range[0] = m_config.min_track_candidates_per_track;
-    m_track_candidates_range[1] = m_config.max_track_candidates_per_track;
 
     m_desc.add_options()(
         "max-num-branches-per-seed",

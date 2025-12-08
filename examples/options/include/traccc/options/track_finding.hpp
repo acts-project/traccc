@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -35,14 +35,19 @@ class track_finding : public interface, public config_provider<finding_config> {
     /// Configuration conversion operators
     operator finding_config() const override;
 
+    /// Return a printable set of options
     std::unique_ptr<configuration_printable> as_printable() const override;
 
     private:
     /// The internal configuration
     finding_config m_config;
     /// Additional variables which we cannot simply store in the config
-    opts::value_array<unsigned int, 2> m_track_candidates_range{0, 0};
-    int m_pdg_number = 0;
+    opts::value_array<unsigned int, 2> m_track_candidates_range{
+        m_config.min_track_candidates_per_track,
+        m_config.max_track_candidates_per_track};
+    /// Helper variable for setting the PDG ID of the particle hypothesis
+    int m_pdg_number{m_config.ptc_hypothesis.pdg_num()};
+
 };  // class track_finding
 
 }  // namespace traccc::opts
