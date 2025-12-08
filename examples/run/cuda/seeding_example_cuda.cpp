@@ -69,7 +69,7 @@ using namespace traccc;
 int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::track_finding& finding_opts,
             const traccc::opts::track_propagation& propagation_opts,
-            const traccc::opts::track_fitting& fitting_opts,
+            [[maybe_unused]] const traccc::opts::track_fitting& fitting_opts,
             const traccc::opts::input_data& input_opts,
             const traccc::opts::detector& detector_opts,
             const traccc::opts::magnetic_field& bfield_opts,
@@ -97,15 +97,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::finding_performance_writer find_performance_writer(
         traccc::finding_performance_writer::config{
             .truth_config = truth_finding_opts,
-            .track_truth_config = track_matching_opts},
-        logger().clone("FindingPerformanceWriter"));
-    traccc::finding_performance_writer postfit_find_performance_writer(
-        traccc::finding_performance_writer::config{
-            .file_path = "performance_track_postfit_finding.root",
-            .truth_config = truth_finding_opts,
             .track_truth_config = track_matching_opts,
             .require_fit = true},
-        logger().clone("PostFitFindingPerformanceWriter"));
+        logger().clone("FindingPerformanceWriter"));
     traccc::fitting_performance_writer fit_performance_writer(
         traccc::fitting_performance_writer::config{},
         logger().clone("FittingPerformanceWriter"));
@@ -200,15 +194,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::cuda::combinatorial_kalman_filter_algorithm device_finding(
         cfg, mr, async_copy, stream, logger().clone("CudaFindingAlg"));
 
-    // Fitting algorithm object
-    traccc::fitting_config fit_cfg(fitting_opts);
-    fit_cfg.propagation = propagation_config;
-
-    traccc::host::kalman_fitting_algorithm host_fitting(
-        fit_cfg, host_mr, host_copy, logger().clone("HostFittingAlg"));
-    traccc::cuda::kalman_fitting_algorithm device_fitting(
-        fit_cfg, mr, async_copy, stream, logger().clone("CudaFittingAlg"));
-
     traccc::performance::timing_info elapsedTimes;
 
     // Loop over events
@@ -223,8 +208,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         traccc::host::track_params_estimation::output_type params;
         traccc::edm::track_container<traccc::default_algebra>::host
             track_candidates{host_mr};
-        traccc::edm::track_container<traccc::default_algebra>::host
-            track_states{host_mr};
 
         traccc::edm::seed_collection::buffer seeds_cuda_buffer;
         traccc::bound_track_parameters_collection_types::buffer
@@ -232,9 +215,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
         traccc::edm::track_container<traccc::default_algebra>::buffer
             track_candidates_cuda_buffer;
-
-        traccc::edm::track_container<traccc::default_algebra>::buffer
-            track_states_cuda_buffer;
 
         {  // Start measuring wall time
             traccc::performance::timer wall_t("Wall time", elapsedTimes);
@@ -338,29 +318,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                                  vecmem::get_data(measurements_per_event),
                                  vecmem::get_data(params));
             }
-
-            /*------------------------
-               Track Fitting with KF
-              ------------------------*/
-
-            {
-                traccc::performance::timer t("Track fitting with KF (cuda)",
-                                             elapsedTimes);
-
-                track_states_cuda_buffer =
-                    device_fitting(detector_buffer, device_field,
-                                   track_candidates_cuda_buffer);
-            }
-
-            if (accelerator_opts.compare_with_cpu) {
-                traccc::performance::timer t("Track fitting with KF (cpu)",
-                                             elapsedTimes);
-                track_states = host_fitting(
-                    host_det, host_field,
-                    traccc::edm::track_container<
-                        traccc::default_algebra>::const_data(track_candidates));
-            }
-
         }  // Stop measuring wall time
 
         /*----------------------------------
@@ -380,16 +337,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         async_copy(track_candidates_cuda_buffer.tracks,
                    track_candidates_cuda.tracks)
             ->wait();
-
-        // Copy track states from device to host
-        traccc::edm::track_container<traccc::default_algebra>::host
-            track_states_cuda{host_mr};
-        async_copy(track_states_cuda_buffer.tracks, track_states_cuda.tracks)
+        async_copy(track_candidates_cuda_buffer.states,
+                   track_candidates_cuda.states)
             ->wait();
-        async_copy(track_states_cuda_buffer.states, track_states_cuda.states)
-            ->wait();
-        track_states_cuda.measurements =
-            vecmem::get_data(measurements_per_event);
 
         if (accelerator_opts.compare_with_cpu) {
             // Show which event we are currently presenting the results for.
@@ -410,37 +360,21 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 compare_track_parameters{"track parameters"};
             compare_track_parameters(vecmem::get_data(params),
                                      vecmem::get_data(params_cuda));
-
-            // Compare the track candidates made on the host and on the
-            // device
-            traccc::soa_comparator<
-                traccc::edm::track_collection<traccc::default_algebra>>
-                compare_track_candidates{
-                    "track candidates",
-                    traccc::details::comparator_factory<
-                        traccc::edm::track_collection<traccc::default_algebra>::
-                            const_device::const_proxy_type>{
-                        vecmem::get_data(measurements_per_event),
-                        vecmem::get_data(measurements_per_event),
-                        {},
-                        {}}};
-            compare_track_candidates(
-                vecmem::get_data(track_candidates.tracks),
-                vecmem::get_data(track_candidates_cuda.tracks));
         }
 
         /*----------------
              Statistics
           ---------------*/
 
-        details::print_fitted_tracks_statistics(track_states_cuda, logger());
+        details::print_fitted_tracks_statistics(track_candidates_cuda,
+                                                logger());
         n_spacepoints += spacepoints_per_event.size();
         n_seeds_cuda += seeds_cuda.size();
         n_seeds += seeds.size();
         n_found_tracks_cuda += track_candidates_cuda.tracks.size();
         n_found_tracks += track_candidates.tracks.size();
-        n_fitted_tracks_cuda += track_states_cuda.tracks.size();
-        n_fitted_tracks += track_states.tracks.size();
+        n_fitted_tracks_cuda += track_candidates_cuda.tracks.size();
+        n_fitted_tracks += track_candidates.tracks.size();
 
         /*------------
           Writer
@@ -457,24 +391,23 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 vecmem::get_data(spacepoints_per_event),
                 vecmem::get_data(measurements_per_event), evt_data);
 
+            std::cout << track_candidates_cuda.tracks.size() << ", "
+                      << track_candidates_cuda.states.size() << std::endl;
+
             find_performance_writer.write(
                 traccc::edm::track_container<
                     traccc::default_algebra>::const_data(track_candidates_cuda),
                 evt_data);
 
-            postfit_find_performance_writer.write(
-                traccc::edm::track_container<
-                    traccc::default_algebra>::const_data(track_states_cuda),
-                evt_data);
-
-            for (unsigned int i = 0; i < track_states_cuda.tracks.size(); i++) {
+            for (unsigned int i = 0; i < track_candidates_cuda.tracks.size();
+                 i++) {
                 host_detector_visitor<detector_type_list>(
                     host_det, [&]<typename detector_traits_t>(
                                   const typename detector_traits_t::host& det) {
                         fit_performance_writer.write(
-                            track_states_cuda.tracks.at(i),
-                            track_states_cuda.states, measurements_per_event,
-                            det, evt_data);
+                            track_candidates_cuda.tracks.at(i),
+                            track_candidates_cuda.states,
+                            measurements_per_event, det, evt_data);
                     });
             }
         }
@@ -484,7 +417,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         sd_performance_writer.finalize();
         nsd_performance_writer.finalize();
         find_performance_writer.finalize();
-        postfit_find_performance_writer.finalize();
         fit_performance_writer.finalize();
         std::cout << nsd_performance_writer.generate_report_str();
     }

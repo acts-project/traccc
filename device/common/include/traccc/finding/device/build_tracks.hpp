@@ -49,6 +49,9 @@ struct build_tracks_payload {
      * @brief Optional mapping from tip index to output index
      */
     const unsigned int* tip_to_output_map = nullptr;
+    bound_matrix<default_algebra>* jacobian_ptr = nullptr;
+    bound_track_parameters_collection_types::view link_predicted_parameter_view;
+    bound_track_parameters_collection_types::view link_filtered_parameter_view;
 };
 
 /// Function for building full tracks from the link container:
@@ -61,7 +64,8 @@ struct build_tracks_payload {
 /// @param[inout] payload      The function call payload
 ///
 TRACCC_HOST_DEVICE inline void build_tracks(
-    global_index_t globalIndex, const build_tracks_payload& payload);
+    global_index_t globalIndex, bool run_mbf,
+    const build_tracks_payload& payload);
 
 }  // namespace traccc::device
 

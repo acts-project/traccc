@@ -10,12 +10,17 @@
 // Project include(s).
 #include <type_traits>
 
+#include "traccc/edm/measurement_helpers.hpp"
+#include "traccc/edm/track_parameters.hpp"
+#include "traccc/edm/track_state_helpers.hpp"
 #include "traccc/utils/prob.hpp"
+#include "traccc/utils/subspace.hpp"
 
 namespace traccc::device {
 
 TRACCC_HOST_DEVICE inline void build_tracks(
-    const global_index_t globalIndex, const build_tracks_payload& payload) {
+    const global_index_t globalIndex, bool run_mbf,
+    const build_tracks_payload& payload) {
 
     const edm::measurement_collection<default_algebra>::const_device
         measurements(payload.tracks_view.measurements);
@@ -29,6 +34,12 @@ TRACCC_HOST_DEVICE inline void build_tracks(
 
     edm::track_collection<default_algebra>::device track_candidates(
         payload.tracks_view.tracks);
+    edm::track_state_collection<default_algebra>::device track_states(
+        payload.tracks_view.states);
+    bound_track_parameters_collection_types::device link_predicted_params(
+        payload.link_predicted_parameter_view);
+    bound_track_parameters_collection_types::device link_filtered_params(
+        payload.link_filtered_parameter_view);
 
     if (globalIndex >= tips.size()) {
         return;
@@ -47,44 +58,156 @@ TRACCC_HOST_DEVICE inline void build_tracks(
     auto track = track_candidates.at(output_idx);
 
     // Get the link corresponding to tip
-    auto L = links.at(tip);
+    unsigned int link_idx = tip;
+    auto L = links.at(link_idx);
     const unsigned int n_meas = measurements.size();
 
     // Track summary variables
     scalar ndf_sum = 0.f;
     scalar chi2_sum = 0.f;
 
+    bound_matrix<default_algebra> big_lambda_tilde =
+        matrix::zero<bound_matrix<default_algebra>>();
+    bound_vector<default_algebra> small_lambda_tilde =
+        matrix::zero<bound_vector<default_algebra>>();
+    bound_matrix<default_algebra> accumulated_jacobian =
+        matrix::identity<bound_matrix<default_algebra>>();
+
+    bool mbf_first_processed = false;
+
     // Reversely iterate to fill the track candidates
     for (auto it = track.constituent_links().rbegin();
          it != track.constituent_links().rend(); it++) {
 
         while (L.meas_idx >= n_meas && L.step != 0u) {
+            if (run_mbf) {
+                accumulated_jacobian =
+                    accumulated_jacobian * payload.jacobian_ptr[link_idx];
+            }
 
-            L = links.at(L.previous_candidate_idx);
+            link_idx = L.previous_candidate_idx;
+            L = links.at(link_idx);
         }
 
         assert(L.meas_idx < n_meas);
 
-        *it = {edm::track_constituent_link::measurement, L.meas_idx};
+        if (run_mbf) {
+            const unsigned int track_state_index =
+                track_states.push_back(edm::make_track_state<default_algebra>(
+                    measurements, L.meas_idx));
+            auto track_state = track_states.at(track_state_index);
+
+            track_state.set_hole(false);
+            track_state.set_smoothed(true);
+
+            // TODO: The fact that we store the chi2 three times is nonsense.
+            track_state.filtered_chi2() = L.chi2;
+            track_state.smoothed_chi2() = L.chi2;
+            track_state.backward_chi2() = L.chi2;
+
+            const auto& predicted_params = link_predicted_params.at(link_idx);
+            const auto& filtered_params = link_filtered_params.at(link_idx);
+
+            const auto& predicted_vec = predicted_params.vector();
+            const auto& predicted_covariance = predicted_params.covariance();
+
+            bound_vector<default_algebra> small_lambda_hat;
+            bound_matrix<default_algebra> big_lambda_hat;
+
+            if (!mbf_first_processed) {
+                small_lambda_hat =
+                    matrix::zero<bound_vector<default_algebra>>();
+                big_lambda_hat = matrix::zero<bound_matrix<default_algebra>>();
+                mbf_first_processed = true;
+            } else {
+                small_lambda_hat = matrix::transpose(accumulated_jacobian) *
+                                   small_lambda_tilde;
+                big_lambda_hat = matrix::transpose(accumulated_jacobian) *
+                                 big_lambda_tilde * accumulated_jacobian;
+            }
+
+            // Measurement data on surface
+            detray::dmatrix<default_algebra, 2, 1> meas_local;
+            edm::get_measurement_local<default_algebra>(
+                measurements.at(L.meas_idx), meas_local);
+
+            // WARNING: This code doesn't currently work with line surfaces
+            const subspace<default_algebra, e_bound_size> subs(
+                measurements.at(L.meas_idx).subspace());
+            detray::dmatrix<default_algebra, 2, e_bound_size> H =
+                subs.template projector<2>();
+
+            // TODO: Fix properly
+            if (/*dim == 1*/ getter::element(meas_local, 1u, 0u) == 0.f) {
+                getter::element(H, 1u, 0u) = 0.f;
+                getter::element(H, 1u, 1u) = 0.f;
+            }
+
+            // Spatial resolution (Measurement covariance)
+            detray::dmatrix<default_algebra, 2, 2> V;
+            edm::get_measurement_covariance<default_algebra>(
+                measurements.at(L.meas_idx), V);
+            // TODO: Fix properly
+            if (/*dim == 1*/ getter::element(meas_local, 1u, 0u) == 0.f) {
+                getter::element(V, 1u, 1u) = 1000.f;
+            }
+
+            const auto S = H * predicted_covariance * matrix::transpose(H) + V;
+            const auto S_inv = matrix::inverse(S);
+            const auto K = predicted_covariance * matrix::transpose(H) * S_inv;
+            const auto C_hat =
+                matrix::identity<detray::dmatrix<default_algebra, e_bound_size,
+                                                 e_bound_size>>() -
+                K * H;
+            const auto y = meas_local - H * predicted_vec;
+
+            small_lambda_tilde = -1.f * matrix::transpose(H) * S_inv * y +
+                                 matrix::transpose(C_hat) * small_lambda_hat;
+            big_lambda_tilde =
+                matrix::transpose(H) * S_inv * H +
+                matrix::transpose(C_hat) * big_lambda_hat * C_hat;
+
+            track_state.smoothed_params().vector() =
+                predicted_vec - predicted_covariance * small_lambda_tilde;
+            track_state.smoothed_params().covariance() =
+                predicted_covariance -
+                (predicted_covariance * big_lambda_tilde *
+                 predicted_covariance);
+
+            track_state.filtered_params() = filtered_params;
+
+            accumulated_jacobian = payload.jacobian_ptr[link_idx];
+
+            *it = {edm::track_constituent_link::track_state, track_state_index};
+        } else {
+            *it = {edm::track_constituent_link::measurement, L.meas_idx};
+        }
 
         // Sanity check on chi2
         assert(L.chi2 < std::numeric_limits<traccc::scalar>::max());
         assert(L.chi2 >= 0.f);
 
-        ndf_sum += static_cast<scalar>(measurements.at(it->index).dimensions());
+        ndf_sum +=
+            static_cast<scalar>(measurements.at(L.meas_idx).dimensions());
         chi2_sum += L.chi2;
 
         // Break the loop if the iterator is at the first candidate and fill the
         // seed and track quality
         if (it == track.constituent_links().rend() - 1) {
-            track.fit_outcome() = track_fit_outcome::UNKNOWN;
-            track.params() = seeds.at(L.seed_idx);
+            if (run_mbf) {
+                track.fit_outcome() = track_fit_outcome::SUCCESS;
+                track.params() = track_states.at(it->index).smoothed_params();
+            } else {
+                track.fit_outcome() = track_fit_outcome::UNKNOWN;
+                track.params() = seeds.at(L.seed_idx);
+            }
             track.ndf() = ndf_sum - 5.f;
             track.chi2() = chi2_sum;
             track.pval() = prob(track.chi2(), track.ndf());
             track.nholes() = L.n_skipped;
         } else {
-            L = links.at(L.previous_candidate_idx);
+            link_idx = L.previous_candidate_idx;
+            L = links.at(link_idx);
         }
     }
 
