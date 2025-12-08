@@ -9,6 +9,7 @@
 
 // Project include(s).
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/detector_type_list.hpp"
 #include "traccc/geometry/host_detector.hpp"
 #include "traccc/geometry/move_only_any.hpp"
 

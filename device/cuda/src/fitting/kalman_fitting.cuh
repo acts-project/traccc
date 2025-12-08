@@ -91,11 +91,12 @@ kalman_fitting(
     std::vector<unsigned int> seqs_sizes(candidate_sizes.size());
     std::transform(candidate_sizes.begin(), candidate_sizes.end(),
                    seqs_sizes.begin(), [&config](const unsigned int sz) {
-                       return std::max(sz * config.barcode_sequence_size_factor,
-                                       config.min_barcode_sequence_capacity);
+                       return std::max(sz * config.surface_sequence_size_factor,
+                                       config.min_surface_sequence_capacity);
                    });
-    vecmem::data::jagged_vector_buffer<detray::geometry::barcode> seqs_buffer{
-        seqs_sizes, mr.main, mr.host, vecmem::data::buffer_type::resizable};
+    vecmem::data::jagged_vector_buffer<typename detector_t::surface_type>
+        seqs_buffer{seqs_sizes, mr.main, mr.host,
+                    vecmem::data::buffer_type::resizable};
     copy.setup(seqs_buffer)->ignore();
 
     // Create the buffers for sorting the parameter IDs.
@@ -146,7 +147,7 @@ kalman_fitting(
         .param_ids_view = param_ids_buffer,
         .param_liveness_view = param_liveness_buffer,
         .tracks_view = track_states_buffer,
-        .barcodes_view = seqs_buffer};
+        .surfaces_view = seqs_buffer};
 
     for (std::size_t i = 0; i < config.n_iterations; ++i) {
         // Run the track fitting

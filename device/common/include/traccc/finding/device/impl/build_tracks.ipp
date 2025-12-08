@@ -8,6 +8,8 @@
 #pragma once
 
 // Project include(s).
+#include <type_traits>
+
 #include "traccc/utils/prob.hpp"
 
 namespace traccc::device {
@@ -32,8 +34,17 @@ TRACCC_HOST_DEVICE inline void build_tracks(
         return;
     }
 
+    const auto output_idx = payload.tip_to_output_map != nullptr
+                                ? payload.tip_to_output_map[globalIndex]
+                                : globalIndex;
+
+    if (output_idx ==
+        std::numeric_limits<std::decay_t<decltype(output_idx)>>::max()) {
+        return;
+    }
+
     const auto tip = tips.at(globalIndex);
-    auto track = track_candidates.at(globalIndex);
+    auto track = track_candidates.at(output_idx);
 
     // Get the link corresponding to tip
     auto L = links.at(tip);

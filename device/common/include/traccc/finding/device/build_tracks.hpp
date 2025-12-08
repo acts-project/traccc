@@ -44,6 +44,11 @@ struct build_tracks_payload {
      * @brief View object to the vector of track candidates
      */
     edm::track_container<default_algebra>::view tracks_view;
+
+    /**
+     * @brief Optional mapping from tip index to output index
+     */
+    const unsigned int* tip_to_output_map = nullptr;
 };
 
 /// Function for building full tracks from the link container:

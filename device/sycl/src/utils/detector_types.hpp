@@ -9,6 +9,7 @@
 
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/detector_type_list.hpp"
 
 namespace traccc::sycl {
 
@@ -18,18 +19,30 @@ namespace traccc::sycl {
  */
 struct default_detector_kernel_tag {};
 struct telescope_detector_kernel_tag {};
+struct odd_detector_kernel_tag {};
+struct itk_detector_kernel_tag {};
 
 template <typename T>
 struct detector_tag_selector {};
 
 template <>
-struct detector_tag_selector<default_detector> {
+struct detector_tag_selector<traccc::default_detector> {
     using type = default_detector_kernel_tag;
 };
 
 template <>
-struct detector_tag_selector<telescope_detector> {
+struct detector_tag_selector<traccc::telescope_detector> {
     using type = telescope_detector_kernel_tag;
+};
+
+template <>
+struct detector_tag_selector<traccc::odd_detector> {
+    using type = odd_detector_kernel_tag;
+};
+
+template <>
+struct detector_tag_selector<traccc::itk_detector> {
+    using type = itk_detector_kernel_tag;
 };
 
 template <typename T>
@@ -48,7 +61,7 @@ struct detector_tag_existance_validator<std::tuple<Ts...>> {
 };
 
 static_assert(
-    detector_tag_existance_validator<detector_type_list>::value,
+    detector_tag_existance_validator<traccc::detector_type_list>::value,
     "Not all detector types registered for SYCL have an accompanying tag");
 
 }  // namespace traccc::sycl
