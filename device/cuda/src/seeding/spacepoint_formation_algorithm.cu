@@ -51,7 +51,8 @@ edm::spacepoint_collection::buffer spacepoint_formation_algorithm::operator()(
         vecmem::make_unique_alloc<unsigned int>(*(m_mr.host));
 
     // Get the number of measurements.
-    const auto num_measurements = m_copy.get().get_size(measurements_view);
+    const auto num_measurements =
+        get_size(measurements_view, size_staging_ptr.get(), stream);
 
     // Create the result buffer.
     edm::spacepoint_collection::buffer spacepoints(
