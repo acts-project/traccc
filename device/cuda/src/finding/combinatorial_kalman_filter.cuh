@@ -118,7 +118,8 @@ combinatorial_kalman_filter(
      * Measurement Operations
      *****************************************************************/
 
-    const auto n_measurements = copy.get_size(measurements_view);
+    const auto n_measurements =
+        get_size(measurements_view, size_staging_ptr.get(), stream);
 
     // Access the detector view as a detector object
     detector_t device_det(det);

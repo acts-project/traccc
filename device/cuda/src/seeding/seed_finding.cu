@@ -7,6 +7,7 @@
 
 // Local include(s).
 #include "../utils/cuda_error_handling.hpp"
+#include "../utils/get_size.hpp"
 #include "../utils/global_index.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/seeding/details/seed_finding.hpp"
@@ -183,7 +184,9 @@ edm::seed_collection::buffer seed_finding::operator()(
     vecmem::data::vector_buffer sp_grid_prefix_sum_buff =
         make_prefix_sum_buff(grid_sizes, m_copy, m_mr, m_stream);
 
-    const auto num_spacepoints = m_copy.get_size(sp_grid_prefix_sum_buff);
+    const auto num_spacepoints =
+        get_size(sp_grid_prefix_sum_buff, size_staging_ptr.get(), stream);
+
     if (num_spacepoints == 0) {
         return {0, m_mr.main};
     }
