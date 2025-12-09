@@ -66,7 +66,6 @@ struct gain_matrix_updater {
         // Some identity matrices
         // @TODO: Make constexpr work
         const auto I66 = matrix::identity<bound_matrix_type>();
-        const auto I_m = matrix::identity<matrix_type<D, D>>();
 
         // Measurement data on surface
         matrix_type<D, 1> meas_local;
@@ -112,6 +111,31 @@ struct gain_matrix_updater {
         TRACCC_DEBUG_HOST("Measurement variance:\n" << V);
         TRACCC_DEBUG_HOST("Predicted residual: " << meas_local -
                                                         H * predicted_vec);
+
+        scalar chi2_val;
+
+        {
+            // Calculate the chi square
+            const matrix_type<D, D> R =
+                V + (H * predicted_cov * algebra::matrix::transpose(H));
+            // Residual between measurement and predicted vector
+            const matrix_type<D, 1> residual = meas_local - H * predicted_vec;
+            const matrix_type<1, 1> chi2_mat =
+                algebra::matrix::transposed_product<true, false>(
+                    residual, matrix::inverse(R)) *
+                residual;
+            chi2_val = getter::element(chi2_mat, 0, 0);
+
+            if (chi2_val < 0.f) {
+                TRACCC_ERROR_HOST_DEVICE("Chi2 negative");
+                return kalman_fitter_status::ERROR_UPDATER_CHI2_NEGATIVE;
+            }
+
+            if (!std::isfinite(chi2_val)) {
+                TRACCC_ERROR_HOST_DEVICE("Chi2 infinite");
+                return kalman_fitter_status::ERROR_UPDATER_CHI2_NOT_FINITE;
+            }
+        }
 
         const matrix_type<e_bound_size, D> projected_cov =
             algebra::matrix::transposed_product<false, true>(predicted_cov, H);
@@ -163,33 +187,11 @@ struct gain_matrix_updater {
             return kalman_fitter_status::ERROR_QOP_ZERO;
         }
 
-        // Residual between measurement and (projected) filtered vector
-        const matrix_type<D, 1> residual = meas_local - H * filtered_vec;
-
-        // Calculate the chi square
-        const matrix_type<D, D> R = (I_m - H * K) * V;
-        const matrix_type<1, 1> chi2 =
-            algebra::matrix::transposed_product<true, false>(
-                residual, matrix::inverse(R)) *
-            residual;
-
-        const scalar chi2_val{getter::element(chi2, 0, 0)};
-
         TRACCC_VERBOSE_HOST("Filtered residual: " << residual);
         TRACCC_DEBUG_HOST("R:\n" << R);
         TRACCC_DEBUG_HOST_DEVICE("det(R): %f", matrix::determinant(R));
         TRACCC_DEBUG_HOST("R_inv:\n" << matrix::inverse(R));
         TRACCC_VERBOSE_HOST_DEVICE("Chi2: %f", chi2_val);
-
-        if (chi2_val < 0.f) {
-            TRACCC_ERROR_HOST_DEVICE("Chi2 negative");
-            return kalman_fitter_status::ERROR_UPDATER_CHI2_NEGATIVE;
-        }
-
-        if (!std::isfinite(chi2_val)) {
-            TRACCC_ERROR_HOST_DEVICE("Chi2 infinite");
-            return kalman_fitter_status::ERROR_UPDATER_CHI2_NOT_FINITE;
-        }
 
         // Set the chi2 for this track and measurement
         trk_state.filtered_params().set_vector(filtered_vec);
