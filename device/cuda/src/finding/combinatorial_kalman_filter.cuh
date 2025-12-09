@@ -170,6 +170,11 @@ combinatorial_kalman_filter(
     bound_track_parameters_collection_types::buffer
         link_filtered_parameter_buffer(0, mr.main);
 
+    /*
+     * If we are aiming to run the MBF smoother at the end of the track
+     * finding, we need some space to store the intermediate Jacobians
+     * and parameters. Allocate that space here.
+     */
     if (config.run_mbf_smoother) {
         jacobian_ptr = vecmem::make_unique_alloc<
             bound_matrix<typename detector_t::algebra_type>[]>(
@@ -285,11 +290,11 @@ combinatorial_kalman_filter(
                         sizeof(bound_matrix<typename detector_t::algebra_type>),
                     cudaMemcpyDeviceToDevice, stream));
 
-                copy(new_link_predicted_parameter_buffer,
-                     link_predicted_parameter_buffer)
+                copy(link_predicted_parameter_buffer,
+                     new_link_predicted_parameter_buffer)
                     ->wait();
-                copy(new_link_filtered_parameter_buffer,
-                     link_filtered_parameter_buffer)
+                copy(link_filtered_parameter_buffer,
+                     new_link_filtered_parameter_buffer)
                     ->wait();
 
                 TRACCC_CUDA_ERROR_CHECK(cudaStreamSynchronize(stream));
@@ -647,7 +652,6 @@ combinatorial_kalman_filter(
     if (config.run_mbf_smoother) {
         n_states = std::accumulate(tips_length_host.begin(),
                                    tips_length_host.end(), 0u);
-        TRACCC_INFO("Allocating space for " << n_states << " elements");
     } else {
         n_states = 0;
     }

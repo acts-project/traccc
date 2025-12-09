@@ -43,7 +43,7 @@ struct finding_config {
     /// each track that vote for it
     float min_measurement_voting_fraction = 0.5f;
 
-    /// Enable the MBG smoother
+    /// Enable the MBF smoother
     bool run_mbf_smoother = true;
 
     /// Minimum step length that track should make to reach the next surface. It
