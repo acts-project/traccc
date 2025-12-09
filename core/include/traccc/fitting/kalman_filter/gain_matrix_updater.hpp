@@ -11,12 +11,10 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/definitions/track_parametrization.hpp"
 #include "traccc/edm/measurement_collection.hpp"
-#include "traccc/edm/measurement_helpers.hpp"
-#include "traccc/edm/track_state_collection.hpp"
 #include "traccc/fitting/details/regularize_covariance.hpp"
+#include "traccc/fitting/kalman_filter/measurement_selector.hpp"
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/utils/logging.hpp"
-#include "traccc/utils/subspace.hpp"
 
 namespace traccc {
 
@@ -42,18 +40,16 @@ struct gain_matrix_updater {
     /// @param bound_params bound parameter
     ///
     /// @return true if the update succeeds
-    template <typename track_state_backend_t>
+    template <typename track_state_backend_t, typename measurement_backend_t>
     [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status operator()(
         typename edm::track_state<track_state_backend_t>& trk_state,
-        const edm::measurement_collection<default_algebra>::const_device&
-            measurements,
+        const edm::measurement<measurement_backend_t>& measurement,
         const bound_track_parameters<algebra_t>& bound_params,
         const bool is_line) const {
 
         static constexpr unsigned int D = 2;
 
-        [[maybe_unused]] const unsigned int dim{
-            measurements.at(trk_state.measurement_index()).dimensions()};
+        [[maybe_unused]] const unsigned int dim{measurement.dimensions()};
 
         TRACCC_VERBOSE_HOST_DEVICE("In gain-matrix-updater...");
         TRACCC_VERBOSE_HOST_DEVICE("Measurement dim: %d", dim);
@@ -70,8 +66,7 @@ struct gain_matrix_updater {
 
         // Measurement data on surface
         matrix_type<D, 1> meas_local;
-        edm::get_measurement_local<algebra_t>(
-            measurements.at(trk_state.measurement_index()), meas_local);
+        edm::get_measurement_local<algebra_t>(measurement, meas_local);
 
         assert((dim > 1) || (getter::element(meas_local, 1u, 0u) == 0.f));
 
@@ -83,8 +78,7 @@ struct gain_matrix_updater {
         // Predicted covaraince of bound track parameters
         const bound_matrix_type& predicted_cov = bound_params.covariance();
 
-        const subspace<algebra_t, e_bound_size> subs(
-            measurements.at(trk_state.measurement_index()).subspace());
+        const subspace<algebra_t, e_bound_size> subs(measurement.subspace());
         matrix_type<D, e_bound_size> H = subs.template projector<D>();
 
         // Flip the sign of projector matrix element in case the first element
@@ -101,8 +95,7 @@ struct gain_matrix_updater {
 
         // Spatial resolution (Measurement covariance)
         matrix_type<D, D> V;
-        edm::get_measurement_covariance<algebra_t>(
-            measurements.at(trk_state.measurement_index()), V);
+        edm::get_measurement_covariance<algebra_t>(measurement, V);
         // @TODO: Fix properly
         if (/*dim == 1*/ getter::element(meas_local, 1u, 0u) == 0.f) {
             getter::element(V, 1u, 1u) = 1000.f;

@@ -406,6 +406,8 @@ struct kalman_actor : detray::actor {
             const auto sf = navigation.current_surface();
             const bool is_line = detail::is_line(sf);
 
+            const auto measurement =
+                actor_state.m_measurements.at(trk_state.measurement_index());
             if (!actor_state.backward_mode) {
                 if constexpr (direction_e ==
                                   kalman_actor_direction::FORWARD_ONLY ||
@@ -417,8 +419,7 @@ struct kalman_actor : detray::actor {
                     // Forward filter
                     TRACCC_DEBUG_HOST_DEVICE("Run filtering...");
                     actor_state.fit_result = gain_matrix_updater<algebra_t>{}(
-                        trk_state, actor_state.m_measurements, bound_param,
-                        is_line);
+                        trk_state, measurement, bound_param, is_line);
 
                     // Update the propagation flow
                     bound_param = trk_state.filtered_params();
@@ -447,8 +448,7 @@ struct kalman_actor : detray::actor {
                     } else {
                         actor_state.fit_result =
                             two_filters_smoother<algebra_t>{}(
-                                trk_state, actor_state.m_measurements,
-                                bound_param, is_line);
+                                trk_state, measurement, bound_param, is_line);
                     }
                 } else {
                     assert(false);
