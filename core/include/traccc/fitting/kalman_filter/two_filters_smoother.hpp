@@ -135,10 +135,10 @@ struct two_filters_smoother {
         const subspace<algebra_t, e_bound_size> subs(
             measurements.at(trk_state.measurement_index()).subspace());
         matrix_type<D, e_bound_size> H = subs.template projector<D>();
-        // @TODO: Fix properly
-        if (getter::element(meas_local, 1u, 0u) == 0.f /*dim == 1*/) {
-            getter::element(H, 1u, 0u) = 0.f;
-            getter::element(H, 1u, 1u) = 0.f;
+        if (dim == 1) {
+            // TODO: Fully understand the consequences of this.
+            assert(getter::element(H, 1u, 0u) == 0.f);
+            assert(getter::element(H, 1u, 1u) == 0.f);
         }
 
         const matrix_type<D, 1> residual_smt = meas_local - H * smoothed_vec;
@@ -147,9 +147,10 @@ struct two_filters_smoother {
         matrix_type<D, D> V;
         edm::get_measurement_covariance<algebra_t>(
             measurements.at(trk_state.measurement_index()), V);
-        // @TODO: Fix properly
-        if (getter::element(meas_local, 1u, 0u) == 0.f /*dim == 1*/) {
-            getter::element(V, 1u, 1u) = 1000.f;
+        if (dim == 1) {
+            // This value should never be used!
+            // TODO: Fully understand the consequences of this.
+            getter::element(V, 1u, 1u) = std::numeric_limits<scalar>::max();
         }
 
         TRACCC_DEBUG_HOST("Measurement position: " << meas_local);
