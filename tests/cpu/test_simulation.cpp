@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -22,6 +22,9 @@
 #include <detray/geometry/shapes/rectangle2D.hpp>
 #include <detray/geometry/tracking_surface.hpp>
 #include <detray/test/utils/statistics.hpp>
+
+// VecMem include(s).
+#include <vecmem/memory/host_memory_resource.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>
