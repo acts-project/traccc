@@ -16,16 +16,16 @@
 // Project include(s)
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/clusterization/device/ccl_kernel.hpp"
+#include "traccc/clusterization/device/reify_cluster_data.hpp"
 #include "traccc/utils/projections.hpp"
 #include "traccc/utils/relations.hpp"
 
-// System include(s).
-#include <algorithm>
-#include <mutex>
-
 namespace traccc::alpaka {
+namespace kernels {
 
-struct CCLKernel {
+/// Alpaka kernel for running @c traccc::device::ccl_kernel
+struct ccl_kernel {
+
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, const clustering_config cfg,
@@ -66,88 +66,79 @@ struct CCLKernel {
             adjc_backup_view, adjv_backup_view, backup_mutex, disjoint_set_view,
             cluster_size_view, barry_r, measurements_view, cell_links);
     }
-};
 
-struct ZeroMutexKernel {
+};  // struct ccl_kernel
+
+/// Alpaka kernel for running @c traccc::device::reify_cluster_data
+struct reify_cluster_data {
+
     template <typename TAcc>
-    ALPAKA_FN_ACC void operator()(TAcc const&, uint32_t* ptr) const {
-        *ptr = 0;
+    ALPAKA_FN_ACC void operator()(
+        TAcc const& acc,
+        vecmem::data::vector_view<const unsigned int> disjoint_set_view,
+        traccc::edm::silicon_cluster_collection::view cluster_view) const {
+
+        device::reify_cluster_data(details::thread_id1{acc}.getGlobalThreadId(),
+                                   disjoint_set_view, cluster_view);
     }
-};
+
+};  // struct reify_cluster_data
+
+}  // namespace kernels
 
 clusterization_algorithm::clusterization_algorithm(
     const traccc::memory_resource& mr, vecmem::copy& copy, queue& q,
     const config_type& config, std::unique_ptr<const Logger> logger)
-    : messaging(std::move(logger)),
-      m_mr(mr),
-      m_copy(copy),
-      m_queue(q),
-      m_config(config),
-      m_f_backup(m_config.backup_size(), m_mr.main),
-      m_gf_backup(m_config.backup_size(), m_mr.main),
-      m_adjc_backup(m_config.backup_size(), m_mr.main),
-      m_adjv_backup(m_config.backup_size() * 8, m_mr.main),
-      m_backup_mutex(vecmem::make_unique_alloc<unsigned int>(m_mr.main)) {
+    : device::clusterization_algorithm(mr, copy, config, std::move(logger)),
+      m_queue(q) {}
 
-    m_copy.get().setup(m_f_backup)->wait();
-    m_copy.get().setup(m_gf_backup)->wait();
-    m_copy.get().setup(m_adjc_backup)->wait();
-    m_copy.get().setup(m_adjv_backup)->wait();
+bool clusterization_algorithm::input_is_valid(
+    const edm::silicon_cell_collection::const_view&) const {
+
+    // TODO: implement sanity checks for the input data in Alpaka
+    return true;
 }
 
-clusterization_algorithm::output_type clusterization_algorithm::operator()(
+void clusterization_algorithm::ccl_kernel(
+    unsigned int num_cells, const config_type& config,
     const edm::silicon_cell_collection::const_view& cells,
-    const silicon_detector_description::const_view& det_descr) const {
+    const silicon_detector_description::const_view& det_descr,
+    edm::measurement_collection<default_algebra>::view& measurements,
+    vecmem::data::vector_view<unsigned int>& cell_links,
+    vecmem::data::vector_view<device::details::index_t>& f_backup,
+    vecmem::data::vector_view<device::details::index_t>& gf_backup,
+    vecmem::data::vector_view<unsigned char>& adjc_backup,
+    vecmem::data::vector_view<device::details::index_t>& adjv_backup,
+    unsigned int* backup_mutex,
+    vecmem::data::vector_view<unsigned int>& disjoint_set,
+    vecmem::data::vector_view<unsigned int>& cluster_sizes) const {
 
-    // Get a convenience variable for the queue that we'll be using.
-    auto queue = details::get_queue(m_queue);
-
-    // Setup the mutex, if it is not already setup.
-    std::call_once(m_setup_once, [&queue, mutex_ptr = m_backup_mutex.get()]() {
-        auto workDiv = makeWorkDiv<Acc>(1, 1);
-        ::alpaka::exec<Acc>(queue, workDiv, ZeroMutexKernel{}, mutex_ptr);
-        ::alpaka::wait(queue);
-    });
-
-    // Number of cells
-    const edm::silicon_cell_collection::view::size_type num_cells =
-        m_copy.get().get_size(cells);
-
-    // Create the result object, overestimating the number of measurements.
-    edm::measurement_collection<default_algebra>::buffer measurements{
-        num_cells, m_mr.main, vecmem::data::buffer_type::resizable};
-    m_copy.get().setup(measurements)->ignore();
-
-    // If there are no cells, return right away.
-    if (num_cells == 0) {
-        return measurements;
-    }
-
-    // Create buffer for linking cells to their measurements.
-    //
-    // @todo Construct cell clusters on demand in a member function for
-    // debugging.
-    //
-    vecmem::data::vector_buffer<unsigned int> cell_links(num_cells, m_mr.main);
-    m_copy.get().setup(cell_links)->ignore();
-
-    // Launch ccl kernel. Each thread will handle a single cell.
-    Idx num_blocks = (num_cells + (m_config.target_partition_size()) - 1) /
-                     m_config.target_partition_size();
+    Idx num_blocks = (num_cells + (config.target_partition_size()) - 1) /
+                     config.target_partition_size();
     static_assert(::alpaka::isMultiThreadAcc<Acc>,
                   "Clustering algorithm must be compiled for an accelerator "
                   "with support for multi-thread blocks.");
-    auto workDiv = makeWorkDiv<Acc>(num_blocks, m_config.threads_per_partition);
-
-    vecmem::data::vector_view<unsigned int> dummy_view{0u, nullptr};
+    auto workDiv = makeWorkDiv<Acc>(num_blocks, config.threads_per_partition);
     ::alpaka::exec<Acc>(
-        queue, workDiv, CCLKernel{}, m_config, cells, det_descr,
-        vecmem::get_data(m_f_backup), vecmem::get_data(m_gf_backup),
-        vecmem::get_data(m_adjc_backup), vecmem::get_data(m_adjv_backup),
-        m_backup_mutex.get(), dummy_view, dummy_view,
-        vecmem::get_data(measurements), vecmem::get_data(cell_links));
+        details::get_queue(m_queue), workDiv, kernels::ccl_kernel{}, config,
+        cells, det_descr, f_backup, gf_backup, adjc_backup, adjv_backup,
+        backup_mutex, disjoint_set, cluster_sizes, measurements, cell_links);
+}
 
-    return measurements;
+void clusterization_algorithm::cluster_maker_kernel(
+    unsigned int num_cells,
+    const vecmem::data::vector_view<unsigned int>& disjoint_set,
+    edm::silicon_cluster_collection::view& cluster_data) const {
+
+    const unsigned int num_threads = 512;
+    const unsigned int num_blocks = (num_cells + num_threads - 1) / num_threads;
+    static_assert(::alpaka::isMultiThreadAcc<Acc>,
+                  "Clustering algorithm must be compiled for an accelerator "
+                  "with support for multi-thread blocks.");
+    auto workDiv = makeWorkDiv<Acc>(num_blocks, num_threads);
+    ::alpaka::exec<Acc>(details::get_queue(m_queue), workDiv,
+                        kernels::reify_cluster_data{}, disjoint_set,
+                        cluster_data);
 }
 
 }  // namespace traccc::alpaka
@@ -156,10 +147,10 @@ clusterization_algorithm::output_type clusterization_algorithm::operator()(
 namespace alpaka::trait {
 
 template <typename TAcc>
-struct BlockSharedMemDynSizeBytes<traccc::alpaka::CCLKernel, TAcc> {
+struct BlockSharedMemDynSizeBytes<traccc::alpaka::kernels::ccl_kernel, TAcc> {
     template <typename TVec, typename... TArgs>
     ALPAKA_FN_HOST_ACC static auto getBlockSharedMemDynSizeBytes(
-        traccc::alpaka::CCLKernel const& /* kernel */,
+        traccc::alpaka::kernels::ccl_kernel const& /* kernel */,
         TVec const& /* blockThreadExtent */, TVec const& /* threadElemExtent */,
         const traccc::clustering_config config, TArgs const&... /* args */
         ) -> std::size_t {
