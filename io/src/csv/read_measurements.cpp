@@ -80,7 +80,7 @@ std::vector<measurement_id_type> read_measurements(
 
         // Create a sorted measurement collection.
         edm::measurement_collection<default_algebra>::host sorted_measurements(
-            *(vecmem::get_default_resource()));
+            measurements.resource());
         sorted_measurements.resize(measurements.size());
 
         // Map the indices to the new positions. While creating a sorted
