@@ -100,6 +100,12 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     // CKF aborter
     typename detray::detail::tuple_element<6, actor_tuple_type>::type::state s6;
 
+    /*
+     * If we are running the MBF smoother, we need to accumulate the Jacobians
+     * between the two sensitives multiplicatively. To this end, we ask the
+     * parameter transporter to multiply the Jacobians into this matrix, which
+     * is set to the multiplicative identity.
+     */
     if (cfg.run_mbf_smoother) {
         assert(payload.tmp_jacobian_ptr != nullptr);
 
