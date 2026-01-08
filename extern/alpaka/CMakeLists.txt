@@ -16,6 +16,9 @@ set( TRACCC_ALPAKA_SOURCE
    "URL;https://github.com/alpaka-group/alpaka/archive/refs/tags/2.0.0.tar.gz;URL_MD5;7ed1ad266408cdb51f0f12f9e6712cc9"
    CACHE STRING "Source for Alpaka, when built as part of this project" )
 
+set( TRACCC_ALPAKA_PATCH ""
+   CACHE STRING "Patch(es) for alpaka, when built as part of this project" )
+
 mark_as_advanced( TRACCC_ALPAKA_SOURCE TRACCC_ALPAKA_PATCH )
 FetchContent_Declare( Alpaka SYSTEM ${TRACCC_ALPAKA_SOURCE} ${TRACCC_ALPAKA_PATCH})
 
