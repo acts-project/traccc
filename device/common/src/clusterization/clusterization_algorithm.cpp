@@ -76,9 +76,16 @@ clusterization_algorithm::execute_impl(
     // Check the input data in debug mode.
     assert(input_is_valid(cells));
 
-    // Get the number of cells
-    const edm::silicon_cell_collection::const_view::size_type num_cells =
-        copy().get_size(cells);
+    // Get the number of cells, in an asynchronous way if possible.
+    edm::silicon_cell_collection::const_view::size_type num_cells = 0u;
+    if (mr().host) {
+        const vecmem::async_size size = copy().get_size(cells, *(mr().host));
+        // Here we could give control back to the caller, once our code allows
+        // for it. (coroutines...)
+        num_cells = size.get();
+    } else {
+        num_cells = copy().get_size(cells);
+    }
 
     // If there are no cells, return right away.
     if (num_cells == 0) {
@@ -123,7 +130,19 @@ clusterization_algorithm::execute_impl(
     // Create the cluster data if requested.
     if (keep_disjoint_set) {
 
-        auto num_measurements = copy().get_size(measurements);
+        // Get the number of reconstructed measurements, in an asynchronous way
+        // if possible.
+        edm::measurement_collection<default_algebra>::buffer::size_type
+            num_measurements = 0u;
+        if (mr().host) {
+            const vecmem::async_size size =
+                copy().get_size(measurements, *(mr().host));
+            // Here we could give control back to the caller, once our code
+            // allows for it. (coroutines...)
+            num_measurements = size.get();
+        } else {
+            num_measurements = copy().get_size(measurements);
+        }
 
         // This could be further optimized by only copying the number of
         // elements necessary. But since cluster making is mainly meant for
