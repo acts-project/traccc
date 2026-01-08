@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2025 CERN for the benefit of the ACTS project
+ * (c) 2021-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -25,12 +25,15 @@ namespace traccc::device {
 /// @param[in] config        Seedfinder configuration
 /// @param[in] spacepoints   All the spacepoints of the event
 /// @param[out] grid         The spacepoint grid to populate
+/// @param[out] grid_prefix_sum A prefix sum describing the grid contents
 ///
 TRACCC_HOST_DEVICE
 inline void populate_grid(
     global_index_t globalIndex, const seedfinder_config& config,
     const edm::spacepoint_collection::const_view& spacepoints,
-    details::spacepoint_grid_types::view grid);
+    details::spacepoint_grid_types::view grid,
+    vecmem::data::vector_view<traccc::pair<unsigned int, unsigned int> >
+        grid_prefix_sum);
 
 }  // namespace traccc::device
 

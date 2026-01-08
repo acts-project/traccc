@@ -44,7 +44,7 @@ traccc_add_library( traccc_device_common device_common
    "include/traccc/seeding/device/impl/count_grid_capacities.ipp"
    "include/traccc/seeding/device/populate_grid.hpp"
    "include/traccc/seeding/device/impl/populate_grid.ipp"
-   # Seed finding function(s).
+   # Seed finding code.
    "include/traccc/seeding/device/form_spacepoints.hpp"
    "include/traccc/seeding/device/impl/form_spacepoints.ipp"
    "include/traccc/seeding/device/count_doublets.hpp"
@@ -61,6 +61,8 @@ traccc_add_library( traccc_device_common device_common
    "include/traccc/seeding/device/impl/update_triplet_weights.ipp"
    "include/traccc/seeding/device/select_seeds.hpp"
    "include/traccc/seeding/device/impl/select_seeds.ipp"
+   "include/traccc/seeding/device/seeding_algorithm.hpp"
+   "src/seeding/seeding_algorithm.cpp"
    # Track parameters estimation function(s).
    "include/traccc/seeding/device/estimate_track_params.hpp"
    "include/traccc/seeding/device/impl/estimate_track_params.ipp"
