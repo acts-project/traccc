@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024-2025 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -143,6 +143,7 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
     cfg_no_limit.chi2_max = 30.f;
     cfg_no_limit.max_num_branches_per_surface = 10;
     cfg_no_limit.duplicate_removal_minimum_length = 100u;
+    cfg_no_limit.run_mbf_smoother = false;
 
     traccc::sycl::combinatorial_kalman_filter_algorithm::config_type cfg_limit;
     cfg_limit.ptc_hypothesis = ptc;
@@ -150,6 +151,7 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
     cfg_limit.chi2_max = 30.f;
     cfg_limit.max_num_branches_per_surface = 10;
     cfg_limit.duplicate_removal_minimum_length = 100u;
+    cfg_limit.run_mbf_smoother = false;
 
     // Finding algorithm object
     traccc::sycl::combinatorial_kalman_filter_algorithm device_finding{

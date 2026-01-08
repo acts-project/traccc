@@ -144,6 +144,7 @@ TEST_P(CkfToyDetectorTests, Run) {
     cfg.max_num_branches_per_surface = 2;
     cfg.chi2_max = 10.f;
     cfg.propagation.navigation.search_window = search_window;
+    cfg.run_mbf_smoother = false;
 
     // Finding algorithm object
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(cfg,

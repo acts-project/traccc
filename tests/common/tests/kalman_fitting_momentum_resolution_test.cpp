@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2025 CERN for the benefit of the ACTS project
+ * (c) 2025-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -9,6 +9,9 @@
 
 // Local include(s).
 #include "kalman_fitting_momentum_resolution_test.hpp"
+
+// VecMem include(s).
+#include <vecmem/memory/host_memory_resource.hpp>
 
 // ROOT include(s).
 #ifdef TRACCC_HAVE_ROOT

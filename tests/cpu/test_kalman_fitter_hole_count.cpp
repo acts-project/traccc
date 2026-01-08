@@ -127,6 +127,8 @@ TEST_P(KalmanFittingHoleCountTests, Run) {
     // Fitting algorithm object
     traccc::fitting_config fit_cfg;
     fit_cfg.ptc_hypothesis = ptc;
+    fit_cfg.min_p = 10.f * traccc::unit<float>::MeV;
+    fit_cfg.min_pT = 60.f * traccc::unit<float>::MeV;
     traccc::host::kalman_fitting_algorithm fitting(fit_cfg, host_mr, copy);
 
     // Event map

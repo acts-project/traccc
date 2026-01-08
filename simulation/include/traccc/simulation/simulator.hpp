@@ -117,8 +117,9 @@ struct simulator {
             m_scatterer.set_seed(event_id);
             writer_state.set_seed(event_id);
 
-            auto actor_states = detray::tie(m_aborter_state, m_scatterer,
-                                            m_resetter, writer_state);
+            auto actor_states =
+                detray::tie(m_aborter_state, m_transporter_state, m_scatterer,
+                            m_resetter, writer_state);
 
             for (auto track : *m_track_generator.get()) {
 
@@ -157,6 +158,8 @@ struct simulator {
 
     /// Actor states
     typename detray::momentum_aborter<scalar_type>::state m_aborter_state{};
+    typename detray::parameter_transporter<algebra_type>::state
+        m_transporter_state{};
     typename detray::random_scatterer<algebra_type>::state m_scatterer{};
     typename detray::parameter_resetter<algebra_type>::state m_resetter{};
 };
