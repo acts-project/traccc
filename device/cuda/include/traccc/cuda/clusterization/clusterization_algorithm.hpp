@@ -54,34 +54,7 @@ class clusterization_algorithm : public device::clusterization_algorithm,
         const edm::silicon_cell_collection::const_view& cells) const override;
 
     /// Main CCL kernel launcher
-    ///
-    /// @param num_cells     Number of cells in the event
-    /// @param config        The clustering configuration
-    /// @param cells         All cells in an event
-    /// @param det_descr     The detector description
-    /// @param measurements  The measurement collection to fill
-    /// @param cell_links    Buffer for linking cells to measurements
-    /// @param f_backup      Buffer for backup of the first element links
-    /// @param gf_backup     Buffer for backup of the group first element links
-    /// @param adjc_backup   Buffer for backup of the adjacency matrix (counts)
-    /// @param adjv_backup   Buffer for backup of the adjacency matrix (values)
-    /// @param backup_mutex  Mutex for the backup structures
-    /// @param disjoint_set  Buffer for the disjoint set data structure
-    /// @param cluster_sizes Buffer for the sizes of the clusters
-    ///
-    void ccl_kernel(
-        unsigned int num_cells, const config_type& config,
-        const edm::silicon_cell_collection::const_view& cells,
-        const silicon_detector_description::const_view& det_descr,
-        edm::measurement_collection<default_algebra>::view& measurements,
-        vecmem::data::vector_view<unsigned int>& cell_links,
-        vecmem::data::vector_view<device::details::index_t>& f_backup,
-        vecmem::data::vector_view<device::details::index_t>& gf_backup,
-        vecmem::data::vector_view<unsigned char>& adjc_backup,
-        vecmem::data::vector_view<device::details::index_t>& adjv_backup,
-        unsigned int* backup_mutex,
-        vecmem::data::vector_view<unsigned int>& disjoint_set,
-        vecmem::data::vector_view<unsigned int>& cluster_sizes) const override;
+    void ccl_kernel(const ccl_kernel_payload& payload) const override;
 
     /// Cluster data reification kernel launcher
     ///

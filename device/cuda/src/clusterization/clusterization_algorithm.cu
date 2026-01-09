@@ -39,28 +39,19 @@ bool clusterization_algorithm::input_is_valid(
 }
 
 void clusterization_algorithm::ccl_kernel(
-    unsigned int num_cells, const config_type& config,
-    const edm::silicon_cell_collection::const_view& cells,
-    const silicon_detector_description::const_view& det_descr,
-    edm::measurement_collection<default_algebra>::view& measurements,
-    vecmem::data::vector_view<unsigned int>& cell_links,
-    vecmem::data::vector_view<device::details::index_t>& f_backup,
-    vecmem::data::vector_view<device::details::index_t>& gf_backup,
-    vecmem::data::vector_view<unsigned char>& adjc_backup,
-    vecmem::data::vector_view<device::details::index_t>& adjv_backup,
-    unsigned int* backup_mutex,
-    vecmem::data::vector_view<unsigned int>& disjoint_set,
-    vecmem::data::vector_view<unsigned int>& cluster_sizes) const {
+    const ccl_kernel_payload& payload) const {
 
     const unsigned int num_blocks =
-        (num_cells + (config.target_partition_size()) - 1) /
-        config.target_partition_size();
-    kernels::ccl_kernel<<<num_blocks, config.threads_per_partition,
-                          2 * config.max_partition_size() *
+        (payload.n_cells + (payload.config.target_partition_size()) - 1) /
+        payload.config.target_partition_size();
+    kernels::ccl_kernel<<<num_blocks, payload.config.threads_per_partition,
+                          2 * payload.config.max_partition_size() *
                               sizeof(device::details::index_t),
                           details::get_stream(stream())>>>(
-        config, cells, det_descr, measurements, cell_links, f_backup, gf_backup,
-        adjc_backup, adjv_backup, backup_mutex, disjoint_set, cluster_sizes);
+        payload.config, payload.cells, payload.det_descr, payload.measurements,
+        payload.cell_links, payload.f_backup, payload.gf_backup,
+        payload.adjc_backup, payload.adjv_backup, payload.backup_mutex,
+        payload.disjoint_set, payload.cluster_sizes);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 }
 

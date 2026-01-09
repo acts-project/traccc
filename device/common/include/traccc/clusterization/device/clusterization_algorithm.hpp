@@ -110,35 +110,41 @@ class clusterization_algorithm
     virtual bool input_is_valid(
         const edm::silicon_cell_collection::const_view& cells) const = 0;
 
+    /// Payload for the @c ccl_kernel function
+    struct ccl_kernel_payload {
+        /// Number of cells in the event
+        unsigned int n_cells;
+        /// The clustering configuration
+        const config_type& config;
+        /// All cells in an event
+        const edm::silicon_cell_collection::const_view& cells;
+        /// The detector description
+        const silicon_detector_description::const_view& det_descr;
+        /// The measurement collection to fill
+        edm::measurement_collection<default_algebra>::view& measurements;
+        /// Buffer for linking cells to measurements
+        vecmem::data::vector_view<unsigned int>& cell_links;
+        /// Buffer for backup of the first element links
+        vecmem::data::vector_view<details::index_t>& f_backup;
+        /// Buffer for backup of the group first element links
+        vecmem::data::vector_view<details::index_t>& gf_backup;
+        /// Buffer for backup of the adjacency matrix (counts)
+        vecmem::data::vector_view<unsigned char>& adjc_backup;
+        /// Buffer for backup of the adjacency matrix (values)
+        vecmem::data::vector_view<details::index_t>& adjv_backup;
+        /// Mutex for the backup structures
+        unsigned int* backup_mutex;
+        /// Buffer for the disjoint set data structure
+        vecmem::data::vector_view<unsigned int>& disjoint_set;
+        /// Buffer for the sizes of the clusters
+        vecmem::data::vector_view<unsigned int>& cluster_sizes;
+    };
+
     /// Main CCL kernel launcher
     ///
-    /// @param num_cells     Number of cells in the event
-    /// @param config        The clustering configuration
-    /// @param cells         All cells in an event
-    /// @param det_descr     The detector description
-    /// @param measurements  The measurement collection to fill
-    /// @param cell_links    Buffer for linking cells to measurements
-    /// @param f_backup      Buffer for backup of the first element links
-    /// @param gf_backup     Buffer for backup of the group first element links
-    /// @param adjc_backup   Buffer for backup of the adjacency matrix (counts)
-    /// @param adjv_backup   Buffer for backup of the adjacency matrix (values)
-    /// @param backup_mutex  Mutex for the backup structures
-    /// @param disjoint_set  Buffer for the disjoint set data structure
-    /// @param cluster_sizes Buffer for the sizes of the clusters
+    /// @param payload The payload containing all necessary data for the kernel
     ///
-    virtual void ccl_kernel(
-        unsigned int num_cells, const config_type& config,
-        const edm::silicon_cell_collection::const_view& cells,
-        const silicon_detector_description::const_view& det_descr,
-        edm::measurement_collection<default_algebra>::view& measurements,
-        vecmem::data::vector_view<unsigned int>& cell_links,
-        vecmem::data::vector_view<details::index_t>& f_backup,
-        vecmem::data::vector_view<details::index_t>& gf_backup,
-        vecmem::data::vector_view<unsigned char>& adjc_backup,
-        vecmem::data::vector_view<details::index_t>& adjv_backup,
-        unsigned int* backup_mutex,
-        vecmem::data::vector_view<unsigned int>& disjoint_set,
-        vecmem::data::vector_view<unsigned int>& cluster_sizes) const = 0;
+    virtual void ccl_kernel(const ccl_kernel_payload& payload) const = 0;
 
     /// Cluster data reification kernel launcher
     ///

@@ -120,9 +120,9 @@ clusterization_algorithm::execute_impl(
     }
 
     // Launch the CCL kernel.
-    ccl_kernel(num_cells, m_config, cells, det_descr, measurements, cell_links,
-               m_f_backup, m_gf_backup, m_adjc_backup, m_adjv_backup,
-               m_backup_mutex.get(), disjoint_set, cluster_sizes);
+    ccl_kernel({num_cells, m_config, cells, det_descr, measurements, cell_links,
+                m_f_backup, m_gf_backup, m_adjc_backup, m_adjv_backup,
+                m_backup_mutex.get(), disjoint_set, cluster_sizes});
 
     std::optional<traccc::edm::silicon_cluster_collection::buffer>
         cluster_data = std::nullopt;

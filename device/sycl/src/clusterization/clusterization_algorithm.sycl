@@ -51,45 +51,43 @@ bool clusterization_algorithm::input_is_valid(
 }
 
 void clusterization_algorithm::ccl_kernel(
-    unsigned int num_cells, const config_type& config,
-    const edm::silicon_cell_collection::const_view& cells,
-    const silicon_detector_description::const_view& det_descr,
-    edm::measurement_collection<default_algebra>::view& measurements,
-    vecmem::data::vector_view<unsigned int>& cell_links,
-    vecmem::data::vector_view<device::details::index_t>& f_backup,
-    vecmem::data::vector_view<device::details::index_t>& gf_backup,
-    vecmem::data::vector_view<unsigned char>& adjc_backup,
-    vecmem::data::vector_view<device::details::index_t>& adjv_backup,
-    unsigned int* backup_mutex,
-    vecmem::data::vector_view<unsigned int>& disjoint_set,
-    vecmem::data::vector_view<unsigned int>& cluster_sizes) const {
+    const ccl_kernel_payload& payload) const {
 
     // Check if device is capable of allocating sufficient local memory
-    assert(sizeof(device::details::index_t) * 2 * config.max_partition_size() +
+    assert(sizeof(device::details::index_t) * 2 *
+                   payload.config.max_partition_size() +
                3 * sizeof(std::size_t) <
            details::get_queue(queue())
                .get_device()
                .get_info<::sycl::info::device::local_mem_size>());
 
-    std::size_t num_blocks = (num_cells + config.target_partition_size() - 1) /
-                             config.target_partition_size();
+    std::size_t num_blocks =
+        (payload.n_cells + payload.config.target_partition_size() - 1) /
+        payload.config.target_partition_size();
     const ::sycl::nd_range cclKernelRange(
-        ::sycl::range<1>(num_blocks * config.threads_per_partition),
-        ::sycl::range<1>(config.threads_per_partition));
+        ::sycl::range<1>(num_blocks * payload.config.threads_per_partition),
+        ::sycl::range<1>(payload.config.threads_per_partition));
     details::get_queue(queue())
         .submit([&](::sycl::handler& h) {
             // Allocate shared memory for the kernel.
             vecmem::sycl::local_accessor<std::size_t> shared_uint(3, h);
             vecmem::sycl::local_accessor<device::details::index_t> shared_idx(
-                2 * config.max_partition_size(), h);
+                2 * payload.config.max_partition_size(), h);
 
             // Launch the kernel.
             h.parallel_for<kernels::ccl_kernel>(
                 cclKernelRange,
-                [shared_uint, shared_idx, cells, det_descr, measurements,
-                 cell_links, f_backup, gf_backup, adjc_backup, adjv_backup,
-                 backup_mutex, config, disjoint_set,
-                 cluster_sizes](::sycl::nd_item<1> item) {
+                [shared_uint, shared_idx, cells = payload.cells,
+                 det_descr = payload.det_descr,
+                 measurements = payload.measurements,
+                 cell_links = payload.cell_links, f_backup = payload.f_backup,
+                 gf_backup = payload.gf_backup,
+                 adjc_backup = payload.adjc_backup,
+                 adjv_backup = payload.adjv_backup,
+                 backup_mutex = payload.backup_mutex, config = payload.config,
+                 disjoint_set = payload.disjoint_set,
+                 cluster_sizes =
+                     payload.cluster_sizes](::sycl::nd_item<1> item) {
                     // Construct more readable variable names.
                     using vector_size_t = vecmem::data::vector_view<
                         device::details::index_t>::size_type;
