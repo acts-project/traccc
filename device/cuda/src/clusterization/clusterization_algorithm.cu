@@ -23,19 +23,19 @@
 namespace traccc::cuda {
 
 clusterization_algorithm::clusterization_algorithm(
-    const traccc::memory_resource& mr, vecmem::copy& copy, stream& str,
+    const traccc::memory_resource& mr, vecmem::copy& copy, cuda::stream& str,
     const config_type& config, std::unique_ptr<const Logger> logger)
     : device::clusterization_algorithm(mr, copy, config, std::move(logger)),
-      m_stream(str) {}
+      cuda::algorithm_base(str) {}
 
 bool clusterization_algorithm::input_is_valid(
     const edm::silicon_cell_collection::const_view& cells) const {
 
     return (is_contiguous_on<edm::silicon_cell_collection::const_device>(
-                cell_module_projection(), mr().main, copy(), m_stream, cells) &&
+                cell_module_projection(), mr().main, copy(), stream(), cells) &&
             is_ordered_on<edm::silicon_cell_collection::const_device>(
                 channel0_major_cell_order_relation(), mr().main, copy(),
-                m_stream, cells));
+                stream(), cells));
 }
 
 void clusterization_algorithm::ccl_kernel(
@@ -58,7 +58,7 @@ void clusterization_algorithm::ccl_kernel(
     kernels::ccl_kernel<<<num_blocks, config.threads_per_partition,
                           2 * config.max_partition_size() *
                               sizeof(device::details::index_t),
-                          details::get_stream(m_stream)>>>(
+                          details::get_stream(stream())>>>(
         config, cells, det_descr, measurements, cell_links, f_backup, gf_backup,
         adjc_backup, adjv_backup, backup_mutex, disjoint_set, cluster_sizes);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
@@ -69,10 +69,10 @@ void clusterization_algorithm::cluster_maker_kernel(
     const vecmem::data::vector_view<unsigned int>& disjoint_set,
     edm::silicon_cluster_collection::view& cluster_data) const {
 
-    const unsigned int num_threads = 512;
+    const unsigned int num_threads = warp_size() * 16u;
     const unsigned int num_blocks = (num_cells + num_threads - 1) / num_threads;
     kernels::reify_cluster_data<<<num_blocks, num_threads, 0,
-                                  details::get_stream(m_stream)>>>(
+                                  details::get_stream(stream())>>>(
         disjoint_set, cluster_data);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 }

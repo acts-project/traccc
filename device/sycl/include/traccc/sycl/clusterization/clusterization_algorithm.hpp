@@ -8,7 +8,7 @@
 #pragma once
 
 // SYCL library include(s).
-#include "traccc/sycl/utils/queue_wrapper.hpp"
+#include "traccc/sycl/utils/algorithm_base.hpp"
 
 // Project include(s).
 #include "traccc/clusterization/device/clusterization_algorithm.hpp"
@@ -23,7 +23,8 @@ namespace traccc::sycl {
 /// This algorithm returns a buffer which is not necessarily filled yet. A
 /// synchronisation statement is required before destroying the buffer.
 ///
-class clusterization_algorithm : public device::clusterization_algorithm {
+class clusterization_algorithm : public device::clusterization_algorithm,
+                                 public algorithm_base {
 
     public:
     /// Constructor for clusterization algorithm
@@ -93,9 +94,6 @@ class clusterization_algorithm : public device::clusterization_algorithm {
         edm::silicon_cluster_collection::view& cluster_data) const override;
 
     /// @}
-
-    /// The SYCL queue to use
-    std::reference_wrapper<queue_wrapper> m_queue;
 
 };  // class clusterization_algorithm
 

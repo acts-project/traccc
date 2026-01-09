@@ -8,7 +8,7 @@
 #pragma once
 
 // Local include(s).
-#include "traccc/alpaka/utils/queue.hpp"
+#include "traccc/alpaka/utils/algorithm_base.hpp"
 
 // Project include(s).
 #include "traccc/clusterization/device/clusterization_algorithm.hpp"
@@ -23,7 +23,8 @@ namespace traccc::alpaka {
 /// This algorithm returns a buffer which is not necessarily filled yet. A
 /// synchronisation statement is required before destroying this buffer.
 ///
-class clusterization_algorithm : public device::clusterization_algorithm {
+class clusterization_algorithm : public device::clusterization_algorithm,
+                                 public algorithm_base {
 
     public:
     /// Constructor for clusterization algorithm
@@ -35,7 +36,7 @@ class clusterization_algorithm : public device::clusterization_algorithm {
     /// @param config The clustering configuration
     ///
     clusterization_algorithm(
-        const traccc::memory_resource& mr, vecmem::copy& copy, queue& q,
+        const traccc::memory_resource& mr, vecmem::copy& copy, alpaka::queue& q,
         const config_type& config,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
@@ -93,9 +94,6 @@ class clusterization_algorithm : public device::clusterization_algorithm {
         edm::silicon_cluster_collection::view& cluster_data) const override;
 
     /// @}
-
-    /// The Alpaka queue to use
-    std::reference_wrapper<queue> m_queue;
 
 };  // class clusterization_algorithm
 

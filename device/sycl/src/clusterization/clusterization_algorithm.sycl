@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -37,17 +37,17 @@ clusterization_algorithm::clusterization_algorithm(
     const traccc::memory_resource& mr, vecmem::copy& copy, queue_wrapper& queue,
     const config_type& config, std::unique_ptr<const Logger> logger)
     : device::clusterization_algorithm(mr, copy, config, std::move(logger)),
-      m_queue(queue) {}
+      sycl::algorithm_base(queue) {}
 
 bool clusterization_algorithm::input_is_valid(
     const edm::silicon_cell_collection::const_view& cells) const {
 
     return (is_contiguous_on<edm::silicon_cell_collection::const_device>(
                 cell_module_projection(), mr().main, copy(),
-                details::get_queue(m_queue), cells) &&
+                details::get_queue(queue()), cells) &&
             is_ordered_on<edm::silicon_cell_collection::const_device>(
                 channel0_major_cell_order_relation(), mr().main, copy(),
-                details::get_queue(m_queue), cells));
+                details::get_queue(queue()), cells));
 }
 
 void clusterization_algorithm::ccl_kernel(
@@ -67,7 +67,7 @@ void clusterization_algorithm::ccl_kernel(
     // Check if device is capable of allocating sufficient local memory
     assert(sizeof(device::details::index_t) * 2 * config.max_partition_size() +
                3 * sizeof(std::size_t) <
-           details::get_queue(m_queue)
+           details::get_queue(queue())
                .get_device()
                .get_info<::sycl::info::device::local_mem_size>());
 
@@ -76,7 +76,7 @@ void clusterization_algorithm::ccl_kernel(
     const ::sycl::nd_range cclKernelRange(
         ::sycl::range<1>(num_blocks * config.threads_per_partition),
         ::sycl::range<1>(config.threads_per_partition));
-    details::get_queue(m_queue)
+    details::get_queue(queue())
         .submit([&](::sycl::handler& h) {
             // Allocate shared memory for the kernel.
             vecmem::sycl::local_accessor<std::size_t> shared_uint(3, h);
@@ -129,8 +129,8 @@ void clusterization_algorithm::cluster_maker_kernel(
     edm::silicon_cluster_collection::view& cluster_data) const {
 
     const ::sycl::nd_range range =
-        details::calculate1DimNdRange(num_cells, 256);
-    details::get_queue(m_queue)
+        details::calculate1DimNdRange(num_cells, warp_size() * 8u);
+    details::get_queue(queue())
         .submit([&](::sycl::handler& h) {
             h.parallel_for<kernels::reify_cluster_data>(
                 range, [disjoint_set, cluster_data](::sycl::nd_item<1> item) {

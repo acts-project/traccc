@@ -87,10 +87,10 @@ struct reify_cluster_data {
 }  // namespace kernels
 
 clusterization_algorithm::clusterization_algorithm(
-    const traccc::memory_resource& mr, vecmem::copy& copy, queue& q,
+    const traccc::memory_resource& mr, vecmem::copy& copy, alpaka::queue& q,
     const config_type& config, std::unique_ptr<const Logger> logger)
     : device::clusterization_algorithm(mr, copy, config, std::move(logger)),
-      m_queue(q) {}
+      alpaka::algorithm_base(q) {}
 
 bool clusterization_algorithm::input_is_valid(
     const edm::silicon_cell_collection::const_view&) const {
@@ -120,7 +120,7 @@ void clusterization_algorithm::ccl_kernel(
                   "with support for multi-thread blocks.");
     auto workDiv = makeWorkDiv<Acc>(num_blocks, config.threads_per_partition);
     ::alpaka::exec<Acc>(
-        details::get_queue(m_queue), workDiv, kernels::ccl_kernel{}, config,
+        details::get_queue(queue()), workDiv, kernels::ccl_kernel{}, config,
         cells, det_descr, f_backup, gf_backup, adjc_backup, adjv_backup,
         backup_mutex, disjoint_set, cluster_sizes, measurements, cell_links);
 }
@@ -130,13 +130,13 @@ void clusterization_algorithm::cluster_maker_kernel(
     const vecmem::data::vector_view<unsigned int>& disjoint_set,
     edm::silicon_cluster_collection::view& cluster_data) const {
 
-    const unsigned int num_threads = 512;
+    const unsigned int num_threads = warp_size() * 16u;
     const unsigned int num_blocks = (num_cells + num_threads - 1) / num_threads;
     static_assert(::alpaka::isMultiThreadAcc<Acc>,
                   "Clustering algorithm must be compiled for an accelerator "
                   "with support for multi-thread blocks.");
     auto workDiv = makeWorkDiv<Acc>(num_blocks, num_threads);
-    ::alpaka::exec<Acc>(details::get_queue(m_queue), workDiv,
+    ::alpaka::exec<Acc>(details::get_queue(queue()), workDiv,
                         kernels::reify_cluster_data{}, disjoint_set,
                         cluster_data);
 }

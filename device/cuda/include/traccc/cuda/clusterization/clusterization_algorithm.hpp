@@ -8,7 +8,7 @@
 #pragma once
 
 // Local include(s).
-#include "traccc/cuda/utils/stream.hpp"
+#include "traccc/cuda/utils/algorithm_base.hpp"
 
 // Project include(s).
 #include "traccc/clusterization/device/clusterization_algorithm.hpp"
@@ -23,7 +23,8 @@ namespace traccc::cuda {
 /// This algorithm returns a buffer which is not necessarily filled yet. A
 /// synchronisation statement is required before destroying the buffer.
 ///
-class clusterization_algorithm : public device::clusterization_algorithm {
+class clusterization_algorithm : public device::clusterization_algorithm,
+                                 public algorithm_base {
 
     public:
     /// Constructor for clusterization algorithm
@@ -36,8 +37,8 @@ class clusterization_algorithm : public device::clusterization_algorithm {
     /// @param logger The logger instance to use for messaging
     ///
     clusterization_algorithm(
-        const traccc::memory_resource& mr, vecmem::copy& copy, stream& str,
-        const config_type& config,
+        const traccc::memory_resource& mr, vecmem::copy& copy,
+        cuda::stream& str, const config_type& config,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     private:
@@ -94,9 +95,6 @@ class clusterization_algorithm : public device::clusterization_algorithm {
         edm::silicon_cluster_collection::view& cluster_data) const override;
 
     /// @}
-
-    /// The CUDA stream to use
-    std::reference_wrapper<stream> m_stream;
 
 };  // class clusterization_algorithm
 

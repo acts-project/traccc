@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2025 CERN for the benefit of the ACTS project
+# (c) 2021-2026 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -20,6 +20,8 @@ include( traccc-compiler-options-cuda )
 # Set up the build of the traccc::cuda library.
 traccc_add_library( traccc_cuda cuda TYPE SHARED
   # Utility definitions.
+  "include/traccc/cuda/utils/algorithm_base.hpp"
+  "src/utils/algorithm_base.cpp"
   "include/traccc/cuda/utils/make_prefix_sum_buff.hpp"
   "src/utils/make_prefix_sum_buff.cu"
   "include/traccc/cuda/utils/stream.hpp"
