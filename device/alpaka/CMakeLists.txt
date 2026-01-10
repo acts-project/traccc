@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2023-2025 CERN for the benefit of the ACTS project
+# (c) 2023-2026 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -25,6 +25,8 @@ endif()
 
 traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   # Utility definitions.
+  "include/traccc/alpaka/utils/algorithm_base.hpp"
+  "src/utils/algorithm_base.cpp"
   "include/traccc/alpaka/utils/get_device_info.hpp"
   "include/traccc/alpaka/utils/make_prefix_sum_buff.hpp"
   "src/utils/make_prefix_sum_buff.cpp"

@@ -65,10 +65,15 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
             copy.setup(cells_buffer)->wait();
             copy(vecmem::get_data(cells), cells_buffer)->wait();
 
-            auto measurements_buffer = cc(cells_buffer, dd_buffer);
+            auto [measurements_buffer, cluster_buffer] =
+                cc(cells_buffer, dd_buffer,
+                   traccc::device::clustering_keep_disjoint_set{});
             traccc::edm::measurement_collection<traccc::default_algebra>::host
                 measurements{host_mr};
             copy(measurements_buffer, measurements)->wait();
+
+            traccc::edm::silicon_cluster_collection::host clusters{host_mr};
+            copy(cluster_buffer, clusters)->wait();
 
             for (std::size_t i = 0; i < measurements.size(); i++) {
                 if (result.contains(
@@ -82,8 +87,7 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
                     .push_back(measurements.at(i));
             }
 
-            // TODO: Output a real disjoint set here.
-            return {result, std::nullopt};
+            return {result, clusters};
         };
 }
 }  // namespace
