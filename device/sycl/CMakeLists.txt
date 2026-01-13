@@ -11,6 +11,29 @@ include( traccc-compiler-options-sycl )
 # We need the SYCL language in this directory.
 enable_language( SYCL )
 
+# Set up the build of the traccc::sycl_utils library.
+
+traccc_add_library( traccc_sycl_utils sycl_utils TYPE SHARED
+  # Utilities.
+  "include/traccc/sycl/utils/make_prefix_sum_buff.hpp"
+  "src/utils/make_prefix_sum_buff.sycl"
+  "include/traccc/sycl/utils/queue_wrapper.hpp"
+  "src/utils/queue_wrapper.cpp"
+  "include/traccc/sycl/utils/make_magnetic_field.hpp"
+  "src/utils/make_magnetic_field.sycl"
+  "src/utils/magnetic_field_types.hpp"
+  "src/utils/barrier.hpp"
+  "src/utils/calculate1DimNdRange.hpp"
+  "src/utils/calculate1DimNdRange.sycl"
+  "src/utils/get_queue.hpp"
+  "src/utils/get_queue.sycl"
+  "src/utils/thread_id.hpp"
+  "src/utils/oneDPL.hpp"
+  "src/sanity/contiguous_on.hpp"
+  "src/sanity/ordered_on.hpp"
+)
+
+if (TRACCC_BUILD_SYCL)
 # Set up the build of the traccc::sycl library.
 traccc_add_library( traccc_sycl sycl TYPE SHARED
   # Clusterization algorithm(s).
@@ -41,28 +64,17 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "src/fitting/kalman_fitting_algorithm.cpp"
   "src/fitting/kalman_fitting_algorithm.sycl"
   "src/fitting/kalman_fitting.hpp"
-  # Utilities.
-  "include/traccc/sycl/utils/make_prefix_sum_buff.hpp"
-  "src/utils/make_prefix_sum_buff.sycl"
-  "include/traccc/sycl/utils/queue_wrapper.hpp"
-  "src/utils/queue_wrapper.cpp"
-  "include/traccc/sycl/utils/make_magnetic_field.hpp"
-  "src/utils/make_magnetic_field.sycl"
-  "src/utils/magnetic_field_types.hpp"
-  "src/utils/barrier.hpp"
-  "src/utils/calculate1DimNdRange.hpp"
-  "src/utils/calculate1DimNdRange.sycl"
-  "src/utils/get_queue.hpp"
-  "src/utils/get_queue.sycl"
-  "src/utils/thread_id.hpp"
-  "src/utils/oneDPL.hpp"
-  "src/sanity/contiguous_on.hpp"
-  "src/sanity/ordered_on.hpp"
 )
-target_link_libraries( traccc_sycl
+endif()
+target_link_libraries( traccc_sycl_utils
   PUBLIC detray::core vecmem::core
          traccc::core traccc::device_common
-  PRIVATE vecmem::sycl covfie::sycl oneDPL )
+  PRIVATE vecmem::sycl covfie::sycl )
+
+if (TRACCC_BUILD_SYCL)
+target_link_libraries( traccc_sycl
+  PRIVATE vecmem::sycl covfie::sycl oneDPL traccc_sycl_utils )
+
 
 # Set up Thrust specifically for the traccc::sycl library.
 thrust_create_target( traccc::sycl_thrust
@@ -70,3 +82,4 @@ thrust_create_target( traccc::sycl_thrust
   DEVICE CPP )
 target_link_libraries( traccc_sycl
   PRIVATE traccc::sycl_thrust )
+endif()
