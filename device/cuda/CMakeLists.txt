@@ -18,7 +18,7 @@ include( traccc-compiler-options-cpp )
 include( traccc-compiler-options-cuda )
 
 # Set up the build of the traccc::cuda_utils library.
-traccc_add_library( traccc_cuda_utils cuda TYPE SHARED
+traccc_add_library( traccc_cuda_utils cuda_utils TYPE SHARED
   # Utility definitions.
   "include/traccc/cuda/utils/make_prefix_sum_buff.hpp"
   "src/utils/make_prefix_sum_buff.cu"
