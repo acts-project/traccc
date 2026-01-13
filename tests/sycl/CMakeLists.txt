@@ -33,6 +33,7 @@ traccc_add_test(
     detray::test_common
     traccc::core
     traccc::device_common
+    traccc::sycl_utils
     traccc::sycl
     traccc::performance
     traccc::io

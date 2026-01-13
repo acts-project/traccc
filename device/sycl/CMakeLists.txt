@@ -73,7 +73,8 @@ target_link_libraries( traccc_sycl_utils
 
 if (TRACCC_BUILD_SYCL)
 target_link_libraries( traccc_sycl
-  PRIVATE vecmem::sycl covfie::sycl oneDPL traccc_sycl_utils )
+  PUBLIC traccc_sycl_utils
+  PRIVATE vecmem::sycl covfie::sycl oneDPL )
 
 
 # Set up Thrust specifically for the traccc::sycl library.
