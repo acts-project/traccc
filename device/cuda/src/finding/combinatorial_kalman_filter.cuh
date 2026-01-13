@@ -29,6 +29,7 @@
 #include "traccc/edm/device/identity_projector.hpp"
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/track_container.hpp"
+#include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
 #include "traccc/finding/device/barcode_surface_comparator.hpp"
@@ -39,6 +40,7 @@
 #include "traccc/utils/propagation.hpp"
 
 // VecMem include(s).
+#include <vecmem/memory/unique_ptr.hpp>
 #include <vecmem/utils/copy.hpp>
 
 // Thrust include(s).
@@ -161,6 +163,30 @@ combinatorial_kalman_filter(
         link_buffer_capacity, mr.main, vecmem::data::buffer_type::resizable);
     copy.setup(links_buffer)->ignore();
 
+    vecmem::unique_alloc_ptr<bound_matrix<typename detector_t::algebra_type>[]>
+        jacobian_ptr = nullptr;
+    bound_track_parameters_collection_types::buffer
+        link_predicted_parameter_buffer(0, mr.main);
+    bound_track_parameters_collection_types::buffer
+        link_filtered_parameter_buffer(0, mr.main);
+
+    /*
+     * If we are aiming to run the MBF smoother at the end of the track
+     * finding, we need some space to store the intermediate Jacobians
+     * and parameters. Allocate that space here.
+     */
+    if (config.run_mbf_smoother) {
+        jacobian_ptr = vecmem::make_unique_alloc<
+            bound_matrix<typename detector_t::algebra_type>[]>(
+            mr.main, link_buffer_capacity);
+        link_predicted_parameter_buffer =
+            bound_track_parameters_collection_types::buffer(
+                link_buffer_capacity, mr.main);
+        link_filtered_parameter_buffer =
+            bound_track_parameters_collection_types::buffer(
+                link_buffer_capacity, mr.main);
+    }
+
     // Create a buffer of tip links
     vecmem::data::vector_buffer<unsigned int> tips_buffer{
         config.max_num_branches_per_seed * n_seeds, mr.main,
@@ -172,6 +198,9 @@ combinatorial_kalman_filter(
 
     std::map<unsigned int, unsigned int> step_to_link_idx_map;
     step_to_link_idx_map[0] = 0;
+
+    vecmem::unique_alloc_ptr<bound_matrix<typename detector_t::algebra_type>[]>
+        tmp_jacobian_ptr = nullptr;
 
     unsigned int n_in_params = n_seeds;
     for (unsigned int step = 0;
@@ -241,6 +270,41 @@ combinatorial_kalman_filter(
             copy(links_buffer, new_links_buffer)->wait();
 
             links_buffer = std::move(new_links_buffer);
+
+            if (config.run_mbf_smoother) {
+                vecmem::unique_alloc_ptr<
+                    bound_matrix<typename detector_t::algebra_type>[]>
+                    new_jacobian_ptr = vecmem::make_unique_alloc<
+                        bound_matrix<typename detector_t::algebra_type>[]>(
+                        mr.main, link_buffer_capacity);
+                bound_track_parameters_collection_types::buffer
+                    new_link_predicted_parameter_buffer{link_buffer_capacity,
+                                                        mr.main};
+                bound_track_parameters_collection_types::buffer
+                    new_link_filtered_parameter_buffer{link_buffer_capacity,
+                                                       mr.main};
+
+                TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
+                    new_jacobian_ptr.get(), jacobian_ptr.get(),
+                    links_size *
+                        sizeof(bound_matrix<typename detector_t::algebra_type>),
+                    cudaMemcpyDeviceToDevice, stream));
+
+                copy(link_predicted_parameter_buffer,
+                     new_link_predicted_parameter_buffer)
+                    ->wait();
+                copy(link_filtered_parameter_buffer,
+                     new_link_filtered_parameter_buffer)
+                    ->wait();
+
+                TRACCC_CUDA_ERROR_CHECK(cudaStreamSynchronize(stream));
+
+                jacobian_ptr = std::move(new_jacobian_ptr);
+                link_predicted_parameter_buffer =
+                    std::move(new_link_predicted_parameter_buffer);
+                link_filtered_parameter_buffer =
+                    std::move(new_link_filtered_parameter_buffer);
+            }
         }
 
         {
@@ -271,7 +335,12 @@ combinatorial_kalman_filter(
                 .tip_lengths_view = tip_length_buffer,
                 .n_tracks_per_seed_view = n_tracks_per_seed_buffer,
                 .tmp_params_view = tmp_params_buffer,
-                .tmp_links_view = tmp_links_buffer};
+                .tmp_links_view = tmp_links_buffer,
+                .jacobian_ptr = jacobian_ptr.get(),
+                .tmp_jacobian_ptr = tmp_jacobian_ptr.get(),
+                .link_predicted_parameter_view =
+                    link_predicted_parameter_buffer,
+                .link_filtered_parameter_view = link_filtered_parameter_buffer};
 
             // The number of threads, blocks and shared memory to use.
             const unsigned int nThreads = warp_size * 2;
@@ -410,6 +479,12 @@ combinatorial_kalman_filter(
              *****************************************************************/
 
             {
+                if (config.run_mbf_smoother) {
+                    tmp_jacobian_ptr = vecmem::make_unique_alloc<
+                        bound_matrix<typename detector_t::algebra_type>[]>(
+                        mr.main, n_candidates);
+                }
+
                 // Allocate the kernel's payload in host memory.
                 using payload_t = device::propagate_to_next_surface_payload<
                     traccc::details::ckf_propagator_t<detector_t, bfield_t>,
@@ -425,7 +500,8 @@ combinatorial_kalman_filter(
                     .step = step,
                     .n_in_params = n_candidates,
                     .tips_view = tips_buffer,
-                    .tip_lengths_view = tip_length_buffer};
+                    .tip_lengths_view = tip_length_buffer,
+                    .tmp_jacobian_ptr = tmp_jacobian_ptr.get()};
 
                 const unsigned int nThreads = warp_size * 4;
                 const unsigned int nBlocks =
@@ -442,6 +518,8 @@ combinatorial_kalman_filter(
 
         n_in_params = n_candidates;
     }
+
+    tmp_jacobian_ptr.reset();
 
     TRACCC_DEBUG("Final link buffer usage was "
                  << copy.get_size(links_buffer) << " out of "
@@ -569,11 +647,23 @@ combinatorial_kalman_filter(
     copy(tip_length_buffer, tips_length_host)->wait();
     tips_length_host.resize(n_tips_total_filtered);
 
+    unsigned int n_states;
+
+    if (config.run_mbf_smoother) {
+        n_states = std::accumulate(tips_length_host.begin(),
+                                   tips_length_host.end(), 0u);
+    } else {
+        n_states = 0;
+    }
+
     // Create track candidate buffer
     typename edm::track_container<typename detector_t::algebra_type>::buffer
         track_candidates_buffer{
-            {tips_length_host, mr.main, mr.host}, {}, measurements_view};
+            {tips_length_host, mr.main, mr.host},
+            {n_states, mr.main, vecmem::data::buffer_type::resizable},
+            measurements_view};
     copy.setup(track_candidates_buffer.tracks)->ignore();
+    copy.setup(track_candidates_buffer.states)->ignore();
 
     // @Note: nBlocks can be zero in case there is no tip. This happens when
     // chi2_max config is set tightly and no tips are found
@@ -586,8 +676,13 @@ combinatorial_kalman_filter(
             .links_view = links_buffer,
             .tips_view = tips_buffer,
             .tracks_view = {track_candidates_buffer},
-            .tip_to_output_map = tip_to_output_map.get()};
-        kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(payload);
+            .tip_to_output_map = tip_to_output_map.get(),
+            .jacobian_ptr = jacobian_ptr.get(),
+            .link_predicted_parameter_view = link_predicted_parameter_buffer,
+            .link_filtered_parameter_view = link_filtered_parameter_buffer,
+        };
+        kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(
+            config.run_mbf_smoother, payload);
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
         str.synchronize();

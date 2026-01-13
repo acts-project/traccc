@@ -1,29 +1,19 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // CUDA Library include(s).
-#include "../../sanity/contiguous_on.cuh"
-#include "../../sanity/ordered_on.cuh"
 #include "../../utils/barrier.hpp"
 #include "../../utils/cuda_error_handling.hpp"
 #include "../../utils/thread_id.hpp"
-#include "../../utils/utils.hpp"
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
-#include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
-#include "traccc/utils/projections.hpp"
-#include "traccc/utils/relations.hpp"
 
 // Project include(s)
 #include "traccc/clusterization/device/ccl_kernel.hpp"
-
-// Vecmem include(s).
-#include <cstring>
-#include <vecmem/utils/copy.hpp>
 
 namespace traccc::cuda::kernels {
 

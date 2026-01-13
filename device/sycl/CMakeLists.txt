@@ -15,6 +15,8 @@ enable_language( SYCL )
 
 traccc_add_library( traccc_sycl_utils sycl_utils TYPE SHARED
   # Utilities.
+  "include/traccc/sycl/utils/algorithm_base.hpp"
+  "src/utils/algorithm_base.sycl"
   "include/traccc/sycl/utils/make_prefix_sum_buff.hpp"
   "src/utils/make_prefix_sum_buff.sycl"
   "include/traccc/sycl/utils/queue_wrapper.hpp"

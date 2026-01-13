@@ -161,7 +161,7 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
         ->ignore();
 
     // Run the clusterization (asynchronously).
-    const clusterization_algorithm::output_type unsorted_measurements =
+    const auto unsorted_measurements =
         m_clusterization(cells_buffer, m_device_det_descr);
     const measurement_sorting_algorithm::output_type measurements =
         m_measurement_sorting(unsorted_measurements);
@@ -218,7 +218,7 @@ bound_track_parameters_collection_types::host full_chain_algorithm::seeding(
         ->ignore();
 
     // Run the clusterization (asynchronously).
-    const clusterization_algorithm::output_type unsorted_measurements =
+    const auto unsorted_measurements =
         m_clusterization(cells_buffer, m_device_det_descr);
     const measurement_sorting_algorithm::output_type measurements =
         m_measurement_sorting(unsorted_measurements);

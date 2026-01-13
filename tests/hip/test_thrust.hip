@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -10,7 +10,7 @@
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/containers/vector.hpp>
 #include <vecmem/memory/hip/device_memory_resource.hpp>
-#include <vecmem/memory/memory_resource.hpp>
+#include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/copy.hpp>
 #include <vecmem/utils/hip/copy.hpp>
 

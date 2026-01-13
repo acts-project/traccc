@@ -43,6 +43,9 @@ struct finding_config {
     /// each track that vote for it
     float min_measurement_voting_fraction = 0.5f;
 
+    /// Enable the MBF smoother
+    bool run_mbf_smoother = true;
+
     /// Minimum step length that track should make to reach the next surface. It
     /// should be set higher than the overstep tolerance not to make it stay on
     /// the same surface
@@ -62,7 +65,7 @@ struct finding_config {
 
     /// Particle hypothesis
     traccc::pdg_particle<traccc::scalar> ptc_hypothesis =
-        traccc::muon<traccc::scalar>();
+        traccc::pion_plus<traccc::scalar>();
 
     /// Minimum track length in order for a track to be a candidate for
     /// duplicate removal.

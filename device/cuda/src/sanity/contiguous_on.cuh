@@ -1,7 +1,7 @@
 /**
  * traccc library, part of the ACTS project (R&D line)
  *
- * (c) 2024-2025 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -98,7 +98,8 @@ template <typename CONTAINER, std::semiregular P, typename VIEW>
     requires std::regular_invocable<P,
                                     decltype(std::declval<CONTAINER>().at(0))>
 bool is_contiguous_on(P&& projection, vecmem::memory_resource& mr,
-                      vecmem::copy& copy, stream& stream, const VIEW& view) {
+                      const vecmem::copy& copy, stream& stream,
+                      const VIEW& view) {
 
     // This should never be a performance-critical step, so we can keep the
     // block size fixed.
