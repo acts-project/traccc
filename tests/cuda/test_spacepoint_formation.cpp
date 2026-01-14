@@ -1,13 +1,13 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Project include(s).
 #include "tests/test_detectors.hpp"
-#include "traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
+#include "traccc/cuda/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/geometry/detector.hpp"
@@ -92,7 +92,8 @@ TEST(CUDASpacepointFormation, cuda) {
                             1u});
 
     // Run spacepoint formation
-    traccc::cuda::spacepoint_formation_algorithm sp_formation(mr, copy, stream);
+    traccc::cuda::silicon_pixel_spacepoint_formation_algorithm sp_formation(
+        mr, copy, stream);
     auto spacepoints_buffer =
         sp_formation(device_det, vecmem::get_data(measurements));
 
