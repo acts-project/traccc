@@ -58,8 +58,10 @@ set( TRACCC_DEVICE_LOG_LVL "NONE" CACHE STRING
 
 # Flags controlling which parts of traccc to build.
 option( TRACCC_BUILD_CUDA "Build the CUDA sources included in traccc" FALSE )
+option( TRACCC_BUILD_CUDA_UTILS "Build the CUDA util sources included in traccc" FALSE )
 option( TRACCC_BUILD_HIP "Build the HIP sources included in traccc" FALSE)
 option( TRACCC_BUILD_SYCL "Build the SYCL sources included in traccc" FALSE )
+option( TRACCC_BUILD_SYCL_MAGFIELD "Build the SYCL magnetic field sources included in traccc" FALSE )
 option( TRACCC_BUILD_ALPAKA "Build the Alpaka sources included in traccc"
    FALSE )
 option( TRACCC_BUILD_IO "Build the IO module (needed by examples, performance, testing)" TRUE )
@@ -425,10 +427,10 @@ set(TRACCC_ALGEBRA_PLUGINS ARRAY CACHE STRING "Algebra plugin to use in the buil
 # Build the traccc code.
 add_subdirectory( core )
 add_subdirectory( device/common )
-if( TRACCC_BUILD_CUDA )
+if( TRACCC_BUILD_CUDA OR  TRACCC_BUILD_CUDA_UTILS)
    add_subdirectory( device/cuda )
 endif()
-if( TRACCC_BUILD_SYCL )
+if( TRACCC_BUILD_SYCL OR  TRACCC_BUILD_SYCL_MAGFIELD)
    add_subdirectory( device/sycl )
 endif()
 if( TRACCC_BUILD_ALPAKA )

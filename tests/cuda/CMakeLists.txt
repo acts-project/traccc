@@ -62,6 +62,7 @@ traccc_add_test(
     detray::test_common
     traccc::core
     traccc::device_common
+    traccc::cuda_utils
     traccc::cuda
     traccc::performance
     traccc::io
