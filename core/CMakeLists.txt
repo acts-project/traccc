@@ -79,13 +79,16 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/clusterization/clusterization_algorithm.hpp"
   "src/clusterization/clusterization_algorithm.cpp"
   # Finding algorithmic code
-  "include/traccc/finding/candidate_link.hpp"
-  "include/traccc/finding/finding_config.hpp"
   "include/traccc/finding/actors/ckf_aborter.hpp"
   "include/traccc/finding/actors/interaction_register.hpp"
+  "include/traccc/finding/actors/measurement_kalman_updater.hpp"
   "include/traccc/finding/details/combinatorial_kalman_filter_types.hpp"
   "include/traccc/finding/details/combinatorial_kalman_filter.hpp"
+  "include/traccc/finding/details/kalman_track_follower.hpp"
+  "include/traccc/finding/candidate_link.hpp"
   "include/traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
+  "include/traccc/finding/finding_config.hpp"
+  "include/traccc/finding/measurement_selector.hpp"
   "src/finding/combinatorial_kalman_filter_algorithm.cpp"
   # Fitting algorithmic code
   "include/traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
