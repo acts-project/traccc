@@ -17,6 +17,7 @@
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 #include "traccc/fitting/kalman_filter/is_line_visitor.hpp"
+#include "traccc/fitting/kalman_filter/measurement_selector.hpp"
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/sanity/contiguous_on.hpp"
 #include "traccc/utils/logging.hpp"
@@ -249,6 +250,9 @@ combinatorial_kalman_filter(
                                    bound_track_parameters<algebra_type>>>
                 best_links;
 
+            const bool is_line = detail::is_line(sf);
+            measurement_selector::config calib_cfg{};
+
             // Iterate over the measurements
             TRACCC_VERBOSE_HOST("No. measurements: " << (up - lo));
             for (unsigned int meas_id = lo; meas_id < up; meas_id++) {
@@ -257,24 +261,53 @@ combinatorial_kalman_filter(
                 // The measurement on surface to handle.
                 const auto meas = measurements.at(meas_id);
 
+                const scalar_type chi2 = measurement_selector::predicted_chi2(
+                    meas, in_param, calib_cfg, is_line);
+
+                // If the measurement is outside the chi2 cut, skip it
+                if (chi2 > config.chi2_max) {
+                    continue;
+                }
+
                 // Create a standalone track state object.
                 auto trk_state =
                     edm::make_track_state<algebra_type>(measurements, meas_id);
 
-                const bool is_line = detail::is_line(sf);
+                // Kalman filter status code
+                kalman_fitter_status res{kalman_fitter_status::ERROR_OTHER};
 
-                // Run the Kalman update on a copy of the track parameters
-                const kalman_fitter_status res =
-                    gain_matrix_updater<algebra_type>{}(trk_state, measurements,
-                                                        in_param, is_line);
+                // Don't run the filter on the first measurement
+                if (step == 0 && !sf.has_material()) {
+                    res = kalman_fitter_status::SUCCESS;
 
-                const traccc::scalar chi2 = trk_state.filtered_chi2();
+                    // Copy the full track parameters
+                    // TODO: Apply calibration ?
+                    trk_state.filtered_params() = in_param;
+
+                    // Update measurement covariance
+                    const auto V =
+                        measurement_selector::calibrated_measurement_covariance<
+                            algebra_type, 2>(meas, calib_cfg);
+
+                    auto& filtered_cov =
+                        trk_state.filtered_params().covariance();
+                    getter::element(filtered_cov, e_bound_loc0, e_bound_loc0) =
+                        getter::element(V, 0, 0);
+                    getter::element(filtered_cov, e_bound_loc1, e_bound_loc1) =
+                        getter::element(V, 1, 1);
+                } else {
+                    // Run the Kalman update on the track state
+                    constexpr gain_matrix_updater<algebra_type>
+                        kalman_updater{};
+                    res = kalman_updater(trk_state, meas, in_param, is_line);
+                }
+
+                trk_state.filtered_chi2() = chi2;
 
                 TRACCC_DEBUG_HOST("KF status: " << fitter_debug_msg{res}());
 
                 // The chi2 from Kalman update should be less than chi2_max
-                if (res == kalman_fitter_status::SUCCESS &&
-                    (chi2 < config.chi2_max)) {
+                if (res == kalman_fitter_status::SUCCESS) {
 
                     TRACCC_VERBOSE_HOST("Found measurement: " << meas_id);
 
