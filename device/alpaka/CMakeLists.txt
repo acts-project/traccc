@@ -47,10 +47,6 @@ traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   # Seeding code
   "include/traccc/alpaka/seeding/spacepoint_formation_algorithm.hpp"
   "src/seeding/spacepoint_formation_algorithm.cpp"
-  "include/traccc/alpaka/seeding/details/spacepoint_binning.hpp"
-  "src/seeding/spacepoint_binning.cpp"
-  "include/traccc/alpaka/seeding/details/seed_finding.hpp"
-  "src/seeding/seed_finding.cpp"
   "include/traccc/alpaka/seeding/seeding_algorithm.hpp"
   "src/seeding/seeding_algorithm.cpp"
   "include/traccc/alpaka/seeding/track_params_estimation.hpp"
