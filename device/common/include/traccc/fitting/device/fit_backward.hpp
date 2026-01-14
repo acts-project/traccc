@@ -42,7 +42,7 @@ TRACCC_HOST_DEVICE inline void fit_backward(
             *(payload.surfaces_view.ptr() + param_id),
             fitter.config().propagation);
 
-        kalman_fitter_status fit_status = fitter.smooth(fitter_state);
+        const kalman_fitter_status fit_status = fitter.smooth(fitter_state);
 
         fitter.update_statistics(fitter_state);
 
@@ -51,11 +51,11 @@ TRACCC_HOST_DEVICE inline void fit_backward(
         fitter.check_fitting_result(fitter_state, kalman_fitter_status::SUCCESS,
                                     fit_status);
 
-        if (fit_status == kalman_fitter_status::SUCCESS) {
+        /*if (fit_status == kalman_fitter_status::SUCCESS) {
             track = fitter_state.m_fit_res;
         } else {
             param_liveness.at(param_id) = 0u;
-        }
+        }*/
 
         // TODO: Grab the smoothed state for next it
     }

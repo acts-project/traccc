@@ -64,7 +64,7 @@ struct build_tracks_payload {
 /// @param[inout] payload      The function call payload
 ///
 TRACCC_HOST_DEVICE inline void build_tracks(
-    global_index_t globalIndex, bool run_mbf,
+    global_index_t globalIndex, bool run_mbf, const bool run_kalman_smoother,
     const build_tracks_payload& payload);
 
 }  // namespace traccc::device

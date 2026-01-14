@@ -8,6 +8,9 @@
 #pragma once
 
 // Local include(s).
+#include "../fitting/kernels/fill_fitting_sort_keys.hpp"
+#include "../fitting/kernels/fit_backward.hpp"
+#include "../fitting/kernels/fit_prelude.hpp"
 #include "../sanity/contiguous_on.cuh"
 #include "../utils/barrier.hpp"
 #include "../utils/cuda_error_handling.hpp"
@@ -34,6 +37,8 @@
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
 #include "traccc/finding/device/barcode_surface_comparator.hpp"
 #include "traccc/finding/finding_config.hpp"
+#include "traccc/fitting/details/kalman_fitting_types.hpp"
+#include "traccc/fitting/device/fill_fitting_sort_keys.hpp"
 #include "traccc/utils/logging.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/projections.hpp"
@@ -170,6 +175,10 @@ combinatorial_kalman_filter(
     bound_track_parameters_collection_types::buffer
         link_filtered_parameter_buffer(0, mr.main);
 
+    vecmem::data::jagged_vector_buffer<typename detector_t::surface_type>
+        seqs_buffer{std::vector<unsigned int>{0u}, mr.main, mr.host,
+                    vecmem::data::buffer_type::resizable};
+
     /*
      * If we are aiming to run the MBF smoother at the end of the track
      * finding, we need some space to store the intermediate Jacobians
@@ -182,10 +191,28 @@ combinatorial_kalman_filter(
         link_predicted_parameter_buffer =
             bound_track_parameters_collection_types::buffer(
                 link_buffer_capacity, mr.main);
+    }
+
+    if (config.run_mbf_smoother || config.run_kalman_smoother) {
         link_filtered_parameter_buffer =
             bound_track_parameters_collection_types::buffer(
                 link_buffer_capacity, mr.main);
     }
+
+    // if (config.run_kalman_smoother) {
+    const unsigned int n_prop_streams{
+        math::min(config.max_num_branches_per_seed * n_seeds, 200000u)};
+    const unsigned int n_surfaces_per_track{
+        std::max(config.max_track_candidates_per_track *
+                     config.kalman_smoother.surface_sequence_size_factor,
+                 config.kalman_smoother.min_surface_sequence_capacity)};
+    std::vector<unsigned int> seqs_sizes(n_prop_streams, n_surfaces_per_track);
+
+    seqs_buffer =
+        vecmem::data::jagged_vector_buffer<typename detector_t::surface_type>{
+            seqs_sizes, mr.main, mr.host, vecmem::data::buffer_type::resizable};
+    copy.setup(seqs_buffer)->ignore();
+    //}
 
     // Create a buffer of tip links
     vecmem::data::vector_buffer<unsigned int> tips_buffer{
@@ -271,6 +298,21 @@ combinatorial_kalman_filter(
 
             links_buffer = std::move(new_links_buffer);
 
+            if (config.run_mbf_smoother || config.run_kalman_smoother) {
+                bound_track_parameters_collection_types::buffer
+                    new_link_filtered_parameter_buffer{link_buffer_capacity,
+                                                       mr.main};
+
+                copy(link_filtered_parameter_buffer,
+                     new_link_filtered_parameter_buffer)
+                    ->wait();
+
+                TRACCC_CUDA_ERROR_CHECK(cudaStreamSynchronize(stream));
+
+                link_filtered_parameter_buffer =
+                    std::move(new_link_filtered_parameter_buffer);
+            }
+
             if (config.run_mbf_smoother) {
                 vecmem::unique_alloc_ptr<
                     bound_matrix<typename detector_t::algebra_type>[]>
@@ -280,9 +322,6 @@ combinatorial_kalman_filter(
                 bound_track_parameters_collection_types::buffer
                     new_link_predicted_parameter_buffer{link_buffer_capacity,
                                                         mr.main};
-                bound_track_parameters_collection_types::buffer
-                    new_link_filtered_parameter_buffer{link_buffer_capacity,
-                                                       mr.main};
 
                 TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
                     new_jacobian_ptr.get(), jacobian_ptr.get(),
@@ -293,17 +332,12 @@ combinatorial_kalman_filter(
                 copy(link_predicted_parameter_buffer,
                      new_link_predicted_parameter_buffer)
                     ->wait();
-                copy(link_filtered_parameter_buffer,
-                     new_link_filtered_parameter_buffer)
-                    ->wait();
 
                 TRACCC_CUDA_ERROR_CHECK(cudaStreamSynchronize(stream));
 
                 jacobian_ptr = std::move(new_jacobian_ptr);
                 link_predicted_parameter_buffer =
                     std::move(new_link_predicted_parameter_buffer);
-                link_filtered_parameter_buffer =
-                    std::move(new_link_filtered_parameter_buffer);
             }
         }
 
@@ -501,7 +535,8 @@ combinatorial_kalman_filter(
                     .n_in_params = n_candidates,
                     .tips_view = tips_buffer,
                     .tip_lengths_view = tip_length_buffer,
-                    .tmp_jacobian_ptr = tmp_jacobian_ptr.get()};
+                    .tmp_jacobian_ptr = tmp_jacobian_ptr.get(),
+                    .surfaces_view = seqs_buffer};
 
                 const unsigned int nThreads = warp_size * 4;
                 const unsigned int nBlocks =
@@ -649,7 +684,7 @@ combinatorial_kalman_filter(
 
     unsigned int n_states;
 
-    if (config.run_mbf_smoother) {
+    if (config.run_mbf_smoother || config.run_kalman_smoother) {
         n_states = std::accumulate(tips_length_host.begin(),
                                    tips_length_host.end(), 0u);
     } else {
@@ -682,10 +717,93 @@ combinatorial_kalman_filter(
             .link_filtered_parameter_view = link_filtered_parameter_buffer,
         };
         kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(
-            config.run_mbf_smoother, payload);
+            config.run_mbf_smoother, config.run_kalman_smoother, payload);
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
         str.synchronize();
+    }
+
+    /// Run a Kalman filter in the backpropagation to smoothe the tracks
+    if (config.run_kalman_smoother) {
+
+        std::cout << "KALMAN SMOOTHER" << std::endl;
+
+        const typename edm::track_container<typename detector_t::algebra_type>::
+            const_view track_candidates_view{track_candidates_buffer};
+
+        // Get the number of tracks.
+        const unsigned int n_tracks =
+            copy.get_size(track_candidates_view.tracks);
+
+        // Create the result buffer.
+        /*typename edm::track_container<typename
+        detector_t::algebra_type>::buffer track_states_buffer{
+                {tips_length_host, mr.main, mr.host,
+                 vecmem::data::buffer_type::resizable},
+                {n_states, mr.main, vecmem::data::buffer_type::resizable},
+                track_candidates_view.measurements};
+        copy.setup(track_states_buffer.tracks)->ignore();
+        copy.setup(track_states_buffer.states)->ignore();
+
+        // Return early, if there are no tracks.
+        if (n_tracks == 0) {
+            return track_states_buffer;
+        }*/
+
+        // Create the buffers for sorting the parameter IDs.
+        /*vecmem::data::vector_buffer<device::sort_key> keys_buffer(n_tracks,
+                                                                  mr.main);
+        vecmem::data::vector_buffer<unsigned int> param_ids_buffer(n_tracks,
+                                                                   mr.main);
+        vecmem::data::vector_buffer<unsigned int> param_liveness_buffer(
+            n_tracks, mr.main);
+        vecmem::copy::event_type keys_setup_event = copy.setup(keys_buffer);
+        vecmem::copy::event_type param_ids_setup_event =
+            copy.setup(param_ids_buffer);
+        vecmem::copy::event_type param_liveness_setup_event =
+            copy.setup(param_liveness_buffer);
+        keys_setup_event->ignore();
+        param_ids_setup_event->ignore();
+        param_liveness_setup_event->ignore();
+
+        // Launch parameters for all the kernels.
+        const unsigned int nThreads = warp_size * 4;
+        const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
+
+        // Fill the keys and param_ids buffers.
+        fill_fitting_sort_keys(nBlocks, nThreads, stream,
+                               track_candidates_view.tracks, keys_buffer,
+                               param_ids_buffer);
+
+        // Sort the key to get the sorted parameter ids
+        vecmem::device_vector<device::sort_key> keys_device(keys_buffer);
+        vecmem::device_vector<unsigned int> param_ids_device(param_ids_buffer);
+        thrust::sort_by_key(
+            thrust::cuda::par_nosync(std::pmr::polymorphic_allocator(&mr.main))
+                .on(stream),
+            keys_device.begin(), keys_device.end(), param_ids_device.begin());
+
+        // Run the fitting, using the sorted parameter IDs.
+        fit_prelude(nBlocks, nThreads, 0, stream, param_ids_buffer,
+                    track_candidates_view, track_candidates_buffer,
+                    param_liveness_buffer);
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+        str.synchronize();*/
+
+        // Allocate the fitting kernels's payload in host memory.
+        using fitter_t = traccc::details::kalman_fitter_t<detector_t, bfield_t>;
+        device::fit_payload<fitter_t> host_payload{
+            .det_data = det,
+            .field_data = field,
+            .param_ids_view = param_ids_buffer,
+            .param_liveness_view = param_liveness_buffer,
+            .tracks_view = track_candidates_buffer,
+            .surfaces_view = seqs_buffer};
+
+        // Run the track fitting
+        fit_backward<fitter_t>(nBlocks, nThreads, 0, stream,
+                               config.kalman_smoother, host_payload);
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
     }
 
     return track_candidates_buffer;

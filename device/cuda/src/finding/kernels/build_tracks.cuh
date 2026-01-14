@@ -13,6 +13,6 @@
 
 namespace traccc::cuda::kernels {
 
-__global__ void build_tracks(bool run_mbf,
+__global__ void build_tracks(bool run_mbf, const bool run_kalman_smoother,
                              device::build_tracks_payload payload);
 }

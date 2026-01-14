@@ -35,15 +35,15 @@ TRACCC_HOST_DEVICE inline void fit_prelude(
         return;
     }
 
-    typename edm::track_state_collection<algebra_t>::device track_states(
-        tracks_view.states);
+    // typename edm::track_state_collection<algebra_t>::device track_states(
+    //     tracks_view.states);
 
     vecmem::device_vector<const unsigned int> param_ids(param_ids_view);
     vecmem::device_vector<unsigned int> param_liveness(param_liveness_view);
 
     const unsigned int param_id = param_ids.at(globalIndex);
 
-    auto track = tracks.at(param_id);
+    /*auto track = tracks.at(param_id);
 
     const typename edm::track_collection<algebra_t>::const_device
         track_candidates{track_candidates_view.tracks};
@@ -62,7 +62,7 @@ TRACCC_HOST_DEVICE inline void fit_prelude(
     }
 
     // TODO: Set other stuff in the header?
-    track.params() = track_candidate.params();
+    track.params() = track_candidate.params();*/
     param_liveness.at(param_id) = 1u;
 }
 

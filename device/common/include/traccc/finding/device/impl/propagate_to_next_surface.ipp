@@ -84,21 +84,27 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     // Pathlimit aborter
     typename detray::detail::tuple_element<0, actor_tuple_type>::type::state
         s0{};
-    typename detray::detail::tuple_element<1, actor_tuple_type>::type::state
-        s1{};
+    // Surface sequencer
+    typename detray::detail::tuple_element<1, actor_tuple_type>::type::state s1{
+        vecmem::device_vector<
+            typename propagator_t::detector_type::surface_type>(
+            *(payload.surfaces_view.ptr() + param_id))};
+    // Parameter transporter state
+    typename detray::detail::tuple_element<2, actor_tuple_type>::type::state
+        s2{};
     // CKF-interactor
-    typename detray::detail::tuple_element<3, actor_tuple_type>::type::state
-        s3{};
+    typename detray::detail::tuple_element<4, actor_tuple_type>::type::state
+        s4{};
     // Interaction register
-    typename detray::detail::tuple_element<2, actor_tuple_type>::type::state s2{
-        s3};
+    typename detray::detail::tuple_element<3, actor_tuple_type>::type::state s3{
+        s4};
     // Parameter resetter
-    typename detray::detail::tuple_element<4, actor_tuple_type>::type::state s4{
+    typename detray::detail::tuple_element<5, actor_tuple_type>::type::state s5{
         prop_cfg};
     // Momentum aborter
-    typename detray::detail::tuple_element<5, actor_tuple_type>::type::state s5;
-    // CKF aborter
     typename detray::detail::tuple_element<6, actor_tuple_type>::type::state s6;
+    // CKF aborter
+    typename detray::detail::tuple_element<7, actor_tuple_type>::type::state s7;
 
     /*
      * If we are running the MBF smoother, we need to accumulate the Jacobians
@@ -111,19 +117,23 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
 
         payload.tmp_jacobian_ptr[param_id] = matrix::identity<
             bound_matrix<typename propagator_t::detector_type::algebra_type>>();
-        s1._full_jacobian_ptr = &payload.tmp_jacobian_ptr[param_id];
+        s2._full_jacobian_ptr = &payload.tmp_jacobian_ptr[param_id];
     }
 
-    s5.min_pT(static_cast<scalar_t>(cfg.min_pT));
-    s5.min_p(static_cast<scalar_t>(cfg.min_p));
-    s6.min_step_length = cfg.min_step_length_for_next_surface;
-    s6.max_count = cfg.max_step_counts_for_next_surface;
+    if (cfg.run_kalman_smoother) {
+    }
+
+    s6.min_pT(static_cast<scalar_t>(cfg.min_pT));
+    s6.min_p(static_cast<scalar_t>(cfg.min_p));
+    s7.min_step_length = cfg.min_step_length_for_next_surface;
+    s7.max_count = cfg.max_step_counts_for_next_surface;
 
     // Propagate to the next surface
-    propagator.propagate(propagation, detray::tie(s0, s1, s2, s3, s4, s5, s6));
+    propagator.propagate(propagation,
+                         detray::tie(s0, s1, s2, s3, s4, s5, s6, s7));
 
     // If a surface found, add the parameter for the next step
-    if (s6.success) {
+    if (s7.success) {
         assert(propagation._navigation.is_on_sensitive());
         assert(!propagation._stepping.bound_params().is_invalid());
 

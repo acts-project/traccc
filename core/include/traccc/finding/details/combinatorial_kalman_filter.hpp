@@ -130,6 +130,9 @@ combinatorial_kalman_filter(
 
     std::vector<std::pair<unsigned int, unsigned int>> tips;
 
+    std::vector<std::vector<typename detector_t::surface_type>> sf_sequences;
+    sf_sequences.resize(config.max_track_candidates_per_track);
+
     // Create propagator
     auto prop_cfg{config.propagation};
     prop_cfg.navigation.estimate_scattering_noise = false;
@@ -507,6 +510,10 @@ combinatorial_kalman_filter(
 
             typename detray::pathlimit_aborter<scalar_type>::state
                 aborter_state;
+            typename detray::surface_sequencer<
+                typename detector_t::surface_type>::state sequencer_state{
+                vecmem::device_vector<typename detector_t::surface_type>{
+                    vecmem::get_data(sf_sequences[link_id])}};
             typename detray::parameter_transporter<
                 typename detector_t::algebra_type>::state transporter_state;
             traccc::details::ckf_interactor_t::state interactor_state;
@@ -533,7 +540,7 @@ combinatorial_kalman_filter(
             TRACCC_DEBUG_HOST("Propagating... ");
             propagator.propagate(
                 propagation,
-                detray::tie(aborter_state, transporter_state,
+                detray::tie(aborter_state, sequencer_state, transporter_state,
                             interaction_register_state, interactor_state,
                             resetter_state, momentum_aborter_state,
                             ckf_aborter_state));

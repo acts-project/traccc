@@ -82,6 +82,13 @@ struct propagate_to_next_surface_payload {
 
     bound_matrix<typename propagator_t::detector_type::algebra_type>*
         tmp_jacobian_ptr;
+
+    /**
+     * @brief View object to the output barcode sequence
+     */
+    vecmem::data::jagged_vector_view<
+        typename propagator_t::detector_type::surface_type>
+        surfaces_view;
 };
 
 /// Function for propagating the kalman-updated tracks to the next surface

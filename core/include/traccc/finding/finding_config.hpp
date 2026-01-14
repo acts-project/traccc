@@ -10,6 +10,7 @@
 // traccc include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
+#include "traccc/fitting/fitting_config.hpp"
 #include "traccc/utils/particle.hpp"
 
 // detray include(s).
@@ -45,6 +46,11 @@ struct finding_config {
 
     /// Enable the MBF smoother
     bool run_mbf_smoother = true;
+
+    /// Enable the Kalman smoother
+    bool run_kalman_smoother = false;
+    // Fitting config for the Kalman smoother
+    traccc::fitting_config kalman_smoother;
 
     /// Minimum step length that track should make to reach the next surface. It
     /// should be set higher than the overstep tolerance not to make it stay on

@@ -150,7 +150,7 @@ struct propagate_to_next_surface {
 struct build_tracks {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        TAcc const& acc, bool run_mbf,
+        TAcc const& acc, bool run_mbf, const bool run_kalman_smoother,
         const device::build_tracks_payload payload) const {
 
         device::global_index_t globalThreadIdx =

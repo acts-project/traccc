@@ -37,8 +37,10 @@ using ckf_interactor_t =
     detray::pointwise_material_interactor<traccc::default_algebra>;
 
 /// Actor chain used in the Combinatorial Kalman Filter (CKF)
+template <typename surface_t>
 using ckf_actor_chain_t =
     detray::actor_chain<detray::pathlimit_aborter<traccc::scalar>,
+                        detray::surface_sequencer<surface_t>,
                         detray::parameter_transporter<traccc::default_algebra>,
                         interaction_register<ckf_interactor_t>,
                         ckf_interactor_t,
@@ -53,6 +55,6 @@ template <typename detector_t, typename bfield_t>
 using ckf_propagator_t =
     detray::propagator<ckf_stepper_t<bfield_t>,
                        detray::caching_navigator<std::add_const_t<detector_t>>,
-                       ckf_actor_chain_t>;
+                       ckf_actor_chain_t<typename detector_t::surface_type>>;
 
 }  // namespace traccc::details

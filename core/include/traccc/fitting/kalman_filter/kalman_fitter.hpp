@@ -295,13 +295,14 @@ class kalman_fitter {
     /// @param fitter_state the state of kalman fitter
     [[nodiscard]] TRACCC_HOST_DEVICE kalman_fitter_status
     smooth(state& fitter_state) const {
-        TRACCC_VERBOSE_HOST_DEVICE("Run smoothing...");
+        TRACCC_INFO_HOST_DEVICE("Run smoothing...");
 
         if (fitter_state.m_fit_actor_state.sequencer().overflow()) {
-            TRACCC_ERROR_HOST_DEVICE("Barcode sequence overlow");
+            TRACCC_ERROR_HOST_DEVICE("Surface sequence overlow");
             return kalman_fitter_status::ERROR_BARCODE_SEQUENCE_OVERFLOW;
         }
         if (fitter_state.m_fit_actor_state.sequencer().sequence().empty()) {
+            TRACCC_ERROR_HOST_DEVICE("Surface sequence empty");
             return kalman_fitter_status::ERROR_UPDATER_SKIPPED_STATE;
         }
 
@@ -314,6 +315,12 @@ class kalman_fitter {
         while (!fitter_state.m_fit_actor_state.finished() &&
                (!fitter_state.m_fit_actor_state.is_state() ||
                 fitter_state.m_fit_actor_state().is_hole())) {
+            if (!fitter_state.m_fit_actor_state.is_state()) {
+                TRACCC_ERROR_HOST_DEVICE("Not a track state");
+            }
+            if (fitter_state.m_fit_actor_state().is_hole()) {
+                TRACCC_ERROR_HOST_DEVICE("HOLE");
+            }
             fitter_state.m_fit_actor_state.next();
         }
 
@@ -367,6 +374,7 @@ class kalman_fitter {
         while (propagation._navigation.has_next_external() &&
                propagation._navigation.next_external().barcode() !=
                    last.smoothed_params().surface_link()) {
+            TRACCC_INFO_HOST_DEVICE("Barcode does not match!");
             TRACCC_DEBUG_HOST(
                 "Advancing to next external surface from: "
                 << propagation._navigation.next_external().barcode());
@@ -375,6 +383,7 @@ class kalman_fitter {
 
         // No valid states produced by forward pass
         if (propagation._navigation.finished()) {
+            TRACCC_ERROR_HOST_DEVICE("No matching barcodes!");
             return kalman_fitter_status::ERROR_UPDATER_SKIPPED_STATE;
         }
 
@@ -390,6 +399,7 @@ class kalman_fitter {
                            m_cfg.covariance_inflation_factor);
 
         // Run the smoothing
+        TRACCC_INFO_HOST_DEVICE("Propagating");
         propagator.propagate(propagation, fitter_state.backward_actor_state());
 
         // Reset the backward mode to false
@@ -398,10 +408,12 @@ class kalman_fitter {
         // Encountered error in the smoother?
         if (fitter_state.m_fit_actor_state.fit_result !=
             kalman_fitter_status::SUCCESS) {
+            TRACCC_ERROR_HOST_DEVICE("Fit failed!");
             return fitter_state.m_fit_actor_state.fit_result;
         }
         // Encountered error during propagation?
         if (!propagator.finished(propagation)) {
+            TRACCC_ERROR_HOST_DEVICE("-> Propagation failed!");
             return kalman_fitter_status::ERROR_PROPAGATION_FAILURE;
         }
 
@@ -519,6 +531,7 @@ class kalman_fitter {
                  fit_res.constituent_links()) {
                 assert(link.type == edm::track_constituent_link::track_state);
                 auto trk_state = track_states.at(link.index);
+
                 // Fitting fails if any of non-hole track states is not smoothed
                 if (!trk_state.is_hole() && !trk_state.is_smoothed()) {
                     TRACCC_ERROR_HOST_DEVICE("Not all smoothed");
@@ -529,7 +542,6 @@ class kalman_fitter {
             }
 
             // Fitting succeeds if any of non-hole track states is not smoothed
-            TRACCC_DEBUG_HOST_DEVICE("Fit status: SUCCESS");
             fit_res.fit_outcome() = track_fit_outcome::SUCCESS;
             return;
         }

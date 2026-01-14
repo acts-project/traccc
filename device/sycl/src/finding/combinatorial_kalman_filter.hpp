@@ -583,6 +583,7 @@ combinatorial_kalman_filter(
                         ::sycl::nd_item<1> item) {
                         device::build_tracks(details::global_index(item),
                                              false && config.run_mbf_smoother,
+                                             config.run_kalman_smoother,
                                              {.seeds_view = seeds,
                                               .links_view = links,
                                               .tips_view = tips,

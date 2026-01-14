@@ -20,7 +20,7 @@ namespace traccc::device {
 
 TRACCC_HOST_DEVICE inline void build_tracks(
     const global_index_t globalIndex, bool run_mbf,
-    const build_tracks_payload& payload) {
+    const bool run_kalman_smoother, const build_tracks_payload& payload) {
 
     const edm::measurement_collection<default_algebra>::const_device
         measurements(payload.tracks_view.measurements);
@@ -91,22 +91,33 @@ TRACCC_HOST_DEVICE inline void build_tracks(
 
         assert(L.meas_idx < n_meas);
 
-        if (run_mbf) {
-            const unsigned int track_state_index =
+        auto track_state_index{std::numeric_limits<unsigned int>::max()};
+        if (run_mbf || run_kalman_smoother) {
+            track_state_index =
                 track_states.push_back(edm::make_track_state<default_algebra>(
                     measurements, L.meas_idx));
             auto track_state = track_states.at(track_state_index);
 
+            // Get the filtered track parameters from the CKF
+            const auto& filtered_params = link_filtered_params.at(link_idx);
+            track_state.filtered_params() = filtered_params;
+            track_state.filtered_chi2() = L.chi2;
             track_state.set_hole(false);
+        }
+
+        // Run the MBF smoother
+        if (run_mbf) {
+            auto track_state = track_states.at(track_state_index);
+
             track_state.set_smoothed(true);
 
             // TODO: The fact that we store the chi2 three times is nonsense.
-            track_state.filtered_chi2() = L.chi2;
-            track_state.smoothed_chi2() = L.chi2;
-            track_state.backward_chi2() = L.chi2;
+            track_state.smoothed_chi2() =
+                std::numeric_limits<traccc::scalar>::max();
+            track_state.backward_chi2() =
+                std::numeric_limits<traccc::scalar>::max();
 
             const auto& predicted_params = link_predicted_params.at(link_idx);
-            const auto& filtered_params = link_filtered_params.at(link_idx);
 
             const auto& predicted_vec = predicted_params.vector();
             const auto& predicted_covariance = predicted_params.covariance();
@@ -174,10 +185,10 @@ TRACCC_HOST_DEVICE inline void build_tracks(
                 (predicted_covariance * big_lambda_tilde *
                  predicted_covariance);
 
-            track_state.filtered_params() = filtered_params;
-
             accumulated_jacobian = payload.jacobian_ptr[link_idx];
 
+            *it = {edm::track_constituent_link::track_state, track_state_index};
+        } else if (run_kalman_smoother) {
             *it = {edm::track_constituent_link::track_state, track_state_index};
         } else {
             *it = {edm::track_constituent_link::measurement, L.meas_idx};

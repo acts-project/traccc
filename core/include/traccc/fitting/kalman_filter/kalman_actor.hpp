@@ -347,6 +347,7 @@ struct kalman_actor : detray::actor {
         auto& stepping = propagation._stepping;
         auto& navigation = propagation._navigation;
 
+        TRACCC_INFO_HOST_DEVICE("IN SMOOTHER");
         TRACCC_VERBOSE_HOST_DEVICE("In Kalman actor (status %d)...",
                                    actor_state.fit_result);
 
@@ -367,6 +368,7 @@ struct kalman_actor : detray::actor {
         // triggered only for sensitive surfaces
         if (navigation.is_on_sensitive()) {
 
+            TRACCC_INFO_HOST_DEVICE("On surface");
             TRACCC_DEBUG_HOST(
                 "-> on surface: " << navigation.current_surface());
 
@@ -379,9 +381,11 @@ struct kalman_actor : detray::actor {
                     actor_state.add_to_sequence(
                         std::as_const(navigation).current().sf_desc);
                 }
+                DETRAY_ERROR_HOST_DEVICE("Surface not matched!");
                 return;
             } else if (actor_state.fit_result !=
                        kalman_fitter_status::SUCCESS) {
+                DETRAY_ERROR_HOST_DEVICE("ABORTED");
                 // Surface matched but encountered error: Abort fit
                 navigation.abort(fitter_debug_msg{actor_state.fit_result});
                 propagation._heartbeat = false;
@@ -435,7 +439,7 @@ struct kalman_actor : detray::actor {
                               direction_e ==
                                   kalman_actor_direction::BIDIRECTIONAL) {
                     // Backward filter for smoothing
-                    TRACCC_DEBUG_HOST_DEVICE("Run smoothing...");
+                    TRACCC_INFO_HOST_DEVICE("Run smoothing...");
 
                     // Forward filter did not find this state: cannot smoothe
                     if (trk_state.filtered_params().is_invalid()) {
@@ -449,6 +453,12 @@ struct kalman_actor : detray::actor {
                             two_filters_smoother<algebra_t>{}(
                                 trk_state, actor_state.m_measurements,
                                 bound_param, is_line);
+                        if (!trk_state.is_smoothed()) {
+                            TRACCC_ERROR_HOST_DEVICE(
+                                "Track state NOT smoothed!");
+                        } else {
+                            TRACCC_INFO_HOST_DEVICE("Track state IS smoothed!");
+                        }
                     }
                 } else {
                     assert(false);
@@ -487,6 +497,7 @@ struct kalman_actor : detray::actor {
             if (actor_state.finished() && !actor_state.do_precise_hole_count) {
                 navigation.exit();
                 propagation._heartbeat = false;
+                TRACCC_INFO_HOST_DEVICE("Navigation exit");
                 return;
             }
 

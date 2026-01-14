@@ -93,6 +93,14 @@ track_finding::track_finding() : interface("Track Finding Options") {
         po::value(&m_config.duplicate_removal_minimum_length)
             ->default_value(m_config.duplicate_removal_minimum_length),
         "Minimum track length for deduplication (0 to disable) [cardinal]");
+    m_desc.add_options()("finding-run-mbf-smoother",
+                         po::value(&m_config.run_mbf_smoother)
+                             ->default_value(m_config.run_mbf_smoother),
+                         "Enable the MBF smoother");
+    m_desc.add_options()("finding-run-kalman-smoother",
+                         po::value(&m_config.run_kalman_smoother)
+                             ->default_value(m_config.run_kalman_smoother),
+                         "Enable the Kalman smoother");
 }
 
 void track_finding::read(const po::variables_map &) {
@@ -152,6 +160,11 @@ std::unique_ptr<configuration_printable> track_finding::as_printable() const {
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Minimum p",
         std::format("{} GeV", m_config.min_p / traccc::unit<float>::GeV)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Run MBF smoother", m_config.run_mbf_smoother ? "true" : "false"));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Run Kalman smoother",
+        m_config.run_kalman_smoother ? "true" : "false"));
 
     return cat;
 }
