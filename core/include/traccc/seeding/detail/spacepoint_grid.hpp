@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2025 CERN for the benefit of the ACTS project
+ * (c) 2021-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -32,23 +32,19 @@ struct spacepoint_grid_types {
     /// Spacepoint grid host type
     using host =
         detray::grid2<detray::attach_populator, detray::axis2::circular,
-                      detray::axis2::regular, detray::serializer2,
-                      vecmem::vector, vecmem::jagged_vector, detray::darray,
-                      detray::dtuple, unsigned int, false>;
+                      detray::axis2::regular, detray::serializer2>;
 
     /// Spacepoint grid (non-const) device type
     using device =
         detray::grid2<detray::attach_populator, detray::axis2::circular,
                       detray::axis2::regular, detray::serializer2,
-                      vecmem::device_vector, vecmem::jagged_device_vector,
-                      detray::darray, detray::dtuple, unsigned int, false>;
+                      vecmem::device_vector, vecmem::jagged_device_vector>;
     /// Spacepoint grid (const) device type
     using const_device =
         detray::grid2<detray::attach_populator, detray::axis2::circular,
                       detray::axis2::regular, detray::serializer2,
                       vecmem::device_vector, vecmem::jagged_device_vector,
-                      detray::darray, detray::dtuple, const unsigned int,
-                      false>;
+                      detray::darray, detray::dtuple, const unsigned int>;
 
     /// Spacepoint grid (non-const) data type
     using data = detray::grid2_data<host>;
