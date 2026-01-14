@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2025 CERN for the benefit of the ACTS project
+# (c) 2021-2026 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -14,12 +14,12 @@ include( traccc-compiler-options-sycl )
 enable_language( SYCL )
 
 # SYCL seeding executable(s).
-traccc_add_executable( seeding_example_sycl "seeding_example_sycl.sycl"
+traccc_add_executable( seeding_example_sycl "seeding_example_sycl.cpp"
    LINK_LIBRARIES traccc::options vecmem::core vecmem::sycl traccc::io
                   traccc::core traccc::device_common traccc::sycl
                   traccc::performance traccc_examples_common )
 
-traccc_add_executable( seq_example_sycl "seq_example_sycl.sycl"
+traccc_add_executable( seq_example_sycl "seq_example_sycl.cpp"
    LINK_LIBRARIES traccc::options vecmem::core vecmem::sycl traccc::io
                   traccc::core traccc::device_common traccc::sycl
                   traccc::performance traccc_examples_common )
