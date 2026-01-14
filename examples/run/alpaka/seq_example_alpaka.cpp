@@ -11,7 +11,7 @@
 #include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/alpaka/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/alpaka/fitting/kalman_fitting_algorithm.hpp"
-#include "traccc/alpaka/seeding/spacepoint_formation_algorithm.hpp"
+#include "traccc/alpaka/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
 #include "traccc/alpaka/seeding/triplet_seeding_algorithm.hpp"
 #include "traccc/alpaka/utils/queue.hpp"
@@ -119,7 +119,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     using host_spacepoint_formation_algorithm =
         traccc::host::silicon_pixel_spacepoint_formation_algorithm;
     using device_spacepoint_formation_algorithm =
-        traccc::alpaka::spacepoint_formation_algorithm;
+        traccc::alpaka::silicon_pixel_spacepoint_formation_algorithm;
 
     using host_finding_algorithm =
         traccc::host::combinatorial_kalman_filter_algorithm;
