@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2026 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,31 +8,31 @@
 #pragma once
 
 // Local include(s).
-#include "traccc/sycl/utils/algorithm_base.hpp"
+#include "traccc/alpaka/utils/algorithm_base.hpp"
 
 // Project include(s).
-#include "traccc/seeding/device/seeding_algorithm.hpp"
+#include "traccc/seeding/device/triplet_seeding_algorithm.hpp"
 
-namespace traccc::sycl {
+namespace traccc::alpaka {
 
-/// Main algorithm for performing the track seeding using oneAPI/SYCL
-class seeding_algorithm : public device::seeding_algorithm,
-                          public sycl::algorithm_base {
+/// Main algorithm for performing the track seeding using Alpaka
+class triplet_seeding_algorithm : public device::triplet_seeding_algorithm,
+                                  public alpaka::algorithm_base {
 
     public:
     /// Constructor for the seed finding algorithm
     ///
-    /// @param mr is a struct of memory resources (shared or host & device)
+    /// @param mr The memory resource to use
+    /// @param mr The memory resource(s) to use in the algorithm
     /// @param copy The copy object to use for copying data between device
     ///             and host memory blocks
-    /// @param queue The SYCL queue to work with
+    /// @param q  The Alpaka queue to perform the operations in
     ///
-    seeding_algorithm(
+    triplet_seeding_algorithm(
         const seedfinder_config& finder_config,
         const spacepoint_grid_config& grid_config,
         const seedfilter_config& filter_config,
-        const traccc::memory_resource& mr, vecmem::copy& copy,
-        queue_wrapper& queue,
+        const traccc::memory_resource& mr, vecmem::copy& copy, alpaka::queue& q,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     private:
@@ -102,6 +102,6 @@ class seeding_algorithm : public device::seeding_algorithm,
     void select_seeds_kernel(
         const select_seeds_kernel_payload& payload) const override;
 
-};  // class seeding_algorithm
+};  // class triplet_seeding_algorithm
 
-}  // namespace traccc::sycl
+}  // namespace traccc::alpaka

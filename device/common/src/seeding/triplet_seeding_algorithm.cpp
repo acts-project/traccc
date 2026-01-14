@@ -6,7 +6,7 @@
  */
 
 // Local include(s).
-#include "traccc/seeding/device/seeding_algorithm.hpp"
+#include "traccc/seeding/device/triplet_seeding_algorithm.hpp"
 
 #include "traccc/device/fill_prefix_sum.hpp"
 #include "traccc/edm/device/doublet_counter.hpp"
@@ -20,7 +20,7 @@
 
 namespace traccc::device {
 
-struct seeding_algorithm::data {
+struct triplet_seeding_algorithm::data {
 
     /// @name Configuration objects
     /// @{
@@ -39,24 +39,24 @@ struct seeding_algorithm::data {
               details::spacepoint_grid_types::host::axis_p1_type>
         m_axes;
 
-};  // struct seeding_algorithm::data
+};  // struct triplet_seeding_algorithm::data
 
-seeding_algorithm::seeding_algorithm(const seedfinder_config& finder_config,
-                                     const spacepoint_grid_config& grid_config,
-                                     const seedfilter_config& filter_config,
-                                     const memory_resource& mr,
-                                     vecmem::copy& copy,
-                                     std::unique_ptr<const Logger> logger)
+triplet_seeding_algorithm::triplet_seeding_algorithm(
+    const seedfinder_config& finder_config,
+    const spacepoint_grid_config& grid_config,
+    const seedfilter_config& filter_config, const memory_resource& mr,
+    vecmem::copy& copy, std::unique_ptr<const Logger> logger)
     : messaging(std::move(logger)),
       algorithm_base{mr, copy},
       m_data{std::make_unique<data>(
           grid_config, finder_config, filter_config,
           get_axes(grid_config, (mr.host ? *(mr.host) : mr.main)))} {}
 
-seeding_algorithm::~seeding_algorithm() = default;
+triplet_seeding_algorithm::~triplet_seeding_algorithm() = default;
 
-auto seeding_algorithm::operator()(const edm::spacepoint_collection::const_view&
-                                       spacepoints) const -> output_type {
+auto triplet_seeding_algorithm::operator()(
+    const edm::spacepoint_collection::const_view& spacepoints) const
+    -> output_type {
 
     // A small sanity check.
     assert(m_data);

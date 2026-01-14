@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -18,9 +18,9 @@
 #include "traccc/sycl/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/sycl/fitting/kalman_fitting_algorithm.hpp"
-#include "traccc/sycl/seeding/seeding_algorithm.hpp"
 #include "traccc/sycl/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
+#include "traccc/sycl/seeding/triplet_seeding_algorithm.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/propagation.hpp"
 
@@ -155,7 +155,7 @@ class full_chain_algorithm
     /// Spacepoint formation algorithm
     spacepoint_formation_algorithm m_spacepoint_formation;
     /// Seeding algorithm
-    seeding_algorithm m_seeding;
+    triplet_seeding_algorithm m_seeding;
     /// Track parameter estimation algorithm
     track_params_estimation m_track_parameter_estimation;
     /// Track finding algorithm

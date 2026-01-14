@@ -24,9 +24,9 @@
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 #include "traccc/sycl/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
-#include "traccc/sycl/seeding/seeding_algorithm.hpp"
 #include "traccc/sycl/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
+#include "traccc/sycl/seeding/triplet_seeding_algorithm.hpp"
 #include "traccc/sycl/utils/make_magnetic_field.hpp"
 
 // performance
@@ -165,7 +165,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
         mr, copy, traccc_queue, logger().clone("SyclMeasSortingAlg"));
     traccc::sycl::silicon_pixel_spacepoint_formation_algorithm sf_sycl(
         mr, copy, traccc_queue, logger().clone("SyclSpFormationAlg"));
-    traccc::sycl::seeding_algorithm sa_sycl(
+    traccc::sycl::triplet_seeding_algorithm sa_sycl(
         seedfinder_config, spacepoint_grid_config, seedfilter_config, mr, copy,
         traccc_queue, logger().clone("SyclSeedingAlg"));
     traccc::sycl::track_params_estimation tp_sycl(
@@ -199,7 +199,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
             measurements_sycl_buffer;
         traccc::sycl::silicon_pixel_spacepoint_formation_algorithm::output_type
             spacepoints_sycl_buffer;
-        traccc::sycl::seeding_algorithm::output_type seeds_sycl_buffer;
+        traccc::sycl::triplet_seeding_algorithm::output_type seeds_sycl_buffer;
         traccc::sycl::track_params_estimation::output_type params_sycl_buffer(
             0, *mr.host);
         traccc::sycl::combinatorial_kalman_filter_algorithm::output_type

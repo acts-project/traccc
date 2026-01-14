@@ -29,15 +29,16 @@
 
 namespace traccc::device {
 
-/// Main algorithm for performing the track seeding
+/// Main algorithm for performing triplet track seeding
 ///
 /// This algorithm returns a buffer which is not necessarily filled yet. A
 /// synchronisation statement is required before destroying this buffer.
 ///
-class seeding_algorithm : public algorithm<edm::seed_collection::buffer(
-                              const edm::spacepoint_collection::const_view&)>,
-                          public messaging,
-                          public algorithm_base {
+class triplet_seeding_algorithm
+    : public algorithm<edm::seed_collection::buffer(
+          const edm::spacepoint_collection::const_view&)>,
+      public messaging,
+      public algorithm_base {
 
     public:
     /// Constructor for the seed finding algorithm
@@ -50,14 +51,14 @@ class seeding_algorithm : public algorithm<edm::seed_collection::buffer(
     ///             and host memory blocks
     /// @param logger The logger instance to use
     ///
-    seeding_algorithm(
+    triplet_seeding_algorithm(
         const seedfinder_config& finder_config,
         const spacepoint_grid_config& grid_config,
         const seedfilter_config& filter_config, const memory_resource& mr,
         vecmem::copy& copy,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
     /// Destructor
-    virtual ~seeding_algorithm();
+    virtual ~triplet_seeding_algorithm();
 
     /// Operator executing the algorithm.
     ///
@@ -312,6 +313,6 @@ class seeding_algorithm : public algorithm<edm::seed_collection::buffer(
     /// Pointer to internal data
     std::unique_ptr<data> m_data;
 
-};  // class seeding_algorithm
+};  // class triplet_seeding_algorithm
 
 }  // namespace traccc::device

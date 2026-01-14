@@ -8,35 +8,31 @@
 #pragma once
 
 // Local include(s).
-#include "traccc/cuda/utils/algorithm_base.hpp"
+#include "traccc/sycl/utils/algorithm_base.hpp"
 
 // Project include(s).
-#include "traccc/seeding/device/seeding_algorithm.hpp"
+#include "traccc/seeding/device/triplet_seeding_algorithm.hpp"
 
-namespace traccc::cuda {
+namespace traccc::sycl {
 
-/// Main algorithm for performing the track seeding on an NVIDIA GPU
-///
-/// This algorithm returns a buffer which is not necessarily filled yet. A
-/// synchronisation statement is required before destroying this buffer.
-///
-class seeding_algorithm : public device::seeding_algorithm,
-                          public cuda::algorithm_base {
+/// Main algorithm for performing the track seeding using oneAPI/SYCL
+class triplet_seeding_algorithm : public device::triplet_seeding_algorithm,
+                                  public sycl::algorithm_base {
 
     public:
     /// Constructor for the seed finding algorithm
     ///
-    /// @param mr The memory resource to use
-    /// @param mr The memory resource(s) to use in the algorithm
+    /// @param mr is a struct of memory resources (shared or host & device)
     /// @param copy The copy object to use for copying data between device
     ///             and host memory blocks
-    /// @param str The CUDA stream to perform the operations in
+    /// @param queue The SYCL queue to work with
     ///
-    seeding_algorithm(
+    triplet_seeding_algorithm(
         const seedfinder_config& finder_config,
         const spacepoint_grid_config& grid_config,
-        const seedfilter_config& filter_config, const memory_resource& mr,
-        vecmem::copy& copy, cuda::stream& str,
+        const seedfilter_config& filter_config,
+        const traccc::memory_resource& mr, vecmem::copy& copy,
+        queue_wrapper& queue,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     private:
@@ -106,8 +102,6 @@ class seeding_algorithm : public device::seeding_algorithm,
     void select_seeds_kernel(
         const select_seeds_kernel_payload& payload) const override;
 
-    /// @}
+};  // class triplet_seeding_algorithm
 
-};  // class seeding_algorithm
-
-}  // namespace traccc::cuda
+}  // namespace traccc::sycl

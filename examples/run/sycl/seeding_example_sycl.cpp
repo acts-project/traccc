@@ -14,8 +14,8 @@
 // algorithms
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
-#include "traccc/sycl/seeding/seeding_algorithm.hpp"
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
+#include "traccc/sycl/seeding/triplet_seeding_algorithm.hpp"
 
 // io
 #include "traccc/io/read_detector.hpp"
@@ -109,13 +109,14 @@ int seq_run(const traccc::opts::detector& detector_opts,
         track_params_estimation_config, host_mr,
         logger().clone("HostTrackParEstAlg"));
 
-    traccc::sycl::seeding_algorithm sa_sycl{seedfinder_config,
-                                            spacepoint_grid_config,
-                                            seedfilter_config,
-                                            mr,
-                                            copy,
-                                            traccc_queue,
-                                            logger().clone("SyclSeedingAlg")};
+    traccc::sycl::triplet_seeding_algorithm sa_sycl{
+        seedfinder_config,
+        spacepoint_grid_config,
+        seedfilter_config,
+        mr,
+        copy,
+        traccc_queue,
+        logger().clone("SyclSeedingAlg")};
     traccc::sycl::track_params_estimation tp_sycl{
         track_params_estimation_config, mr, copy, traccc_queue,
         logger().clone("SyclTrackParEstAlg")};

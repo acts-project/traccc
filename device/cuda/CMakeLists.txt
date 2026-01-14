@@ -41,8 +41,8 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   # Seed finding code.
   "include/traccc/cuda/seeding/track_params_estimation.hpp"
   "src/seeding/track_params_estimation.cu"
-  "include/traccc/cuda/seeding/seeding_algorithm.hpp"
-  "src/seeding/seeding_algorithm.cu"
+  "include/traccc/cuda/seeding/triplet_seeding_algorithm.hpp"
+  "src/seeding/triplet_seeding_algorithm.cu"
   "include/traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
   "src/seeding/spacepoint_formation_algorithm.cu"
   #GBTS seed finding code

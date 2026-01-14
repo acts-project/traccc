@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2025 CERN for the benefit of the ACTS project
+ * (c) 2021-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -10,8 +10,8 @@
 #include "../common/print_fitted_tracks_statistics.hpp"
 #include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
-#include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
+#include "traccc/cuda/seeding/triplet_seeding_algorithm.hpp"
 #include "traccc/cuda/utils/make_magnetic_field.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
@@ -170,13 +170,14 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     vecmem::cuda::async_copy async_copy{stream.cudaStream()};
 
-    traccc::cuda::seeding_algorithm sa_cuda{seedfinder_config,
-                                            spacepoint_grid_config,
-                                            seedfilter_config,
-                                            mr,
-                                            async_copy,
-                                            stream,
-                                            logger().clone("CudaSeedingAlg")};
+    traccc::cuda::triplet_seeding_algorithm sa_cuda{
+        seedfinder_config,
+        spacepoint_grid_config,
+        seedfilter_config,
+        mr,
+        async_copy,
+        stream,
+        logger().clone("CudaSeedingAlg")};
     traccc::cuda::track_params_estimation tp_cuda{
         track_params_estimation_config, mr, async_copy, stream,
         logger().clone("CudaTrackParEstAlg")};
