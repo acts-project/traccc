@@ -11,9 +11,16 @@ include( traccc-compiler-options-sycl )
 # We need the SYCL language in this directory.
 enable_language( SYCL )
 
-# Set up the build of the traccc::sycl_utils library.
+# Set up the build of the traccc::sycl_magfield library.
+traccc_add_library( traccc_sycl_magfield sycl_magfield TYPE SHARED
+  "include/traccc/sycl/utils/make_magnetic_field.hpp"
+  "src/utils/make_magnetic_field.sycl"
+  "src/utils/magnetic_field_types.hpp"
+)
 
-traccc_add_library( traccc_sycl_utils sycl_utils TYPE SHARED
+if (TRACCC_BUILD_SYCL)
+# Set up the build of the traccc::sycl library.
+traccc_add_library( traccc_sycl sycl TYPE SHARED
   # Utilities.
   "include/traccc/sycl/utils/algorithm_base.hpp"
   "src/utils/algorithm_base.sycl"
@@ -21,9 +28,6 @@ traccc_add_library( traccc_sycl_utils sycl_utils TYPE SHARED
   "src/utils/make_prefix_sum_buff.sycl"
   "include/traccc/sycl/utils/queue_wrapper.hpp"
   "src/utils/queue_wrapper.cpp"
-  "include/traccc/sycl/utils/make_magnetic_field.hpp"
-  "src/utils/make_magnetic_field.sycl"
-  "src/utils/magnetic_field_types.hpp"
   "src/utils/barrier.hpp"
   "src/utils/calculate1DimNdRange.hpp"
   "src/utils/calculate1DimNdRange.sycl"
@@ -33,11 +37,6 @@ traccc_add_library( traccc_sycl_utils sycl_utils TYPE SHARED
   "src/utils/oneDPL.hpp"
   "src/sanity/contiguous_on.hpp"
   "src/sanity/ordered_on.hpp"
-)
-
-if (TRACCC_BUILD_SYCL)
-# Set up the build of the traccc::sycl library.
-traccc_add_library( traccc_sycl sycl TYPE SHARED
   # Clusterization algorithm(s).
   "include/traccc/sycl/clusterization/clusterization_algorithm.hpp"
   "src/clusterization/clusterization_algorithm.sycl"
@@ -68,15 +67,16 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "src/fitting/kalman_fitting.hpp"
 )
 endif()
-target_link_libraries( traccc_sycl_utils
+target_link_libraries( traccc_sycl_magfield
   PUBLIC detray::core vecmem::core
          traccc::core traccc::device_common
   PRIVATE vecmem::sycl covfie::sycl )
 
 if (TRACCC_BUILD_SYCL)
 target_link_libraries( traccc_sycl
-  PUBLIC traccc_sycl_utils
-  PRIVATE vecmem::sycl covfie::sycl oneDPL )
+  PUBLIC detray::core vecmem::core
+         traccc::core traccc::device_common
+  PRIVATE vecmem::sycl covfie::sycl oneDPL)
 
 
 # Set up Thrust specifically for the traccc::sycl library.
