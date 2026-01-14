@@ -20,9 +20,7 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "src/clusterization/measurement_sorting_algorithm.sycl"
   # Seeding algorithm(s).
   "include/traccc/sycl/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
-  "src/seeding/silicon_pixel_spacepoint_formation_algorithm.cpp"
   "src/seeding/silicon_pixel_spacepoint_formation_algorithm.sycl"
-  "src/seeding/silicon_pixel_spacepoint_formation.hpp"
   "include/traccc/sycl/seeding/triplet_seeding_algorithm.hpp"
   "src/seeding/triplet_seeding_algorithm.sycl"
   "include/traccc/sycl/seeding/track_params_estimation.hpp"
