@@ -195,6 +195,9 @@ struct seedfilter_config {
     // the impact parameters (d0) is multiplied by this factor and subtracted
     // from weight
     float impactWeightFactor = 1.f;
+    // assumed variance of the half-Gaussian distribution of the impact
+    // parameter $d_0$ in mm
+    float impactSigma = 5.f;
     // seed weight increased by this value if a compatible seed has been found.
     float compatSeedWeight = 200.f;
     // minimum distance between compatible seeds to be considered for weight
@@ -203,6 +206,13 @@ struct seedfilter_config {
     // how often do you want to increase the weight of a seed for finding a
     // compatible seed?
     size_t compatSeedLimit = 2;
+    // Number of consituents spacepoints for which a seed must be the best
+    // seed, where "best" is defined by the weight. Valid range is
+    // [0, 1, 2, 3] where 0 disables the cut.
+    unsigned int minNumTimesWeightCompatible = 1;
+    // The minimum relative weight for a seed to be considered compatible with
+    // one of its spacepoints.
+    float minWeightCompatibilityFraction = 0.6f;
 
     // seed weight increase
     float good_spB_min_radius = 150.f * unit<float>::mm;
@@ -214,7 +224,7 @@ struct seedfilter_config {
     float good_spB_min_weight = 380.f;
 
     // seed cut
-    float seed_min_weight = 200.f;
+    float seed_min_weight = 400.f;
     float spB_min_radius = 43.f * unit<float>::mm;
 };
 
