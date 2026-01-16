@@ -120,15 +120,6 @@ int main(int argc, char* argv[]) {
         traccc::buffer_from_host_detector(polymorphic_detector, device_mr,
                                           async_copy);
 
-    /// Standard deviations for seed track parameters
-    static constexpr std::array<scalar, e_bound_size> stddevs = {
-        0.03f * traccc::unit<scalar>::mm,
-        0.03f * traccc::unit<scalar>::mm,
-        0.017f,
-        0.017f,
-        0.001f / traccc::unit<scalar>::GeV,
-        1.f * traccc::unit<scalar>::ns};
-
     // Fitting algorithm object
     traccc::fitting_config fit_cfg(fitting_opts);
     fit_cfg.propagation = propagation_opts;
@@ -161,7 +152,7 @@ int main(int argc, char* argv[]) {
                 const typename detector_traits_t::host& det) {
                 // Seed generator
                 traccc::seed_generator<typename detector_traits_t::host> sg(
-                    det, stddevs);
+                    det);
                 evt_data.generate_truth_candidates(
                     truth_track_candidates, truth_measurements, sg, host_mr);
             });
