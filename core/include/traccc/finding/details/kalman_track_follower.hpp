@@ -11,7 +11,7 @@
 #include "traccc/edm/track_container.hpp"
 #include "traccc/edm/track_state_helpers.hpp"
 #include "traccc/finding/actors/measurement_kalman_updater.hpp"
-#include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
+#include "traccc/finding/details/kalman_track_follower_types.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/finding/measurement_selector.hpp"
 #include "traccc/sanity/contiguous_on.hpp"
@@ -67,19 +67,7 @@ kalman_track_follower(
     using scalar_t = detray::dscalar<algebra_t>;
 
     // Detray propagation types
-    using navigator_t = detray::caching_navigator<std::add_const_t<detector_t>>;
-    using stepper_t = detray::rk_stepper<bfield_t, algebra_t>;
-
-    using actor_chain_t =
-        detray::actor_chain<detray::pathlimit_aborter<scalar_t>,
-                            detray::parameter_transporter<algebra_t>,
-                            detray::pointwise_material_interactor<algebra_t>,
-                            traccc::measurement_updater<algebra_t>,
-                            detray::parameter_resetter<algebra_t>,
-                            detray::momentum_aborter<scalar_t>>;
-
-    using propagator_t =
-        detray::propagator<stepper_t, navigator_t, actor_chain_t>;
+    using propagator_t = traccc::details::kf_propagator_t<detector_t, bfield_t>;
 
     // Create the measurement container.
     typename edm::measurement_collection<algebra_t>::const_device measurements{

@@ -79,6 +79,7 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/finding/kernels/gather_best_tips_per_measurement.cu"
   "src/finding/kernels/gather_measurement_votes.cu"
   "src/finding/kernels/update_tip_length_buffer.cu"
+  "src/finding/kernels/kalman_track_follower.hpp"
   "src/finding/kernels/propagate_to_next_surface.hpp"
   # Ambiguity resolution
   "include/traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
@@ -160,6 +161,29 @@ foreach(DETECTOR_NAME ${TRACCC_SUPPORTED_DETECTORS})
         COMMENT "Generating kernel specialization of `apply_interaction` for ${DETECTOR_NAME}"
     )
     target_sources(traccc_cuda PRIVATE ${GENERATED_SOURCE})
+endforeach()
+
+# Generate specializations for kalman_track_follower
+foreach(DETECTOR_NAME ${TRACCC_SUPPORTED_DETECTORS})
+    foreach(BFIELD_NAME ${TRACCC_CUDA_SUPPORTED_BFIELDS})
+        set(GENERATED_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/src/finding/kernels/specializations/kalman_track_follower_${DETECTOR_NAME}_${BFIELD_NAME}.cu")
+        set(TEMPLATE_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/src/finding/kernels/specializations/kalman_track_follower.cu.template")
+        add_custom_command(
+            OUTPUT "${GENERATED_SOURCE}"
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/src/finding/kernels/specializations/"
+            COMMAND
+                Python::Interpreter
+                "${KERNEL_SPECIALIZATION_PY}"
+                "${TEMPLATE_SOURCE}"
+                -o "${GENERATED_SOURCE}"
+                --detector "${DETECTOR_NAME}"
+                --bfield "${BFIELD_NAME}"
+                --model cuda
+            DEPENDS "${KERNEL_SPECIALIZATION_PY}" "${TEMPLATE_SOURCE}"
+            COMMENT "Generating kernel specialization of `kalman_track_follower` for ${DETECTOR_NAME} and ${BFIELD_NAME}"
+        )
+        target_sources(traccc_cuda PRIVATE ${GENERATED_SOURCE})
+    endforeach()
 endforeach()
 
 # Generate specializations for propagate_to_next_surface
