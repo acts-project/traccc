@@ -55,8 +55,7 @@ struct measurement_selector {
     /// @returns the projection matrix H
     template <detray::concepts::algebra algebra_t, unsigned int D,
               typename measurement_backend_t>
-    TRACCC_HOST_DEVICE static constexpr detray::dmatrix<algebra_t, D,
-                                                        e_bound_size>
+    TRACCC_HOST_DEVICE static detray::dmatrix<algebra_t, D, e_bound_size>
     observation_model(
         const edm::measurement<measurement_backend_t>& measurement,
         const bound_track_parameters<algebra_t>& bound_params,
@@ -91,7 +90,7 @@ struct measurement_selector {
     /// @returns the projection matrix H
     template <detray::concepts::algebra algebra_t, unsigned int D,
               typename measurement_backend_t>
-    TRACCC_HOST_DEVICE static constexpr detray::dmatrix<algebra_t, D, 1>
+    TRACCC_HOST_DEVICE static detray::dmatrix<algebra_t, D, 1>
     calibrated_measurement_position(
         const edm::measurement<measurement_backend_t>& measurement,
         const config& /*cfg*/) {
@@ -117,7 +116,7 @@ struct measurement_selector {
     /// @returns the projection matrix H
     template <detray::concepts::algebra algebra_t, unsigned int D,
               typename measurement_backend_t>
-    TRACCC_HOST_DEVICE static constexpr detray::dmatrix<algebra_t, D, D>
+    TRACCC_HOST_DEVICE static detray::dmatrix<algebra_t, D, D>
     calibrated_measurement_covariance(
         const edm::measurement<measurement_backend_t>& measurement,
         const config& /*cfg*/) {
@@ -149,10 +148,10 @@ struct measurement_selector {
     /// @returns the predicted chi2 of the calibrated measurement
     template <typename measurement_backend_t,
               detray::concepts::algebra algebra_t>
-    TRACCC_HOST_DEVICE static constexpr detray::dscalar<algebra_t>
-    predicted_chi2(const edm::measurement<measurement_backend_t>& measurement,
-                   const bound_track_parameters<algebra_t>& bound_params,
-                   const config& cfg, const bool is_line) {
+    TRACCC_HOST_DEVICE static detray::dscalar<algebra_t> predicted_chi2(
+        const edm::measurement<measurement_backend_t>& measurement,
+        const bound_track_parameters<algebra_t>& bound_params,
+        const config& cfg, const bool is_line) {
 
         // Measurement maximal dimension
         constexpr unsigned int D = 2;
@@ -216,8 +215,7 @@ struct measurement_selector {
     ///
     /// @returns the optimal candidate measurement for the input params
     template <detray::concepts::algebra algebra_t>
-    TRACCC_HOST_DEVICE static constexpr candidate_measurement
-    find_optimal_measurement(
+    TRACCC_HOST_DEVICE static candidate_measurement find_optimal_measurement(
         const bound_track_parameters<algebra_t>& bound_params,
         const typename edm::measurement_collection<algebra_t>::const_device&
             measurements,
@@ -260,7 +258,7 @@ struct measurement_selector {
     ///
     /// @returns a collection of compatible measurements, sorted by pred. chi2
     template <detray::concepts::algebra algebra_t>
-    TRACCC_HOST_DEVICE static constexpr vecmem::vector<candidate_measurement>
+    TRACCC_HOST_DEVICE static vecmem::vector<candidate_measurement>
     find_compatible_measurements(
         const bound_track_parameters<algebra_t>& bound_params,
         const typename edm::measurement_collection<algebra_t>::const_device&

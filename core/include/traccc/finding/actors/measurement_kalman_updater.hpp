@@ -60,6 +60,8 @@ struct measurement_updater : detray::actor {
         unsigned short max_n_holes{3u};
         // Max no. consecutive holes on track
         unsigned short max_n_consecutive_holes{2u};
+        // Index of the next track state in the track state collection
+        unsigned int state_idx{std::numeric_limits<unsigned int>::max()};
 
         // Statistics for the current track
         track_stats<scalar_t> m_stats{};
@@ -169,7 +171,12 @@ struct measurement_updater : detray::actor {
 
             // Add the track state to the track
             trk_state.set_hole(false);
-            updater_state.m_track_states.push_back(trk_state);
+
+            assert(updater_state.state_idx <
+                   updater_state.m_track_states.size());
+            updater_state.m_track_states.at(updater_state.state_idx) =
+                trk_state;
+            updater_state.state_idx++;
 
             // Update statistics
             updater_state.m_stats.n_consecutive_holes = 0u;

@@ -11,7 +11,7 @@
 #include "traccc/edm/track_container.hpp"
 #include "traccc/edm/track_state_helpers.hpp"
 #include "traccc/finding/actors/measurement_kalman_updater.hpp"
-#include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
+#include "traccc/finding/details/kalman_track_follower_types.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/finding/measurement_selector.hpp"
 #include "traccc/sanity/contiguous_on.hpp"
@@ -58,28 +58,16 @@ kalman_track_follower(
     const typename edm::measurement_collection<
         typename detector_t::algebra_type>::const_view& measurements_view,
     const bound_track_parameters_collection_types::const_view& seeds_view,
-    const finding_config& config, vecmem::memory_resource& mr,
+    const finding_config& cfg, vecmem::memory_resource& mr,
     const Logger& /*log*/) {
 
-    assert(config.min_track_candidates_per_track >= 1);
+    assert(cfg.min_track_candidates_per_track >= 1);
 
     using algebra_t = typename detector_t::algebra_type;
     using scalar_t = detray::dscalar<algebra_t>;
 
     // Detray propagation types
-    using navigator_t = detray::caching_navigator<std::add_const_t<detector_t>>;
-    using stepper_t = detray::rk_stepper<bfield_t, algebra_t>;
-
-    using actor_chain_t =
-        detray::actor_chain<detray::pathlimit_aborter<scalar_t>,
-                            detray::parameter_transporter<algebra_t>,
-                            detray::pointwise_material_interactor<algebra_t>,
-                            traccc::measurement_updater<algebra_t>,
-                            detray::parameter_resetter<algebra_t>,
-                            detray::momentum_aborter<scalar_t>>;
-
-    using propagator_t =
-        detray::propagator<stepper_t, navigator_t, actor_chain_t>;
+    using propagator_t = traccc::details::kf_propagator_t<detector_t, bfield_t>;
 
     // Create the measurement container.
     typename edm::measurement_collection<algebra_t>::const_device measurements{
@@ -125,14 +113,14 @@ kalman_track_follower(
     track_container.tracks.reserve(n_seeds);
     // Total number of track states for all tracks in one event
     track_container.states.reserve(n_seeds *
-                                   config.max_track_candidates_per_track);
+                                   cfg.max_track_candidates_per_track);
 
     // Give the device container to the to the measurement updater
     typename edm::track_state_collection<algebra_t>::device track_states(
         vecmem::get_data(track_container.states));
 
     // Create detray propagator
-    auto prop_cfg{config.propagation};
+    auto prop_cfg{cfg.propagation};
     propagator_t propagator(prop_cfg);
 
     // Configuration for measurement calibration
@@ -144,7 +132,7 @@ kalman_track_follower(
         // Construct propagation state
         typename propagator_t::state propagation(seed, field, det);
         propagation.set_particle(
-            detail::correct_particle_hypothesis(config.ptc_hypothesis, seed));
+            detail::correct_particle_hypothesis(cfg.ptc_hypothesis, seed));
 
         // Pathlimit aborter
         typename detray::pathlimit_aborter<scalar_t>::state aborter_state;
@@ -166,18 +154,20 @@ kalman_track_follower(
             momentum_aborter_state{};
 
         // Update the actor config
-        momentum_aborter_state.min_pT(static_cast<scalar_t>(config.min_pT));
-        momentum_aborter_state.min_p(static_cast<scalar_t>(config.min_p));
+        momentum_aborter_state.min_pT(static_cast<scalar_t>(cfg.min_pT));
+        momentum_aborter_state.min_p(static_cast<scalar_t>(cfg.min_p));
 
-        meas_updater_state.max_chi2 = config.chi2_max;
+        // Index of first track state
+        const unsigned int track_states_offset{
+            seed_idx * cfg.max_track_candidates_per_track};
+
+        meas_updater_state.max_chi2 = cfg.chi2_max;
         meas_updater_state.max_n_holes =
-            static_cast<unsigned short>(config.max_num_skipping_per_cand);
+            static_cast<unsigned short>(cfg.max_num_skipping_per_cand);
         meas_updater_state.max_n_consecutive_holes =
-            static_cast<unsigned short>(config.max_num_consecutive_skipped);
+            static_cast<unsigned short>(cfg.max_num_consecutive_skipped);
+        meas_updater_state.state_idx = track_states_offset;
         meas_updater_state.m_calib_cfg = calib_cfg;
-
-        // Current number of track states before new track is added
-        const unsigned int track_states_offset{track_states.size()};
 
         auto actor_states = detray::tie(aborter_state, transporter_state,
                                         interactor_state, meas_updater_state,
@@ -187,9 +177,9 @@ kalman_track_follower(
         propagator.propagate(propagation, actor_states);
 
         // Observe minimum track length
-        const unsigned int n_new_track_states{track_states.size() -
+        const unsigned int n_new_track_states{meas_updater_state.state_idx -
                                               track_states_offset};
-        if (n_new_track_states < config.min_track_candidates_per_track) {
+        if (n_new_track_states < cfg.min_track_candidates_per_track) {
             continue;
         }
 
@@ -197,7 +187,7 @@ kalman_track_follower(
         vecmem::vector<edm::track_constituent_link> state_links;
         state_links.reserve(n_new_track_states);
         for (unsigned int state_idx = track_states_offset;
-             state_idx < track_states.size(); state_idx++) {
+             state_idx < meas_updater_state.state_idx; state_idx++) {
             state_links.emplace_back(edm::track_constituent_link::track_state,
                                      state_idx);
         }
