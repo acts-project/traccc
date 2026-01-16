@@ -37,7 +37,7 @@ class track_fitting : public interface, public config_provider<fitting_config> {
     /// The internal configuration
     fitting_config m_config;
     /// Particle hypothesis (PDG)
-    int m_pdg = 13;
+    int m_pdg{m_config.ptc_hypothesis.pdg_num()};
 
 };  // class track_fitting
 
