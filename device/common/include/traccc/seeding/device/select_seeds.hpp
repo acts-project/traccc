@@ -42,7 +42,9 @@ inline void select_seeds(
     const triplet_counter_spM_collection_types::const_view& spM_tc_view,
     const triplet_counter_collection_types::const_view& tc_view,
     const device_triplet_collection_types::const_view& triplet_view,
-    triplet* data, edm::seed_collection::view seed_view);
+    triplet* data,
+    const vecmem::data::vector_view<const unsigned int> votes_per_triplet_view,
+    edm::seed_collection::view seed_view);
 
 }  // namespace traccc::device
 
