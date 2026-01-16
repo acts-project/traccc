@@ -29,7 +29,7 @@ usage() {
    echo "  -r <repetitions>     The number of repetitions in the test"
    echo "  -e <eventMultiplier> Multiplier for the number of events per thread"
    echo "  -c <csvFile>         Name of the output CSV file"
-   echo "  -y <throughputType>  Type of throughput test to run (traccc/g200/g100)"
+   echo "  -y <throughputType>  Type of throughput test to run (traccc/g200/g100, or with GBTS, g230/g130)"
    echo "  -h                   Print this help"
    echo ""
 }
@@ -146,6 +146,12 @@ if [[ "${TRACCC_THROUGPUT_TYPE}" == "g200" ]]; then
    TRACCC_CUTS=${G200_CUTS[@]}
 elif [[ "${TRACCC_THROUGPUT_TYPE}" == "g100" ]]; then
    TRACCC_CUTS=${G100_CUTS[@]}
+elif [[ "${TRACCC_THROUGPUT_TYPE}" == "g230" ]]; then
+   TRACCC_CUTS=${G200_CUTS[@]}
+   TRACCC_CUTS+=(--useGBTS --gbts_config_dir="${TRACCC_INPUT_DIR}")
+elif [[ "${TRACCC_THROUGPUT_TYPE}" == "g130" ]]; then
+   TRACCC_CUTS=${G100_CUTS[@]}
+   TRACCC_CUTS+=(--useGBTS --gbts_config_dir="${TRACCC_INPUT_DIR}")
 elif [[ "${TRACCC_THROUGPUT_TYPE}" != "traccc" ]]; then
    echo "***"
    echo "*** Unknown throughput type: '${TRACCC_THROUGPUT_TYPE}'"
@@ -177,20 +183,20 @@ for NTHREAD in $(seq ${TRACCC_MIN_THREADS} ${TRACCC_THREAD_STEP} ${TRACCC_MAX_TH
          ((COUNTER++))
 
          # Run the throughput test.
-         ${TRACCC_EXECUTABLE}                                                  \
-            --detector-file="${TRACCC_INPUT_DIR}/ITk_DetectorBuilder_geometry.json" \
-            --material-file="${TRACCC_INPUT_DIR}/ITk_detector_material.json"   \
-            --grid-file="${TRACCC_INPUT_DIR}/ITk_DetectorBuilder_surface_grids.json" \
-            --digitization-file="${TRACCC_INPUT_DIR}/ITk_digitization_config_with_strips_with_shift_annulus_flip.json" \
-            --read-bfield-from-file                                            \
-            --bfield-file="${TRACCC_INPUT_DIR}/ITk_bfield.cvf"                 \
-            --input-directory="${TRACCC_INPUT_DIR}/${EVTDIR}/"                 \
-            --use-acts-geom-source=0                                           \
-            --input-events=100                                                 \
-            --cpu-threads=${NTHREAD}                                           \
-            --cold-run-events=$((5*${NTHREAD}))                                \
-            --processed-events=$((100*${NTHREAD}))                             \
-            --log-file="${TRACCC_CSV_FILE}"                                    \
+         ${TRACCC_EXECUTABLE}                                                        \
+	    --detector-file="${TRACCC_INPUT_DIR}/detray_detector_geometry.json"          \
+            --material-file="${TRACCC_INPUT_DIR}/detray_detector_material_maps.json" \
+            --grid-file="${TRACCC_INPUT_DIR}/detray_detector_surface_grids.json"     \
+            --digitization-file="${TRACCC_INPUT_DIR}/ITk_digitization_config.json"   \
+            --read-bfield-from-file                                                  \
+            --bfield-file="${TRACCC_INPUT_DIR}/ITk_bfield.cvf"                       \
+            --input-directory="${TRACCC_INPUT_DIR}/${EVTDIR}/"                       \
+            --use-acts-geom-source=0                                                 \
+            --input-events=100                                                       \
+            --cpu-threads=${NTHREAD}                                                 \
+            --cold-run-events=$((5*${NTHREAD}))                                      \
+            --processed-events=$((100*${NTHREAD}))                                   \
+            --log-file="${TRACCC_CSV_FILE}"                                          \
             ${TRACCC_CUTS[@]}
       done
    done
