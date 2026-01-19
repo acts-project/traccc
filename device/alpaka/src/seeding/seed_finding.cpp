@@ -216,13 +216,15 @@ edm::seed_collection::buffer seed_finding::operator()(
     Idx threadsPerBlock = std::min(getWarpSize<Acc>() * 2, maxThreads);
 
     // Get the sizes from the grid view
-    auto grid_sizes = m_copy.get_sizes(g2_view._data_view);
+    const std::vector<unsigned int> grid_sizes =
+        m_copy.get_sizes(g2_view._data_view);
 
     // Create prefix sum buffer
     vecmem::data::vector_buffer sp_grid_prefix_sum_buff =
         make_prefix_sum_buff(grid_sizes, m_copy, m_mr, m_queue);
 
-    const auto num_spacepoints = m_copy.get_size(sp_grid_prefix_sum_buff);
+    const unsigned int num_spacepoints =
+        m_copy.get_size(sp_grid_prefix_sum_buff);
     if (num_spacepoints == 0) {
         return {0, m_mr.main};
     }

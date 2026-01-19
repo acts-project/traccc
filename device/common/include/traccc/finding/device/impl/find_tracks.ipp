@@ -210,7 +210,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
 
             if (use_measurement) {
 
-                auto trk_state =
+                edm::track_state trk_state =
                     edm::make_track_state<typename detector_t::algebra_type>(
                         measurements, meas_idx);
 

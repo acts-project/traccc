@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -41,8 +41,8 @@ measurement_creation_algorithm::operator()(
     for (decltype(clusters)::size_type i = 0; i < clusters.size(); ++i) {
 
         // Get the cluster and measurement.
-        const auto cluster = clusters.at(i);
-        auto measurement = measurements.at(i);
+        const edm::silicon_cluster cluster = clusters.at(i);
+        edm::measurement measurement = measurements.at(i);
 
         // A security check.
         assert(cluster.cell_indices().empty() == false);
