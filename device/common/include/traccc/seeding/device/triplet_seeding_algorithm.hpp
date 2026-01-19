@@ -9,7 +9,7 @@
 
 // Local include(s).
 #include "traccc/device/algorithm_base.hpp"
-#include "traccc/device/fill_prefix_sum.hpp"
+#include "traccc/device/prefix_sum_element.hpp"
 #include "traccc/edm/device/device_doublet.hpp"
 #include "traccc/edm/device/device_triplet.hpp"
 #include "traccc/edm/device/doublet_counter.hpp"

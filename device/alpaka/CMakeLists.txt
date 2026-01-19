@@ -28,8 +28,6 @@ traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   "include/traccc/alpaka/utils/algorithm_base.hpp"
   "src/utils/algorithm_base.cpp"
   "include/traccc/alpaka/utils/get_device_info.hpp"
-  "include/traccc/alpaka/utils/make_prefix_sum_buff.hpp"
-  "src/utils/make_prefix_sum_buff.cpp"
   "src/utils/get_device_info.cpp"
   "include/traccc/alpaka/utils/queue.hpp"
   "src/utils/queue.cpp"

@@ -17,8 +17,7 @@ inline void populate_grid(
     const global_index_t globalIndex, const seedfinder_config& config,
     const edm::spacepoint_collection::const_view& spacepoints_view,
     details::spacepoint_grid_types::view grid_view,
-    vecmem::data::vector_view<traccc::pair<unsigned int, unsigned int> >
-        grid_prefix_sum_view) {
+    vecmem::data::vector_view<prefix_sum_element_t> grid_prefix_sum_view) {
 
     // Check if anything needs to be done.
     const edm::spacepoint_collection::const_device spacepoints(
@@ -48,8 +47,8 @@ inline void populate_grid(
             grid.bin(bin_index).push_back(globalIndex);
 
         // Add a prefix sum element for the spacepoint.
-        vecmem::device_vector<traccc::pair<unsigned int, unsigned int> >
-            grid_prefix_sum(grid_prefix_sum_view);
+        vecmem::device_vector<prefix_sum_element_t> grid_prefix_sum(
+            grid_prefix_sum_view);
         grid_prefix_sum.push_back({bin_index, sp_index});
     }
 }

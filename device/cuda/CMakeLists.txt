@@ -22,8 +22,6 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   # Utility definitions.
   "include/traccc/cuda/utils/algorithm_base.hpp"
   "src/utils/algorithm_base.cpp"
-  "include/traccc/cuda/utils/make_prefix_sum_buff.hpp"
-  "src/utils/make_prefix_sum_buff.cu"
   "include/traccc/cuda/utils/stream.hpp"
   "src/utils/barrier.hpp"
   "src/utils/cuda_error_handling.hpp"

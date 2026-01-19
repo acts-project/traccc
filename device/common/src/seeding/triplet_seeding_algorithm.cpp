@@ -8,7 +8,6 @@
 // Local include(s).
 #include "traccc/seeding/device/triplet_seeding_algorithm.hpp"
 
-#include "traccc/device/fill_prefix_sum.hpp"
 #include "traccc/edm/device/doublet_counter.hpp"
 #include "traccc/edm/device/seeding_global_counter.hpp"
 

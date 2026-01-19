@@ -8,8 +8,8 @@
 #pragma once
 
 // Local include(s).
-#include "traccc/device/fill_prefix_sum.hpp"
 #include "traccc/device/global_index.hpp"
+#include "traccc/device/prefix_sum_element.hpp"
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
@@ -32,8 +32,7 @@ inline void populate_grid(
     global_index_t globalIndex, const seedfinder_config& config,
     const edm::spacepoint_collection::const_view& spacepoints,
     details::spacepoint_grid_types::view grid,
-    vecmem::data::vector_view<traccc::pair<unsigned int, unsigned int> >
-        grid_prefix_sum);
+    vecmem::data::vector_view<prefix_sum_element_t> grid_prefix_sum);
 
 }  // namespace traccc::device
 
