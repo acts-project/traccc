@@ -24,6 +24,7 @@
 #include "traccc/finding/details/kalman_track_follower_types.hpp"
 #include "traccc/finding/device/barcode_surface_comparator.hpp"
 #include "traccc/finding/finding_config.hpp"
+#include "traccc/finding/track_state_candidate.hpp"
 #include "traccc/utils/logging.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/projections.hpp"
@@ -132,6 +133,56 @@ kalman_track_follower(
     copy.setup(seeds_buffer)->ignore();
     copy(seeds, seeds_buffer, vecmem::copy::type::device_to_device)->ignore();
 
+    // Get output track statistics
+    vecmem::data::vector_buffer<track_stats<scalar_t>> track_stats_buffer{
+        n_seeds, mr.main};
+    copy.setup(track_stats_buffer)->ignore();
+
+    // Get the output track state data, depending on which data is required
+    vecmem::data::vector_buffer<track_state_candidate> track_cand_buffer{
+        0, mr.main};
+    vecmem::data::vector_buffer<filtered_track_state_candidate<algebra_t>>
+        filtered_track_cand_buffer{0, mr.main};
+    vecmem::data::vector_buffer<full_track_state_candidate<algebra_t>>
+        full_track_cand_buffer{0, mr.main};
+
+    // Allocate memory for the required data collection mode
+    const unsigned int max_cands{seeds.size() *
+                                 config.max_track_candidates_per_track};
+    if (config.run_smoother == smoother_type::e_none) {
+        track_cand_buffer = vecmem::data::vector_buffer<track_state_candidate>{
+            max_cands, mr.main};
+    } else if (config.run_smoother == smoother_type::e_kalman) {
+        filtered_track_cand_buffer = vecmem::data::vector_buffer<
+            filtered_track_state_candidate<algebra_t>>{max_cands, mr.main};
+    } else if (config.run_smoother == smoother_type::e_mbf) {
+        full_track_cand_buffer =
+            vecmem::data::vector_buffer<full_track_state_candidate<algebra_t>>{
+                max_cands, mr.main};
+    }
+
+    // Allocate the kernel's payload in host memory.
+    using payload_t = device::kalman_track_follower_payload<propagator_t>;
+    const payload_t host_payload{
+        .det_data = det,
+        .field_data = field,
+        .seeds_view = seeds_buffer,
+        .measurements_view = measurements_view,
+        .measurement_ranges_view = meas_ranges_buffer,
+        .track_stats_view = track_stats_buffer,
+        .track_cand_view = track_cand_buffer,
+        .filtered_track_cand_view = filtered_track_cand_buffer,
+        .full_track_cand_view = full_track_cand_buffer,
+    };
+
+    const unsigned int nThreads = warp_size * 4;
+    const unsigned int nBlocks = (n_seeds - 1) / nThreads;
+    traccc::cuda::kalman_track_follower<propagator_t>(
+        nBlocks, nThreads, 0u, stream, config, host_payload);
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+    str.synchronize();
+
     // Create track candidate buffer
     vecmem::vector<unsigned int> n_constituent_links(mr.host);
     n_constituent_links.resize(n_seeds, config.max_track_candidates_per_track);
@@ -143,25 +194,6 @@ kalman_track_follower(
         measurements_view};
     copy.setup(track_candidates_buffer.tracks)->ignore();
     copy.setup(track_candidates_buffer.states)->ignore();
-
-    // Allocate the kernel's payload in host memory.
-    using payload_t = device::kalman_track_follower_payload<propagator_t>;
-    const payload_t host_payload{
-        .det_data = det,
-        .field_data = field,
-        .seeds_view = seeds_buffer,
-        .measurements_view = measurements_view,
-        .measurement_ranges_view = meas_ranges_buffer,
-        .tracks_view = {track_candidates_buffer},
-    };
-
-    const unsigned int nThreads = warp_size * 4;
-    const unsigned int nBlocks = (n_seeds - 1) / nThreads;
-    traccc::cuda::kalman_track_follower<propagator_t>(
-        nBlocks, nThreads, 0u, stream, config, host_payload);
-    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
-
-    str.synchronize();
 
     return track_candidates_buffer;
 }

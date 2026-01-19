@@ -241,7 +241,7 @@ struct measurement_selector {
 
             // Check predicted chi2 cut
             if (chi2 < cand.chi2) {
-                cand = {meas_idx, chi2};
+                cand = {meas_idx, static_cast<float>(chi2)};
             }
         }
 
@@ -260,11 +260,11 @@ struct measurement_selector {
     template <detray::concepts::algebra algebra_t>
     TRACCC_HOST_DEVICE static vecmem::vector<candidate_measurement>
     find_compatible_measurements(
-        const bound_track_parameters<algebra_t>& bound_params,
+        const bound_track_parameters<algebra_t>& /*bound_params*/,
         const typename edm::measurement_collection<algebra_t>::const_device&
-            measurements,
-        vecmem::device_vector<unsigned int> meas_ranges, const config& cfg,
-        const bool is_line) {
+        /*measurements*/,
+        vecmem::device_vector<unsigned int> /*meas_ranges*/,
+        const config& /*cfg*/, const bool /*is_line*/) {
         /* TODO: Implement*/
         assert(false);
         return {};

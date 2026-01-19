@@ -49,11 +49,35 @@ struct gain_matrix_updater {
             measurements,
         const bound_track_parameters<algebra_t>& bound_params,
         const bool is_line) const {
+        return this->operator()(trk_state.filtered_params(),
+                                trk_state.filtered_chi2(),
+                                measurements.at(trk_state.measurement_index()),
+                                bound_params, is_line);
+    }
+
+    /// Gain matrix updater operation
+    ///
+    /// @brief Based on "Application of Kalman filtering to track and vertex
+    /// fitting", R.Frühwirth, NIM A
+    ///
+    /// @param[out] filtered_params the filtered track vector and covariance
+    /// @param[out] filtered_chi2 the filtered chi2 value
+    /// @param[in] measurement the new measurement for the update
+    /// @param[in] bound_params the predicted track parameters
+    /// @param[in] is_line whether the measurement is on a line shaped surface
+    ///
+    /// @return kalman fitter status
+    template <typename measurement_backend_t>
+    [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status operator()(
+        bound_track_parameters<algebra_t>& filtered_params,
+        detray::dscalar<algebra_t>& filtered_chi2,
+        const edm::measurement<measurement_backend_t>& measurement,
+        const bound_track_parameters<algebra_t>& bound_params,
+        const bool is_line) const {
 
         static constexpr unsigned int D = 2;
 
-        [[maybe_unused]] const unsigned int dim{
-            measurements.at(trk_state.measurement_index()).dimensions()};
+        [[maybe_unused]] const unsigned int dim{measurement.dimensions()};
 
         TRACCC_VERBOSE_HOST_DEVICE("In gain-matrix-updater...");
         TRACCC_VERBOSE_HOST_DEVICE("Measurement dim: %d", dim);
@@ -70,8 +94,7 @@ struct gain_matrix_updater {
 
         // Measurement data on surface
         matrix_type<D, 1> meas_local;
-        edm::get_measurement_local<algebra_t>(
-            measurements.at(trk_state.measurement_index()), meas_local);
+        edm::get_measurement_local<algebra_t>(measurement, meas_local);
 
         assert((dim > 1) || (getter::element(meas_local, 1u, 0u) == 0.f));
 
@@ -83,8 +106,7 @@ struct gain_matrix_updater {
         // Predicted covaraince of bound track parameters
         const bound_matrix_type& predicted_cov = bound_params.covariance();
 
-        const subspace<algebra_t, e_bound_size> subs(
-            measurements.at(trk_state.measurement_index()).subspace());
+        const subspace<algebra_t, e_bound_size> subs(measurement.subspace());
         matrix_type<D, e_bound_size> H = subs.template projector<D>();
 
         // Flip the sign of projector matrix element in case the first element
@@ -101,8 +123,7 @@ struct gain_matrix_updater {
 
         // Spatial resolution (Measurement covariance)
         matrix_type<D, D> V;
-        edm::get_measurement_covariance<algebra_t>(
-            measurements.at(trk_state.measurement_index()), V);
+        edm::get_measurement_covariance<algebra_t>(measurement, V);
         // @TODO: Fix properly
         if (/*dim == 1*/ getter::element(meas_local, 1u, 0u) == 0.f) {
             getter::element(V, 1u, 1u) = 1000.f;
@@ -192,29 +213,29 @@ struct gain_matrix_updater {
         }
 
         // Set the chi2 for this track and measurement
-        trk_state.filtered_params().set_vector(filtered_vec);
-        trk_state.filtered_params().set_covariance(filtered_cov);
-        trk_state.filtered_chi2() = chi2_val;
+        filtered_params.set_vector(filtered_vec);
+        filtered_params.set_covariance(filtered_cov);
+        filtered_chi2 = chi2_val;
 
-        if (math::fmod(trk_state.filtered_params().theta(),
+        if (math::fmod(filtered_params.theta(),
                        2.f * constant<traccc::scalar>::pi) == 0.f) {
             TRACCC_ERROR_HOST_DEVICE(
                 "Hit theta pole after filtering : %f (unrecoverable error "
                 "pre-normalization)",
-                trk_state.filtered_params().theta());
+                filtered_params.theta());
             return kalman_fitter_status::ERROR_THETA_POLE;
         }
 
         // Wrap the phi and theta angles in their valid ranges
-        normalize_angles(trk_state.filtered_params());
+        normalize_angles(filtered_params);
 
-        const scalar theta = trk_state.filtered_params().theta();
+        const scalar theta = filtered_params.theta();
         if (theta <= 0.f || theta >= 2.f * constant<traccc::scalar>::pi) {
             TRACCC_ERROR_HOST_DEVICE("Hit theta pole in filtering : %f", theta);
             return kalman_fitter_status::ERROR_THETA_POLE;
         }
 
-        assert(!trk_state.filtered_params().is_invalid());
+        assert(!filtered_params.is_invalid());
 
         return kalman_fitter_status::SUCCESS;
     }

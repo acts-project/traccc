@@ -15,7 +15,9 @@
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/track_container.hpp"
 #include "traccc/edm/track_parameters.hpp"
+#include "traccc/finding/actors/measurement_kalman_updater.hpp"
 #include "traccc/finding/finding_config.hpp"
+#include "traccc/finding/track_state_candidate.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
@@ -27,6 +29,7 @@ namespace traccc::device {
 template <typename propagator_t>
 struct kalman_track_follower_payload {
     using algebra_t = typename propagator_t::detector_type::algebra_type;
+    using scalar_t = detray::dscalar<algebra_t>;
 
     /**
      * @brief View object to the tracking detector description
@@ -56,9 +59,18 @@ struct kalman_track_follower_payload {
     vecmem::data::vector_view<unsigned int> measurement_ranges_view;
 
     /**
-     * @brief View object to the vector of track candidates
+     * @brief View object to the collected track statistic data
      */
-    edm::track_container<algebra_t>::view tracks_view;
+    vecmem::data::vector_view<track_stats<scalar_t>> track_stats_view;
+
+    /**
+     * @brief View object to the collected track state data
+     */
+    vecmem::data::vector_view<track_state_candidate> track_cand_view;
+    vecmem::data::vector_view<filtered_track_state_candidate<algebra_t>>
+        filtered_track_cand_view;
+    vecmem::data::vector_view<full_track_state_candidate<algebra_t>>
+        full_track_cand_view;
 };
 
 /// Function that run Kalman filter based track following

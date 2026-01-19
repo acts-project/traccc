@@ -172,7 +172,7 @@ combinatorial_kalman_filter(
      * finding, we need some space to store the intermediate Jacobians
      * and parameters. Allocate that space here.
      */
-    if (false && config.run_mbf_smoother) {
+    if (false && config.run_smoother == smoother_type::e_mbf) {
         jacobian_ptr = vecmem::make_unique_alloc<
             bound_matrix<typename detector_t::algebra_type>[]>(
             mr.main, link_buffer_capacity);
@@ -491,7 +491,7 @@ combinatorial_kalman_filter(
              *****************************************************************/
 
             {
-                if (false && config.run_mbf_smoother) {
+                if (false && config.run_smoother == smoother_type::e_mbf) {
                     tmp_jacobian_ptr = vecmem::make_unique_alloc<
                         bound_matrix<typename detector_t::algebra_type>[]>(
                         mr.main, n_candidates);
@@ -582,7 +582,8 @@ combinatorial_kalman_filter(
                          vecmem::get_data(link_filtered_parameter_buffer)](
                         ::sycl::nd_item<1> item) {
                         device::build_tracks(details::global_index(item),
-                                             false && config.run_mbf_smoother,
+                                             false && config.run_smoother ==
+                                                          smoother_type::e_mbf,
                                              {.seeds_view = seeds,
                                               .links_view = links,
                                               .tips_view = tips,

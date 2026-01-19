@@ -14,7 +14,9 @@
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/measurement_helpers.hpp"
 #include "traccc/edm/track_state_collection.hpp"
+#include "traccc/finding/finding_config.hpp"
 #include "traccc/finding/measurement_selector.hpp"
+#include "traccc/finding/track_state_candidate.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 #include "traccc/fitting/kalman_filter/is_line_visitor.hpp"
 #include "traccc/fitting/status_codes.hpp"
@@ -22,23 +24,26 @@
 
 // detray include(s)
 #include <detray/propagator/base_actor.hpp>
+#include <detray/utils/ranges/detail/iterator_functions.hpp>
 
 namespace traccc {
 
 /// Some statistics of a given candidate track
 template <detray::concepts::scalar scalar_t>
 struct track_stats {
-    scalar_t ndf_sum{0.f};
     scalar_t chi2_sum{0.f};
-    unsigned short n_holes{0u};
-    unsigned short n_consecutive_holes{0u};
+    unsigned int seed_idx{std::numeric_limits<unsigned int>::max()};
+    std::uint_least16_t n_track_states{0u};
+    std::uint_least16_t ndf_sum{0u};
+    std::uint_least16_t n_holes{0u};
+    std::uint_least16_t n_consecutive_holes{0u};
 };
 
 /// Find the optimal next measurement and perform a Kalman update on it
 template <detray::concepts::algebra algebra_t>
 struct measurement_updater : detray::actor {
 
-    // Contains the current track states and some statistics
+    /// Contains the current track states and some statistics
     struct state {
         using scalar_t = detray::dscalar<algebra_t>;
         using measurement_collection_t = edm::measurement_collection<algebra_t>;
@@ -48,39 +53,41 @@ struct measurement_updater : detray::actor {
             typename edm::measurement_collection<algebra_t>::const_device
                 measurements,
             vecmem::data::vector_view<unsigned int> meas_ranges_view,
-            typename edm::track_state_collection<algebra_t>::device&
-                track_states)
+            void* track_state_candidates, const smoother_type smoother)
             : m_measurements{measurements},
               m_measurement_ranges{meas_ranges_view},
-              m_track_states{track_states} {}
+              m_cand_ptr{track_state_candidates},
+              m_run_smoother{smoother} {}
 
-        // Congfig params
+        /// Congfig params
         scalar_t max_chi2{0.f};
-        // Max no. holes on track
+        /// Max no. holes on track
         unsigned short max_n_holes{3u};
-        // Max no. consecutive holes on track
+        /// Max no. consecutive holes on track
         unsigned short max_n_consecutive_holes{2u};
-        // Index of the next track state in the track state collection
-        unsigned int state_idx{std::numeric_limits<unsigned int>::max()};
 
-        // Statistics for the current track
+        /// Statistics for the current track
         track_stats<scalar_t> m_stats{};
 
-        // Calibration configuration
+        /// Calibration configuration
         traccc::measurement_selector::config m_calib_cfg{};
 
-        // Measurement container
+        /// Measurement container
         typename measurement_collection_t::const_device m_measurements;
-        // Per surface measurement index ranges into measurement cont.
+        /// Per surface measurement index ranges into measurement cont.
         vecmem::device_vector<unsigned int> m_measurement_ranges;
-        // Track states for the current track
-        typename edm::track_state_collection<algebra_t>::device m_track_states;
+        /// Track states for the current track
+        void* m_cand_ptr{nullptr};
+        /// The track candidate collection type pointed to
+        smoother_type m_run_smoother{smoother_type::e_mbf};
     };
 
     /// Select the optimal next measurement and run the KF update
     template <typename propagator_state_t>
     TRACCC_HOST_DEVICE void operator()(state& updater_state,
                                        propagator_state_t& propagation) const {
+        using scalar_t = detray::dscalar<algebra_t>;
+
         auto& navigation = propagation._navigation;
         auto& stepping = propagation._stepping;
 
@@ -106,13 +113,11 @@ struct measurement_updater : detray::actor {
                 bound_param, measurements, updater_state.m_measurement_ranges,
                 updater_state.m_calib_cfg, is_line);
 
+        scalar_t filtered_chi2{0.f};
+
         // Run the KF update and add the track state
         if (cand.chi2 <= updater_state.max_chi2) {
-            const unsigned int meas_idx{cand.meas_idx};
-            const auto meas = measurements.at(meas_idx);
-
-            auto trk_state =
-                edm::make_track_state<algebra_t>(measurements, meas_idx);
+            const auto meas = measurements.at(cand.meas_idx);
 
             kalman_fitter_status res{kalman_fitter_status::ERROR_OTHER};
 
@@ -129,18 +134,15 @@ struct measurement_updater : detray::actor {
                 getter::element(filtered_cov, e_bound_loc1, e_bound_loc1) =
                     getter::element(V, 1, 1);
 
-                trk_state.filtered_params() = bound_param;
-                trk_state.filtered_chi2() = 0.f;
-
                 TRACCC_VERBOSE_HOST("Updated track parameters:\n"
                                     << bound_param);
 
                 res = kalman_fitter_status::SUCCESS;
             } else {
-                // Run the Kalman update on the track state
+                // Run the Kalman update on the bound track params (in place!)
                 constexpr gain_matrix_updater<algebra_t> kalman_updater{};
-                res = kalman_updater(trk_state, measurements, bound_param,
-                                     is_line);
+                res = kalman_updater(bound_param, filtered_chi2, meas,
+                                     bound_param, is_line);
 
                 TRACCC_DEBUG_HOST("KF status: " << fitter_debug_msg{res}());
                 // Abandon measurement in case of filter failure
@@ -154,7 +156,6 @@ struct measurement_updater : detray::actor {
                 }
 
                 // Update propagation on filtered track params
-                bound_param = trk_state.filtered_params();
                 TRACCC_VERBOSE_HOST("Updated track parameters:\n"
                                     << bound_param);
 
@@ -167,22 +168,49 @@ struct measurement_updater : detray::actor {
                 }
             }
 
-            TRACCC_VERBOSE_HOST_DEVICE("Found measurement: %d", meas_idx);
+            TRACCC_VERBOSE_HOST_DEVICE("Found measurement: %d", cand.meas_idx);
 
-            // Add the track state to the track
-            trk_state.set_hole(false);
+            // TODO: Get host-device compatible visitor implementation
+            const auto i{
+                static_cast<int>(updater_state.m_stats.n_track_states)};
+            if (updater_state.m_run_smoother == smoother_type::e_none) {
+                auto* track_cand_ptr = static_cast<track_state_candidate*>(
+                    updater_state.m_cand_ptr);
+                detray::ranges::detail::advance(track_cand_ptr, i);
 
-            assert(updater_state.state_idx <
-                   updater_state.m_track_states.size());
-            updater_state.m_track_states.at(updater_state.state_idx) =
-                trk_state;
-            updater_state.state_idx++;
+                assert(track_cand_ptr);
+                *track_cand_ptr = {cand.meas_idx};
+            } else if (updater_state.m_run_smoother ==
+                       smoother_type::e_kalman) {
+                auto* track_cand_ptr =
+                    static_cast<filtered_track_state_candidate<algebra_t>*>(
+                        updater_state.m_cand_ptr);
+
+                detray::ranges::detail::advance(track_cand_ptr, i);
+
+                assert(track_cand_ptr);
+                *track_cand_ptr = {cand.meas_idx, filtered_chi2, bound_param};
+            } else if (updater_state.m_run_smoother == smoother_type::e_mbf) {
+                /*auto* track_cand_ptr =
+                static_cast<full_track_state_candidate<algebra_t>*>(
+                                           updater_state.m_cand_ptr);
+
+                detray::ranges::detail::advance(track_cand_ptr, i);
+
+                assert(track_cand_ptr);
+                *track_cand_ptr = {cand.meas_idx, filtered_chi2, bound_param};*/
+            } else {
+                navigation.abort(
+                    "Unknown data coll. type in measurement updater");
+                return;
+            }
 
             // Update statistics
             updater_state.m_stats.n_consecutive_holes = 0u;
             updater_state.m_stats.ndf_sum +=
-                static_cast<float>(meas.dimensions());
-            updater_state.m_stats.chi2_sum += trk_state.filtered_chi2();
+                static_cast<std::uint_least16_t>(meas.dimensions());
+            updater_state.m_stats.chi2_sum += filtered_chi2;
+            updater_state.m_stats.n_track_states++;
         } else {
             // If the surface was only hit due to tolerances, don't count holes
             if (!navigation.is_edge_candidate()) {

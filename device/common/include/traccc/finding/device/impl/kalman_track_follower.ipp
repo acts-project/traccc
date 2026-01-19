@@ -15,6 +15,7 @@
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/finding/measurement_selector.hpp"
+#include "traccc/finding/track_state_candidate.hpp"
 #include "traccc/sanity/contiguous_on.hpp"
 #include "traccc/utils/logging.hpp"
 #include "traccc/utils/particle.hpp"
@@ -52,15 +53,48 @@ TRACCC_HOST_DEVICE inline void kalman_track_follower(
     typename edm::measurement_collection<algebra_t>::const_device measurements(
         payload.measurements_view);
 
+    // Collect the track statistics
+    vecmem::device_vector<track_stats<scalar_t>> track_stats(
+        payload.track_stats_view);
+
+    // Output data collections
+    vecmem::device_vector<track_state_candidate> track_cands{
+        payload.track_cand_view};
+    vecmem::device_vector<filtered_track_state_candidate<algebra_t>>
+        filtered_track_cands{payload.filtered_track_cand_view};
+    vecmem::device_vector<full_track_state_candidate<algebra_t>>
+        full_track_cands{payload.full_track_cand_view};
+
+    // Number of found tracks = number of seeds
+    const unsigned int max_cands{seeds.size() *
+                                 cfg.max_track_candidates_per_track};
+    const auto current_cand{
+        static_cast<int>(globalIndex * cfg.max_track_candidates_per_track)};
+
+    void* track_cand_ptr{nullptr};
+    if (cfg.run_smoother == smoother_type::e_none) {
+        assert(track_cands.size() == max_cands);
+        track_cand_ptr = static_cast<void*>(
+            detray::ranges::detail::next(track_cands.data(), current_cand));
+    } else if (cfg.run_smoother == smoother_type::e_kalman) {
+        assert(filtered_track_cands.size() == max_cands);
+        track_cand_ptr = static_cast<void*>(detray::ranges::detail::next(
+            filtered_track_cands.data(), current_cand));
+    } else if (cfg.run_smoother == smoother_type::e_mbf) {
+        assert(full_track_cands.size() == max_cands);
+        track_cand_ptr = static_cast<void*>(detray::ranges::detail::next(
+            full_track_cands.data(), current_cand));
+    } else {
+        TRACCC_ERROR_DEVICE("Unknown smoother option");
+        return;
+    }
+    assert(track_cand_ptr);
+
     // Output tracks and track state collection
-    typename edm::track_collection<algebra_t>::device track_candidates(
+    /*typename edm::track_collection<algebra_t>::device track_candidates(
         payload.tracks_view.tracks);
     typename edm::track_state_collection<algebra_t>::device track_states(
-        payload.tracks_view.states);
-
-    // Index of first track state
-    const unsigned int track_states_offset{globalIndex *
-                                           cfg.max_track_candidates_per_track};
+        payload.tracks_view.states);*/
 
     // Configuration for measurement calibration
     measurement_selector::config calib_cfg{};
@@ -83,7 +117,8 @@ TRACCC_HOST_DEVICE inline void kalman_track_follower(
         interactor_state;
     // Do the measurement selection
     typename traccc::measurement_updater<algebra_t>::state meas_updater_state{
-        measurements, payload.measurement_ranges_view, track_states};
+        measurements, payload.measurement_ranges_view, track_cand_ptr,
+        cfg.run_smoother};
     // Set bound track parameters after Kalman and material updates
     typename detray::parameter_resetter<algebra_t>::state resetter_state{
         prop_cfg};
@@ -99,7 +134,6 @@ TRACCC_HOST_DEVICE inline void kalman_track_follower(
         static_cast<unsigned short>(cfg.max_num_skipping_per_cand);
     meas_updater_state.max_n_consecutive_holes =
         static_cast<unsigned short>(cfg.max_num_consecutive_skipped);
-    meas_updater_state.state_idx = track_states_offset;
     meas_updater_state.m_calib_cfg = calib_cfg;
 
     auto actor_states =
@@ -109,18 +143,19 @@ TRACCC_HOST_DEVICE inline void kalman_track_follower(
     // Propagate the entire track
     propagator.propagate(propagation, actor_states);
 
-    // If a surface found, add the parameter for the next step
-    if (propagator.finished(propagation)) {
+    // If a surface found, save the track stats to build the tracks
+    if (propagator.finished(propagation) &&
+        meas_updater_state.m_stats.n_track_states <
+            cfg.min_track_candidates_per_track) {
         assert(propagation._navigation.is_on_sensitive());
         assert(!propagation._stepping.bound_params().is_invalid());
 
-        // Observe minimum track length
-        const unsigned int n_new_track_states{meas_updater_state.state_idx -
-                                              track_states_offset};
-        if (n_new_track_states < cfg.min_track_candidates_per_track) {
-            return;
-        }
+        track_stats.at(globalIndex) = meas_updater_state.m_stats;
+    } else {
+        TRACCC_ERROR_DEVICE("Propagation failure!");
+    }
 
+    /*if (is_alive) {
         // Link the new states to the final track
         auto track = track_candidates.at(globalIndex);
         for (unsigned int state_idx = track_states_offset;
@@ -145,9 +180,7 @@ TRACCC_HOST_DEVICE inline void kalman_track_follower(
         track.chi2() = trk_stats.chi2_sum;
         track.pval() = prob(trk_stats.chi2_sum, ndf_sum);
         track.nholes() = static_cast<unsigned int>(trk_stats.n_holes);
-    } else {
-        TRACCC_ERROR_DEVICE("Propagation failure!");
-    }
+    }*/
 }
 
 }  // namespace traccc::device

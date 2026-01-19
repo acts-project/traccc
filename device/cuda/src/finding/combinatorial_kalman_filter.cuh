@@ -175,7 +175,7 @@ combinatorial_kalman_filter(
      * finding, we need some space to store the intermediate Jacobians
      * and parameters. Allocate that space here.
      */
-    if (config.run_mbf_smoother) {
+    if (config.run_smoother == smoother_type::e_mbf) {
         jacobian_ptr = vecmem::make_unique_alloc<
             bound_matrix<typename detector_t::algebra_type>[]>(
             mr.main, link_buffer_capacity);
@@ -271,7 +271,7 @@ combinatorial_kalman_filter(
 
             links_buffer = std::move(new_links_buffer);
 
-            if (config.run_mbf_smoother) {
+            if (config.run_smoother == smoother_type::e_mbf) {
                 vecmem::unique_alloc_ptr<
                     bound_matrix<typename detector_t::algebra_type>[]>
                     new_jacobian_ptr = vecmem::make_unique_alloc<
@@ -479,7 +479,7 @@ combinatorial_kalman_filter(
              *****************************************************************/
 
             {
-                if (config.run_mbf_smoother) {
+                if (config.run_smoother == smoother_type::e_mbf) {
                     tmp_jacobian_ptr = vecmem::make_unique_alloc<
                         bound_matrix<typename detector_t::algebra_type>[]>(
                         mr.main, n_candidates);
@@ -650,7 +650,7 @@ combinatorial_kalman_filter(
 
     unsigned int n_states;
 
-    if (config.run_mbf_smoother) {
+    if (config.run_smoother == smoother_type::e_mbf) {
         n_states = std::accumulate(tips_length_host.begin(),
                                    tips_length_host.end(), 0u);
     } else {
@@ -683,7 +683,7 @@ combinatorial_kalman_filter(
             .link_filtered_parameter_view = link_filtered_parameter_buffer,
         };
         kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(
-            config.run_mbf_smoother, payload);
+            config.run_smoother == smoother_type::e_mbf, payload);
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
         str.synchronize();
