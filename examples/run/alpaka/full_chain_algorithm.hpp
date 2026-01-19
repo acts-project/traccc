@@ -30,6 +30,8 @@
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/messaging.hpp"
 #include "traccc/utils/propagation.hpp"
+// GBTS include for placeholder input (not implemented)
+#include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/vector.hpp>
@@ -78,12 +80,13 @@ class full_chain_algorithm
         const seedfinder_config& finder_config,
         const spacepoint_grid_config& grid_config,
         const seedfilter_config& filter_config,
+        const gbts_seedfinder_config& gbts_config,
         const track_params_estimation_config& track_params_estimation_config,
         const finding_algorithm::config_type& finding_config,
         const fitting_algorithm::config_type& fitting_config,
         const silicon_detector_description::host& det_descr,
         const magnetic_field& field, host_detector* detector,
-        std::unique_ptr<const traccc::Logger> logger);
+        std::unique_ptr<const traccc::Logger> logger, bool useGBTS = false);
 
     /// Copy constructor
     ///
@@ -175,12 +178,17 @@ class full_chain_algorithm
     spacepoint_grid_config m_grid_config;
     /// Configuration for the seed filtering
     seedfilter_config m_filter_config;
+    /// placeholder GBTS config
+    [[maybe_unused]] gbts_seedfinder_config m_gbts_config;
     /// Configuration for track parameter estimation
     track_params_estimation_config m_track_params_estimation_config;
+
     /// Configuration for the track finding
     finding_algorithm::config_type m_finding_config;
     /// Configuration for the track fitting
     fitting_algorithm::config_type m_fitting_config;
+
+    bool usingGBTS;
 
     /// @}
 

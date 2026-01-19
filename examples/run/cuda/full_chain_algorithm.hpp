@@ -13,6 +13,7 @@
 #include "traccc/cuda/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
+#include "traccc/cuda/gbts_seeding/gbts_seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
@@ -77,12 +78,13 @@ class full_chain_algorithm
         const seedfinder_config& finder_config,
         const spacepoint_grid_config& grid_config,
         const seedfilter_config& filter_config,
+        const gbts_seedfinder_config& gbts_config,
         const track_params_estimation_config& track_params_estimation_config,
         const finding_algorithm::config_type& finding_config,
         const fitting_algorithm::config_type& fitting_config,
         const silicon_detector_description::host& det_descr,
         const magnetic_field& field, host_detector* detector,
-        std::unique_ptr<const traccc::Logger> logger);
+        std::unique_ptr<const traccc::Logger> logger, bool useGBTS = false);
 
     /// Copy constructor
     ///
@@ -154,6 +156,8 @@ class full_chain_algorithm
     spacepoint_formation_algorithm m_spacepoint_formation;
     /// Seeding algorithm
     seeding_algorithm m_seeding;
+    /// Seeding with GBTS algorithm
+    gbts_seeding_algorithm m_gbts_seeding;
     /// Track parameter estimation algorithm
     track_params_estimation m_track_parameter_estimation;
 
@@ -175,6 +179,8 @@ class full_chain_algorithm
     spacepoint_grid_config m_grid_config;
     /// Configuration for the seed filtering
     seedfilter_config m_filter_config;
+    // Configuration for GBTS seeding
+    gbts_seedfinder_config m_gbts_config;
 
     /// Configuration for track parameter estimation
     track_params_estimation_config m_track_params_estimation_config;
@@ -183,6 +189,8 @@ class full_chain_algorithm
     finding_algorithm::config_type m_finding_config;
     /// Configuration for the track fitting
     fitting_algorithm::config_type m_fitting_config;
+
+    bool usingGBTS;
 
     /// @}
 };  // class full_chain_algorithm
