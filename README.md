@@ -96,33 +96,21 @@ flowchart LR
     sp -->|<a href='https://github.com/acts-project/traccc/blob/main/core/include/traccc/seeding/spacepoint_binning.hpp'>SP Binning</a>| bin;
     linkStyle 9 stroke: black;
 
-    %% SYCL spacepoint binning
-    sp -->|<a href='https://github.com/acts-project/traccc/blob/main/device/sycl/include/traccc/sycl/seeding/spacepoint_binning.hpp'>SP Binning</a>| bin;
+    %% SYCL triplet seeding
+    sp -->|<a href='https://github.com/acts-project/traccc/blob/main/device/sycl/include/traccc/sycl/seeding/triplet_seeding_algorithm.hpp'>Triplet Seeding</a>| seed;
     linkStyle 10 stroke: blue;
 
-    %% CUDA spacepoint binning
-    sp -->|<a href='https://github.com/acts-project/traccc/blob/main/device/cuda/include/traccc/cuda/seeding/spacepoint_binning.hpp'>SP Binning</a>| bin;
+    %% CUDA triplet seeding
+    sp -->|<a href='https://github.com/acts-project/traccc/blob/main/device/cuda/include/traccc/cuda/seeding/triplet_seeding_algorithm.hpp'>Triplet Seeding</a>| seed;
     linkStyle 11 stroke: green;
 
-    %% Alpaka spacepoint binning
-    sp -->|<a href='https://github.com/acts-project/traccc/blob/main/device/alpaka/include/traccc/alpaka/seeding/spacepoint_binning.hpp'>SP Binning</a>| bin;
+    %% Alpaka triplet seeding
+    sp -->|<a href='https://github.com/acts-project/traccc/blob/main/device/alpaka/include/traccc/alpaka/seeding/triplet_seeding_algorithm.hpp'>Triplet Seeding</a>| seed;
     linkStyle 12 stroke: orange;
 
     %% Host seeding
     bin -->|<a href='https://github.com/acts-project/traccc/blob/main/core/include/traccc/seeding/seed_finding.hpp'>Seeding</a>| seed;
     linkStyle 13 stroke: black;
-
-    %% SYCL seeding
-    bin -->|<a href='https://github.com/acts-project/traccc/blob/main/device/sycl/include/traccc/sycl/seeding/seed_finding.hpp'>Seeding</a>| seed;
-    linkStyle 14 stroke: blue;
-
-    %% CUDA seeding
-    bin -->|<a href='https://github.com/acts-project/traccc/blob/main/device/cuda/include/traccc/cuda/seeding/seed_finding.hpp'>Seeding</a>| seed;
-    linkStyle 15 stroke: green;
-
-    %% Alpaka seeding
-    bin -->|<a href='https://github.com/acts-project/traccc/blob/main/device/alpaka/include/traccc/alpaka/seeding/seed_finding.hpp'>Seeding</a>| seed;
-    linkStyle 16 stroke: orange;
 
     %% Host param est.
     seed -->|<a href='https://github.com/acts-project/traccc/blob/main/core/include/traccc/seeding/track_params_estimation.hpp'>Param. Est.</a>| ptrack;
