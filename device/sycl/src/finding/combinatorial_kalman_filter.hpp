@@ -154,8 +154,20 @@ combinatorial_kalman_filter(
                                                                        mr.main);
     copy.setup(n_tracks_per_seed_buffer)->wait();
 
+    // Compute the effective number of initial links per seed. If the
+    // branching factor (`max_num_branches_per_surface`) is arbitrary there
+    // is no useful upper bound on the number of links, but if the branching
+    // factor is exactly one, we can never have more links per seed than the
+    // number of CKF steps, which is a useful upper bound.
+    const unsigned int effective_initial_links_per_seed =
+        config.max_num_branches_per_surface == 1
+            ? std::min(config.initial_links_per_seed,
+                       config.max_track_candidates_per_track)
+            : config.initial_links_per_seed;
+
     // Create a buffer for links
-    unsigned int link_buffer_capacity = config.initial_links_per_seed * n_seeds;
+    unsigned int link_buffer_capacity =
+        effective_initial_links_per_seed * n_seeds;
     vecmem::data::vector_buffer<candidate_link> links_buffer(
         link_buffer_capacity, mr.main, vecmem::data::buffer_type::resizable);
     copy.setup(links_buffer)->wait();
