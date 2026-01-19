@@ -65,13 +65,11 @@ traccc_add_library( traccc_device_common device_common
    "include/traccc/seeding/device/estimate_track_params.hpp"
    "include/traccc/seeding/device/impl/estimate_track_params.ipp"
    # Track finding funtions(s).
-   "include/traccc/finding/device/apply_interaction.hpp"
    "include/traccc/finding/device/barcode_surface_comparator.hpp"
    "include/traccc/finding/device/build_tracks.hpp"
    "include/traccc/finding/device/find_tracks.hpp"
    "include/traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
    "include/traccc/finding/device/propagate_to_next_surface.hpp"
-   "include/traccc/finding/device/impl/apply_interaction.ipp"
    "include/traccc/finding/device/impl/build_tracks.ipp"
    "include/traccc/finding/device/impl/find_tracks.ipp"
    "include/traccc/finding/device/impl/fill_finding_propagation_sort_keys.ipp"
