@@ -90,6 +90,11 @@ track_finding::track_finding() : interface("Track Finding Options") {
         po::value(&m_config.duplicate_removal_minimum_length)
             ->default_value(m_config.duplicate_removal_minimum_length),
         "Minimum track length for deduplication (0 to disable) [cardinal]");
+    m_desc.add_options()("initial-links-per-seed",
+                         po::value(&m_config.initial_links_per_seed)
+                             ->default_value(m_config.initial_links_per_seed),
+                         "Initial number of links to allocate memory for "
+                         "[cardinal] [compute performance only]");
 }
 
 void track_finding::read(const po::variables_map &) {
@@ -149,6 +154,9 @@ std::unique_ptr<configuration_printable> track_finding::as_printable() const {
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Minimum p",
         std::format("{} GeV", m_config.min_p / traccc::unit<float>::GeV)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Initial links per seed",
+        std::to_string(m_config.initial_links_per_seed)));
 
     return cat;
 }
