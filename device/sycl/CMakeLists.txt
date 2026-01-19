@@ -11,6 +11,12 @@ include( traccc-compiler-options-sycl )
 # We need the SYCL language in this directory.
 enable_language( SYCL )
 
+# Set up the build of the traccc::sycl_queue_wrapper library.
+traccc_add_library( traccc_sycl_queue_wrapper sycl_queue_wrapper TYPE SHARED
+  "include/traccc/sycl/utils/queue_wrapper.hpp"
+  "src/utils/queue_wrapper.cpp"
+)
+
 # Set up the build of the traccc::sycl_magfield library.
 traccc_add_library( traccc_sycl_magfield sycl_magfield TYPE SHARED
   "include/traccc/sycl/utils/make_magnetic_field.hpp"
@@ -26,8 +32,6 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "src/utils/algorithm_base.sycl"
   "include/traccc/sycl/utils/make_prefix_sum_buff.hpp"
   "src/utils/make_prefix_sum_buff.sycl"
-  "include/traccc/sycl/utils/queue_wrapper.hpp"
-  "src/utils/queue_wrapper.cpp"
   "src/utils/barrier.hpp"
   "src/utils/calculate1DimNdRange.hpp"
   "src/utils/calculate1DimNdRange.sycl"
@@ -69,13 +73,13 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
 endif()
 target_link_libraries( traccc_sycl_magfield
   PUBLIC detray::core vecmem::core
-         traccc::core traccc::device_common
+         traccc::core traccc::device_common traccc_sycl_queue_wrapper
   PRIVATE vecmem::sycl covfie::sycl )
 
 if (TRACCC_BUILD_SYCL)
 target_link_libraries( traccc_sycl
   PUBLIC detray::core vecmem::core
-         traccc::core traccc::device_common
+         traccc::core traccc::device_common traccc_sycl_queue_wrapper
   PRIVATE vecmem::sycl covfie::sycl oneDPL)
 
 
