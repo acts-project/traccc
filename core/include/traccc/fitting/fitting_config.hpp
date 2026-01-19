@@ -29,6 +29,10 @@ struct fitting_config {
     float min_p = 100.f * traccc::unit<float>::MeV;
     float min_pT = 600.f * traccc::unit<float>::MeV;
 
+    // Maximal local radius a measurement is allowed to be away from the
+    // predicted track position in order to be considered as a condidate
+    float max_measurement_radius{5.f * traccc::unit<float>::mm};
+
     /// Particle hypothesis
     traccc::pdg_particle<traccc::scalar> ptc_hypothesis =
         traccc::pion_plus<traccc::scalar>();

@@ -44,6 +44,8 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     const finding_config& cfg, const find_tracks_payload<detector_t>& payload,
     const find_tracks_shared_payload& shared_payload) {
 
+    using algebra_t = typename detector_t::algebra_type;
+
     const unsigned int in_param_id = thread_id.getGlobalThreadIdX();
     const bool last_step =
         payload.step == cfg.max_track_candidates_per_track - 1;
@@ -169,10 +171,9 @@ TRACCC_HOST_DEVICE inline void find_tracks(
 
         barrier.blockBarrier();
 
-        std::optional<std::tuple<
-            typename edm::track_state_collection<
-                typename detector_t::algebra_type>::device::object_type,
-            unsigned int, unsigned int>>
+        std::optional<std::tuple<typename edm::track_state_collection<
+                                     algebra_t>::device::object_type,
+                                 unsigned int, unsigned int>>
             result = std::nullopt;
 
         /*
@@ -210,18 +211,58 @@ TRACCC_HOST_DEVICE inline void find_tracks(
 
             if (use_measurement) {
 
-                auto trk_state =
-                    edm::make_track_state<typename detector_t::algebra_type>(
-                        measurements, meas_idx);
-
                 const detray::tracking_surface sf{det, in_par.surface_link()};
-
                 const bool is_line = detail::is_line(sf);
 
-                // Run the Kalman update
-                const kalman_fitter_status res =
-                    gain_matrix_updater<typename detector_t::algebra_type>{}(
-                        trk_state, measurements, in_par, is_line);
+                measurement_selector::config calib_cfg{};
+
+                const edm::measurement meas = measurements.at(meas_idx);
+
+                // The filtered track state
+                auto trk_state =
+                    edm::make_track_state<algebra_t>(measurements, meas_idx);
+
+                const traccc::scalar chi2 =
+                    measurement_selector::predicted_chi2(meas, in_par,
+                                                         calib_cfg, is_line);
+
+                trk_state.filtered_chi2() = chi2;
+
+                // If the measurement is outside the chi2 cut, skip it
+                if (chi2 > cfg.chi2_max) {
+                    use_measurement = false;
+                }
+
+                // Kalman filter status code
+                kalman_fitter_status res{kalman_fitter_status::ERROR_OTHER};
+
+                if (use_measurement) {
+                    if (payload.step == 0 && chi2 == 0.f &&
+                        !sf.has_material()) {
+                        res = kalman_fitter_status::SUCCESS;
+
+                        trk_state.filtered_params() = in_par;
+
+                        // Update measurement covariance
+                        const auto V = measurement_selector::
+                            calibrated_measurement_covariance<algebra_t, 2>(
+                                meas, calib_cfg);
+
+                        auto& filtered_cov =
+                            trk_state.filtered_params().covariance();
+                        getter::element(filtered_cov, e_bound_loc0,
+                                        e_bound_loc0) =
+                            getter::element(V, 0, 0);
+                        getter::element(filtered_cov, e_bound_loc1,
+                                        e_bound_loc1) =
+                            getter::element(V, 1, 1);
+                    } else {
+                        // Run the Kalman update on a copy of the track
+                        // parameters
+                        res = gain_matrix_updater<algebra_t>{}(trk_state, meas,
+                                                               in_par, is_line);
+                    }
+                }
 
                 TRACCC_DEBUG_DEVICE("KF status: %d", res);
 
@@ -236,13 +277,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                  * but, more importantly, allows us to more easily use
                  * block-wide synchronization primitives.
                  */
-                if (const traccc::scalar chi2 = trk_state.filtered_chi2();
-                    res != kalman_fitter_status::SUCCESS ||
-                    chi2 >= cfg.chi2_max) {
-                    use_measurement = false;
-                }
-
-                if (use_measurement) {
+                if (use_measurement && res == kalman_fitter_status::SUCCESS) {
                     TRACCC_VERBOSE_DEVICE("Found measurement: %d", meas_idx);
                     result.emplace(trk_state, meas_idx, owner_local_thread_id);
                 }
