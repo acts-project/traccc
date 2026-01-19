@@ -98,12 +98,12 @@ combinatorial_kalman_filter(
     std::vector<unsigned int> meas_ranges;
     meas_ranges.reserve(det.surfaces().size());
 
-    for (const auto& sf_desc : det.surfaces()) {
+    for (const typename detector_t::surface_type& sf_desc : det.surfaces()) {
         // Measurements can only be found on sensitive surfaces
         if (!sf_desc.is_sensitive()) {
             // Lower range index is the upper index of the previous range
             // This is guaranteed by the measurement sorting step
-            const auto sf_idx{sf_desc.index()};
+            const unsigned int sf_idx{sf_desc.index()};
             const unsigned int lo{sf_idx == 0u ? 0u : meas_ranges[sf_idx - 1u]};
 
             // Hand the upper index of the previous range through to assign
@@ -131,7 +131,7 @@ combinatorial_kalman_filter(
     std::vector<std::pair<unsigned int, unsigned int>> tips;
 
     // Create propagator
-    auto prop_cfg{config.propagation};
+    detray::propagation::config prop_cfg{config.propagation};
     prop_cfg.navigation.estimate_scattering_noise = false;
     traccc::details::ckf_propagator_t<detector_t, bfield_t> propagator(
         prop_cfg);
@@ -241,7 +241,7 @@ combinatorial_kalman_filter(
              *****************************************************************/
 
             // Iterate over the measurements for this surface
-            const auto sf_idx{sf.index()};
+            const unsigned int sf_idx{sf.index()};
             const unsigned int lo{sf_idx == 0u ? 0u : meas_ranges[sf_idx - 1]};
             const unsigned int up{meas_ranges[sf_idx]};
 
@@ -255,10 +255,10 @@ combinatorial_kalman_filter(
                 TRACCC_VERBOSE_HOST("Testing measurement: " << meas_id);
 
                 // The measurement on surface to handle.
-                const auto meas = measurements.at(meas_id);
+                const edm::measurement meas = measurements.at(meas_id);
 
                 // Create a standalone track state object.
-                auto trk_state =
+                edm::track_state trk_state =
                     edm::make_track_state<algebra_type>(measurements, meas_id);
 
                 const bool is_line = detail::is_line(sf);
@@ -362,22 +362,23 @@ combinatorial_kalman_filter(
                 last_meas_to_tracks_map;
 
             for (std::size_t i = 0; i < n_links; ++i) {
-                auto L = links.at(step).at(i);
+                candidate_link L = links.at(step).at(i);
 
                 while (L.meas_idx >= n_meas && L.step != 0u) {
-                    const auto link_pos = param_to_link.at(L.step - 1u)
-                                              .at(L.previous_candidate_idx);
+                    const std::size_t link_pos =
+                        param_to_link.at(L.step - 1u)
+                            .at(L.previous_candidate_idx);
                     L = links.at(L.step - 1u).at(link_pos);
                 }
 
                 last_meas_to_tracks_map[L.meas_idx].push_back(i);
             }
 
-            for (const auto& it : last_meas_to_tracks_map) {
-                const auto& tracks = it.second;
+            for (const auto& [_, tracks] : last_meas_to_tracks_map) {
 
                 for (std::size_t i = 0; i < tracks.size(); ++i) {
-                    const auto& Lthisbase = links.at(step).at(tracks.at(i));
+                    const candidate_link& Lthisbase =
+                        links.at(step).at(tracks.at(i));
                     const scalar prob_this =
                         prob(Lthisbase.chi2_sum,
                              static_cast<scalar>(Lthisbase.ndf_sum - 5));
@@ -393,8 +394,8 @@ combinatorial_kalman_filter(
                             continue;
                         }
 
-                        auto Lthis = Lthisbase;
-                        auto Lthat = links.at(step).at(tracks.at(j));
+                        candidate_link Lthis = Lthisbase;
+                        candidate_link Lthat = links.at(step).at(tracks.at(j));
 
                         if (step + 1 - Lthat.n_skipped <=
                                 config.duplicate_removal_minimum_length ||
@@ -411,7 +412,7 @@ combinatorial_kalman_filter(
                         while (true) {
                             while (Lthis.meas_idx >= n_meas &&
                                    Lthis.step != 0u) {
-                                const auto link_pos =
+                                const std::size_t link_pos =
                                     param_to_link.at(Lthis.step - 1u)
                                         .at(Lthis.previous_candidate_idx);
 
@@ -419,7 +420,7 @@ combinatorial_kalman_filter(
                             }
                             while (Lthat.meas_idx >= n_meas &&
                                    Lthat.step != 0u) {
-                                const auto link_pos =
+                                const std::size_t link_pos =
                                     param_to_link.at(Lthat.step - 1u)
                                         .at(Lthat.previous_candidate_idx);
 
@@ -433,12 +434,12 @@ combinatorial_kalman_filter(
                                     this_is_dominated = false;
                                     break;
                                 } else {
-                                    const auto link_pos_this =
+                                    const std::size_t link_pos_this =
                                         param_to_link.at(Lthis.step - 1u)
                                             .at(Lthis.previous_candidate_idx);
                                     Lthis = links.at(Lthis.step - 1u)
                                                 .at(link_pos_this);
-                                    const auto link_pos_that =
+                                    const std::size_t link_pos_that =
                                         param_to_link.at(Lthat.step - 1u)
                                             .at(Lthat.previous_candidate_idx);
                                     Lthat = links.at(Lthat.step - 1u)
@@ -493,7 +494,8 @@ combinatorial_kalman_filter(
                 continue;
             }
 
-            const auto& param = updated_params[link_id];
+            const bound_track_parameters<algebra_type>& param =
+                updated_params[link_id];
 
             // Create propagator state
             typename traccc::details::ckf_propagator_t<
@@ -548,7 +550,8 @@ combinatorial_kalman_filter(
                 TRACCC_DEBUG_HOST(
                     "On surface: " << propagation._navigation.barcode());
 
-                const auto& out_param = propagation._stepping.bound_params();
+                const bound_track_parameters<algebra_type>& out_param =
+                    propagation._stepping.bound_params();
 
                 const scalar theta = out_param.theta();
                 if (theta <= 0.f ||
@@ -609,7 +612,7 @@ combinatorial_kalman_filter(
 
     for (const auto& tip : tips) {
         // Get the link corresponding to tip
-        auto L = links.at(tip.first).at(tip.second);
+        candidate_link L = links.at(tip.first).at(tip.second);
 
         const unsigned int n_cands = tip.first + 1 - L.n_skipped;
 
@@ -618,9 +621,6 @@ combinatorial_kalman_filter(
             n_cands > config.max_track_candidates_per_track) {
             continue;
         }
-
-        // Retrieve tip
-        L = links.at(tip.first).at(tip.second);
 
         vecmem::vector<edm::track_constituent_link> cands_per_track;
         cands_per_track.resize(n_cands);
@@ -634,7 +634,7 @@ combinatorial_kalman_filter(
              it++) {
 
             while (L.meas_idx >= n_meas && L.step != 0u) {
-                const auto link_pos =
+                const std::size_t link_pos =
                     param_to_link.at(L.step - 1u).at(L.previous_candidate_idx);
 
                 L = links.at(L.step - 1u).at(link_pos);
@@ -659,13 +659,14 @@ combinatorial_kalman_filter(
             // fill the seed
             if (it == cands_per_track.rend() - 1) {
 
-                auto cand_seed = seeds.at(L.seed_idx);
+                const bound_track_parameters<algebra_type>& cand_seed =
+                    seeds.at(L.seed_idx);
                 ndf_sum = ndf_sum - 5.f;
-                const auto pval = prob(chi2_sum, ndf_sum);
+                const scalar_type pval = prob(chi2_sum, ndf_sum);
 
                 // Add seed and track candidates to the output container
                 output_candidates.tracks.push_back({});
-                auto track = output_candidates.tracks.at(
+                edm::track track = output_candidates.tracks.at(
                     output_candidates.tracks.size() - 1);
                 track.fit_outcome() = track_fit_outcome::UNKNOWN;
                 track.params() = cand_seed;
@@ -676,7 +677,7 @@ combinatorial_kalman_filter(
                 track.constituent_links() = cands_per_track;
 
             } else {
-                const auto l_pos =
+                const std::size_t l_pos =
                     param_to_link.at(L.step - 1u).at(L.previous_candidate_idx);
 
                 L = links.at(L.step - 1u).at(l_pos);

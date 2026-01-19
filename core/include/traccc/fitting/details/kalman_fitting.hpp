@@ -56,7 +56,7 @@ typename edm::track_container<algebra_t>::host kalman_fitting(
 
         // Create the objects that will describe this track fit.
         result.tracks.push_back({});
-        auto fitted_track = result.tracks.at(result.tracks.size() - 1);
+        edm::track fitted_track = result.tracks.at(result.tracks.size() - 1);
         for (const edm::track_constituent_link& link :
              tracks.tracks.constituent_links().at(i)) {
             assert(link.type == edm::track_constituent_link::measurement);
@@ -78,9 +78,10 @@ typename edm::track_container<algebra_t>::host kalman_fitting(
         copy.setup(seqs_buffer)->wait();
 
         // Make a fitter state
-        auto result_tracks_view = vecmem::get_data(result.tracks);
+        typename edm::track_collection<algebra_t>::data result_tracks_data =
+            vecmem::get_data(result.tracks);
         typename edm::track_collection<algebra_t>::device result_tracks_device{
-            result_tracks_view};
+            result_tracks_data};
         typename fitter_t::state fitter_state(
             result_tracks_device.at(result_tracks_device.size() - 1),
             typename edm::track_state_collection<algebra_t>::device{

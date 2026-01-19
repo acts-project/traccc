@@ -38,7 +38,7 @@ TRACCC_HOST_DEVICE inline void apply_interaction(
         return;
     }
 
-    auto& bound_param = params.at(globalIndex);
+    bound_track_parameters<>& bound_param = params.at(globalIndex);
 
     if (const detray::tracking_surface sf{det, bound_param.surface_link()};
         params_liveness.at(globalIndex) != 0u && sf.has_material()) {

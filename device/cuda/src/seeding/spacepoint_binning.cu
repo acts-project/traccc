@@ -70,7 +70,7 @@ traccc::details::spacepoint_grid_types::buffer spacepoint_binning::operator()(
         vecmem::make_unique_alloc<unsigned int>(*(m_mr.host));
 
     // Get the spacepoint sizes from the view
-    const auto sp_size =
+    const unsigned int sp_size =
         get_size(spacepoints_view, size_staging_ptr.get(), stream);
 
     if (sp_size == 0) {

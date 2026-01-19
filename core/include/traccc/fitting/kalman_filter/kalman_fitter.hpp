@@ -410,8 +410,10 @@ class kalman_fitter {
 
     TRACCC_HOST_DEVICE
     void update_statistics(state& fitter_state) const {
-        auto& fit_res = fitter_state.m_fit_res;
-        auto& track_states = fitter_state.m_fit_actor_state.m_track_states;
+        typename edm::track_collection<algebra_type>::device::proxy_type&
+            fit_res = fitter_state.m_fit_res;
+        typename edm::track_state_collection<algebra_type>::device&
+            track_states = fitter_state.m_fit_actor_state.m_track_states;
 
         // Only count statistics for fully fitted tracks
         if (fitter_state.m_fit_actor_state.fit_result !=
@@ -437,7 +439,7 @@ class kalman_fitter {
              fit_res.constituent_links()) {
 
             assert(link.type == edm::track_constituent_link::track_state);
-            auto trk_state = track_states.at(link.index);
+            edm::track_state trk_state = track_states.at(link.index);
             const detray::tracking_surface sf{
                 m_detector, fitter_state.m_fit_actor_state.m_measurements
                                 .at(trk_state.measurement_index())
@@ -459,9 +461,10 @@ class kalman_fitter {
     void check_fitting_result(state& fitter_state,
                               const kalman_fitter_status res_fw,
                               const kalman_fitter_status res_bw) const {
-        auto& fit_res = fitter_state.m_fit_res;
-        const auto& track_states =
-            fitter_state.m_fit_actor_state.m_track_states;
+        typename edm::track_collection<algebra_type>::device::proxy_type&
+            fit_res = fitter_state.m_fit_res;
+        const typename edm::track_state_collection<algebra_type>::device&
+            track_states = fitter_state.m_fit_actor_state.m_track_states;
 
         TRACCC_DEBUG_HOST_DEVICE("Checking fit results...");
 
@@ -518,7 +521,7 @@ class kalman_fitter {
             for (const edm::track_constituent_link& link :
                  fit_res.constituent_links()) {
                 assert(link.type == edm::track_constituent_link::track_state);
-                auto trk_state = track_states.at(link.index);
+                edm::track_state trk_state = track_states.at(link.index);
                 // Fitting fails if any of non-hole track states is not smoothed
                 if (!trk_state.is_hole() && !trk_state.is_smoothed()) {
                     TRACCC_ERROR_HOST_DEVICE("Not all smoothed");
