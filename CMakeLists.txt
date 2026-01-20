@@ -64,7 +64,11 @@ cmake_dependent_option( TRACCC_BUILD_CUDA
    "Build the traccc::cuda library" FALSE
    TRACCC_BUILD_CUDA_UTILS FALSE )
 option( TRACCC_BUILD_HIP "Build the HIP sources included in traccc" FALSE)
-option( TRACCC_BUILD_SYCL "Build the SYCL sources included in traccc" FALSE )
+option( TRACCC_BUILD_SYCL_UTILS
+   "Build the traccc::sycl_utils library" FALSE )
+cmake_dependent_option( TRACCC_BUILD_SYCL
+   "Build the traccc::sycl library" FALSE
+   TRACCC_BUILD_SYCL_UTILS FALSE )
 option( TRACCC_BUILD_ALPAKA "Build the Alpaka sources included in traccc"
    FALSE )
 option( TRACCC_BUILD_IO "Build the IO module (needed by examples, performance, testing)" TRUE )
@@ -435,6 +439,9 @@ if( TRACCC_BUILD_CUDA_UTILS )
 endif()
 if( TRACCC_BUILD_CUDA )
    add_subdirectory( device/cuda )
+endif()
+if( TRACCC_BUILD_SYCL_UTILS )
+   add_subdirectory( device/sycl_utils )
 endif()
 if( TRACCC_BUILD_SYCL )
    add_subdirectory( device/sycl )
