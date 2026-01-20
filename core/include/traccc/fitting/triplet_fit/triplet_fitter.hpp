@@ -11,10 +11,12 @@
 #include "traccc/definitions/math.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/track_candidate.hpp"
+#include "traccc/edm/track_container.hpp"
 #include "traccc/edm/track_parameters.hpp"
-#include "traccc/edm/track_state.hpp"
+#include "traccc/edm/track_state_collection.hpp"
+#include "traccc/edm/measurement.hpp"
 #include "traccc/fitting/fitting_config.hpp"
+#include "traccc/utils/prob.hpp"
 
 // detray include(s).
 #include "detray/geometry/tracking_surface.hpp"
@@ -193,28 +195,17 @@ class triplet_fitter {
         std::array<measurement, 3u> m_meas;
     };
 
-    /// Helper function - Initialize fitter
-    ///
-    /// @param in_track_states input track states (from measurements)
-    ///
-    TRACCC_HOST_DEVICE
-    void init_fitter(
-        vecmem::vector<track_state<algebra_type>>&& in_track_states) {
-
-        m_track_states = std::move(in_track_states);
-
-        // Clear triplets from the last track
-        m_triplets.clear();
-    }
 
     /// Helper function - Make triplets
     ///
     /// Makes triplets from consecutive measurements on the track
     ///
     TRACCC_HOST_DEVICE
-    void make_triplets() {
+    void make_triplets(const vecmem::vector<unsigned int>& in_measurements, 
+                        measurement_collection_types::const_device measurements) {
 
-        size_t n_triplets = m_track_states.size() - 2;
+        // Assuming no holes
+        const size_t n_triplets = in_measurements.size() - 2;
 
         m_triplets.reserve(n_triplets);
 
@@ -222,13 +213,9 @@ class triplet_fitter {
         for (size_t i = 0; i < n_triplets; ++i) {
 
             // Get track states (and measurements)
-            const track_state<algebra_type>& state_0 = m_track_states[i];
-            const track_state<algebra_type>& state_1 = m_track_states[i + 1];
-            const track_state<algebra_type>& state_2 = m_track_states[i + 2];
-
-            const measurement& meas_0 = state_0.get_measurement();
-            const measurement& meas_1 = state_1.get_measurement();
-            const measurement& meas_2 = state_2.get_measurement();
+            const measurement& meas_0 = measurements.at(in_measurements[i]);
+            const measurement& meas_1 = measurements.at(in_measurements[i + 1]);
+            const measurement& meas_2 = measurements.at(in_measurements[i + 2]);
 
             // Get surfaces
             detray::tracking_surface meas_0_sf(m_detector, meas_0.surface_link);
@@ -256,10 +243,6 @@ class triplet_fitter {
             point3 glob_3d_1 = meas_1_sf.local_to_global({}, loc_2d_1, {});
             point3 glob_3d_2 = meas_2_sf.local_to_global({}, loc_2d_2, {});
 
-            std::cout << "x_0 : " << glob_3d_0[0] << ", " << glob_3d_0[1] << ", " << glob_3d_0[2] << std::endl;
-            std::cout << "x_1 : " << glob_3d_1[0] << ", " << glob_3d_1[1] << ", " << glob_3d_1[2] << std::endl;
-            std::cout << "x_2 : " << glob_3d_2[0] << ", " << glob_3d_2[1] << ", " << glob_3d_2[2] << std::endl;
-
             // Make triplet
             triplet t(glob_3d_0, glob_3d_1, glob_3d_2);
 
@@ -267,6 +250,13 @@ class triplet_fitter {
             t.m_meas[0] = meas_0;
             t.m_meas[1] = meas_1;
             t.m_meas[2] = meas_2;
+
+            // keep track of dimensions
+            m_meas_sum_dims += static_cast<scalar>(meas_0.meas_dim);
+            if (i == n_triplets - 1u) {
+                m_meas_sum_dims += static_cast<scalar>(meas_1.meas_dim);
+                m_meas_sum_dims += static_cast<scalar>(meas_2.meas_dim);
+            }
 
             // copy again
             m_triplets.push_back(t);
@@ -356,8 +346,6 @@ class triplet_fitter {
     ///
     TRACCC_HOST_DEVICE void linearize_triplet(triplet& t) {
 
-        // std::cout << "Linearization new\n";
-
         // Vectors joining hits
         vector3 x_01{t.m_hit_pos[1] - t.m_hit_pos[0]};
         vector3 x_12{t.m_hit_pos[2] - t.m_hit_pos[1]};
@@ -368,21 +356,13 @@ class triplet_fitter {
         scalar d_12 = algebra::cmath::perp(x_12);
         scalar d_02 = algebra::cmath::perp(x_02);
 
-        // std::cout << "\nd_01 : " << d_01 << " d_12 : " << d_12 << " d_02 : " << d_02 << std::endl;
-
         // Longitudinal distances
         scalar z_01 = x_01[2];
         scalar z_12 = x_12[2];
 
-        // std::cout << "z_01 : " << z_01 << " z_12 : " << z_12 << std::endl;
-
         // Azimuthal angles of transverse vectors
         scalar phi_01 = math::atan2(x_01[1], x_01[0]);
         scalar phi_12 = math::atan2(x_12[1], x_12[0]);
-
-        // scalar dphi = triplet_fitter::delta_phi(phi_12, phi_01);
-        // scalar phi_3C = 2.f * dphi;
-        // std::cout << "phi12 : " << phi_12 << " phi01 : " << phi_01 << " dphi : " << dphi << std::endl;
 
         // Calculation of circle curvature and hence the entire
         // linearization will fail for very low (or 0) transverse
@@ -401,8 +381,6 @@ class triplet_fitter {
             return;
         }
 
-        // std::cout << "c_perp : " << c_perp << std::endl;
-
         // Parameters of the arc segments //
 
         // Transverse bending angles
@@ -419,17 +397,6 @@ class triplet_fitter {
         phi_1C = 2.f * math::asin(sin_phiHalf_1C);
         phi_2C = 2.f * math::asin(sin_phiHalf_2C);
 
-        /*if (d_01 < d_12) {
-            phi_1C = 2.f * math::asin(sin_phiHalf_1C);
-            std::cout << "sin_phiHalf_1C : " << sin_phiHalf_1C << " math::asin : " << math::asin(sin_phiHalf_1C)
-            << " std::asin : " << std::asin(sin_phiHalf_1C) << std::endl;
-            phi_2C = phi_3C - phi_1C;
-        } else {
-            phi_2C = 2.f * math::asin(sin_phiHalf_2C);
-            phi_1C = phi_3C - phi_2C;
-        }*/
-
-        // std::cout << "phi1 : " << phi_1C << " phi2 : " << phi_2C << " phi3 : " << phi_3C << std::endl;
 
         // Bending parameters
         scalar Xphi_1C = 1.f;
@@ -463,7 +430,6 @@ class triplet_fitter {
         scalar theta_1C = math::atan2(t_1C, z_01);
         scalar theta_2C = math::atan2(t_2C, z_12);
 
-        // std::cout << "theta1 : " << theta_1C << " theta2 : " << theta_2C << std::endl;
 
         scalar cot_th_1C = z_01 / t_1C;
         scalar cot_th_2C = z_12 / t_2C;
@@ -494,7 +460,6 @@ class triplet_fitter {
         scalar t_eff = mat_scatter / detray::cos_angle({}, scat_sf, tangent3D,
                                                        t.m_meas[1].local);
 
-        // std::cout << "t_eff : " << t_eff << std::endl;
 
         auto scattering_unc = [](scalar curvature_3D, scalar eff_thickness,
                                  vector3 field_strength_vector) {
@@ -509,9 +474,6 @@ class triplet_fitter {
         B_vec[0u] = B_field[0u];
         B_vec[1u] = B_field[1u];
         B_vec[2u] = B_field[2u];
-        // std::cout << "\tB-field " << B_vec[0u] << ", " << B_vec[1u] << ", "
-        // << B_vec[2u] << std::endl;
-
         
 
         // 3D curvatures of segments
@@ -527,7 +489,6 @@ class triplet_fitter {
         scalar n_2C =
             1.f / (Xphi_2C * cos_phiHalf_2C * sin_th_2C_2 + cos_th_2C_2);
 
-        // std::cout << "n_1C : " << n_1C << " n_2C : " << n_2C << std::endl;
 
         // Segment parameters
 
@@ -641,16 +602,6 @@ class triplet_fitter {
                     t_shift.m_seg_2.tau - t.m_seg_2.tau);
             }
         }
-    
-        // std::cout << "\n Hd_phi: \n";
-        // for (auto phi : t.m_hd_phi) {
-        //     std::cout << phi << " ";
-        // }
-        // std::cout << "\n Hd_theta: \n";
-        // for (auto theta : t.m_hd_theta) {
-        //     std::cout << theta << " ";
-        // }
-        // std::cout << "\n";
     }
 
 
@@ -658,14 +609,12 @@ class triplet_fitter {
     ///
     /// Global fit of processed hit triplets on track
     ///
-    /// @param fitting_res result of the fit for this track
-    /// @param track_states fitted track states at the measurement surfaces
+    /// @param track track object being fitted
+    /// @return fitted state at first measurement
     ///
-    /// (fitted state only at the first measurement surface is calculated)
     TRACCC_HOST_DEVICE
-    void do_global_fit(
-        fitting_result<algebra_type>& fitting_res,
-        vecmem::vector<track_state<algebra_type>>& track_states) {
+    typename edm::track_state_collection<algebra_type>::host::object_type do_global_fit(
+        typename edm::track_collection<algebra_type>::host::proxy_type& track) {
 
         // Allocate matrices with max possible sizes
         constexpr size_t max_nhits =
@@ -675,8 +624,9 @@ class triplet_fitter {
 
         // Actual number in this track
         const size_t N_triplets = m_triplets.size();
-        assert(m_track_states.size() <= max_nhits);
-        assert(N_triplets == m_track_states.size() - 2u);
+        // assert(m_track_states.size() <= max_nhits);
+        // assert(N_triplets == m_track_states.size() - 2u);
+        assert(N_triplets + 2u <= max_nhits);
 
         // Make matrices/vectors
 
@@ -760,35 +710,6 @@ class triplet_fitter {
 
         }  // done filling
 
-        // std::cout << "rho:\n";
-        // for (size_t r = 0u; r < 2 * max_ntrips; ++r) {
-        //     std::cout << std::setw(12);
-        //     std::cout << getter::element(rho, r, 0u) << "\n";
-        // }
-
-        // std::cout << "phi:\n";
-        // for (size_t r = 0u; r < 2 * max_ntrips; ++r) {
-        //     std::cout << std::setw(12);
-        //     std::cout << getter::element(psi, r, 0u) << "\n";
-        // }
-
-        // std::cout << "Hd:\n";
-        // for (size_t r = 0u; r < 2 * max_ntrips; ++r) {
-        //     for (size_t c = 0u; c < max_ndirs; ++c) {
-        //         std::cout << std::setw(12);
-        //         std::cout << getter::element(Hd, r, c) << " ";
-        //     }
-        //     std::cout << std::endl;
-        // }
-
-        // std::cout << "D_MS_inv:\n";
-        // for (size_t r = 0u; r < 2 * max_ntrips; ++r) {
-        //     for (size_t c = 0u; c < 2 * max_ntrips; ++c) {
-        //         std::cout << std::setw(12);
-        //         std::cout << getter::element(D_MS_inv, r, c) << " ";
-        //     }
-        //     std::cout << std::endl;
-        // }
 
         // Triplet precision matrix
         // Note: diagonal elements in K_inv are 1
@@ -820,14 +741,6 @@ class triplet_fitter {
             -1.f * getter::element(rhoT_K_psi, 0u, 0u) / getter::element(rhoT_K_rho, 0u, 0u);
 
         scalar var_c_3D = 1.f / getter::element(rhoT_K_rho, 0u, 0u);
-
-        // For debugging
-        fitting_res.c_3D = c_3D;
-        fitting_res.sig_c_3D = math::sqrt(var_c_3D);
-
-        std::cout << "--------------------------------------------" << std::endl;
-
-        std::cout << "c_3D : " << c_3D << "\t var : " << var_c_3D << std::endl;
 
         scalar chi2 =
             getter::element(psiT_K_psi, 0u, 0u) + c_3D *
@@ -909,8 +822,6 @@ class triplet_fitter {
         scalar rho_theta = triplet_first.m_seg_1.rho_theta - d_rho_theta;
         scalar rho_phi = -0.5f * (triplet_first.m_seg_1.rho_phi - d_rho_phi);
 
-        std::cout << "theta : " << theta << "  phi : " << phi << std::endl;
-
         // Track parameters at first measurement surface
         detray::bound_parameters_vector<algebra_type> fitted_params;
 
@@ -928,14 +839,13 @@ class triplet_fitter {
         B_vec[1u] = B_field[1u];
         B_vec[2u] = B_field[2u];
 
-        // Units: B [T], p [MeV - NO !!], c_3D in native units [mm]
-        // Magentic field obtained from traccc is NOT in units of Tesla !!
-        // but it must be converted to Tesla for the expression
+        // Units (in expression): B [T], p [MeV], c_3D [mm]
+        // Expression: p = mom_conv * B / c_3D
+        //-------------------------------------------------
+        // Magentic field to be converted from traccc native to Tesla
         scalar p = mom_conv * algebra::cmath::norm(B_vec) /
-                    (c_3D * unit<scalar>::mm * unit<scalar>::T);
-
-        std::cout << "B : " << B_vec[0] << ", " << B_vec[1] << ", " << B_vec[2] << "\t p [MeV]: " << p << std::endl;
-
+                    (c_3D * unit<scalar>::mm * unit<scalar>::T * 1000.f); // GeV (native)
+        
         const scalar q = 1.f;
         fitted_params.set_qop(q / p);
 
@@ -948,9 +858,6 @@ class triplet_fitter {
         point2 loc0_post_fit = loc0 + point2{getter::element(hit_loc_pulls, 0u, 0u), getter::element(hit_loc_pulls, max_nhits, 0u)}; // check sign: - ??
 
         fitted_params.set_bound_local(loc0_post_fit);
-        std::cout << "local pos : " << loc0[0] << ", " << loc0[1] << std::endl;
-        std::cout << "local post fit : " << loc0_post_fit[0] << ", " << loc0_post_fit[1] << std::endl;
-
         
         // Track angle covariances
         scalar sum_thth{};
@@ -1009,80 +916,55 @@ class triplet_fitter {
         getter::element(fit_cov, e_bound_phi, e_bound_phi) = var_phi;
         getter::element(fit_cov, e_bound_theta, e_bound_theta) = var_theta;
 
-        getter::element(fit_cov, e_bound_qoverp, e_bound_qoverp) = var_c_3D * unit<scalar>::mm2 / math::pow( (0.3f * algebra::cmath::norm(B_vec))/ unit<scalar>::T, 2.f);
+        getter::element(fit_cov, e_bound_qoverp, e_bound_qoverp) = var_c_3D * unit<scalar>::mm2 / math::pow( (mom_conv * algebra::cmath::norm(B_vec))/ unit<scalar>::T, 2.f);
         getter::element(fit_cov, e_bound_time, e_bound_time) = 0;
 
 
-        std::cout << "var pos : " << var_pos_postFit[0u] << ", " << var_pos_postFit[1u]
-        << " var phi : " << var_phi << " var_theta : " << var_theta << std::endl;
-        
 
-        // Store track parameters
-        fitting_res.trk_quality.chi2 = chi2;
-        fitting_res.fit_params.set_vector(fitted_params.vector());
-        fitting_res.fit_params.set_covariance(fit_cov);
-        fitting_res.trk_quality.ndf =
-            [](const vecmem::vector<track_state<algebra_type>>& states)
-            -> scalar {
-            // Number of degrees of freedom
-            // = sum of number of dimensions
-            // of measurements - number of
-            // track parameter dimensions.
-
-            scalar sum_dims = 0;
-            for (const track_state<algebra_type>& s : states) {
-                sum_dims += static_cast<scalar>(s.get_measurement().meas_dim);
-            }
-
-            return (sum_dims - 5.f);
-        }(m_track_states);
+        // Store final results
+        track.chi2() = chi2;
+        track.params().set_vector(fitted_params.vector());
+        track.params().set_covariance(fit_cov);
+        track.ndf() = m_meas_sum_dims - 5.f;
+        track.pval() = prob(track.chi2(), track.ndf());
 
         if (chi2 > 0.f) {
-            fitting_res.fit_outcome = fitter_outcome::SUCCESS;
+            track.fit_outcome() = track_fit_outcome::SUCCESS;
         }
 
         // Only the smoothed parameters
         // at the first measurement are
         // used for performance plots
         // see fitting_performance_writer
-        track_states[0].smoothed_chi2() = chi2;
-        track_states[0].smoothed().set_vector(fitted_params.vector());
-        track_states[0].smoothed().set_covariance(fit_cov);
-        track_states[0].is_hole = false;
-        track_states[0].is_smoothed = true;
+        typename edm::track_state_collection<algebra_type>::host::object_type out_state{};
+
+        out_state.smoothed_chi2() = chi2;
+        out_state.smoothed_params().set_vector(fitted_params.vector());
+        out_state.smoothed_params().set_covariance(fit_cov);
+        out_state.set_hole(false);
+        out_state.set_smoothed(true);
+
+        return out_state;
     }
 
-    /// Run the fitter
+    /// Run the fitter - main fitting function
     ///
-    /// Main fitting function
+    /// @param track track object being fitted
+    /// @return fitted track state at first surface
     ///
-    /// @param fitting_res result of the fit for this track
-    /// @param track_states fitted track states at the measurement surfaces
-    /// (fitted state only at the first measurement surface is calculated)
-    TRACCC_HOST_DEVICE void fit(
-        fitting_result<algebra_type>& fitting_res,
-        vecmem::vector<track_state<algebra_type>>& track_states) {
+    TRACCC_HOST_DEVICE 
+    typename edm::track_state_collection<algebra_type>::host::object_type fit(
+        typename edm::track_collection<algebra_type>::host::proxy_type& track) {
 
         for (triplet& t : m_triplets) {
 
             linearize_triplet(t);
-            std::cout << "parameters new:\n";
-            std::cout << "phi_0 : " << t.m_phi_0 << "  theta_0 : " << t.m_theta_0 << std::endl;
-            std::cout << "rho_phi : " << t.m_rho_phi << " rho_theta : " << t.m_rho_theta << std::endl;
             calculate_pos_derivs(t);
         }
 
-        // Passing through the input track
-        // states (measurements) to the output
-        for (auto& state : m_track_states) {
-            state.is_hole = false;
-            track_states.push_back(state);
-        }
+        auto first_state = do_global_fit(track);
 
-        // Only the smoothed parameter
-        // at the first measurement is
-        // updated here in the vector.
-        do_global_fit(fitting_res, track_states);
+        return first_state;
     }
 
     private:
@@ -1096,6 +978,9 @@ class triplet_fitter {
     // Maximum number of uncertainty directions / hit
     static constexpr size_t m_max_dims = 2u;
 
+    // Sum of measurement diensions
+    scalar m_meas_sum_dims{};
+
     // Detector context type
     using context = typename detector_t::geometry_context;
 
@@ -1107,9 +992,6 @@ class triplet_fitter {
 
     // Vector of triplets
     vecmem::vector<triplet> m_triplets;
-
-    // Track states
-    vecmem::vector<track_state<algebra_type>> m_track_states;
 
     // Configuration object
     config_type m_cfg;

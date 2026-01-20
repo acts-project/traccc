@@ -6,10 +6,12 @@
  */
 
 // Project include(s).
-#include "traccc/edm/track_state.hpp"
+#include "traccc/bfield/construct_const_bfield.hpp"
 #include "traccc/fitting/triplet_fitting_algorithm.hpp"
+#include "traccc/io/read_detector.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/resolution/fitting_performance_writer.hpp"
+#include "traccc/simulation/event_generators.hpp"
 #include "traccc/simulation/simulator.hpp"
 #include "traccc/utils/ranges.hpp"
 #include "traccc/utils/seed_generator.hpp"
@@ -19,7 +21,6 @@
 
 // detray include(s).
 #include <detray/io/frontend/detector_reader.hpp>
-#include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
@@ -52,7 +53,9 @@ TEST_P(TripletFittingTelescopeTests, Run) {
     // Performance writer
     traccc::fitting_performance_writer::config fit_writer_cfg;
     fit_writer_cfg.file_path = "performance_track_fitting_" + name + ".root";
-    traccc::fitting_performance_writer fit_performance_writer(fit_writer_cfg);
+    traccc::fitting_performance_writer fit_performance_writer(
+        fit_writer_cfg, traccc::getDefaultLogger("FittingPerformanceWriter",
+                                                 traccc::Logging::Level::INFO));
 
     /*****************************
      * Build a telescope geometry
@@ -65,15 +68,18 @@ TEST_P(TripletFittingTelescopeTests, Run) {
 
     // Read back detector file
     const std::string path = name + "/";
-    detray::io::detector_reader_config reader_cfg{};
-    reader_cfg.add_file(path + "telescope_detector_geometry.json")
-        .add_file(path + "telescope_detector_homogeneous_material.json");
 
-    const auto [host_det, names] =
-        detray::io::read_detector<host_detector_type>(host_mr, reader_cfg);
-    auto field =
-        detray::bfield::create_const_field<host_detector_type::scalar_type>(
-            std::get<13>(GetParam()));
+    traccc::host_detector detector;
+    traccc::io::read_detector(
+        detector, host_mr,
+        std::filesystem::absolute(
+            std::filesystem::path(path + "telescope_detector_geometry.json"))
+            .native(),
+        std::filesystem::absolute(
+            std::filesystem::path(
+                path + "telescope_detector_homogeneous_material.json"))
+            .native());
+    auto field = traccc::construct_const_bfield(std::get<13>(GetParam()));
 
     /***************************
      * Generate simulation data
@@ -107,8 +113,9 @@ TEST_P(TripletFittingTelescopeTests, Run) {
     std::filesystem::create_directories(full_path);
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
                                  writer_type>(
-        ptc, n_events, host_det, field, std::move(generator),
-        std::move(smearer_writer_cfg), full_path);
+        ptc, n_events, detector.as<detector_traits>(),
+        field.as_field<traccc::const_bfield_backend_t<traccc::scalar>>(),
+        std::move(generator), std::move(smearer_writer_cfg), full_path);
     sim.run();
 
     /***************
@@ -116,7 +123,8 @@ TEST_P(TripletFittingTelescopeTests, Run) {
      ***************/
 
     // Seed generator
-    seed_generator<host_detector_type> sg(host_det, stddevs);
+    seed_generator<host_detector_type> sg(detector.as<detector_traits>(),
+                                          stddevs);
 
     // Fitting algorithm object
     traccc::fitting_config fit_cfg;
@@ -129,20 +137,26 @@ TEST_P(TripletFittingTelescopeTests, Run) {
         // Event map
         traccc::event_data evt_data(path, i_evt, host_mr);
         // Truth Track Candidates
-        traccc::track_candidate_container_types::host track_candidates =
-            evt_data.generate_truth_candidates(sg, host_mr);
+        traccc::measurement_collection_types::host measurements(&host_mr);
+        traccc::edm::track_container<traccc::default_algebra>::host
+            track_candidates{host_mr};
+        evt_data.generate_truth_candidates(track_candidates, measurements, sg,
+                                           host_mr);
+        track_candidates.measurements = vecmem::get_data(measurements);
 
         // n_trakcs = 100
-        ASSERT_EQ(track_candidates.size(), n_truth_tracks);
+        ASSERT_EQ(track_candidates.tracks.size(), n_truth_tracks);
 
         // Run fitting
-        auto track_states =
-            fitting(host_det, field, traccc::get_data(track_candidates));
+        auto track_states = fitting(
+            detector, field,
+            traccc::edm::track_container<traccc::default_algebra>::const_data(
+                track_candidates));
 
         // Iterator over tracks
-        const std::size_t n_tracks = track_states.size();
+        const std::size_t n_tracks = track_states.tracks.size();
         const std::size_t n_fitted_tracks =
-            count_successfully_fitted_tracks(track_states);
+            count_successfully_fitted_tracks(track_states.tracks);
 
         // n_trakcs = 100
         ASSERT_EQ(n_tracks, n_truth_tracks);
@@ -150,17 +164,20 @@ TEST_P(TripletFittingTelescopeTests, Run) {
 
         for (std::size_t i_trk = 0; i_trk < n_tracks; i_trk++) {
 
-            const auto& track_states_per_track = track_states[i_trk].items;
-            const auto& fit_res = track_states[i_trk].header;
+            EXPECT_EQ(track_states.tracks.at(i_trk).fit_outcome(),
+                      traccc::track_fit_outcome::SUCCESS);
 
-            consistency_tests(track_states_per_track);
+            consistency_tests(track_states.tracks.at(i_trk),
+                              track_states.states);
 
-            ndf_tests(fit_res, track_states_per_track);
+            ndf_tests(track_states.tracks.at(i_trk), track_states.states,
+                      measurements);
 
-            ASSERT_EQ(fit_res.trk_quality.n_holes, 0u);
+            ASSERT_EQ(track_states.tracks.at(i_trk).nholes(), 0u);
 
-            fit_performance_writer.write(track_states_per_track, fit_res,
-                                         host_det, evt_data);
+            fit_performance_writer.write(
+                track_states.tracks.at(i_trk), track_states.states,
+                measurements, detector.as<detector_traits>(), evt_data);
         }
     }
 

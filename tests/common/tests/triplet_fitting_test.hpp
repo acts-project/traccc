@@ -8,17 +8,25 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/bfield/magnetic_field_types.hpp"
 #include "traccc/definitions/common.hpp"
+#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/track_collection.hpp"
+#include "traccc/edm/track_state_collection.hpp"
 #include "traccc/fitting/triplet_fit/triplet_fitter.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/simulation/event_generators.hpp"
+
+// Covfie include(s).
+#include <covfie/core/field.hpp>
 
 // detray include(s).
-#include <detray/definitions/pdg_particle.hpp>
-#include <detray/detectors/bfield.hpp>
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
-#include <detray/test/utils/simulation/event_generator/track_generators.hpp>
+// #include <detray/definitions/pdg_particle.hpp>
+// #include <detray/detectors/magnetic_field.hpp>
+// #include <detray/navigation/navigator.hpp>
+// #include <detray/propagator/propagator.hpp>
+// #include <detray/propagator/rk_stepper.hpp>
+// #include <detray/test/utils/simulation/event_generator/track_generators.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>
@@ -33,11 +41,13 @@ namespace traccc {
 class TripletFittingTests : public testing::Test {
     public:
     /// Type declarations
+    using detector_traits = traccc::default_detector;
     using host_detector_type = traccc::default_detector::host;
     using device_detector_type = traccc::default_detector::device;
 
     using scalar_type = device_detector_type::scalar_type;
-    using b_field_t = covfie::field<detray::bfield::const_bknd_t<scalar_type>>;
+    using b_field_t =
+        covfie::field<traccc::const_bfield_backend_t<scalar_type>>;
     /*using rk_stepper_type =
         detray::rk_stepper<b_field_t::view_t, traccc::default_algebra,
                            detray::constrained_step<scalar_type>>;
@@ -67,23 +77,26 @@ class TripletFittingTests : public testing::Test {
     ///
     void p_value_tests(std::string_view file_name) const;
 
-    /// Validadte the NDF for track finding output
-    ///
-    /// @param find_res Finding result of a track
-    /// @param track_candidates_per_track Track candidates of a track
-    ///
-    void ndf_tests(const finding_result& find_res,
-                   const track_candidate_collection_types::host&
-                       track_candidates_per_track);
-
     /// Validadte the NDF for track fitting output
     ///
-    /// @param fit_res Fitting statistics result of a track
-    /// @param track_states_per_track Track states of a track
+    /// @param track Fitting statistics result of a track
+    /// @param track_states All track states in the event
+    /// @param measurements All measurements in the event
     ///
     void ndf_tests(
-        const fitting_result<traccc::default_algebra>& fit_res,
-        const track_state_collection_types::host& track_states_per_track);
+        const edm::track_collection<default_algebra>::host::const_proxy_type&
+            track,
+        const edm::track_state_collection<default_algebra>::host& track_states,
+        const measurement_collection_types::host& measurements);
+
+    /// Count the number of tracks that were successfully fitted
+    ///
+    /// @param tracks The track fit collection to count on
+    /// @return The number of tracks that were successfully fitted
+    ///
+    std::size_t count_successfully_fitted_tracks(
+        const edm::track_collection<default_algebra>::host& tracks) const;
+
 
     // The number of tracks successful with KF
     std::size_t n_success{0u};

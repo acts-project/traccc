@@ -9,13 +9,10 @@
 
 // Project include(s).
 #include "triplet_fitting_test.hpp"
+#include "test_detectors.hpp"
 
 // Detray include(s).
-#include <detray/geometry/mask.hpp>
-#include <detray/geometry/shapes/rectangle2D.hpp>
 #include <detray/io/frontend/detector_writer.hpp>
-#include <detray/test/utils/detectors/build_telescope_detector.hpp>
-#include <detray/tracks/ray.hpp>
 
 namespace traccc {
 
@@ -70,20 +67,14 @@ class TripletFittingTelescopeTests
         0.05f / traccc::unit<scalar>::GeV,
         1.f * traccc::unit<scalar>::ns};
 
-    void consistency_tests(const track_candidate_collection_types::host&
-                               track_candidates_per_track) const {
-
-        // The nubmer of track candidates is supposed be equal to the number
-        // of planes
-        ASSERT_EQ(track_candidates_per_track.size(), std::get<11>(GetParam()));
-    }
-
-    void consistency_tests(const track_state_collection_types::host&
-                               track_states_per_track) const {
+    void consistency_tests(
+        const edm::track_collection<default_algebra>::host::const_proxy_type&
+            track,
+        const edm::track_state_collection<default_algebra>::host&) const {
 
         // The nubmer of track states is supposed be equal to the number
         // of planes
-        ASSERT_EQ(track_states_per_track.size(), std::get<11>(GetParam()));
+        ASSERT_EQ(track.constituent_links().size(), std::get<11>(GetParam()));
     }
 
     protected:

@@ -8,15 +8,16 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/track_candidate.hpp"
-#include "traccc/edm/track_state.hpp"
+#include "traccc/bfield/magnetic_field.hpp"
+#include "traccc/edm/track_container.hpp"
+#include "traccc/edm/track_state_collection.hpp"
 #include "traccc/fitting/fitting_config.hpp"
-#include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/messaging.hpp"
 
 // Detray include(s).
-#include <detray/detectors/bfield.hpp>
+#include <covfie/core/field.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
@@ -28,18 +29,15 @@ namespace traccc::host {
 
 /// Triplet based track fitting algorithm
 class triplet_fitting_algorithm
-    : public algorithm<track_state_container_types::host(
-          const default_detector::host&,
-          const detray::bfield::const_field_t<
-              default_detector::host::scalar_type>::view_t&,
-          const track_candidate_container_types::const_view&)>,
+    : public algorithm<edm::track_container<default_algebra>::host(
+          const host_detector&,
+          const magnetic_field&,
+          const edm::track_container<default_algebra>::const_view&)>,
       public messaging {
 
     public:
     /// Configuration type
     using config_type = fitting_config;
-    /// Output type
-    using output_type = track_state_container_types::host;
 
     /// Constructor with the algorithm's configuration
     ///
@@ -52,17 +50,16 @@ class triplet_fitting_algorithm
 
     /// Execute the algorithm
     ///
-    /// @param det             The (default) detector object
-    /// @param field           The (constant) magnetic field object
+    /// @param det             The detector object
+    /// @param field           The magnetic field object
     /// @param track_candidates All track candidates to fit
     ///
     /// @return A container of the fitted track states
     ///
     output_type operator()(
-        const default_detector::host& det,
-        const detray::bfield::const_field_t<
-            default_detector::host::scalar_type>::view_t& field,
-        const track_candidate_container_types::const_view& track_candidates)
+        const host_detector& det,
+        const magnetic_field& field,
+        const edm::track_container<default_algebra>::const_view& track_candidates)
         const override;
 
     private:

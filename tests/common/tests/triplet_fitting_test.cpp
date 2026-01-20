@@ -134,50 +134,62 @@ void TripletFittingTests::p_value_tests([
 }
 
 void TripletFittingTests::ndf_tests(
-    const finding_result& find_res,
-    const track_candidate_collection_types::host& track_candidates_per_track) {
-
-    scalar dim_sum = 0;
-
-    for (const auto& cand : track_candidates_per_track) {
-        dim_sum += static_cast<scalar>(cand.meas_dim);
-    }
-
-    // Check if the number of degree of freedoms is equal to (the sum of
-    // measurement dimensions - 5)
-    ASSERT_FLOAT_EQ(static_cast<float>(find_res.trk_quality.ndf),
-                    static_cast<float>(dim_sum) - 5.f);
-}
-
-void TripletFittingTests::ndf_tests(
-    const fitting_result<traccc::default_algebra>& fit_res,
-    const track_state_collection_types::host& track_states_per_track) {
+    const edm::track_collection<default_algebra>::host::const_proxy_type& track,
+    const edm::track_state_collection<default_algebra>::host& track_states,
+    const measurement_collection_types::host& measurements) {
 
     scalar dim_sum = 0;
     std::size_t n_effective_states = 0;
 
-    for (const auto& state : track_states_per_track) {
+    for (const auto& [type, index] : track.constituent_links()) {
 
-        // Getting rid of the requirement for state
-        // to be smoothed, since it does not apply
-        // for the Triplet fit
-        if (!state.is_hole) {
+        if (type == edm::track_constituent_link::track_state) {
 
-            dim_sum += static_cast<scalar>(state.get_measurement().meas_dim);
-            n_effective_states++;
+            auto state = track_states.at(index);
+
+            // Getting rid of the requirement for state
+            // to be smoothed, since it does not apply
+            // for the Triplet fit
+            if (!state.is_hole()) {
+
+                dim_sum += static_cast<scalar>(measurements.at(state.measurement_index()).meas_dim);
+                n_effective_states++;
+            }
+        
+        } else if (type == edm::track_constituent_link::measurement) {
+            dim_sum += static_cast<scalar>(measurements.at(index).meas_dim);
+        } else {
+            GTEST_FAIL();
         }
+        
     }
 
     // Check if the number of degree of freedoms is equal to (the sum of
     // measurement dimensions - 5)
-    ASSERT_FLOAT_EQ(static_cast<float>(fit_res.trk_quality.ndf),
+    ASSERT_FLOAT_EQ(static_cast<float>(track.ndf()),
                     static_cast<float>(dim_sum) - 5.f);
 
     // The number of track states is supposed to be eqaul to the number
     // of measurements unless KF failes in the middle of propagation
-    if (n_effective_states == track_states_per_track.size()) {
+    if (n_effective_states == track.constituent_links().size()) {
         n_success++;
     }
 }
+
+std::size_t TripletFittingTests::count_successfully_fitted_tracks(
+    const edm::track_collection<default_algebra>::host& tracks) const {
+
+    const std::size_t n_tracks = tracks.size();
+    std::size_t n_fitted_tracks = 0u;
+
+    for (std::size_t i = 0; i < n_tracks; ++i) {
+        if (tracks.at(i).fit_outcome() == track_fit_outcome::SUCCESS) {
+            n_fitted_tracks++;
+        }
+    }
+
+    return n_fitted_tracks;
+}
+
 
 }  // namespace traccc
