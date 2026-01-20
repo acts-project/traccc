@@ -13,9 +13,7 @@ traccc_add_library( traccc_device_common device_common
    # General code.
    "include/traccc/device/algorithm_base.hpp"
    "src/device/algorithm_base.cpp"
-   "include/traccc/device/fill_prefix_sum.hpp"
-   "include/traccc/device/impl/fill_prefix_sum.ipp"
-   "include/traccc/device/make_prefix_sum_buffer.hpp"
+   "include/traccc/device/prefix_sum_element.hpp"
    "include/traccc/device/container_h2d_copy_alg.hpp"
    "include/traccc/device/impl/container_h2d_copy_alg.ipp"
    "include/traccc/device/container_d2h_copy_alg.hpp"
@@ -44,7 +42,7 @@ traccc_add_library( traccc_device_common device_common
    "include/traccc/seeding/device/impl/count_grid_capacities.ipp"
    "include/traccc/seeding/device/populate_grid.hpp"
    "include/traccc/seeding/device/impl/populate_grid.ipp"
-   # Seed finding function(s).
+   # Seed finding code.
    "include/traccc/seeding/device/form_spacepoints.hpp"
    "include/traccc/seeding/device/impl/form_spacepoints.ipp"
    "include/traccc/seeding/device/count_doublets.hpp"
@@ -61,6 +59,8 @@ traccc_add_library( traccc_device_common device_common
    "include/traccc/seeding/device/impl/update_triplet_weights.ipp"
    "include/traccc/seeding/device/select_seeds.hpp"
    "include/traccc/seeding/device/impl/select_seeds.ipp"
+   "include/traccc/seeding/device/triplet_seeding_algorithm.hpp"
+   "src/seeding/triplet_seeding_algorithm.cpp"
    # Track parameters estimation function(s).
    "include/traccc/seeding/device/estimate_track_params.hpp"
    "include/traccc/seeding/device/impl/estimate_track_params.ipp"

@@ -1,12 +1,9 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2025 CERN for the benefit of the ACTS project
+ * (c) 2021-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
-
-// SYCL include(s)
-#include <sycl/sycl.hpp>
 
 // core
 #include "traccc/geometry/detector.hpp"
@@ -17,8 +14,8 @@
 // algorithms
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
-#include "traccc/sycl/seeding/seeding_algorithm.hpp"
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
+#include "traccc/sycl/seeding/triplet_seeding_algorithm.hpp"
 
 // io
 #include "traccc/io/read_detector.hpp"
@@ -60,19 +57,19 @@ int seq_run(const traccc::opts::detector& detector_opts,
     TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
     // Creating sycl queue object
-    ::sycl::queue q;
-    TRACCC_INFO("Running on device: "
-                << q.get_device().get_info<::sycl::info::device::name>());
+    vecmem::sycl::queue_wrapper vecmem_queue;
+    traccc::sycl::queue_wrapper traccc_queue{vecmem_queue.queue()};
+    TRACCC_INFO("Running on device: " << vecmem_queue.device_name());
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
-    vecmem::sycl::host_memory_resource sycl_host_mr{&q};
-    vecmem::sycl::shared_memory_resource shared_mr{&q};
-    vecmem::sycl::device_memory_resource device_mr{&q};
+    vecmem::sycl::host_memory_resource sycl_host_mr{vecmem_queue};
+    vecmem::sycl::shared_memory_resource shared_mr{vecmem_queue};
+    vecmem::sycl::device_memory_resource device_mr{vecmem_queue};
     traccc::memory_resource mr{device_mr, &sycl_host_mr};
 
     // Copy object for asynchronous data transfers.
-    vecmem::sycl::async_copy copy{&q};
+    vecmem::sycl::async_copy copy{vecmem_queue};
 
     // Performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -96,7 +93,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
 
     const traccc::detector_buffer detector_buffer =
         traccc::buffer_from_host_detector(host_det, device_mr, copy);
-    q.wait_and_throw();
+    vecmem_queue.synchronize();
 
     const traccc::vector3 field_vec(seeding_opts);
 
@@ -112,15 +109,16 @@ int seq_run(const traccc::opts::detector& detector_opts,
         track_params_estimation_config, host_mr,
         logger().clone("HostTrackParEstAlg"));
 
-    traccc::sycl::seeding_algorithm sa_sycl{seedfinder_config,
-                                            spacepoint_grid_config,
-                                            seedfilter_config,
-                                            mr,
-                                            copy,
-                                            &q,
-                                            logger().clone("SyclSeedingAlg")};
+    traccc::sycl::triplet_seeding_algorithm sa_sycl{
+        seedfinder_config,
+        spacepoint_grid_config,
+        seedfilter_config,
+        mr,
+        copy,
+        traccc_queue,
+        logger().clone("SyclSeedingAlg")};
     traccc::sycl::track_params_estimation tp_sycl{
-        track_params_estimation_config, mr, copy, &q,
+        track_params_estimation_config, mr, copy, traccc_queue,
         logger().clone("SyclTrackParEstAlg")};
 
     traccc::performance::timing_info elapsedTimes;

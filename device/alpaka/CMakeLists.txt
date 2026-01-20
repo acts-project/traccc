@@ -28,8 +28,6 @@ traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   "include/traccc/alpaka/utils/algorithm_base.hpp"
   "src/utils/algorithm_base.cpp"
   "include/traccc/alpaka/utils/get_device_info.hpp"
-  "include/traccc/alpaka/utils/make_prefix_sum_buff.hpp"
-  "src/utils/make_prefix_sum_buff.cpp"
   "src/utils/get_device_info.cpp"
   "include/traccc/alpaka/utils/queue.hpp"
   "src/utils/queue.cpp"
@@ -47,12 +45,8 @@ traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   # Seeding code
   "include/traccc/alpaka/seeding/spacepoint_formation_algorithm.hpp"
   "src/seeding/spacepoint_formation_algorithm.cpp"
-  "include/traccc/alpaka/seeding/details/spacepoint_binning.hpp"
-  "src/seeding/spacepoint_binning.cpp"
-  "include/traccc/alpaka/seeding/details/seed_finding.hpp"
-  "src/seeding/seed_finding.cpp"
-  "include/traccc/alpaka/seeding/seeding_algorithm.hpp"
-  "src/seeding/seeding_algorithm.cpp"
+  "include/traccc/alpaka/seeding/triplet_seeding_algorithm.hpp"
+  "src/seeding/triplet_seeding_algorithm.cpp"
   "include/traccc/alpaka/seeding/track_params_estimation.hpp"
   "src/seeding/track_params_estimation.cpp"
   # Track finding algorithm(s).

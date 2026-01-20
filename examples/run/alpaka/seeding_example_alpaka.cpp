@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -9,8 +9,8 @@
 #include "../common/make_magnetic_field.hpp"
 #include "traccc/alpaka/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/alpaka/fitting/kalman_fitting_algorithm.hpp"
-#include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
+#include "traccc/alpaka/seeding/triplet_seeding_algorithm.hpp"
 #include "traccc/alpaka/utils/queue.hpp"
 #include "traccc/alpaka/utils/vecmem_objects.hpp"
 #include "traccc/definitions/common.hpp"
@@ -151,7 +151,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         logger().clone("HostTrackParEstAlg"));
 
     // Alpaka Algorithms
-    traccc::alpaka::seeding_algorithm sa_alpaka{
+    traccc::alpaka::triplet_seeding_algorithm sa_alpaka{
         seedfinder_config,
         spacepoint_grid_config,
         seedfilter_config,

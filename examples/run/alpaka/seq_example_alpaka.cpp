@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -11,9 +11,9 @@
 #include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/alpaka/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/alpaka/fitting/kalman_fitting_algorithm.hpp"
-#include "traccc/alpaka/seeding/seeding_algorithm.hpp"
 #include "traccc/alpaka/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/alpaka/seeding/track_params_estimation.hpp"
+#include "traccc/alpaka/seeding/triplet_seeding_algorithm.hpp"
 #include "traccc/alpaka/utils/queue.hpp"
 #include "traccc/alpaka/utils/vecmem_objects.hpp"
 #include "traccc/clusterization/clusterization_algorithm.hpp"
@@ -169,7 +169,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
         mr, copy, queue, logger().clone("AlpakaMeasSortingAlg"));
     device_spacepoint_formation_algorithm sf_alpaka(
         mr, copy, queue, logger().clone("AlpakaSpFormationAlg"));
-    traccc::alpaka::seeding_algorithm sa_alpaka(
+    traccc::alpaka::triplet_seeding_algorithm sa_alpaka(
         seedfinder_config, spacepoint_grid_config, seedfilter_config, mr, copy,
         queue, logger().clone("AlpakaSeedingAlg"));
     traccc::alpaka::track_params_estimation tp_alpaka(

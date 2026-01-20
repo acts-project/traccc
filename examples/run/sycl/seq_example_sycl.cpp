@@ -5,9 +5,6 @@
  * Mozilla Public License Version 2.0
  */
 
-// SYCL include(s)
-#include <sycl/sycl.hpp>
-
 // core
 #include "traccc/geometry/detector.hpp"
 
@@ -27,9 +24,9 @@
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 #include "traccc/sycl/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
-#include "traccc/sycl/seeding/seeding_algorithm.hpp"
 #include "traccc/sycl/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/sycl/seeding/track_params_estimation.hpp"
+#include "traccc/sycl/seeding/triplet_seeding_algorithm.hpp"
 #include "traccc/sycl/utils/make_magnetic_field.hpp"
 
 // performance
@@ -70,25 +67,6 @@
 #include <iostream>
 #include <memory>
 
-// Simple asynchronous handler function
-class handle_async_error {
-    public:
-    handle_async_error(const traccc::Logger& l) : logger(l) {}
-
-    auto operator()(::sycl::exception_list elist) {
-        for (auto& e : elist) {
-            try {
-                std::rethrow_exception(e);
-            } catch (::sycl::exception& e) {
-                TRACCC_ERROR("Asynchronous exception: " << e.what());
-            }
-        }
-    }
-
-    private:
-    const traccc::Logger& logger;
-};
-
 int seq_run(const traccc::opts::detector& detector_opts,
             const traccc::opts::magnetic_field& bfield_opts,
             const traccc::opts::input_data& input_opts,
@@ -103,19 +81,18 @@ int seq_run(const traccc::opts::detector& detector_opts,
     TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
     // Creating SYCL queue object
-    ::sycl::queue q(handle_async_error{logger()});
-    traccc::sycl::queue_wrapper queue{&q};
-    TRACCC_INFO("Running on device: "
-                << q.get_device().get_info<::sycl::info::device::name>());
+    vecmem::sycl::queue_wrapper vecmem_queue;
+    traccc::sycl::queue_wrapper traccc_queue{vecmem_queue.queue()};
+    TRACCC_INFO("Running on device: " << vecmem_queue.device_name());
 
     // Memory resources used by the application.
     vecmem::host_memory_resource host_mr;
-    vecmem::sycl::host_memory_resource sycl_host_mr{&q};
-    vecmem::sycl::device_memory_resource device_mr{&q};
+    vecmem::sycl::host_memory_resource sycl_host_mr{vecmem_queue};
+    vecmem::sycl::device_memory_resource device_mr{vecmem_queue};
     traccc::memory_resource mr{device_mr, &sycl_host_mr};
 
     // Copy object for asynchronous data transfers.
-    vecmem::sycl::async_copy copy{&q};
+    vecmem::sycl::async_copy copy{vecmem_queue};
 
     // Construct the detector description object.
     traccc::silicon_detector_description::host host_det_descr{host_mr};
@@ -154,7 +131,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     const traccc::vector3 field_vec(seeding_opts);
     const auto host_field = traccc::details::make_magnetic_field(bfield_opts);
     const auto device_field =
-        traccc::sycl::make_magnetic_field(host_field, queue);
+        traccc::sycl::make_magnetic_field(host_field, traccc_queue);
 
     // Algorithm configuration(s).
     const traccc::seedfinder_config seedfinder_config(seeding_opts);
@@ -182,20 +159,20 @@ int seq_run(const traccc::opts::detector& detector_opts,
         finding_cfg, host_mr, logger().clone("HostFindingAlg")};
 
     traccc::sycl::clusterization_algorithm ca_sycl(
-        mr, copy, queue, clusterization_opts,
+        mr, copy, traccc_queue, clusterization_opts,
         logger().clone("SyclClusteringAlg"));
     traccc::sycl::measurement_sorting_algorithm ms_sycl(
-        mr, copy, queue, logger().clone("SyclMeasSortingAlg"));
+        mr, copy, traccc_queue, logger().clone("SyclMeasSortingAlg"));
     traccc::sycl::silicon_pixel_spacepoint_formation_algorithm sf_sycl(
-        mr, copy, queue, logger().clone("SyclSpFormationAlg"));
-    traccc::sycl::seeding_algorithm sa_sycl(
+        mr, copy, traccc_queue, logger().clone("SyclSpFormationAlg"));
+    traccc::sycl::triplet_seeding_algorithm sa_sycl(
         seedfinder_config, spacepoint_grid_config, seedfilter_config, mr, copy,
-        &q, logger().clone("SyclSeedingAlg"));
+        traccc_queue, logger().clone("SyclSeedingAlg"));
     traccc::sycl::track_params_estimation tp_sycl(
-        track_params_estimation_config, mr, copy, &q,
+        track_params_estimation_config, mr, copy, traccc_queue,
         logger().clone("SyclTrackParEstAlg"));
     traccc::sycl::combinatorial_kalman_filter_algorithm finding_alg_sycl{
-        finding_cfg, mr, copy, queue, logger().clone("SyclFindingAlg")};
+        finding_cfg, mr, copy, traccc_queue, logger().clone("SyclFindingAlg")};
 
     // performance writer
     traccc::seeding_performance_writer sd_performance_writer(
@@ -222,7 +199,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
             measurements_sycl_buffer;
         traccc::sycl::silicon_pixel_spacepoint_formation_algorithm::output_type
             spacepoints_sycl_buffer;
-        traccc::sycl::seeding_algorithm::output_type seeds_sycl_buffer;
+        traccc::sycl::triplet_seeding_algorithm::output_type seeds_sycl_buffer;
         traccc::sycl::track_params_estimation::output_type params_sycl_buffer(
             0, *mr.host);
         traccc::sycl::combinatorial_kalman_filter_algorithm::output_type
@@ -259,7 +236,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 auto unsorted_measurements =
                     ca_sycl(cells_buffer, device_det_descr);
                 measurements_sycl_buffer = ms_sycl(unsorted_measurements);
-                q.wait_and_throw();
+                vecmem_queue.synchronize();
             }  // stop measuring clusterization sycl timer
 
             // CPU
@@ -279,7 +256,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 // Reconstruct it into spacepoints on the device.
                 spacepoints_sycl_buffer =
                     sf_sycl(detector_buffer, measurements_sycl_buffer);
-                q.wait_and_throw();
+                vecmem_queue.synchronize();
             }  // stop measuring clusterization sycl timer
 
             // CPU
@@ -294,7 +271,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
             {
                 traccc::performance::timer t("Seeding (sycl)", elapsedTimes);
                 seeds_sycl_buffer = sa_sycl(spacepoints_sycl_buffer);
-                q.wait_and_throw();
+                vecmem_queue.synchronize();
             }  // stop measuring seeding sycl timer
 
             // CPU
@@ -310,7 +287,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 params_sycl_buffer =
                     tp_sycl(measurements_sycl_buffer, spacepoints_sycl_buffer,
                             seeds_sycl_buffer, field_vec);
-                q.wait_and_throw();
+                vecmem_queue.synchronize();
             }  // stop measuring track params timer
 
             // CPU
@@ -329,7 +306,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 track_candidates_sycl_buffer = finding_alg_sycl(
                     detector_buffer, device_field, measurements_sycl_buffer,
                     params_sycl_buffer);
-                q.wait_and_throw();
+                vecmem_queue.synchronize();
             }
 
             // CPU

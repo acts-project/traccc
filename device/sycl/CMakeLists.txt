@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2025 CERN for the benefit of the ACTS project
+# (c) 2021-2026 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -23,12 +23,8 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "src/seeding/silicon_pixel_spacepoint_formation_algorithm.cpp"
   "src/seeding/silicon_pixel_spacepoint_formation_algorithm.sycl"
   "src/seeding/silicon_pixel_spacepoint_formation.hpp"
-  "include/traccc/sycl/seeding/details/spacepoint_binning.hpp"
-  "src/seeding/spacepoint_binning.sycl"
-  "include/traccc/sycl/seeding/details/seed_finding.hpp"
-  "src/seeding/seed_finding.sycl"
-  "include/traccc/sycl/seeding/seeding_algorithm.hpp"
-  "src/seeding/seeding_algorithm.cpp"
+  "include/traccc/sycl/seeding/triplet_seeding_algorithm.hpp"
+  "src/seeding/triplet_seeding_algorithm.sycl"
   "include/traccc/sycl/seeding/track_params_estimation.hpp"
   "src/seeding/track_params_estimation.sycl"
   # Track finding algorithm(s).
@@ -44,8 +40,6 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   # Utilities.
   "include/traccc/sycl/utils/algorithm_base.hpp"
   "src/utils/algorithm_base.sycl"
-  "include/traccc/sycl/utils/make_prefix_sum_buff.hpp"
-  "src/utils/make_prefix_sum_buff.sycl"
   "include/traccc/sycl/utils/queue_wrapper.hpp"
   "src/utils/queue_wrapper.cpp"
   "include/traccc/sycl/utils/make_magnetic_field.hpp"

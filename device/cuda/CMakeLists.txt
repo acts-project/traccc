@@ -22,8 +22,6 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   # Utility definitions.
   "include/traccc/cuda/utils/algorithm_base.hpp"
   "src/utils/algorithm_base.cpp"
-  "include/traccc/cuda/utils/make_prefix_sum_buff.hpp"
-  "src/utils/make_prefix_sum_buff.cu"
   "include/traccc/cuda/utils/stream.hpp"
   "src/utils/barrier.hpp"
   "src/utils/cuda_error_handling.hpp"
@@ -41,12 +39,8 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   # Seed finding code.
   "include/traccc/cuda/seeding/track_params_estimation.hpp"
   "src/seeding/track_params_estimation.cu"
-  "include/traccc/cuda/seeding/details/spacepoint_binning.hpp"
-  "src/seeding/spacepoint_binning.cu"
-  "include/traccc/cuda/seeding/details/seed_finding.hpp"
-  "src/seeding/seed_finding.cu"
-  "include/traccc/cuda/seeding/seeding_algorithm.hpp"
-  "src/seeding/seeding_algorithm.cpp"
+  "include/traccc/cuda/seeding/triplet_seeding_algorithm.hpp"
+  "src/seeding/triplet_seeding_algorithm.cu"
   "include/traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
   "src/seeding/spacepoint_formation_algorithm.cu"
   #GBTS seed finding code
