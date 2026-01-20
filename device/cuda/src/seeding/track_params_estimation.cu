@@ -7,7 +7,6 @@
 
 // Local include(s).
 #include "../utils/cuda_error_handling.hpp"
-#include "../utils/get_size.hpp"
 #include "../utils/global_index.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
@@ -56,13 +55,15 @@ track_params_estimation::output_type track_params_estimation::operator()(
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(m_stream);
 
-    // Staging area for copying sizes from device to host
-    vecmem::unique_alloc_ptr<unsigned int> size_staging_ptr =
-        vecmem::make_unique_alloc<unsigned int>(*(m_mr.host));
-
     // Get the size of the seeds view
-    const unsigned int seeds_size =
-        get_size(seeds_view, size_staging_ptr.get(), stream);
+    unsigned int seeds_size;
+    if (m_mr.host) {
+        const vecmem::async_size size =
+            m_copy.get_size(seeds_view, *(m_mr.host));
+        seeds_size = size.get();
+    } else {
+        seeds_size = m_copy.get_size(seeds_view);
+    }
 
     // Create device buffer for the parameters
     bound_track_parameters_collection_types::buffer params_buffer(seeds_size,
