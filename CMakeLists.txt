@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2025 CERN for the benefit of the ACTS project
+# (c) 2021-2026 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -57,7 +57,12 @@ set( TRACCC_DEVICE_LOG_LVL "NONE" CACHE STRING
    "Log level for traccc and detray device code" )
 
 # Flags controlling which parts of traccc to build.
-option( TRACCC_BUILD_CUDA "Build the CUDA sources included in traccc" FALSE )
+include( CMakeDependentOption )
+option( TRACCC_BUILD_CUDA_UTILS
+   "Build the traccc::cuda_utils library" FALSE )
+cmake_dependent_option( TRACCC_BUILD_CUDA
+   "Build the traccc::cuda library" FALSE
+   TRACCC_BUILD_CUDA_UTILS FALSE )
 option( TRACCC_BUILD_HIP "Build the HIP sources included in traccc" FALSE)
 option( TRACCC_BUILD_SYCL "Build the SYCL sources included in traccc" FALSE )
 option( TRACCC_BUILD_ALPAKA "Build the Alpaka sources included in traccc"
@@ -425,6 +430,9 @@ set(TRACCC_ALGEBRA_PLUGINS ARRAY CACHE STRING "Algebra plugin to use in the buil
 # Build the traccc code.
 add_subdirectory( core )
 add_subdirectory( device/common )
+if( TRACCC_BUILD_CUDA_UTILS )
+   add_subdirectory( device/cuda_utils )
+endif()
 if( TRACCC_BUILD_CUDA )
    add_subdirectory( device/cuda )
 endif()
