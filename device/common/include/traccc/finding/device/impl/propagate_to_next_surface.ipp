@@ -106,7 +106,7 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
      * parameter transporter to multiply the Jacobians into this matrix, which
      * is set to the multiplicative identity.
      */
-    if (cfg.run_mbf_smoother) {
+    if (cfg.run_smoother == smoother_type::e_mbf) {
         assert(payload.tmp_jacobian_ptr != nullptr);
 
         payload.tmp_jacobian_ptr[param_id] = matrix::identity<

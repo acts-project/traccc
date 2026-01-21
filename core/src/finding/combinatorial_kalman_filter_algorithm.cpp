@@ -10,6 +10,7 @@
 
 #include "traccc/bfield/magnetic_field_types.hpp"
 #include "traccc/finding/details/combinatorial_kalman_filter.hpp"
+#include "traccc/finding/details/kalman_track_follower.hpp"
 #include "traccc/utils/host_detector_bfield_visitor.hpp"
 
 // System include(s).
@@ -44,9 +45,16 @@ combinatorial_kalman_filter_algorithm::operator()(
         [&]<typename detector_t, typename bfield_view_t>(
             const typename detector_t::host& detector,
             const bfield_view_t field) {
-            return details::combinatorial_kalman_filter(
-                detector, field, measurements, seeds, m_config, m_mr.get(),
-                logger());
+            if (m_config.max_num_branches_per_seed == 1 ||
+                m_config.max_num_branches_per_surface == 1) {
+                return details::kalman_track_follower(
+                    detector, field, measurements, seeds, m_config, m_mr.get(),
+                    logger());
+            } else {
+                return details::combinatorial_kalman_filter(
+                    detector, field, measurements, seeds, m_config, m_mr.get(),
+                    logger());
+            }
         });
 }
 

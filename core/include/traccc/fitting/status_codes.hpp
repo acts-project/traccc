@@ -37,6 +37,9 @@ struct fitter_debug_msg {
         const std::string msg{"Kalman Fitter: "};
         switch (m_error_code) {
             using enum kalman_fitter_status;
+            case SUCCESS: {
+                return msg + "SUCCESS";
+            }
             case ERROR_QOP_ZERO: {
                 return msg + "Track qop is zero";
             }
