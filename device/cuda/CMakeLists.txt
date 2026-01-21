@@ -34,8 +34,8 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/sanity/contiguous_on.cuh"
   "src/sanity/ordered_on.cuh"
   # Seed finding code.
-  "include/traccc/cuda/seeding/track_params_estimation.hpp"
-  "src/seeding/track_params_estimation.cu"
+  "include/traccc/cuda/seeding/seed_parameter_estimation_algorithm.hpp"
+  "src/seeding/seed_parameter_estimation_algorithm.cu"
   "include/traccc/cuda/seeding/triplet_seeding_algorithm.hpp"
   "src/seeding/triplet_seeding_algorithm.cu"
   "include/traccc/cuda/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
