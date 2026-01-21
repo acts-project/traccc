@@ -22,6 +22,10 @@ __global__ __launch_bounds__(128) void propagate_to_next_surface(
     const finding_config cfg,
     device::propagate_to_next_surface_payload<propagator_t, bfield_t> payload) {
 
+#if defined(__CUDA_ARCH__) && CUDART_VERSION >= 13000
+    asm(".pragma \"enable_smem_spilling\";");
+#endif
+
     device::propagate_to_next_surface<propagator_t, bfield_t>(
         details::global_index1(), cfg, payload);
 }

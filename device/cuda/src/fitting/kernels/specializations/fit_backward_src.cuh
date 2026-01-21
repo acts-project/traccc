@@ -16,6 +16,11 @@ namespace kernels {
 template <typename fitter_t>
 __global__ __launch_bounds__(128) void fit_backward(
     const fitting_config cfg, const device::fit_payload<fitter_t> payload) {
+
+#if defined(__CUDA_ARCH__) && CUDART_VERSION >= 13000
+    asm(".pragma \"enable_smem_spilling\";");
+#endif
+
     device::fit_backward<fitter_t>(details::global_index1(), cfg, payload);
 }
 }  // namespace kernels
