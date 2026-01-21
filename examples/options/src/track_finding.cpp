@@ -78,11 +78,11 @@ track_finding::track_finding() : interface("Track Finding Options") {
                          po::value(&m_pdg_number)->default_value(m_pdg_number),
                          "PDG number for the particle hypothesis");
     m_desc.add_options()(
-        "min-total-momentum",
+        "finding-min-total-momentum",
         po::value(&m_config.min_p)->default_value(m_config.min_p),
         "Minimum total track momentum [GeV]");
     m_desc.add_options()(
-        "min-transverse-momentum",
+        "finding-min-transverse-momentum",
         po::value(&m_config.min_pT)->default_value(m_config.min_pT),
         "Minimum transverse track momentum [GeV]");
     m_desc.add_options()(
@@ -91,7 +91,7 @@ track_finding::track_finding() : interface("Track Finding Options") {
             ->default_value(m_config.duplicate_removal_minimum_length),
         "Minimum track length for deduplication (0 to disable) [cardinal]");
     m_desc.add_options()(
-        "finding-smoother",
+        "finding-run-smoother",
         po::value(&m_config.run_smoother)->default_value(m_config.run_smoother),
         "Configure the smoother [none, MBF, Kalman]");
 }
@@ -156,7 +156,7 @@ std::unique_ptr<configuration_printable> track_finding::as_printable() const {
     std::stringstream os{};
     os << m_config.run_smoother;
     cat->add_child(
-        std::make_unique<configuration_kv_pair>("Run smoother:", os.str()));
+        std::make_unique<configuration_kv_pair>("Run smoother", os.str()));
 
     return cat;
 }

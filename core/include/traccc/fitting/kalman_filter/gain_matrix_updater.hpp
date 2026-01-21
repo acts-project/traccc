@@ -98,8 +98,6 @@ struct gain_matrix_updater {
 
         assert((dim > 1) || (getter::element(meas_local, 1u, 0u) == 0.f));
 
-        TRACCC_DEBUG_HOST("Predicted param.: " << bound_params);
-
         // Predicted vector of bound track parameters
         const bound_vector_type& predicted_vec = bound_params.vector();
 
@@ -129,10 +127,10 @@ struct gain_matrix_updater {
             getter::element(V, 1u, 1u) = 1000.f;
         }
 
-        TRACCC_DEBUG_HOST("Measurement position: " << meas_local);
+        TRACCC_DEBUG_HOST("Measurement position:\n" << meas_local);
         TRACCC_DEBUG_HOST("Measurement variance:\n" << V);
-        TRACCC_DEBUG_HOST("Predicted residual: " << meas_local -
-                                                        H * predicted_vec);
+        TRACCC_DEBUG_HOST("Predicted residual:\n"
+                          << meas_local - H * predicted_vec);
 
         const matrix_type<e_bound_size, D> projected_cov =
             algebra::matrix::transposed_product<false, true>(predicted_cov, H);
@@ -196,9 +194,11 @@ struct gain_matrix_updater {
 
         const scalar chi2_val{getter::element(chi2, 0, 0)};
 
-        TRACCC_VERBOSE_HOST("Filtered residual: " << residual);
+        TRACCC_VERBOSE_HOST("Filtered residual:\n" << residual);
         TRACCC_DEBUG_HOST("R:\n" << R);
-        TRACCC_DEBUG_HOST_DEVICE("det(R): %f", matrix::determinant(R));
+        TRACCC_DEBUG_HOST("det(R): " << std::scientific
+                                     << matrix::determinant(R)
+                                     << std::defaultfloat);
         TRACCC_DEBUG_HOST("R_inv:\n" << matrix::inverse(R));
         TRACCC_VERBOSE_HOST_DEVICE("Chi2: %f", chi2_val);
 

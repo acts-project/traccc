@@ -61,6 +61,8 @@ struct measurement_updater : detray::actor {
 
         /// Congfig params
         scalar_t max_chi2{0.f};
+        /// Max no. of track states this actor can accumulate
+        unsigned int max_n_track_states{100u};
         /// Max no. holes on track
         unsigned short max_n_holes{3u};
         /// Max no. consecutive holes on track
@@ -106,12 +108,17 @@ struct measurement_updater : detray::actor {
         // Track parameters on the sensitive surface
         auto& bound_param = stepping.bound_params();
 
+        TRACCC_DEBUG_HOST("Predicted param.: " << bound_param);
+
         // Find the measurement with the smallest predicted chi2
         const auto& measurements = updater_state.m_measurements;
         const candidate_measurement cand =
             measurement_selector::find_optimal_measurement(
                 bound_param, measurements, updater_state.m_measurement_ranges,
                 updater_state.m_calib_cfg, is_line);
+
+        TRACCC_VERBOSE_HOST_DEVICE("Optimal measurement: %d (pred. chi2 = %f)",
+                                   cand.meas_idx, cand.chi2);
 
         scalar_t filtered_chi2{0.f};
 
@@ -122,7 +129,8 @@ struct measurement_updater : detray::actor {
             kalman_fitter_status res{kalman_fitter_status::ERROR_OTHER};
 
             // No Kalman update needed (first measurement of the seed)
-            if (cand.chi2 == 0.f && !sf.has_material()) {
+            if (cand.chi2 <= std::numeric_limits<scalar_t>::epsilon() &&
+                !sf.has_material()) {
                 // Update measurement covariance
                 const auto V =
                     measurement_selector::calibrated_measurement_covariance<
@@ -151,13 +159,17 @@ struct measurement_updater : detray::actor {
                         "KF failure: " << fitter_debug_msg{res}());
                     TRACCC_ERROR_DEVICE("KF failure: %d",
                                         static_cast<int>(res));
-                    navigation.abort(fitter_debug_msg{res});
-                    return;
-                }
 
-                // Update propagation on filtered track params
-                TRACCC_VERBOSE_HOST("Updated track parameters:\n"
-                                    << bound_param);
+                    TRACCC_WARNING_HOST_DEVICE("Counting this as hole!");
+                    updater_state.m_stats.n_holes++;
+                    updater_state.m_stats.n_consecutive_holes++;
+
+                    if (bound_param.is_invalid()) {
+                        navigation.exit();
+                        propagation._heartbeat = false;
+                        return;
+                    }
+                }
 
                 // Flag renavigation of the current candidate (unless overlap)
                 if (math::fabs(navigation()) > 1.f * unit<float>::um) {
@@ -202,6 +214,7 @@ struct measurement_updater : detray::actor {
             } else {
                 navigation.abort(
                     "Unknown data coll. type in measurement updater");
+                propagation._heartbeat = false;
                 return;
             }
 
@@ -211,21 +224,35 @@ struct measurement_updater : detray::actor {
                 static_cast<std::uint_least16_t>(meas.dimensions());
             updater_state.m_stats.chi2_sum += filtered_chi2;
             updater_state.m_stats.n_track_states++;
+
+            if (updater_state.m_stats.n_track_states >=
+                updater_state.max_n_track_states) {
+                TRACCC_WARNING_HOST_DEVICE(
+                    "Max. number of track states reached");
+                navigation.exit();
+                propagation._heartbeat = false;
+                return;
+            }
         } else {
             // If the surface was only hit due to tolerances, don't count holes
             if (!navigation.is_edge_candidate()) {
-                TRACCC_VERBOSE_HOST_DEVICE("Found hole!");
+                TRACCC_WARNING_HOST_DEVICE("Found hole!");
                 updater_state.m_stats.n_holes++;
                 updater_state.m_stats.n_consecutive_holes++;
             }
-            // If the total number of holes is too large, abort
+            // If the total number of holes is too large, exit
             if (updater_state.m_stats.n_holes > updater_state.max_n_holes) {
-                navigation.abort("Maximum total number of holes");
+                TRACCC_WARNING_HOST_DEVICE("Maximum total number of holes");
+                navigation.exit();
+                propagation._heartbeat = false;
             }
-            // If the number of consecutive holes is too large, abort
+            // If the number of consecutive holes is too large, exit
             if (updater_state.m_stats.n_consecutive_holes >
                 updater_state.max_n_consecutive_holes) {
-                navigation.abort("Maximum number of consecutive holes");
+                TRACCC_WARNING_HOST_DEVICE(
+                    "Maximum number of consecutive holes");
+                navigation.exit();
+                propagation._heartbeat = false;
             }
         }
     }

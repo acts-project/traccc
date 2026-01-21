@@ -99,8 +99,8 @@ struct measurement_selector {
         detray::dmatrix<algebra_t, D, 1> meas_local;
         edm::get_measurement_local<algebra_t>(measurement, meas_local);
 
-        TRACCC_DEBUG_HOST(
-            "Measurement position (uncalibrated): " << meas_local);
+        TRACCC_DEBUG_HOST("Measurement position (uncalibrated):\n"
+                          << meas_local);
 
         assert((measurement.dimensions() > 1) ||
                (getter::element(meas_local, 1u, 0u) == 0.f));
@@ -125,7 +125,11 @@ struct measurement_selector {
         detray::dmatrix<algebra_t, D, D> V;
         edm::get_measurement_covariance<algebra_t>(measurement, V);
 
-        if (measurement.dimensions() == 1) {
+        detray::dmatrix<algebra_t, D, 1> meas_local;
+        edm::get_measurement_local<algebra_t>(measurement, meas_local);
+        // @TODO: Fix properly
+        if (/*dim == 1*/ getter::element(meas_local, 1u, 0u) == 0.f) {
+            // if (measurement.dimensions() == 1) {
             getter::element(V, 1u, 1u) =
                 std::numeric_limits<detray::dscalar<algebra_t>>::max();
         }
@@ -163,8 +167,6 @@ struct measurement_selector {
         assert(measurement.dimensions() == 1u ||
                measurement.dimensions() == 2u);
 
-        TRACCC_DEBUG_HOST("Predicted param.: " << bound_params);
-
         assert(!bound_params.is_invalid());
         assert(!bound_params.surface_link().is_invalid());
 
@@ -185,14 +187,16 @@ struct measurement_selector {
             V;
 
         TRACCC_DEBUG_HOST("R:\n" << R);
-        TRACCC_DEBUG_HOST_DEVICE("det(R): %f", matrix::determinant(R));
+        TRACCC_DEBUG_HOST("det(R): " << std::scientific
+                                     << matrix::determinant(R)
+                                     << std::defaultfloat);
         TRACCC_DEBUG_HOST("R_inv:\n" << matrix::inverse(R));
 
         // Residual between measurement and (projected) vector (innovation)
         const matrix_t<algebra_t, D, 1> residual =
             meas_local - H * bound_params.vector();
 
-        TRACCC_VERBOSE_HOST("Predicted residual: " << residual);
+        TRACCC_VERBOSE_HOST("Predicted residual:\n" << residual);
 
         const matrix_t<algebra_t, 1, 1> pred_chi2 =
             algebra::matrix::transposed_product<true, false>(
@@ -232,6 +236,9 @@ struct measurement_selector {
         const unsigned int lo{sf_idx == 0u ? 0u : meas_ranges[sf_idx - 1]};
         const unsigned int up{meas_ranges[sf_idx]};
 
+        TRACCC_VERBOSE_HOST_DEVICE("Have %d measurements on surface %d...",
+                                   up - lo, sf_idx);
+
         // Find the best fitting measurment by prediced chi2
         // TODO: Load balancing
         for (unsigned int meas_idx = lo; meas_idx < up; meas_idx++) {
@@ -242,6 +249,10 @@ struct measurement_selector {
             // Check predicted chi2 cut
             if (chi2 < cand.chi2) {
                 cand = {meas_idx, static_cast<float>(chi2)};
+                // Found optimal
+                if (cand.chi2 <= std::numeric_limits<scalar_t>::epsilon()) {
+                    return cand;
+                }
             }
         }
 

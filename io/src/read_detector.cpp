@@ -27,10 +27,13 @@ template <typename detector_t>
 void read_detector(traccc::host_detector& detector, vecmem::memory_resource& mr,
                    const std::string_view& geometry_file,
                    const std::string_view& material_file,
-                   const std::string_view& grid_file) {
+                   const std::string_view& grid_file,
+                   const bool do_consistency_check = false) {
 
     // Set up the detector reader configuration.
     detray::io::detector_reader_config cfg;
+    cfg.do_check(do_consistency_check);
+
     cfg.add_file(traccc::io::get_absolute_path(geometry_file));
     if (material_file.empty() == false) {
         cfg.add_file(traccc::io::get_absolute_path(material_file));

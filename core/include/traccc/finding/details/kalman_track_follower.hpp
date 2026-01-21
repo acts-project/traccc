@@ -134,12 +134,9 @@ kalman_track_follower(
         return track_container;
     }
 
-    // Give the device container to the to the measurement updater
-    typename edm::track_state_collection<algebra_t>::device track_states(
-        vecmem::get_data(track_container.states));
-
     // Create detray propagator
     auto prop_cfg{cfg.propagation};
+    prop_cfg.navigation.estimate_scattering_noise = false;
     propagator_t propagator(prop_cfg);
 
     // Configuration for measurement calibration
@@ -148,21 +145,20 @@ kalman_track_follower(
     for (unsigned int seed_idx = 0u; seed_idx < seeds.size(); ++seed_idx) {
         const auto& seed = seeds[seed_idx];
 
+        TRACCC_VERBOSE_HOST("Track: " << seed_idx);
+
         // Set the data pointer to the beginning of the range of the track
         const auto current_cand{
             static_cast<int>(seed_idx * cfg.max_track_candidates_per_track)};
 
         void* track_cand_ptr{nullptr};
         if (cfg.run_smoother == smoother_type::e_none) {
-            track_cands.resize(max_cands);
             track_cand_ptr = static_cast<void*>(
                 detray::ranges::detail::next(track_cands.data(), current_cand));
         } else if (cfg.run_smoother == smoother_type::e_kalman) {
-            filtered_track_cands.resize(max_cands);
             track_cand_ptr = static_cast<void*>(detray::ranges::detail::next(
                 filtered_track_cands.data(), current_cand));
         } else if (cfg.run_smoother == smoother_type::e_mbf) {
-            full_track_cands.resize(max_cands);
             track_cand_ptr = static_cast<void*>(detray::ranges::detail::next(
                 full_track_cands.data(), current_cand));
         }
@@ -198,6 +194,8 @@ kalman_track_follower(
         momentum_aborter_state.min_p(static_cast<scalar_t>(cfg.min_p));
 
         meas_updater_state.max_chi2 = cfg.chi2_max;
+        meas_updater_state.max_n_track_states =
+            cfg.max_track_candidates_per_track;
         meas_updater_state.max_n_holes =
             static_cast<unsigned short>(cfg.max_num_skipping_per_cand);
         meas_updater_state.max_n_consecutive_holes =
@@ -212,6 +210,11 @@ kalman_track_follower(
         // Propagate the entire track
         propagator.propagate(propagation, actor_states);
 
+        if (!propagator.finished(propagation)) {
+            TRACCC_ERROR_HOST("Propagation failure! Track: " << seed_idx);
+            continue;
+        }
+
         // Observe minimum track length
         const track_stats<scalar_t>& trk_stats = meas_updater_state.m_stats;
         const unsigned int n_track_states{trk_stats.n_track_states};
@@ -219,14 +222,22 @@ kalman_track_follower(
             continue;
         }
 
+        TRACCC_VERBOSE_HOST_DEVICE("Found track with %d track states",
+                                   n_track_states);
+
         // Link the new states to the final track
         vecmem::vector<edm::track_constituent_link> state_links;
         state_links.reserve(n_track_states);
-        const unsigned int track_state_offset{track_states.size()};
+        const auto track_state_offset{
+            static_cast<unsigned int>(track_container.states.size())};
         for (unsigned int state_idx = track_state_offset;
              state_idx < track_state_offset + n_track_states; state_idx++) {
             state_links.emplace_back(edm::track_constituent_link::track_state,
                                      state_idx);
+
+            TRACCC_INFO_HOST_DEVICE(
+                "Adding track state (local idx %d, global idx %d)",
+                state_idx - track_state_offset, state_idx);
 
             // The track_cand_ptr points at the first track state
             if (cfg.run_smoother == smoother_type::e_none) {
@@ -234,36 +245,61 @@ kalman_track_follower(
                     static_cast<track_state_candidate*>(track_cand_ptr);
                 detray::ranges::detail::advance(data_ptr,
                                                 state_idx - track_state_offset);
+                assert(data_ptr);
+                assert(data_ptr->measurement_index < measurements.size());
 
-                auto track_state = edm::make_track_state<algebra_t>(
-                    measurements, data_ptr->measurement_index);
-                track_states.push_back(track_state);
+                TRACCC_DEBUG_HOST_DEVICE("-> Measurement %d",
+                                         data_ptr->measurement_index);
+
+                track_container.states.push_back(
+                    edm::make_track_state<algebra_t>(
+                        measurements, data_ptr->measurement_index));
             } else if (cfg.run_smoother == smoother_type::e_mbf) {
                 auto* data_ptr =
                     static_cast<full_track_state_candidate<algebra_t>*>(
                         track_cand_ptr);
                 detray::ranges::detail::advance(data_ptr,
                                                 state_idx - track_state_offset);
+                assert(data_ptr);
+                assert(data_ptr->measurement_index < measurements.size());
 
-                auto track_state = edm::make_track_state<algebra_t>(
-                    measurements, data_ptr->measurement_index);
-                track_states.push_back(track_state);
+                TRACCC_DEBUG_HOST_DEVICE("-> Measurement %d",
+                                         data_ptr->measurement_index);
+
+                track_container.states.push_back(
+                    edm::make_track_state<algebra_t>(
+                        measurements, data_ptr->measurement_index));
+                auto track_state = track_container.states.at(state_idx);
 
                 track_state.filtered_params() = data_ptr->filtered_params;
                 track_state.filtered_chi2() = data_ptr->filtered_chi2;
+
+                TRACCC_DEBUG_HOST("-> Filtered track params (chi2 = "
+                                  << track_state.filtered_chi2() << "):\n"
+                                  << track_state.filtered_params());
             } else if (cfg.run_smoother == smoother_type::e_kalman) {
                 auto* data_ptr =
                     static_cast<filtered_track_state_candidate<algebra_t>*>(
                         track_cand_ptr);
                 detray::ranges::detail::advance(data_ptr,
                                                 state_idx - track_state_offset);
+                assert(data_ptr);
+                assert(data_ptr->measurement_index < measurements.size());
 
-                auto track_state = edm::make_track_state<algebra_t>(
-                    measurements, data_ptr->measurement_index);
-                track_states.push_back(track_state);
+                TRACCC_DEBUG_HOST_DEVICE("-> Measurement %d",
+                                         data_ptr->measurement_index);
+
+                track_container.states.push_back(
+                    edm::make_track_state<algebra_t>(
+                        measurements, data_ptr->measurement_index));
+                auto track_state = track_container.states.at(state_idx);
 
                 track_state.filtered_params() = data_ptr->filtered_params;
                 track_state.filtered_chi2() = data_ptr->filtered_chi2;
+
+                TRACCC_DEBUG_HOST("-> Filtered track params (chi2 = "
+                                  << track_state.filtered_chi2() << "):\n"
+                                  << track_state.filtered_params());
             }
         }
 
@@ -286,6 +322,11 @@ kalman_track_follower(
         track.pval() = prob(trk_stats.chi2_sum, static_cast<scalar_t>(ndf_sum));
         track.nholes() = static_cast<unsigned int>(trk_stats.n_holes);
         track.constituent_links() = std::move(state_links);
+
+        TRACCC_INFO_HOST("Found track " << seed_idx << " ("
+                                        << track.constituent_links().size()
+                                        << " track states):\n"
+                                        << seed);
     }
 
     return track_container;

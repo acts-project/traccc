@@ -494,6 +494,18 @@ combinatorial_kalman_filter(
                 continue;
             }
 
+            // If number of consecutive skips is larger than the maximum value,
+            // consider the link to be a tip
+            if (links.at(step).at(link_id).n_consecutive_skipped >
+                config.max_num_consecutive_skipped) {
+                TRACCC_WARNING_HOST(
+                    "Create tip: Max no. of consecutive holes reached! Bound "
+                    "param:\n"
+                    << updated_params[link_id].vector());
+                tips.push_back({step, link_id});
+                continue;
+            }
+
             const bound_track_parameters<algebra_type>& param =
                 updated_params[link_id];
 

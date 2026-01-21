@@ -1,6 +1,7 @@
-import pandas
 import argparse
 import logging
+import os
+import pandas
 import pathlib
 
 
@@ -80,24 +81,29 @@ def main():
     origin_particles_final_file = args.input / (
         origin_event_prefix + "particles_final.csv"
     )
-    particles_final_df = pandas.read_csv(origin_particles_final_file)
-    log.info(
-        "Read data for %d final input particles from %s",
-        particles_final_df.shape[0],
-        origin_particles_final_file,
-    )
-    filtered_particles_final_df = particles_final_df[
-        particles_final_df["particle_id"].isin(to_keep)
-    ]
-    destination_particles_final_file = args.output / (
-        destination_event_prefix + "particles_final.csv"
-    )
-    filtered_particles_final_df.to_csv(destination_particles_final_file, index=False)
-    log.info(
-        "Wrote data for %d final output particles to %s",
-        filtered_particles_final_df.shape[0],
-        destination_particles_final_file,
-    )
+    if os.path.isfile(origin_particles_final_file):
+        particles_final_df = pandas.read_csv(origin_particles_final_file)
+        log.info(
+            "Read data for %d final input particles from %s",
+            particles_final_df.shape[0],
+            origin_particles_final_file,
+        )
+        filtered_particles_final_df = particles_final_df[
+            particles_final_df["particle_id"].isin(to_keep)
+        ]
+        destination_particles_final_file = args.output / (
+            destination_event_prefix + "particles_final.csv"
+        )
+        filtered_particles_final_df.to_csv(destination_particles_final_file, index=False)
+        log.info(
+            "Wrote data for %d final output particles to %s",
+            filtered_particles_final_df.shape[0],
+            destination_particles_final_file,
+        )
+    else:
+        log.warning(
+            f"Final particle input file {origin_particles_final_file} does not exits - skipping"
+        )
 
     # Logic for processing hits
     origin_hits_file = args.input / (origin_event_prefix + "hits.csv")
