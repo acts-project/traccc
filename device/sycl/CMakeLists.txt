@@ -23,8 +23,8 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "src/seeding/silicon_pixel_spacepoint_formation_algorithm.sycl"
   "include/traccc/sycl/seeding/triplet_seeding_algorithm.hpp"
   "src/seeding/triplet_seeding_algorithm.sycl"
-  "include/traccc/sycl/seeding/track_params_estimation.hpp"
-  "src/seeding/track_params_estimation.sycl"
+  "include/traccc/sycl/seeding/seed_parameter_estimation_algorithm.hpp"
+  "src/seeding/seed_parameter_estimation_algorithm.sycl"
   # Track finding algorithm(s).
   "include/traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
   "src/finding/combinatorial_kalman_filter_algorithm.cpp"
