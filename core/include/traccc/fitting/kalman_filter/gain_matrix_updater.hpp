@@ -8,6 +8,8 @@
 #pragma once
 
 // Project include(s).
+#include <limits>
+
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/definitions/track_parametrization.hpp"
 #include "traccc/edm/measurement_collection.hpp"
@@ -93,19 +95,20 @@ struct gain_matrix_updater {
             getter::element(H, 0u, e_bound_loc0) = -1;
         }
 
-        // @TODO: Fix properly
-        if (/*dim == 1*/ getter::element(meas_local, 1u, 0u) == 0.f) {
-            getter::element(H, 1u, 0u) = 0.f;
-            getter::element(H, 1u, 1u) = 0.f;
+        if (dim == 1) {
+            // TODO: Fully understand the consequences of this.
+            assert(getter::element(H, 1u, 0u) == 0.f);
+            assert(getter::element(H, 1u, 1u) == 0.f);
         }
 
         // Spatial resolution (Measurement covariance)
         matrix_type<D, D> V;
         edm::get_measurement_covariance<algebra_t>(
             measurements.at(trk_state.measurement_index()), V);
-        // @TODO: Fix properly
-        if (/*dim == 1*/ getter::element(meas_local, 1u, 0u) == 0.f) {
-            getter::element(V, 1u, 1u) = 1000.f;
+        if (dim == 1) {
+            // This value should never be used!
+            // TODO: Fully understand the consequences of this.
+            getter::element(V, 1u, 1u) = std::numeric_limits<scalar>::max();
         }
 
         TRACCC_DEBUG_HOST("Measurement position: " << meas_local);
