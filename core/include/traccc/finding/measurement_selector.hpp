@@ -99,8 +99,8 @@ struct measurement_selector {
         detray::dmatrix<algebra_t, D, 1> meas_local;
         edm::get_measurement_local<algebra_t>(measurement, meas_local);
 
-        TRACCC_DEBUG_HOST(
-            "Measurement position (uncalibrated): " << meas_local);
+        TRACCC_DEBUG_HOST("Measurement position (uncalibrated):\n"
+                          << meas_local);
 
         assert((measurement.dimensions() > 1) ||
                (getter::element(meas_local, 1u, 0u) == 0.f));
@@ -163,8 +163,6 @@ struct measurement_selector {
         assert(measurement.dimensions() == 1u ||
                measurement.dimensions() == 2u);
 
-        TRACCC_DEBUG_HOST("Predicted param.: " << bound_params);
-
         assert(!bound_params.is_invalid());
         assert(!bound_params.surface_link().is_invalid());
 
@@ -185,14 +183,16 @@ struct measurement_selector {
             V;
 
         TRACCC_DEBUG_HOST("R:\n" << R);
-        TRACCC_DEBUG_HOST_DEVICE("det(R): %f", matrix::determinant(R));
+        TRACCC_DEBUG_HOST("det(R): " << std::scientific
+                                     << matrix::determinant(R)
+                                     << std::defaultfloat);
         TRACCC_DEBUG_HOST("R_inv:\n" << matrix::inverse(R));
 
         // Residual between measurement and (projected) vector (innovation)
         const matrix_t<algebra_t, D, 1> residual =
             meas_local - H * bound_params.vector();
 
-        TRACCC_VERBOSE_HOST("Predicted residual: " << residual);
+        TRACCC_VERBOSE_HOST("Predicted residual:\n" << residual);
 
         const matrix_t<algebra_t, 1, 1> pred_chi2 =
             algebra::matrix::transposed_product<true, false>(
@@ -242,6 +242,10 @@ struct measurement_selector {
             // Check predicted chi2 cut
             if (chi2 < cand.chi2) {
                 cand = {meas_idx, static_cast<float>(chi2)};
+                // Found optimal
+                if (cand.chi2 <= std::numeric_limits<scalar_t>::epsilon()) {
+                    return cand;
+                }
             }
         }
 
