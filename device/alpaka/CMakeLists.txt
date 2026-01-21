@@ -49,8 +49,8 @@ traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   "src/seeding/silicon_pixel_spacepoint_formation_algorithm.cpp"
   "include/traccc/alpaka/seeding/triplet_seeding_algorithm.hpp"
   "src/seeding/triplet_seeding_algorithm.cpp"
-  "include/traccc/alpaka/seeding/track_params_estimation.hpp"
-  "src/seeding/track_params_estimation.cpp"
+  "include/traccc/alpaka/seeding/seed_parameter_estimation_algorithm.hpp"
+  "src/seeding/seed_parameter_estimation_algorithm.cpp"
   # Track finding algorithm(s).
   "include/traccc/alpaka/finding/combinatorial_kalman_filter_algorithm.hpp"
   "src/finding/combinatorial_kalman_filter_algorithm.cpp"
