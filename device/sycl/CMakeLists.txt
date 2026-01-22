@@ -40,10 +40,6 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   # Utilities.
   "include/traccc/sycl/utils/algorithm_base.hpp"
   "src/utils/algorithm_base.sycl"
-  "include/traccc/sycl/utils/queue_wrapper.hpp"
-  "src/utils/queue_wrapper.cpp"
-  "include/traccc/sycl/utils/make_magnetic_field.hpp"
-  "src/utils/make_magnetic_field.sycl"
   "src/utils/magnetic_field_types.hpp"
   "src/utils/barrier.hpp"
   "src/utils/calculate1DimNdRange.hpp"
@@ -57,7 +53,7 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
 )
 target_link_libraries( traccc_sycl
   PUBLIC detray::core vecmem::core
-         traccc::core traccc::device_common
+         traccc::core traccc::device_common traccc::sycl_utils
   PRIVATE vecmem::sycl covfie::sycl oneDPL )
 
 # Set up Thrust specifically for the traccc::sycl library.
