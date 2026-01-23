@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024-2025 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -643,7 +643,7 @@ combinatorial_kalman_filter(
                 .links_view = links_buffer,
                 .tips_view = tips_buffer,
                 .tracks_view = track_candidates_buffer,
-                .tip_to_output_map = nullptr,
+                .tip_to_output_map = {},
                 .jacobian_ptr = jacobian_ptr.get(),
                 .link_predicted_parameter_view =
                     link_predicted_parameter_buffer,

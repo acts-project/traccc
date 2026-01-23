@@ -45,8 +45,10 @@ TRACCC_HOST_DEVICE inline void build_tracks(
         return;
     }
 
-    const unsigned int output_idx = payload.tip_to_output_map != nullptr
-                                        ? payload.tip_to_output_map[globalIndex]
+    const vecmem::device_vector<const unsigned int> tip_to_output_map(
+        payload.tip_to_output_map);
+    const unsigned int output_idx = tip_to_output_map.size()
+                                        ? tip_to_output_map.at(globalIndex)
                                         : globalIndex;
 
     if (output_idx == std::numeric_limits<unsigned int>::max()) {

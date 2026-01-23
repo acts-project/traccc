@@ -569,7 +569,7 @@ combinatorial_kalman_filter(
     }
 
     vecmem::vector<unsigned int> tips_length_host(mr.host);
-    vecmem::unique_alloc_ptr<unsigned int[]> tip_to_output_map = nullptr;
+    vecmem::data::vector_buffer<unsigned int> tip_to_output_map;
 
     unsigned int n_tips_total_filtered = n_tips_total;
 
@@ -640,7 +640,8 @@ combinatorial_kalman_filter(
         }
 
         tip_to_output_map =
-            vecmem::make_unique_alloc<unsigned int[]>(mr.main, n_tips_total);
+            vecmem::data::vector_buffer<unsigned int>(n_tips_total, mr.main);
+        copy.setup(tip_to_output_map)->wait();
 
         {
             const unsigned int num_threads = 512;
@@ -648,32 +649,27 @@ combinatorial_kalman_filter(
                 (n_tips_total + num_threads - 1) / num_threads;
 
             vecmem::data::vector_buffer<unsigned int> new_tip_length_buffer{
-                n_tips_total, mr.main};
+                n_tips_total, mr.main, vecmem::data::buffer_type::resizable};
             copy.setup(new_tip_length_buffer)->wait();
-
-            auto tip_to_output_map_idx =
-                vecmem::make_unique_alloc<unsigned int>(mr.main);
-
-            TRACCC_CUDA_ERROR_CHECK(cudaMemsetAsync(
-                tip_to_output_map_idx.get(), 0, sizeof(unsigned int), stream));
 
             kernels::update_tip_length_buffer<<<num_blocks, num_threads, 0,
                                                 stream>>>(
-                tip_length_buffer, new_tip_length_buffer, votes_per_tip_buffer,
-                tip_to_output_map.get(), tip_to_output_map_idx.get(),
-                config.min_measurement_voting_fraction);
+                {tip_length_buffer, new_tip_length_buffer, votes_per_tip_buffer,
+                 tip_to_output_map, config.min_measurement_voting_fraction});
 
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-            str.synchronize();
-
-            TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
-                &n_tips_total_filtered, tip_to_output_map_idx.get(),
-                sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
+            if (mr.host) {
+                vecmem::async_size size =
+                    copy.get_size(tip_to_output_map, *(mr.host));
+                // Here we could give control back to the caller, once our code
+                // allows for it. (coroutines...)
+                n_tips_total_filtered = size.get();
+            } else {
+                n_tips_total_filtered = copy.get_size(tip_to_output_map);
+            }
 
             tip_length_buffer = std::move(new_tip_length_buffer);
-
-            str.synchronize();
         }
     }
 
@@ -709,7 +705,7 @@ combinatorial_kalman_filter(
             .links_view = links_buffer,
             .tips_view = tips_buffer,
             .tracks_view = {track_candidates_buffer},
-            .tip_to_output_map = tip_to_output_map.get(),
+            .tip_to_output_map = tip_to_output_map,
             .jacobian_ptr = jacobian_ptr.get(),
             .link_predicted_parameter_view = link_predicted_parameter_buffer,
             .link_filtered_parameter_view = link_filtered_parameter_buffer,

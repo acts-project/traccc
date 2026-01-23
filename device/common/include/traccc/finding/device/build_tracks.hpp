@@ -48,7 +48,7 @@ struct build_tracks_payload {
     /**
      * @brief Optional mapping from tip index to output index
      */
-    const unsigned int* tip_to_output_map = nullptr;
+    vecmem::data::vector_view<const unsigned int> tip_to_output_map;
     bound_matrix<default_algebra>* jacobian_ptr = nullptr;
     bound_track_parameters_collection_types::view link_predicted_parameter_view;
     bound_track_parameters_collection_types::view link_filtered_parameter_view;
