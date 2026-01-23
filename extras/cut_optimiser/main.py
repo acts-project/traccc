@@ -14,7 +14,6 @@ import time
 import subprocess
 import re
 
-
 import traccc_bench_tools.parse_profile
 import traccc_bench_tools.types
 
@@ -22,7 +21,7 @@ import traccc_bench_tools.types
 log = logging.getLogger("traccc_cut_optimiser")
 
 
-def main():
+def main(): 
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -108,7 +107,7 @@ def main():
         params = json.load(f)
 
     parameter_space = params["parameters"]
-    parameter_names = sorted(parameter_space)
+    parameter_names = list(parameter_space)
 
     log.info(
         "Running optimisation for %d parameters: %s",
@@ -122,8 +121,12 @@ def main():
         "efficiency",
         "fake_rate",
         "duplicate_rate",
+        "seeding_efficiency",
+        "seed_fake_rate",
+        "seed_duplicate_rate",
     ]
 
+    parameters = []
     if args.db.is_file():
         log.info('Database file "%s" already exists; creating a backup', args.db)
         shutil.copy(str(args.db), str(args.db) + ".bak")
@@ -131,20 +134,26 @@ def main():
         with open(args.db, "r") as f:
             reader = csv.DictReader(f)
             for i in reader:
-                key = (i[k] for k in parameter_names)
+                key = tuple(i[k] for k in parameter_names)
+                pkey = tuple(float(i[k]) for k in parameter_names)
+                parameters.append(pkey)
                 if set(i.keys()) != set(csv_field_names):
                     raise ValueError(
                         "Input database has unexpected columns or is missing columns"
                     )
                 if i["success"] != 0:
+                    set_skip = False
                     results[key] = {
                         "rec_throughput": i["rec_throughput"],
                         "efficiency": i["efficiency"],
                         "fake_rate": i["fake_rate"],
                         "duplicate_rate": i["duplicate_rate"],
+                        "seeding_efficiency": i["seeding_efficiency"],
+                        "seed_fake_rate": i["seed_fake_rate"],
+	                "seed_duplicate_rate": i["seed_duplicate_rate"],
                     }
                 else:
-                    results[key] = None
+                    results[key] = None        
         log.info("Database contained %d pre-existing results", len(results))
     else:
         log.info('Database file "%s" does not exist; starting from scratch', args.db)
@@ -178,8 +187,7 @@ def main():
         if args.random:
             param_dict = {n: random.choice(vs) for n, vs in parameter_space.items()}
             param_list = tuple(param_dict.values())
-
-            if param_list in results:
+            if param_list in parameters:
                 random_retry_count += 1
                 if random_retry_count < 10:
                     log.info(
@@ -203,7 +211,7 @@ def main():
             except StopIteration:
                 log.info("Design space has been exhausted; exiting")
                 break
-            if param_list in results:
+            if param_list in parameters:
                 log.info(
                     "Configuration %s is already known; continuing", str(param_dict)
                 )
@@ -241,8 +249,7 @@ def main():
                     "--grid-file=%s" % params["input"]["grid_file"],
                     "--material-file=%s" % params["input"]["material_file"],
                     "--input-events=1",
-                    "--check-performance",
-                    "--use-acts-geom-source=on",
+                    "--check-performance", 
                 ]
 
                 for k, v in params["config"].items():
@@ -253,27 +260,26 @@ def main():
 
                 if args.ncu_wrapper is not None:
                     profile_args = args.ncu_wrapper.split() + profile_args
-
+                        
                 try:
                     result = subprocess.run(
-                        profile_args,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.STDOUT,
-                        cwd=tmppath,
-                        check=True,
-                        timeout=args.timeout,
+                    profile_args,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    cwd=tmppath,
+                    check=True,
+                    timeout=args.timeout,
                     )
-                except subprocess.CalledProcessError as e:
-                    log.warning("Process failed to execute; continuing")
-                    results[param_list] = None
-                    continue
+                #except subprocess.CalledProcessError as e:
+                #    log.warning("Process failed to execute; continuing")
+                #    results[param_list] = None
+                #    continue
                 except subprocess.TimeoutExpired as e:
                     log.warning("Process timed out; marking as failure and continuing")
                     results[param_list] = None
                     continue
-
                 stdout = result.stdout.decode("utf-8")
-
+                
                 if match := re.search(
                     r"Total track efficiency was (\d+(?:\.\d*)?)%", stdout
                 ):
@@ -294,12 +300,39 @@ def main():
                     result_fake_rate = float(match.group(1))
                 else:
                     raise ValueError("Fake rate could not be parsed from stdout!")
+                
+                if match := re.search(
+                    r"Total seed efficiency was (\d+(?:\.\d*)?)%", stdout
+                ):
+                    result_seeding_efficiency = float(match.group(1)) / 100.0
+                else:
+                    raise ValueError("Seeding Efficiency could not be parsed from stdout!")
+                
+                if match := re.search(
+                    r"Total seed fake rate was (\d+(?:\.\d*)?)", stdout
+                ):
+                    result_seed_fake_rate = float(match.group(1))
+                else:
+                    raise ValueError("Seed fake rate could not be parsed from stdout!")
 
+                if match := re.search(
+                    r"Total seed duplicate rate was (\d+(?:\.\d*)?)", stdout
+                ):
+                    result_seed_duplicate_rate = float(match.group(1))
+                else:
+                    raise ValueError("Seed Duplicate rate could not be parsed from stdout!")
+
+                
                 log.info(
-                    "Physics performance was %.1f%% efficiency, %.1f fake rate, %.1f duplicate rate",
-                    result_efficiency * 100.0,
-                    result_duplicate_rate,
-                    result_fake_rate,
+                    "Physics performance was %(efficiency).1f%% efficiency, %(fake).1f fake rate, %(duplicate).1f duplicate rate, %(seeding_efficiency).1f%% seeding efficiency, %(seed_fake).1f seed fake rate, %(seed_duplicate).1f seed duplicate rate",
+                    {
+                        "efficiency": result_efficiency * 100.0,
+                        "fake": result_fake_rate,
+                        "duplicate": result_duplicate_rate,
+                        "seeding_efficiency": result_seeding_efficiency * 100.0,
+			"seed_fake": result_seed_fake_rate,
+                        "seed_duplicate": result_seed_duplicate_rate,
+                    },
                 )
 
                 end_time = time.time()
@@ -337,6 +370,9 @@ def main():
                     "efficiency": result_efficiency,
                     "fake_rate": result_fake_rate,
                     "duplicate_rate": result_duplicate_rate,
+                    "seeding_efficiency": result_seeding_efficiency,
+                    "seed_fake_rate": result_seed_fake_rate,
+		    "seed_duplicate_rate": result_seed_duplicate_rate,
                 }
 
         except Exception as e:
@@ -348,6 +384,7 @@ def main():
 
     log.info("Gathered a total of %d results (incl. pre-existing)", len(results))
 
+    
     log.info("Writing data to %s", args.db)
     with open(args.db, "w") as f:
         writer = csv.DictWriter(
@@ -355,9 +392,8 @@ def main():
             fieldnames=csv_field_names,
         )
         writer.writeheader()
-
+        
         for k, v in results.items():
-
             param_dict = {parameter_names[i]: p for i, p in enumerate(k)}
             if v is None:
                 writer.writerow(
@@ -368,6 +404,9 @@ def main():
                         efficiency=0.0,
                         fake_rate=0.0,
                         duplicate_rate=0.0,
+                        seeding_efficiency=0.0,
+	                seed_fake_rate=0.0,
+                        seed_duplicate_rate=0.0,
                     )
                 )
             else:
