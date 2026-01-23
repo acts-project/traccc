@@ -13,7 +13,7 @@
 #include "traccc/cuda/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
-#include "traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
+#include "traccc/cuda/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
 #include "traccc/cuda/seeding/triplet_seeding_algorithm.hpp"
 #include "traccc/cuda/utils/stream.hpp"
@@ -55,7 +55,7 @@ class full_chain_algorithm
     /// @{
     /// Spacepoint formation algorithm type
     using spacepoint_formation_algorithm =
-        traccc::cuda::spacepoint_formation_algorithm;
+        traccc::cuda::silicon_pixel_spacepoint_formation_algorithm;
     /// Clustering algorithm type
     using clustering_algorithm = traccc::cuda::clusterization_algorithm;
     /// Track finding algorithm type

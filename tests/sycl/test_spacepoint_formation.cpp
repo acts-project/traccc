@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -24,16 +24,16 @@ using namespace traccc;
 TEST(SYCLSpacepointFormation, sycl) {
 
     // Creating SYCL queue object
-    vecmem::sycl::queue_wrapper queue;
-    std::cout << "Running on device: " << queue.device_name() << "\n";
+    vecmem::sycl::queue_wrapper vecmem_queue;
+    traccc::sycl::queue_wrapper traccc_queue(vecmem_queue.queue());
+    std::cout << "Running on device: " << vecmem_queue.device_name() << "\n";
 
     // Memory resource used by the EDM.
-    vecmem::sycl::shared_memory_resource shared_mr{queue};
+    vecmem::sycl::shared_memory_resource shared_mr{vecmem_queue};
     traccc::memory_resource mr{shared_mr};
 
     // Copy object
-    vecmem::sycl::copy copy{queue};
-
+    vecmem::sycl::copy copy{vecmem_queue};
     // Use rectangle surfaces
     detray::mask<detray::rectangle2D, traccc::default_algebra> rectangle{
         0u, 10000.f * traccc::unit<scalar>::mm,
@@ -91,7 +91,7 @@ TEST(SYCLSpacepointFormation, sycl) {
 
     // Run spacepoint formation
     traccc::sycl::silicon_pixel_spacepoint_formation_algorithm sp_formation(
-        mr, copy, queue.queue());
+        mr, copy, traccc_queue);
     auto spacepoints_buffer =
         sp_formation(detector_buffer, vecmem::get_data(measurements));
 
