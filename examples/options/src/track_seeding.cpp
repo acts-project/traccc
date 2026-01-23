@@ -54,6 +54,13 @@ track_seeding::track_seeding() : interface("Track Seeding Options") {
         po::value(&m_seedfinder.impactMax)
             ->default_value(m_seedfinder.impactMax / unit<float>::mm),
         "Maximum impact parameter [mm]");
+
+    m_desc.add_options()(
+        "seedfinder-deltaZMax",
+        po::value(&m_seedfinder.deltaZMax)
+            ->default_value(m_seedfinder.deltaZMax / unit<float>::mm),
+        "Maximum Z distance between measurements [mm]");
+
     m_desc.add_options()("seedfinder-sigmaScattering",
                          po::value(&m_seedfinder.sigmaScattering)
                              ->default_value(m_seedfinder.sigmaScattering),

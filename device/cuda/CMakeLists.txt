@@ -22,20 +22,17 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   # Utility definitions.
   "include/traccc/cuda/utils/algorithm_base.hpp"
   "src/utils/algorithm_base.cpp"
-  "include/traccc/cuda/utils/stream.hpp"
   "src/utils/barrier.hpp"
   "src/utils/cuda_error_handling.hpp"
   "src/utils/cuda_error_handling.cpp"
-  "src/utils/stream.cpp"
-  "src/utils/opaque_stream.hpp"
-  "src/utils/opaque_stream.cpp"
+  "src/utils/global_index.hpp"
+  "src/utils/magnetic_field_types.hpp"
+  "src/utils/sync.cuh"
+  "src/utils/thread_id.hpp"
   "src/utils/utils.hpp"
   "src/utils/utils.cpp"
   "src/sanity/contiguous_on.cuh"
   "src/sanity/ordered_on.cuh"
-  "include/traccc/cuda/utils/make_magnetic_field.hpp"
-  "src/utils/make_magnetic_field.cpp"
-  "src/utils/magnetic_field_types.hpp"
   # Seed finding code.
   "include/traccc/cuda/seeding/track_params_estimation.hpp"
   "src/seeding/track_params_estimation.cu"
@@ -255,10 +252,8 @@ if(TRACCC_ENABLE_NVTX_PROFILING)
     )
 endif()
 
-target_compile_options( traccc_cuda
-  PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr> )
 target_link_libraries( traccc_cuda
-  PUBLIC traccc::core detray::core vecmem::core
+  PUBLIC traccc::core traccc::cuda_utils detray::core vecmem::core
   PRIVATE CUDA::cudart traccc::device_common vecmem::cuda covfie::cuda )
 
 # Set up Thrust specifically for the traccc::cuda library.
