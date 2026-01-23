@@ -38,19 +38,21 @@ class is_same_object<edm::seed<T>> {
         // Access the reference and test spacepoints.
         const edm::spacepoint_collection::const_device ref_spacepoints{
             m_ref_spacepoints};
-        const auto ref_bottom_spacepoint =
+        const edm::spacepoint ref_bottom_spacepoint =
             ref_spacepoints.at(m_ref.bottom_index());
-        const auto ref_middle_spacepoint =
+        const edm::spacepoint ref_middle_spacepoint =
             ref_spacepoints.at(m_ref.middle_index());
-        const auto ref_top_spacepoint = ref_spacepoints.at(m_ref.top_index());
+        const edm::spacepoint ref_top_spacepoint =
+            ref_spacepoints.at(m_ref.top_index());
 
         const edm::spacepoint_collection::const_device test_spacepoints{
             m_spacepoints};
-        const auto test_bottom_spacepoint =
+        const edm::spacepoint test_bottom_spacepoint =
             test_spacepoints.at(obj.bottom_index());
-        const auto test_middle_spacepoint =
+        const edm::spacepoint test_middle_spacepoint =
             test_spacepoints.at(obj.middle_index());
-        const auto test_top_spacepoint = test_spacepoints.at(obj.top_index());
+        const edm::spacepoint test_top_spacepoint =
+            test_spacepoints.at(obj.top_index());
 
         // Compare the spacepoints.
         return (is_same_object<

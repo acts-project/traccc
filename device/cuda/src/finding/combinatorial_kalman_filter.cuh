@@ -11,7 +11,6 @@
 #include "../sanity/contiguous_on.cuh"
 #include "../utils/barrier.hpp"
 #include "../utils/cuda_error_handling.hpp"
-#include "../utils/get_size.hpp"
 #include "../utils/thread_id.hpp"
 #include "../utils/utils.hpp"
 #include "./kernels/apply_interaction.hpp"
@@ -118,7 +117,15 @@ combinatorial_kalman_filter(
      * Measurement Operations
      *****************************************************************/
 
-    const auto n_measurements = copy.get_size(measurements_view);
+    unsigned int n_measurements;
+
+    if (mr.host) {
+        const vecmem::async_size size =
+            copy.get_size(measurements_view, *(mr.host));
+        n_measurements = size.get();
+    } else {
+        n_measurements = copy.get_size(measurements_view);
+    }
 
     // Access the detector view as a detector object
     detector_t device_det(det);
@@ -139,7 +146,14 @@ combinatorial_kalman_filter(
                         device_det.surfaces().end(), measurement_ranges.begin(),
                         device::barcode_surface_comparator{});
 
-    const unsigned int n_seeds = copy.get_size(seeds);
+    unsigned int n_seeds;
+
+    if (mr.host) {
+        const vecmem::async_size size = copy.get_size(seeds, *(mr.host));
+        n_seeds = size.get();
+    } else {
+        n_seeds = copy.get_size(seeds);
+    }
 
     // Prepare input parameters with seeds
     bound_track_parameters_collection_types::buffer in_params_buffer(n_seeds,
@@ -533,7 +547,14 @@ combinatorial_kalman_filter(
      *****************************************************************/
 
     // Get the number of tips
-    auto n_tips_total = get_size(tips_buffer, size_staging_ptr.get(), stream);
+    unsigned int n_tips_total;
+
+    if (mr.host) {
+        const vecmem::async_size size = copy.get_size(tips_buffer, *(mr.host));
+        n_tips_total = size.get();
+    } else {
+        n_tips_total = copy.get_size(tips_buffer);
+    }
 
     vecmem::vector<unsigned int> tips_length_host(mr.host);
     vecmem::unique_alloc_ptr<unsigned int[]> tip_to_output_map = nullptr;

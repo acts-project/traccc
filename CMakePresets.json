@@ -40,6 +40,7 @@
          "displayName" : "CUDA FP32 Code Development",
          "inherits": ["base-fp32"],
          "cacheVariables": {
+            "TRACCC_BUILD_CUDA_UTILS" : "TRUE",
             "TRACCC_BUILD_CUDA" : "TRUE",
             "VECMEM_BUILD_CUDA_LIBRARY" : "TRUE"
          }
@@ -49,6 +50,7 @@
          "displayName" : "CUDA FP64 Code Development",
          "inherits": ["base-fp64"],
          "cacheVariables": {
+            "TRACCC_BUILD_CUDA_UTILS" : "TRUE",
             "TRACCC_BUILD_CUDA" : "TRUE",
             "VECMEM_BUILD_CUDA_LIBRARY" : "TRUE"
          }
@@ -58,6 +60,7 @@
          "displayName" : "SYCL FP32 Code Development",
          "inherits": ["base-fp32"],
          "cacheVariables": {
+            "TRACCC_BUILD_SYCL_UTILS" : "TRUE",
             "TRACCC_BUILD_SYCL" : "TRUE",
             "VECMEM_BUILD_SYCL_LIBRARY" : "TRUE"
          }
@@ -67,6 +70,7 @@
          "displayName" : "SYCL FP64 Code Development",
          "inherits": ["base-fp64"],
          "cacheVariables": {
+            "TRACCC_BUILD_SYCL_UTILS" : "TRUE",
             "TRACCC_BUILD_SYCL" : "TRUE",
             "VECMEM_BUILD_SYCL_LIBRARY" : "TRUE"
          }

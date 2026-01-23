@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2025 CERN for the benefit of the ACTS project
+ * (c) 2021-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -14,9 +14,9 @@
 #include "traccc/cuda/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
-#include "traccc/cuda/seeding/seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
 #include "traccc/cuda/seeding/track_params_estimation.hpp"
+#include "traccc/cuda/seeding/triplet_seeding_algorithm.hpp"
 #include "traccc/cuda/utils/make_magnetic_field.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
@@ -193,7 +193,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
         mr, copy, stream, logger().clone("CudaMeasSortingAlg"));
     device_spacepoint_formation_algorithm sf_cuda(
         mr, copy, stream, logger().clone("CudaSpFormationAlg"));
-    traccc::cuda::seeding_algorithm sa_cuda(
+    traccc::cuda::triplet_seeding_algorithm sa_cuda(
         seedfinder_config, spacepoint_grid_config, seedfilter_config, mr, copy,
         stream, logger().clone("CudaSeedingAlg"));
     traccc::cuda::track_params_estimation tp_cuda(

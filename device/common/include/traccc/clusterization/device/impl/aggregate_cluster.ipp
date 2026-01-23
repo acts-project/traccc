@@ -62,7 +62,8 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
     scalar max_channel1 = std::numeric_limits<scalar>::lowest();
 
     const unsigned int module_idx = cells.module_index().at(cid + start);
-    const auto module_descr = det_descr.at(module_idx);
+    const silicon_detector_description_interface module_descr =
+        det_descr.at(module_idx);
     const auto partition_size = static_cast<unsigned short>(end - start);
     unsigned int tmp_cluster_size = 0;
 
@@ -73,7 +74,7 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
     for (unsigned short j = cid; j < partition_size; j++) {
 
         const unsigned int pos = j + start;
-        const auto cell = cells.at(pos);
+        const edm::silicon_cell cell = cells.at(pos);
 
         /*
          * Terminate the process earlier if we have reached a cell sufficiently

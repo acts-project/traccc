@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -21,9 +21,6 @@ namespace traccc::opts {
 namespace po = boost::program_options;
 
 track_finding::track_finding() : interface("Track Finding Options") {
-    m_pdg_number = m_config.ptc_hypothesis.pdg_num();
-    m_track_candidates_range[0] = m_config.min_track_candidates_per_track;
-    m_track_candidates_range[1] = m_config.max_track_candidates_per_track;
 
     m_desc.add_options()(
         "max-num-branches-per-seed",
@@ -93,6 +90,10 @@ track_finding::track_finding() : interface("Track Finding Options") {
         po::value(&m_config.duplicate_removal_minimum_length)
             ->default_value(m_config.duplicate_removal_minimum_length),
         "Minimum track length for deduplication (0 to disable) [cardinal]");
+    m_desc.add_options()("finding-run-mbf-smoother",
+                         po::value(&m_config.run_mbf_smoother)
+                             ->default_value(m_config.run_mbf_smoother),
+                         "Enable the MBF smoother");
 }
 
 void track_finding::read(const po::variables_map &) {
@@ -152,6 +153,8 @@ std::unique_ptr<configuration_printable> track_finding::as_printable() const {
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Minimum p",
         std::format("{} GeV", m_config.min_p / traccc::unit<float>::GeV)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Run MBF smoother", m_config.run_mbf_smoother ? "true" : "false"));
 
     return cat;
 }

@@ -69,7 +69,8 @@ struct kalman_actor_state {
 
     /// Get the track state at a given position along the track
     TRACCC_HOST_DEVICE
-    auto at(unsigned int i) const {
+    typename edm::track_state_collection<algebra_t>::device::const_proxy_type
+    at(unsigned int i) const {
         assert(m_track.constituent_links().at(i).type ==
                edm::track_constituent_link::track_state);
         return m_track_states.at(m_track.constituent_links().at(i).index);
@@ -149,7 +150,7 @@ struct kalman_actor_state {
         unsigned int n_missed{0u};
 
         for (unsigned int i = 0u; i < size(); ++i) {
-            const auto trk_state = at(i);
+            const edm::track_state trk_state = at(i);
             if (!trk_state.is_hole() &&
                 trk_state.filtered_params().is_invalid()) {
                 TRACCC_DEBUG_HOST_DEVICE(
@@ -169,7 +170,7 @@ struct kalman_actor_state {
         unsigned int n_missed{0u};
 
         for (unsigned int i = 0u; i < size(); ++i) {
-            const auto trk_state = at(i);
+            const edm::track_state trk_state = at(i);
             if (!trk_state.is_hole() &&
                 trk_state.smoothed_params().is_invalid()) {
                 TRACCC_DEBUG_HOST_DEVICE(
@@ -199,7 +200,7 @@ struct kalman_actor_state {
         propagation_state_t& propagation) {
 
         const auto& navigation = propagation._navigation;
-        auto trk_state = (*this)();
+        edm::track_state trk_state = (*this)();
 
         TRACCC_VERBOSE_HOST("Found: " << navigation.barcode());
 
@@ -283,7 +284,7 @@ struct kalman_actor_state {
 
         // Mismatch was not from missed state: Is a hole
         TRACCC_DEBUG_HOST_DEVICE("--> Did NOT find state: might be hole...");
-        const auto is_hole = check_if_hole(navigation);
+        const bool is_hole = check_if_hole(navigation);
 
         if (is_hole) {
             TRACCC_DEBUG_HOST("--> Expected surfaces:");
@@ -398,9 +399,9 @@ struct kalman_actor : detray::actor {
             }
 
             // Fetch matched track state
-            typename edm::track_state_collection<algebra_t>::device::proxy_type
-                trk_state = actor_state();
-            auto& bound_param = stepping.bound_params();
+            edm::track_state trk_state = actor_state();
+            bound_track_parameters<algebra_t>& bound_param =
+                stepping.bound_params();
 
             // Run Kalman Gain Updater
             const auto sf = navigation.current_surface();
