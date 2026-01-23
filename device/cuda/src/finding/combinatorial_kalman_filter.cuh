@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024-2025 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -632,9 +632,9 @@ combinatorial_kalman_filter(
 
             kernels::gather_measurement_votes<<<num_blocks, num_threads, 0,
                                                 stream>>>(
-                best_tips_per_measurement_insertion_mutex_buffer,
-                best_tips_per_measurement_index_buffer, votes_per_tip_buffer,
-                config.max_num_tracks_per_measurement);
+                {best_tips_per_measurement_insertion_mutex_buffer,
+                 best_tips_per_measurement_index_buffer, votes_per_tip_buffer,
+                 config.max_num_tracks_per_measurement});
 
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
         }
