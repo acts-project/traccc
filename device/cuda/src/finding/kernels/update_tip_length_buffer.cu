@@ -12,7 +12,7 @@
 namespace traccc::cuda::kernels {
 
 __global__ void update_tip_length_buffer(
-    const device::update_tip_length_buffer_payload payload) {
+    device::update_tip_length_buffer_payload payload) {
 
     device::update_tip_length_buffer(details::global_index1(), payload);
 }
