@@ -609,11 +609,11 @@ combinatorial_kalman_filter(
 
             kernels::gather_best_tips_per_measurement<<<num_blocks, num_threads,
                                                         0, stream>>>(
-                tips_buffer, links_buffer, measurements_view,
-                best_tips_per_measurement_insertion_mutex_buffer,
-                best_tips_per_measurement_index_buffer,
-                best_tips_per_measurement_pval_buffer,
-                config.max_num_tracks_per_measurement);
+                {tips_buffer, links_buffer, measurements_view,
+                 best_tips_per_measurement_insertion_mutex_buffer,
+                 best_tips_per_measurement_index_buffer,
+                 best_tips_per_measurement_pval_buffer,
+                 config.max_num_tracks_per_measurement});
 
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
         }
