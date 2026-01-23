@@ -11,42 +11,14 @@
 // Project include(s).
 #include "traccc/sycl/utils/make_magnetic_field.hpp"
 
-// SYCL include(s).
-#include <sycl/sycl.hpp>
-
-// System include(s).
-#include <exception>
-#include <iostream>
-
-namespace {
-
-/// Simple asynchronous handler function
-auto handle_async_error = [](::sycl::exception_list elist) {
-    for (auto& e : elist) {
-        try {
-            std::rethrow_exception(e);
-        } catch (::sycl::exception& e) {
-            std::cout << "ASYNC EXCEPTION!!\n";
-            std::cout << e.what() << "\n";
-        }
-    }
-};
-
-}  // namespace
-
 namespace traccc::sycl {
 namespace details {
 
 struct full_chain_algorithm_data {
-
-    /// Constructor
-    explicit full_chain_algorithm_data(const ::sycl::async_handler& handler)
-        : m_queue{handler} {}
-
-    /// The native SYCL queue object
-    ::sycl::queue m_queue;
+    /// The vecmem SYCL queue object
+    vecmem::sycl::queue_wrapper m_queue;
     /// Wrapper around the SYCL queue object
-    queue_wrapper m_queue_wrapper{&m_queue};
+    queue_wrapper m_queue_wrapper{m_queue.queue()};
 };
 
 }  // namespace details
@@ -62,16 +34,15 @@ full_chain_algorithm::full_chain_algorithm(
     const fitting_algorithm::config_type& fitting_config,
     const silicon_detector_description::host& det_descr,
     const magnetic_field& field, host_detector* detector,
-    std::unique_ptr<const traccc::Logger> logger)
-    : messaging(logger->clone()),
-      m_data(std::make_unique<details::full_chain_algorithm_data>(
-          ::handle_async_error)),
+    std::unique_ptr<const traccc::Logger> log)
+    : messaging(log->clone()),
+      m_data(std::make_unique<details::full_chain_algorithm_data>()),
       m_host_mr(host_mr),
-      m_pinned_host_mr(&(m_data->m_queue)),
+      m_pinned_host_mr(m_data->m_queue),
       m_cached_pinned_host_mr(m_pinned_host_mr),
-      m_device_mr{&(m_data->m_queue)},
+      m_device_mr{m_data->m_queue},
       m_cached_device_mr{m_device_mr},
-      m_copy{&(m_data->m_queue)},
+      m_copy{m_data->m_queue},
       m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
       m_field{sycl::make_magnetic_field(field, m_data->m_queue_wrapper)},
       m_det_descr(det_descr),
@@ -85,37 +56,37 @@ full_chain_algorithm::full_chain_algorithm(
                        m_copy,
                        m_data->m_queue_wrapper,
                        clustering_config,
-                       logger->clone("ClusteringAlg")},
+                       log->clone("ClusteringAlg")},
       m_measurement_sorting({m_cached_device_mr, &m_cached_pinned_host_mr},
                             m_copy, m_data->m_queue_wrapper,
-                            logger->clone("MeasSortingAlg")),
+                            log->clone("MeasSortingAlg")),
       m_spacepoint_formation{{m_cached_device_mr, &m_cached_pinned_host_mr},
                              m_copy,
                              m_data->m_queue_wrapper,
-                             logger->clone("SpFormationAlg")},
+                             log->clone("SpFormationAlg")},
       m_seeding{finder_config,
                 grid_config,
                 filter_config,
                 {m_cached_device_mr, &m_cached_pinned_host_mr},
                 m_copy,
                 m_data->m_queue_wrapper,
-                logger->clone("SeedingAlg")},
+                log->clone("SeedingAlg")},
       m_track_parameter_estimation{
           track_params_estimation_config,
           {m_cached_device_mr, &m_cached_pinned_host_mr},
           m_copy,
           m_data->m_queue_wrapper,
-          logger->clone("TrackParEstAlg")},
+          log->clone("TrackParEstAlg")},
       m_finding{finding_config,
                 {m_cached_device_mr, &m_cached_pinned_host_mr},
                 m_copy,
                 m_data->m_queue_wrapper,
-                logger->clone("TrackFindingAlg")},
+                log->clone("TrackFindingAlg")},
       m_fitting{fitting_config,
                 {m_cached_device_mr, &m_cached_pinned_host_mr},
                 m_copy,
                 m_data->m_queue_wrapper,
-                logger->clone("TrackFittingAlg")},
+                log->clone("TrackFittingAlg")},
       m_clustering_config(clustering_config),
       m_finder_config(finder_config),
       m_grid_config(grid_config),
@@ -125,10 +96,7 @@ full_chain_algorithm::full_chain_algorithm(
       m_fitting_config(fitting_config) {
 
     // Tell the user what device is being used.
-    std::cout
-        << "Using SYCL device: "
-        << m_data->m_queue.get_device().get_info<::sycl::info::device::name>()
-        << std::endl;
+    TRACCC_INFO("Using SYCL device: " << m_data->m_queue.device_name());
 
     // Copy the detector (description) to the device.
     m_copy(vecmem::get_data(m_det_descr.get()), m_device_det_descr)->wait();
@@ -140,14 +108,13 @@ full_chain_algorithm::full_chain_algorithm(
 
 full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
     : messaging(parent.logger().clone()),
-      m_data(std::make_unique<details::full_chain_algorithm_data>(
-          ::handle_async_error)),
+      m_data(std::make_unique<details::full_chain_algorithm_data>()),
       m_host_mr(parent.m_host_mr),
-      m_pinned_host_mr(&(m_data->m_queue)),
+      m_pinned_host_mr(m_data->m_queue),
       m_cached_pinned_host_mr(m_pinned_host_mr),
-      m_device_mr{&(m_data->m_queue)},
+      m_device_mr{m_data->m_queue},
       m_cached_device_mr{m_device_mr},
-      m_copy{&(m_data->m_queue)},
+      m_copy{m_data->m_queue},
       m_field_vec{parent.m_field_vec},
       m_field{parent.m_field},
       m_det_descr(parent.m_det_descr),
