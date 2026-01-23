@@ -94,6 +94,11 @@ track_finding::track_finding() : interface("Track Finding Options") {
                          po::value(&m_config.run_mbf_smoother)
                              ->default_value(m_config.run_mbf_smoother),
                          "Enable the MBF smoother");
+    m_desc.add_options()("initial-links-per-seed",
+                         po::value(&m_config.initial_links_per_seed)
+                             ->default_value(m_config.initial_links_per_seed),
+                         "Initial number of links to allocate memory for "
+                         "[cardinal] [compute performance only]");
 }
 
 void track_finding::read(const po::variables_map &) {
@@ -155,6 +160,9 @@ std::unique_ptr<configuration_printable> track_finding::as_printable() const {
         std::format("{} GeV", m_config.min_p / traccc::unit<float>::GeV)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Run MBF smoother", m_config.run_mbf_smoother ? "true" : "false"));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Initial links per seed",
+        std::to_string(m_config.initial_links_per_seed)));
 
     return cat;
 }
