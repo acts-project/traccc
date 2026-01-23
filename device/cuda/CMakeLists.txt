@@ -17,40 +17,27 @@ find_package( CUDAToolkit REQUIRED )
 include( traccc-compiler-options-cpp )
 include( traccc-compiler-options-cuda )
 
-# Set up the build of the traccc::cuda_utils library.
-traccc_add_library( traccc_cuda_utils cuda_utils TYPE SHARED
+# Set up the build of the traccc::cuda library.
+traccc_add_library( traccc_cuda cuda TYPE SHARED
   # Utility definitions.
   "include/traccc/cuda/utils/algorithm_base.hpp"
   "src/utils/algorithm_base.cpp"
-  "include/traccc/cuda/utils/make_prefix_sum_buff.hpp"
-  "src/utils/make_prefix_sum_buff.cu"
-  "include/traccc/cuda/utils/stream.hpp"
   "src/utils/barrier.hpp"
   "src/utils/cuda_error_handling.hpp"
   "src/utils/cuda_error_handling.cpp"
-  "src/utils/stream.cpp"
-  "src/utils/opaque_stream.hpp"
-  "src/utils/opaque_stream.cpp"
+  "src/utils/global_index.hpp"
+  "src/utils/magnetic_field_types.hpp"
+  "src/utils/sync.cuh"
+  "src/utils/thread_id.hpp"
   "src/utils/utils.hpp"
   "src/utils/utils.cpp"
   "src/sanity/contiguous_on.cuh"
   "src/sanity/ordered_on.cuh"
-  "include/traccc/cuda/utils/make_magnetic_field.hpp"
-  "src/utils/make_magnetic_field.cpp"
-  "src/utils/magnetic_field_types.hpp"
-)
-# Set up the build of the traccc::cuda library.
-if (TRACCC_BUILD_CUDA)
-traccc_add_library( traccc_cuda cuda TYPE SHARED
   # Seed finding code.
   "include/traccc/cuda/seeding/track_params_estimation.hpp"
   "src/seeding/track_params_estimation.cu"
-  "include/traccc/cuda/seeding/details/spacepoint_binning.hpp"
-  "src/seeding/spacepoint_binning.cu"
-  "include/traccc/cuda/seeding/details/seed_finding.hpp"
-  "src/seeding/seed_finding.cu"
-  "include/traccc/cuda/seeding/seeding_algorithm.hpp"
-  "src/seeding/seeding_algorithm.cpp"
+  "include/traccc/cuda/seeding/triplet_seeding_algorithm.hpp"
+  "src/seeding/triplet_seeding_algorithm.cu"
   "include/traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
   "src/seeding/spacepoint_formation_algorithm.cu"
   #GBTS seed finding code
@@ -123,11 +110,9 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/fitting/kernels/fill_fitting_sort_keys.cu"
   "src/fitting/kernels/fit_prelude.cu"
 )
-endif()
 
 set(TRACCC_CUDA_SUPPORTED_BFIELDS "const;inhom_global;inhom_texture")
 
-if (TRACCC_BUILD_CUDA)
 set(KERNEL_SPECIALIZATION_PY "${PROJECT_SOURCE_DIR}/codegen/kernel_specialization/gen_kernel_specialization.py")
 
 # Generate specializations of find_tracks
@@ -236,7 +221,6 @@ foreach(DETECTOR_NAME ${TRACCC_SUPPORTED_DETECTORS})
         target_sources(traccc_cuda PRIVATE ${GENERATED_SOURCE})
     endforeach()
 endforeach()
-endif()
 
 if(TRACCC_ENABLE_NVTX_PROFILING)
     traccc_add_library(
@@ -268,26 +252,16 @@ if(TRACCC_ENABLE_NVTX_PROFILING)
     )
 endif()
 
-target_compile_options( traccc_cuda_utils
-  PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr> )
-target_link_libraries( traccc_cuda_utils
-  PUBLIC traccc::core detray::core vecmem::core
-  PRIVATE CUDA::cudart traccc::device_common vecmem::cuda covfie::cuda )
-if(TRACCC_BUILD_CUDA)
-target_compile_options( traccc_cuda
-  PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr> )
 target_link_libraries( traccc_cuda
-  PRIVATE CUDA::cudart traccc::device_common vecmem::cuda covfie::cuda traccc_cuda_utils )
-endif()
+  PUBLIC traccc::core traccc::cuda_utils detray::core vecmem::core
+  PRIVATE CUDA::cudart traccc::device_common vecmem::cuda covfie::cuda )
 
 # Set up Thrust specifically for the traccc::cuda library.
 thrust_create_target( traccc::cuda_thrust
   HOST CPP
   DEVICE CUDA )
 target_link_libraries( traccc::cuda_thrust INTERFACE CUDA::cudart )
-if(TRACCC_BUILD_CUDA)
 target_link_libraries( traccc_cuda PRIVATE traccc::cuda_thrust )
-endif()
 
 # For CUDA 11 turn on separable compilation. This is necessary for using
 # Thrust 2.1.0.
