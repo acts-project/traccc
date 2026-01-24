@@ -23,9 +23,6 @@
 // Test include(s).
 #include "tests/ckf_toy_detector_test.hpp"
 
-// detray include(s).
-#include <detray/io/frontend/detector_reader.hpp>
-
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>

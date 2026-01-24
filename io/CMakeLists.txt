@@ -13,6 +13,7 @@ find_package( OpenMP COMPONENTS CXX )
 # Set up the "build" of the traccc::io library.
 traccc_add_library( traccc_io io TYPE SHARED
   # Public headers
+  "include/traccc/io/detector.hpp"
   "include/traccc/io/digitization_config.hpp"
   "include/traccc/io/read_cells.hpp"
   "include/traccc/io/read_detector.hpp"

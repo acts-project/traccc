@@ -98,7 +98,8 @@ struct measurement_updater : detray::actor {
             return;
         }
 
-        TRACCC_VERBOSE_HOST_DEVICE("In Kalman measurement updater...");
+        TRACCC_VERBOSE_HOST_DEVICE(
+            "Actor: Update track parameters with new measurement...");
 
         // Get current detector surface (sensitive)
         const auto sf = navigation.current_surface();
@@ -108,7 +109,8 @@ struct measurement_updater : detray::actor {
         // Track parameters on the sensitive surface
         auto& bound_param = stepping.bound_params();
 
-        TRACCC_DEBUG_HOST("Predicted param.: " << bound_param);
+        TRACCC_DEBUG_HOST("-> Predicted param.:\n" << bound_param);
+        TRACCC_VERBOSE_HOST_DEVICE("-> Calculate predicted chi2:");
 
         // Find the measurement with the smallest predicted chi2
         const auto& measurements = updater_state.m_measurements;
@@ -116,14 +118,21 @@ struct measurement_updater : detray::actor {
             measurement_selector::find_optimal_measurement(
                 bound_param, measurements, updater_state.m_measurement_ranges,
                 updater_state.m_calib_cfg, is_line);
-
-        TRACCC_VERBOSE_HOST_DEVICE("Optimal measurement: %d (pred. chi2 = %f)",
-                                   cand.meas_idx, cand.chi2);
+        if (cand.chi2 < std::numeric_limits<scalar_t>::max()) {
+            TRACCC_VERBOSE_HOST_DEVICE(
+                "Optimal measurement: %d (pred. chi2 = %f)", cand.meas_idx,
+                cand.chi2);
+        } else {
+            TRACCC_VERBOSE_HOST_DEVICE("No measurement found");
+        }
 
         scalar_t filtered_chi2{0.f};
 
         // Run the KF update and add the track state
-        if (cand.chi2 <= updater_state.max_chi2) {
+        const scalar_t max_chi2{navigation.is_edge_candidate()
+                                    ? updater_state.max_chi2 / 10.f
+                                    : updater_state.max_chi2};
+        if (cand.chi2 <= max_chi2) {
             const auto meas = measurements.at(cand.meas_idx);
 
             kalman_fitter_status res{kalman_fitter_status::ERROR_OTHER};
@@ -131,6 +140,7 @@ struct measurement_updater : detray::actor {
             // No Kalman update needed (first measurement of the seed)
             if (cand.chi2 <= std::numeric_limits<scalar_t>::epsilon() &&
                 !sf.has_material()) {
+
                 // Update measurement covariance
                 const auto V =
                     measurement_selector::calibrated_measurement_covariance<
@@ -142,8 +152,8 @@ struct measurement_updater : detray::actor {
                 getter::element(filtered_cov, e_bound_loc1, e_bound_loc1) =
                     getter::element(V, 1, 1);
 
-                TRACCC_VERBOSE_HOST("Updated track parameters:\n"
-                                    << bound_param);
+                TRACCC_DEBUG_HOST("-> Updated track parameters:\n"
+                                  << bound_param);
 
                 res = kalman_fitter_status::SUCCESS;
             } else {
@@ -152,7 +162,7 @@ struct measurement_updater : detray::actor {
                 res = kalman_updater(bound_param, filtered_chi2, meas,
                                      bound_param, is_line);
 
-                TRACCC_DEBUG_HOST("KF status: " << fitter_debug_msg{res}());
+                TRACCC_DEBUG_HOST("-> KF status: " << fitter_debug_msg{res}());
                 // Abandon measurement in case of filter failure
                 if (res != kalman_fitter_status::SUCCESS) {
                     TRACCC_ERROR_HOST(
@@ -171,16 +181,27 @@ struct measurement_updater : detray::actor {
                     }
                 }
 
+                propagation.set_particle(detail::correct_particle_hypothesis(
+                    stepping.particle_hypothesis(), bound_param));
+
+                // Consistency check down to 1% relative deviation
+                if (!algebra::approx_equal(filtered_chi2, cand.chi2, 0.01f)) {
+                    TRACCC_WARNING_HOST_DEVICE(
+                        "Chi2 deviation! predicted: %f, filtered: %f",
+                        cand.chi2, filtered_chi2);
+                }
+
                 // Flag renavigation of the current candidate (unless overlap)
                 if (math::fabs(navigation()) > 1.f * unit<float>::um) {
                     navigation.set_high_trust();
                 } else {
                     TRACCC_DEBUG_HOST_DEVICE(
-                        "Encountered overlap, jump to next surface");
+                        "-> Encountered overlap, jump to next surface");
                 }
             }
 
-            TRACCC_VERBOSE_HOST_DEVICE("Found measurement: %d", cand.meas_idx);
+            TRACCC_VERBOSE_HOST_DEVICE("Assigned measurement: %d",
+                                       cand.meas_idx);
 
             // TODO: Get host-device compatible visitor implementation
             const auto i{
@@ -188,6 +209,7 @@ struct measurement_updater : detray::actor {
             if (updater_state.m_run_smoother == smoother_type::e_none) {
                 auto* track_cand_ptr = static_cast<track_state_candidate*>(
                     updater_state.m_cand_ptr);
+
                 detray::ranges::detail::advance(track_cand_ptr, i);
 
                 assert(track_cand_ptr);
@@ -203,14 +225,19 @@ struct measurement_updater : detray::actor {
                 assert(track_cand_ptr);
                 *track_cand_ptr = {cand.meas_idx, filtered_chi2, bound_param};
             } else if (updater_state.m_run_smoother == smoother_type::e_mbf) {
-                /*auto* track_cand_ptr =
-                static_cast<full_track_state_candidate<algebra_t>*>(
-                                           updater_state.m_cand_ptr);
+                auto* track_cand_ptr =
+                    static_cast<full_track_state_candidate<algebra_t>*>(
+                        updater_state.m_cand_ptr);
 
                 detray::ranges::detail::advance(track_cand_ptr, i);
 
+                // TODO: Get proper Jacobian
+                traccc::bound_track_parameters<algebra_t> predicted_params{};
+                traccc::bound_matrix<algebra_t> full_jac{};
+
                 assert(track_cand_ptr);
-                *track_cand_ptr = {cand.meas_idx, filtered_chi2, bound_param};*/
+                *track_cand_ptr = {cand.meas_idx, filtered_chi2, bound_param,
+                                   predicted_params, full_jac};
             } else {
                 navigation.abort(
                     "Unknown data coll. type in measurement updater");

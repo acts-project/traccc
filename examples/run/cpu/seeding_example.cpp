@@ -201,28 +201,28 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
            Ambiguity Resolution with Greedy Solver
           -----------------------------------------*/
 
-        /*auto track_candidates_ar = host_ambiguity_resolution(
+        auto track_candidates_ar = host_ambiguity_resolution(
             traccc::edm::track_container<default_algebra>::const_data(
                 track_candidates));
-        n_ambiguity_free_tracks += track_candidates_ar.tracks.size();*/
+        n_ambiguity_free_tracks += track_candidates_ar.tracks.size();
 
         /*------------------------
            Track Fitting with KF
           ------------------------*/
 
-        /*auto track_states = host_fitting(
+        auto track_states = host_fitting(
             detector, field,
             traccc::edm::track_container<default_algebra>::const_data(
                 track_candidates_ar));
-        n_fitted_tracks += track_states.tracks.size();*/
+        n_fitted_tracks += track_states.tracks.size();
 
         /*------------
            Statistics
           ------------*/
 
-        /*details::print_fitted_tracks_statistics(track_states, logger());
+        details::print_fitted_tracks_statistics(track_states, logger());
         n_spacepoints += spacepoints_per_event.size();
-        n_seeds += seeds.size();*/
+        n_seeds += seeds.size();
 
         /*------------
           Writer
@@ -244,7 +244,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                     traccc::default_algebra>::const_data(track_candidates),
                 evt_data);
 
-            /*ar_performance_writer.write(
+            ar_performance_writer.write(
                 traccc::edm::track_container<
                     traccc::default_algebra>::const_data(track_candidates_ar),
                 evt_data);
@@ -257,7 +257,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                             track_states.tracks.at(i), track_states.states,
                             measurements_per_event, det, evt_data);
                     });
-            }*/
+            }
         }
     }
 

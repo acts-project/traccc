@@ -348,7 +348,7 @@ struct kalman_actor : detray::actor {
         auto& stepping = propagation._stepping;
         auto& navigation = propagation._navigation;
 
-        TRACCC_VERBOSE_HOST_DEVICE("In Kalman actor (status %d)...",
+        TRACCC_VERBOSE_HOST_DEVICE("Actor: Kalman Fitter (status %d)...",
                                    actor_state.fit_result);
 
         // Allow to count holes after the intial track states

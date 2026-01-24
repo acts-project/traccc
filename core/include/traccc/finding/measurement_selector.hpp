@@ -72,12 +72,15 @@ struct measurement_selector {
             getter::element(H, 0u, e_bound_loc0) = -1;
         }
 
-        if (measurement.dimensions() == 1) {
+        detray::dmatrix<algebra_t, D, 1> meas_local;
+        edm::get_measurement_local<algebra_t>(measurement, meas_local);
+        if (/*dim == 1*/ getter::element(meas_local, 1u, 0u) == 0.f) {
+            // if (measurement.dimensions() == 1) {
             getter::element(H, 1u, 0u) = 0.f;
             getter::element(H, 1u, 1u) = 0.f;
         }
 
-        TRACCC_DEBUG_HOST("Observation model (H):\n" << H);
+        TRACCC_DEBUG_HOST("--> Observation model (H):\n" << H);
 
         return H;
     }
@@ -99,7 +102,7 @@ struct measurement_selector {
         detray::dmatrix<algebra_t, D, 1> meas_local;
         edm::get_measurement_local<algebra_t>(measurement, meas_local);
 
-        TRACCC_DEBUG_HOST("Measurement position (uncalibrated):\n"
+        TRACCC_DEBUG_HOST("--> Measurement position (uncalibrated):\n"
                           << meas_local);
 
         assert((measurement.dimensions() > 1) ||
@@ -130,11 +133,10 @@ struct measurement_selector {
         // @TODO: Fix properly
         if (/*dim == 1*/ getter::element(meas_local, 1u, 0u) == 0.f) {
             // if (measurement.dimensions() == 1) {
-            getter::element(V, 1u, 1u) =
-                std::numeric_limits<detray::dscalar<algebra_t>>::max();
+            getter::element(V, 1u, 1u) = 10000.f;
         }
 
-        TRACCC_DEBUG_HOST("Measurement covariance (uncalibrated):\n" << V);
+        TRACCC_DEBUG_HOST("--> Measurement covariance (uncalibrated):\n" << V);
 
         return V;
     }
@@ -157,12 +159,12 @@ struct measurement_selector {
         const bound_track_parameters<algebra_t>& bound_params,
         const config& cfg, const bool is_line) {
 
+        using scalar_t = detray::dscalar<algebra_t>;
+
         // Measurement maximal dimension
         constexpr unsigned int D = 2;
 
-        TRACCC_VERBOSE_HOST_DEVICE("Calculate predicted chi2...");
-        TRACCC_VERBOSE_HOST_DEVICE("Measurement dim: %d",
-                                   measurement.dimensions());
+        TRACCC_VERBOSE_HOST_DEVICE("--> dim: %d", measurement.dimensions());
 
         assert(measurement.dimensions() == 1u ||
                measurement.dimensions() == 2u);
@@ -186,27 +188,27 @@ struct measurement_selector {
                     bound_params.covariance(), H) +
             V;
 
-        TRACCC_DEBUG_HOST("R:\n" << R);
-        TRACCC_DEBUG_HOST("det(R): " << std::scientific
-                                     << matrix::determinant(R)
-                                     << std::defaultfloat);
-        TRACCC_DEBUG_HOST("R_inv:\n" << matrix::inverse(R));
+        TRACCC_DEBUG_HOST("--> R:\n" << R);
+        TRACCC_DEBUG_HOST_DEVICE("--> det(R): %.10e", matrix::determinant(R));
+        TRACCC_DEBUG_HOST("--> R_inv:\n" << matrix::inverse(R));
+        TRACCC_VERBOSE_HOST("--> R_inv:\n" << matrix::inverse(R));
 
         // Residual between measurement and (projected) vector (innovation)
         const matrix_t<algebra_t, D, 1> residual =
             meas_local - H * bound_params.vector();
 
-        TRACCC_VERBOSE_HOST("Predicted residual:\n" << residual);
+        TRACCC_DEBUG_HOST("--> Predicted residual:\n" << residual);
 
         const matrix_t<algebra_t, 1, 1> pred_chi2 =
             algebra::matrix::transposed_product<true, false>(
                 residual, matrix::inverse(R)) *
             residual;
 
-        TRACCC_VERBOSE_HOST_DEVICE("Chi2: %f",
-                                   getter::element(pred_chi2, 0, 0));
+        const scalar_t pred_chi2_val{getter::element(pred_chi2, 0, 0)};
 
-        return getter::element(pred_chi2, 0, 0);
+        TRACCC_VERBOSE_HOST_DEVICE("--> chi2: %.10e", pred_chi2_val);
+
+        return pred_chi2_val;
     }
 
     /// Measurement selection (optimal)
@@ -236,12 +238,15 @@ struct measurement_selector {
         const unsigned int lo{sf_idx == 0u ? 0u : meas_ranges[sf_idx - 1]};
         const unsigned int up{meas_ranges[sf_idx]};
 
-        TRACCC_VERBOSE_HOST_DEVICE("Have %d measurements on surface %d...",
+        TRACCC_VERBOSE_HOST_DEVICE("Have %d measurement(s) on surface %d...",
                                    up - lo, sf_idx);
 
         // Find the best fitting measurment by prediced chi2
         // TODO: Load balancing
         for (unsigned int meas_idx = lo; meas_idx < up; meas_idx++) {
+
+            TRACCC_VERBOSE_HOST_DEVICE("-> Measurment %d:", meas_idx);
+
             // Predicted chi2
             const scalar_t chi2 = measurement_selector::predicted_chi2(
                 measurements.at(meas_idx), bound_params, cfg, is_line);
