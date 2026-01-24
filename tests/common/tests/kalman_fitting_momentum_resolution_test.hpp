@@ -10,9 +10,7 @@
 // Project include(s).
 #include "kalman_fitting_test.hpp"
 #include "test_detectors.hpp"
-
-// Detray include(s).
-#include <detray/io/frontend/detector_writer.hpp>
+#include "traccc/io/detector.hpp"
 
 namespace traccc {
 

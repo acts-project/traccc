@@ -11,6 +11,7 @@
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/io/detector.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/options/generation.hpp"
 #include "traccc/options/output_data.hpp"
@@ -22,7 +23,6 @@
 #include "traccc/simulation/smearing_writer.hpp"
 
 // detray include(s).
-#include <detray/io/frontend/detector_writer.hpp>
 #include <detray/test/common/build_wire_chamber.hpp>
 
 // VecMem include(s).

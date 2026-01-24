@@ -21,9 +21,6 @@
 #include "tests/ckf_telescope_test.hpp"
 #include "traccc/utils/seed_generator.hpp"
 
-// detray include(s).
-#include <detray/io/frontend/detector_reader.hpp>
-
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
