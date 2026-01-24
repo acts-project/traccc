@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2026 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,12 +8,12 @@
 #pragma once
 
 // Local include(s).
-#include "traccc/sycl/utils/algorithm_base.hpp"
+#include "traccc/cuda/utils/algorithm_base.hpp"
 
 // Project include(s).
 #include "traccc/seeding/device/silicon_pixel_spacepoint_formation_algorithm.hpp"
 
-namespace traccc::sycl {
+namespace traccc::cuda {
 
 /// Algorithm forming space points out of measurements
 ///
@@ -22,7 +22,7 @@ namespace traccc::sycl {
 ///
 class silicon_pixel_spacepoint_formation_algorithm
     : public device::silicon_pixel_spacepoint_formation_algorithm,
-      public sycl::algorithm_base {
+      public cuda::algorithm_base {
 
     public:
     /// Constructor for the spacepoint formation algorithm
@@ -30,12 +30,12 @@ class silicon_pixel_spacepoint_formation_algorithm
     /// @param mr The memory resource(s) to use in the algorithm
     /// @param copy The copy object to use for copying data between device
     ///             and host memory blocks
-    /// @param queue The SYCL queue to use
+    /// @param str The CUDA stream to use
     /// @param logger The logger instance to use
     ///
     silicon_pixel_spacepoint_formation_algorithm(
         const traccc::memory_resource& mr, vecmem::copy& copy,
-        queue_wrapper& queue,
+        cuda::stream& str,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     private:
@@ -54,4 +54,4 @@ class silicon_pixel_spacepoint_formation_algorithm
 
 };  // class silicon_pixel_spacepoint_formation_algorithm
 
-}  // namespace traccc::sycl
+}  // namespace traccc::cuda
