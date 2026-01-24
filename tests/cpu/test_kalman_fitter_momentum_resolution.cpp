@@ -19,9 +19,6 @@
 // Test include(s).
 #include "tests/kalman_fitting_momentum_resolution_test.hpp"
 
-// detray include(s).
-#include <detray/io/frontend/detector_reader.hpp>
-
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/copy.hpp>

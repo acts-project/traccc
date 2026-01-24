@@ -44,7 +44,7 @@ struct ckf_aborter : detray::actor {
         abrt_state.count++;
         abrt_state.path_from_surface += stepping.step_size();
 
-        TRACCC_VERBOSE_HOST_DEVICE("Checking CKF aborter");
+        TRACCC_VERBOSE_HOST_DEVICE("Aborter: Checking CKF aborter");
 
         // Stop at the next sensitive surface
         if (navigation.is_on_sensitive() &&

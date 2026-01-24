@@ -9,6 +9,7 @@
 #include "traccc/io/read_detector_description.hpp"
 
 #include "traccc/geometry/host_detector.hpp"
+#include "traccc/io/detector.hpp"
 #include "traccc/io/read_conditions_config.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_digitization_config.hpp"
@@ -16,7 +17,6 @@
 
 // Detray include(s)
 #include <detray/geometry/tracking_surface.hpp>
-#include <detray/io/frontend/impl/json_readers.hpp>
 #include <detray/utils/type_registry.hpp>
 
 // VecMem include(s).
