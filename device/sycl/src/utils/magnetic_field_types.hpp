@@ -24,7 +24,7 @@
 
 namespace traccc::sycl {
 
-/// Inhomogeneous B-field backend type for CUDA
+/// Inhomogeneous B-field backend type for SYCL
 template <typename scalar_t>
 using inhom_bfield_backend_t =
     covfie::backend::affine<covfie::backend::linear<covfie::backend::clamp<

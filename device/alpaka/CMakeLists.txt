@@ -14,13 +14,13 @@ set(PRIVATE_LIBRARIES alpaka::alpaka)
 traccc_enable_language_alpaka()
 
 if(alpaka_ACC_GPU_CUDA_ENABLE)
-  list(APPEND PRIVATE_LIBRARIES CUDA::cudart vecmem::cuda)
+  list(APPEND PRIVATE_LIBRARIES CUDA::cudart vecmem::cuda traccc::cuda_utils covfie::cuda)
 elseif(alpaka_ACC_GPU_HIP_ENABLE)
   find_package( HIPToolkit REQUIRED )
-  list(APPEND PRIVATE_LIBRARIES HIP::hiprt vecmem::hip)
+  list(APPEND PRIVATE_LIBRARIES HIP::hiprt vecmem::hip covfie::hip)
 elseif(alpaka_ACC_SYCL_ENABLE)
   include( traccc-compiler-options-sycl )
-  list(APPEND PRIVATE_LIBRARIES vecmem::sycl)
+  list(APPEND PRIVATE_LIBRARIES vecmem::sycl traccc::sycl_utils covfie::sycl)
 endif()
 
 traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
@@ -28,6 +28,8 @@ traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   "include/traccc/alpaka/utils/algorithm_base.hpp"
   "src/utils/algorithm_base.cpp"
   "include/traccc/alpaka/utils/get_device_info.hpp"
+  "include/traccc/alpaka/utils/make_magnetic_field.hpp"
+  "src/utils/make_magnetic_field.cpp"
   "src/utils/get_device_info.cpp"
   "include/traccc/alpaka/utils/queue.hpp"
   "src/utils/queue.cpp"
