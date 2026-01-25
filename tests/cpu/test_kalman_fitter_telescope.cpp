@@ -122,8 +122,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
      ***************/
 
     // Seed generator
-    seed_generator<host_detector_type> sg(detector.as<detector_traits>(),
-                                          stddevs);
+    seed_generator<host_detector_type> sg(detector.as<detector_traits>());
 
     // Fitting algorithm object
     traccc::fitting_config fit_cfg;
