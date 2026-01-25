@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2025 CERN for the benefit of the ACTS project
+ * (c) 2021-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -17,36 +17,41 @@
 
 namespace traccc::device {
 
-TRACCC_HOST_DEVICE
-inline void estimate_track_params(
+template <typename algebra_t, typename bfield_t>
+TRACCC_HOST_DEVICE inline void estimate_track_params(
     const global_index_t globalIndex,
     const track_params_estimation_config& config,
-    const edm::measurement_collection<default_algebra>::const_view&
+    const typename edm::measurement_collection<algebra_t>::const_view&
         measurements_view,
     const edm::spacepoint_collection::const_view& spacepoints_view,
-    const edm::seed_collection::const_view& seeds_view, const vector3& bfield,
+    const edm::seed_collection::const_view& seeds_view, const bfield_t& bfield,
     bound_track_parameters_collection_types::view params_view) {
 
     // Check if anything needs to be done.
-    const edm::seed_collection::const_device seeds_device(seeds_view);
-    if (globalIndex >= seeds_device.size()) {
+    const edm::seed_collection::const_device seeds(seeds_view);
+    if (globalIndex >= seeds.size()) {
         return;
     }
 
-    const edm::measurement_collection<default_algebra>::const_device
-        measurements_device(measurements_view);
-    const edm::spacepoint_collection::const_device spacepoints_device(
+    // Create the rest of the device objects.
+    const typename edm::measurement_collection<algebra_t>::const_device
+        measurements(measurements_view);
+    const edm::spacepoint_collection::const_device spacepoints(
         spacepoints_view);
+    bound_track_parameters_collection_types::device params(params_view);
 
-    bound_track_parameters_collection_types::device params_device(params_view);
-
-    const edm::seed_collection::const_device::const_proxy_type this_seed =
-        seeds_device.at(globalIndex);
+    // Figure out the magnetic field at the bottom spacepoint's position.
+    const edm::spacepoint bottom_sp =
+        spacepoints.at(seeds.bottom_index().at(globalIndex));
+    const auto covfie_field_at_sp =
+        bfield.at(bottom_sp.x(), bottom_sp.y(), bottom_sp.z());
+    const vector3 vector_field_at_sp{
+        covfie_field_at_sp[0], covfie_field_at_sp[1], covfie_field_at_sp[2]};
 
     // Get bound track parameter
-    bound_track_parameters<>& track_params = params_device.at(globalIndex);
-    seed_to_bound_param_vector(track_params, measurements_device,
-                               spacepoints_device, this_seed, bfield);
+    bound_track_parameters<>& track_params = params.at(globalIndex);
+    seed_to_bound_param_vector(track_params, measurements, spacepoints,
+                               seeds.at(globalIndex), vector_field_at_sp);
 
     // NOTE: The code below uses the covariance of theta in the calculation of
     // the calculation of q/p. Thus, theta must be computed first.

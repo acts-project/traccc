@@ -12,8 +12,8 @@
 #include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/alpaka/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/alpaka/fitting/kalman_fitting_algorithm.hpp"
+#include "traccc/alpaka/seeding/seed_parameter_estimation_algorithm.hpp"
 #include "traccc/alpaka/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
-#include "traccc/alpaka/seeding/track_params_estimation.hpp"
 #include "traccc/alpaka/seeding/triplet_seeding_algorithm.hpp"
 #include "traccc/alpaka/utils/get_device_info.hpp"
 #include "traccc/alpaka/utils/vecmem_objects.hpp"
@@ -155,7 +155,7 @@ class full_chain_algorithm
     /// Seeding algorithm
     triplet_seeding_algorithm m_seeding;
     /// Track parameter estimation algorithm
-    track_params_estimation m_track_parameter_estimation;
+    seed_parameter_estimation_algorithm m_track_parameter_estimation;
 
     /// Track finding algorithm
     finding_algorithm m_finding;

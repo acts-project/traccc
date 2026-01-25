@@ -24,8 +24,8 @@
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 #include "traccc/sycl/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
+#include "traccc/sycl/seeding/seed_parameter_estimation_algorithm.hpp"
 #include "traccc/sycl/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
-#include "traccc/sycl/seeding/track_params_estimation.hpp"
 #include "traccc/sycl/seeding/triplet_seeding_algorithm.hpp"
 #include "traccc/sycl/utils/make_magnetic_field.hpp"
 
@@ -168,7 +168,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     traccc::sycl::triplet_seeding_algorithm sa_sycl(
         seedfinder_config, spacepoint_grid_config, seedfilter_config, mr, copy,
         traccc_queue, logger().clone("SyclSeedingAlg"));
-    traccc::sycl::track_params_estimation tp_sycl(
+    traccc::sycl::seed_parameter_estimation_algorithm tp_sycl(
         track_params_estimation_config, mr, copy, traccc_queue,
         logger().clone("SyclTrackParEstAlg"));
     traccc::sycl::combinatorial_kalman_filter_algorithm finding_alg_sycl{
@@ -200,8 +200,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
         traccc::sycl::silicon_pixel_spacepoint_formation_algorithm::output_type
             spacepoints_sycl_buffer;
         traccc::sycl::triplet_seeding_algorithm::output_type seeds_sycl_buffer;
-        traccc::sycl::track_params_estimation::output_type params_sycl_buffer(
-            0, *mr.host);
+        traccc::sycl::seed_parameter_estimation_algorithm::output_type
+            params_sycl_buffer(0, *mr.host);
         traccc::sycl::combinatorial_kalman_filter_algorithm::output_type
             track_candidates_sycl_buffer;
 
@@ -285,8 +285,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 traccc::performance::timer t("Track params (sycl)",
                                              elapsedTimes);
                 params_sycl_buffer =
-                    tp_sycl(measurements_sycl_buffer, spacepoints_sycl_buffer,
-                            seeds_sycl_buffer, field_vec);
+                    tp_sycl(device_field, measurements_sycl_buffer,
+                            spacepoints_sycl_buffer, seeds_sycl_buffer);
                 vecmem_queue.synchronize();
             }  // stop measuring track params timer
 

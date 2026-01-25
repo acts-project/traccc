@@ -63,6 +63,8 @@ traccc_add_library( traccc_device_common device_common
    "src/seeding/triplet_seeding_algorithm.cpp"
    "include/traccc/seeding/device/silicon_pixel_spacepoint_formation_algorithm.hpp"
    "src/seeding/silicon_pixel_spacepoint_formation_algorithm.cpp"
+   "include/traccc/seeding/device/seed_parameter_estimation_algorithm.hpp"
+   "src/seeding/seed_parameter_estimation_algorithm.cpp"
    # Track parameters estimation function(s).
    "include/traccc/seeding/device/estimate_track_params.hpp"
    "include/traccc/seeding/device/impl/estimate_track_params.ipp"
