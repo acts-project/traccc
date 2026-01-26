@@ -57,18 +57,15 @@ set( TRACCC_DEVICE_LOG_LVL "NONE" CACHE STRING
    "Log level for traccc and detray device code" )
 
 # Flags controlling which parts of traccc to build.
-include( CMakeDependentOption )
+option( TRACCC_BUILD_CUDA
+   "Build the traccc::cuda library" FALSE )
 option( TRACCC_BUILD_CUDA_UTILS
-   "Build the traccc::cuda_utils library" FALSE )
-cmake_dependent_option( TRACCC_BUILD_CUDA
-   "Build the traccc::cuda library" FALSE
-   TRACCC_BUILD_CUDA_UTILS FALSE )
+   "Build the traccc::cuda_utils library" ${TRACCC_BUILD_CUDA} )
 option( TRACCC_BUILD_HIP "Build the HIP sources included in traccc" FALSE)
+option( TRACCC_BUILD_SYCL
+   "Build the traccc::sycl library" FALSE )
 option( TRACCC_BUILD_SYCL_UTILS
-   "Build the traccc::sycl_utils library" FALSE )
-cmake_dependent_option( TRACCC_BUILD_SYCL
-   "Build the traccc::sycl library" FALSE
-   TRACCC_BUILD_SYCL_UTILS FALSE )
+   "Build the traccc::sycl_utils library" ${TRACCC_BUILD_SYCL} )
 option( TRACCC_BUILD_ALPAKA "Build the Alpaka sources included in traccc"
    FALSE )
 option( TRACCC_BUILD_IO "Build the IO module (needed by examples, performance, testing)" TRUE )
