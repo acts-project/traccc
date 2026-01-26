@@ -14,7 +14,7 @@
 #include "traccc/edm/track_container.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_state_collection.hpp"
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/utils/prob.hpp"
 
@@ -129,7 +129,7 @@ class triplet_fitter {
         /// Custom copy
         ///
         /// (only hit positions and measurements copied)
-        triplet(const triplet& t) : m_hit_pos{t.m_hit_pos}, m_meas{t.m_meas} {}
+        triplet(const triplet& t) : m_hit_pos{t.m_hit_pos}, m_meas_idx{t.m_meas_idx} {}
 
         /// Shift a hit by measurement uncertainty
         ///
@@ -138,24 +138,26 @@ class triplet_fitter {
         /// @param multipler multipler
         /// @param detector detector
         void shiftHit(const unsigned& hit_idx, const unsigned& dir_idx,
-                      const scalar& multipler, const detector_t& detector) {
+                      const scalar& multipler, typename edm::measurement_collection<algebra_type>::const_device measurements,
+                       const detector_t& detector) {
             // The shifts are applied to the global
             // positions of the hits
 
             // Get local positions and variances of measurement
             point2 loc_pos{};
             point2 loc_var{};
-            for (std::size_t dim : m_meas[hit_idx].subs.get_indices()) {
-                loc_pos[dim] = m_meas[hit_idx].local[dim];
-                loc_var[dim] = m_meas[hit_idx].variance[dim];
+            const auto meas = measurements.at(m_meas_idx[hit_idx]);
+            for (std::size_t dim : meas.subspace()) {
+                loc_pos[dim] = measurements.at(m_meas_idx[hit_idx]).local_position()[dim];
+                loc_var[dim] = measurements.at(m_meas_idx[hit_idx]).local_variance()[dim];
             }
 
             // Shift local position
-            assert(dir_idx <= m_meas[hit_idx].meas_dim);
+            assert(dir_idx <= measurements.at(m_meas_idx[hit_idx]).meas_dim);
             loc_pos[dir_idx] += multipler * math::sqrt(loc_var[dir_idx]);
 
             // Surface
-            detray::tracking_surface sf{detector, m_meas[hit_idx].surface_link};
+            detray::tracking_surface sf{detector, measurements.at(m_meas_idx[hit_idx]).surface_link()};
 
             // Convert shifted position to global coordinates
             point3 glob_pos = sf.local_to_global({}, loc_pos, {});
@@ -192,7 +194,11 @@ class triplet_fitter {
 
         // Measurements for getting position uncertainties (hit shifts)
         // and surface orientation (scattering estimation)
-        std::array<measurement, 3u> m_meas;
+        // std::array<typename edm::measurement_collection<algebra_type>::host::proxy_type, 3u> m_meas;
+
+        // No default construction for measurement proxies
+        // can I have an array of indices instead ?
+        std::array<unsigned int, 3u> m_meas_idx;
     };
 
 
@@ -202,7 +208,7 @@ class triplet_fitter {
     ///
     TRACCC_HOST_DEVICE
     void make_triplets(const vecmem::vector<unsigned int>& in_measurements, 
-                        measurement_collection_types::const_device measurements) {
+                        typename edm::measurement_collection<algebra_type>::const_device measurements) {
 
         // Assuming no holes
         const size_t n_triplets = in_measurements.size() - 2;
@@ -213,29 +219,29 @@ class triplet_fitter {
         for (size_t i = 0; i < n_triplets; ++i) {
 
             // Get track states (and measurements)
-            const measurement& meas_0 = measurements.at(in_measurements[i]);
-            const measurement& meas_1 = measurements.at(in_measurements[i + 1]);
-            const measurement& meas_2 = measurements.at(in_measurements[i + 2]);
+            auto meas_0 = measurements.at(in_measurements[i]);
+            auto meas_1 = measurements.at(in_measurements[i + 1]);
+            auto meas_2 = measurements.at(in_measurements[i + 2]);
 
             // Get surfaces
-            detray::tracking_surface meas_0_sf(m_detector, meas_0.surface_link);
-            detray::tracking_surface meas_1_sf(m_detector, meas_1.surface_link);
-            detray::tracking_surface meas_2_sf(m_detector, meas_2.surface_link);
+            detray::tracking_surface meas_0_sf(m_detector, meas_0.surface_link());
+            detray::tracking_surface meas_1_sf(m_detector, meas_1.surface_link());
+            detray::tracking_surface meas_2_sf(m_detector, meas_2.surface_link());
 
             // Get measurement local positions
             point2 loc_2d_0{};
-            for (std::size_t dim : meas_0.subs.get_indices()) {
-                loc_2d_0[dim] = meas_0.local[dim];
+            for (std::size_t dim : meas_0.subspace()) {
+                loc_2d_0[dim] = meas_0.local_position()[dim];
             }
 
             point2 loc_2d_1{};
-            for (std::size_t dim : meas_1.subs.get_indices()) {
-                loc_2d_1[dim] = meas_1.local[dim];
+            for (std::size_t dim : meas_1.subspace()) {
+                loc_2d_1[dim] = meas_1.local_position()[dim];
             }
 
             point2 loc_2d_2{};
-            for (std::size_t dim : meas_2.subs.get_indices()) {
-                loc_2d_2[dim] = meas_2.local[dim];
+            for (std::size_t dim : meas_2.subspace()) {
+                loc_2d_2[dim] = meas_2.local_position()[dim];
             }
 
             // Convert to global
@@ -246,19 +252,17 @@ class triplet_fitter {
             // Make triplet
             triplet t(glob_3d_0, glob_3d_1, glob_3d_2);
 
-            // measurements copied here
-            t.m_meas[0] = meas_0;
-            t.m_meas[1] = meas_1;
-            t.m_meas[2] = meas_2;
+            t.m_meas_idx[0] = in_measurements[i];
+            t.m_meas_idx[1] = in_measurements[i + 1];
+            t.m_meas_idx[2] = in_measurements[i + 2];
 
             // keep track of dimensions
-            m_meas_sum_dims += static_cast<scalar>(meas_0.meas_dim);
+            m_meas_sum_dims += static_cast<scalar>(meas_0.dimensions());
             if (i == n_triplets - 1u) {
-                m_meas_sum_dims += static_cast<scalar>(meas_1.meas_dim);
-                m_meas_sum_dims += static_cast<scalar>(meas_2.meas_dim);
+                m_meas_sum_dims += static_cast<scalar>(meas_1.dimensions());
+                m_meas_sum_dims += static_cast<scalar>(meas_2.dimensions());
             }
 
-            // copy again
             m_triplets.push_back(t);
         }
     }
@@ -344,7 +348,8 @@ class triplet_fitter {
     ///
     /// @param t Triplet to linearize
     ///
-    TRACCC_HOST_DEVICE void linearize_triplet(triplet& t) {
+    TRACCC_HOST_DEVICE void linearize_triplet(triplet& t,
+    typename edm::measurement_collection<algebra_type>::const_device measurements) {
 
         // Vectors joining hits
         vector3 x_01{t.m_hit_pos[1] - t.m_hit_pos[0]};
@@ -454,11 +459,11 @@ class triplet_fitter {
         // (track direction used here
         // to get precise thickness of material)
 
-        detray::tracking_surface scat_sf(m_detector, t.m_meas[1].surface_link);
+        detray::tracking_surface scat_sf(m_detector, measurements.at(t.m_meas_idx[1]).surface_link());
 
         // effective thickness
         scalar t_eff = mat_scatter / detray::cos_angle({}, scat_sf, tangent3D,
-                                                       t.m_meas[1].local);
+                                                       measurements.at(t.m_meas_idx[1]).local_position());
 
 
         auto scattering_unc = [](scalar curvature_3D, scalar eff_thickness,
@@ -538,7 +543,8 @@ class triplet_fitter {
     ///
     /// @param t Triplet
     ///
-    TRACCC_HOST_DEVICE void calculate_pos_derivs(triplet& t) {
+    TRACCC_HOST_DEVICE void calculate_pos_derivs(triplet& t,
+         typename edm::measurement_collection<algebra_type>::const_device measurements) {
 
         // Hits shifted by multiplier * sigma in every direction
         scalar multiplier = 1.f;
@@ -560,7 +566,7 @@ class triplet_fitter {
 
                 // Default derivative 0 for dimensions
                 // which don't exist for this measurement
-                if (dir >= t.m_meas[hit].meas_dim) {
+                if (dir >= measurements.at(t.m_meas_idx[hit]).dimensions()) {
                     t.m_hd_phi.push_back(0.f);
                     t.m_hd_theta.push_back(0.f);
                     continue;
@@ -569,10 +575,10 @@ class triplet_fitter {
                 // Make a copy to shift
                 triplet t_shift{t};
 
-                t_shift.shiftHit(hit, dir, multiplier, m_detector);
+                t_shift.shiftHit(hit, dir, multiplier, measurements, m_detector);
 
                 // Calculate triplet and segment parameters
-                linearize_triplet(t_shift);
+                linearize_triplet(t_shift, measurements);
 
                 // Calculate derivatives
 
@@ -614,7 +620,8 @@ class triplet_fitter {
     ///
     TRACCC_HOST_DEVICE
     typename edm::track_state_collection<algebra_type>::host::object_type do_global_fit(
-        typename edm::track_collection<algebra_type>::host::proxy_type& track) {
+        typename edm::track_collection<algebra_type>::host::proxy_type& track,
+        typename edm::measurement_collection<algebra_type>::const_device measurements) {
 
         // Allocate matrices with max possible sizes
         constexpr size_t max_nhits =
@@ -852,9 +859,9 @@ class triplet_fitter {
         
         // Post-fit position of first hit
 
-        const auto& m0 = triplet_first.m_meas[0];
+        const auto& m0 = measurements.at(triplet_first.m_meas_idx[0]);
 
-        point2 loc0{m0.local[0], m0.local[1]};
+        point2 loc0{m0.local_position()[0], m0.local_position()[1]};
         point2 loc0_post_fit = loc0 + point2{getter::element(hit_loc_pulls, 0u, 0u), getter::element(hit_loc_pulls, max_nhits, 0u)}; // check sign: - ??
 
         fitted_params.set_bound_local(loc0_post_fit);
@@ -904,7 +911,7 @@ class triplet_fitter {
         
         for (unsigned dir_i = 0; dir_i < m_max_dims; ++dir_i) {
             unsigned idx = dir_i * max_nhits; // hit_i = 0
-            var_pos_postFit[dir_i] = getter::element(hit_loc_corrmatrix, idx, idx) * triplet_first.m_meas[0].variance[dir_i]; 
+            var_pos_postFit[dir_i] = getter::element(hit_loc_corrmatrix, idx, idx) * measurements.at(triplet_first.m_meas_idx[0]).local_variance()[dir_i]; 
         }
         
         // Covariance matrix
@@ -954,15 +961,16 @@ class triplet_fitter {
     ///
     TRACCC_HOST_DEVICE 
     typename edm::track_state_collection<algebra_type>::host::object_type fit(
-        typename edm::track_collection<algebra_type>::host::proxy_type& track) {
+        typename edm::track_collection<algebra_type>::host::proxy_type& track,
+        typename edm::measurement_collection<algebra_type>::const_device measurements) {
 
         for (triplet& t : m_triplets) {
 
-            linearize_triplet(t);
-            calculate_pos_derivs(t);
+            linearize_triplet(t, measurements);
+            calculate_pos_derivs(t, measurements);
         }
 
-        auto first_state = do_global_fit(track);
+        auto first_state = do_global_fit(track, measurements);
 
         return first_state;
     }

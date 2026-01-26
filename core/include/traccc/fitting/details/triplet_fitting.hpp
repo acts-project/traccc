@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/track_collection.hpp"
 #include "traccc/edm/track_container.hpp"
 #include "traccc/edm/track_state_collection.hpp"
@@ -39,8 +39,7 @@ typename edm::track_container<algebra_t>::host triplet_fitting(
     vecmem::memory_resource& mr, vecmem::copy& copy) {
 
     // Get the input collections(s).
-    const measurement_collection_types::const_device measurements{
-        track_container.measurements};
+    const typename edm::measurement_collection<algebra_t>::const_device measurements{track_container.measurements};
     const typename edm::track_collection<algebra_t>::const_device
         track_candidates{track_container.tracks};
 
@@ -77,7 +76,7 @@ typename edm::track_container<algebra_t>::host triplet_fitting(
         fitter.make_triplets(measurement_idx, measurements);
 
         // Run fitter
-        auto first_state = fitter.fit(fitted_track);
+        auto first_state = fitter.fit(fitted_track, measurements);
 
         // Save track states in result
         unsigned state_counter = 0;

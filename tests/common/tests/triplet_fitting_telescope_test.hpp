@@ -14,6 +14,9 @@
 // Detray include(s).
 #include <detray/io/frontend/detector_writer.hpp>
 
+// VecMem include(s).
+#include <vecmem/memory/host_memory_resource.hpp>
+
 namespace traccc {
 
 /// Kalman Fitting Test with Telescope Detector
