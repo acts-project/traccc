@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -26,16 +26,15 @@ namespace traccc::device {
 /// @param[in] spacepoints_view Collection storing the spacepoints
 /// @param[in] seeds_view       Collection storing the seeds
 /// @param[in] bfield           B field
-/// @param[in] stddev           Standard deviation of seed parameters
 /// @param[out] params_view     Collection storing the bound track parameters
 ///
-TRACCC_HOST_DEVICE
-inline void estimate_track_params(
+template <typename algebra_t, typename bfield_t>
+TRACCC_HOST_DEVICE inline void estimate_track_params(
     global_index_t globalIndex, const track_params_estimation_config& config,
-    const edm::measurement_collection<default_algebra>::const_view&
+    const typename edm::measurement_collection<algebra_t>::const_view&
         measurements_view,
     const edm::spacepoint_collection::const_view& spacepoints_view,
-    const edm::seed_collection::const_view& seeds_view, const vector3& bfield,
+    const edm::seed_collection::const_view& seeds_view, const bfield_t& bfield,
     bound_track_parameters_collection_types::view params_view);
 
 }  // namespace traccc::device

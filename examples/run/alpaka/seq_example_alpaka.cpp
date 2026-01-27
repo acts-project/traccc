@@ -11,8 +11,8 @@
 #include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/alpaka/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/alpaka/fitting/kalman_fitting_algorithm.hpp"
-#include "traccc/alpaka/seeding/spacepoint_formation_algorithm.hpp"
-#include "traccc/alpaka/seeding/track_params_estimation.hpp"
+#include "traccc/alpaka/seeding/seed_parameter_estimation_algorithm.hpp"
+#include "traccc/alpaka/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/alpaka/seeding/triplet_seeding_algorithm.hpp"
 #include "traccc/alpaka/utils/queue.hpp"
 #include "traccc/alpaka/utils/vecmem_objects.hpp"
@@ -119,7 +119,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     using host_spacepoint_formation_algorithm =
         traccc::host::silicon_pixel_spacepoint_formation_algorithm;
     using device_spacepoint_formation_algorithm =
-        traccc::alpaka::spacepoint_formation_algorithm;
+        traccc::alpaka::silicon_pixel_spacepoint_formation_algorithm;
 
     using host_finding_algorithm =
         traccc::host::combinatorial_kalman_filter_algorithm;
@@ -172,7 +172,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     traccc::alpaka::triplet_seeding_algorithm sa_alpaka(
         seedfinder_config, spacepoint_grid_config, seedfilter_config, mr, copy,
         queue, logger().clone("AlpakaSeedingAlg"));
-    traccc::alpaka::track_params_estimation tp_alpaka(
+    traccc::alpaka::seed_parameter_estimation_algorithm tp_alpaka(
         track_params_estimation_config, mr, copy, queue,
         logger().clone("AlpakaTrackParEstAlg"));
     device_finding_algorithm finding_alg_alpaka(
@@ -293,9 +293,9 @@ int seq_run(const traccc::opts::detector& detector_opts,
             {
                 traccc::performance::timer t("Track params (alpaka)",
                                              elapsedTimes);
-                params_alpaka_buffer = tp_alpaka(
-                    measurements_alpaka_buffer, spacepoints_alpaka_buffer,
-                    seeds_alpaka_buffer, field_vec);
+                params_alpaka_buffer =
+                    tp_alpaka(field, measurements_alpaka_buffer,
+                              spacepoints_alpaka_buffer, seeds_alpaka_buffer);
                 queue.synchronize();
             }  // stop measuring track params timer
 

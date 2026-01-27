@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -11,11 +11,6 @@
 #include <memory>
 
 namespace traccc::cuda {
-
-// Forward declaration(s).
-namespace details {
-struct opaque_stream;
-}
 
 /// Owning wrapper class around @c cudaStream_t
 ///
@@ -50,8 +45,10 @@ class stream {
     void synchronize() const;
 
     private:
-    /// Smart pointer to the managed @c cudaStream_t object
-    std::unique_ptr<details::opaque_stream> m_stream;
+    /// Implementation struct hiding the CUDA-specific details
+    struct impl;
+    /// Smart pointer to the implementation
+    std::unique_ptr<impl> m_impl;
 
 };  // class stream
 

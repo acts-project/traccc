@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -179,9 +179,9 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
         // Run the seed-finding (asynchronously).
         const spacepoint_formation_algorithm::output_type spacepoints =
             m_spacepoint_formation(m_device_detector, measurements);
-        const track_params_estimation::output_type track_params =
-            m_track_parameter_estimation(measurements, spacepoints,
-                                         m_seeding(spacepoints), m_field_vec);
+        const seed_parameter_estimation_algorithm::output_type track_params =
+            m_track_parameter_estimation(m_field, measurements, spacepoints,
+                                         m_seeding(spacepoints));
 
         // Run the track finding (asynchronously).
         const finding_algorithm::output_type track_candidates =
@@ -231,9 +231,9 @@ bound_track_parameters_collection_types::host full_chain_algorithm::seeding(
         // Run the seed-finding (asynchronously).
         const spacepoint_formation_algorithm::output_type spacepoints =
             m_spacepoint_formation(m_device_detector, measurements);
-        const track_params_estimation::output_type track_params =
-            m_track_parameter_estimation(measurements, spacepoints,
-                                         m_seeding(spacepoints), m_field_vec);
+        const seed_parameter_estimation_algorithm::output_type track_params =
+            m_track_parameter_estimation(m_field, measurements, spacepoints,
+                                         m_seeding(spacepoints));
 
         // Copy a limited amount of result data back to the host.
         const auto host_seeds = m_copy.to(track_params, m_cached_pinned_host_mr,

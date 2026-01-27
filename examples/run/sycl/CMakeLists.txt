@@ -4,15 +4,6 @@
 #
 # Mozilla Public License Version 2.0
 
-# CMake 3.12+ is needed for OBJECT libraries.
-cmake_minimum_required( VERSION 3.12 )
-
-# Project include(s).
-include( traccc-compiler-options-sycl )
-
-# We need the SYCL language in this directory.
-enable_language( SYCL )
-
 # SYCL seeding executable(s).
 traccc_add_executable( seeding_example_sycl "seeding_example_sycl.cpp"
    LINK_LIBRARIES traccc::options vecmem::core vecmem::sycl traccc::io
@@ -27,9 +18,9 @@ traccc_add_executable( seq_example_sycl "seq_example_sycl.cpp"
 #
 # Set up the "throughput applications".
 #
-add_library( traccc_examples_sycl OBJECT
+add_library( traccc_examples_sycl STATIC
    "full_chain_algorithm.hpp"
-   "full_chain_algorithm.sycl" )
+   "full_chain_algorithm.cpp" )
 target_link_libraries( traccc_examples_sycl
    PUBLIC vecmem::core vecmem::sycl detray::core detray::detectors
           traccc::core traccc::device_common traccc::sycl

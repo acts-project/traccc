@@ -9,7 +9,7 @@
 #include "../common/make_magnetic_field.hpp"
 #include "traccc/alpaka/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/alpaka/fitting/kalman_fitting_algorithm.hpp"
-#include "traccc/alpaka/seeding/track_params_estimation.hpp"
+#include "traccc/alpaka/seeding/seed_parameter_estimation_algorithm.hpp"
 #include "traccc/alpaka/seeding/triplet_seeding_algorithm.hpp"
 #include "traccc/alpaka/utils/queue.hpp"
 #include "traccc/alpaka/utils/vecmem_objects.hpp"
@@ -159,7 +159,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         async_copy,
         queue,
         logger().clone("AlpakaSeedingAlg")};
-    traccc::alpaka::track_params_estimation tp_alpaka{
+    traccc::alpaka::seed_parameter_estimation_algorithm tp_alpaka{
         track_params_estimation_config, mr, async_copy, queue,
         logger().clone("AlpakaTrackParEstAlg")};
 
@@ -279,9 +279,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             {
                 traccc::performance::timer t("Track params (alpaka)",
                                              elapsedTimes);
-                params_alpaka_buffer = tp_alpaka(
-                    measurements_alpaka_buffer, spacepoints_alpaka_buffer,
-                    seeds_alpaka_buffer, field_vec);
+                params_alpaka_buffer =
+                    tp_alpaka(field, measurements_alpaka_buffer,
+                              spacepoints_alpaka_buffer, seeds_alpaka_buffer);
                 queue.synchronize();
             }  // stop measuring track params alpaka timer
 
