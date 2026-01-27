@@ -9,14 +9,12 @@
 #include "traccc/clusterization/measurement_creation_algorithm.hpp"
 #include "traccc/clusterization/sparse_ccl_algorithm.hpp"
 #include "traccc/io/data_format.hpp"
+#include "traccc/io/detector.hpp"
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/utils/event_data.hpp"
-
-// Detray include(s)
-#include <detray/io/frontend/detector_reader.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>

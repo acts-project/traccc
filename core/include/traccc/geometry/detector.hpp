@@ -11,7 +11,14 @@
 #include "traccc/definitions/primitives.hpp"
 
 // Detray include(s).
+
+// Turn off exessive detector building debug logs (only works with gcc!)
+// clang-format off
+#include <detray/utils/quiet_log_start.hpp>
 #include <detray/core/detector.hpp>
+#include <detray/utils/quiet_log_end.hpp>
+// clang-format on
+
 #include <detray/detectors/default_metadata.hpp>
 #include <detray/detectors/itk_metadata.hpp>
 #include <detray/detectors/odd_metadata.hpp>

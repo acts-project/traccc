@@ -55,8 +55,8 @@ struct gain_matrix_updater {
         [[maybe_unused]] const unsigned int dim{
             measurements.at(trk_state.measurement_index()).dimensions()};
 
-        TRACCC_VERBOSE_HOST_DEVICE("In gain-matrix-updater...");
-        TRACCC_VERBOSE_HOST_DEVICE("Measurement dim: %d", dim);
+        TRACCC_VERBOSE_HOST_DEVICE("Perform Kalman filtering...");
+        TRACCC_VERBOSE_HOST_DEVICE("-> Measurement dim: %d", dim);
 
         assert(dim == 1u || dim == 2u);
 
@@ -108,10 +108,10 @@ struct gain_matrix_updater {
             getter::element(V, 1u, 1u) = 1000.f;
         }
 
-        TRACCC_DEBUG_HOST("Measurement position: " << meas_local);
-        TRACCC_DEBUG_HOST("Measurement variance:\n" << V);
-        TRACCC_DEBUG_HOST("Predicted residual: " << meas_local -
-                                                        H * predicted_vec);
+        TRACCC_DEBUG_HOST("-> Measurement position:\n" << meas_local);
+        TRACCC_DEBUG_HOST("-> Measurement variance:\n" << V);
+        TRACCC_DEBUG_HOST("-> Predicted residual:\n"
+                          << meas_local - H * predicted_vec);
 
         const matrix_type<e_bound_size, D> projected_cov =
             algebra::matrix::transposed_product<false, true>(predicted_cov, H);
@@ -122,8 +122,8 @@ struct gain_matrix_updater {
         assert(matrix::determinant(M) != 0.f);
         const matrix_type<6, D> K = projected_cov * matrix::inverse(M);
 
-        TRACCC_DEBUG_HOST("H:\n" << H);
-        TRACCC_DEBUG_HOST("K:\n" << K);
+        TRACCC_DEBUG_HOST("-> H:\n" << H);
+        TRACCC_DEBUG_HOST("-> K:\n" << K);
 
         // Calculate the filtered track parameters
         const matrix_type<6, 1> filtered_vec =
@@ -133,8 +133,8 @@ struct gain_matrix_updater {
             i_minus_kh * predicted_cov * matrix::transpose(i_minus_kh) +
             K * V * matrix::transpose(K);
 
-        TRACCC_DEBUG_HOST("Filtered param:\n" << filtered_vec);
-        TRACCC_DEBUG_HOST("Filtered cov:\n" << filtered_cov);
+        TRACCC_DEBUG_HOST("-> Filtered param:\n" << filtered_vec);
+        TRACCC_DEBUG_HOST("-> Filtered cov:\n" << filtered_cov);
 
         // Check the covariance for consistency
         // @TODO: Need to understand why negative variance happens
@@ -175,11 +175,13 @@ struct gain_matrix_updater {
 
         const scalar chi2_val{getter::element(chi2, 0, 0)};
 
-        TRACCC_VERBOSE_HOST("Filtered residual: " << residual);
-        TRACCC_DEBUG_HOST("R:\n" << R);
-        TRACCC_DEBUG_HOST_DEVICE("det(R): %f", matrix::determinant(R));
-        TRACCC_DEBUG_HOST("R_inv:\n" << matrix::inverse(R));
-        TRACCC_VERBOSE_HOST_DEVICE("Chi2: %f", chi2_val);
+        TRACCC_DEBUG_HOST("-> Filtered residual:\n" << residual);
+        TRACCC_DEBUG_HOST("-> R:\n" << R);
+        TRACCC_DEBUG_HOST("-> det(R): " << std::scientific
+                                        << matrix::determinant(R)
+                                        << std::defaultfloat);
+        TRACCC_DEBUG_HOST("-> R_inv:\n" << matrix::inverse(R));
+        TRACCC_VERBOSE_HOST_DEVICE("-> Chi2: %f", chi2_val);
 
         if (chi2_val < 0.f) {
             TRACCC_ERROR_HOST_DEVICE("Chi2 negative");
