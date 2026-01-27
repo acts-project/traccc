@@ -14,8 +14,7 @@
 
 // Project include(s).
 #include "traccc/edm/device/sort_key.hpp"
-#include "traccc/edm/track_candidate_container.hpp"
-#include "traccc/edm/track_fit_container.hpp"
+#include "traccc/edm/track_container.hpp"
 #include "traccc/fitting/details/kalman_fitting_types.hpp"
 #include "traccc/fitting/device/fill_fitting_sort_keys.hpp"
 #include "traccc/fitting/device/fit.hpp"
@@ -67,19 +66,17 @@ namespace details {
 /// @return A container of the fitted track states
 ///
 template <typename kernel_t, typename detector_t, typename bfield_t>
-typename edm::track_fit_container<typename detector_t::algebra_type>::buffer
+typename edm::track_container<typename detector_t::algebra_type>::buffer
 kalman_fitting(
     const typename detector_t::const_view_type& det_view,
     const bfield_t& field_view,
-    const typename edm::track_candidate_container<
+    const typename edm::track_container<
         typename detector_t::algebra_type>::const_view& track_candidates_view,
     const fitting_config& config, const memory_resource& mr, vecmem::copy& copy,
     ::sycl::queue& queue) {
 
     // Get the number of tracks.
-    const edm::track_candidate_collection<
-        default_algebra>::const_device::size_type n_tracks =
-        copy.get_size(track_candidates_view.tracks);
+    const unsigned int n_tracks = copy.get_size(track_candidates_view.tracks);
 
     // Get the sizes of the track candidates in each track.
     const std::vector<unsigned int> candidate_sizes =
@@ -88,11 +85,12 @@ kalman_fitting(
         std::accumulate(candidate_sizes.begin(), candidate_sizes.end(), 0u);
 
     // Create the result buffer.
-    typename edm::track_fit_container<typename detector_t::algebra_type>::buffer
+    typename edm::track_container<typename detector_t::algebra_type>::buffer
         track_states_buffer{
             {candidate_sizes, mr.main, mr.host,
              vecmem::data::buffer_type::resizable},
-            {n_states, mr.main, vecmem::data::buffer_type::resizable}};
+            {n_states, mr.main, vecmem::data::buffer_type::resizable},
+            track_candidates_view.measurements};
     vecmem::copy::event_type tracks_setup_event =
         copy.setup(track_states_buffer.tracks);
     vecmem::copy::event_type track_states_setup_event =
@@ -108,11 +106,12 @@ kalman_fitting(
     std::vector<unsigned int> seqs_sizes(candidate_sizes.size());
     std::transform(candidate_sizes.begin(), candidate_sizes.end(),
                    seqs_sizes.begin(), [&config](const unsigned int sz) {
-                       return std::max(sz * config.barcode_sequence_size_factor,
-                                       config.min_barcode_sequence_capacity);
+                       return std::max(sz * config.surface_sequence_size_factor,
+                                       config.min_surface_sequence_capacity);
                    });
-    vecmem::data::jagged_vector_buffer<detray::geometry::barcode> seqs_buffer{
-        seqs_sizes, mr.main, mr.host, vecmem::data::buffer_type::resizable};
+    vecmem::data::jagged_vector_buffer<typename detector_t::surface_type>
+        seqs_buffer{seqs_sizes, mr.main, mr.host,
+                    vecmem::data::buffer_type::resizable};
     copy.setup(seqs_buffer)->wait();
 
     // Create the buffers for sorting the parameter IDs.
@@ -157,10 +156,8 @@ kalman_fitting(
                              param_ids_device.begin());
 
     // Run the fitting, using the sorted parameter IDs.
-    typename edm::track_fit_container<typename detector_t::algebra_type>::view
-        track_states_view{track_states_buffer.tracks,
-                          track_states_buffer.states,
-                          track_candidates_view.measurements};
+    typename edm::track_container<typename detector_t::algebra_type>::view
+        track_states_view{track_states_buffer};
     tracks_setup_event->wait();
     track_states_setup_event->wait();
 
@@ -187,7 +184,7 @@ kalman_fitting(
         .param_ids_view = param_ids_buffer,
         .param_liveness_view = param_liveness_buffer,
         .tracks_view = track_states_view,
-        .barcodes_view = seqs_buffer};
+        .surfaces_view = seqs_buffer};
     // Now copy it to device memory.
     vecmem::data::vector_buffer<device::fit_payload<fitter_t>> device_payload(
         1u, mr.main);

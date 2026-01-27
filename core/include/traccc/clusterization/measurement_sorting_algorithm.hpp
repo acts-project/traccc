@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,12 +8,16 @@
 #pragma once
 
 // Library include(s).
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/messaging.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
+
+// System include(s).
+#include <functional>
+#include <memory>
 
 namespace traccc::host {
 
@@ -26,17 +30,32 @@ namespace traccc::host {
 /// measurements "correctly" in place.
 ///
 class measurement_sorting_algorithm
-    : public algorithm<measurement_collection_types::view(
-          const measurement_collection_types::view&)>,
+    : public algorithm<edm::measurement_collection<default_algebra>::host(
+          const edm::measurement_collection<default_algebra>::const_view&)>,
       public messaging {
 
     public:
+    /// Constructor
+    ///
+    /// @param mr The memory resource to use for the algorithm
+    /// @param logger The logger to use for the algorithm
+    ///
+    measurement_sorting_algorithm(
+        vecmem::memory_resource& mr,
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
+
     /// Callable operator performing the sorting on a container
     ///
     /// @param measurements The measurements to sort
     ///
-    output_type operator()(const measurement_collection_types::view&
-                               measurements_view) const override;
+    [[nodiscard]] output_type operator()(
+        const edm::measurement_collection<default_algebra>::const_view&
+            measurements) const override;
+
+    private:
+    /// The memory resource to use
+    std::reference_wrapper<vecmem::memory_resource> m_mr;
+
 };  // class measurement_sorting_algorithm
 
 }  // namespace traccc::host

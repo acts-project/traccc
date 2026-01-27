@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2025 CERN for the benefit of the ACTS project
+# (c) 2021-2026 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -52,19 +52,24 @@ include( traccc-functions )
 set( TRACCC_CUSTOM_SCALARTYPE "float" CACHE STRING
    "Scalar type to use in the TRACCC code" )
 
+# Temporary setting for the traccc device log level, until it can be removed.
+set( TRACCC_DEVICE_LOG_LVL "NONE" CACHE STRING
+   "Log level for traccc and detray device code" )
+
 # Flags controlling which parts of traccc to build.
-option( TRACCC_BUILD_CUDA "Build the CUDA sources included in traccc" FALSE )
+option( TRACCC_BUILD_CUDA
+   "Build the traccc::cuda library" FALSE )
+option( TRACCC_BUILD_CUDA_UTILS
+   "Build the traccc::cuda_utils library" ${TRACCC_BUILD_CUDA} )
 option( TRACCC_BUILD_HIP "Build the HIP sources included in traccc" FALSE)
-option( TRACCC_BUILD_SYCL "Build the SYCL sources included in traccc" FALSE )
-option( TRACCC_BUILD_FUTHARK "Build the Futhark sources included in traccc"
-   FALSE )
-option( TRACCC_BUILD_KOKKOS "Build the Kokkos sources included in traccc"
-   FALSE )
+option( TRACCC_BUILD_SYCL
+   "Build the traccc::sycl library" FALSE )
+option( TRACCC_BUILD_SYCL_UTILS
+   "Build the traccc::sycl_utils library" ${TRACCC_BUILD_SYCL} )
 option( TRACCC_BUILD_ALPAKA "Build the Alpaka sources included in traccc"
    FALSE )
 option( TRACCC_BUILD_IO "Build the IO module (needed by examples, performance, testing)" TRUE )
 option( TRACCC_BUILD_TESTING "Build the (unit) tests of traccc" TRUE )
-option( TRACCC_BUILD_BENCHMARKS "Build the benchmarks of traccc" TRUE )
 option( TRACCC_BUILD_EXAMPLES "Build the examples of traccc" TRUE )
 
 # Flags controlling what traccc should use.
@@ -88,7 +93,11 @@ endif()
 # In order to generate specializations for our kernels, we need to have both
 # a working Python interpreter, and a list of supported detectors.
 find_package (Python COMPONENTS Interpreter REQUIRED)
-set(TRACCC_SUPPORTED_DETECTORS "default_detector;telescope_detector;toy_detector")
+# The detector types supported by this build of traccc.
+set( TRACCC_SUPPORTED_DETECTORS
+   "default_detector;odd_detector;telescope_detector"
+   CACHE STRING
+   "Semicolon-separated list of detector types to support in this build" )
 
 # Set up build profiling for the project.
 if( CTEST_USE_LAUNCHERS )
@@ -264,32 +273,6 @@ if( TRACCC_SETUP_DPL )
    endif()
 endif()
 
-# Set up Kokkos.
-option( TRACCC_SETUP_KOKKOS
-   "Set up the Kokkos library" ${TRACCC_BUILD_KOKKOS} )
-if (TRACCC_USE_SYSTEM_LIBS OR TRACCC_USE_SPACK_LIBS)
-   set(TRACCC_USE_SYSTEM_KOKKOS_DEFAULT ON)
-else()
-   set(TRACCC_USE_SYSTEM_KOKKOS_DEFAULT OFF)
-endif()
-option( TRACCC_USE_SYSTEM_KOKKOS
-   "Pick up an existing installation of Kokkos from the build environment"
-   ${TRACCC_USE_SYSTEM_KOKKOS_DEFAULT} )
-unset(TRACCC_USE_SYSTEM_KOKKOS_DEFAULT)
-if( TRACCC_SETUP_KOKKOS )
-   if( TRACCC_USE_SYSTEM_KOKKOS )
-      find_package( Kokkos REQUIRED )
-      # Kokkos likes to determine the host architecture at installation time
-      # and propagate the corresponding `-march` flag through the CMake
-      # configuration which cases compiler errors when we use e.g. ICPX which
-      # dislikes it when you set two different microarchitectures (traccc sets
-      # a generic x86 target).
-      set_target_properties(Kokkos::kokkoscore PROPERTIES INTERFACE_COMPILE_OPTIONS "")
-   else()
-      add_subdirectory( extern/kokkos )
-   endif()
-endif()
-
 # Set up Alpaka.
 option( TRACCC_SETUP_ALPAKA
    "Set up the Alpaka library" ${TRACCC_BUILD_ALPAKA})
@@ -413,26 +396,6 @@ if( TRACCC_SETUP_GOOGLETEST )
    endif()
 endif()
 
-# Set up Google Benchmark
-option( TRACCC_SETUP_BENCHMARKS
-   "Set up the Google Benchmark target(s) explicitly" TRUE )
-if (TRACCC_USE_SYSTEM_LIBS OR TRACCC_USE_SPACK_LIBS)
-   set(TRACCC_USE_SYSTEM_BENCHMARKS_DEFAULT ON)
-else()
-   set(TRACCC_USE_SYSTEM_BENCHMARKS_DEFAULT OFF)
-endif()
-option( TRACCC_USE_SYSTEM_BENCHMARKS
-   "Pick up an existing installation of Google Benchmark from the build environment"
-   ${TRACCC_USE_SYSTEM_BENCHMARKS_DEFAULT} )
-unset(TRACCC_USE_SYSTEM_BENCHMARKS_DEFAULT)
-if( TRACCC_SETUP_BENCHMARKS )
-   if( TRACCC_USE_SYSTEM_BENCHMARKS )
-      find_package( benchmark REQUIRED )
-   else()
-      add_subdirectory( extern/benchmark )
-   endif()
-endif()
-
 # Set up indicators.
 set( _indicatorsDefault FALSE )
 if( TRACCC_BUILD_EXAMPLES OR TRACCC_BUILD_IO )
@@ -468,11 +431,14 @@ set(TRACCC_ALGEBRA_PLUGINS ARRAY CACHE STRING "Algebra plugin to use in the buil
 # Build the traccc code.
 add_subdirectory( core )
 add_subdirectory( device/common )
+if( TRACCC_BUILD_CUDA_UTILS )
+   add_subdirectory( device/cuda_utils )
+endif()
 if( TRACCC_BUILD_CUDA )
    add_subdirectory( device/cuda )
 endif()
-if( TRACCC_BUILD_KOKKOS )
-   add_subdirectory( device/kokkos )
+if( TRACCC_BUILD_SYCL_UTILS )
+   add_subdirectory( device/sycl_utils )
 endif()
 if( TRACCC_BUILD_SYCL )
    add_subdirectory( device/sycl )
@@ -505,20 +471,6 @@ if( BUILD_TESTING AND TRACCC_BUILD_TESTING )
       message(FATAL_ERROR "traccc::io is disabled, but it is required to build the tests.")
    endif()
    add_subdirectory( tests )
-endif()
-
-# Set up the benchmark(s).
-if( TRACCC_BUILD_BENCHMARKS )
-   # Find Boost.
-   find_package( Boost CONFIG REQUIRED COMPONENTS filesystem )
-   if ( NOT TRACCC_BUILD_IO )
-      message(FATAL_ERROR "traccc::io is disabled, but it is required to build the tests.")
-   endif()
-   add_subdirectory( benchmarks )
-endif()
-
-if(TRACCC_BUILD_FUTHARK)
-   add_subdirectory(device/futhark)
 endif()
 
 # Set up the packaging of the project.

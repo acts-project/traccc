@@ -13,7 +13,7 @@
 #include <traccc/utils/event_data.hpp>
 
 // Project include(s).
-#include <traccc/edm/measurement.hpp>
+#include <traccc/edm/measurement_collection.hpp>
 #include <traccc/edm/nseed.hpp>
 #include <traccc/edm/spacepoint_collection.hpp>
 
@@ -44,7 +44,8 @@ class nseed_performance_writer {
     void register_event(
         std::size_t ev, const SeedIt sb, const SeedIt se,
         const edm::spacepoint_collection::const_view& spacepoints_view,
-        const measurement_collection_types::const_view& measurements_view,
+        const edm::measurement_collection<default_algebra>::const_view&
+            measurements_view,
         const event_data& em) {
 
         std::size_t seed_id = 0;
@@ -53,8 +54,8 @@ class nseed_performance_writer {
 
         const edm::spacepoint_collection::const_device spacepoints{
             spacepoints_view};
-        const measurement_collection_types::const_device measurements{
-            measurements_view};
+        const edm::measurement_collection<default_algebra>::const_device
+            measurements{measurements_view};
 
         for (SeedIt s = sb; s != se; ++s) {
             std::vector<std::vector<uint64_t>> particle_ids;
@@ -66,8 +67,12 @@ class nseed_performance_writer {
                     assert(spacepoints.at(l).measurement_index_2() ==
                            edm::spacepoint_collection::host::
                                INVALID_MEASUREMENT_INDEX);
-                    traccc::measurement meas = measurements.at(
-                        spacepoints.at(l).measurement_index_1());
+                    const edm::measurement meas = measurements.at(
+                        spacepoints
+                            .at(static_cast<edm::measurement_collection<
+                                    default_algebra>::const_device::size_type>(
+                                l))
+                            .measurement_index_1());
 
                     const auto& ptcs = em.m_meas_to_ptc_map.find(meas)->second;
 

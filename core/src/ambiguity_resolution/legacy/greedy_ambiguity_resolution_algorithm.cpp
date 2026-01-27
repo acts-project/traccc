@@ -36,8 +36,8 @@ namespace traccc::legacy {
 /// @param track_states the container of the fitted track parameters
 /// @return the container without ambiguous tracks
 auto greedy_ambiguity_resolution_algorithm::operator()(
-    const edm::track_candidate_container<default_algebra>::host& track_states)
-    const -> output_type {
+    const edm::track_container<default_algebra>::host& track_states) const
+    -> output_type {
 
     state_t state;
     compute_initial_state(track_states, state);
@@ -45,31 +45,36 @@ auto greedy_ambiguity_resolution_algorithm::operator()(
 
     // Copy the tracks to be retained in the return value
 
-    edm::track_candidate_collection<default_algebra>::host res{m_mr.get()};
-    res.reserve(state.selected_tracks.size());
+    edm::track_container<default_algebra>::host res{m_mr.get(),
+                                                    track_states.measurements};
+    res.tracks.reserve(state.selected_tracks.size());
 
     TRACCC_DEBUG(
         "state.selected_tracks.size() = " << state.selected_tracks.size());
 
     for (auto index : state.selected_tracks) {
-        res.push_back(track_states.tracks.at(index.first));
+        res.tracks.push_back(track_states.tracks.at(index.first));
     }
     return res;
 }
 
 void greedy_ambiguity_resolution_algorithm::compute_initial_state(
-    const edm::track_candidate_container<default_algebra>::host& track_states,
+    const edm::track_container<default_algebra>::host& track_states,
     state_t& state) const {
+
+    // Create a measurement collection to interact with.
+    const edm::measurement_collection<default_algebra>::const_device
+        measurements(track_states.measurements);
 
     // For each track of the input container
     std::size_t n_track_states = track_states.tracks.size();
     for (std::size_t track_index = 0; track_index < n_track_states;
          ++track_index) {
 
-        auto const& track = track_states.tracks.at(track_index);
+        auto const track = track_states.tracks.at(track_index);
 
         // Kick out tracks that do not fulfill our initial requirements
-        if (track.measurement_indices().size() < _config.n_measurements_min) {
+        if (track.constituent_links().size() < _config.n_measurements_min) {
             continue;
         }
 
@@ -77,9 +82,10 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
         std::vector<std::size_t> measurement_ids;
         std::unordered_map<std::size_t, std::size_t> already_added_mes;
 
-        for (unsigned int meas_idx : track.measurement_indices()) {
-            std::size_t mid =
-                track_states.measurements.at(meas_idx).measurement_id;
+        for (const auto& [type, meas_idx] : track.constituent_links()) {
+            assert(type == edm::track_constituent_link::measurement);
+
+            std::size_t mid = measurements.at(meas_idx).identifier();
 
             // If the same measurement is found multiple times in a single
             // track: remove duplicates.

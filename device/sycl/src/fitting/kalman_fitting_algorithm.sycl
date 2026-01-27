@@ -24,8 +24,8 @@ struct fit_tracks;
 
 kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
     const detector_buffer& detector, const magnetic_field& bfield,
-    const edm::track_candidate_container<default_algebra>::const_view&
-        track_candidates) const {
+    const edm::track_container<default_algebra>::const_view& track_candidates)
+    const {
 
     // Perform the track fitting using the templated implementation.
     return detector_buffer_magnetic_field_visitor<

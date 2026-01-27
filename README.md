@@ -4,24 +4,23 @@ Demonstrator tracking chain for accelerators.
 
 ## Features
 
-| Category                  | Algorithms             | CPU | CUDA | SYCL | Alpaka | Kokkos | Futhark |
-| ------------------------- | ---------------------- | --- | ---- | ---- | ------ | ------ | ------- |
-| **Clusterization**        | CCL / FastSv / etc.    | ✅  | ✅   | ✅   | ✅     | ⚪     | ✅      |
-|                           | Measurement creation   | ✅  | ✅   | ✅   | ✅     | ⚪     | ✅      |
-| **Seeding**               | Spacepoint formation   | ✅  | ✅   | ✅   | ✅     | ⚪     | ⚪      |
-|                           | Spacepoint binning     | ✅  | ✅   | ✅   | ✅     | ✅     | ⚪      |
-|                           | Seed finding           | ✅  | ✅   | ✅   | ✅     | ⚪     | ⚪      |
-|                           | Track param estimation | ✅  | ✅   | ✅   | ✅     | ⚪     | ⚪      |
-| **Track finding**         | Combinatorial KF       | ✅  | ✅   | ✅   | ✅     | ⚪     | ⚪      |
-| **Ambiguity resolution**  | Greedy resolver        | ✅  | 🟡   | ⚪   | ⚪     | ⚪     | ⚪      |
-| **Track fitting**         | KF                     | ✅  | ✅   | 🟡   | ✅     | ⚪     | ⚪      |
+| Category                  | Algorithms             | CPU | CUDA | SYCL | Alpaka |
+| ------------------------- | ---------------------- | --- | ---- | ---- | ------ |
+| **Clusterization**        | CCL / FastSv / etc.    | ✅  | ✅   | ✅   | ✅     |
+|                           | Measurement creation   | ✅  | ✅   | ✅   | ✅     |
+| **Seeding**               | Spacepoint formation   | ✅  | ✅   | ✅   | ✅     |
+|                           | Spacepoint binning     | ✅  | ✅   | ✅   | ✅     |
+|                           | Seed finding           | ✅  | ✅   | ✅   | ✅     |
+|                           | Track param estimation | ✅  | ✅   | ✅   | ✅     |
+| **Track finding**         | Combinatorial KF       | ✅  | ✅   | ✅   | ✅     |
+| **Ambiguity resolution**  | Greedy resolver        | ✅  | 🟡   | ⚪   | ⚪     |
+| **Track fitting**         | KF                     | ✅  | ✅   | 🟡   | ✅     |
 
 ✅: exists, 🟡: work started, ⚪: work not started yet
 
 The relations between datatypes and algorithms is given in the (approximately
 commutative) diagram shown below. Black lines indicate CPU algorithms, green
-lines indicate CUDA algorithms, blue lines indicate SYCL algorithms, and brown
-lines indicate Futhark algorithms. Solid algorithms are ready for use, dashed
+lines indicate CUDA algorithms, blue lines indicate SYCL algorithms. Solid algorithms are ready for use, dashed
 algorithms are in development or future goals. Data types for different
 heterogeneous platforms are contracted for legibility, and identities are
 hidden.
@@ -97,33 +96,21 @@ flowchart LR
     sp -->|<a href='https://github.com/acts-project/traccc/blob/main/core/include/traccc/seeding/spacepoint_binning.hpp'>SP Binning</a>| bin;
     linkStyle 9 stroke: black;
 
-    %% SYCL spacepoint binning
-    sp -->|<a href='https://github.com/acts-project/traccc/blob/main/device/sycl/include/traccc/sycl/seeding/spacepoint_binning.hpp'>SP Binning</a>| bin;
+    %% SYCL triplet seeding
+    sp -->|<a href='https://github.com/acts-project/traccc/blob/main/device/sycl/include/traccc/sycl/seeding/triplet_seeding_algorithm.hpp'>Triplet Seeding</a>| seed;
     linkStyle 10 stroke: blue;
 
-    %% CUDA spacepoint binning
-    sp -->|<a href='https://github.com/acts-project/traccc/blob/main/device/cuda/include/traccc/cuda/seeding/spacepoint_binning.hpp'>SP Binning</a>| bin;
+    %% CUDA triplet seeding
+    sp -->|<a href='https://github.com/acts-project/traccc/blob/main/device/cuda/include/traccc/cuda/seeding/triplet_seeding_algorithm.hpp'>Triplet Seeding</a>| seed;
     linkStyle 11 stroke: green;
 
-    %% Alpaka spacepoint binning
-    sp -->|<a href='https://github.com/acts-project/traccc/blob/main/device/alpaka/include/traccc/alpaka/seeding/spacepoint_binning.hpp'>SP Binning</a>| bin;
+    %% Alpaka triplet seeding
+    sp -->|<a href='https://github.com/acts-project/traccc/blob/main/device/alpaka/include/traccc/alpaka/seeding/triplet_seeding_algorithm.hpp'>Triplet Seeding</a>| seed;
     linkStyle 12 stroke: orange;
 
     %% Host seeding
     bin -->|<a href='https://github.com/acts-project/traccc/blob/main/core/include/traccc/seeding/seed_finding.hpp'>Seeding</a>| seed;
     linkStyle 13 stroke: black;
-
-    %% SYCL seeding
-    bin -->|<a href='https://github.com/acts-project/traccc/blob/main/device/sycl/include/traccc/sycl/seeding/seed_finding.hpp'>Seeding</a>| seed;
-    linkStyle 14 stroke: blue;
-
-    %% CUDA seeding
-    bin -->|<a href='https://github.com/acts-project/traccc/blob/main/device/cuda/include/traccc/cuda/seeding/seed_finding.hpp'>Seeding</a>| seed;
-    linkStyle 15 stroke: green;
-
-    %% Alpaka seeding
-    bin -->|<a href='https://github.com/acts-project/traccc/blob/main/device/alpaka/include/traccc/alpaka/seeding/seed_finding.hpp'>Seeding</a>| seed;
-    linkStyle 16 stroke: orange;
 
     %% Host param est.
     seed -->|<a href='https://github.com/acts-project/traccc/blob/main/core/include/traccc/seeding/track_params_estimation.hpp'>Param. Est.</a>| ptrack;
@@ -210,7 +197,7 @@ spack env activate traccc
 ```
 
 This way, Spack will automatically download and install all dependencies
-necessary to use traccc with the CUDA, SYCL, Kokkos, and Alpaka programming
+necessary to use traccc with the CUDA, SYCL, and Alpaka programming
 models. When using Spack to manage your dependencies, make sure to compile
 traccc with the `-DTRACCC_USE_SPACK_LIBS=ON` flag.
 
@@ -370,16 +357,6 @@ The install step needs to be executed only once. After that, the code can be eas
 ```console
 $ pre-commit run --all-files
 ```
-
-## Continuous benchmark
-
-Monitoring the event throughput of track reconstruction with the toy geometry
-
-- Number of events: 100
-- Number of tracks per event: 5000
-- Algorithms used: seeding, track finding and track fitting
-
-<img src="https://gitlab.cern.ch/acts/traccc-benchmark/-/raw/master/plots/toy_data.png?ref_type=heads" />
 
 ## Troubleshooting
 

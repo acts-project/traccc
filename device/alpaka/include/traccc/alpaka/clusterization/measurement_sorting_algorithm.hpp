@@ -11,7 +11,7 @@
 #include "traccc/alpaka/utils/queue.hpp"
 
 // Project include(s).
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
@@ -35,8 +35,8 @@ namespace traccc::alpaka {
 /// to the rescue.
 ///
 class measurement_sorting_algorithm
-    : public algorithm<measurement_collection_types::view(
-          const measurement_collection_types::view&)>,
+    : public algorithm<edm::measurement_collection<default_algebra>::buffer(
+          const edm::measurement_collection<default_algebra>::const_view&)>,
       public messaging {
 
     public:
@@ -53,8 +53,9 @@ class measurement_sorting_algorithm
     ///
     /// @param measurements The measurements to sort
     ///
-    output_type operator()(const measurement_collection_types::view&
-                               measurements_view) const override;
+    [[nodiscard]] output_type operator()(
+        const edm::measurement_collection<default_algebra>::const_view&
+            measurements) const override;
 
     private:
     // The memory resource(s) to use

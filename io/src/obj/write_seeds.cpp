@@ -42,7 +42,7 @@ void write_seeds(std::string_view filename,
             return false;
         }
         // Write the spacepoint.
-        const auto sp = spacepoints[memory_index];
+        const edm::spacepoint sp = spacepoints[memory_index];
         file << "v " << sp.x() << " " << sp.y() << " " << sp.z() << "\n";
         // Remember the mapping.
         spacepoint_indices[memory_index] = file_index;
@@ -56,7 +56,7 @@ void write_seeds(std::string_view filename,
     file << "# Spacepoints from which the seeds are built\n";
     for (edm::seed_collection::const_device::size_type i = 0; i < seeds.size();
          ++i) {
-        const auto seed = seeds.at(i);
+        const edm::seed seed = seeds.at(i);
         if (write_spacepoint(seed.bottom_index(), file_index)) {
             ++file_index;
         }
@@ -83,7 +83,7 @@ void write_seeds(std::string_view filename,
     file << "# Seeds\n";
     for (edm::seed_collection::const_device::size_type i = 0; i < seeds.size();
          ++i) {
-        const auto seed = seeds.at(i);
+        const edm::seed seed = seeds.at(i);
         file << "l " << get_spacepoint_index(seed.bottom_index()) << " "
              << get_spacepoint_index(seed.middle_index()) << " "
              << get_spacepoint_index(seed.top_index()) << "\n";

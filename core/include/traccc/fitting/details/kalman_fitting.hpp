@@ -8,10 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_candidate_container.hpp"
-#include "traccc/edm/track_fit_collection.hpp"
-#include "traccc/edm/track_fit_container.hpp"
+#include "traccc/edm/track_container.hpp"
 #include "traccc/edm/track_state_collection.hpp"
 #include "traccc/edm/track_state_helpers.hpp"
 #include "traccc/fitting/status_codes.hpp"
@@ -41,62 +38,60 @@ namespace traccc::host::details {
 /// @return A container of the fitted track states
 ///
 template <typename algebra_t, typename fitter_t>
-typename edm::track_fit_container<algebra_t>::host kalman_fitting(
+typename edm::track_container<algebra_t>::host kalman_fitting(
     fitter_t& fitter,
-    const typename edm::track_candidate_container<algebra_t>::const_view&
-        track_container,
+    const typename edm::track_container<algebra_t>::const_view& tracks_view,
     vecmem::memory_resource& mr, vecmem::copy& copy) {
 
     // Create the input container(s).
-    const measurement_collection_types::const_device measurements{
-        track_container.measurements};
-    const typename edm::track_candidate_collection<
-        typename fitter_t::algebra_type>::const_device track_candidates{
-        track_container.tracks};
+    const typename edm::track_container<algebra_t>::const_device tracks{
+        tracks_view};
 
     // Create the output containers.
-    typename edm::track_fit_container<algebra_t>::host result{mr};
+    typename edm::track_container<algebra_t>::host result{
+        mr, tracks_view.measurements};
 
     // Iterate over the tracks,
-    for (typename edm::track_candidate_collection<
-             typename fitter_t::algebra_type>::const_device::size_type i = 0;
-         i < track_candidates.size(); ++i) {
+    for (unsigned int i = 0; i < tracks.tracks.size(); ++i) {
 
         // Create the objects that will describe this track fit.
-        result.tracks.push_back(
-            {track_fit_outcome::UNKNOWN, {}, 0.f, 0.f, 0.f, 0u, {}});
-        auto fitted_track = result.tracks.at(result.tracks.size() - 1);
-        for (unsigned int measurement_index :
-             track_candidates.measurement_indices().at(i)) {
-            fitted_track.state_indices().push_back(
-                static_cast<unsigned int>(result.states.size()));
+        result.tracks.push_back({});
+        edm::track fitted_track = result.tracks.at(result.tracks.size() - 1);
+        for (const edm::track_constituent_link& link :
+             tracks.tracks.constituent_links().at(i)) {
+            assert(link.type == edm::track_constituent_link::measurement);
+            fitted_track.constituent_links().push_back(
+                {edm::track_constituent_link::track_state,
+                 static_cast<unsigned int>(result.states.size())});
             result.states.push_back(edm::make_track_state<algebra_t>(
-                measurements, measurement_index));
+                tracks.measurements, link.index));
         }
 
-        vecmem::data::vector_buffer<detray::geometry::barcode> seqs_buffer{
-            static_cast<vecmem::data::vector_buffer<
-                detray::geometry::barcode>::size_type>(
-                std::max(fitted_track.state_indices().size() *
-                             fitter.config().barcode_sequence_size_factor,
-                         fitter.config().min_barcode_sequence_capacity)),
-            mr, vecmem::data::buffer_type::resizable};
+        vecmem::data::vector_buffer<typename fitter_t::surface_type>
+            seqs_buffer{
+                static_cast<vecmem::data::vector_buffer<
+                    typename fitter_t::surface_type>::size_type>(
+                    std::max(fitted_track.constituent_links().size() *
+                                 fitter.config().surface_sequence_size_factor,
+                             fitter.config().min_surface_sequence_capacity)),
+                mr, vecmem::data::buffer_type::resizable};
         copy.setup(seqs_buffer)->wait();
 
         // Make a fitter state
-        auto result_tracks_view = vecmem::get_data(result.tracks);
-        typename edm::track_fit_collection<algebra_t>::device
-            result_tracks_device{result_tracks_view};
+        typename edm::track_collection<algebra_t>::data result_tracks_data =
+            vecmem::get_data(result.tracks);
+        typename edm::track_collection<algebra_t>::device result_tracks_device{
+            result_tracks_data};
         typename fitter_t::state fitter_state(
             result_tracks_device.at(result_tracks_device.size() - 1),
             typename edm::track_state_collection<algebra_t>::device{
                 vecmem::get_data(result.states)},
-            measurements, seqs_buffer);
+            tracks.measurements, seqs_buffer, fitter.config().propagation);
 
         // Run the fitter. The status that it returns is not used here. The main
         // failure modes are saved onto the fitted track itself. Not sure what
         // we may want to do with the more detailed status codes in the future.
-        (void)fitter.fit(track_candidates.params().at(i), fitter_state);
+        (void)fitter.fit(tracks.tracks.params().at(i), fitter_state);
     }
 
     // Return the fitted track states.

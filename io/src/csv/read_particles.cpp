@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -40,12 +40,14 @@ void read_particles(particle_collection_types::host& particles,
     }
 }
 
-void read_particles(particle_container_types::host& particles,
-                    std::string_view particles_file, std::string_view hits_file,
-                    std::string_view measurements_file,
-                    std::string_view hit_map_file,
-                    const traccc::host_detector* detector,
-                    const bool sort_measurements) {
+void read_particles(
+    particle_container_types::host& particles,
+    edm::measurement_collection<default_algebra>::host& measurements,
+    std::string_view particles_file, std::string_view hits_file,
+    std::string_view measurements_file, std::string_view hit_map_file,
+    const traccc::host_detector* detector,
+    const traccc::silicon_detector_description::host* detector_description,
+    const bool sort_measurements) {
 
     // Memory resource used by the temporary collections.
     vecmem::host_memory_resource mr;
@@ -59,10 +61,10 @@ void read_particles(particle_container_types::host& particles,
     particle_collection_types::host temp_particles{&mr};
     read_particles(temp_particles, particles_file);
 
-    // Read in all measurements, into a temporary collection.
-    measurement_collection_types::host temp_measurements{&mr};
-    const std::vector<measurement_id_type> new_idx_map = read_measurements(
-        temp_measurements, measurements_file, detector, sort_measurements);
+    // Read in all measurements.
+    const std::vector<measurement_id_type> new_idx_map =
+        read_measurements(measurements, measurements_file, detector,
+                          detector_description, sort_measurements);
 
     // Make a hit to measurement map.
     std::unordered_map<std::size_t, measurement_id_type> hit_to_measurement;
@@ -78,9 +80,9 @@ void read_particles(particle_container_types::host& particles,
         }
     }
 
-    // Construct the measurements belonging to each particle.
-    vecmem::jagged_vector<measurement> particle_measurements{
-        temp_particles.size(), vecmem::vector<measurement>{&mr}, &mr};
+    // Construct the indices of the measurements belonging to each particle.
+    vecmem::jagged_vector<unsigned int> particle_measurements{
+        temp_particles.size(), vecmem::vector<unsigned int>{&mr}, &mr};
     hit h;
     std::size_t hit_id = 0u;
     while (hit_reader.read(h)) {
@@ -109,7 +111,7 @@ void read_particles(particle_container_types::host& particles,
         particle_measurements
             [static_cast<decltype(particle_measurements)::size_type>(
                  particle_index)]
-                .push_back(temp_measurements.at(hit_to_measurement_it->second));
+                .push_back(hit_to_measurement_it->second);
 
         // Increment the hit ID.
         ++hit_id;

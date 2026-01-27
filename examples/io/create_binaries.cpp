@@ -50,10 +50,11 @@ int create_binaries(const traccc::opts::detector& detector_opts,
                           traccc::data_format::binary, vecmem::get_data(cells));
 
         // Read the measurements and hits from the relevant event file
-        traccc::measurement_collection_types::host measurements{&host_mr};
+        traccc::edm::measurement_collection<traccc::default_algebra>::host
+            measurements{host_mr};
         traccc::edm::spacepoint_collection::host spacepoints{host_mr};
         traccc::io::read_spacepoints(spacepoints, measurements, event,
-                                     input_opts.directory, nullptr,
+                                     input_opts.directory, nullptr, nullptr,
                                      input_opts.format);
 
         // Write binary file(s)

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -32,20 +32,23 @@ measurement_creation_algorithm::operator()(
     const silicon_detector_description::const_device det_descr{dd_view};
 
     // Create the result object.
-    output_type result(clusters.size(), &(m_mr.get()));
-    measurement_collection_types::device measurements{vecmem::get_data(result)};
+    output_type result(m_mr.get());
+    result.resize(clusters.size());
+    edm::measurement_collection<default_algebra>::device measurements{
+        vecmem::get_data(result)};
 
     // Process the clusters one-by-one.
     for (decltype(clusters)::size_type i = 0; i < clusters.size(); ++i) {
 
-        // Get the cluster.
-        const auto cluster = clusters[i];
+        // Get the cluster and measurement.
+        const edm::silicon_cluster cluster = clusters.at(i);
+        edm::measurement measurement = measurements.at(i);
 
         // A security check.
         assert(cluster.cell_indices().empty() == false);
 
         // Fill measurement from cluster
-        details::fill_measurement(measurements, i, cluster, cells, det_descr);
+        details::fill_measurement(measurement, cluster, i, cells, det_descr);
     }
 
     return result;

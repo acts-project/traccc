@@ -35,6 +35,17 @@ struct finding_config {
     /// Maximum number of consecutive holes
     unsigned int max_num_consecutive_skipped = 1;
 
+    /// Maximum number of tracks per measurement; if zero, don't prune
+    unsigned int max_num_tracks_per_measurement = 0;
+
+    /// If `max_num_tracks_per_measurement` is enabled, i.e. if it is non-zero
+    /// then this value determines the minimum fraction of measurements in
+    /// each track that vote for it
+    float min_measurement_voting_fraction = 0.5f;
+
+    /// Enable the MBF smoother
+    bool run_mbf_smoother = true;
+
     /// Minimum step length that track should make to reach the next surface. It
     /// should be set higher than the overstep tolerance not to make it stay on
     /// the same surface
@@ -43,7 +54,7 @@ struct finding_config {
     unsigned int max_step_counts_for_next_surface = 100;
 
     /// Maximum Chi-square that is allowed for branching
-    float chi2_max = 100.f;
+    float chi2_max = 30.f;
 
     /// Propagation configuration
     detray::propagation::config propagation{};
@@ -54,7 +65,7 @@ struct finding_config {
 
     /// Particle hypothesis
     traccc::pdg_particle<traccc::scalar> ptc_hypothesis =
-        traccc::muon<traccc::scalar>();
+        traccc::pion_plus<traccc::scalar>();
 
     /// Minimum track length in order for a track to be a candidate for
     /// duplicate removal.

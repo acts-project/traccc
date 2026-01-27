@@ -10,10 +10,13 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/definitions/track_parametrization.hpp"
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/measurement_helpers.hpp"
 #include "traccc/edm/track_state_collection.hpp"
+#include "traccc/fitting/details/regularize_covariance.hpp"
 #include "traccc/fitting/status_codes.hpp"
+#include "traccc/utils/logging.hpp"
+#include "traccc/utils/subspace.hpp"
 
 namespace traccc {
 
@@ -42,25 +45,18 @@ struct gain_matrix_updater {
     template <typename track_state_backend_t>
     [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status operator()(
         typename edm::track_state<track_state_backend_t>& trk_state,
-        const measurement_collection_types::const_device& measurements,
+        const edm::measurement_collection<default_algebra>::const_device&
+            measurements,
         const bound_track_parameters<algebra_t>& bound_params,
         const bool is_line) const {
 
-        const auto D = measurements.at(trk_state.measurement_index()).meas_dim;
-
-        assert(D == 1u || D == 2u);
-
-        return update(trk_state, measurements, bound_params, D, is_line);
-    }
-
-    template <typename track_state_backend_t>
-    [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status update(
-        typename edm::track_state<track_state_backend_t>& trk_state,
-        const measurement_collection_types::const_device& measurements,
-        const bound_track_parameters<algebra_t>& bound_params,
-        const unsigned int dim, const bool is_line) const {
-
         static constexpr unsigned int D = 2;
+
+        [[maybe_unused]] const unsigned int dim{
+            measurements.at(trk_state.measurement_index()).dimensions()};
+
+        TRACCC_VERBOSE_HOST_DEVICE("In gain-matrix-updater...");
+        TRACCC_VERBOSE_HOST_DEVICE("Measurement dim: %d", dim);
 
         assert(dim == 1u || dim == 2u);
 
@@ -79,15 +75,17 @@ struct gain_matrix_updater {
 
         assert((dim > 1) || (getter::element(meas_local, 1u, 0u) == 0.f));
 
+        TRACCC_DEBUG_HOST("Predicted param.: " << bound_params);
+
         // Predicted vector of bound track parameters
         const bound_vector_type& predicted_vec = bound_params.vector();
 
         // Predicted covaraince of bound track parameters
         const bound_matrix_type& predicted_cov = bound_params.covariance();
 
-        matrix_type<D, e_bound_size> H =
-            measurements.at(trk_state.measurement_index())
-                .subs.template projector<D>();
+        const subspace<algebra_t, e_bound_size> subs(
+            measurements.at(trk_state.measurement_index()).subspace());
+        matrix_type<D, e_bound_size> H = subs.template projector<D>();
 
         // Flip the sign of projector matrix element in case the first element
         // of line measurement is negative
@@ -95,7 +93,8 @@ struct gain_matrix_updater {
             getter::element(H, 0u, e_bound_loc0) = -1;
         }
 
-        if (dim == 1) {
+        // @TODO: Fix properly
+        if (/*dim == 1*/ getter::element(meas_local, 1u, 0u) == 0.f) {
             getter::element(H, 1u, 0u) = 0.f;
             getter::element(H, 1u, 1u) = 0.f;
         }
@@ -104,10 +103,15 @@ struct gain_matrix_updater {
         matrix_type<D, D> V;
         edm::get_measurement_covariance<algebra_t>(
             measurements.at(trk_state.measurement_index()), V);
-
-        if (dim == 1) {
-            getter::element(V, 1u, 1u) = 1.f;
+        // @TODO: Fix properly
+        if (/*dim == 1*/ getter::element(meas_local, 1u, 0u) == 0.f) {
+            getter::element(V, 1u, 1u) = 1000.f;
         }
+
+        TRACCC_DEBUG_HOST("Measurement position: " << meas_local);
+        TRACCC_DEBUG_HOST("Measurement variance:\n" << V);
+        TRACCC_DEBUG_HOST("Predicted residual: " << meas_local -
+                                                        H * predicted_vec);
 
         const matrix_type<e_bound_size, D> projected_cov =
             algebra::matrix::transposed_product<false, true>(predicted_cov, H);
@@ -118,10 +122,46 @@ struct gain_matrix_updater {
         assert(matrix::determinant(M) != 0.f);
         const matrix_type<6, D> K = projected_cov * matrix::inverse(M);
 
+        TRACCC_DEBUG_HOST("H:\n" << H);
+        TRACCC_DEBUG_HOST("K:\n" << K);
+
         // Calculate the filtered track parameters
         const matrix_type<6, 1> filtered_vec =
             predicted_vec + K * (meas_local - H * predicted_vec);
-        const matrix_type<6, 6> filtered_cov = (I66 - K * H) * predicted_cov;
+        const matrix_type<6, 6> i_minus_kh = I66 - K * H;
+        matrix_type<6, 6> filtered_cov =
+            i_minus_kh * predicted_cov * matrix::transpose(i_minus_kh) +
+            K * V * matrix::transpose(K);
+
+        TRACCC_DEBUG_HOST("Filtered param:\n" << filtered_vec);
+        TRACCC_DEBUG_HOST("Filtered cov:\n" << filtered_cov);
+
+        // Check the covariance for consistency
+        // @TODO: Need to understand why negative variance happens
+        if (constexpr traccc::scalar min_var{-0.01f};
+            !details::regularize_covariance<algebra_t>(filtered_cov, min_var)) {
+            TRACCC_ERROR_HOST_DEVICE("Negative variance after filtering");
+            return kalman_fitter_status::ERROR_UPDATER_INVALID_COVARIANCE;
+        }
+
+        // Return false if track is parallel to z-axis or phi is not finite
+        if (!std::isfinite(getter::element(filtered_vec, e_bound_theta, 0))) {
+            TRACCC_ERROR_HOST_DEVICE(
+                "Theta is infinite after filtering (Matrix inversion)");
+            return kalman_fitter_status::ERROR_INVERSION;
+        }
+
+        if (!std::isfinite(getter::element(filtered_vec, e_bound_phi, 0))) {
+            TRACCC_ERROR_HOST_DEVICE(
+                "Phi is infinite after filtering (Matrix inversion)");
+            return kalman_fitter_status::ERROR_INVERSION;
+        }
+
+        if (math::fabs(getter::element(filtered_vec, e_bound_qoverp, 0)) ==
+            0.f) {
+            TRACCC_ERROR_HOST_DEVICE("q/p is zero after filtering");
+            return kalman_fitter_status::ERROR_QOP_ZERO;
+        }
 
         // Residual between measurement and (projected) filtered vector
         const matrix_type<D, 1> residual = meas_local - H * filtered_vec;
@@ -133,36 +173,46 @@ struct gain_matrix_updater {
                 residual, matrix::inverse(R)) *
             residual;
 
-        // Return false if track is parallel to z-axis or phi is not finite
-        const scalar theta = bound_params.theta();
+        const scalar chi2_val{getter::element(chi2, 0, 0)};
 
-        if (theta <= 0.f || theta >= constant<traccc::scalar>::pi) {
-            return kalman_fitter_status::ERROR_THETA_ZERO;
-        }
+        TRACCC_VERBOSE_HOST("Filtered residual: " << residual);
+        TRACCC_DEBUG_HOST("R:\n" << R);
+        TRACCC_DEBUG_HOST_DEVICE("det(R): %f", matrix::determinant(R));
+        TRACCC_DEBUG_HOST("R_inv:\n" << matrix::inverse(R));
+        TRACCC_VERBOSE_HOST_DEVICE("Chi2: %f", chi2_val);
 
-        if (!std::isfinite(bound_params.phi())) {
-            return kalman_fitter_status::ERROR_INVERSION;
-        }
-
-        if (std::abs(bound_params.qop()) == 0.f) {
-            return kalman_fitter_status::ERROR_QOP_ZERO;
-        }
-
-        if (getter::element(chi2, 0, 0) < 0.f) {
+        if (chi2_val < 0.f) {
+            TRACCC_ERROR_HOST_DEVICE("Chi2 negative");
             return kalman_fitter_status::ERROR_UPDATER_CHI2_NEGATIVE;
         }
 
-        if (!std::isfinite(getter::element(chi2, 0, 0))) {
+        if (!std::isfinite(chi2_val)) {
+            TRACCC_ERROR_HOST_DEVICE("Chi2 infinite");
             return kalman_fitter_status::ERROR_UPDATER_CHI2_NOT_FINITE;
         }
 
-        // Set the track state parameters
+        // Set the chi2 for this track and measurement
         trk_state.filtered_params().set_vector(filtered_vec);
         trk_state.filtered_params().set_covariance(filtered_cov);
-        trk_state.filtered_chi2() = getter::element(chi2, 0, 0);
+        trk_state.filtered_chi2() = chi2_val;
 
-        // Wrap the phi in the range of [-pi, pi]
-        wrap_phi(trk_state.filtered_params());
+        if (math::fmod(trk_state.filtered_params().theta(),
+                       2.f * constant<traccc::scalar>::pi) == 0.f) {
+            TRACCC_ERROR_HOST_DEVICE(
+                "Hit theta pole after filtering : %f (unrecoverable error "
+                "pre-normalization)",
+                trk_state.filtered_params().theta());
+            return kalman_fitter_status::ERROR_THETA_POLE;
+        }
+
+        // Wrap the phi and theta angles in their valid ranges
+        normalize_angles(trk_state.filtered_params());
+
+        const scalar theta = trk_state.filtered_params().theta();
+        if (theta <= 0.f || theta >= 2.f * constant<traccc::scalar>::pi) {
+            TRACCC_ERROR_HOST_DEVICE("Hit theta pole in filtering : %f", theta);
+            return kalman_fitter_status::ERROR_THETA_POLE;
+        }
 
         assert(!trk_state.filtered_params().is_invalid());
 

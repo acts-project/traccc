@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/track_state_collection.hpp"
 
 // Local include(s).
@@ -23,9 +23,12 @@ class is_same_object<edm::track_state<T>> {
 
     public:
     /// Constructor with a reference object, and an allowed uncertainty
-    is_same_object(const measurement_collection_types::const_view& ref_meas,
-                   const measurement_collection_types::const_view& test_meas,
-                   const edm::track_state<T>& ref, scalar unc = float_epsilon)
+    is_same_object(
+        const edm::measurement_collection<default_algebra>::const_view&
+            ref_meas,
+        const edm::measurement_collection<default_algebra>::const_view&
+            test_meas,
+        const edm::track_state<T>& ref, scalar unc = float_epsilon)
         : m_ref_meas(ref_meas),
           m_test_meas(test_meas),
           m_ref(ref),
@@ -55,9 +58,12 @@ class is_same_object<edm::track_state<T>> {
             return false;
         }
         // Compare the measurements that they point at.
-        const measurement_collection_types::const_device ref_meas{m_ref_meas};
-        const measurement_collection_types::const_device test_meas{m_test_meas};
-        if (!is_same_object<measurement>(
+        const edm::measurement_collection<default_algebra>::const_device
+            ref_meas{m_ref_meas};
+        const edm::measurement_collection<default_algebra>::const_device
+            test_meas{m_test_meas};
+        if (!is_same_object<edm::measurement_collection<
+                default_algebra>::const_device::const_proxy_type>(
                 ref_meas.at(m_ref.measurement_index()),
                 m_unc)(test_meas.at(obj.measurement_index()))) {
             return false;
@@ -69,9 +75,9 @@ class is_same_object<edm::track_state<T>> {
 
     private:
     /// Measurements for the reference object
-    const measurement_collection_types::const_view m_ref_meas;
+    const edm::measurement_collection<default_algebra>::const_view m_ref_meas;
     /// Measurements for the test object
-    const measurement_collection_types::const_view m_test_meas;
+    const edm::measurement_collection<default_algebra>::const_view m_test_meas;
     /// The reference object
     const edm::track_state<T> m_ref;
     /// The uncertainty

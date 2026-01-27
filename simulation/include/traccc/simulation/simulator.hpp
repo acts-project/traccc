@@ -60,7 +60,7 @@ struct simulator {
                             detray::random_scatterer<algebra_type>,
                             detray::parameter_resetter<algebra_type>, writer_t>;
 
-    using navigator_type = detray::navigator<detector_t>;
+    using navigator_type = detray::caching_navigator<detector_t>;
     using stepper_type = detray::rk_stepper<
         typename bfield_type::view_t, algebra_type,
         detray::constrained_step<detray::dscalar<algebra_type>>>;
@@ -82,6 +82,15 @@ struct simulator {
 
         m_cfg.ptc_type = ptc_type;
         m_track_generator->config().charge(ptc_type.charge());
+
+        // Turn off tracking features
+        m_cfg.propagation.stepping.do_covariance_transport = false;
+        m_cfg.propagation.stepping.use_eloss_gradient = false;
+        m_cfg.propagation.stepping.use_field_gradient = false;
+        m_cfg.propagation.navigation.estimate_scattering_noise = false;
+
+        m_resetter = typename detray::parameter_resetter<algebra_type>::state{
+            m_cfg.propagation};
     }
 
     config& get_config() { return m_cfg; }
@@ -109,7 +118,8 @@ struct simulator {
             writer_state.set_seed(event_id);
 
             auto actor_states =
-                detray::tie(m_aborter_state, m_scatterer, writer_state);
+                detray::tie(m_aborter_state, m_transporter_state, m_scatterer,
+                            m_resetter, writer_state);
 
             for (auto track : *m_track_generator.get()) {
 
@@ -148,7 +158,10 @@ struct simulator {
 
     /// Actor states
     typename detray::momentum_aborter<scalar_type>::state m_aborter_state{};
+    typename detray::parameter_transporter<algebra_type>::state
+        m_transporter_state{};
     typename detray::random_scatterer<algebra_type>::state m_scatterer{};
+    typename detray::parameter_resetter<algebra_type>::state m_resetter{};
 };
 
 }  // namespace traccc

@@ -23,8 +23,7 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/track_candidate_collection.hpp"
-#include "traccc/edm/track_candidate_container.hpp"
+#include "traccc/edm/track_container.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/messaging.hpp"
 
@@ -46,8 +45,8 @@ namespace traccc::legacy {
 ///     shared hits / hits).
 ///  4) Back to square 1.
 class greedy_ambiguity_resolution_algorithm
-    : public algorithm<edm::track_candidate_collection<default_algebra>::host(
-          const edm::track_candidate_container<default_algebra>::host&)>,
+    : public algorithm<edm::track_container<default_algebra>::host(
+          const edm::track_container<default_algebra>::host&)>,
       public messaging {
 
     public:
@@ -108,9 +107,8 @@ class greedy_ambiguity_resolution_algorithm
     ///
     /// @param track_states the container of the fitted track parameters
     /// @return the container without ambiguous tracks
-    output_type operator()(
-        const edm::track_candidate_container<default_algebra>::host&
-            track_states) const override;
+    output_type operator()(const edm::track_container<default_algebra>::host&
+                               tracks) const override;
 
     /// Get configuration
     config_t& get_config() { return _config; }
@@ -120,13 +118,12 @@ class greedy_ambiguity_resolution_algorithm
     /// information that will later be used to accelerate the ambiguity
     /// resolution.
     ///
-    /// @param track_states The input track container (output of the fitting
-    /// algorithm).
+    /// @param tracks The input track container
     /// @param state An empty state object which is expected to be default
     /// constructed.
-    void compute_initial_state(const edm::track_candidate_container<
-                                   default_algebra>::host& track_states,
-                               state_t& state) const;
+    void compute_initial_state(
+        const edm::track_container<default_algebra>::host& tracks,
+        state_t& state) const;
 
     /// Updates the state iteratively by evicting one track after the other
     /// until the final state conditions are met.

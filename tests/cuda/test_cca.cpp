@@ -26,9 +26,11 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
     return [cfg](const traccc::edm::silicon_cell_collection::host& cells,
                  const traccc::silicon_detector_description::host& dd)
                -> std::pair<std::map<traccc::geometry_id,
-                                     vecmem::vector<traccc::measurement>>,
+                                     traccc::edm::measurement_collection<
+                                         traccc::default_algebra>::host>,
                             traccc::edm::silicon_cluster_collection::host> {
-        std::map<traccc::geometry_id, vecmem::vector<traccc::measurement>>
+        std::map<traccc::geometry_id, traccc::edm::measurement_collection<
+                                          traccc::default_algebra>::host>
             geom_to_meas_map;
 
         traccc::cuda::stream stream;
@@ -59,15 +61,23 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
         auto [measurements_buffer, cluster_buffer] =
             cc(cells_buffer, dd_buffer,
                traccc::device::clustering_keep_disjoint_set{});
-        traccc::measurement_collection_types::host measurements{&host_mr};
+        traccc::edm::measurement_collection<traccc::default_algebra>::host
+            measurements{host_mr};
         copy(measurements_buffer, measurements)->wait();
 
         traccc::edm::silicon_cluster_collection::host clusters{host_mr};
         copy(cluster_buffer, clusters)->wait();
 
         for (std::size_t i = 0; i < measurements.size(); i++) {
-            geom_to_meas_map[measurements.at(i).surface_link.value()].push_back(
-                measurements.at(i));
+            if (geom_to_meas_map.contains(
+                    measurements.at(i).surface_link().value()) == false) {
+                geom_to_meas_map.insert(
+                    {measurements.at(i).surface_link().value(),
+                     traccc::edm::measurement_collection<
+                         traccc::default_algebra>::host{host_mr}});
+            }
+            geom_to_meas_map.at(measurements.at(i).surface_link().value())
+                .push_back(measurements.at(i));
         }
 
         return {std::move(geom_to_meas_map), std::move(clusters)};

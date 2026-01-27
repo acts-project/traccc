@@ -11,7 +11,8 @@
 #include "traccc/utils/particle.hpp"
 
 // Detray include(s).
-#include <detray/navigation/navigator.hpp>
+#include <detray/definitions/navigation.hpp>
+#include <detray/geometry/tracking_surface.hpp>
 #include <detray/propagator/actors/pointwise_material_interactor.hpp>
 
 namespace traccc::device {
@@ -37,7 +38,7 @@ TRACCC_HOST_DEVICE inline void apply_interaction(
         return;
     }
 
-    auto& bound_param = params.at(globalIndex);
+    bound_track_parameters<>& bound_param = params.at(globalIndex);
 
     if (const detray::tracking_surface sf{det, bound_param.surface_link()};
         params_liveness.at(globalIndex) != 0u && sf.has_material()) {

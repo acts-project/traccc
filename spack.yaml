@@ -15,11 +15,9 @@ spack:
     - "root cxxstd=20"
     # General dependencies
     - "intel-oneapi-tbb@2021.12.0"
-    - "kokkos"
     - "alpaka"
     - "boost@1.85.0: +log+program_options"
     - "indicators"
-    - "benchmark ~performance_counters"
     # SYCL dependencies
     - "intel-oneapi-dpl"
     # Examples and test dependencies

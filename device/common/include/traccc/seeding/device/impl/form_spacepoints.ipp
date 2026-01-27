@@ -18,12 +18,13 @@ namespace traccc::device {
 template <typename detector_t>
 TRACCC_HOST_DEVICE inline void form_spacepoints(
     const global_index_t globalIndex, typename detector_t::view det_view,
-    const measurement_collection_types::const_view& measurements_view,
+    const edm::measurement_collection<default_algebra>::const_view&
+        measurements_view,
     edm::spacepoint_collection::view spacepoints_view) {
 
     // Set up the input container(s).
-    const measurement_collection_types::const_device measurements(
-        measurements_view);
+    const edm::measurement_collection<default_algebra>::const_device
+        measurements(measurements_view);
 
     // Check if anything needs to be done
     if (globalIndex >= measurements.size()) {
@@ -36,7 +37,7 @@ TRACCC_HOST_DEVICE inline void form_spacepoints(
     // Set up the output container(s).
     edm::spacepoint_collection::device spacepoints(spacepoints_view);
 
-    const measurement& meas = measurements.at(globalIndex);
+    const edm::measurement meas = measurements.at(globalIndex);
 
     // Fill the spacepoint using the common function.
     if (details::is_valid_measurement(meas)) {

@@ -162,9 +162,14 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
         // Truth Track Candidates
         traccc::event_data evt_data(path, i_evt, host_mr);
 
-        traccc::edm::track_candidate_container<traccc::default_algebra>::host
+        traccc::edm::measurement_collection<traccc::default_algebra>::host
+            truth_measurements{host_mr};
+        traccc::edm::track_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
-        evt_data.generate_truth_candidates(truth_track_candidates, sg, host_mr);
+        evt_data.generate_truth_candidates(truth_track_candidates,
+                                           truth_measurements, sg, host_mr);
+        truth_track_candidates.measurements =
+            vecmem::get_data(truth_measurements);
 
         ASSERT_EQ(truth_track_candidates.tracks.size(), n_truth_tracks);
 
@@ -183,34 +188,36 @@ TEST_P(CudaCkfCombinatoricsTelescopeTests, Run) {
             ->wait();
 
         // Read measurements
-        traccc::measurement_collection_types::host measurements_per_event{
-            &host_mr};
+        traccc::edm::measurement_collection<traccc::default_algebra>::host
+            measurements_per_event{host_mr};
         traccc::io::read_measurements(measurements_per_event, i_evt, path);
 
-        traccc::measurement_collection_types::buffer measurements_buffer(
-            static_cast<unsigned int>(measurements_per_event.size()), mr.main);
+        traccc::edm::measurement_collection<traccc::default_algebra>::buffer
+            measurements_buffer(
+                static_cast<unsigned int>(measurements_per_event.size()),
+                mr.main);
         copy.setup(measurements_buffer)->wait();
         copy(vecmem::get_data(measurements_per_event), measurements_buffer)
             ->wait();
 
         // Run device finding
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
+        traccc::edm::track_container<traccc::default_algebra>::buffer
             track_candidates_cuda_buffer = device_finding(
                 detector_buffer, field, measurements_buffer, seeds_buffer);
 
         // Run device finding (Limit)
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
+        traccc::edm::track_container<traccc::default_algebra>::buffer
             track_candidates_limit_cuda_buffer = device_finding_limit(
                 detector_buffer, field, measurements_buffer, seeds_buffer);
 
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+        traccc::edm::track_collection<traccc::default_algebra>::host
             track_candidates_cuda{host_mr},
             track_candidates_limit_cuda{host_mr};
-        copy(track_candidates_cuda_buffer, track_candidates_cuda,
+        copy(track_candidates_cuda_buffer.tracks, track_candidates_cuda,
              vecmem::copy::type::device_to_host)
             ->wait();
-        copy(track_candidates_limit_cuda_buffer, track_candidates_limit_cuda,
-             vecmem::copy::type::device_to_host)
+        copy(track_candidates_limit_cuda_buffer.tracks,
+             track_candidates_limit_cuda, vecmem::copy::type::device_to_host)
             ->wait();
 
         // Make sure that the number of found tracks = n_track ^ (n_planes +

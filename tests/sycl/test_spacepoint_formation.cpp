@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -24,16 +24,16 @@ using namespace traccc;
 TEST(SYCLSpacepointFormation, sycl) {
 
     // Creating SYCL queue object
-    vecmem::sycl::queue_wrapper queue;
-    std::cout << "Running on device: " << queue.device_name() << "\n";
+    vecmem::sycl::queue_wrapper vecmem_queue;
+    traccc::sycl::queue_wrapper traccc_queue(vecmem_queue.queue());
+    std::cout << "Running on device: " << vecmem_queue.device_name() << "\n";
 
     // Memory resource used by the EDM.
-    vecmem::sycl::shared_memory_resource shared_mr{queue};
+    vecmem::sycl::shared_memory_resource shared_mr{vecmem_queue};
     traccc::memory_resource mr{shared_mr};
 
     // Copy object
-    vecmem::sycl::copy copy{queue};
-
+    vecmem::sycl::copy copy{vecmem_queue};
     // Use rectangle surfaces
     detray::mask<detray::rectangle2D, traccc::default_algebra> rectangle{
         0u, 10000.f * traccc::unit<scalar>::mm,
@@ -65,17 +65,33 @@ TEST(SYCLSpacepointFormation, sycl) {
                                           copy);
 
     // Prepare measurement collection
-    measurement_collection_types::host measurements{&shared_mr};
+    edm::measurement_collection<default_algebra>::host measurements{shared_mr};
 
     // Add a measurement at the first plane
-    measurements.push_back({{7.f, 2.f}, {0.f, 0.f}, surfaces[0].barcode()});
+    measurements.push_back({{7.f, 2.f},
+                            {0.f, 0.f},
+                            2,
+                            0.f,
+                            0.f,
+                            0u,
+                            surfaces[0].barcode(),
+                            {1u, 1u},
+                            0u});
 
     // Add a measurement at the last plane
-    measurements.push_back({{10.f, 15.f}, {0.f, 0.f}, surfaces[8u].barcode()});
+    measurements.push_back({{10.f, 15.f},
+                            {0.f, 0.f},
+                            2u,
+                            0.f,
+                            0.f,
+                            0u,
+                            surfaces[8u].barcode(),
+                            {1u, 1u},
+                            1u});
 
     // Run spacepoint formation
     traccc::sycl::silicon_pixel_spacepoint_formation_algorithm sp_formation(
-        mr, copy, queue.queue());
+        mr, copy, traccc_queue);
     auto spacepoints_buffer =
         sp_formation(detector_buffer, vecmem::get_data(measurements));
 

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2025 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -9,6 +9,7 @@
 
 // Project include(s).
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/detector_type_list.hpp"
 #include "traccc/geometry/move_only_any.hpp"
 
 // Detray include(s).

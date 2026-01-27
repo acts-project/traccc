@@ -8,9 +8,11 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/utils/logging.hpp"
 #include "traccc/utils/particle.hpp"
 
 // Detray include(s).
+#include <detray/plugins/algebra/array_definitions.hpp>
 #include <detray/propagator/constrained_step.hpp>
 #include <detray/utils/tuple_helpers.hpp>
 
@@ -36,7 +38,7 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     vecmem::device_vector<const candidate_link> links(payload.links_view);
 
     const unsigned int link_idx = payload.prev_links_idx + param_id;
-    const auto& link = links.at(link_idx);
+    const candidate_link link = links.at(link_idx);
     assert(link.step == payload.step);
     const unsigned int n_cands = link.step + 1 - link.n_skipped;
 
@@ -62,7 +64,9 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     const bound_track_parameters<> in_par = params.at(param_id);
 
     // Create propagator
-    propagator_t propagator(cfg.propagation);
+    detray::propagation::config prop_cfg{cfg.propagation};
+    prop_cfg.navigation.estimate_scattering_noise = false;
+    propagator_t propagator(prop_cfg);
 
     // Create propagator state
     typename propagator_t::state propagation(in_par, payload.field_data, det);
@@ -80,6 +84,8 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     // Pathlimit aborter
     typename detray::detail::tuple_element<0, actor_tuple_type>::type::state
         s0{};
+    typename detray::detail::tuple_element<1, actor_tuple_type>::type::state
+        s1{};
     // CKF-interactor
     typename detray::detail::tuple_element<3, actor_tuple_type>::type::state
         s3{};
@@ -87,21 +93,34 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     typename detray::detail::tuple_element<2, actor_tuple_type>::type::state s2{
         s3};
     // Parameter resetter
-    // typename detray::detail::tuple_element<4, actor_tuple_type>::type::state
-    // s4{
-    //    cfg.propagation};
+    typename detray::detail::tuple_element<4, actor_tuple_type>::type::state s4{
+        prop_cfg};
     // Momentum aborter
     typename detray::detail::tuple_element<5, actor_tuple_type>::type::state s5;
     // CKF aborter
     typename detray::detail::tuple_element<6, actor_tuple_type>::type::state s6;
 
-    s6.min_step_length = cfg.min_step_length_for_next_surface;
-    s6.max_count = cfg.max_step_counts_for_next_surface;
+    /*
+     * If we are running the MBF smoother, we need to accumulate the Jacobians
+     * between the two sensitives multiplicatively. To this end, we ask the
+     * parameter transporter to multiply the Jacobians into this matrix, which
+     * is set to the multiplicative identity.
+     */
+    if (cfg.run_mbf_smoother) {
+        assert(payload.tmp_jacobian_ptr != nullptr);
+
+        payload.tmp_jacobian_ptr[param_id] = matrix::identity<
+            bound_matrix<typename propagator_t::detector_type::algebra_type>>();
+        s1._full_jacobian_ptr = &payload.tmp_jacobian_ptr[param_id];
+    }
+
     s5.min_pT(static_cast<scalar_t>(cfg.min_pT));
     s5.min_p(static_cast<scalar_t>(cfg.min_p));
+    s6.min_step_length = cfg.min_step_length_for_next_surface;
+    s6.max_count = cfg.max_step_counts_for_next_surface;
 
     // Propagate to the next surface
-    propagator.propagate(propagation, detray::tie(s0, s2, s3, s5, s6));
+    propagator.propagate(propagation, detray::tie(s0, s1, s2, s3, s4, s5, s6));
 
     // If a surface found, add the parameter for the next step
     if (s6.success) {
@@ -110,13 +129,32 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
 
         params[param_id] = propagation._stepping.bound_params();
         params_liveness[param_id] = 1u;
+
+        const scalar theta = params[param_id].theta();
+        if (theta <= 0.f || theta >= 2.f * constant<traccc::scalar>::pi) {
+            TRACCC_ERROR_DEVICE("Theta is zero after propagation");
+            params_liveness[param_id] = 0u;
+        }
+
+        if (!std::isfinite(params[param_id].phi())) {
+            TRACCC_ERROR_DEVICE(
+                "Phi is infinite after propagation (Matrix inversion)");
+            params_liveness[param_id] = 0u;
+        }
+
+        if (math::fabs(params[param_id].qop()) == 0.f) {
+            TRACCC_ERROR_DEVICE("q/p is zero after propagation");
+            params_liveness[param_id] = 0u;
+        }
     } else {
         params_liveness[param_id] = 0u;
+    }
 
-        if (n_cands >= cfg.min_track_candidates_per_track) {
-            auto tip_pos = tips.push_back(link_idx);
-            tip_lengths.at(tip_pos) = n_cands;
-        }
+    if (params_liveness[param_id] == 0 &&
+        n_cands >= cfg.min_track_candidates_per_track) {
+        TRACCC_VERBOSE_DEVICE("Create tip: No next sensitive found");
+        auto tip_pos = tips.push_back(link_idx);
+        tip_lengths.at(tip_pos) = n_cands;
     }
 }
 

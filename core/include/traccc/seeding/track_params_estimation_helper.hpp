@@ -9,6 +9,7 @@
 
 // Library include(s).
 #include "traccc/definitions/math.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/seed_collection.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/edm/track_parameters.hpp"
@@ -45,7 +46,8 @@ inline TRACCC_HOST_DEVICE vector2 uv_transform(const scalar& x,
 template <typename T>
 inline TRACCC_HOST_DEVICE void seed_to_bound_param_vector(
     bound_track_parameters<>& params,
-    const measurement_collection_types::const_device& measurements,
+    const edm::measurement_collection<default_algebra>::const_device&
+        measurements,
     const edm::spacepoint_collection::const_device& spacepoints,
     const edm::seed<T>& seed, const vector3& bfield) {
 
@@ -108,10 +110,11 @@ inline TRACCC_HOST_DEVICE void seed_to_bound_param_vector(
     // The measured loc0 and loc1
     assert(spB.measurement_index_2() ==
            edm::spacepoint_collection::device::INVALID_MEASUREMENT_INDEX);
-    const measurement& meas_for_spB =
+    const edm::measurement meas_for_spB =
         measurements.at(spB.measurement_index_1());
-    params.set_surface_link(meas_for_spB.surface_link);
-    params.set_bound_local(meas_for_spB.local);
+    params.set_surface_link(meas_for_spB.surface_link());
+    params.set_bound_local(
+        {meas_for_spB.local_position()[0], meas_for_spB.local_position()[1]});
 
     // The estimated q/pt in [GeV/c]^-1 (note that the pt is the
     // projection of momentum on the transverse plane of the new frame)

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -9,168 +9,135 @@
 #include "../sanity/contiguous_on.hpp"
 #include "../sanity/ordered_on.hpp"
 #include "../utils/barrier.hpp"
+#include "../utils/calculate1DimNdRange.hpp"
 #include "../utils/get_queue.hpp"
 #include "../utils/thread_id.hpp"
-#include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
-#include "traccc/utils/projections.hpp"
-#include "traccc/utils/relations.hpp"
 
 // Project include(s)
 #include "traccc/clusterization/device/ccl_kernel.hpp"
+#include "traccc/clusterization/device/reify_cluster_data.hpp"
+#include "traccc/utils/projections.hpp"
+#include "traccc/utils/relations.hpp"
 
 // Vecmem include(s).
 #include <vecmem/utils/sycl/local_accessor.hpp>
 
 namespace traccc::sycl {
-
 namespace kernels {
 
 /// Class identifying the kernel running @c traccc::device::ccl_kernel
 class ccl_kernel;
+/// Class identifying the kernel running @c traccc::device::reify_cluster_data
+class reify_cluster_data;
 
 }  // namespace kernels
 
 clusterization_algorithm::clusterization_algorithm(
     const traccc::memory_resource& mr, vecmem::copy& copy, queue_wrapper& queue,
     const config_type& config, std::unique_ptr<const Logger> logger)
-    : messaging(std::move(logger)),
-      m_mr(mr),
-      m_queue(queue),
-      m_copy(copy),
-      m_config(config),
-      m_f_backup(m_config.backup_size(), m_mr.main),
-      m_gf_backup(m_config.backup_size(), m_mr.main),
-      m_adjc_backup(m_config.backup_size(), m_mr.main),
-      m_adjv_backup(m_config.backup_size() * 8, m_mr.main),
-      m_backup_mutex(vecmem::make_unique_alloc<unsigned int>(m_mr.main)) {
-    m_copy.get().setup(m_f_backup)->wait();
-    m_copy.get().setup(m_gf_backup)->wait();
-    m_copy.get().setup(m_adjc_backup)->wait();
-    m_copy.get().setup(m_adjv_backup)->wait();
+    : device::clusterization_algorithm(mr, copy, config, std::move(logger)),
+      sycl::algorithm_base(queue) {}
 
-    details::get_queue(m_queue)
-        .memset(
-            m_backup_mutex.get(), 0,
-            sizeof(
-                std::remove_extent_t<decltype(m_backup_mutex)::element_type>))
-        .wait_and_throw();
+bool clusterization_algorithm::input_is_valid(
+    const edm::silicon_cell_collection::const_view& cells) const {
+
+    return (is_contiguous_on<edm::silicon_cell_collection::const_device>(
+                cell_module_projection(), mr().main, copy(),
+                details::get_queue(queue()), cells) &&
+            is_ordered_on<edm::silicon_cell_collection::const_device>(
+                channel0_major_cell_order_relation(), mr().main, copy(),
+                details::get_queue(queue()), cells));
 }
 
-clusterization_algorithm::output_type clusterization_algorithm::operator()(
-    const edm::silicon_cell_collection::const_view& cells_view,
-    const silicon_detector_description::const_view& det_descr) const {
-
-    // Get the number of cells
-    const edm::silicon_cell_collection::view::size_type num_cells =
-        m_copy.get().get_size(cells_view);
-
-    // Create the result object, overestimating the number of measurements.
-    measurement_collection_types::buffer measurements{
-        num_cells, m_mr.main, vecmem::data::buffer_type::resizable};
-    vecmem::copy::event_type measurements_setup_event =
-        m_copy.get().setup(measurements);
-    measurement_collection_types::view measurements_view(measurements);
-
-    // If there are no cells, return right away.
-    if (num_cells == 0) {
-        return measurements;
-    }
-
-    assert(is_contiguous_on<edm::silicon_cell_collection::const_device>(
-        cell_module_projection(), m_mr.main, m_copy,
-        details::get_queue(m_queue), cells_view));
-    assert(is_ordered_on<edm::silicon_cell_collection::const_device>(
-        channel0_major_cell_order_relation(), m_mr.main, m_copy,
-        details::get_queue(m_queue), cells_view));
-
-    std::size_t num_blocks =
-        (num_cells + m_config.target_partition_size() - 1) /
-        m_config.target_partition_size();
-
-    ::sycl::nd_range cclKernelRange(
-        ::sycl::range<1>(num_blocks * m_config.threads_per_partition),
-        ::sycl::range<1>(m_config.threads_per_partition));
+void clusterization_algorithm::ccl_kernel(
+    const ccl_kernel_payload& payload) const {
 
     // Check if device is capable of allocating sufficient local memory
     assert(sizeof(device::details::index_t) * 2 *
-                   m_config.max_partition_size() +
+                   payload.config.max_partition_size() +
                3 * sizeof(std::size_t) <
-           details::get_queue(m_queue)
+           details::get_queue(queue())
                .get_device()
                .get_info<::sycl::info::device::local_mem_size>());
 
-    // Create buffer for linking cells to their measurements.
-    //
-    // @todo Construct cell clusters on demand in a member function for
-    // debugging.
-    //
-    vecmem::data::vector_buffer<unsigned int> cell_links(num_cells, m_mr.main);
-    vecmem::copy::event_type cell_links_setup_event =
-        m_copy.get().setup(cell_links);
-    vecmem::data::vector_view<unsigned int> cell_links_view(cell_links);
-
-    using vector_size_t =
-        vecmem::data::vector_view<device::details::index_t>::size_type;
-
-    // Ensure that the chosen maximum cell count is compatible with the maximum
-    // stack size.
-    assert(m_config.max_cells_per_thread <=
-           device::details::CELLS_PER_THREAD_STACK_LIMIT);
-
-    // Run ccl kernel
-    measurements_setup_event->wait();
-    cell_links_setup_event->wait();
-    details::get_queue(m_queue)
+    std::size_t num_blocks =
+        (payload.n_cells + payload.config.target_partition_size() - 1) /
+        payload.config.target_partition_size();
+    const ::sycl::nd_range cclKernelRange(
+        ::sycl::range<1>(num_blocks * payload.config.threads_per_partition),
+        ::sycl::range<1>(payload.config.threads_per_partition));
+    details::get_queue(queue())
         .submit([&](::sycl::handler& h) {
             // Allocate shared memory for the kernel.
             vecmem::sycl::local_accessor<std::size_t> shared_uint(3, h);
             vecmem::sycl::local_accessor<device::details::index_t> shared_idx(
-                2 * m_config.max_partition_size(), h);
+                2 * payload.config.max_partition_size(), h);
 
             // Launch the kernel.
             h.parallel_for<kernels::ccl_kernel>(
                 cclKernelRange,
-                [shared_uint, shared_idx, cells_view, det_descr,
-                 measurements_view, cell_links_view,
-                 f_backup_view = vecmem::get_data(m_f_backup),
-                 gf_backup_view = vecmem::get_data(m_gf_backup),
-                 adjc_backup_view = vecmem::get_data(m_adjc_backup),
-                 adjv_backup_view = vecmem::get_data(m_adjv_backup),
-                 mutex_ptr = m_backup_mutex.get(),
-                 cfg = m_config](::sycl::nd_item<1> item) {
+                [shared_uint, shared_idx, cells = payload.cells,
+                 det_descr = payload.det_descr,
+                 measurements = payload.measurements,
+                 cell_links = payload.cell_links, f_backup = payload.f_backup,
+                 gf_backup = payload.gf_backup,
+                 adjc_backup = payload.adjc_backup,
+                 adjv_backup = payload.adjv_backup,
+                 backup_mutex = payload.backup_mutex, config = payload.config,
+                 disjoint_set = payload.disjoint_set,
+                 cluster_sizes =
+                     payload.cluster_sizes](::sycl::nd_item<1> item) {
                     // Construct more readable variable names.
+                    using vector_size_t = vecmem::data::vector_view<
+                        device::details::index_t>::size_type;
                     vecmem::data::vector_view<device::details::index_t> f_view{
-                        static_cast<vector_size_t>(cfg.max_partition_size()),
+                        static_cast<vector_size_t>(config.max_partition_size()),
                         &shared_idx[0]};
                     vecmem::data::vector_view<device::details::index_t> gf_view{
-                        static_cast<vector_size_t>(cfg.max_partition_size()),
-                        &shared_idx[cfg.max_partition_size()]};
+                        static_cast<vector_size_t>(config.max_partition_size()),
+                        &shared_idx[config.max_partition_size()]};
                     std::size_t& partition_start = shared_uint[0];
                     std::size_t& partition_end = shared_uint[1];
                     std::size_t& outi = shared_uint[2];
 
                     // Mutex for scratch space
-                    vecmem::device_atomic_ref<unsigned int> backup_mutex(
-                        *mutex_ptr);
+                    vecmem::device_atomic_ref<unsigned int> mutex(
+                        *backup_mutex);
 
                     // Barrier used in the algorithm.
                     const details::barrier barrier{item};
                     const details::thread_id thread_id{item};
 
                     // Run the algorithm for this thread.
-                    device::ccl_kernel(
-                        cfg, thread_id, cells_view, det_descr, partition_start,
-                        partition_end, outi, f_view, gf_view, f_backup_view,
-                        gf_backup_view, adjc_backup_view, adjv_backup_view,
-                        backup_mutex, {0u, nullptr}, {0u, nullptr}, barrier,
-                        measurements_view, cell_links_view);
+                    device::ccl_kernel(config, thread_id, cells, det_descr,
+                                       partition_start, partition_end, outi,
+                                       f_view, gf_view, f_backup, gf_backup,
+                                       adjc_backup, adjv_backup, mutex,
+                                       disjoint_set, cluster_sizes, barrier,
+                                       measurements, cell_links);
                 });
         })
         .wait_and_throw();
+}
 
-    // Return the reconstructed measurements.
-    return measurements;
+void clusterization_algorithm::cluster_maker_kernel(
+    unsigned int num_cells,
+    const vecmem::data::vector_view<unsigned int>& disjoint_set,
+    edm::silicon_cluster_collection::view& cluster_data) const {
+
+    const ::sycl::nd_range range =
+        details::calculate1DimNdRange(num_cells, warp_size() * 8u);
+    details::get_queue(queue())
+        .submit([&](::sycl::handler& h) {
+            h.parallel_for<kernels::reify_cluster_data>(
+                range, [disjoint_set, cluster_data](::sycl::nd_item<1> item) {
+                    device::reify_cluster_data(
+                        static_cast<unsigned int>(item.get_global_linear_id()),
+                        disjoint_set, cluster_data);
+                });
+        })
+        .wait_and_throw();
 }
 
 }  // namespace traccc::sycl

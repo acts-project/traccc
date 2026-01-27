@@ -8,6 +8,7 @@
 // core
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/host_detector.hpp"
+#include "traccc/seeding/detail/track_params_estimation_config.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/propagation.hpp"
 
@@ -148,7 +149,9 @@ int seq_run(const traccc::opts::input_data& input_opts,
     traccc::host::seeding_algorithm sa(
         seedfinder_config, spacepoint_grid_config, seedfilter_config, host_mr,
         logger().clone("SeedingAlg"));
-    traccc::host::track_params_estimation tp(host_mr,
+    traccc::track_params_estimation_config track_params_estimation_config;
+    traccc::host::track_params_estimation tp(track_params_estimation_config,
+                                             host_mr,
                                              logger().clone("TrackParEstAlg"));
 
     finding_algorithm finding_alg(finding_cfg, host_mr,
@@ -189,7 +192,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
         traccc::host::sparse_ccl_algorithm::output_type clusters_per_event{
             host_mr};
         traccc::host::measurement_creation_algorithm::output_type
-            measurements_per_event{&host_mr};
+            measurements_per_event{host_mr};
         spacepoint_formation_algorithm::output_type spacepoints_per_event{
             host_mr};
         traccc::host::seeding_algorithm::output_type seeds{host_mr};
@@ -279,28 +282,28 @@ int seq_run(const traccc::opts::input_data& input_opts,
                                 vecmem::get_data(params));
             }
             if (output_opts.directory != "") {
-                traccc::io::write(event, output_opts.directory,
-                                  output_opts.format,
-                                  vecmem::get_data(track_candidates),
-                                  vecmem::get_data(measurements_per_event),
-                                  polymorphic_detector);
+                traccc::io::write(
+                    event, output_opts.directory, output_opts.format,
+                    traccc::edm::track_container<
+                        traccc::default_algebra>::const_data(track_candidates),
+                    polymorphic_detector);
             }
 
             {
                 // Perform ambiguity resolution only if asked for.
                 traccc::performance::timer timer{"Track ambiguity resolution",
                                                  elapsedTimes};
-                resolved_track_candidates =
-                    resolution_alg({vecmem::get_data(track_candidates),
-                                    vecmem::get_data(measurements_per_event)});
+                resolved_track_candidates = resolution_alg(
+                    traccc::edm::track_container<
+                        traccc::default_algebra>::const_data(track_candidates));
             }
 
             {
                 traccc::performance::timer timer{"Track fitting", elapsedTimes};
-                track_states =
-                    fitting_alg(polymorphic_detector, field,
-                                {vecmem::get_data(resolved_track_candidates),
-                                 vecmem::get_data(measurements_per_event)});
+                track_states = fitting_alg(
+                    polymorphic_detector, field,
+                    traccc::edm::track_container<traccc::default_algebra>::
+                        const_data(resolved_track_candidates));
             }
 
             /*----------------------------
@@ -311,8 +314,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
             n_measurements += measurements_per_event.size();
             n_spacepoints += spacepoints_per_event.size();
             n_seeds += seeds.size();
-            n_found_tracks += track_candidates.size();
-            n_ambiguity_free_tracks += resolved_track_candidates.size();
+            n_found_tracks += track_candidates.tracks.size();
+            n_ambiguity_free_tracks += resolved_track_candidates.tracks.size();
             n_fitted_tracks += track_states.tracks.size();
 
         }  // Stop measuring Wall time.
@@ -335,12 +338,12 @@ int seq_run(const traccc::opts::input_data& input_opts,
                 vecmem::get_data(spacepoints_per_event),
                 vecmem::get_data(measurements_per_event), evt_data);
             find_performance_writer.write(
-                {vecmem::get_data(track_candidates),
-                 vecmem::get_data(measurements_per_event)},
+                traccc::edm::track_container<
+                    traccc::default_algebra>::const_data(track_candidates),
                 evt_data);
             ar_performance_writer.write(
-                {vecmem::get_data(resolved_track_candidates),
-                 vecmem::get_data(measurements_per_event)},
+                traccc::edm::track_container<traccc::default_algebra>::
+                    const_data(resolved_track_candidates),
                 evt_data);
 
             for (unsigned int i = 0; i < track_states.tracks.size(); i++) {

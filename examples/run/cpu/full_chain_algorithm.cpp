@@ -15,6 +15,7 @@ full_chain_algorithm::full_chain_algorithm(
     const seedfinder_config& finder_config,
     const spacepoint_grid_config& grid_config,
     const seedfilter_config& filter_config,
+    const track_params_estimation_config& track_params_estimation_config,
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
     const silicon_detector_description::host& det_descr,
@@ -31,7 +32,7 @@ full_chain_algorithm::full_chain_algorithm(
       m_spacepoint_formation(mr, logger->cloneWithSuffix("SpFormationAlg")),
       m_seeding(finder_config, grid_config, filter_config, mr,
                 logger->cloneWithSuffix("SeedingAlg")),
-      m_track_parameter_estimation(mr,
+      m_track_parameter_estimation(track_params_estimation_config, mr,
                                    logger->cloneWithSuffix("TrackParamEstAlg")),
       m_finding(finding_config, mr, logger->cloneWithSuffix("TrackFindingAlg")),
       m_fitting(fitting_config, mr, *m_copy,
@@ -39,6 +40,7 @@ full_chain_algorithm::full_chain_algorithm(
       m_finder_config(finder_config),
       m_grid_config(grid_config),
       m_filter_config(filter_config),
+      m_track_params_estimation_config(track_params_estimation_config),
       m_finding_config(finding_config),
       m_fitting_config(fitting_config) {}
 
@@ -58,8 +60,8 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     if (m_detector != nullptr) {
 
         // Run the seed-finding.
-        const measurement_collection_types::const_view measurements_view =
-            vecmem::get_data(measurements);
+        const edm::measurement_collection<default_algebra>::const_data
+            measurements_view = vecmem::get_data(measurements);
         const spacepoint_formation_algorithm::output_type spacepoints =
             m_spacepoint_formation(*m_detector, measurements_view);
         const edm::spacepoint_collection::const_data spacepoints_data =
@@ -79,9 +81,9 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
             *m_detector, m_field, measurements_view, track_params_view);
 
         // Run the track fitting, and return its results.
-        return m_fitting(
-                   *m_detector, m_field,
-                   {vecmem::get_data(track_candidates), measurements_view})
+        return m_fitting(*m_detector, m_field,
+                         edm::track_container<default_algebra>::const_data(
+                             track_candidates))
             .tracks;
     }
     // If not, just return an empty object.
@@ -108,8 +110,8 @@ bound_track_parameters_collection_types::host full_chain_algorithm::seeding(
     if (m_detector != nullptr) {
 
         // Run the seed-finding.
-        const measurement_collection_types::const_view measurements_view =
-            vecmem::get_data(measurements);
+        const edm::measurement_collection<default_algebra>::const_data
+            measurements_view = vecmem::get_data(measurements);
         const spacepoint_formation_algorithm::output_type spacepoints =
             m_spacepoint_formation(*m_detector, measurements_view);
         const edm::spacepoint_collection::const_data spacepoints_data =

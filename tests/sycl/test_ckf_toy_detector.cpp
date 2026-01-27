@@ -141,6 +141,7 @@ TEST_P(CkfToyDetectorTests, Run) {
     cfg.max_num_branches_per_surface = 2;
     cfg.chi2_max = 10.f;
     cfg.propagation.navigation.search_window = search_window;
+    cfg.run_mbf_smoother = false;
 
     // Finding algorithm object
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(cfg,
@@ -156,9 +157,14 @@ TEST_P(CkfToyDetectorTests, Run) {
         // Truth Track Candidates
         traccc::event_data evt_data(path.native(), i_evt, host_mr);
 
-        traccc::edm::track_candidate_container<traccc::default_algebra>::host
+        traccc::edm::measurement_collection<traccc::default_algebra>::host
+            truth_measurements{host_mr};
+        traccc::edm::track_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
-        evt_data.generate_truth_candidates(truth_track_candidates, sg, host_mr);
+        evt_data.generate_truth_candidates(truth_track_candidates,
+                                           truth_measurements, sg, host_mr);
+        truth_track_candidates.measurements =
+            vecmem::get_data(truth_measurements);
 
         ASSERT_EQ(truth_track_candidates.tracks.size(), n_truth_tracks);
 
@@ -177,13 +183,15 @@ TEST_P(CkfToyDetectorTests, Run) {
             ->wait();
 
         // Read measurements
-        traccc::measurement_collection_types::host measurements_per_event{
-            &host_mr};
+        traccc::edm::measurement_collection<traccc::default_algebra>::host
+            measurements_per_event{host_mr};
         traccc::io::read_measurements(measurements_per_event, i_evt,
                                       path.native());
 
-        traccc::measurement_collection_types::buffer measurements_buffer(
-            static_cast<unsigned int>(measurements_per_event.size()), mr.main);
+        traccc::edm::measurement_collection<traccc::default_algebra>::buffer
+            measurements_buffer(
+                static_cast<unsigned int>(measurements_per_event.size()),
+                mr.main);
         copy.setup(measurements_buffer)->wait();
         copy(vecmem::get_data(measurements_per_event), measurements_buffer)
             ->wait();
@@ -194,36 +202,37 @@ TEST_P(CkfToyDetectorTests, Run) {
             vecmem::get_data(seeds));
 
         // Run device finding
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::buffer
-            track_candidates_sycl_buffer = device_finding(
-                detector_buffer, field, measurements_buffer, seeds_buffer);
+        auto track_candidates_sycl_buffer = device_finding(
+            detector_buffer, field, measurements_buffer, seeds_buffer);
 
-        traccc::edm::track_candidate_collection<traccc::default_algebra>::host
+        traccc::edm::track_collection<traccc::default_algebra>::host
             track_candidates_sycl{host_mr};
-        copy(track_candidates_sycl_buffer, track_candidates_sycl)->wait();
+        copy(track_candidates_sycl_buffer.tracks, track_candidates_sycl)
+            ->wait();
 
         // Simple check
         ASSERT_LE(static_cast<double>(std::llabs(
-                      static_cast<long>(track_candidates.size()) -
+                      static_cast<long>(track_candidates.tracks.size()) -
                       static_cast<long>(track_candidates_sycl.size()))) /
-                      static_cast<double>(track_candidates.size()),
+                      static_cast<double>(track_candidates.tracks.size()),
                   0.001f)
-            << "No. tracks (host): " << track_candidates.size() << "/"
+            << "No. tracks (host): " << track_candidates.tracks.size() << "/"
             << n_truth_tracks
             << "\nNo. tracks (device): " << track_candidates_sycl.size() << "/"
             << n_truth_tracks;
-        ASSERT_GE(track_candidates.size(), n_truth_tracks);
+        ASSERT_GE(track_candidates.tracks.size(), n_truth_tracks);
 
         // Make sure that the outputs from cpu and cuda CKF are equivalent
         unsigned int n_matches = 0u;
-        for (unsigned int i = 0u; i < track_candidates.size(); i++) {
+        for (unsigned int i = 0u; i < track_candidates.tracks.size(); i++) {
 
-            traccc::details::is_same_object<
-                traccc::edm::track_candidate_collection<
-                    traccc::default_algebra>::host::const_proxy_type>
-                iso{vecmem::get_data(measurements_per_event),
-                    vecmem::get_data(measurements_per_event),
-                    track_candidates.at(i)};
+            traccc::details::is_same_object<traccc::edm::track_collection<
+                traccc::default_algebra>::host::const_proxy_type>
+                iso{track_candidates.measurements,
+                    track_candidates.measurements,
+                    vecmem::get_data(track_candidates.states),
+                    vecmem::get_data(track_candidates.states),
+                    track_candidates.tracks.at(i)};
 
             for (unsigned int j = 0u; j < track_candidates_sycl.size(); j++) {
                 if (iso(track_candidates_sycl.at(j))) {
@@ -235,7 +244,7 @@ TEST_P(CkfToyDetectorTests, Run) {
 
         float matching_rate =
             float(n_matches) /
-            static_cast<float>(std::max(track_candidates.size(),
+            static_cast<float>(std::max(track_candidates.tracks.size(),
                                         track_candidates_sycl.size()));
         EXPECT_GE(matching_rate, 0.998f);
     }

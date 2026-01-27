@@ -12,8 +12,7 @@
 
 // Project include(s).
 #include "traccc/bfield/magnetic_field.hpp"
-#include "traccc/edm/track_candidate_container.hpp"
-#include "traccc/edm/track_fit_container.hpp"
+#include "traccc/edm/track_container.hpp"
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/detector_buffer.hpp"
@@ -31,16 +30,14 @@ namespace traccc::alpaka {
 
 /// Kalman filter based track fitting algorithm
 class kalman_fitting_algorithm
-    : public algorithm<edm::track_fit_container<default_algebra>::buffer(
+    : public algorithm<edm::track_container<default_algebra>::buffer(
           const detector_buffer&, const magnetic_field&,
-          const edm::track_candidate_container<default_algebra>::const_view&)>,
+          const edm::track_container<default_algebra>::const_view&)>,
       public messaging {
 
     public:
     /// Configuration type
     using config_type = fitting_config;
-    /// Output type
-    using output_type = edm::track_fit_container<default_algebra>::buffer;
 
     /// Constructor with the algorithm's configuration
     ///
@@ -65,7 +62,7 @@ class kalman_fitting_algorithm
     ///
     output_type operator()(
         const detector_buffer& det, const magnetic_field& bfield,
-        const edm::track_candidate_container<default_algebra>::const_view&
+        const edm::track_container<default_algebra>::const_view&
             track_candidates) const override;
 
     private:

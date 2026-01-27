@@ -7,7 +7,7 @@
 
 // Project include(s).
 #include "traccc/definitions/common.hpp"
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
@@ -45,7 +45,7 @@ TEST(seeding, case1) {
     traccc::host::seeding_algorithm sa(finder_config, grid_config,
                                        filter_config, host_mr);
 
-    measurement_collection_types::host measurements(&host_mr);
+    edm::measurement_collection<default_algebra>::host measurements(host_mr);
     edm::spacepoint_collection::host spacepoints{host_mr};
 
     // Spacepoints from 16.62 GeV muon
@@ -88,7 +88,9 @@ TEST(seeding, case1) {
     // The number of seeds should be eqaul to one
     ASSERT_EQ(seeds.size(), 1u);
 
-    traccc::host::track_params_estimation tp(host_mr);
+    traccc::track_params_estimation_config track_params_estimation_config;
+    traccc::host::track_params_estimation tp(track_params_estimation_config,
+                                             host_mr);
 
     auto bound_params =
         tp(vecmem::get_data(measurements), vecmem::get_data(spacepoints),
@@ -117,7 +119,7 @@ TEST(seeding, case2) {
     traccc::host::seeding_algorithm sa(finder_config, grid_config,
                                        filter_config, host_mr);
 
-    measurement_collection_types::host measurements(&host_mr);
+    edm::measurement_collection<default_algebra>::host measurements(host_mr);
     edm::spacepoint_collection::host spacepoints{host_mr};
 
     // Spacepoints from 1.85 GeV muon
@@ -160,7 +162,9 @@ TEST(seeding, case2) {
     // The number of seeds should be eqaul to one
     ASSERT_EQ(seeds.size(), 1u);
 
-    traccc::host::track_params_estimation tp(host_mr);
+    traccc::track_params_estimation_config track_params_estimation_config;
+    traccc::host::track_params_estimation tp(track_params_estimation_config,
+                                             host_mr);
 
     auto bound_params =
         tp(vecmem::get_data(measurements), vecmem::get_data(spacepoints),

@@ -9,7 +9,7 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
 
 namespace traccc::details {
@@ -17,7 +17,9 @@ namespace traccc::details {
 /// Function helping with checking a measurement obejct for spacepoint creation
 ///
 /// @param[in]  measurement The input measurement
-TRACCC_HOST_DEVICE inline bool is_valid_measurement(const measurement& meas);
+template <typename measurement_backend_t>
+TRACCC_HOST_DEVICE inline bool is_valid_measurement(
+    const edm::measurement<measurement_backend_t>& meas);
 
 /// Fill a spacepoint object with the information from a measurement
 ///
@@ -26,9 +28,11 @@ TRACCC_HOST_DEVICE inline bool is_valid_measurement(const measurement& meas);
 /// @param[in]  measurement The measurement to create the spacepoint out of
 /// @param[in]  gctx        The current geometry context
 ///
-template <typename soa_t, typename detector_t>
+template <typename spacepoint_backend_t, typename detector_t,
+          typename measurement_backend_t>
 TRACCC_HOST_DEVICE inline void fill_pixel_spacepoint(
-    edm::spacepoint<soa_t>& sp, const detector_t& det, const measurement& meas,
+    edm::spacepoint<spacepoint_backend_t>& sp, const detector_t& det,
+    const edm::measurement<measurement_backend_t>& meas,
     const typename detector_t::geometry_context gctx = {});
 
 }  // namespace traccc::details

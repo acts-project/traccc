@@ -9,16 +9,19 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_fit_collection.hpp"
+#include "traccc/edm/measurement_collection.hpp"
+#include "traccc/edm/track_collection.hpp"
 #include "traccc/edm/track_state_collection.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 #include "traccc/fitting/kalman_filter/is_line_visitor.hpp"
 #include "traccc/fitting/kalman_filter/two_filters_smoother.hpp"
 #include "traccc/fitting/status_codes.hpp"
+#include "traccc/utils/logging.hpp"
 #include "traccc/utils/particle.hpp"
 
 // detray include(s).
+#include <detray/definitions/navigation.hpp>
+#include <detray/propagator/actors/surface_sequencer.hpp>
 #include <detray/propagator/base_actor.hpp>
 
 // vecmem include(s)
@@ -32,29 +35,53 @@ enum class kalman_actor_direction {
     BIDIRECTIONAL
 };
 
-template <typename algebra_t>
+template <typename algebra_t, typename surface_t>
 struct kalman_actor_state {
+
+    using sequencer_t = typename detray::surface_sequencer<surface_t>::state;
 
     /// Constructor with the vector of track states
     TRACCC_HOST_DEVICE
     kalman_actor_state(
-        const typename edm::track_fit_collection<algebra_t>::device::proxy_type&
+        const typename edm::track_collection<algebra_t>::device::proxy_type&
             track,
         const typename edm::track_state_collection<algebra_t>::device&
             track_states,
-        const measurement_collection_types::const_device& measurements)
+        const typename edm::measurement_collection<algebra_t>::const_device&
+            measurements,
+        vecmem::device_vector<surface_t> sequence)
         : m_track{track},
           m_track_states{track_states},
-          m_measurements{measurements} {
+          m_measurements{measurements},
+          m_sequencer{sequence} {
 
         reset();
+    }
+
+    /// Get the track state at a given position along the track
+    TRACCC_HOST_DEVICE
+    typename edm::track_state_collection<algebra_t>::device::proxy_type at(
+        unsigned int i) {
+        assert(m_track.constituent_links().at(i).type ==
+               edm::track_constituent_link::track_state);
+        return m_track_states.at(m_track.constituent_links().at(i).index);
+    }
+
+    /// Get the track state at a given position along the track
+    TRACCC_HOST_DEVICE
+    typename edm::track_state_collection<algebra_t>::device::const_proxy_type
+    at(unsigned int i) const {
+        assert(m_track.constituent_links().at(i).type ==
+               edm::track_constituent_link::track_state);
+        return m_track_states.at(m_track.constituent_links().at(i).index);
     }
 
     /// @return the reference of track state pointed by the iterator
     TRACCC_HOST_DEVICE
     typename edm::track_state_collection<algebra_t>::device::proxy_type
     operator()() {
-        return m_track_states.at(m_track.state_indices().at(m_idx));
+        assert(m_idx >= 0);
+        return at(static_cast<unsigned int>(m_idx));
     }
 
     /// Reset the iterator
@@ -63,8 +90,9 @@ struct kalman_actor_state {
         if (!backward_mode) {
             m_idx = 0;
         } else {
-            m_idx = m_track.state_indices().size() - 1;
+            m_idx = static_cast<int>(size()) - 1;
         }
+        n_holes = 0u;
     }
 
     /// Advance the iterator
@@ -77,47 +105,237 @@ struct kalman_actor_state {
         }
     }
 
+    /// @TODO: Const-correctness broken due to a vecmem bug
+    /// @returns the number of track states
+    TRACCC_HOST_DEVICE
+    unsigned int size() /*const*/ { return m_track.constituent_links().size(); }
+
+    /// @return access to the surface sequencer - non-const
+    TRACCC_HOST_DEVICE sequencer_t& sequencer() { return m_sequencer; }
+
+    /// @return access to the surface sequencer - non-const
+    TRACCC_HOST_DEVICE const sequencer_t& sequencer() const {
+        return m_sequencer;
+    }
+
+    /// Add the next surface to the sequence
+    TRACCC_HOST_DEVICE void add_to_sequence(
+        typename sequencer_t::surface_type sf_desc) {
+        assert(!sf_desc.barcode().is_invalid());
+
+        m_sequencer.sequence().push_back(sf_desc);
+        DETRAY_VERBOSE_HOST("Added: " << sf_desc);
+    }
+
     /// @return true if the iterator reaches the end of vector
     TRACCC_HOST_DEVICE
-    bool is_complete() {
-        if (!backward_mode && m_idx == m_track.state_indices().size()) {
-            return true;
-        } else if (backward_mode && m_idx > m_track.state_indices().size()) {
+    bool finished() /*const*/ {
+        return (!backward_mode && m_idx == static_cast<int>(size())) ||
+               (backward_mode && m_idx == -1);
+    }
+
+    /// @TODO: Const-correctness broken due to a vecmem bug
+    TRACCC_HOST_DEVICE
+    bool is_state() /* const*/ {
+        assert(m_idx >= 0);
+        return (m_track.constituent_links()
+                    .at(static_cast<unsigned int>(m_idx))
+                    .type == edm::track_constituent_link::track_state);
+    }
+
+    /// @TODO: Const-correctness broken due to a vecmem bug
+    /// @returns the current number of missed states during forward fit
+    TRACCC_HOST_DEVICE
+    unsigned int count_missed_fit() /*const*/ {
+        unsigned int n_missed{0u};
+
+        for (unsigned int i = 0u; i < size(); ++i) {
+            const edm::track_state trk_state = at(i);
+            if (!trk_state.is_hole() &&
+                trk_state.filtered_params().is_invalid()) {
+                TRACCC_DEBUG_HOST_DEVICE(
+                    "Missed track state %d/%d on surface %d during forward fit",
+                    i, size(), at(i).filtered_params().surface_link().index());
+                ++n_missed;
+            }
+        }
+
+        return n_missed;
+    }
+
+    /// @TODO: Const-correctness broken due to a vecmem bug
+    /// @returns the current number of missed states during smoothing
+    TRACCC_HOST_DEVICE
+    unsigned int count_missed_smoother() /*const*/ {
+        unsigned int n_missed{0u};
+
+        for (unsigned int i = 0u; i < size(); ++i) {
+            const edm::track_state trk_state = at(i);
+            if (!trk_state.is_hole() &&
+                trk_state.smoothed_params().is_invalid()) {
+                TRACCC_DEBUG_HOST_DEVICE(
+                    "Missed track state %d/%d on surface %d during smoothing",
+                    i, size(), at(i).smoothed_params().surface_link().index());
+                ++n_missed;
+            }
+        }
+
+        return n_missed;
+    }
+
+    template <typename nav_state_t>
+    TRACCC_HOST_DEVICE bool check_if_hole(const nav_state_t& navigation) {
+        if (do_precise_hole_count || !navigation.current().is_edge()) {
+            TRACCC_VERBOSE_HOST_DEVICE("---> State flagged as hole");
+            ++n_holes;
             return true;
         }
         return false;
     }
 
-    TRACCC_HOST_DEVICE
-    bool is_state() {
-        return m_track.state_indices().at(m_idx) !=
-               std::numeric_limits<unsigned int>::max();
+    /// @return true if the current surface could be matched to a track state
+    /// @TODO: Remove once direct navigator is used in forward pass
+    template <typename propagation_state_t>
+    TRACCC_HOST_DEVICE bool match_surface_to_track_state(
+        propagation_state_t& propagation) {
+
+        const auto& navigation = propagation._navigation;
+        edm::track_state trk_state = (*this)();
+
+        TRACCC_VERBOSE_HOST("Found: " << navigation.barcode());
+
+        // Surface was found, continue with KF algorithm
+        if (navigation.barcode() ==
+            trk_state.filtered_params().surface_link()) {
+            // Count a hole, if track finding did not find a measurement
+            if (!backward_mode && trk_state.is_hole()) {
+                TRACCC_VERBOSE_HOST_DEVICE(
+                    "-> Track finding flagged this as hole");
+                check_if_hole(navigation);
+            }
+
+            TRACCC_VERBOSE_HOST_DEVICE(
+                "-> Matched current surface to next track state: %d/%d", m_idx,
+                size());
+            // If track finding did not find measurement on this surface: skip
+            return !trk_state.is_hole();
+        }
+
+        // Skipped surfaces: adjust iterator and remove counted hole
+        // (only relevant if using non-direct navigation, e.g. forward truth
+        // fitting or different prop. config between CKF asnd KF)
+        // TODO: Remove again
+        unsigned int n{1};
+        if (backward_mode) {
+            // If we are on the last state and the navigation surface does
+            // not match, it must be an additional surface
+            // -> continue navigation until matched
+            if (m_idx == 0) {
+                TRACCC_VERBOSE_HOST_DEVICE("--> bw: Evaluate first state");
+                check_if_hole(navigation);
+                return false;
+            }
+            TRACCC_VERBOSE_HOST_DEVICE(
+                "--> bw: Check other states on track for a match");
+            // Check if the current navigation surfaces can be found on a
+            // later track state. That means the current track state was
+            // skipped by the navigator: Advance the internal iterator
+            for (int i = m_idx - 1; i >= 0; --i) {
+                if (at(static_cast<unsigned int>(i))
+                        .filtered_params()
+                        .surface_link() == navigation.barcode()) {
+                    TRACCC_VERBOSE_HOST_DEVICE(
+                        "--> bw: Matched to earlier state: navigator skipped "
+                        "surfaces in between");
+                    TRACCC_VERBOSE_HOST_DEVICE("--> bw: no. skipped: %d", n);
+                    assert(m_idx >= static_cast<int>(n));
+                    m_idx -= static_cast<int>(n);
+                    assert(std::isfinite(m_idx));
+                    fit_result =
+                        kalman_fitter_status::ERROR_SMOOTHER_SKIPPED_STATE;
+                    return true;
+                }
+                ++n;
+            }
+        } else {
+            assert(m_idx >= 0);
+            if (m_idx + 1 == static_cast<int>(size())) {
+                TRACCC_DEBUG_HOST_DEVICE("--> fw: Evaluate last state");
+                check_if_hole(navigation);
+                return false;
+            }
+            TRACCC_DEBUG_HOST_DEVICE(
+                "--> fw: Check other states on track for a match");
+            for (unsigned int i = static_cast<unsigned int>(m_idx) + 1u;
+                 i < size(); ++i) {
+                if (at(i).filtered_params().surface_link() ==
+                    navigation.barcode()) {
+                    TRACCC_DEBUG_HOST_DEVICE(
+                        "--> fw: Matched to later state: navigator skipped "
+                        "surfaces in between");
+                    m_idx += static_cast<int>(n);
+                    fit_result =
+                        kalman_fitter_status::ERROR_UPDATER_SKIPPED_STATE;
+                    return true;
+                }
+                ++n;
+            }
+        }
+
+        // Mismatch was not from missed state: Is a hole
+        TRACCC_DEBUG_HOST_DEVICE("--> Did NOT find state: might be hole...");
+        const bool is_hole = check_if_hole(navigation);
+
+        if (is_hole) {
+            TRACCC_DEBUG_HOST("--> Expected surfaces:");
+            for (unsigned int i = 0u; i < size(); ++i) {
+                TRACCC_DEBUG_HOST("   - "
+                                  << at(i).filtered_params().surface_link());
+            }
+        } else if (navigation.current().is_edge()) {
+            TRACCC_VERBOSE_HOST_DEVICE("--> Hit surface edge: Not a hole");
+        }
+
+        // After additional surface, keep navigating until match is found
+        return false;
     }
 
     /// Object describing the track fit
-    typename edm::track_fit_collection<algebra_t>::device::proxy_type m_track;
+    typename edm::track_collection<algebra_t>::device::proxy_type m_track;
     /// All track states in the event
     typename edm::track_state_collection<algebra_t>::device m_track_states;
     /// All measurements in the event
-    measurement_collection_types::const_device m_measurements;
+    typename edm::measurement_collection<algebra_t>::const_device
+        m_measurements;
+
+    /// The surface sequencer
+    sequencer_t m_sequencer;
 
     /// Index of the current track state
-    unsigned int m_idx;
+    int m_idx;
 
-    // The number of holes (The number of sensitive surfaces which do not
-    // have a measurement for the track pattern)
+    /// The number of holes (The number of sensitive surfaces which do not
+    /// have a measurement for the track pattern)
     unsigned int n_holes{0u};
 
-    // Run back filtering for smoothing, if true
+    /// Finish the navigation beyond the track states in the fitter to find all
+    /// holes
+    bool do_precise_hole_count = false;
+
+    /// Run back filtering for smoothing, if true
     bool backward_mode = false;
+
+    /// Result of the fitter pass
+    kalman_fitter_status fit_result = kalman_fitter_status::SUCCESS;
 };
 
 /// Detray actor for Kalman filtering
-template <typename algebra_t, kalman_actor_direction direction_e>
+template <typename algebra_t, typename surface_t,
+          kalman_actor_direction direction_e>
 struct kalman_actor : detray::actor {
 
     // Actor state
-    using state = kalman_actor_state<algebra_t>;
+    using state = kalman_actor_state<algebra_t, surface_t>;
 
     /// Actor operation to perform the Kalman filtering
     ///
@@ -130,53 +348,85 @@ struct kalman_actor : detray::actor {
         auto& stepping = propagation._stepping;
         auto& navigation = propagation._navigation;
 
-        // If the iterator reaches the end, terminate the propagation
-        if (actor_state.is_complete()) {
-            propagation._heartbeat &= navigation.exit();
+        TRACCC_VERBOSE_HOST_DEVICE("In Kalman actor (status %d)...",
+                                   actor_state.fit_result);
+
+        // Allow to count holes after the intial track states
+        if (actor_state.do_precise_hole_count && actor_state.finished()) {
+            if (navigation.is_on_sensitive()) {
+                TRACCC_VERBOSE_HOST_DEVICE(
+                    "Track is already complete: This surface is a hole");
+                // At this point every surface is a hole
+                actor_state.n_holes++;
+            }
             return;
         }
+
+        TRACCC_VERBOSE_HOST(
+            "Expected: " << actor_state().filtered_params().surface_link());
 
         // triggered only for sensitive surfaces
         if (navigation.is_on_sensitive()) {
 
-            typename edm::track_state_collection<algebra_t>::device::proxy_type
-                trk_state = actor_state();
+            TRACCC_DEBUG_HOST(
+                "-> on surface: " << navigation.current_surface());
 
-            // Increase the hole counts if the propagator fails to find the next
-            // measurement
-            if (navigation.barcode() !=
-                actor_state.m_measurements.at(trk_state.measurement_index())
-                    .surface_link) {
-                if (!actor_state.backward_mode) {
-                    actor_state.n_holes++;
+            // Increase the hole count if the propagator stops at an additional
+            // surface and wait for the next sensitive surface to match
+            if (!actor_state.match_surface_to_track_state(propagation)) {
+                if (!actor_state.backward_mode &&
+                    navigation.current_surface().has_material()) {
+                    // Add this to the surface sequence for the backward fit
+                    actor_state.add_to_sequence(
+                        std::as_const(navigation).current().sf_desc);
                 }
+                return;
+            } else if (actor_state.fit_result !=
+                       kalman_fitter_status::SUCCESS) {
+                // Surface matched but encountered error: Abort fit
+                navigation.abort(fitter_debug_msg{actor_state.fit_result});
+                propagation._heartbeat = false;
                 return;
             }
 
-            // This track state is not a hole
-            if (!actor_state.backward_mode) {
-                trk_state.set_hole(false);
+            auto& sequencer = actor_state.sequencer();
+            if (sequencer.sequence().size() ==
+                sequencer.sequence().capacity()) {
+                DETRAY_ERROR_HOST_DEVICE("Sequence overflow!");
+                sequencer.set_overflow();
+                navigation.exit();
+                return;
             }
 
+            // Fetch matched track state
+            edm::track_state trk_state = actor_state();
+            bound_track_parameters<algebra_t>& bound_param =
+                stepping.bound_params();
+
             // Run Kalman Gain Updater
-            const auto sf = navigation.get_surface();
-
-            const bool is_line = sf.template visit_mask<is_line_visitor>();
-
-            kalman_fitter_status res = kalman_fitter_status::SUCCESS;
+            const auto sf = navigation.current_surface();
+            const bool is_line = detail::is_line(sf);
 
             if (!actor_state.backward_mode) {
                 if constexpr (direction_e ==
                                   kalman_actor_direction::FORWARD_ONLY ||
                               direction_e ==
                                   kalman_actor_direction::BIDIRECTIONAL) {
+                    // Wrap the phi and theta angles in their valid ranges
+                    normalize_angles(bound_param);
+
                     // Forward filter
-                    res = gain_matrix_updater<algebra_t>{}(
-                        trk_state, actor_state.m_measurements,
-                        propagation._stepping.bound_params(), is_line);
+                    TRACCC_DEBUG_HOST_DEVICE("Run filtering...");
+                    actor_state.fit_result = gain_matrix_updater<algebra_t>{}(
+                        trk_state, actor_state.m_measurements, bound_param,
+                        is_line);
 
                     // Update the propagation flow
-                    stepping.bound_params() = trk_state.filtered_params();
+                    bound_param = trk_state.filtered_params();
+
+                    // Add this to the surface sequence for the backward fit
+                    actor_state.add_to_sequence(
+                        std::as_const(navigation).current().sf_desc);
                 } else {
                     assert(false);
                 }
@@ -186,18 +436,42 @@ struct kalman_actor : detray::actor {
                               direction_e ==
                                   kalman_actor_direction::BIDIRECTIONAL) {
                     // Backward filter for smoothing
-                    res = two_filters_smoother<algebra_t>{}(
-                        trk_state, actor_state.m_measurements,
-                        propagation._stepping.bound_params(), is_line);
+                    TRACCC_DEBUG_HOST_DEVICE("Run smoothing...");
+
+                    // Forward filter did not find this state: cannot smoothe
+                    if (trk_state.filtered_params().is_invalid()) {
+                        TRACCC_ERROR_HOST_DEVICE(
+                            "Track state not filtered by forward fit. "
+                            "Skipping");
+                        actor_state.fit_result =
+                            kalman_fitter_status::ERROR_UPDATER_SKIPPED_STATE;
+                    } else {
+                        actor_state.fit_result =
+                            two_filters_smoother<algebra_t>{}(
+                                trk_state, actor_state.m_measurements,
+                                bound_param, is_line);
+                    }
                 } else {
                     assert(false);
                 }
             }
 
             // Abort if the Kalman update fails
-            if (res != kalman_fitter_status::SUCCESS) {
-                propagation._heartbeat &=
-                    navigation.abort(fitter_debug_msg{res});
+            if (actor_state.fit_result != kalman_fitter_status::SUCCESS) {
+                if (actor_state.backward_mode) {
+                    TRACCC_ERROR_DEVICE("Abort backward fit: KF status %d",
+                                        actor_state.fit_result);
+                    TRACCC_ERROR_HOST(
+                        "Abort backward fit: "
+                        << fitter_debug_msg{actor_state.fit_result}());
+                } else {
+                    TRACCC_ERROR_DEVICE("Abort forward fit: KF status %d",
+                                        actor_state.fit_result);
+                    TRACCC_ERROR_HOST("Abort forward fit: " << fitter_debug_msg{
+                                          actor_state.fit_result}());
+                }
+                navigation.abort(fitter_debug_msg{actor_state.fit_result});
+                propagation._heartbeat = false;
                 return;
             }
 
@@ -205,14 +479,33 @@ struct kalman_actor : detray::actor {
             // is changed (This rarely happens when qop is set with a poor seed
             // resolution)
             propagation.set_particle(detail::correct_particle_hypothesis(
-                stepping.particle_hypothesis(),
-                propagation._stepping.bound_params()));
+                stepping.particle_hypothesis(), bound_param));
 
             // Update iterator
             actor_state.next();
 
-            // Flag renavigation of the current candidate
-            navigation.set_high_trust();
+            // No need to continue
+            if (actor_state.finished() && !actor_state.do_precise_hole_count) {
+                navigation.exit();
+                propagation._heartbeat = false;
+                return;
+            }
+
+            // Flag renavigation of the current candidate (unless for overlap)
+            if (math::fabs(navigation()) > 1.f * unit<float>::um) {
+                navigation.set_high_trust();
+            } else {
+                TRACCC_DEBUG_HOST_DEVICE(
+                    "Encountered overlap, jump to next surface");
+            }
+        } else if (!actor_state.backward_mode &&
+                   navigation.encountered_sf_material()) {
+            assert(std::as_const(navigation).is_on_passive() ||
+                   std::as_const(navigation).is_on_portal());
+
+            // Add this to the surface sequence for the backward fit
+            actor_state.add_to_sequence(
+                std::as_const(navigation).current().sf_desc);
         }
     }
 };

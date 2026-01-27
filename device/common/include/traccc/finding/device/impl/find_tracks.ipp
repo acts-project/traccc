@@ -26,6 +26,7 @@
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 #include "traccc/fitting/kalman_filter/is_line_visitor.hpp"
 #include "traccc/fitting/status_codes.hpp"
+#include "traccc/utils/logging.hpp"
 
 // Detray include(s)
 #include <detray/geometry/tracking_surface.hpp>
@@ -51,7 +52,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
      * Initialize all of the device vectors from their vecmem views.
      */
     detector_t det(payload.det_data);
-    measurement_collection_types::const_device measurements(
+    edm::measurement_collection<default_algebra>::const_device measurements(
         payload.measurements_view);
     bound_track_parameters_collection_types::const_device in_params(
         payload.in_params_view);
@@ -67,6 +68,10 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     vecmem::device_vector<unsigned int> tip_lengths(payload.tip_lengths_view);
     vecmem::device_vector<unsigned int> n_tracks_per_seed(
         payload.n_tracks_per_seed_view);
+    bound_track_parameters_collection_types::device link_predicted_parameters(
+        payload.link_predicted_parameter_view);
+    bound_track_parameters_collection_types::device link_filtered_parameters(
+        payload.link_filtered_parameter_view);
 
     /*
      * Initialize the block-shared data; in particular, set the total size of
@@ -104,6 +109,8 @@ TRACCC_HOST_DEVICE inline void find_tracks(
             in_params.at(in_param_id).surface_link().index()};
         init_meas = sf_idx == 0u ? 0u : meas_ranges[sf_idx - 1];
         num_meas = meas_ranges[sf_idx] - init_meas;
+        TRACCC_VERBOSE_DEVICE("No. measurements: %d", num_meas);
+        TRACCC_VERBOSE_DEVICE("Testing measurement: %d", init_meas);
 
         /*
          * If we cannot find any corresponding measurements, set the number of
@@ -203,18 +210,20 @@ TRACCC_HOST_DEVICE inline void find_tracks(
 
             if (use_measurement) {
 
-                auto trk_state =
+                edm::track_state trk_state =
                     edm::make_track_state<typename detector_t::algebra_type>(
                         measurements, meas_idx);
 
                 const detray::tracking_surface sf{det, in_par.surface_link()};
 
-                const bool is_line = sf.template visit_mask<is_line_visitor>();
+                const bool is_line = detail::is_line(sf);
 
                 // Run the Kalman update
                 const kalman_fitter_status res =
                     gain_matrix_updater<typename detector_t::algebra_type>{}(
                         trk_state, measurements, in_par, is_line);
+
+                TRACCC_DEBUG_DEVICE("KF status: %d", res);
 
                 /*
                  * The $\chi^2$ value from the Kalman update should be less than
@@ -234,6 +243,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                 }
 
                 if (use_measurement) {
+                    TRACCC_VERBOSE_DEVICE("Found measurement: %d", meas_idx);
                     result.emplace(trk_state, meas_idx, owner_local_thread_id);
                 }
             }
@@ -431,7 +441,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                             prev_ndf_sum +
                             measurements
                                 .at(std::get<0>(*result).measurement_index())
-                                .meas_dim};
+                                .dimensions()};
 
                     tmp_params.at(p_offset + l_pos) =
                         std::get<0>(*result).filtered_params();
@@ -527,8 +537,8 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     }
 
     /*
-     * Compute the offset at which this block will write, as well as the index
-     * at which this block will write.
+     * Compute the offset at which this block will write, as well as the
+     * index at which this block will write.
      */
     if (in_param_is_live) {
         local_num_params = std::get<1>(decode_insertion_mutex(
@@ -600,6 +610,24 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                     .chi2_sum = prev_chi2_sum,
                     .ndf_sum = prev_ndf_sum};
 
+                if (payload.tmp_jacobian_ptr != nullptr) {
+                    assert(payload.jacobian_ptr != nullptr);
+                    payload.jacobian_ptr[out_offset] =
+                        payload.tmp_jacobian_ptr[in_param_id];
+                }
+
+                if (link_filtered_parameters.capacity() > 0) {
+                    link_filtered_parameters.at(out_offset) =
+                        in_params.at(in_param_id);
+                }
+
+                if (link_predicted_parameters.capacity() > 0) {
+                    link_predicted_parameters.at(out_offset) =
+                        in_params.at(in_param_id);
+                }
+
+                TRACCC_VERBOSE_DEVICE("Hole state created");
+
                 unsigned int param_pos = out_offset - payload.curr_links_idx;
 
                 out_params.at(param_pos) = in_params.at(in_param_id);
@@ -609,6 +637,12 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                 const unsigned int n_cands = payload.step - n_skipped;
 
                 if (n_cands >= cfg.min_track_candidates_per_track) {
+                    if (!in_param_can_create_hole) {
+                        TRACCC_WARNING_DEVICE("Create tip: Max no. holes");
+                    } else {
+                        TRACCC_WARNING_DEVICE(
+                            "Create tip: No next sensitive found");
+                    }
                     auto tip_pos = tips.push_back(prev_link_idx);
                     tip_lengths.at(tip_pos) = n_cands;
                 }
@@ -629,10 +663,27 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                     static_cast<unsigned int>(!last_step);
                 links.at(out_offset) = tmp_links.at(in_offset);
 
+                if (payload.tmp_jacobian_ptr != nullptr) {
+                    assert(payload.jacobian_ptr != nullptr);
+                    payload.jacobian_ptr[out_offset] =
+                        payload.tmp_jacobian_ptr[in_param_id];
+                }
+
+                if (link_filtered_parameters.capacity() > 0) {
+                    link_filtered_parameters.at(out_offset) =
+                        tmp_params.at(in_offset);
+                }
+
+                if (link_predicted_parameters.capacity() > 0) {
+                    link_predicted_parameters.at(out_offset) =
+                        in_params.at(in_param_id);
+                }
+
                 const unsigned int n_cands = payload.step + 1 - n_skipped;
 
                 if (last_step &&
                     n_cands >= cfg.min_track_candidates_per_track) {
+                    TRACCC_ERROR_DEVICE("Create tip: Max no. candidates");
                     auto tip_pos = tips.push_back(out_offset);
                     tip_lengths.at(tip_pos) = n_cands;
                 }

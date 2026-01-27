@@ -1,12 +1,15 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Local include(s).
 #include "full_chain_algorithm.hpp"
+
+// Project include(s).
+#include "traccc/alpaka/utils/make_magnetic_field.hpp"
 
 // System include(s).
 #include <iostream>
@@ -20,6 +23,7 @@ full_chain_algorithm::full_chain_algorithm(
     const seedfinder_config& finder_config,
     const spacepoint_grid_config& grid_config,
     const seedfilter_config& filter_config,
+    const track_params_estimation_config& track_params_estimation_config,
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
     const silicon_detector_description::host& det_descr,
@@ -32,7 +36,7 @@ full_chain_algorithm::full_chain_algorithm(
       m_cached_pinned_host_mr(m_vecmem_objects.host_mr()),
       m_cached_device_mr(m_vecmem_objects.device_mr()),
       m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
-      m_field(field),
+      m_field(make_magnetic_field(field, m_queue)),
       m_det_descr(det_descr),
       m_device_det_descr(
           static_cast<silicon_detector_description::buffer::size_type>(
@@ -53,6 +57,7 @@ full_chain_algorithm::full_chain_algorithm(
                 m_vecmem_objects.async_copy(), m_queue,
                 logger->cloneWithSuffix("SeedingAlg")),
       m_track_parameter_estimation(
+          track_params_estimation_config,
           {m_cached_device_mr, &m_cached_pinned_host_mr},
           m_vecmem_objects.async_copy(), m_queue,
           logger->cloneWithSuffix("TrackParamEstAlg")),
@@ -66,6 +71,7 @@ full_chain_algorithm::full_chain_algorithm(
       m_finder_config(finder_config),
       m_grid_config(grid_config),
       m_filter_config(filter_config),
+      m_track_params_estimation_config(track_params_estimation_config),
       m_finding_config(finding_config),
       m_fitting_config(fitting_config) {
 
@@ -112,6 +118,7 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
                 m_vecmem_objects.async_copy(), m_queue,
                 parent.logger().cloneWithSuffix("SeedingAlg")),
       m_track_parameter_estimation(
+          parent.m_track_params_estimation_config,
           {m_cached_device_mr, &m_cached_pinned_host_mr},
           m_vecmem_objects.async_copy(), m_queue,
           parent.logger().cloneWithSuffix("TrackParamEstAlg")),
@@ -127,6 +134,7 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_finder_config(parent.m_finder_config),
       m_grid_config(parent.m_grid_config),
       m_filter_config(parent.m_filter_config),
+      m_track_params_estimation_config(parent.m_track_params_estimation_config),
       m_finding_config(parent.m_finding_config),
       m_fitting_config(parent.m_fitting_config) {
 
@@ -153,9 +161,10 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
         ->ignore();
 
     // Run the clusterization (asynchronously).
-    const clusterization_algorithm::output_type measurements =
+    const auto unsorted_measurements =
         m_clusterization(cells_buffer, m_device_det_descr);
-    m_measurement_sorting(measurements);
+    const measurement_sorting_algorithm::output_type measurements =
+        m_measurement_sorting(unsorted_measurements);
 
     // If we have a Detray detector, run the track finding and fitting.
     if (m_detector != nullptr) {
@@ -163,17 +172,17 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
         // Run the seed-finding (asynchronously).
         const spacepoint_formation_algorithm::output_type spacepoints =
             m_spacepoint_formation(m_device_detector, measurements);
-        const track_params_estimation::output_type track_params =
-            m_track_parameter_estimation(measurements, spacepoints,
-                                         m_seeding(spacepoints), m_field_vec);
+        const seed_parameter_estimation_algorithm::output_type track_params =
+            m_track_parameter_estimation(m_field, measurements, spacepoints,
+                                         m_seeding(spacepoints));
 
         // Run the track finding (asynchronously).
         const finding_algorithm::output_type track_candidates =
             m_finding(m_device_detector, m_field, measurements, track_params);
 
         // Run the track fitting (asynchronously).
-        const fitting_algorithm::output_type track_states = m_fitting(
-            m_device_detector, m_field, {track_candidates, measurements});
+        const fitting_algorithm::output_type track_states =
+            m_fitting(m_device_detector, m_field, track_candidates);
 
         // Copy a limited amount of result data back to the host.
         const auto host_tracks = m_vecmem_objects.async_copy().to(
@@ -190,7 +199,8 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     else {
 
         // Copy the measurements back to the host.
-        measurement_collection_types::host measurements_host(&m_host_mr);
+        edm::measurement_collection<default_algebra>::host measurements_host(
+            m_host_mr);
         m_vecmem_objects.async_copy()(measurements, measurements_host)->wait();
 
         // Return an empty object.
@@ -208,9 +218,10 @@ bound_track_parameters_collection_types::host full_chain_algorithm::seeding(
         ->ignore();
 
     // Run the clusterization (asynchronously).
-    const clusterization_algorithm::output_type measurements =
+    const auto unsorted_measurements =
         m_clusterization(cells_buffer, m_device_det_descr);
-    m_measurement_sorting(measurements);
+    const measurement_sorting_algorithm::output_type measurements =
+        m_measurement_sorting(unsorted_measurements);
 
     // If we have a Detray detector, run the track finding and fitting.
     if (m_detector != nullptr) {
@@ -218,9 +229,9 @@ bound_track_parameters_collection_types::host full_chain_algorithm::seeding(
         // Run the seed-finding (asynchronously).
         const spacepoint_formation_algorithm::output_type spacepoints =
             m_spacepoint_formation(m_device_detector, measurements);
-        const track_params_estimation::output_type track_params =
-            m_track_parameter_estimation(measurements, spacepoints,
-                                         m_seeding(spacepoints), m_field_vec);
+        const seed_parameter_estimation_algorithm::output_type track_params =
+            m_track_parameter_estimation(m_field, measurements, spacepoints,
+                                         m_seeding(spacepoints));
 
         // Copy a limited amount of result data back to the host.
         const auto host_seeds = m_vecmem_objects.async_copy().to(
@@ -237,7 +248,8 @@ bound_track_parameters_collection_types::host full_chain_algorithm::seeding(
     else {
 
         // Copy the measurements back to the host.
-        measurement_collection_types::host measurements_host(&m_host_mr);
+        edm::measurement_collection<default_algebra>::host measurements_host(
+            m_host_mr);
         m_vecmem_objects.async_copy()(measurements, measurements_host)->wait();
 
         // Return an empty object.

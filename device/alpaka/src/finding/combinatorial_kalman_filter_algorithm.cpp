@@ -28,7 +28,8 @@ combinatorial_kalman_filter_algorithm::combinatorial_kalman_filter_algorithm(
 combinatorial_kalman_filter_algorithm::output_type
 combinatorial_kalman_filter_algorithm::operator()(
     const detector_buffer& det, const magnetic_field& bfield,
-    const measurement_collection_types::const_view& measurements,
+    const edm::measurement_collection<default_algebra>::const_view&
+        measurements,
     const bound_track_parameters_collection_types::const_view& seeds) const {
 
     // Perform the track finding using the templated implementation.

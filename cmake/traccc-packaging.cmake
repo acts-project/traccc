@@ -30,9 +30,5 @@ install( FILES
    "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/traccc-config-version.cmake"
    DESTINATION "${CMAKE_INSTALL_CMAKEDIR}" )
 
-# Install the "language helper" file(s).
-install( FILES "${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindFuthark.cmake"
-   DESTINATION "${CMAKE_INSTALL_CMAKEDIR}" )
-
 # Clean up.
 unset( CMAKE_INSTALL_CMAKEDIR )

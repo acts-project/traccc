@@ -1,13 +1,13 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 // Project include(s).
 #include "tests/test_detectors.hpp"
-#include "traccc/cuda/seeding/spacepoint_formation_algorithm.hpp"
+#include "traccc/cuda/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/geometry/detector.hpp"
@@ -67,16 +67,33 @@ TEST(CUDASpacepointFormation, cuda) {
         traccc::buffer_from_host_detector(host_det, mng_mr, copy);
 
     // Prepare measurement collection
-    measurement_collection_types::host measurements{&mng_mr};
+    edm::measurement_collection<default_algebra>::host measurements{mng_mr};
 
     // Add a measurement at the first plane
-    measurements.push_back({{7.f, 2.f}, {0.f, 0.f}, surfaces[0].barcode()});
+    measurements.push_back({{7.f, 2.f},
+                            {0.f, 0.f},
+                            2,
+                            0.f,
+                            0.f,
+                            0u,
+                            surfaces[0].barcode(),
+                            {1u, 1u},
+                            0u});
 
     // Add a measurement at the last plane
-    measurements.push_back({{10.f, 15.f}, {0.f, 0.f}, surfaces[8u].barcode()});
+    measurements.push_back({{10.f, 15.f},
+                            {0.f, 0.f},
+                            2u,
+                            0.f,
+                            0.f,
+                            0u,
+                            surfaces[8u].barcode(),
+                            {1u, 1u},
+                            1u});
 
     // Run spacepoint formation
-    traccc::cuda::spacepoint_formation_algorithm sp_formation(mr, copy, stream);
+    traccc::cuda::silicon_pixel_spacepoint_formation_algorithm sp_formation(
+        mr, copy, stream);
     auto spacepoints_buffer =
         sp_formation(device_det, vecmem::get_data(measurements));
 

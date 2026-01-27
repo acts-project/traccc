@@ -16,13 +16,15 @@
 #include "../utils/thread_id.hpp"
 
 // Project include(s).
-#include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_candidate_collection.hpp"
+#include "traccc/edm/device/identity_projector.hpp"
+#include "traccc/edm/measurement_collection.hpp"
+#include "traccc/edm/track_container.hpp"
 #include "traccc/finding/actors/ckf_aborter.hpp"
 #include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
 #include "traccc/finding/device/apply_interaction.hpp"
+#include "traccc/finding/device/barcode_surface_comparator.hpp"
 #include "traccc/finding/device/build_tracks.hpp"
 #include "traccc/finding/device/fill_finding_duplicate_removal_sort_keys.hpp"
 #include "traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
@@ -82,21 +84,28 @@ struct build_tracks {};
 /// @return A buffer of the found track candidates
 ///
 template <typename kernel_t, typename detector_t, typename bfield_t>
-edm::track_candidate_collection<default_algebra>::buffer
+edm::track_container<typename detector_t::algebra_type>::buffer
 combinatorial_kalman_filter(
     const typename detector_t::const_view_type& det, const bfield_t& field,
-    const measurement_collection_types::const_view& measurements,
+    const typename edm::measurement_collection<
+        typename detector_t::algebra_type>::const_view& measurements_view,
     const bound_track_parameters_collection_types::const_view& seeds,
     const finding_config& config, const memory_resource& mr, vecmem::copy& copy,
     ::sycl::queue& queue) {
 
+    const typename edm::measurement_collection<
+        typename detector_t::algebra_type>::const_device measurements{
+        measurements_view};
+
     assert(config.min_step_length_for_next_surface >
-               math::fabs(config.propagation.navigation.overstep_tolerance) &&
+               math::fabs(config.propagation.navigation.intersection
+                              .overstep_tolerance) &&
            "Min step length for the next surface should be higher than the "
            "overstep tolerance");
-
-    assert(is_contiguous_on<measurement_collection_types::const_device>(
-        measurement_module_projection(), mr.main, copy, queue, measurements));
+    assert(is_contiguous_on<
+           vecmem::device_vector<const detray::geometry::barcode>>(
+        device::identity_projector{}, mr.main, copy, queue,
+        measurements_view.template get<6>()));
 
     // oneDPL policy to use, forcing execution onto the same device that the
     // hand-written kernels would run on.
@@ -106,8 +115,7 @@ combinatorial_kalman_filter(
      * Measurement Operations
      *****************************************************************/
 
-    const measurement_collection_types::const_view::size_type n_measurements =
-        copy.get_size(measurements);
+    const unsigned int n_measurements = copy.get_size(measurements_view);
 
     // Access the detector view as a detector object
     detector_t device_det(det);
@@ -120,9 +128,13 @@ combinatorial_kalman_filter(
     vecmem::device_vector<unsigned int> measurement_ranges(meas_ranges_buffer);
 
     oneapi::dpl::upper_bound(
-        policy, measurements.ptr(), measurements.ptr() + n_measurements,
+        policy, measurements.surface_link().begin(),
+        // We have to use this ugly form here, because if the
+        // measurement collection is resizable (which it often
+        // is), the end() function cannot be used in host code.
+        measurements.surface_link().begin() + n_measurements,
         device_det.surfaces().begin(), device_det.surfaces().end(),
-        measurement_ranges.begin(), measurement_sf_comp());
+        measurement_ranges.begin(), device::barcode_surface_comparator{});
     queue.wait_and_throw();
 
     const unsigned int n_seeds = copy.get_size(seeds);
@@ -142,11 +154,47 @@ combinatorial_kalman_filter(
                                                                        mr.main);
     copy.setup(n_tracks_per_seed_buffer)->wait();
 
+    // Compute the effective number of initial links per seed. If the
+    // branching factor (`max_num_branches_per_surface`) is arbitrary there
+    // is no useful upper bound on the number of links, but if the branching
+    // factor is exactly one, we can never have more links per seed than the
+    // number of CKF steps, which is a useful upper bound.
+    const unsigned int effective_initial_links_per_seed =
+        config.max_num_branches_per_surface == 1
+            ? std::min(config.initial_links_per_seed,
+                       config.max_track_candidates_per_track)
+            : config.initial_links_per_seed;
+
     // Create a buffer for links
-    unsigned int link_buffer_capacity = config.initial_links_per_seed * n_seeds;
+    unsigned int link_buffer_capacity =
+        effective_initial_links_per_seed * n_seeds;
     vecmem::data::vector_buffer<candidate_link> links_buffer(
         link_buffer_capacity, mr.main, vecmem::data::buffer_type::resizable);
     copy.setup(links_buffer)->wait();
+
+    vecmem::unique_alloc_ptr<bound_matrix<typename detector_t::algebra_type>[]>
+        jacobian_ptr = nullptr;
+    bound_track_parameters_collection_types::buffer
+        link_predicted_parameter_buffer(0, mr.main);
+    bound_track_parameters_collection_types::buffer
+        link_filtered_parameter_buffer(0, mr.main);
+
+    /*
+     * If we are aiming to run the MBF smoother at the end of the track
+     * finding, we need some space to store the intermediate Jacobians
+     * and parameters. Allocate that space here.
+     */
+    if (false && config.run_mbf_smoother) {
+        jacobian_ptr = vecmem::make_unique_alloc<
+            bound_matrix<typename detector_t::algebra_type>[]>(
+            mr.main, link_buffer_capacity);
+        link_predicted_parameter_buffer =
+            bound_track_parameters_collection_types::buffer(
+                link_buffer_capacity, mr.main);
+        link_filtered_parameter_buffer =
+            bound_track_parameters_collection_types::buffer(
+                link_buffer_capacity, mr.main);
+    }
 
     // Create a buffer of tip links
     vecmem::data::vector_buffer<unsigned int> tips_buffer{
@@ -159,6 +207,9 @@ combinatorial_kalman_filter(
 
     std::map<unsigned int, unsigned int> step_to_link_idx_map;
     step_to_link_idx_map[0] = 0;
+
+    vecmem::unique_alloc_ptr<bound_matrix<typename detector_t::algebra_type>[]>
+        tmp_jacobian_ptr = nullptr;
 
     unsigned int n_in_params = n_seeds;
     for (unsigned int step = 0;
@@ -239,7 +290,7 @@ combinatorial_kalman_filter(
             using payload_t = device::find_tracks_payload<detector_t>;
             const payload_t host_payload{
                 .det_data = det,
-                .measurements_view = measurements,
+                .measurements_view = measurements_view,
                 .in_params_view = in_params_buffer,
                 .in_params_liveness_view = param_liveness_buffer,
                 .n_in_params = n_in_params,
@@ -255,7 +306,12 @@ combinatorial_kalman_filter(
                 .tip_lengths_view = tip_length_buffer,
                 .n_tracks_per_seed_view = n_tracks_per_seed_buffer,
                 .tmp_params_view = tmp_params_buffer,
-                .tmp_links_view = tmp_links_buffer};
+                .tmp_links_view = tmp_links_buffer,
+                .jacobian_ptr = jacobian_ptr.get(),
+                .tmp_jacobian_ptr = tmp_jacobian_ptr.get(),
+                .link_predicted_parameter_view =
+                    link_predicted_parameter_buffer,
+                .link_filtered_parameter_view = link_filtered_parameter_buffer};
             // Now copy it to device memory.
             vecmem::data::vector_buffer<payload_t> device_payload(1u, mr.main);
             copy.setup(device_payload)->wait();
@@ -447,6 +503,12 @@ combinatorial_kalman_filter(
              *****************************************************************/
 
             {
+                if (false && config.run_mbf_smoother) {
+                    tmp_jacobian_ptr = vecmem::make_unique_alloc<
+                        bound_matrix<typename detector_t::algebra_type>[]>(
+                        mr.main, n_candidates);
+                }
+
                 // Allocate the kernel's payload in host memory.
                 using payload_t = device::propagate_to_next_surface_payload<
                     traccc::details::ckf_propagator_t<detector_t, bfield_t>,
@@ -462,7 +524,8 @@ combinatorial_kalman_filter(
                     .step = step,
                     .n_in_params = n_candidates,
                     .tips_view = tips_buffer,
-                    .tip_lengths_view = tip_length_buffer};
+                    .tip_lengths_view = tip_length_buffer,
+                    .tmp_jacobian_ptr = tmp_jacobian_ptr.get()};
                 // Now copy it to device memory.
                 vecmem::data::vector_buffer<payload_t> device_payload(1u,
                                                                       mr.main);
@@ -500,7 +563,7 @@ combinatorial_kalman_filter(
      *****************************************************************/
 
     // Get the number of tips
-    auto n_tips_total = copy.get_size(tips_buffer);
+    const unsigned int n_tips_total = copy.get_size(tips_buffer);
 
     std::vector<unsigned int> tips_length_host;
 
@@ -510,26 +573,36 @@ combinatorial_kalman_filter(
     }
 
     // Create track candidate buffer
-    edm::track_candidate_collection<default_algebra>::buffer
-        track_candidates_buffer{tips_length_host, mr.main, mr.host};
-    copy.setup(track_candidates_buffer)->wait();
+    typename edm::track_container<typename detector_t::algebra_type>::buffer
+        track_candidates_buffer{
+            {tips_length_host, mr.main, mr.host}, {}, measurements_view};
+    copy.setup(track_candidates_buffer.tracks)->wait();
 
     if (n_tips_total > 0) {
         queue
             .submit([&](::sycl::handler& h) {
                 h.parallel_for<kernels::build_tracks<kernel_t>>(
                     calculate1DimNdRange(n_tips_total, 64),
-                    [measurements, seeds,
-                     links = vecmem::get_data(links_buffer),
+                    [config, seeds, links = vecmem::get_data(links_buffer),
                      tips = vecmem::get_data(tips_buffer),
-                     track_candidates = vecmem::get_data(
-                         track_candidates_buffer)](::sycl::nd_item<1> item) {
-                        device::build_tracks(
-                            details::global_index(item),
-                            {seeds,
-                             links,
-                             tips,
-                             {track_candidates, measurements}});
+                     tracks = typename edm::track_container<
+                         typename detector_t::algebra_type>::
+                         view(track_candidates_buffer),
+                     link_predicted_parameters =
+                         vecmem::get_data(link_predicted_parameter_buffer),
+                     link_filtered_parameters =
+                         vecmem::get_data(link_filtered_parameter_buffer)](
+                        ::sycl::nd_item<1> item) {
+                        device::build_tracks(details::global_index(item),
+                                             false && config.run_mbf_smoother,
+                                             {.seeds_view = seeds,
+                                              .links_view = links,
+                                              .tips_view = tips,
+                                              .tracks_view = tracks,
+                                              .link_predicted_parameter_view =
+                                                  link_predicted_parameters,
+                                              .link_filtered_parameter_view =
+                                                  link_filtered_parameters});
                     });
             })
             .wait_and_throw();

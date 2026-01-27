@@ -17,8 +17,7 @@ namespace traccc::cuda {
 namespace kernels {
 
 __global__ void fill_fitting_sort_keys(
-    edm::track_candidate_collection<default_algebra>::const_view
-        track_candidates_view,
+    edm::track_collection<default_algebra>::const_view track_candidates_view,
     vecmem::data::vector_view<device::sort_key> keys_view,
     vecmem::data::vector_view<unsigned int> ids_view) {
 
@@ -30,8 +29,7 @@ __global__ void fill_fitting_sort_keys(
 
 void fill_fitting_sort_keys(
     const dim3& grid_size, const dim3& block_size, cudaStream_t stream,
-    edm::track_candidate_collection<default_algebra>::const_view
-        track_candidates_view,
+    edm::track_collection<default_algebra>::const_view track_candidates_view,
     vecmem::data::vector_view<device::sort_key> keys_view,
     vecmem::data::vector_view<unsigned int> ids_view) {
 

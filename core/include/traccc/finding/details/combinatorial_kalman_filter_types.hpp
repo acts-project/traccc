@@ -14,15 +14,7 @@
 #include "traccc/finding/actors/interaction_register.hpp"
 
 // Detray include(s).
-#include <detray/navigation/navigator.hpp>
-#include <detray/propagator/actor_chain.hpp>
-#include <detray/propagator/actors/aborters.hpp>
-#include <detray/propagator/actors/parameter_resetter.hpp>
-#include <detray/propagator/actors/parameter_transporter.hpp>
-#include <detray/propagator/actors/pointwise_material_interactor.hpp>
-#include <detray/propagator/constrained_step.hpp>
-#include <detray/propagator/propagator.hpp>
-#include <detray/propagator/rk_stepper.hpp>
+#include "traccc/utils/propagation.hpp"
 
 // System include(s).
 #include <type_traits>
@@ -60,7 +52,7 @@ using ckf_actor_chain_t =
 template <typename detector_t, typename bfield_t>
 using ckf_propagator_t =
     detray::propagator<ckf_stepper_t<bfield_t>,
-                       detray::navigator<std::add_const_t<detector_t>>,
+                       detray::caching_navigator<std::add_const_t<detector_t>>,
                        ckf_actor_chain_t>;
 
 }  // namespace traccc::details

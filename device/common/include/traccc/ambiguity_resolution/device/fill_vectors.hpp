@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/edm/track_candidate_container.hpp"
+#include "traccc/edm/track_container.hpp"
 
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
@@ -24,8 +24,7 @@ struct fill_vectors_payload {
     /**
      * @brief View object to the input track candidates
      */
-    edm::track_candidate_container<default_algebra>::const_view
-        track_candidates_view;
+    edm::track_container<default_algebra>::const_view tracks_view;
 
     /**
      * @brief View object to the vector of measured ids per track

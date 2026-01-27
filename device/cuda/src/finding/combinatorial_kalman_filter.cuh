@@ -11,7 +11,6 @@
 #include "../sanity/contiguous_on.cuh"
 #include "../utils/barrier.hpp"
 #include "../utils/cuda_error_handling.hpp"
-#include "../utils/get_size.hpp"
 #include "../utils/thread_id.hpp"
 #include "../utils/utils.hpp"
 #include "./kernels/apply_interaction.hpp"
@@ -19,14 +18,20 @@
 #include "./kernels/fill_finding_duplicate_removal_sort_keys.cuh"
 #include "./kernels/fill_finding_propagation_sort_keys.cuh"
 #include "./kernels/find_tracks.cuh"
+#include "./kernels/gather_best_tips_per_measurement.cuh"
+#include "./kernels/gather_measurement_votes.cuh"
 #include "./kernels/propagate_to_next_surface.hpp"
 #include "./kernels/remove_duplicates.cuh"
+#include "./kernels/update_tip_length_buffer.cuh"
 
 // Project include(s).
-#include "traccc/edm/measurement.hpp"
-#include "traccc/edm/track_candidate_collection.hpp"
+#include "traccc/edm/device/identity_projector.hpp"
+#include "traccc/edm/measurement_collection.hpp"
+#include "traccc/edm/track_container.hpp"
+#include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
+#include "traccc/finding/device/barcode_surface_comparator.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/utils/logging.hpp"
 #include "traccc/utils/memory_resource.hpp"
@@ -34,6 +39,7 @@
 #include "traccc/utils/propagation.hpp"
 
 // VecMem include(s).
+#include <vecmem/memory/unique_ptr.hpp>
 #include <vecmem/utils/copy.hpp>
 
 // Thrust include(s).
@@ -70,20 +76,28 @@ namespace traccc::cuda::details {
 /// @return A buffer of the found track candidates
 ///
 template <typename detector_t, typename bfield_t>
-edm::track_candidate_collection<default_algebra>::buffer
+edm::track_container<typename detector_t::algebra_type>::buffer
 combinatorial_kalman_filter(
     const typename detector_t::const_view_type& det, const bfield_t& field,
-    const measurement_collection_types::const_view& measurements,
+    const typename edm::measurement_collection<
+        typename detector_t::algebra_type>::const_view& measurements_view,
     const bound_track_parameters_collection_types::const_view& seeds,
     const finding_config& config, const memory_resource& mr, vecmem::copy& copy,
     const Logger& log, stream& str, unsigned int warp_size) {
 
+    const typename edm::measurement_collection<
+        typename detector_t::algebra_type>::const_device measurements{
+        measurements_view};
+
     assert(config.min_step_length_for_next_surface >
-               math::fabs(config.propagation.navigation.overstep_tolerance) &&
+               math::fabs(config.propagation.navigation.intersection
+                              .overstep_tolerance) &&
            "Min step length for the next surface should be higher than the "
            "overstep tolerance");
-    assert(is_contiguous_on<measurement_collection_types::const_device>(
-        measurement_module_projection(), mr.main, copy, str, measurements));
+    assert(is_contiguous_on<
+           vecmem::device_vector<const detray::geometry::barcode>>(
+        device::identity_projector{}, mr.main, copy, str,
+        measurements_view.template get<6>()));
 
     // Create a logger.
     auto logger = [&log]() -> const Logger& { return log; };
@@ -103,8 +117,15 @@ combinatorial_kalman_filter(
      * Measurement Operations
      *****************************************************************/
 
-    const measurement_collection_types::const_view::size_type n_measurements =
-        copy.get_size(measurements);
+    unsigned int n_measurements;
+
+    if (mr.host) {
+        const vecmem::async_size size =
+            copy.get_size(measurements_view, *(mr.host));
+        n_measurements = size.get();
+    } else {
+        n_measurements = copy.get_size(measurements_view);
+    }
 
     // Access the detector view as a detector object
     detector_t device_det(det);
@@ -116,12 +137,23 @@ combinatorial_kalman_filter(
     copy.setup(meas_ranges_buffer)->ignore();
     vecmem::device_vector<unsigned int> measurement_ranges(meas_ranges_buffer);
 
-    thrust::upper_bound(
-        thrust_policy, measurements.ptr(), measurements.ptr() + n_measurements,
-        device_det.surfaces().begin(), device_det.surfaces().end(),
-        measurement_ranges.begin(), measurement_sf_comp());
+    thrust::upper_bound(thrust_policy, measurements.surface_link().begin(),
+                        // We have to use this ugly form here, because if the
+                        // measurement collection is resizable (which it often
+                        // is), the end() function cannot be used in host code.
+                        measurements.surface_link().begin() + n_measurements,
+                        device_det.surfaces().begin(),
+                        device_det.surfaces().end(), measurement_ranges.begin(),
+                        device::barcode_surface_comparator{});
 
-    const unsigned int n_seeds = copy.get_size(seeds);
+    unsigned int n_seeds;
+
+    if (mr.host) {
+        const vecmem::async_size size = copy.get_size(seeds, *(mr.host));
+        n_seeds = size.get();
+    } else {
+        n_seeds = copy.get_size(seeds);
+    }
 
     // Prepare input parameters with seeds
     bound_track_parameters_collection_types::buffer in_params_buffer(n_seeds,
@@ -139,11 +171,47 @@ combinatorial_kalman_filter(
                                                                        mr.main);
     copy.setup(n_tracks_per_seed_buffer)->ignore();
 
+    // Compute the effective number of initial links per seed. If the
+    // branching factor (`max_num_branches_per_surface`) is arbitrary there
+    // is no useful upper bound on the number of links, but if the branching
+    // factor is exactly one, we can never have more links per seed than the
+    // number of CKF steps, which is a useful upper bound.
+    const unsigned int effective_initial_links_per_seed =
+        config.max_num_branches_per_surface == 1
+            ? std::min(config.initial_links_per_seed,
+                       config.max_track_candidates_per_track)
+            : config.initial_links_per_seed;
+
     // Create a buffer for links
-    unsigned int link_buffer_capacity = config.initial_links_per_seed * n_seeds;
+    unsigned int link_buffer_capacity =
+        effective_initial_links_per_seed * n_seeds;
     vecmem::data::vector_buffer<candidate_link> links_buffer(
         link_buffer_capacity, mr.main, vecmem::data::buffer_type::resizable);
     copy.setup(links_buffer)->ignore();
+
+    vecmem::unique_alloc_ptr<bound_matrix<typename detector_t::algebra_type>[]>
+        jacobian_ptr = nullptr;
+    bound_track_parameters_collection_types::buffer
+        link_predicted_parameter_buffer(0, mr.main);
+    bound_track_parameters_collection_types::buffer
+        link_filtered_parameter_buffer(0, mr.main);
+
+    /*
+     * If we are aiming to run the MBF smoother at the end of the track
+     * finding, we need some space to store the intermediate Jacobians
+     * and parameters. Allocate that space here.
+     */
+    if (config.run_mbf_smoother) {
+        jacobian_ptr = vecmem::make_unique_alloc<
+            bound_matrix<typename detector_t::algebra_type>[]>(
+            mr.main, link_buffer_capacity);
+        link_predicted_parameter_buffer =
+            bound_track_parameters_collection_types::buffer(
+                link_buffer_capacity, mr.main);
+        link_filtered_parameter_buffer =
+            bound_track_parameters_collection_types::buffer(
+                link_buffer_capacity, mr.main);
+    }
 
     // Create a buffer of tip links
     vecmem::data::vector_buffer<unsigned int> tips_buffer{
@@ -156,6 +224,9 @@ combinatorial_kalman_filter(
 
     std::map<unsigned int, unsigned int> step_to_link_idx_map;
     step_to_link_idx_map[0] = 0;
+
+    vecmem::unique_alloc_ptr<bound_matrix<typename detector_t::algebra_type>[]>
+        tmp_jacobian_ptr = nullptr;
 
     unsigned int n_in_params = n_seeds;
     for (unsigned int step = 0;
@@ -225,6 +296,41 @@ combinatorial_kalman_filter(
             copy(links_buffer, new_links_buffer)->wait();
 
             links_buffer = std::move(new_links_buffer);
+
+            if (config.run_mbf_smoother) {
+                vecmem::unique_alloc_ptr<
+                    bound_matrix<typename detector_t::algebra_type>[]>
+                    new_jacobian_ptr = vecmem::make_unique_alloc<
+                        bound_matrix<typename detector_t::algebra_type>[]>(
+                        mr.main, link_buffer_capacity);
+                bound_track_parameters_collection_types::buffer
+                    new_link_predicted_parameter_buffer{link_buffer_capacity,
+                                                        mr.main};
+                bound_track_parameters_collection_types::buffer
+                    new_link_filtered_parameter_buffer{link_buffer_capacity,
+                                                       mr.main};
+
+                TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
+                    new_jacobian_ptr.get(), jacobian_ptr.get(),
+                    links_size *
+                        sizeof(bound_matrix<typename detector_t::algebra_type>),
+                    cudaMemcpyDeviceToDevice, stream));
+
+                copy(link_predicted_parameter_buffer,
+                     new_link_predicted_parameter_buffer)
+                    ->wait();
+                copy(link_filtered_parameter_buffer,
+                     new_link_filtered_parameter_buffer)
+                    ->wait();
+
+                TRACCC_CUDA_ERROR_CHECK(cudaStreamSynchronize(stream));
+
+                jacobian_ptr = std::move(new_jacobian_ptr);
+                link_predicted_parameter_buffer =
+                    std::move(new_link_predicted_parameter_buffer);
+                link_filtered_parameter_buffer =
+                    std::move(new_link_filtered_parameter_buffer);
+            }
         }
 
         {
@@ -239,7 +345,7 @@ combinatorial_kalman_filter(
             using payload_t = device::find_tracks_payload<detector_t>;
             const payload_t host_payload{
                 .det_data = det,
-                .measurements_view = measurements,
+                .measurements_view = measurements_view,
                 .in_params_view = in_params_buffer,
                 .in_params_liveness_view = param_liveness_buffer,
                 .n_in_params = n_in_params,
@@ -255,7 +361,12 @@ combinatorial_kalman_filter(
                 .tip_lengths_view = tip_length_buffer,
                 .n_tracks_per_seed_view = n_tracks_per_seed_buffer,
                 .tmp_params_view = tmp_params_buffer,
-                .tmp_links_view = tmp_links_buffer};
+                .tmp_links_view = tmp_links_buffer,
+                .jacobian_ptr = jacobian_ptr.get(),
+                .tmp_jacobian_ptr = tmp_jacobian_ptr.get(),
+                .link_predicted_parameter_view =
+                    link_predicted_parameter_buffer,
+                .link_filtered_parameter_view = link_filtered_parameter_buffer};
 
             // The number of threads, blocks and shared memory to use.
             const unsigned int nThreads = warp_size * 2;
@@ -394,6 +505,12 @@ combinatorial_kalman_filter(
              *****************************************************************/
 
             {
+                if (config.run_mbf_smoother) {
+                    tmp_jacobian_ptr = vecmem::make_unique_alloc<
+                        bound_matrix<typename detector_t::algebra_type>[]>(
+                        mr.main, n_candidates);
+                }
+
                 // Allocate the kernel's payload in host memory.
                 using payload_t = device::propagate_to_next_surface_payload<
                     traccc::details::ckf_propagator_t<detector_t, bfield_t>,
@@ -409,7 +526,8 @@ combinatorial_kalman_filter(
                     .step = step,
                     .n_in_params = n_candidates,
                     .tips_view = tips_buffer,
-                    .tip_lengths_view = tip_length_buffer};
+                    .tip_lengths_view = tip_length_buffer,
+                    .tmp_jacobian_ptr = tmp_jacobian_ptr.get()};
 
                 const unsigned int nThreads = warp_size * 4;
                 const unsigned int nBlocks =
@@ -427,6 +545,8 @@ combinatorial_kalman_filter(
         n_in_params = n_candidates;
     }
 
+    tmp_jacobian_ptr.reset();
+
     TRACCC_DEBUG("Final link buffer usage was "
                  << copy.get_size(links_buffer) << " out of "
                  << link_buffer_capacity << " ("
@@ -439,19 +559,144 @@ combinatorial_kalman_filter(
      *****************************************************************/
 
     // Get the number of tips
-    auto n_tips_total = get_size(tips_buffer, size_staging_ptr.get(), stream);
+    unsigned int n_tips_total;
+
+    if (mr.host) {
+        const vecmem::async_size size = copy.get_size(tips_buffer, *(mr.host));
+        n_tips_total = size.get();
+    } else {
+        n_tips_total = copy.get_size(tips_buffer);
+    }
 
     vecmem::vector<unsigned int> tips_length_host(mr.host);
+    vecmem::unique_alloc_ptr<unsigned int[]> tip_to_output_map = nullptr;
 
-    if (n_tips_total > 0) {
-        copy(tip_length_buffer, tips_length_host)->wait();
-        tips_length_host.resize(n_tips_total);
+    unsigned int n_tips_total_filtered = n_tips_total;
+
+    if (n_tips_total > 0 && config.max_num_tracks_per_measurement > 0) {
+        // TODO: DOCS
+
+        vecmem::data::vector_buffer<unsigned int>
+            best_tips_per_measurement_index_buffer(
+                config.max_num_tracks_per_measurement * n_measurements,
+                mr.main);
+        copy.setup(best_tips_per_measurement_index_buffer)->wait();
+
+        vecmem::data::vector_buffer<unsigned long long int>
+            best_tips_per_measurement_insertion_mutex_buffer(n_measurements,
+                                                             mr.main);
+        copy.setup(best_tips_per_measurement_insertion_mutex_buffer)->wait();
+
+        // NOTE: This memset assumes that an all-zero bit vector interpreted
+        // as a floating point value has value zero, which is true for IEEE
+        // 754 but might not be true for arbitrary float formats.
+        copy.memset(best_tips_per_measurement_insertion_mutex_buffer, 0)
+            ->wait();
+
+        {
+            vecmem::data::vector_buffer<scalar>
+                best_tips_per_measurement_pval_buffer(
+                    config.max_num_tracks_per_measurement * n_measurements,
+                    mr.main);
+            copy.setup(best_tips_per_measurement_pval_buffer)->wait();
+
+            // NOTE: Normally, launching small blocks is a performance
+            // antipattern, but there is little use to having larger blocks
+            // here.
+            const unsigned int num_threads = 32;
+            const unsigned int num_blocks =
+                (n_tips_total + num_threads - 1) / num_threads;
+
+            kernels::gather_best_tips_per_measurement<<<num_blocks, num_threads,
+                                                        0, stream>>>(
+                tips_buffer, links_buffer, measurements_view,
+                best_tips_per_measurement_insertion_mutex_buffer,
+                best_tips_per_measurement_index_buffer,
+                best_tips_per_measurement_pval_buffer,
+                config.max_num_tracks_per_measurement);
+
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+        }
+
+        vecmem::data::vector_buffer<unsigned int> votes_per_tip_buffer(
+            n_tips_total, mr.main);
+        copy.setup(votes_per_tip_buffer)->wait();
+        copy.memset(votes_per_tip_buffer, 0)->wait();
+
+        {
+            const unsigned int num_threads = 512;
+            const unsigned int num_blocks =
+                (config.max_num_tracks_per_measurement * n_measurements +
+                 num_threads - 1) /
+                num_threads;
+
+            kernels::gather_measurement_votes<<<num_blocks, num_threads, 0,
+                                                stream>>>(
+                best_tips_per_measurement_insertion_mutex_buffer,
+                best_tips_per_measurement_index_buffer, votes_per_tip_buffer,
+                config.max_num_tracks_per_measurement);
+
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+        }
+
+        tip_to_output_map =
+            vecmem::make_unique_alloc<unsigned int[]>(mr.main, n_tips_total);
+
+        {
+            const unsigned int num_threads = 512;
+            const unsigned int num_blocks =
+                (n_tips_total + num_threads - 1) / num_threads;
+
+            vecmem::data::vector_buffer<unsigned int> new_tip_length_buffer{
+                n_tips_total, mr.main};
+            copy.setup(new_tip_length_buffer)->wait();
+
+            auto tip_to_output_map_idx =
+                vecmem::make_unique_alloc<unsigned int>(mr.main);
+
+            TRACCC_CUDA_ERROR_CHECK(cudaMemsetAsync(
+                tip_to_output_map_idx.get(), 0, sizeof(unsigned int), stream));
+
+            kernels::update_tip_length_buffer<<<num_blocks, num_threads, 0,
+                                                stream>>>(
+                tip_length_buffer, new_tip_length_buffer, votes_per_tip_buffer,
+                tip_to_output_map.get(), tip_to_output_map_idx.get(),
+                config.min_measurement_voting_fraction);
+
+            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+            str.synchronize();
+
+            TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
+                &n_tips_total_filtered, tip_to_output_map_idx.get(),
+                sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
+
+            tip_length_buffer = std::move(new_tip_length_buffer);
+
+            str.synchronize();
+        }
+    }
+
+    copy(tip_length_buffer, tips_length_host)->wait();
+    tips_length_host.resize(n_tips_total_filtered);
+
+    unsigned int n_states;
+
+    if (config.run_mbf_smoother) {
+        n_states = std::accumulate(tips_length_host.begin(),
+                                   tips_length_host.end(), 0u);
+    } else {
+        n_states = 0;
     }
 
     // Create track candidate buffer
-    edm::track_candidate_collection<default_algebra>::buffer
-        track_candidates_buffer{tips_length_host, mr.main, mr.host};
-    copy.setup(track_candidates_buffer)->ignore();
+    typename edm::track_container<typename detector_t::algebra_type>::buffer
+        track_candidates_buffer{
+            {tips_length_host, mr.main, mr.host},
+            {n_states, mr.main, vecmem::data::buffer_type::resizable},
+            measurements_view};
+    copy.setup(track_candidates_buffer.tracks)->ignore();
+    copy.setup(track_candidates_buffer.states)->ignore();
 
     // @Note: nBlocks can be zero in case there is no tip. This happens when
     // chi2_max config is set tightly and no tips are found
@@ -459,11 +704,18 @@ combinatorial_kalman_filter(
         const unsigned int nThreads = warp_size * 2;
         const unsigned int nBlocks = (n_tips_total + nThreads - 1) / nThreads;
 
+        const device::build_tracks_payload payload{
+            .seeds_view = seeds,
+            .links_view = links_buffer,
+            .tips_view = tips_buffer,
+            .tracks_view = {track_candidates_buffer},
+            .tip_to_output_map = tip_to_output_map.get(),
+            .jacobian_ptr = jacobian_ptr.get(),
+            .link_predicted_parameter_view = link_predicted_parameter_buffer,
+            .link_filtered_parameter_view = link_filtered_parameter_buffer,
+        };
         kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(
-            {.seeds_view = seeds,
-             .links_view = links_buffer,
-             .tips_view = tips_buffer,
-             .track_candidates_view = {track_candidates_buffer, measurements}});
+            config.run_mbf_smoother, payload);
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
         str.synchronize();

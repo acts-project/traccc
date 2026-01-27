@@ -10,6 +10,7 @@
 // Project include(s)
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
+#include "traccc/utils/logging.hpp"
 
 // detray include(s)
 #include <detray/propagator/base_actor.hpp>
@@ -43,22 +44,25 @@ struct ckf_aborter : detray::actor {
         abrt_state.count++;
         abrt_state.path_from_surface += stepping.step_size();
 
+        TRACCC_VERBOSE_HOST_DEVICE("Checking CKF aborter");
+
         // Stop at the next sensitive surface
         if (navigation.is_on_sensitive() &&
             abrt_state.path_from_surface > abrt_state.min_step_length) {
-            prop_state._heartbeat &= navigation.pause();
+            navigation.pause();
+            prop_state._heartbeat = false;
             abrt_state.success = true;
-        }
-
-        // Reset path from surface
-        if (navigation.is_on_sensitive()) {
             abrt_state.path_from_surface = 0.f;
+
+            TRACCC_VERBOSE_HOST_DEVICE("-> Found sensitive surface: %d",
+                                       navigation.barcode().index());
         }
 
         if (abrt_state.count > abrt_state.max_count) {
-            prop_state._heartbeat &= navigation.abort(
+            navigation.abort(
                 "CKF: Maximum number of steps to reach next sensitive surface "
                 "exceeded");
+            prop_state._heartbeat = false;
         }
     }
 };

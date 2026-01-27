@@ -7,7 +7,7 @@
 
 // Project include(s).
 #include "traccc/definitions/common.hpp"
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
@@ -47,7 +47,7 @@ TEST(track_params_estimation, helix_negative_charge) {
         pos, time, vector::normalize(mom), q / vector::norm(mom), B);
 
     // Make three spacepoints with the helix
-    measurement_collection_types::host measurements(&host_mr);
+    edm::measurement_collection<default_algebra>::host measurements(host_mr);
     edm::spacepoint_collection::host spacepoints{host_mr};
     measurements.resize(3);
     spacepoints.reserve(3);
@@ -66,7 +66,9 @@ TEST(track_params_estimation, helix_negative_charge) {
     seeds.push_back({0, 1, 2});
 
     // Run track parameter estimation
-    traccc::host::track_params_estimation tp(host_mr);
+    traccc::track_params_estimation_config track_params_estimation_config;
+    traccc::host::track_params_estimation tp(track_params_estimation_config,
+                                             host_mr);
     auto bound_params =
         tp(vecmem::get_data(measurements), vecmem::get_data(spacepoints),
            vecmem::get_data(seeds), B);
@@ -95,7 +97,7 @@ TEST(track_params_estimation, helix_positive_charge) {
         pos, time, vector::normalize(mom), q / vector::norm(mom), B);
 
     // Make three spacepoints with the helix
-    measurement_collection_types::host measurements(&host_mr);
+    edm::measurement_collection<default_algebra>::host measurements(host_mr);
     edm::spacepoint_collection::host spacepoints{host_mr};
     measurements.resize(3);
     spacepoints.reserve(3);
@@ -114,7 +116,9 @@ TEST(track_params_estimation, helix_positive_charge) {
     seeds.push_back({0, 1, 2});
 
     // Run track parameter estimation
-    traccc::host::track_params_estimation tp(host_mr);
+    traccc::track_params_estimation_config track_params_estimation_config;
+    traccc::host::track_params_estimation tp(track_params_estimation_config,
+                                             host_mr);
     auto bound_params =
         tp(vecmem::get_data(measurements), vecmem::get_data(spacepoints),
            vecmem::get_data(seeds), B);

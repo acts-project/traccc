@@ -14,7 +14,7 @@
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/finding_config.hpp"
@@ -41,7 +41,7 @@ struct find_tracks_payload {
      *
      * @warning Measurements on the same surface must be adjacent
      */
-    measurement_collection_types::const_view measurements_view;
+    edm::measurement_collection<default_algebra>::const_view measurements_view;
 
     /**
      * @brief View object to the vector of track parameters
@@ -119,6 +119,11 @@ struct find_tracks_payload {
      * @brief View object to the temporary link vector
      */
     vecmem::data::vector_view<candidate_link> tmp_links_view;
+
+    bound_matrix<typename detector_t::algebra_type>* jacobian_ptr = nullptr;
+    bound_matrix<typename detector_t::algebra_type>* tmp_jacobian_ptr = nullptr;
+    bound_track_parameters_collection_types::view link_predicted_parameter_view;
+    bound_track_parameters_collection_types::view link_filtered_parameter_view;
 };
 
 /// (Shared Event Data) Payload for the @c traccc::device::find_tracks function

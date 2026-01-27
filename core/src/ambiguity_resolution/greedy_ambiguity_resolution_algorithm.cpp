@@ -10,24 +10,24 @@
 
 // System include
 #include <algorithm>
+#include <cassert>
 #include <unordered_set>
 #include <vector>
 
 namespace traccc::host {
 
 auto greedy_ambiguity_resolution_algorithm::operator()(
-    const edm::track_candidate_container<default_algebra>::const_view&
-        track_container) const -> output_type {
+    const edm::track_container<default_algebra>::const_view& track_view) const
+    -> output_type {
 
-    const edm::track_candidate_collection<default_algebra>::const_device
-        track_candidates(track_container.tracks);
-    const measurement_collection_types::const_device measurements{
-        track_container.measurements};
+    const edm::track_container<default_algebra>::const_device input_tracks(
+        track_view);
 
-    const std::size_t n_tracks = track_candidates.size();
+    const std::size_t n_tracks = input_tracks.tracks.size();
 
     // Make the output container
-    edm::track_candidate_collection<default_algebra>::host output{m_mr.get()};
+    edm::track_container<default_algebra>::host output{m_mr.get()};
+    output.measurements = track_view.measurements;
 
     if (n_tracks == 0) {
         return output;
@@ -47,11 +47,11 @@ auto greedy_ambiguity_resolution_algorithm::operator()(
 
     for (unsigned int i = 0; i < n_tracks; i++) {
         // Fill the pval vectors
-        pvals[i] = track_candidates.at(i).pval();
+        pvals[i] = input_tracks.tracks.at(i).pval();
 
-        const auto measurement_indices =
-            track_candidates.at(i).measurement_indices();
-        const unsigned int n_cands = measurement_indices.size();
+        const vecmem::device_vector<const edm::track_constituent_link>
+            measurement_links = input_tracks.tracks.at(i).constituent_links();
+        const unsigned int n_cands = measurement_links.size();
 
         if (n_cands < m_config.min_meas_per_track) {
             // Reject if the number of measurements is less than the cut
@@ -62,8 +62,10 @@ auto greedy_ambiguity_resolution_algorithm::operator()(
         } else {
             // Fill measurement ids and n_measurements
             meas_ids[i].reserve(n_cands);
-            for (const auto idx : measurement_indices) {
-                meas_ids[i].push_back(measurements.at(idx).measurement_id);
+            for (const auto [type, idx] : measurement_links) {
+                assert(type == edm::track_constituent_link::measurement);
+                meas_ids[i].push_back(
+                    input_tracks.measurements.at(idx).identifier());
             }
             n_meas[i] = n_cands;
             assert(n_cands == meas_ids[i].size());
@@ -72,11 +74,13 @@ auto greedy_ambiguity_resolution_algorithm::operator()(
 
     // Get the sorted unique measurement vector
     std::unordered_set<std::size_t> unique_meas_set;
-    for (const auto& i : accepted_ids) {
-        const auto measurement_indices =
-            track_candidates.at(i).measurement_indices();
-        for (const auto idx : measurement_indices) {
-            unique_meas_set.insert(measurements.at(idx).measurement_id);
+    for (const unsigned int& i : accepted_ids) {
+        const vecmem::device_vector<const edm::track_constituent_link>
+            measurement_links = input_tracks.tracks.at(i).constituent_links();
+        for (const auto [type, idx] : measurement_links) {
+            assert(type == edm::track_constituent_link::measurement);
+            unique_meas_set.insert(
+                input_tracks.measurements.at(idx).identifier());
         }
     }
 
@@ -88,12 +92,12 @@ auto greedy_ambiguity_resolution_algorithm::operator()(
     std::vector<std::vector<unsigned int>> tracks_per_measurement;
     tracks_per_measurement.resize(unique_meas.size());
 
-    for (const auto& i : accepted_ids) {
+    for (const unsigned int i : accepted_ids) {
 
         std::unordered_set<std::size_t> deduplicated_ids(meas_ids[i].begin(),
                                                          meas_ids[i].end());
 
-        for (const auto& meas_id : deduplicated_ids) {
+        for (const std::size_t meas_id : deduplicated_ids) {
 
             const auto it = std::lower_bound(unique_meas.begin(),
                                              unique_meas.end(), meas_id);
@@ -106,8 +110,8 @@ auto greedy_ambiguity_resolution_algorithm::operator()(
 
     // Count the number of shared measurements
     std::vector<unsigned int> n_shared(n_tracks, 0);
-    for (const auto& i : accepted_ids) {
-        for (const auto& meas_id : meas_ids[i]) {
+    for (const unsigned int i : accepted_ids) {
+        for (const std::size_t meas_id : meas_ids[i]) {
             const auto it = std::lower_bound(unique_meas.begin(),
                                              unique_meas.end(), meas_id);
             assert(it != unique_meas.end());
@@ -121,7 +125,7 @@ auto greedy_ambiguity_resolution_algorithm::operator()(
 
     // Make relative number of shared measurement vector
     std::vector<traccc::scalar> rel_shared(n_tracks);
-    for (const auto& i : accepted_ids) {
+    for (const unsigned int i : accepted_ids) {
         rel_shared[i] = static_cast<traccc::scalar>(n_shared[i]) /
                         static_cast<traccc::scalar>(n_meas[i]);
     }
@@ -146,7 +150,7 @@ auto greedy_ambiguity_resolution_algorithm::operator()(
         }
 
         unsigned int max_shared(0);
-        for (const auto& i : accepted_ids) {
+        for (const unsigned int i : accepted_ids) {
             if (n_shared[i] > max_shared) {
                 max_shared = n_shared[i];
             }
@@ -171,20 +175,21 @@ auto greedy_ambiguity_resolution_algorithm::operator()(
 
         std::unordered_set<std::size_t> seen;
         std::vector<std::size_t> meas_ids_to_remove;
-        for (const auto& id : meas_ids[worst_track]) {
+        for (const std::size_t id : meas_ids[worst_track]) {
             if (seen.insert(id).second) {
                 meas_ids_to_remove.push_back(id);
             }
         }
 
-        for (const auto& id : meas_ids_to_remove) {
+        for (const std::size_t id : meas_ids_to_remove) {
             const auto it =
                 std::lower_bound(unique_meas.begin(), unique_meas.end(), id);
             assert(it != unique_meas.end());
             const std::size_t unique_meas_idx = static_cast<std::size_t>(
                 std::distance(unique_meas.begin(), it));
 
-            auto& tracks = tracks_per_measurement[unique_meas_idx];
+            std::vector<unsigned int>& tracks =
+                tracks_per_measurement[unique_meas_idx];
 
             if (tracks.empty()) {
                 continue;
@@ -200,7 +205,7 @@ auto greedy_ambiguity_resolution_algorithm::operator()(
             // If there is only one track associated with measurement, the
             // number of shared measurement can be reduced by one
             if (tracks.size() == 1) {
-                const auto tid = tracks[0];
+                const unsigned int tid = tracks[0];
 
                 n_shared[tid] -= static_cast<unsigned int>(
                     std::count(meas_ids[tid].begin(), meas_ids[tid].end(), id));
@@ -227,21 +232,22 @@ auto greedy_ambiguity_resolution_algorithm::operator()(
     }
 
     // Fill the output container with accepted tracks
-    output.reserve(accepted_ids.size());
-    for (const auto& i : accepted_ids) {
+    output.tracks.reserve(accepted_ids.size());
+    for (const unsigned int i : accepted_ids) {
         // Get the track candidate proxy.
-        const auto tcand = track_candidates.at(i);
+        const edm::track tcand = input_tracks.tracks.at(i);
         // Add it to the output container. In such a complicated way, because
         // the input container is a "device" container, and the output is a
         // "host" one. So pushing back the device proxy doesn't work directly.
         // (Jagged vectors cannot be converted to each other just so easily.)
-        output.push_back({tcand.params(),
-                          tcand.ndf(),
-                          tcand.chi2(),
-                          tcand.pval(),
-                          tcand.nholes(),
-                          {tcand.measurement_indices().begin(),
-                           tcand.measurement_indices().end()}});
+        output.tracks.push_back({tcand.fit_outcome(),
+                                 tcand.params(),
+                                 tcand.ndf(),
+                                 tcand.chi2(),
+                                 tcand.pval(),
+                                 tcand.nholes(),
+                                 {tcand.constituent_links().begin(),
+                                  tcand.constituent_links().end()}});
     }
 
     return output;

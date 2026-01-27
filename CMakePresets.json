@@ -11,7 +11,6 @@
             "CMAKE_BUILD_TYPE"         : "RelWithDebInfo",
             "TRACCC_BUILD_TESTING"     : "TRUE",
             "TRACCC_BUILD_EXAMPLES"    : "TRUE",
-            "TRACCC_BUILD_BENCHMARKS"  : "TRUE",
             "TRACCC_FAIL_ON_WARNINGS"  : "TRUE",
             "TRACCC_USE_ROOT"          : "FALSE",
             "TRACCC_ALGEBRA_PLUGINS"   : "ARRAY",
@@ -29,7 +28,6 @@
             "CMAKE_BUILD_TYPE"         : "RelWithDebInfo",
             "TRACCC_BUILD_TESTING"     : "TRUE",
             "TRACCC_BUILD_EXAMPLES"    : "TRUE",
-            "TRACCC_BUILD_BENCHMARKS"  : "TRUE",
             "TRACCC_FAIL_ON_WARNINGS"  : "TRUE",
             "TRACCC_USE_ROOT"          : "FALSE",
             "TRACCC_ALGEBRA_PLUGINS"   : "ARRAY",
@@ -42,6 +40,7 @@
          "displayName" : "CUDA FP32 Code Development",
          "inherits": ["base-fp32"],
          "cacheVariables": {
+            "TRACCC_BUILD_CUDA_UTILS" : "TRUE",
             "TRACCC_BUILD_CUDA" : "TRUE",
             "VECMEM_BUILD_CUDA_LIBRARY" : "TRUE"
          }
@@ -51,6 +50,7 @@
          "displayName" : "CUDA FP64 Code Development",
          "inherits": ["base-fp64"],
          "cacheVariables": {
+            "TRACCC_BUILD_CUDA_UTILS" : "TRUE",
             "TRACCC_BUILD_CUDA" : "TRUE",
             "VECMEM_BUILD_CUDA_LIBRARY" : "TRUE"
          }
@@ -60,6 +60,7 @@
          "displayName" : "SYCL FP32 Code Development",
          "inherits": ["base-fp32"],
          "cacheVariables": {
+            "TRACCC_BUILD_SYCL_UTILS" : "TRUE",
             "TRACCC_BUILD_SYCL" : "TRUE",
             "VECMEM_BUILD_SYCL_LIBRARY" : "TRUE"
          }
@@ -69,6 +70,7 @@
          "displayName" : "SYCL FP64 Code Development",
          "inherits": ["base-fp64"],
          "cacheVariables": {
+            "TRACCC_BUILD_SYCL_UTILS" : "TRUE",
             "TRACCC_BUILD_SYCL" : "TRUE",
             "VECMEM_BUILD_SYCL_LIBRARY" : "TRUE"
          }
@@ -126,22 +128,6 @@
          }
       },
       {
-         "name" : "kokkos-fp32",
-         "displayName" : "Kokkos FP32 Code Development",
-         "inherits": ["base-fp32"],
-         "cacheVariables": {
-            "TRACCC_BUILD_KOKKOS" : "TRUE"
-         }
-      },
-      {
-         "name" : "kokkos-fp64",
-         "displayName" : "Kokkos FP64 Code Development",
-         "inherits": ["base-fp64"],
-         "cacheVariables": {
-            "TRACCC_BUILD_KOKKOS" : "TRUE"
-         }
-      },
-      {
          "name" : "host-fp32",
          "displayName": "Host FP32 Code Development",
          "inherits": ["base-fp32"],
@@ -164,14 +150,12 @@
       {
          "name" : "full-fp32",
          "displayName": "Full FP32 Code Development",
-         "inherits": ["host-fp32", "cuda-fp32", "sycl-fp32", "alpaka-fp32",
-                      "kokkos-fp32"]
+         "inherits": ["host-fp32", "cuda-fp32", "sycl-fp32", "alpaka-fp32"]
       },
       {
          "name" : "full-fp64",
          "displayName": "Full FP64 Code Development",
-         "inherits": ["host-fp64", "cuda-fp64", "sycl-fp64", "alpaka-fp64",
-                      "kokkos-fp64"]
+         "inherits": ["host-fp64", "cuda-fp64", "sycl-fp64", "alpaka-fp64"]
       }
    ]
 }

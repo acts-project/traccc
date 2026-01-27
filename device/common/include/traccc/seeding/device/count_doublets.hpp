@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2025 CERN for the benefit of the ACTS project
+ * (c) 2021-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,8 +8,8 @@
 #pragma once
 
 // Local include(s).
-#include "traccc/device/fill_prefix_sum.hpp"
 #include "traccc/device/global_index.hpp"
+#include "traccc/device/prefix_sum_element.hpp"
 #include "traccc/edm/device/doublet_counter.hpp"
 
 // Project include(s).

@@ -124,4 +124,16 @@ OutputIt unique_copy(Queue &q, const memory_resource &mr, InputIt first,
 #endif
 }
 
+template <typename InputIterator, typename UnaryFunction>
+void for_each(Queue &q, const memory_resource &mr, InputIterator first,
+              InputIterator last, UnaryFunction f) {
+
+    auto execPolicy = getExecutionPolicy(q, mr);
+#if defined(ALPAKA_ACC_SYCL_ENABLED)
+    oneapi::dpl::for_each(execPolicy, first, last, f);
+#else
+    thrust::for_each(execPolicy, first, last, f);
+#endif
+}
+
 }  // namespace traccc::alpaka::details

@@ -25,14 +25,13 @@ __global__ void fill_track_candidates(
     // Set up the device objects.
     vecmem::device_vector<const unsigned int> sorted_ids(
         payload.sorted_ids_view);
-    edm::track_candidate_collection<default_algebra>::const_device
-        track_candidates(payload.track_candidates_view);
-    edm::track_candidate_collection<default_algebra>::device
-        res_track_candidates(payload.res_track_candidates_view);
+    edm::track_collection<default_algebra>::const_device tracks(
+        payload.tracks_view.tracks);
+    edm::track_collection<default_algebra>::device res_tracks(
+        payload.res_tracks_view.tracks);
 
     // Copy the appropriate track candidate.
-    res_track_candidates.at(globalIndex) =
-        track_candidates.at(sorted_ids.at(globalIndex));
+    res_tracks.at(globalIndex) = tracks.at(sorted_ids.at(globalIndex));
 }
 
 }  // namespace traccc::cuda::kernels

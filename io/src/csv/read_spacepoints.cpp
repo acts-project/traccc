@@ -22,17 +22,19 @@
 
 namespace traccc::io::csv {
 
-void read_spacepoints(edm::spacepoint_collection::host& spacepoints,
-                      measurement_collection_types::host& measurements,
-                      std::string_view hit_filename,
-                      std::string_view meas_filename,
-                      std::string_view meas_hit_map_filename,
-                      const traccc::host_detector* detector,
-                      const bool sort_measurements) {
+void read_spacepoints(
+    edm::spacepoint_collection::host& spacepoints,
+    edm::measurement_collection<default_algebra>::host& measurements,
+    std::string_view hit_filename, std::string_view meas_filename,
+    std::string_view meas_hit_map_filename,
+    const traccc::host_detector* detector,
+    const traccc::silicon_detector_description::host* detector_description,
+    const bool sort_measurements) {
 
     // Read all measurements.
-    const std::vector<measurement_id_type> new_idx_map = read_measurements(
-        measurements, meas_filename, detector, sort_measurements);
+    const std::vector<measurement_id_type> new_idx_map =
+        read_measurements(measurements, meas_filename, detector,
+                          detector_description, sort_measurements);
 
     // Measurement hit id reader
     auto mhid_reader =
@@ -57,7 +59,7 @@ void read_spacepoints(edm::spacepoint_collection::host& spacepoints,
         // Find the index of the measurement that this hit/spacepoint belongs
         // to. Which may not be valid, as some simulated hits are not associated
         // with a measurement.
-        auto const measurement_id_it =
+        const auto measurement_id_it =
             measurement_hit_ids.find(spacepoints.size());
         const unsigned int measurement_index =
             (measurement_id_it != measurement_hit_ids.end())

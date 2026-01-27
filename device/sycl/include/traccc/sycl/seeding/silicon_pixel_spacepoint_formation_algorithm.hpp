@@ -1,27 +1,17 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
-// Library include(s).
-#include "traccc/edm/measurement.hpp"
-#include "traccc/edm/spacepoint_collection.hpp"
-#include "traccc/geometry/detector.hpp"
-#include "traccc/geometry/detector_buffer.hpp"
-#include "traccc/sycl/utils/queue_wrapper.hpp"
-#include "traccc/utils/algorithm.hpp"
-#include "traccc/utils/memory_resource.hpp"
-#include "traccc/utils/messaging.hpp"
+// Local include(s).
+#include "traccc/sycl/utils/algorithm_base.hpp"
 
-// VecMem include(s).
-#include <vecmem/utils/copy.hpp>
-
-// System include(s).
-#include <functional>
+// Project include(s).
+#include "traccc/seeding/device/silicon_pixel_spacepoint_formation_algorithm.hpp"
 
 namespace traccc::sycl {
 
@@ -31,42 +21,37 @@ namespace traccc::sycl {
 /// measurements made on every detector module, into 3D spacepoint coordinates.
 ///
 class silicon_pixel_spacepoint_formation_algorithm
-    : public algorithm<edm::spacepoint_collection::buffer(
-          const detector_buffer&,
-          const measurement_collection_types::const_view&)>,
-      public messaging {
+    : public device::silicon_pixel_spacepoint_formation_algorithm,
+      public sycl::algorithm_base {
 
     public:
-    /// Output type
-    using output_type = edm::spacepoint_collection::buffer;
-
-    /// Constructor for spacepoint_formation
+    /// Constructor for the spacepoint formation algorithm
     ///
-    /// @param mr is the memory resource
+    /// @param mr The memory resource(s) to use in the algorithm
+    /// @param copy The copy object to use for copying data between device
+    ///             and host memory blocks
+    /// @param queue The SYCL queue to use
+    /// @param logger The logger instance to use
     ///
     silicon_pixel_spacepoint_formation_algorithm(
         const traccc::memory_resource& mr, vecmem::copy& copy,
-        queue_wrapper queue,
+        queue_wrapper& queue,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
-    /// Construct spacepoints from 2D silicon pixel measurements
-    ///
-    /// @param det Detector object
-    /// @param measurements A collection of measurements
-    /// @return A spacepoint buffer, with one spacepoint for every
-    ///         silicon pixel measurement
-    ///
-    output_type operator()(const detector_buffer& det,
-                           const measurement_collection_types::const_view&
-                               measurements) const override;
-
     private:
-    /// Memory resource used by the algorithm
-    traccc::memory_resource m_mr;
-    /// The copy object to use
-    std::reference_wrapper<vecmem::copy> m_copy;
-    /// SYCL queue object
-    mutable queue_wrapper m_queue;
-};
+    /// @name Function(s) inherited from
+    /// @c traccc::device::silicon_pixel_spacepoint_formation_algorithm
+    /// @{
+
+    /// Launch the spacepoint formation kernel
+    ///
+    /// @param payload The payload for the kernel
+    ///
+    void form_spacepoints_kernel(
+        const form_spacepoints_kernel_payload& payload) const override;
+
+    /// @}
+
+};  // class silicon_pixel_spacepoint_formation_algorithm
 
 }  // namespace traccc::sycl

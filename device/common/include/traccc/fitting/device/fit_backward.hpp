@@ -22,7 +22,7 @@ TRACCC_HOST_DEVICE inline void fit_backward(
     vecmem::device_vector<const unsigned int> param_ids(payload.param_ids_view);
     vecmem::device_vector<unsigned int> param_liveness(
         payload.param_liveness_view);
-    typename edm::track_fit_container<
+    typename edm::track_container<
         typename fitter_t::detector_type::algebra_type>::device
         tracks(payload.tracks_view);
 
@@ -31,7 +31,7 @@ TRACCC_HOST_DEVICE inline void fit_backward(
     }
 
     const unsigned int param_id = param_ids.at(globalIndex);
-    auto track = tracks.tracks.at(param_id);
+    edm::track track = tracks.tracks.at(param_id);
 
     // Run fitting
     fitter_t fitter(det, payload.field_data, cfg);
@@ -39,18 +39,19 @@ TRACCC_HOST_DEVICE inline void fit_backward(
     if (param_liveness.at(param_id) > 0u) {
         typename fitter_t::state fitter_state(
             track, tracks.states, tracks.measurements,
-            *(payload.barcodes_view.ptr() + param_id));
+            *(payload.surfaces_view.ptr() + param_id),
+            fitter.config().propagation);
 
         kalman_fitter_status fit_status = fitter.smooth(fitter_state);
 
+        fitter.update_statistics(fitter_state);
+
+        // Assume that this branch is only called if the forward fit was
+        // successfull (track param are alive)
+        fitter.check_fitting_result(fitter_state, kalman_fitter_status::SUCCESS,
+                                    fit_status);
+
         if (fit_status == kalman_fitter_status::SUCCESS) {
-
-            fitter.update_statistics(fitter_state);
-
-            fitter.check_fitting_result(fitter_state);
-
-            assert(fit_status == kalman_fitter_status::SUCCESS);
-
             track = fitter_state.m_fit_res;
         } else {
             param_liveness.at(param_id) = 0u;

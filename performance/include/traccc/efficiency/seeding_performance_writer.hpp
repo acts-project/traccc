@@ -14,7 +14,7 @@
 #include "traccc/utils/truth_matching_config.hpp"
 
 // Project include(s).
-#include "traccc/edm/measurement.hpp"
+#include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/seed_collection.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/utils/event_data.hpp"
@@ -66,11 +66,11 @@ class seeding_performance_writer : public messaging {
     /// Destructor
     ~seeding_performance_writer();
 
-    void write(
-        const edm::seed_collection::const_view& seeds_view,
-        const edm::spacepoint_collection::const_view& spacepoints_view,
-        const measurement_collection_types::const_view& measurements_view,
-        const event_data& evt_data);
+    void write(const edm::seed_collection::const_view& seeds_view,
+               const edm::spacepoint_collection::const_view& spacepoints_view,
+               const edm::measurement_collection<default_algebra>::const_view&
+                   measurements_view,
+               const event_data& evt_data);
 
     void finalize();
 

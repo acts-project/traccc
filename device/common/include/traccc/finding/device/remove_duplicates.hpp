@@ -145,7 +145,7 @@ TRACCC_HOST_DEVICE inline void remove_duplicates(
      * belonging to the executing thread and "that" as any other track
      * considered.
      */
-    const auto& Lthisbase =
+    const candidate_link& Lthisbase =
         links.at(payload.curr_links_idx + param_ids.at(tid));
 
     /*
@@ -180,8 +180,9 @@ TRACCC_HOST_DEVICE inline void remove_duplicates(
          */
         bool this_is_dominated = true;
 
-        auto Lthis = Lthisbase;
-        auto Lthat = links.at(payload.curr_links_idx + param_ids.at(i));
+        candidate_link Lthis = Lthisbase;
+        candidate_link Lthat =
+            links.at(payload.curr_links_idx + param_ids.at(i));
 
         if (payload.step + 1 - Lthat.n_skipped <=
                 cfg.duplicate_removal_minimum_length ||

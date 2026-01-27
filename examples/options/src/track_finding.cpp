@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -21,9 +21,6 @@ namespace traccc::opts {
 namespace po = boost::program_options;
 
 track_finding::track_finding() : interface("Track Finding Options") {
-    m_pdg_number = m_config.ptc_hypothesis.pdg_num();
-    m_track_candidates_range[0] = m_config.min_track_candidates_per_track;
-    m_track_candidates_range[1] = m_config.max_track_candidates_per_track;
 
     m_desc.add_options()(
         "max-num-branches-per-seed",
@@ -35,6 +32,17 @@ track_finding::track_finding() : interface("Track Finding Options") {
         po::value(&m_config.max_num_branches_per_surface)
             ->default_value(m_config.max_num_branches_per_surface),
         "Max number of branches per surface");
+    m_desc.add_options()(
+        "max-num-tracks-per-measurement",
+        po::value(&m_config.max_num_tracks_per_measurement)
+            ->default_value(m_config.max_num_tracks_per_measurement),
+        "Max number of tracks per input measurement; zero disables pruning");
+    m_desc.add_options()(
+        "min-measurement-voting-fraction",
+        po::value(&m_config.min_measurement_voting_fraction)
+            ->default_value(m_config.min_measurement_voting_fraction),
+        "Min fraction of voting measurements; only used if "
+        "`max-num-tracks-per-measurement` is non-zero");
     m_desc.add_options()("track-candidates-range",
                          po::value(&m_track_candidates_range)
                              ->value_name("MIN:MAX")
@@ -82,6 +90,15 @@ track_finding::track_finding() : interface("Track Finding Options") {
         po::value(&m_config.duplicate_removal_minimum_length)
             ->default_value(m_config.duplicate_removal_minimum_length),
         "Minimum track length for deduplication (0 to disable) [cardinal]");
+    m_desc.add_options()("finding-run-mbf-smoother",
+                         po::value(&m_config.run_mbf_smoother)
+                             ->default_value(m_config.run_mbf_smoother),
+                         "Enable the MBF smoother");
+    m_desc.add_options()("initial-links-per-seed",
+                         po::value(&m_config.initial_links_per_seed)
+                             ->default_value(m_config.initial_links_per_seed),
+                         "Initial number of links to allocate memory for "
+                         "[cardinal] [compute performance only]");
 }
 
 void track_finding::read(const po::variables_map &) {
@@ -109,6 +126,12 @@ std::unique_ptr<configuration_printable> track_finding::as_printable() const {
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Max branches at surface",
         std::to_string(m_config.max_num_branches_per_surface)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Max tracks per measurement",
+        std::to_string(m_config.max_num_tracks_per_measurement)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Min measurement voting fraction",
+        std::to_string(m_config.min_measurement_voting_fraction)));
     std::ostringstream candidate_ss;
     candidate_ss << m_track_candidates_range;
     cat->add_child(std::make_unique<configuration_kv_pair>(
@@ -135,6 +158,11 @@ std::unique_ptr<configuration_printable> track_finding::as_printable() const {
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Minimum p",
         std::format("{} GeV", m_config.min_p / traccc::unit<float>::GeV)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Run MBF smoother", m_config.run_mbf_smoother ? "true" : "false"));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Initial links per seed",
+        std::to_string(m_config.initial_links_per_seed)));
 
     return cat;
 }

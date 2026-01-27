@@ -63,7 +63,8 @@ TEST_P(SurfaceBinningTests, Run) {
 
     // Read the hits from the relevant event file
     traccc::edm::spacepoint_collection::host spacepoints_truth{host_mr};
-    traccc::measurement_collection_types::host measurements_truth{&host_mr};
+    traccc::edm::measurement_collection<traccc::default_algebra>::host
+        measurements_truth{host_mr};
     traccc::io::read_spacepoints(spacepoints_truth, measurements_truth, event,
                                  data_dir, &detector);
 
