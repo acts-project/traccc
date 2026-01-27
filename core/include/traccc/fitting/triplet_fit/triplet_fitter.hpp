@@ -62,13 +62,17 @@ class triplet_fitter {
 
     // Convenience function: wrap angle between -Pi and Pi
     static inline scalar wrap_pi_mpi(scalar angle) {
-        while (angle > static_cast<scalar>(M_PI))
-            angle = angle - 2.f * static_cast<scalar>(M_PI);
+        // Map angle to [ -2*PI, 2*PI ]
+        const scalar two_pi = 2.0f * static_cast<scalar>(M_PI);
+        angle = std::fmod(angle + static_cast<scalar>(M_PI), two_pi);
 
-        while (angle < -1.f * static_cast<scalar>(M_PI))
-            angle = angle + 2.f * static_cast<scalar>(M_PI);
+        // Handle negative results from fmod to ensure we are in [ 0, 2*PI ]
+        if (angle < 0) {
+            angle += two_pi;
+        }
 
-        return angle;
+        // Shift back to [ -PI, PI ]
+        return angle - static_cast<scalar>(M_PI);
     }
 
     // Convenience function: difference of two azimuthal angles
