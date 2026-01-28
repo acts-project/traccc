@@ -32,8 +32,8 @@ struct gbts_ctx {
     // nEdges, nConnections, nConnectedEdges, .., nSeeds
     unsigned int* d_counters{};
 
-    // device cut values
-    gbts_algo_params* d_algo_params;
+    // device side graph building cuts
+    gbts_graph_building_params* d_graph_building_params;
 
     // node making and binning
     int* d_layerCounts{};
@@ -95,23 +95,19 @@ struct gbts_ctx {
     int* d_active_edges{};
     // d_levels[edge_idx] = the maxium length of seeds starting with this edge
     char* d_levels{};
-    int* d_level_views{};       // edge indices by level
-    int* d_level_boundaries{};  // number of edges for each level in the above
+    // #paths, is terminus
+    short2* d_outgoing_paths{};
 
     // seed-extraction walkthrough
 
-    // edge_idx and prev mini_state forms a seeds uniuqe path through the graph
-    int2* d_mini_states{};
+    // edge_idx and prev path_store idx forms a uniuqe path through the graph
+    int2* d_path_store{};
     int2* d_seed_proposals{};  // int quality and final mini_state_idx
-    kernels::edgeState* d_state_store{};  // global overflow of live edgeStates
     // first 32 bits are seed quality second 32 bits are seed_proposals index
     unsigned long long int* d_edge_bids{};
     // 0 as default/is real seed, 1 as maybe seed,
     //-1 as maybe fake seed, -2 as fake
     char* d_seed_ambiguity{};
-
-    // output
-    kernels::Tracklet* d_seeds{};
 };
 
 gbts_seeding_algorithm::gbts_seeding_algorithm(
@@ -132,20 +128,23 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
 
     cudaStream_t stream = details::get_stream(m_stream);
 
-    cudaMalloc(&ctx.d_algo_params, sizeof(m_config.algo_params));
-    cudaMemcpyAsync(ctx.d_algo_params, &m_config.algo_params,
-                    sizeof(m_config.algo_params), cudaMemcpyHostToDevice);
+    cudaMalloc(&ctx.d_graph_building_params,
+               sizeof(m_config.graph_building_params));
+    cudaMemcpyAsync(
+        ctx.d_graph_building_params, &m_config.graph_building_params,
+        sizeof(m_config.graph_building_params), cudaMemcpyHostToDevice);
 
     // 0. bin spacepoints by the maping supplied to config.m_surfaceToLayerMap
     ctx.nSp = m_copy.get().get_size(spacepoints);
-    if (ctx.nSp == 0)
+    if (ctx.nSp == 0) {
         return {0, m_mr.main};
-
+    }
     unsigned int nThreads = 128;
     unsigned int nBlocks = 1 + (ctx.nSp - 1) / nThreads;
 
     cudaMalloc(&ctx.d_layerCounts, (m_config.nLayers + 1) * sizeof(int));
-    cudaMemset(ctx.d_layerCounts, 0, (m_config.nLayers + 1) * sizeof(int));
+    cudaMemsetAsync(ctx.d_layerCounts, 0, (m_config.nLayers + 1) * sizeof(int),
+                    stream);
 
     cudaMalloc(&ctx.d_spacepointsLayer, ctx.nSp * sizeof(short));
     cudaMalloc(&ctx.d_reducedSP, ctx.nSp * sizeof(float4));
@@ -176,7 +175,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
         spacepoints, measurements, ctx.d_volumeToLayerMap,
         ctx.d_surfaceToLayerMap, ctx.d_layerType, ctx.d_reducedSP,
         ctx.d_layerCounts, ctx.d_spacepointsLayer,
-        m_config.algo_params.type1_max_width, ctx.nSp,
+        m_config.graph_building_params.type1_max_width, ctx.nSp,
         m_config.volumeToLayerMap.size(), m_config.surfaceToLayerMap.size());
 
     cudaStreamSynchronize(stream);
@@ -271,7 +270,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     }
     size_t hist_size = sizeof(int) * m_config.n_eta_bins * m_config.n_phi_bins;
     cudaMalloc(&ctx.d_eta_phi_histo, hist_size);
-    cudaMemset(ctx.d_eta_phi_histo, 0, hist_size);
+    cudaMemsetAsync(ctx.d_eta_phi_histo, 0, hist_size, stream);
     cudaMalloc(&ctx.d_phi_cusums, hist_size);
 
     nBlocks = 1 + (ctx.nNodes - 1) / nNodesPerBlock;
@@ -367,8 +366,8 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     kernels::node_sorting_kernel<<<nBlocks, nThreads, 0, stream>>>(
         ctx.d_sp_params, ctx.d_node_eta_index, ctx.d_node_phi_index,
         ctx.d_phi_cusums, ctx.d_node_params, ctx.d_node_index,
-        ctx.d_original_sp_idx, ctx.d_algo_params, nNodesPerBlock, ctx.nNodes,
-        m_config.n_phi_bins);
+        ctx.d_original_sp_idx, ctx.d_graph_building_params, nNodesPerBlock,
+        ctx.nNodes, m_config.n_phi_bins);
 
     cudaStreamSynchronize(stream);
     cudaFree(ctx.d_sp_params);
@@ -435,7 +434,9 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
         // large bins will be split into smaller sub-views
 
         int nNodesInBin1 = bin1_end - bin1_begin;
-
+        if (bin1_begin > bin1_end) {
+            nNodesInBin1 = bin1_begin - bin1_end;
+        }
         int_nBinPairs +=
             1 + (nNodesInBin1 - 1) /
                     traccc::device::gbts_consts::node_buffer_length;
@@ -463,12 +464,13 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
         // max radius of bin2 - min radius of bin1
         float maxDeltaR = std::fabs(rb2 - rb1);
 
-        float deltaPhi = m_config.algo_params.min_delta_phi +
-                         m_config.algo_params.dphi_coeff * maxDeltaR;
+        float deltaPhi = m_config.graph_building_params.min_delta_phi +
+                         m_config.graph_building_params.dphi_coeff * maxDeltaR;
 
         if (maxDeltaR < 60) {
-            deltaPhi = m_config.algo_params.min_delta_phi_low_dr +
-                       m_config.algo_params.dphi_coeff_low_dr * maxDeltaR;
+            deltaPhi =
+                m_config.graph_building_params.min_delta_phi_low_dr +
+                m_config.graph_building_params.dphi_coeff_low_dr * maxDeltaR;
         }
         // splitting large bins into more consistent sizes
 
@@ -526,7 +528,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
                     cudaMemcpyHostToDevice, stream);
 
     cudaMalloc(&ctx.d_counters, sizeof(unsigned int) * 12);
-    cudaMemset(ctx.d_counters, 0, sizeof(unsigned int) * 12);
+    cudaMemsetAsync(ctx.d_counters, 0, sizeof(unsigned int) * 12, stream);
 
     cudaStreamSynchronize(stream);
 
@@ -536,15 +538,17 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     cudaMalloc(&ctx.d_edge_nodes, sizeof(int2) * ctx.nMaxEdges);
 
     cudaMalloc(&ctx.d_num_incoming_edges, sizeof(int) * (ctx.nNodes + 1));
-    cudaMemset(ctx.d_num_incoming_edges, 0, sizeof(int) * (ctx.nNodes + 1));
+    cudaMemsetAsync(ctx.d_num_incoming_edges, 0, sizeof(int) * (ctx.nNodes + 1),
+                    stream);
 
     nBlocks = ctx.nUsedBinPairs;
     nThreads = 128;
 
     kernels::graphEdgeMakingKernel<<<nBlocks, nThreads, 0, stream>>>(
         ctx.d_bin_pair_views, ctx.d_bin_pair_dphi, ctx.d_node_params,
-        ctx.d_algo_params, ctx.d_counters, ctx.d_edge_nodes, ctx.d_edge_params,
-        ctx.d_num_incoming_edges, ctx.nMaxEdges, m_config.n_phi_bins);
+        ctx.d_graph_building_params, ctx.d_counters, ctx.d_edge_nodes,
+        ctx.d_edge_params, ctx.d_num_incoming_edges, ctx.nMaxEdges,
+        m_config.n_phi_bins);
 
     cudaStreamSynchronize(stream);
     cudaFree(ctx.d_node_params);
@@ -615,18 +619,18 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     data_size = ctx.nEdges * sizeof(unsigned char);
 
     cudaMalloc(&ctx.d_num_neighbours, data_size);
-    cudaMemset(ctx.d_num_neighbours, 0, data_size);
+    cudaMemsetAsync(ctx.d_num_neighbours, 0, data_size, stream);
 
     data_size = ctx.nEdges * sizeof(int);
 
     cudaMalloc(&ctx.d_reIndexer, data_size);
-    cudaMemset(ctx.d_reIndexer, 0xFF, data_size);
+    cudaMemsetAsync(ctx.d_reIndexer, 0xFF, data_size, stream);
 
     data_size = m_config.max_num_neighbours * ctx.nEdges * sizeof(int);
     cudaMalloc(&ctx.d_neighbours, data_size);
 
     kernels::graphEdgeMatchingKernel<<<nBlocks, nThreads, 0, stream>>>(
-        ctx.d_algo_params, ctx.d_edge_params, ctx.d_edge_nodes,
+        ctx.d_graph_building_params, ctx.d_edge_params, ctx.d_edge_nodes,
         ctx.d_num_incoming_edges, ctx.d_edge_links, ctx.d_num_neighbours,
         ctx.d_neighbours, ctx.d_reIndexer, ctx.d_counters, ctx.nEdges,
         m_config.max_num_neighbours);
@@ -709,7 +713,8 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     data_size = ctx.nConnectedEdges * sizeof(int);
 
     cudaMalloc(&ctx.d_active_edges, data_size);
-    cudaMemset(ctx.d_active_edges, 0xFF, data_size);  // initialize to -1
+    cudaMemsetAsync(ctx.d_active_edges, 0xFF, data_size,
+                    stream);  // initialize to -1
 
     data_size = 2 * ctx.nConnectedEdges * sizeof(unsigned char);
 
@@ -717,16 +722,9 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     cudaMalloc(&ctx.d_levels, data_size);
     // initalize to 1 so level counts the maxium number of edge segments
     //  for a seed originating at the edge
-    cudaMemset(ctx.d_levels, 0x1, data_size);
+    cudaMemsetAsync(ctx.d_levels, 0x1, data_size, stream);
 
-    data_size = ctx.nConnectedEdges * sizeof(int);
-
-    cudaMalloc(&ctx.d_level_views, data_size);  // level-based edge views
-
-    data_size = (traccc::device::gbts_consts::max_cca_iter + 1) * sizeof(int);
-
-    cudaMalloc(&ctx.d_level_boundaries, data_size);
-    cudaMemset(ctx.d_level_boundaries, 0, data_size);
+    cudaMalloc(&ctx.d_outgoing_paths, ctx.nConnectedEdges * sizeof(short2));
 
     unsigned int nEdgesLeft = ctx.nConnectedEdges;
 
@@ -744,8 +742,8 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
          iter++) {
         kernels::CCA_IterationKernel<<<nBlocks, nThreads, 0, stream>>>(
             ctx.d_output_graph, ctx.d_levels, ctx.d_active_edges,
-            ctx.d_level_views, ctx.d_level_boundaries, ctx.d_counters, iter,
-            ctx.nConnectedEdges, m_config.max_num_neighbours);
+            ctx.d_outgoing_paths, ctx.d_counters, iter, ctx.nConnectedEdges,
+            m_config.max_num_neighbours, m_config.minLevel);
 
         cudaStreamSynchronize(stream);
     }
@@ -762,131 +760,114 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
         return {0, m_mr.main};
     }
 
-    int nEdgesByLevel_cuml[traccc::device::gbts_consts::max_cca_iter + 1];
-    nEdgesByLevel_cuml[traccc::device::gbts_consts::max_cca_iter] = 0;
+    nThreads = 128;
+    nBlocks = 1 + (ctx.nConnectedEdges - 1) / nThreads;
 
-    cudaMemcpyAsync(&nEdgesByLevel_cuml[0], ctx.d_level_boundaries,
-                    sizeof(nEdgesByLevel_cuml), cudaMemcpyDeviceToHost, stream);
+    cudaStreamSynchronize(stream);
 
-    int level_max = traccc::device::gbts_consts::max_cca_iter;
-    for (; nEdgesByLevel_cuml[level_max - 1] == 0; level_max--)
-        ;
+    kernels::count_terminus_edges<<<nBlocks, nThreads, 0, stream>>>(
+        ctx.d_path_store, ctx.d_outgoing_paths, ctx.d_counters,
+        ctx.nConnectedEdges);
 
-    if (level_max < m_config.minLevel)
-        return {0, m_mr.main};
-    // 7. extract seeds, longest segment first
+    cudaStreamSynchronize(stream);
 
-    int device;
-    cudaGetDevice(&device);
-    int SM_count;
-    cudaDeviceGetAttribute(&SM_count, cudaDevAttrMultiProcessorCount, device);
-    int smem;
-    cudaDeviceGetAttribute(&smem, cudaDevAttrMaxSharedMemoryPerMultiprocessor,
-                           device);
+    // nPaths to terminus, nTerminusEdges
+    unsigned int path_sizes[2];
+    cudaMemcpyAsync(&path_sizes, &ctx.d_counters[6], 2 * sizeof(unsigned int),
+                    cudaMemcpyDeviceToHost, stream);
 
-    nThreads = 1024;
+    TRACCC_DEBUG(path_sizes[0] << "size of path store | nTerminusEdges "
+                               << path_sizes[1]);
 
-    nBlocks = 0;
-    int smem_per_block = static_cast<int>(sizeof(kernels::edgeState)) *
-                         traccc::device::gbts_consts::shared_state_buffer_size;
-
-    unsigned int soft_max_blocks =
-        static_cast<unsigned int>(SM_count * (smem / smem_per_block));
-
-    unsigned int nMaxMini = 10000 + ctx.nConnectedEdges * 3;
-    cudaMalloc(&ctx.d_mini_states, sizeof(int2) * nMaxMini);
-
-    unsigned int nMaxStateStore = 2000 + ctx.nConnectedEdges;
-    cudaMalloc(&ctx.d_state_store, sizeof(kernels::edgeState) * nMaxStateStore);
-
-    unsigned int nMaxProps = 4000 + ctx.nConnectedEdges;
-    cudaMalloc(&ctx.d_seed_proposals, sizeof(int2) * nMaxProps);
-    cudaMalloc(&ctx.d_seed_ambiguity, sizeof(char) * nMaxProps);
+    cudaMalloc(&ctx.d_path_store,
+               (path_sizes[0] + path_sizes[1]) * sizeof(int2));
+    cudaMalloc(&ctx.d_seed_proposals, path_sizes[0] * sizeof(int2));
+    cudaMalloc(&ctx.d_seed_ambiguity, path_sizes[0] * sizeof(char));
 
     cudaMalloc(&ctx.d_edge_bids,
-               sizeof(unsigned long long int) * ctx.nConnectedEdges);
+               ctx.nConnectedEdges * sizeof(unsigned long long int));
+    cudaMemsetAsync(ctx.d_edge_bids, 0,
+                    ctx.nConnectedEdges * sizeof(unsigned long long int),
+                    stream);
 
-    unsigned int nMaxSeeds = 20 + ctx.nConnectedEdges / 20;
-    cudaMalloc(&ctx.d_seeds, sizeof(kernels::Tracklet) * nMaxSeeds);
+    kernels::add_terminus_to_path_store<<<nBlocks, nThreads, 0, stream>>>(
+        ctx.d_path_store, ctx.d_outgoing_paths, ctx.d_counters,
+        ctx.nConnectedEdges);
 
-    int view_shift = nEdgesByLevel_cuml[0];
-    for (int level = level_max - 1; level + 1 >= m_config.minLevel; level--) {
-        unsigned int nRootEdges = static_cast<unsigned int>(
-            nEdgesByLevel_cuml[level] - nEdgesByLevel_cuml[level_max]);
+    nBlocks = 1 + (path_sizes[1] - 1) / 16;
+    nThreads = 128;
 
-        if (nRootEdges == 0)
-            continue;
-        unsigned int estimated_nStates =
-            static_cast<unsigned int>(std::pow(1.3f, level + 1) * nRootEdges);
+    kernels::fill_path_store<<<nBlocks, nThreads, 0, stream>>>(
+        ctx.d_path_store, ctx.d_output_graph, ctx.d_levels, ctx.d_counters,
+        path_sizes[1], m_config.max_num_neighbours);
 
-        nBlocks +=
-            1 + estimated_nStates /
-                    traccc::device::gbts_consts::shared_state_buffer_size;
+    nThreads = 128;
+    nBlocks = 1 + (path_sizes[0] + path_sizes[1] - 1) / nThreads;
 
-        if (nBlocks > soft_max_blocks || level_max - level > 3 ||
-            level + 1 == m_config.minLevel) {
+    kernels::fit_segments<<<nBlocks, nThreads, 0, stream>>>(
+        ctx.d_reducedSP, ctx.d_output_graph, ctx.d_path_store,
+        ctx.d_seed_proposals, ctx.d_edge_bids, ctx.d_seed_ambiguity,
+        ctx.d_levels, ctx.d_counters, path_sizes[1], m_config.minLevel,
+        m_config.max_num_neighbours, m_config.seed_extraction_params);
 
-            int view_min = view_shift - nEdgesByLevel_cuml[level];
-            int view_max = view_shift - nEdgesByLevel_cuml[level_max];
+    unsigned int nProps = 0;
+    cudaMemcpyAsync(&nProps, &ctx.d_counters[8], sizeof(unsigned int),
+                    cudaMemcpyDeviceToHost, stream);
 
-            if (view_min == view_max)
-                continue;
+    TRACCC_DEBUG("nProps " << nProps);
 
-            cudaMemset(ctx.d_edge_bids, 0,
-                       sizeof(unsigned long long int) * ctx.nConnectedEdges);
-
-            kernels::seed_extracting_kernel<<<nBlocks, nThreads, 0, stream>>>(
-                view_min, view_max, ctx.d_level_views, ctx.d_levels,
-                ctx.d_reducedSP, ctx.d_output_graph, ctx.d_mini_states,
-                ctx.d_state_store, ctx.d_edge_bids, ctx.d_seed_ambiguity,
-                ctx.d_seed_proposals, ctx.d_seeds, ctx.d_counters,
-                m_config.minLevel, nMaxMini, nMaxProps,
-                nMaxStateStore / nBlocks, nMaxSeeds,
-                m_config.max_num_neighbours);
-
-            level_max = level;
-            nBlocks = 0;
-        }
-    }
     cudaStreamSynchronize(stream);
 
     cudaFree(ctx.d_levels);
-    cudaFree(ctx.d_level_views);
-    cudaFree(ctx.d_level_boundaries);
-    cudaFree(ctx.d_state_store);
-    cudaFree(ctx.d_mini_states);
-    cudaFree(ctx.d_seed_proposals);
-    cudaFree(ctx.d_edge_bids);
-    cudaFree(ctx.d_seed_ambiguity);
-
-    cudaFree(ctx.d_output_graph);
-    cudaFree(ctx.d_algo_params);
+    cudaFree(ctx.d_outgoing_paths);
     cudaFree(ctx.d_reducedSP);
 
-    cudaMemcpyAsync(&ctx.nSeeds, &ctx.d_counters[9], sizeof(unsigned int),
-                    cudaMemcpyDeviceToHost, stream);
-
-    if (ctx.nSeeds > nMaxSeeds)
-        ctx.nSeeds = nMaxSeeds;
-    if (ctx.nSeeds == 0)
+    if (nProps == 0) {
         return {0, m_mr.main};
+    }
+
+    nThreads = 128;
+    nBlocks = 1 + (nProps - 1) / nThreads;
+
+    kernels::reset_edge_bids<<<nBlocks, nThreads, 0, stream>>>(
+        ctx.d_path_store, ctx.d_seed_proposals, ctx.d_edge_bids,
+        ctx.d_seed_ambiguity, ctx.d_counters, -1);
+
+    for (int round = 0; round < 5; ++round) {
+
+        cudaMemsetAsync(ctx.d_edge_bids, 0,
+                        ctx.nConnectedEdges * sizeof(unsigned long long int),
+                        stream);
+
+        kernels::seeds_rebid_for_edges<<<nBlocks, nThreads, 0, stream>>>(
+            ctx.d_path_store, ctx.d_seed_proposals, ctx.d_edge_bids,
+            ctx.d_seed_ambiguity, nProps);
+
+        kernels::reset_edge_bids<<<nBlocks, nThreads, 0, stream>>>(
+            ctx.d_path_store, ctx.d_seed_proposals, ctx.d_edge_bids,
+            ctx.d_seed_ambiguity, ctx.d_counters, round);
+    }
+
+    cudaFree(ctx.d_edge_bids);
+    cudaFree(ctx.d_counters);
+    cudaFree(ctx.d_graph_building_params);
 
     // 8. convert to 3sp seeds and make output buffer
 
     edm::seed_collection::buffer output_seeds(
-        ctx.nSeeds, m_mr.main, vecmem::data::buffer_type::resizable);
+        nProps, m_mr.main, vecmem::data::buffer_type::resizable);
     m_copy.get().setup(output_seeds)->ignore();
 
-    nThreads = 128;
-    nBlocks = 1 + (ctx.nSeeds - 1) / nThreads;
-
     kernels::gbts_seed_conversion_kernel<<<nBlocks, nThreads, 0, stream>>>(
-        ctx.d_seeds, output_seeds, ctx.nSeeds);
+        ctx.d_seed_proposals, ctx.d_seed_ambiguity, ctx.d_path_store,
+        ctx.d_output_graph, output_seeds, nProps, m_config.max_num_neighbours);
 
     cudaStreamSynchronize(stream);
 
-    cudaFree(ctx.d_seeds);
-    cudaFree(ctx.d_counters);
+    cudaFree(ctx.d_output_graph);
+    cudaFree(ctx.d_path_store);
+    cudaFree(ctx.d_seed_proposals);
+    cudaFree(ctx.d_seed_ambiguity);
 
     error = cudaGetLastError();
 

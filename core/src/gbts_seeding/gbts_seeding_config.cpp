@@ -103,11 +103,11 @@ bool gbts_seedfinder_config::setLinkingScheme(
         volumeToLayerMap[vLpair.second] = vLpair.first;
     // scale cuts
     float ptScale = 900.0f / minPt;
-    algo_params.min_delta_phi *= ptScale;
-    algo_params.dphi_coeff *= ptScale;
-    algo_params.min_delta_phi_low_dr *= ptScale;
-    algo_params.dphi_coeff_low_dr *= ptScale;
-    algo_params.max_Kappa *= ptScale;
+    graph_building_params.min_delta_phi *= ptScale;
+    graph_building_params.dphi_coeff *= ptScale;
+    graph_building_params.min_delta_phi_low_dr *= ptScale;
+    graph_building_params.dphi_coeff_low_dr *= ptScale;
+    graph_building_params.max_Kappa *= ptScale;
 
     // contianers sizes
     nLayers = static_cast<unsigned int>(layerInfo.type.size());
