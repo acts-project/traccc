@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2025 CERN for the benefit of the ACTS project
+ * (c) 2025-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -11,7 +11,7 @@
 #include <Acts/Utilities/Logger.hpp>
 
 // detray include(s)
-#include <detray/utils/log.hpp>
+#include <detray/utils/detail/logging_helpers.hpp>
 
 namespace traccc {
 
@@ -50,79 +50,54 @@ const Logger& getDummyLogger();
 #define TRACCC_ERROR(x) ACTS_ERROR(x)
 #define TRACCC_FATAL(x) ACTS_FATAL(x)
 
-/// @TODO: Temporary usage of detray logger, until the ACTS logger can be
-/// used/passed in host-device code
+// Define traccc logging macros that are safe to use in device compiled code:
 
-// Exclude SYCL and HIP builds, which run into linker errors
-#if defined(CL_SYCL_LANGUAGE_VERSION) || defined(SYCL_LANGUAGE_VERSION) || \
-    defined(__HIP__)
-#define __EXCLUDE_LOGS__
-#endif
+// Printed only when compiled for host
+// TODO: Harmonize with ACTS logger
+#define TRACCC_FATAL_HOST(x) DETRAY_FATAL_STREAM("TRACCC", x)
+#define TRACCC_ERROR_HOST(x) DETRAY_ERROR_STREAM("TRACCC", x)
+#define TRACCC_WARNING_HOST(x) DETRAY_WARN_STREAM("TRACCC", x)
+#define TRACCC_INFO_HOST(x) DETRAY_INFO_STREAM("TRACCC", x)
+#define TRACCC_VERBOSE_HOST(x) DETRAY_VERBOSE_STREAM("TRACCC", x)
+#define TRACCC_DEBUG_HOST(x) DETRAY_DEBUG_STREAM("TRACCC", x)
 
-#if !defined(__EXCLUDE_LOGS__)
-// Host log messages in host-device code (@TODO: This will currently claim to
-// come from "DETRAY")
-#define TRACCC_VERBOSE_HOST(x) DETRAY_VERBOSE_HOST(x)
-#define TRACCC_DEBUG_HOST(x) DETRAY_DEBUG_HOST(x)
-#define TRACCC_INFO_HOST(x) DETRAY_INFO_HOST(x)
-#define TRACCC_WARNING_HOST(x) DETRAY_WARN_HOST(x)
-#define TRACCC_ERROR_HOST(x) DETRAY_ERROR_HOST(x)
-#define TRACCC_FATAL_HOST(x) DETRAY_FATAL_HOST(x)
-
-// Host-device log messages for host-device code
-#define TRACCC_WARNING_HOST_DEVICE(x, ...) \
-    DETRAY_LOG_PRINTF("TRACCC", "WARNING", x, __VA_ARGS__)
-#define TRACCC_ERROR_HOST_DEVICE(x, ...) \
-    DETRAY_LOG_PRINTF("TRACCC", "ERROR", x, __VA_ARGS__)
+// Printed in both host and device execution
+// TODO: Implement rate limiting
 #define TRACCC_FATAL_HOST_DEVICE(x, ...) \
-    DETRAY_LOG_PRINTF("TRACCC", "FATAL", x, __VA_ARGS__)
-#else
-#define TRACCC_VERBOSE_HOST(x)
-#define TRACCC_DEBUG_HOST(x)
-#define TRACCC_INFO_HOST(x)
-#define TRACCC_WARNING_HOST(x)
-#define TRACCC_ERROR_HOST(x)
-#define TRACCC_FATAL_HOST(x)
-
-#define TRACCC_WARNING_HOST_DEVICE(x, ...)
-#define TRACCC_ERROR_HOST_DEVICE(x, ...)
-#define TRACCC_FATAL_HOST_DEVICE(x, ...)
-#endif  // defined(__EXCLUDE_LOGS__)
-
-#if DETRAY_LOG_LVL > 0 && !defined(__EXCLUDE_LOGS__)
+    DETRAY_FATAL_PRINTF("TRACCC", x, __VA_ARGS__)
+#define TRACCC_ERROR_HOST_DEVICE(x, ...) \
+    DETRAY_ERROR_PRINTF("TRACCC", x, __VA_ARGS__)
+#define TRACCC_WARNING_HOST_DEVICE(x, ...) \
+    DETRAY_WARN_PRINTF("TRACCC", x, __VA_ARGS__)
 #define TRACCC_INFO_HOST_DEVICE(x, ...) \
-    DETRAY_LOG_PRINTF("TRACCC", "INFO", x, __VA_ARGS__)
-#else
-#define TRACCC_INFO_HOST_DEVICE(x, ...)
-#endif
-
-#if DETRAY_LOG_LVL > 1 && !defined(__EXCLUDE_LOGS__)
+    DETRAY_INFO_PRINTF("TRACCC", x, __VA_ARGS__)
 #define TRACCC_VERBOSE_HOST_DEVICE(x, ...) \
-    DETRAY_LOG_PRINTF("TRACCC", "VERBOSE", x, __VA_ARGS__)
-#else
-#define TRACCC_VERBOSE_HOST_DEVICE(x, ...)
-#endif
-
-#if DETRAY_LOG_LVL > 2 && !defined(__EXCLUDE_LOGS__)
+    DETRAY_VERBOSE_PRINTF("TRACCC", x, __VA_ARGS__)
 #define TRACCC_DEBUG_HOST_DEVICE(x, ...) \
-    DETRAY_LOG_PRINTF("TRACCC", "DEBUG", x, __VA_ARGS__)
-#else
-#define TRACCC_DEBUG_HOST_DEVICE(x, ...)
-#endif
+    DETRAY_DEBUG_PRINTF("TRACCC", x, __VA_ARGS__)
 
-// Device log messages in device/host-device code
-#if defined(__DEVICE_LOGGING__) && !defined(__EXCLUDE_LOGS__)
-#define TRACCC_WARNING_DEVICE(x, ...) TRACCC_WARNING_HOST_DEVICE(x, __VA_ARGS__)
-#define TRACCC_ERROR_DEVICE(x, ...) TRACCC_ERROR_HOST_DEVICE(x, __VA_ARGS__)
-#define TRACCC_FATAL_DEVICE(x, ...) TRACCC_FATAL_HOST_DEVICE(x, __VA_ARGS__)
-#define TRACCC_INFO_DEVICE(x, ...) TRACCC_INFO_HOST_DEVICE(x, __VA_ARGS__)
-#define TRACCC_VERBOSE_DEVICE(x, ...) TRACCC_VERBOSE_HOST_DEVICE(x, __VA_ARGS__)
-#define TRACCC_DEBUG_DEVICE(x, ...) TRACCC_DEBUG_HOST_DEVICE(x, __VA_ARGS__)
+// Printed only when compiled for device
+#ifdef __DEVICE_LOGGING__
+
+#define TRACCC_FATAL_DEVICE(x, ...) \
+    DETRAY_FATAL_PRINTF("TRACCC", x, __VA_ARGS__)
+#define TRACCC_ERROR_DEVICE(x, ...) \
+    DETRAY_ERROR_PRINTF("TRACCC", x, __VA_ARGS__)
+#define TRACCC_WARNING_DEVICE(x, ...) \
+    DETRAY_WARN_PRINTF("TRACCC", x, __VA_ARGS__)
+#define TRACCC_INFO_DEVICE(x, ...) DETRAY_INFO_PRINTF("TRACCC", x, __VA_ARGS__)
+#define TRACCC_VERBOSE_DEVICE(x, ...) \
+    DETRAY_VERBOSE_PRINTF("TRACCC", x, __VA_ARGS__)
+#define TRACCC_DEBUG_DEVICE(x, ...) \
+    DETRAY_DEBUG_PRINTF("TRACCC", x, __VA_ARGS__)
+
 #else
-#define TRACCC_WARNING_DEVICE(x, ...)
-#define TRACCC_ERROR_DEVICE(x, ...)
+
 #define TRACCC_FATAL_DEVICE(x, ...)
+#define TRACCC_ERROR_DEVICE(x, ...)
+#define TRACCC_WARNING_DEVICE(x, ...)
 #define TRACCC_INFO_DEVICE(x, ...)
 #define TRACCC_VERBOSE_DEVICE(x, ...)
 #define TRACCC_DEBUG_DEVICE(x, ...)
+
 #endif

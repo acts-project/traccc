@@ -16,7 +16,7 @@
 namespace traccc {
 
 template <typename interactor_t>
-struct interaction_register : detray::actor {
+struct interaction_register : detray::base_actor {
     struct state {
         typename interactor_t::state &interactor_state;
     };
