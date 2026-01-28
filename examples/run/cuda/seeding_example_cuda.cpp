@@ -10,7 +10,7 @@
 #include "../common/print_fitted_tracks_statistics.hpp"
 #include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
-#include "traccc/cuda/seeding/track_params_estimation.hpp"
+#include "traccc/cuda/seeding/seed_parameter_estimation_algorithm.hpp"
 #include "traccc/cuda/seeding/triplet_seeding_algorithm.hpp"
 #include "traccc/cuda/utils/make_magnetic_field.hpp"
 #include "traccc/definitions/common.hpp"
@@ -178,7 +178,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         async_copy,
         stream,
         logger().clone("CudaSeedingAlg")};
-    traccc::cuda::track_params_estimation tp_cuda{
+    traccc::cuda::seed_parameter_estimation_algorithm tp_cuda{
         track_params_estimation_config, mr, async_copy, stream,
         logger().clone("CudaTrackParEstAlg")};
 
@@ -285,8 +285,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 traccc::performance::timer t("Track params (cuda)",
                                              elapsedTimes);
                 params_cuda_buffer =
-                    tp_cuda(measurements_cuda_buffer, spacepoints_cuda_buffer,
-                            seeds_cuda_buffer, field_vec);
+                    tp_cuda(device_field, measurements_cuda_buffer,
+                            spacepoints_cuda_buffer, seeds_cuda_buffer);
                 stream.synchronize();
             }  // stop measuring track params cuda timer
 
