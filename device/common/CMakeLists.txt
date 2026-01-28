@@ -75,6 +75,7 @@ traccc_add_library( traccc_device_common device_common
    "include/traccc/finding/device/gather_best_tips_per_measurement.hpp"
    "include/traccc/finding/device/gather_measurement_votes.hpp"
    "include/traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
+   "include/traccc/finding/device/kalman_track_follower.hpp"
    "include/traccc/finding/device/propagate_to_next_surface.hpp"
    "include/traccc/finding/device/update_tip_length_buffer.hpp"
    "include/traccc/finding/device/impl/build_tracks.ipp"
@@ -82,6 +83,7 @@ traccc_add_library( traccc_device_common device_common
    "include/traccc/finding/device/impl/gather_best_tips_per_measurement.ipp"
    "include/traccc/finding/device/impl/gather_measurement_votes.ipp"
    "include/traccc/finding/device/impl/fill_finding_propagation_sort_keys.ipp"
+   "include/traccc/finding/device/impl/kalman_track_follower.ipp"
    "include/traccc/finding/device/impl/propagate_to_next_surface.ipp"
    "include/traccc/finding/device/impl/update_tip_length_buffer.ipp"
    # Track fitting funtions(s).

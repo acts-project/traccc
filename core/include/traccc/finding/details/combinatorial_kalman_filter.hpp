@@ -533,8 +533,7 @@ combinatorial_kalman_filter(
                             momentum_aborter_state, ckf_aborter_state));
             TRACCC_DEBUG_HOST("Finished propagation");
 
-            // If a surface found, add the parameter for the next
-            // step
+            // If a surface found, add the parameter for the next step
             bool valid_track{ckf_aborter_state.success};
             if (valid_track) {
                 assert(propagation.navigation().is_on_sensitive());
