@@ -26,7 +26,7 @@ namespace traccc {
 /// serve as a failsafe in case of a bug in the track finding / fitting
 /// algorithm.
 ///
-struct kalman_step_aborter : public detray::actor {
+struct kalman_step_aborter : public detray::base_actor {
 
     /// The state of the aborter
     struct state {
