@@ -661,12 +661,12 @@ combinatorial_kalman_filter(
 
             if (mr.host) {
                 vecmem::async_size size =
-                    copy.get_size(tip_to_output_map, *(mr.host));
+                    copy.get_size(new_tip_length_buffer, *(mr.host));
                 // Here we could give control back to the caller, once our code
                 // allows for it. (coroutines...)
                 n_tips_total_filtered = size.get();
             } else {
-                n_tips_total_filtered = copy.get_size(tip_to_output_map);
+                n_tips_total_filtered = copy.get_size(new_tip_length_buffer);
             }
 
             tip_length_buffer = std::move(new_tip_length_buffer);
