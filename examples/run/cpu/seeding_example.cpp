@@ -201,10 +201,11 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
            Ambiguity Resolution with Greedy Solver
           -----------------------------------------*/
 
-        auto track_candidates_ar = host_ambiguity_resolution(
+        // TODO: Fix me
+        /*auto track_candidates_ar = host_ambiguity_resolution(
             traccc::edm::track_container<default_algebra>::const_data(
                 track_candidates));
-        n_ambiguity_free_tracks += track_candidates_ar.tracks.size();
+        n_ambiguity_free_tracks += track_candidates_ar.tracks.size();*/
 
         /*------------------------
            Track Fitting with KF
@@ -213,7 +214,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         auto track_states = host_fitting(
             detector, field,
             traccc::edm::track_container<default_algebra>::const_data(
-                track_candidates_ar));
+                track_candidates));
         n_fitted_tracks += track_states.tracks.size();
 
         /*------------
@@ -244,10 +245,10 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                     traccc::default_algebra>::const_data(track_candidates),
                 evt_data);
 
-            ar_performance_writer.write(
+            /*ar_performance_writer.write(
                 traccc::edm::track_container<
                     traccc::default_algebra>::const_data(track_candidates_ar),
-                evt_data);
+                evt_data);*/
 
             for (unsigned int i = 0; i < track_states.tracks.size(); i++) {
                 host_detector_visitor<detector_type_list>(
