@@ -760,7 +760,7 @@ combinatorial_kalman_filter(
         queue
             .submit([&](::sycl::handler& h) {
                 h.parallel_for<kernels::build_tracks<kernel_t>>(
-                    calculate1DimNdRange(n_tips_total, 64),
+                    calculate1DimNdRange(n_tips_total_filtered, 64),
                     [config, seeds, links = vecmem::get_data(links_buffer),
                      tips = vecmem::get_data(tips_buffer),
                      tracks = typename edm::track_container<

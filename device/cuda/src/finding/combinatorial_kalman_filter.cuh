@@ -698,7 +698,8 @@ combinatorial_kalman_filter(
     // chi2_max config is set tightly and no tips are found
     if (n_tips_total > 0) {
         const unsigned int nThreads = warp_size * 2;
-        const unsigned int nBlocks = (n_tips_total + nThreads - 1) / nThreads;
+        const unsigned int nBlocks =
+            (n_tips_total_filtered + nThreads - 1) / nThreads;
 
         const device::build_tracks_payload payload{
             .seeds_view = seeds,
