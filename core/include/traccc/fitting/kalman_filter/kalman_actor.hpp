@@ -332,7 +332,7 @@ struct kalman_actor_state {
 /// Detray actor for Kalman filtering
 template <typename algebra_t, typename surface_t,
           kalman_actor_direction direction_e>
-struct kalman_actor : detray::actor {
+struct kalman_actor : detray::base_actor {
 
     // Actor state
     using state = kalman_actor_state<algebra_t, surface_t>;

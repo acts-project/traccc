@@ -32,7 +32,7 @@
 namespace traccc {
 
 template <typename smearer_t>
-struct smearing_writer : detray::actor {
+struct smearing_writer : detray::base_actor {
 
     using algebra_type = typename smearer_t::algebra_type;
     using scalar_type = detray::dscalar<algebra_type>;
