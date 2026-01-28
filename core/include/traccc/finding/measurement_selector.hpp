@@ -191,7 +191,6 @@ struct measurement_selector {
         TRACCC_DEBUG_HOST("--> R:\n" << R);
         TRACCC_DEBUG_HOST_DEVICE("--> det(R): %.10e", matrix::determinant(R));
         TRACCC_DEBUG_HOST("--> R_inv:\n" << matrix::inverse(R));
-        TRACCC_VERBOSE_HOST("--> R_inv:\n" << matrix::inverse(R));
 
         // Residual between measurement and (projected) vector (innovation)
         const matrix_t<algebra_t, D, 1> residual =

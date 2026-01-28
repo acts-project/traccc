@@ -27,13 +27,15 @@ namespace traccc::details {
 template <typename bfield_t>
 using kf_stepper_t = detray::rk_stepper<bfield_t, traccc::default_algebra>;
 
-using kf_actor_chain_t = detray::actor_chain<
-    detray::pathlimit_aborter<traccc::scalar>,
-    detray::parameter_transporter<traccc::default_algebra>,
+using parameter_updater_t = detray::actor::parameter_updater<
+    traccc::default_algebra,
     detray::pointwise_material_interactor<traccc::default_algebra>,
-    traccc::measurement_updater<traccc::default_algebra>,
-    detray::parameter_resetter<traccc::default_algebra>,
-    detray::momentum_aborter<traccc::scalar>>;
+    traccc::measurement_updater<traccc::default_algebra>>;
+
+using kf_actor_chain_t =
+    detray::actor_chain<detray::pathlimit_aborter<traccc::scalar>,
+                        parameter_updater_t,
+                        detray::momentum_aborter<traccc::scalar>>;
 
 template <typename detector_t, typename bfield_t>
 using kf_propagator_t =

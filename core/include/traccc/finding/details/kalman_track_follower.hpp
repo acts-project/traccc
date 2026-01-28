@@ -138,7 +138,7 @@ kalman_track_follower(
 
     // Create detray propagator
     auto prop_cfg{cfg.propagation};
-    prop_cfg.navigation.estimate_scattering_noise = false;
+    // prop_cfg.navigation.estimate_scattering_noise = false;
     propagator_t propagator(prop_cfg);
 
     // Configuration for measurement calibration
@@ -192,8 +192,8 @@ kalman_track_follower(
         // Pathlimit aborter
         typename detray::pathlimit_aborter<scalar_t>::state aborter_state;
         // Track parameter transporter
-        typename detray::parameter_transporter<algebra_t>::state
-            transporter_state;
+        typename detray::actor::parameter_transporter<algebra_t>::state
+            transporter_state{seed};
         // Material interactor
         typename detray::pointwise_material_interactor<algebra_t>::state
             interactor_state;
@@ -202,8 +202,8 @@ kalman_track_follower(
             meas_updater_state{measurements, vecmem::get_data(meas_ranges),
                                track_cand_ptr, cfg.run_smoother};
         // Set bound track parameters after Kalman and material updates
-        typename detray::parameter_resetter<algebra_t>::state resetter_state{
-            prop_cfg};
+        typename detray::actor::parameter_setter<algebra_t>::state
+            resetter_state{prop_cfg};
         // Momentum aborter
         typename detray::momentum_aborter<scalar_t>::state
             momentum_aborter_state{};
@@ -238,6 +238,8 @@ kalman_track_follower(
         const track_stats<scalar_t>& trk_stats = meas_updater_state.m_stats;
         const unsigned int n_track_states{trk_stats.n_track_states};
         if (n_track_states < cfg.min_track_candidates_per_track) {
+            TRACCC_WARNING_HOST("# Track states " << n_track_states
+                                                  << ": discarding track");
             continue;
         }
 

@@ -41,12 +41,14 @@ struct track_stats {
 
 /// Find the optimal next measurement and perform a Kalman update on it
 template <detray::concepts::algebra algebra_t>
-struct measurement_updater : detray::actor {
+struct measurement_updater : detray::base_actor {
 
     /// Contains the current track states and some statistics
     struct state {
         using scalar_t = detray::dscalar<algebra_t>;
         using measurement_collection_t = edm::measurement_collection<algebra_t>;
+
+        constexpr state() = default;
 
         TRACCC_HOST_DEVICE
         constexpr state(
@@ -75,9 +77,11 @@ struct measurement_updater : detray::actor {
         traccc::measurement_selector::config m_calib_cfg{};
 
         /// Measurement container
-        typename measurement_collection_t::const_device m_measurements;
+        typename measurement_collection_t::const_device m_measurements{
+            typename measurement_collection_t::const_view{}};
         /// Per surface measurement index ranges into measurement cont.
-        vecmem::device_vector<unsigned int> m_measurement_ranges;
+        vecmem::device_vector<unsigned int> m_measurement_ranges{
+            vecmem::data::vector_view<unsigned int>{}};
         /// Track states for the current track
         void* m_cand_ptr{nullptr};
         /// The track candidate collection type pointed to
@@ -85,8 +89,9 @@ struct measurement_updater : detray::actor {
     };
 
     /// Select the optimal next measurement and run the KF update
-    template <typename propagator_state_t>
+    template <typename transporter_result_t, typename propagator_state_t>
     TRACCC_HOST_DEVICE void operator()(state& updater_state,
+                                       transporter_result_t& transporter_result,
                                        propagator_state_t& propagation) const {
         using scalar_t = detray::dscalar<algebra_t>;
 
@@ -107,7 +112,7 @@ struct measurement_updater : detray::actor {
         assert(sf.is_sensitive());
 
         // Track parameters on the sensitive surface
-        auto& bound_param = stepping.bound_params();
+        auto& bound_param = transporter_result.destination_params;
 
         TRACCC_DEBUG_HOST("-> Predicted param.:\n" << bound_param);
         TRACCC_VERBOSE_HOST_DEVICE("-> Calculate predicted chi2:");
@@ -129,9 +134,8 @@ struct measurement_updater : detray::actor {
         scalar_t filtered_chi2{0.f};
 
         // Run the KF update and add the track state
-        const scalar_t max_chi2{navigation.is_edge_candidate()
-                                    ? updater_state.max_chi2 / 10.f
-                                    : updater_state.max_chi2};
+        const scalar_t max_chi2{
+            navigation.is_edge_candidate() ? 1.f : updater_state.max_chi2};
         if (cand.chi2 <= max_chi2) {
             const auto meas = measurements.at(cand.meas_idx);
 
@@ -245,6 +249,9 @@ struct measurement_updater : detray::actor {
                 return;
             }
 
+            // The updated track params. should be published to the propagation
+            transporter_result.status = detray::actor::status::e_success;
+
             // Update statistics
             updater_state.m_stats.n_consecutive_holes = 0u;
             updater_state.m_stats.ndf_sum +=
@@ -263,7 +270,8 @@ struct measurement_updater : detray::actor {
         } else {
             // If the surface was only hit due to tolerances, don't count holes
             if (!navigation.is_edge_candidate()) {
-                TRACCC_WARNING_HOST_DEVICE("Found hole!");
+                TRACCC_WARNING_HOST_DEVICE(
+                    "Found hole: Continue propagation without update");
                 updater_state.m_stats.n_holes++;
                 updater_state.m_stats.n_consecutive_holes++;
             }
@@ -281,6 +289,9 @@ struct measurement_updater : detray::actor {
                 navigation.exit();
                 propagation._heartbeat = false;
             }
+
+            // Discasrd the current local track parameters
+            transporter_result.status = detray::actor::status::e_failure;
         }
     }
 };
