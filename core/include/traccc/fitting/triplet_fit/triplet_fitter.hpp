@@ -157,7 +157,7 @@ class triplet_fitter {
             }
 
             // Shift local position
-            assert(dir_idx <= measurements.at(m_meas_idx[hit_idx]).meas_dim);
+            assert(dir_idx <= measurements.at(m_meas_idx[hit_idx]).dimensions());
             loc_pos[dir_idx] += multipler * math::sqrt(loc_var[dir_idx]);
 
             // Surface
