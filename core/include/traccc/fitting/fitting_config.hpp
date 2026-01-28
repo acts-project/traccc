@@ -10,7 +10,7 @@
 // Local include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
-#include "traccc/fitting/kalman_filter/measurement_selector.hpp"
+#include "traccc/finding/measurement_selector.hpp"
 #include "traccc/utils/particle.hpp"
 
 // detray include(s).

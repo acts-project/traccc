@@ -279,7 +279,7 @@ combinatorial_kalman_filter(
      * finding, we need some space to store the intermediate Jacobians
      * and parameters. Allocate that space here.
      */
-    if (false && config.run_mbf_smoother) {
+    if (false && config.run_smoother == smoother_type::e_mbf) {
         jacobian_ptr = vecmem::make_unique_alloc<
             bound_matrix<typename detector_t::algebra_type>[]>(
             mr.main, link_buffer_capacity);
@@ -591,7 +591,7 @@ combinatorial_kalman_filter(
              *****************************************************************/
 
             {
-                if (false && config.run_mbf_smoother) {
+                if (false && config.run_smoother == smoother_type::e_mbf) {
                     tmp_jacobian_ptr = vecmem::make_unique_alloc<
                         bound_matrix<typename detector_t::algebra_type>[]>(
                         mr.main, n_candidates);
@@ -678,7 +678,8 @@ combinatorial_kalman_filter(
 
         ::alpaka::exec<Acc>(
             queue, workDiv, kernels::build_tracks{},
-            false && config.run_mbf_smoother, config.meas_calibration,
+            false && config.run_smoother == smoother_type::e_mbf,
+            config.meas_calibration,
             device::build_tracks_payload{
                 .seeds_view = seeds,
                 .links_view = links_buffer,
