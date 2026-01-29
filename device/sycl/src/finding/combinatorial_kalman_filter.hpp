@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024-2025 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -29,8 +29,11 @@
 #include "traccc/finding/device/fill_finding_duplicate_removal_sort_keys.hpp"
 #include "traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
 #include "traccc/finding/device/find_tracks.hpp"
+#include "traccc/finding/device/gather_best_tips_per_measurement.hpp"
+#include "traccc/finding/device/gather_measurement_votes.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
 #include "traccc/finding/device/remove_duplicates.hpp"
+#include "traccc/finding/device/update_tip_length_buffer.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/projections.hpp"
@@ -57,6 +60,14 @@ template <typename T>
 struct fill_finding_propagation_sort_keys {};
 template <typename T>
 struct propagate_to_next_surface {};
+template <typename T>
+struct gather_best_tips_per_measurement {};
+
+template <typename T>
+struct gather_measurement_votes {};
+
+template <typename T>
+struct update_tip_length_buffer {};
 template <typename T>
 struct build_tracks {};
 }  // namespace kernels
@@ -184,7 +195,7 @@ combinatorial_kalman_filter(
      * finding, we need some space to store the intermediate Jacobians
      * and parameters. Allocate that space here.
      */
-    if (false && config.run_mbf_smoother) {
+    if (config.run_mbf_smoother) {
         jacobian_ptr = vecmem::make_unique_alloc<
             bound_matrix<typename detector_t::algebra_type>[]>(
             mr.main, link_buffer_capacity);
@@ -273,6 +284,41 @@ combinatorial_kalman_filter(
             copy(links_buffer, new_links_buffer)->wait();
 
             links_buffer = std::move(new_links_buffer);
+
+            if (config.run_mbf_smoother) {
+                vecmem::unique_alloc_ptr<
+                    bound_matrix<typename detector_t::algebra_type>[]>
+                    new_jacobian_ptr = vecmem::make_unique_alloc<
+                        bound_matrix<typename detector_t::algebra_type>[]>(
+                        mr.main, link_buffer_capacity);
+                bound_track_parameters_collection_types::buffer
+                    new_link_predicted_parameter_buffer{link_buffer_capacity,
+                                                        mr.main};
+                bound_track_parameters_collection_types::buffer
+                    new_link_filtered_parameter_buffer{link_buffer_capacity,
+                                                       mr.main};
+
+                copy(
+                    vecmem::data::vector_view<
+                        bound_matrix<typename detector_t::algebra_type>>{
+                        links_size, jacobian_ptr.get()},
+                    vecmem::data::vector_view<
+                        bound_matrix<typename detector_t::algebra_type>>{
+                        link_buffer_capacity, new_jacobian_ptr.get()})
+                    ->wait();
+                copy(link_predicted_parameter_buffer,
+                     new_link_predicted_parameter_buffer)
+                    ->wait();
+                copy(link_filtered_parameter_buffer,
+                     new_link_filtered_parameter_buffer)
+                    ->wait();
+
+                jacobian_ptr = std::move(new_jacobian_ptr);
+                link_predicted_parameter_buffer =
+                    std::move(new_link_predicted_parameter_buffer);
+                link_filtered_parameter_buffer =
+                    std::move(new_link_filtered_parameter_buffer);
+            }
         }
 
         {
@@ -503,7 +549,7 @@ combinatorial_kalman_filter(
              *****************************************************************/
 
             {
-                if (false && config.run_mbf_smoother) {
+                if (config.run_mbf_smoother) {
                     tmp_jacobian_ptr = vecmem::make_unique_alloc<
                         bound_matrix<typename detector_t::algebra_type>[]>(
                         mr.main, n_candidates);
@@ -565,7 +611,136 @@ combinatorial_kalman_filter(
     // Get the number of tips
     const unsigned int n_tips_total = copy.get_size(tips_buffer);
 
-    std::vector<unsigned int> tips_length_host;
+    vecmem::vector<unsigned int> tips_length_host(mr.host);
+    vecmem::data::vector_buffer<unsigned int> tip_to_output_map;
+
+    unsigned int n_tips_total_filtered = n_tips_total;
+
+    if (n_tips_total > 0 && config.max_num_tracks_per_measurement > 0) {
+        // TODO: DOCS
+
+        vecmem::data::vector_buffer<unsigned int>
+            best_tips_per_measurement_index_buffer(
+                config.max_num_tracks_per_measurement * n_measurements,
+                mr.main);
+        copy.setup(best_tips_per_measurement_index_buffer)->wait();
+
+        vecmem::data::vector_buffer<unsigned long long int>
+            best_tips_per_measurement_insertion_mutex_buffer(n_measurements,
+                                                             mr.main);
+        copy.setup(best_tips_per_measurement_insertion_mutex_buffer)->wait();
+
+        // NOTE: This memset assumes that an all-zero bit vector interpreted
+        // as a floating point value has value zero, which is true for IEEE
+        // 754 but might not be true for arbitrary float formats.
+        copy.memset(best_tips_per_measurement_insertion_mutex_buffer, 0)
+            ->wait();
+
+        {
+            vecmem::data::vector_buffer<scalar>
+                best_tips_per_measurement_pval_buffer(
+                    config.max_num_tracks_per_measurement * n_measurements,
+                    mr.main);
+            copy.setup(best_tips_per_measurement_pval_buffer)->wait();
+
+            const device::gather_best_tips_per_measurement_payload<
+                typename detector_t::algebra_type>
+                payload{tips_buffer,
+                        links_buffer,
+                        measurements_view,
+                        best_tips_per_measurement_insertion_mutex_buffer,
+                        best_tips_per_measurement_index_buffer,
+                        best_tips_per_measurement_pval_buffer,
+                        config.max_num_tracks_per_measurement};
+            queue
+                .submit([&](::sycl::handler& h) {
+                    h.parallel_for<
+                        kernels::gather_best_tips_per_measurement<kernel_t>>(
+                        calculate1DimNdRange(n_tips_total, 32),
+                        [payload](::sycl::nd_item<1> item) {
+                            device::gather_best_tips_per_measurement(
+                                details::global_index(item),
+                                details::barrier{item}, payload);
+                        });
+                })
+                .wait_and_throw();
+        }
+
+        vecmem::data::vector_buffer<unsigned int> votes_per_tip_buffer(
+            n_tips_total, mr.main);
+        copy.setup(votes_per_tip_buffer)->wait();
+        copy.memset(votes_per_tip_buffer, 0)->wait();
+
+        {
+            const device::gather_measurement_votes_payload payload{
+                best_tips_per_measurement_insertion_mutex_buffer,
+                best_tips_per_measurement_index_buffer, votes_per_tip_buffer,
+                config.max_num_tracks_per_measurement};
+
+            queue
+                .submit([&](::sycl::handler& h) {
+                    h.parallel_for<kernels::gather_measurement_votes<kernel_t>>(
+                        calculate1DimNdRange(
+                            config.max_num_tracks_per_measurement *
+                                n_measurements,
+                            512),
+                        [payload](::sycl::nd_item<1> item) {
+                            device::gather_measurement_votes(
+                                details::global_index(item), payload);
+                        });
+                })
+                .wait_and_throw();
+        }
+
+        tip_to_output_map =
+            vecmem::data::vector_buffer<unsigned int>(n_tips_total, mr.main);
+        copy.setup(tip_to_output_map)->wait();
+
+        {
+            vecmem::data::vector_buffer<unsigned int> new_tip_length_buffer{
+                n_tips_total, mr.main, vecmem::data::buffer_type::resizable};
+            copy.setup(new_tip_length_buffer)->wait();
+
+            const device::update_tip_length_buffer_payload payload{
+                tip_length_buffer, new_tip_length_buffer, votes_per_tip_buffer,
+                tip_to_output_map, config.min_measurement_voting_fraction};
+
+            queue
+                .submit([&](::sycl::handler& h) {
+                    h.parallel_for<kernels::update_tip_length_buffer<kernel_t>>(
+                        calculate1DimNdRange(n_tips_total, 512),
+                        [payload](::sycl::nd_item<1> item) {
+                            device::update_tip_length_buffer(
+                                details::global_index(item), payload);
+                        });
+                })
+                .wait_and_throw();
+
+            if (mr.host) {
+                vecmem::async_size size =
+                    copy.get_size(new_tip_length_buffer, *(mr.host));
+                // Here we could give control back to the caller, once our code
+                // allows for it. (coroutines...)
+                n_tips_total_filtered = size.get();
+            } else {
+                n_tips_total_filtered = copy.get_size(new_tip_length_buffer);
+            }
+
+            tip_length_buffer = std::move(new_tip_length_buffer);
+        }
+    }
+
+    copy(tip_length_buffer, tips_length_host)->wait();
+    tips_length_host.resize(n_tips_total_filtered);
+
+    unsigned int n_states;
+
+    if (config.run_mbf_smoother) {
+        n_states = std::accumulate(tips_length_host.begin(),
+                                   tips_length_host.end(), 0u);
+    } else {
+        n_states = 0;
+    }
 
     if (n_tips_total > 0) {
         copy(tip_length_buffer, tips_length_host)->wait();
@@ -575,34 +750,42 @@ combinatorial_kalman_filter(
     // Create track candidate buffer
     typename edm::track_container<typename detector_t::algebra_type>::buffer
         track_candidates_buffer{
-            {tips_length_host, mr.main, mr.host}, {}, measurements_view};
+            {tips_length_host, mr.main, mr.host},
+            {n_states, mr.main, vecmem::data::buffer_type::resizable},
+            measurements_view};
     copy.setup(track_candidates_buffer.tracks)->wait();
+    copy.setup(track_candidates_buffer.states)->wait();
 
     if (n_tips_total > 0) {
         queue
             .submit([&](::sycl::handler& h) {
                 h.parallel_for<kernels::build_tracks<kernel_t>>(
-                    calculate1DimNdRange(n_tips_total, 64),
+                    calculate1DimNdRange(n_tips_total_filtered, 64),
                     [config, seeds, links = vecmem::get_data(links_buffer),
                      tips = vecmem::get_data(tips_buffer),
                      tracks = typename edm::track_container<
                          typename detector_t::algebra_type>::
                          view(track_candidates_buffer),
+                     tip_to_output_map = vecmem::get_data(tip_to_output_map),
+                     jacobian_ptr = jacobian_ptr.get(),
                      link_predicted_parameters =
                          vecmem::get_data(link_predicted_parameter_buffer),
                      link_filtered_parameters =
                          vecmem::get_data(link_filtered_parameter_buffer)](
                         ::sycl::nd_item<1> item) {
-                        device::build_tracks(details::global_index(item),
-                                             false && config.run_mbf_smoother,
-                                             {.seeds_view = seeds,
-                                              .links_view = links,
-                                              .tips_view = tips,
-                                              .tracks_view = tracks,
-                                              .link_predicted_parameter_view =
-                                                  link_predicted_parameters,
-                                              .link_filtered_parameter_view =
-                                                  link_filtered_parameters});
+                        device::build_tracks(
+                            details::global_index(item),
+                            config.run_mbf_smoother,
+                            {.seeds_view = seeds,
+                             .links_view = links,
+                             .tips_view = tips,
+                             .tracks_view = tracks,
+                             .tip_to_output_map = tip_to_output_map,
+                             .jacobian_ptr = jacobian_ptr,
+                             .link_predicted_parameter_view =
+                                 link_predicted_parameters,
+                             .link_filtered_parameter_view =
+                                 link_filtered_parameters});
                     });
             })
             .wait_and_throw();

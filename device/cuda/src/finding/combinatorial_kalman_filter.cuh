@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024-2025 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -569,7 +569,7 @@ combinatorial_kalman_filter(
     }
 
     vecmem::vector<unsigned int> tips_length_host(mr.host);
-    vecmem::unique_alloc_ptr<unsigned int[]> tip_to_output_map = nullptr;
+    vecmem::data::vector_buffer<unsigned int> tip_to_output_map;
 
     unsigned int n_tips_total_filtered = n_tips_total;
 
@@ -609,11 +609,11 @@ combinatorial_kalman_filter(
 
             kernels::gather_best_tips_per_measurement<<<num_blocks, num_threads,
                                                         0, stream>>>(
-                tips_buffer, links_buffer, measurements_view,
-                best_tips_per_measurement_insertion_mutex_buffer,
-                best_tips_per_measurement_index_buffer,
-                best_tips_per_measurement_pval_buffer,
-                config.max_num_tracks_per_measurement);
+                {tips_buffer, links_buffer, measurements_view,
+                 best_tips_per_measurement_insertion_mutex_buffer,
+                 best_tips_per_measurement_index_buffer,
+                 best_tips_per_measurement_pval_buffer,
+                 config.max_num_tracks_per_measurement});
 
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
         }
@@ -632,15 +632,16 @@ combinatorial_kalman_filter(
 
             kernels::gather_measurement_votes<<<num_blocks, num_threads, 0,
                                                 stream>>>(
-                best_tips_per_measurement_insertion_mutex_buffer,
-                best_tips_per_measurement_index_buffer, votes_per_tip_buffer,
-                config.max_num_tracks_per_measurement);
+                {best_tips_per_measurement_insertion_mutex_buffer,
+                 best_tips_per_measurement_index_buffer, votes_per_tip_buffer,
+                 config.max_num_tracks_per_measurement});
 
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
         }
 
         tip_to_output_map =
-            vecmem::make_unique_alloc<unsigned int[]>(mr.main, n_tips_total);
+            vecmem::data::vector_buffer<unsigned int>(n_tips_total, mr.main);
+        copy.setup(tip_to_output_map)->wait();
 
         {
             const unsigned int num_threads = 512;
@@ -648,32 +649,27 @@ combinatorial_kalman_filter(
                 (n_tips_total + num_threads - 1) / num_threads;
 
             vecmem::data::vector_buffer<unsigned int> new_tip_length_buffer{
-                n_tips_total, mr.main};
+                n_tips_total, mr.main, vecmem::data::buffer_type::resizable};
             copy.setup(new_tip_length_buffer)->wait();
-
-            auto tip_to_output_map_idx =
-                vecmem::make_unique_alloc<unsigned int>(mr.main);
-
-            TRACCC_CUDA_ERROR_CHECK(cudaMemsetAsync(
-                tip_to_output_map_idx.get(), 0, sizeof(unsigned int), stream));
 
             kernels::update_tip_length_buffer<<<num_blocks, num_threads, 0,
                                                 stream>>>(
-                tip_length_buffer, new_tip_length_buffer, votes_per_tip_buffer,
-                tip_to_output_map.get(), tip_to_output_map_idx.get(),
-                config.min_measurement_voting_fraction);
+                {tip_length_buffer, new_tip_length_buffer, votes_per_tip_buffer,
+                 tip_to_output_map, config.min_measurement_voting_fraction});
 
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-            str.synchronize();
-
-            TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
-                &n_tips_total_filtered, tip_to_output_map_idx.get(),
-                sizeof(unsigned int), cudaMemcpyDeviceToHost, stream));
+            if (mr.host) {
+                vecmem::async_size size =
+                    copy.get_size(new_tip_length_buffer, *(mr.host));
+                // Here we could give control back to the caller, once our code
+                // allows for it. (coroutines...)
+                n_tips_total_filtered = size.get();
+            } else {
+                n_tips_total_filtered = copy.get_size(new_tip_length_buffer);
+            }
 
             tip_length_buffer = std::move(new_tip_length_buffer);
-
-            str.synchronize();
         }
     }
 
@@ -702,14 +698,15 @@ combinatorial_kalman_filter(
     // chi2_max config is set tightly and no tips are found
     if (n_tips_total > 0) {
         const unsigned int nThreads = warp_size * 2;
-        const unsigned int nBlocks = (n_tips_total + nThreads - 1) / nThreads;
+        const unsigned int nBlocks =
+            (n_tips_total_filtered + nThreads - 1) / nThreads;
 
         const device::build_tracks_payload payload{
             .seeds_view = seeds,
             .links_view = links_buffer,
             .tips_view = tips_buffer,
             .tracks_view = {track_candidates_buffer},
-            .tip_to_output_map = tip_to_output_map.get(),
+            .tip_to_output_map = tip_to_output_map,
             .jacobian_ptr = jacobian_ptr.get(),
             .link_predicted_parameter_view = link_predicted_parameter_buffer,
             .link_filtered_parameter_view = link_filtered_parameter_buffer,
