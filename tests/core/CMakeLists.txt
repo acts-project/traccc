@@ -7,6 +7,7 @@
 # Declare the core library test(s).
 traccc_add_test(core
    "test_algorithm.cpp"
+   "test_edm.cpp"
    "test_module_map.cpp"
    "test_pvalue.cpp"
    "particle.cpp"
