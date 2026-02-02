@@ -18,6 +18,7 @@
 #include "traccc/utils/particle.hpp"
 
 // Detray core include(s).
+#include <detray/propagator/actors/parameter_updater.hpp>
 #include <detray/propagator/base_actor.hpp>
 #include <detray/utils/concepts.hpp>
 
@@ -123,8 +124,10 @@ struct smearing_writer : detray::base_actor {
     };
 
     template <typename propagator_state_t>
-    void operator()(state& writer_state,
-                    propagator_state_t& propagation) const {
+    void operator()(
+        state& writer_state, propagator_state_t& propagation,
+        const detray::actor::parameter_transporter_result<algebra_type>& res)
+        const {
 
         auto& navigation = propagation.navigation();
         auto& stepping = propagation.stepping();
@@ -155,7 +158,7 @@ struct smearing_writer : detray::base_actor {
 
             // Write measurements
             io::csv::measurement meas;
-            const auto bound_params = stepping.bound_params();
+            const auto& bound_params = res.destination_params();
 
             meas.measurement_id = writer_state.m_hit_count;
             meas.geometry_id = hit.geometry_id;

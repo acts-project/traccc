@@ -24,7 +24,8 @@ TRACCC_HOST_DEVICE inline void apply_interaction(
 
     // Type definitions
     using algebra_type = typename detector_t::algebra_type;
-    using interactor_type = detray::pointwise_material_interactor<algebra_type>;
+    using interactor_type =
+        detray::actor::pointwise_material_interactor<algebra_type>;
 
     // Detector
     detector_t det(payload.det_data);

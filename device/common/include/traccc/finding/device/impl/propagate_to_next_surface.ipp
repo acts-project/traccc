@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,11 +8,11 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
 #include "traccc/utils/logging.hpp"
 #include "traccc/utils/particle.hpp"
 
 // Detray include(s).
-#include <detray/propagator/constrained_step.hpp>
 #include <detray/utils/tuple_helpers.hpp>
 
 namespace traccc::device {
@@ -22,7 +22,8 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     const global_index_t globalIndex, const finding_config& cfg,
     const propagate_to_next_surface_payload<propagator_t, bfield_t>& payload) {
 
-    using scalar_t = propagator_t::detector_type::scalar_type;
+    using algebra_t = typename propagator_t::detector_type::algebra_type;
+    using scalar_t = detray::dscalar<algebra_t>;
 
     if (globalIndex >= payload.n_in_params) {
         return;
@@ -75,29 +76,19 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
         .template set_constraint<detray::step::constraint::e_accuracy>(
             cfg.propagation.stepping.step_constraint);
 
-    // Actor state
-    // @TODO: simplify the syntax here
-    // @NOTE: Post material interaction might be required here
-    using actor_tuple_type =
-        typename propagator_t::actor_chain_type::actor_tuple;
+    // Actor states
     // Pathlimit aborter
-    typename detray::detail::tuple_element<0, actor_tuple_type>::type::state
-        s0{};
-    typename detray::detail::tuple_element<1, actor_tuple_type>::type::state
-        s1{};
+    typename detray::actor::pathlimit_aborter<scalar_t>::state aborter_state{};
+    // Parameter updater
+    typename detray::actor::parameter_updater_state<algebra_t> updater_state{
+        prop_cfg, in_par};
     // CKF-interactor
-    typename detray::detail::tuple_element<3, actor_tuple_type>::type::state
-        s3{};
-    // Interaction register
-    typename detray::detail::tuple_element<2, actor_tuple_type>::type::state s2{
-        s3};
-    // Parameter resetter
-    typename detray::detail::tuple_element<4, actor_tuple_type>::type::state s4{
-        prop_cfg};
+    traccc::details::ckf_interactor_t::state interactor_state;
     // Momentum aborter
-    typename detray::detail::tuple_element<5, actor_tuple_type>::type::state s5;
+    typename detray::actor::momentum_aborter<scalar_t>::state
+        momentum_aborter_state{};
     // CKF aborter
-    typename detray::detail::tuple_element<6, actor_tuple_type>::type::state s6;
+    typename ckf_aborter::state ckf_aborter_state{};
 
     /*
      * If we are running the MBF smoother, we need to accumulate the Jacobians
@@ -108,25 +99,27 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     if (cfg.run_mbf_smoother) {
         assert(payload.tmp_jacobian_ptr != nullptr);
 
-        payload.tmp_jacobian_ptr[param_id] = matrix::identity<
-            bound_matrix<typename propagator_t::detector_type::algebra_type>>();
-        s1._full_jacobian_ptr = &payload.tmp_jacobian_ptr[param_id];
+        payload.tmp_jacobian_ptr[param_id] =
+            matrix::identity<bound_matrix<algebra_t>>();
+        updater_state.set_full_jacobian(&payload.tmp_jacobian_ptr[param_id]);
     }
 
-    s5.min_pT(static_cast<scalar_t>(cfg.min_pT));
-    s5.min_p(static_cast<scalar_t>(cfg.min_p));
-    s6.min_step_length = cfg.min_step_length_for_next_surface;
-    s6.max_count = cfg.max_step_counts_for_next_surface;
+    momentum_aborter_state.min_pT(static_cast<scalar_t>(cfg.min_pT));
+    momentum_aborter_state.min_p(static_cast<scalar_t>(cfg.min_p));
+    ckf_aborter_state.min_step_length = cfg.min_step_length_for_next_surface;
+    ckf_aborter_state.max_count = cfg.max_step_counts_for_next_surface;
 
     // Propagate to the next surface
-    propagator.propagate(propagation, detray::tie(s0, s1, s2, s3, s4, s5, s6));
+    propagator.propagate(
+        propagation, detray::tie(aborter_state, updater_state, interactor_state,
+                                 momentum_aborter_state, ckf_aborter_state));
 
     // If a surface found, add the parameter for the next step
-    if (s6.success) {
+    if (ckf_aborter_state.success) {
         assert(propagation.navigation().is_on_sensitive());
-        assert(!propagation.stepping().bound_params().is_invalid());
+        assert(!updater_state.bound_params().is_invalid());
 
-        params[param_id] = propagation.stepping().bound_params();
+        params[param_id] = updater_state.bound_params();
         params_liveness[param_id] = 1u;
 
         const scalar theta = params[param_id].theta();

@@ -59,7 +59,7 @@ struct seed_generator {
 
         // Type definitions
         using interactor_type =
-            detray::pointwise_material_interactor<algebra_type>;
+            detray::actor::pointwise_material_interactor<algebra_type>;
 
         assert(ptc_type.charge() * bound_param.qop() > 0.f);
 

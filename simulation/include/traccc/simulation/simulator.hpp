@@ -54,11 +54,11 @@ struct simulator {
         }
     };
 
-    using actor_chain_type =
-        detray::actor_chain<detray::momentum_aborter<scalar_type>,
-                            detray::parameter_transporter<algebra_type>,
-                            detray::random_scatterer<algebra_type>,
-                            detray::parameter_resetter<algebra_type>, writer_t>;
+    using actor_chain_type = detray::actor_chain<
+        detray::actor::momentum_aborter<scalar_type>,
+        detray::actor::parameter_updater<
+            algebra_type, detray::actor::random_scatterer<algebra_type>,
+            writer_t>>;
 
     using navigator_type = detray::caching_navigator<detector_t>;
     using stepper_type = detray::rk_stepper<
@@ -89,7 +89,7 @@ struct simulator {
         m_cfg.propagation.stepping.use_field_gradient = false;
         m_cfg.propagation.navigation.estimate_scattering_noise = false;
 
-        m_resetter = typename detray::parameter_resetter<algebra_type>::state{
+        m_updater_state = detray::actor::parameter_updater_state<algebra_type>{
             m_cfg.propagation};
     }
 
@@ -117,11 +117,12 @@ struct simulator {
             m_scatterer.set_seed(event_id);
             writer_state.set_seed(event_id);
 
-            auto actor_states =
-                detray::tie(m_aborter_state, m_transporter_state, m_scatterer,
-                            m_resetter, writer_state);
+            auto actor_states = detray::tie(m_aborter_state, m_updater_state,
+                                            m_scatterer, writer_state);
 
             for (auto track : *m_track_generator.get()) {
+
+                m_updater_state.init(track);
 
                 writer_state.write_particle(
                     track,
@@ -153,16 +154,16 @@ struct simulator {
     std::size_t m_events{0u};
     std::string m_directory = "";
     const detector_t& m_detector;
-    const bfield_type& m_field;
+    const typename bfield_type::view_t m_field;
     std::unique_ptr<track_generator_t> m_track_generator;
     typename writer_t::config m_writer_cfg;
 
     /// Actor states
-    typename detray::momentum_aborter<scalar_type>::state m_aborter_state{};
-    typename detray::parameter_transporter<algebra_type>::state
-        m_transporter_state{};
-    typename detray::random_scatterer<algebra_type>::state m_scatterer{};
-    typename detray::parameter_resetter<algebra_type>::state m_resetter{};
+    typename detray::actor::momentum_aborter<scalar_type>::state
+        m_aborter_state{};
+    typename detray::actor::parameter_updater<algebra_type>::state
+        m_updater_state{};
+    typename detray::actor::random_scatterer<algebra_type>::state m_scatterer{};
 };
 
 }  // namespace traccc

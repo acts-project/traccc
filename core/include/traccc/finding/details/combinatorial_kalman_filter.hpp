@@ -25,7 +25,7 @@
 #include "traccc/utils/propagation.hpp"
 
 // VecMem include(s).
-#include <detray/propagator/actors/parameter_transporter.hpp>
+#include <detray/propagator/actors/parameter_updater.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 
 // System include(s).
@@ -213,28 +213,11 @@ combinatorial_kalman_filter(
                                 << in_param.vector());
             TRACCC_DEBUG_HOST("Cov:\n" << in_param.covariance());
 
-            /*************************
-             * Material interaction
-             *************************/
-
             // Get surface corresponding to bound params
             const detray::tracking_surface sf{det, in_param.surface_link()};
 
             TRACCC_VERBOSE_HOST(" Free params:\n"
                                 << sf.bound_to_free_vector({}, in_param));
-
-            // Apply interactor
-            if (sf.has_material()) {
-                const typename detector_t::geometry_context ctx{};
-                traccc::details::ckf_interactor_t::state interactor_state;
-                traccc::details::ckf_interactor_t{}.update(
-                    ctx,
-                    detail::correct_particle_hypothesis(config.ptc_hypothesis,
-                                                        in_param),
-                    in_param, interactor_state,
-                    static_cast<int>(detray::navigation::direction::e_forward),
-                    sf);
-            }
 
             /*****************************************************************
              * Find tracks (CKF)
@@ -519,17 +502,13 @@ combinatorial_kalman_filter(
                 .template set_constraint<detray::step::constraint::e_accuracy>(
                     config.propagation.stepping.step_constraint);
 
-            typename detray::pathlimit_aborter<scalar_type>::state
+            typename detray::actor::pathlimit_aborter<scalar_type>::state
                 aborter_state;
-            typename detray::parameter_transporter<
-                typename detector_t::algebra_type>::state transporter_state;
+            detray::actor::parameter_updater_state<
+                typename detector_t::algebra_type>
+                updater_state{prop_cfg, param};
             traccc::details::ckf_interactor_t::state interactor_state;
-            typename interaction_register<traccc::details::ckf_interactor_t>::
-                state interaction_register_state{interactor_state};
-            typename detray::parameter_resetter<
-                typename detector_t::algebra_type>::state resetter_state{
-                prop_cfg};
-            typename detray::momentum_aborter<scalar_type>::state
+            typename detray::actor::momentum_aborter<scalar_type>::state
                 momentum_aborter_state{};
             typename ckf_aborter::state ckf_aborter_state;
 
@@ -547,10 +526,8 @@ combinatorial_kalman_filter(
             TRACCC_DEBUG_HOST("Propagating... ");
             propagator.propagate(
                 propagation,
-                detray::tie(aborter_state, transporter_state,
-                            interaction_register_state, interactor_state,
-                            resetter_state, momentum_aborter_state,
-                            ckf_aborter_state));
+                detray::tie(aborter_state, updater_state, interactor_state,
+                            momentum_aborter_state, ckf_aborter_state));
             TRACCC_DEBUG_HOST("Finished propagation");
 
             // If a surface found, add the parameter for the next
@@ -558,12 +535,12 @@ combinatorial_kalman_filter(
             bool valid_track{ckf_aborter_state.success};
             if (valid_track) {
                 assert(propagation.navigation().is_on_sensitive());
-                assert(!propagation.stepping().bound_params().is_invalid());
+                assert(!updater_state.bound_params().is_invalid());
                 TRACCC_DEBUG_HOST(
                     "On surface: " << propagation.navigation().barcode());
 
                 const bound_track_parameters<algebra_type>& out_param =
-                    propagation.stepping().bound_params();
+                    updater_state.bound_params();
 
                 const scalar theta = out_param.theta();
                 if (theta <= 0.f ||
