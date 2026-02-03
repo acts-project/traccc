@@ -509,6 +509,28 @@ combinatorial_kalman_filter(
             const bound_track_parameters<algebra_type>& param =
                 updated_params[link_id];
 
+            // Check if the seed shopuld be used
+            if (step == 0u) {
+                const scalar_type q{detail::correct_particle_hypothesis(
+                                        config.ptc_hypothesis, param)
+                                        .charge()};
+                if (param.pT(q) <=
+                    static_cast<scalar_type>(config.min_pT) / 10.f) {
+                    TRACCC_WARNING_HOST(
+                        "Seed below min. transverse momentum: |pT| = "
+                        << param.pT(q) << " MeV");
+                    param_liveness.at(link_id) = 0u;
+                    continue;
+                }
+                if (param.p(q) <=
+                    static_cast<scalar_type>(config.min_p) / 10.f) {
+                    TRACCC_WARNING_HOST("Seed below min. momentum: |p| = "
+                                        << param.p(q) << " MeV");
+                    param_liveness.at(link_id) = 0u;
+                    continue;
+                }
+            }
+
             // Create propagator state
             typename traccc::details::ckf_propagator_t<
                 detector_t, bfield_t>::state propagation(param, field, det);
@@ -529,15 +551,9 @@ combinatorial_kalman_filter(
             typename detray::parameter_resetter<
                 typename detector_t::algebra_type>::state resetter_state{
                 prop_cfg};
-            typename detray::momentum_aborter<scalar_type>::state
-                momentum_aborter_state{};
             typename ckf_aborter::state ckf_aborter_state;
 
             // Update the actor config
-            momentum_aborter_state.min_pT(
-                static_cast<scalar_type>(config.min_pT));
-            momentum_aborter_state.min_p(
-                static_cast<scalar_type>(config.min_p));
             ckf_aborter_state.min_step_length =
                 config.min_step_length_for_next_surface;
             ckf_aborter_state.max_count =
@@ -549,8 +565,7 @@ combinatorial_kalman_filter(
                 propagation,
                 detray::tie(aborter_state, transporter_state,
                             interaction_register_state, interactor_state,
-                            resetter_state, momentum_aborter_state,
-                            ckf_aborter_state));
+                            resetter_state, ckf_aborter_state));
             TRACCC_DEBUG_HOST("Finished propagation");
 
             // If a surface found, add the parameter for the next
@@ -564,6 +579,28 @@ combinatorial_kalman_filter(
 
                 const bound_track_parameters<algebra_type>& out_param =
                     propagation._stepping.bound_params();
+
+                if (const unsigned int n_cands =
+                        step + 1 - links.at(step).at(link_id).n_skipped;
+                    n_cands >= config.duplicate_removal_minimum_length) {
+                    // Check if the track should be continued
+                    const auto& free_param = propagation._stepping();
+                    const scalar_type q{
+                        propagation._stepping.particle_hypothesis().charge()};
+                    if (free_param.pT(q) <=
+                        static_cast<scalar_type>(config.min_pT)) {
+                        TRACCC_WARNING_HOST(
+                            "Track below min. transverse momentum: |pT| = "
+                            << free_param.pT(q) << " MeV");
+                        param_liveness.at(link_id) = 0u;
+                    }
+                    if (free_param.p(q) <=
+                        static_cast<scalar_type>(config.min_p)) {
+                        TRACCC_WARNING_HOST("Track below min. momentum: |p| = "
+                                            << free_param.p(q) << " MeV");
+                        param_liveness.at(link_id) = 0u;
+                    }
+                }
 
                 const scalar theta = out_param.theta();
                 if (theta <= 0.f ||

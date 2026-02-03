@@ -63,6 +63,26 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     // Input bound track parameter
     const bound_track_parameters<> in_par = params.at(param_id);
 
+    // Check if the seed shopuld be used
+    if (link.step == 0u) {
+        const scalar_t q{
+            detail::correct_particle_hypothesis(cfg.ptc_hypothesis, in_par)
+                .charge()};
+        if (in_par.pT(q) <= static_cast<scalar_t>(cfg.min_pT) / 10.f) {
+            TRACCC_WARNING_DEVICE(
+                "Seed below min. transverse momentum: |pT| = %f MeV",
+                in_par.pT(q));
+            params_liveness[param_id] = 0u;
+            return;
+        }
+        if (in_par.p(q) <= static_cast<scalar_t>(cfg.min_p) / 10.f) {
+            TRACCC_WARNING_DEVICE("Seed below min. momentum: |p| = %f MeV",
+                                  in_par.p(q));
+            params_liveness[param_id] = 0u;
+            return;
+        }
+    }
+
     // Create propagator
     detray::propagation::config prop_cfg{cfg.propagation};
     prop_cfg.navigation.estimate_scattering_noise = false;
@@ -95,10 +115,8 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     // Parameter resetter
     typename detray::detail::tuple_element<4, actor_tuple_type>::type::state s4{
         prop_cfg};
-    // Momentum aborter
-    typename detray::detail::tuple_element<5, actor_tuple_type>::type::state s5;
     // CKF aborter
-    typename detray::detail::tuple_element<6, actor_tuple_type>::type::state s6;
+    typename detray::detail::tuple_element<5, actor_tuple_type>::type::state s5;
 
     /*
      * If we are running the MBF smoother, we need to accumulate the Jacobians
@@ -114,21 +132,37 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
         s1._full_jacobian_ptr = &payload.tmp_jacobian_ptr[param_id];
     }
 
-    s5.min_pT(static_cast<scalar_t>(cfg.min_pT));
-    s5.min_p(static_cast<scalar_t>(cfg.min_p));
-    s6.min_step_length = cfg.min_step_length_for_next_surface;
-    s6.max_count = cfg.max_step_counts_for_next_surface;
+    s5.min_step_length = cfg.min_step_length_for_next_surface;
+    s5.max_count = cfg.max_step_counts_for_next_surface;
 
     // Propagate to the next surface
-    propagator.propagate(propagation, detray::tie(s0, s1, s2, s3, s4, s5, s6));
+    propagator.propagate(propagation, detray::tie(s0, s1, s2, s3, s4, s5));
 
     // If a surface found, add the parameter for the next step
-    if (s6.success) {
+    if (s5.success) {
         assert(propagation._navigation.is_on_sensitive());
         assert(!propagation._stepping.bound_params().is_invalid());
 
         params[param_id] = propagation._stepping.bound_params();
         params_liveness[param_id] = 1u;
+
+        if (n_cands >= cfg.duplicate_removal_minimum_length) {
+            // Check if the track should be continued
+            const auto& free_param = propagation._stepping();
+            const scalar_t q{
+                propagation._stepping.particle_hypothesis().charge()};
+            if (free_param.pT(q) <= static_cast<scalar_t>(cfg.min_pT)) {
+                TRACCC_WARNING_DEVICE(
+                    "Track below min. transverse momentum: |pT| = %f MeV",
+                    free_param.pT(q));
+                params_liveness[param_id] = 0u;
+            }
+            if (free_param.p(q) <= static_cast<scalar_t>(cfg.min_p)) {
+                TRACCC_WARNING_DEVICE("Track below min. momentum: |p| = %f MeV",
+                                      free_param.p(q));
+                params_liveness[param_id] = 0u;
+            }
+        }
 
         const scalar theta = params[param_id].theta();
         if (theta <= 0.f || theta >= 2.f * constant<traccc::scalar>::pi) {
