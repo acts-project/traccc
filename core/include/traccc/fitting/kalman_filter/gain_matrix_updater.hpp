@@ -17,6 +17,7 @@
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/utils/logging.hpp"
 #include "traccc/utils/subspace.hpp"
+#include "traccc/utils/trigonometric_helpers.hpp"
 
 namespace traccc {
 
@@ -196,23 +197,23 @@ struct gain_matrix_updater {
         trk_state.filtered_params().set_covariance(filtered_cov);
         trk_state.filtered_chi2() = chi2_val;
 
-        if (math::fmod(trk_state.filtered_params().theta(),
-                       2.f * constant<traccc::scalar>::pi) == 0.f) {
+        // Wrap the phi and theta angles in their valid ranges
+        scalar wrapped_phi;
+        scalar wrapped_theta;
+
+        std::tie(wrapped_phi, wrapped_theta) =
+            detail::wrap_phi_theta(trk_state.filtered_params().phi(),
+                                   trk_state.filtered_params().theta());
+
+        if (wrapped_theta == 0.f) {
             TRACCC_ERROR_HOST_DEVICE(
-                "Hit theta pole after filtering : %f (unrecoverable error "
-                "pre-normalization)",
+                "Hit theta pole after filtering : %f (unrecoverable error)",
                 trk_state.filtered_params().theta());
             return kalman_fitter_status::ERROR_THETA_POLE;
         }
 
-        // Wrap the phi and theta angles in their valid ranges
-        normalize_angles(trk_state.filtered_params());
-
-        const scalar theta = trk_state.filtered_params().theta();
-        if (theta <= 0.f || theta >= 2.f * constant<traccc::scalar>::pi) {
-            TRACCC_ERROR_HOST_DEVICE("Hit theta pole in filtering : %f", theta);
-            return kalman_fitter_status::ERROR_THETA_POLE;
-        }
+        trk_state.filtered_params().set_phi(wrapped_phi);
+        trk_state.filtered_params().set_theta(wrapped_theta);
 
         assert(!trk_state.filtered_params().is_invalid());
 
