@@ -227,7 +227,7 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
                 input_opts.events;
 
             // Process one event.
-            rec_track_params += (*alg)(input[event]).size();
+            rec_track_params += process_event(input[event]);
             progress_bar.tick();
         }
     }

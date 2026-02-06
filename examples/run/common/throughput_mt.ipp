@@ -275,10 +275,9 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
             // Launch the processing of the event.
             arena.execute([&, event]() {
                 group.run([&, event]() {
-                    rec_track_params.fetch_add(algs.at(static_cast<std::size_t>(
-                        tbb::this_task_arena::current_thread_index()))(
-                                                       input[event])
-                                                   .size());
+                    rec_track_params.fetch_add(process_event(
+                        tbb::this_task_arena::current_thread_index(),
+                        input[event]));
                     progress_bar.tick();
                 });
             });
