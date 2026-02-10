@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -12,12 +12,10 @@ namespace traccc::sycl {
 
 combinatorial_kalman_filter_algorithm::combinatorial_kalman_filter_algorithm(
     const config_type& config, const traccc::memory_resource& mr,
-    vecmem::copy& copy, queue_wrapper queue,
+    vecmem::copy& copy, queue_wrapper& queue,
     std::unique_ptr<const Logger> logger)
-    : messaging(std::move(logger)),
-      m_config{config},
-      m_mr{mr},
-      m_copy{copy},
-      m_queue{queue} {}
+    : device::combinatorial_kalman_filter_algorithm(config, mr, copy,
+                                                    std::move(logger)),
+      sycl::algorithm_base(queue) {}
 
 }  // namespace traccc::sycl
