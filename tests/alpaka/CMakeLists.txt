@@ -19,11 +19,16 @@ endif()
 traccc_add_alpaka_test( alpaka
    alpaka_basic.cpp
    test_cca.cpp
+   test_ckf_combinatorics_telescope.cpp
+   test_ckf_toy_detector.cpp
    LINK_LIBRARIES
    GTest::gtest_main
    traccc_tests_common
    alpaka::alpaka
    vecmem::core
    traccc::alpaka
+   traccc::io
+   traccc::performance
+   traccc::simulation
    ${DEVICE_LIBRARIES}
 )
