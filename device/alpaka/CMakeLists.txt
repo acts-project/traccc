@@ -54,7 +54,6 @@ traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   # Track finding algorithm(s).
   "include/traccc/alpaka/finding/combinatorial_kalman_filter_algorithm.hpp"
   "src/finding/combinatorial_kalman_filter_algorithm.cpp"
-  "src/finding/combinatorial_kalman_filter.hpp"
   # Track fitting algorithm(s).
   "include/traccc/alpaka/fitting/kalman_fitting_algorithm.hpp"
   "src/fitting/kalman_fitting_algorithm.cpp"
