@@ -214,8 +214,9 @@ void combinatorial_kalman_filter_algorithm::sort_param_ids_by_keys(
 }
 
 void combinatorial_kalman_filter_algorithm::propagate_to_next_surface_kernel(
-    unsigned int n_threads,
-    const propagate_to_next_surface_kernel_payload& payload) const {
+    unsigned int n_threads, const finding_config& config,
+    const detector_buffer& detector, const magnetic_field& field,
+    const device::propagate_to_next_surface_payload& payload) const {
 
     // Establish the kernel launch parameters.
     const unsigned int deviceThreads = warp_size() * 2;
@@ -225,32 +226,16 @@ void combinatorial_kalman_filter_algorithm::propagate_to_next_surface_kernel(
     // Launch the kernel for the appropriate detector and magnetic field type.
     detector_buffer_magnetic_field_visitor<detector_type_list,
                                            cuda::bfield_type_list<scalar>>(
-        payload.det, payload.field,
+        detector, field,
         [&]<typename detector_traits_t, typename bfield_view_t>(
-            const typename detector_traits_t::view& detector,
+            const typename detector_traits_t::view& det,
             const bfield_view_t& bfield) {
             propagate_to_next_surface<
                 traccc::details::ckf_propagator_t<
                     typename detector_traits_t::device, bfield_view_t>,
-                bfield_view_t>(
-                deviceBlocks, deviceThreads, 0u, details::get_stream(stream()),
-                payload.config,
-                device::propagate_to_next_surface_payload<
-                    traccc::details::ckf_propagator_t<
-                        typename detector_traits_t::device, bfield_view_t>,
-                    bfield_view_t>{
-                    .det_data = detector,
-                    .field_data = bfield,
-                    .params_view = payload.params,
-                    .params_liveness_view = payload.params_liveness,
-                    .param_ids_view = payload.param_ids,
-                    .links_view = payload.links,
-                    .prev_links_idx = payload.prev_links_idx,
-                    .step = payload.step,
-                    .n_in_params = n_threads,
-                    .tips_view = payload.tips,
-                    .tip_lengths_view = payload.tip_lengths,
-                    .tmp_jacobian_ptr = payload.tmp_jacobian.ptr()});
+                bfield_view_t>(deviceBlocks, deviceThreads, 0u,
+                               details::get_stream(stream()), config, det,
+                               bfield, payload);
         });
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 }

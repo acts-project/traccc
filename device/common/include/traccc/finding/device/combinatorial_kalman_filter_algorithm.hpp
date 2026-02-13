@@ -17,6 +17,7 @@
 #include "traccc/finding/device/find_tracks_payload.hpp"
 #include "traccc/finding/device/gather_best_tips_per_measurement.hpp"
 #include "traccc/finding/device/gather_measurement_votes.hpp"
+#include "traccc/finding/device/propagate_to_next_surface.hpp"
 #include "traccc/finding/device/remove_duplicates.hpp"
 #include "traccc/finding/device/update_tip_length_buffer.hpp"
 
@@ -185,42 +186,18 @@ class combinatorial_kalman_filter_algorithm
         vecmem::data::vector_view<device::sort_key>& keys,
         vecmem::data::vector_view<unsigned int>& param_ids) const = 0;
 
-    /// Payload for the @c propagate_to_next_surface_kernel function
-    struct propagate_to_next_surface_kernel_payload {
-        /// The track finding configuration
-        const finding_config& config;
-        /// The detector object
-        const detector_buffer& det;
-        /// The magnetic field object
-        const magnetic_field& field;
-        /// The vector of track parameters
-        bound_track_parameters_collection_types::view& params;
-        /// The vector of track parameter liveness values
-        vecmem::data::vector_view<unsigned int>& params_liveness;
-        /// Sorted parameter identifiers
-        const vecmem::data::vector_view<const unsigned int>& param_ids;
-        /// The vector of candidate links
-        const vecmem::data::vector_view<const candidate_link>& links;
-        /// Index in the link vector at which the current step starts
-        unsigned int prev_links_idx;
-        /// Current CKF step number
-        unsigned int step;
-        /// The vector of tips
-        vecmem::data::vector_view<unsigned int>& tips;
-        /// The number of track states per tip
-        vecmem::data::vector_view<unsigned int>& tip_lengths;
-        /// The temporary Jacobian buffer
-        vecmem::data::vector_view<bound_matrix<default_algebra>>& tmp_jacobian;
-    };
-
     /// Launch the @c propagate_to_next_surface kernel
     ///
     /// @param n_threads The number of threads to launch the kernel with
+    /// @param config The track finding configuration
+    /// @param det The detector object
+    /// @param bfield The magnetic field object
     /// @param payload The payload for the kernel
     ///
     virtual void propagate_to_next_surface_kernel(
-        unsigned int n_threads,
-        const propagate_to_next_surface_kernel_payload& payload) const = 0;
+        unsigned int n_threads, const finding_config& config,
+        const detector_buffer& det, const magnetic_field& bfield,
+        const device::propagate_to_next_surface_payload& payload) const = 0;
 
     /// Launch the @c gather_best_tips_per_measurement kernel
     ///

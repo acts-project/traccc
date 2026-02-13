@@ -132,11 +132,16 @@ class combinatorial_kalman_filter_algorithm
     /// Launch the @c propagate_to_next_surface kernel
     ///
     /// @param n_threads The number of threads to launch the kernel with
+    /// @param config The track finding configuration
+    /// @param det The detector object
+    /// @param bfield The magnetic field object
     /// @param payload The payload for the kernel
     ///
     void propagate_to_next_surface_kernel(
-        unsigned int n_threads,
-        const propagate_to_next_surface_kernel_payload& payload) const override;
+        unsigned int n_threads, const finding_config& config,
+        const detector_buffer& det, const magnetic_field& bfield,
+        const device::propagate_to_next_surface_payload& payload)
+        const override;
 
     /// Launch the @c gather_best_tips_per_measurement kernel
     ///
