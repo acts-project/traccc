@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -23,18 +23,7 @@ namespace traccc::device {
 
 /// (Event Data) Payload for the @c traccc::device::propagate_to_next_surface
 /// function
-template <typename propagator_t, typename bfield_t>
 struct propagate_to_next_surface_payload {
-    /**
-     * @brief View object to the tracking detector description
-     */
-    typename propagator_t::detector_type::const_view_type det_data;
-
-    /**
-     * @brief View object to the magnetic field
-     */
-    bfield_t field_data;
-
     /**
      * @brief View object to the vector of track parameters
      */
@@ -80,8 +69,7 @@ struct propagate_to_next_surface_payload {
      */
     vecmem::data::vector_view<unsigned int> tip_lengths_view;
 
-    bound_matrix<typename propagator_t::detector_type::algebra_type>*
-        tmp_jacobian_ptr;
+    vecmem::data::vector_view<bound_matrix<default_algebra> > tmp_jacobian_view;
 };
 
 /// Function for propagating the kalman-updated tracks to the next surface
@@ -93,12 +81,17 @@ struct propagate_to_next_surface_payload {
 ///
 /// @param[in] globalIndex        The index of the current thread
 /// @param[in] cfg                Track finding config object
+/// @param[in] det_data           View object to the tracking detector
+///                               description
+/// @param[in] field_data         View object to the magnetic field
 /// @param[inout] payload      The function call payload
 ///
 template <typename propagator_t, typename bfield_t>
 TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     global_index_t globalIndex, const finding_config& cfg,
-    const propagate_to_next_surface_payload<propagator_t, bfield_t>& payload);
+    const typename propagator_t::detector_type::const_view_type& det_data,
+    const bfield_t& field_data,
+    const propagate_to_next_surface_payload& payload);
 
 }  // namespace traccc::device
 

@@ -379,18 +379,17 @@ auto combinatorial_kalman_filter_algorithm::operator()(
             }
 
             propagate_to_next_surface_kernel(
-                n_candidates, {.config = m_data->m_config,
-                               .det = det,
-                               .field = bfield,
-                               .params = in_params_buffer,
-                               .params_liveness = param_liveness_buffer,
-                               .param_ids = param_ids_buffer,
-                               .links = links_buffer,
-                               .prev_links_idx = step_to_link_idx_map[step],
-                               .step = step,
-                               .tips = tips_buffer,
-                               .tip_lengths = tip_length_buffer,
-                               .tmp_jacobian = tmp_jacobian_buffer});
+                n_candidates, m_data->m_config, det, bfield,
+                {.params_view = in_params_buffer,
+                 .params_liveness_view = param_liveness_buffer,
+                 .param_ids_view = param_ids_buffer,
+                 .links_view = links_buffer,
+                 .prev_links_idx = step_to_link_idx_map[step],
+                 .step = step,
+                 .n_in_params = n_candidates,
+                 .tips_view = tips_buffer,
+                 .tip_lengths_view = tip_length_buffer,
+                 .tmp_jacobian_view = tmp_jacobian_buffer});
         }
 
         n_in_params = n_candidates;
