@@ -14,6 +14,7 @@
 #include "traccc/finding/device/build_tracks.hpp"
 #include "traccc/finding/device/fill_finding_duplicate_removal_sort_keys.hpp"
 #include "traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
+#include "traccc/finding/device/find_tracks_payload.hpp"
 #include "traccc/finding/device/gather_best_tips_per_measurement.hpp"
 #include "traccc/finding/device/gather_measurement_votes.hpp"
 #include "traccc/finding/device/remove_duplicates.hpp"
@@ -124,63 +125,17 @@ class combinatorial_kalman_filter_algorithm
         const detector_buffer& det,
         const device::apply_interaction_payload& payload) const = 0;
 
-    /// Payload for the @c find_tracks_kernel function
-    struct find_tracks_kernel_payload {
-        /// The track finding configuration
-        const finding_config& config;
-        /// The number of input track parameters
-        bound_track_parameters_collection_types::const_view::size_type n_params;
-        /// The detector object
-        const detector_buffer& det;
-        /// The measurements view
-        const edm::measurement_collection<default_algebra>::const_view&
-            measurements;
-        /// The input track parameters buffer
-        const bound_track_parameters_collection_types::const_view& in_params;
-        /// The liveness view of the input track parameters
-        const vecmem::data::vector_view<const unsigned int>& in_params_liveness;
-        /// The measurement ranges view
-        const vecmem::data::vector_view<const unsigned int>& measurement_ranges;
-        /// The links buffer
-        vecmem::data::vector_view<candidate_link> links;
-        /// Index in the link vector at which the previous step starts
-        unsigned int prev_links_idx;
-        /// Index in the link vector at which the current step starts
-        unsigned int curr_links_idx;
-        /// The current step index
-        unsigned int step;
-        /// The output (updated) track parameters buffer
-        bound_track_parameters_collection_types::view& out_params;
-        /// The liveness view of the output track parameters
-        vecmem::data::vector_view<unsigned int>& out_params_liveness;
-        /// The tips buffer
-        vecmem::data::vector_view<unsigned int>& tips;
-        /// The tip lengths buffer
-        vecmem::data::vector_view<unsigned int>& tip_lengths;
-        /// The number of tracks per seed buffer
-        vecmem::data::vector_view<unsigned int>& n_tracks_per_seed;
-        /// Temporary track parameters buffer
-        bound_track_parameters_collection_types::view& tmp_params;
-        /// Temporary links buffer
-        vecmem::data::vector_view<candidate_link>& tmp_links;
-        /// The Jacobian buffer
-        vecmem::data::vector_view<bound_matrix<default_algebra>>& jacobian;
-        /// The temporary Jacobian buffer
-        vecmem::data::vector_view<bound_matrix<default_algebra>>& tmp_jacobian;
-        /// The link predicted parameter buffer
-        bound_track_parameters_collection_types::view& link_predicted_parameter;
-        /// The link filtered parameter buffer
-        bound_track_parameters_collection_types::view& link_filtered_parameter;
-    };
-
     /// Track finding kernel launcher
     ///
     /// @param n_threads The number of threads to launch the kernel with
+    /// @param config The track finding configuration
+    /// @param det The detector object
     /// @param payload The payload for the kernel
     ///
     virtual void find_tracks_kernel(
-        unsigned int n_threads,
-        const find_tracks_kernel_payload& payload) const = 0;
+        unsigned int n_threads, const finding_config& config,
+        const detector_buffer& det,
+        const device::find_tracks_payload& payload) const = 0;
 
     /// Launch the kernel sorting the parameters before duplicate removal
     ///

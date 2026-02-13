@@ -110,7 +110,9 @@ void combinatorial_kalman_filter_algorithm::apply_interaction_kernel(
 }
 
 void combinatorial_kalman_filter_algorithm::find_tracks_kernel(
-    unsigned int n_threads, const find_tracks_kernel_payload& payload) const {
+    unsigned int n_threads, const finding_config& config,
+    const detector_buffer& detector,
+    const device::find_tracks_payload& payload) const {
 
     // Establish the kernel launch parameters.
     const unsigned int deviceThreads = warp_size() * 2;
@@ -122,35 +124,11 @@ void combinatorial_kalman_filter_algorithm::find_tracks_kernel(
 
     // Launch the kernel for the appropriate detector type.
     detector_buffer_visitor<detector_type_list>(
-        payload.det, [&]<typename detector_traits_t>(
-                         const typename detector_traits_t::view& det) {
+        detector, [&]<typename detector_traits_t>(
+                      const typename detector_traits_t::view& det) {
             find_tracks<typename detector_traits_t::device>(
                 deviceBlocks, deviceThreads, deviceSharedMem,
-                details::get_stream(stream()), payload.config,
-                device::find_tracks_payload<typename detector_traits_t::device>{
-                    .det_data = det,
-                    .measurements_view = payload.measurements,
-                    .in_params_view = payload.in_params,
-                    .in_params_liveness_view = payload.in_params_liveness,
-                    .n_in_params = payload.n_params,
-                    .measurement_ranges_view = payload.measurement_ranges,
-                    .links_view = payload.links,
-                    .prev_links_idx = payload.prev_links_idx,
-                    .curr_links_idx = payload.curr_links_idx,
-                    .step = payload.step,
-                    .out_params_view = payload.out_params,
-                    .out_params_liveness_view = payload.out_params_liveness,
-                    .tips_view = payload.tips,
-                    .tip_lengths_view = payload.tip_lengths,
-                    .n_tracks_per_seed_view = payload.n_tracks_per_seed,
-                    .tmp_params_view = payload.tmp_params,
-                    .tmp_links_view = payload.tmp_links,
-                    .jacobian_ptr = payload.jacobian.ptr(),
-                    .tmp_jacobian_ptr = payload.tmp_jacobian.ptr(),
-                    .link_predicted_parameter_view =
-                        payload.link_predicted_parameter,
-                    .link_filtered_parameter_view =
-                        payload.link_filtered_parameter});
+                details::get_stream(stream()), config, det, payload);
         });
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 }

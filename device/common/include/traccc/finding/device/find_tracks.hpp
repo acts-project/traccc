@@ -10,17 +10,10 @@
 // Local include(s).
 #include "traccc/device/concepts/barrier.hpp"
 #include "traccc/device/concepts/thread_id.hpp"
+#include "traccc/finding/device/find_tracks_payload.hpp"
 
 // Project include(s).
-#include "traccc/definitions/primitives.hpp"
-#include "traccc/definitions/qualifiers.hpp"
-#include "traccc/edm/measurement_collection.hpp"
-#include "traccc/edm/track_parameters.hpp"
-#include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/finding_config.hpp"
-
-// VecMem include(s).
-#include <vecmem/containers/data/vector_view.hpp>
 
 // System include(s).
 #include <cstdint>
@@ -148,6 +141,8 @@ struct find_tracks_shared_payload {
 /// @param[in] thread_id          A thread identifier object
 /// @param[in] barrier            A block-wide barrier
 /// @param[in] cfg                Track finding config object
+/// @param[in] det_data           View object to the tracking detector
+///                               description
 /// @param[inout] payload         The global memory payload
 /// @param[inout] shared_payload  The shared memory payload
 ///
@@ -155,7 +150,8 @@ template <typename detector_t, concepts::thread_id1 thread_id_t,
           concepts::barrier barrier_t>
 TRACCC_HOST_DEVICE inline void find_tracks(
     const thread_id_t& thread_id, const barrier_t& barrier,
-    const finding_config& cfg, const find_tracks_payload<detector_t>& payload,
+    const finding_config& cfg, typename detector_t::const_view_type det_data,
+    const find_tracks_payload& payload,
     const find_tracks_shared_payload& shared_payload);
 
 }  // namespace traccc::device

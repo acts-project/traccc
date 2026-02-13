@@ -75,11 +75,14 @@ class combinatorial_kalman_filter_algorithm
     /// Track finding kernel launcher
     ///
     /// @param n_threads The number of threads to launch the kernel with
+    /// @param config The track finding configuration
+    /// @param det The detector object
     /// @param payload The payload for the kernel
     ///
     void find_tracks_kernel(
-        unsigned int n_threads,
-        const find_tracks_kernel_payload& payload) const override;
+        unsigned int n_threads, const finding_config& config,
+        const detector_buffer& det,
+        const device::find_tracks_payload& payload) const override;
 
     /// Launch the kernel sorting the parameters before duplicate removal
     ///

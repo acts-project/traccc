@@ -42,7 +42,8 @@ template <typename detector_t, concepts::thread_id1 thread_id_t,
           concepts::barrier barrier_t>
 TRACCC_HOST_DEVICE inline void find_tracks(
     const thread_id_t& thread_id, const barrier_t& barrier,
-    const finding_config& cfg, const find_tracks_payload<detector_t>& payload,
+    const finding_config& cfg, typename detector_t::const_view_type det_data,
+    const find_tracks_payload& payload,
     const find_tracks_shared_payload& shared_payload) {
 
     using algebra_t = typename detector_t::algebra_type;
