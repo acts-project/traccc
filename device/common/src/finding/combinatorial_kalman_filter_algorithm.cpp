@@ -160,12 +160,11 @@ auto combinatorial_kalman_filter_algorithm::operator()(
         /*****************************************************************
          * Apply material interaction
          ****************************************************************/
-        apply_interaction_kernel(n_in_params,
-                                 {.config = m_data->m_config,
-                                  .n_params = n_in_params,
-                                  .det = det,
-                                  .params = in_params_buffer,
-                                  .params_liveness = param_liveness_buffer});
+        apply_interaction_kernel(
+            n_in_params, m_data->m_config, det,
+            {.n_params = n_in_params,
+             .params_view = in_params_buffer,
+             .params_liveness_view = param_liveness_buffer});
 
         /*****************************************************************
          * Find valid tracks

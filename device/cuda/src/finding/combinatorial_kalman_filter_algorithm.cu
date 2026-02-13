@@ -89,8 +89,9 @@ combinatorial_kalman_filter_algorithm::build_measurement_ranges_buffer(
 }
 
 void combinatorial_kalman_filter_algorithm::apply_interaction_kernel(
-    unsigned int n_threads,
-    const apply_interaction_kernel_payload& payload) const {
+    unsigned int n_threads, const finding_config& config,
+    const detector_buffer& detector,
+    const device::apply_interaction_payload& payload) const {
 
     // Establish the kernel launch parameters.
     const unsigned int deviceThreads = warp_size() * 2;
@@ -99,17 +100,11 @@ void combinatorial_kalman_filter_algorithm::apply_interaction_kernel(
 
     // Launch the kernel for the appropriate detector type.
     detector_buffer_visitor<detector_type_list>(
-        payload.det, [&]<typename detector_traits_t>(
-                         const typename detector_traits_t::view& det) {
+        detector, [&]<typename detector_traits_t>(
+                      const typename detector_traits_t::view& det) {
             apply_interaction<typename detector_traits_t::device>(
                 deviceBlocks, deviceThreads, 0, details::get_stream(stream()),
-                payload.config,
-                device::apply_interaction_payload<
-                    typename detector_traits_t::device>{
-                    .det_data = det,
-                    .n_params = payload.n_params,
-                    .params_view = payload.params,
-                    .params_liveness_view = payload.params_liveness});
+                config, det, payload);
         });
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 }
