@@ -10,6 +10,7 @@
 // Library include(s).
 #include "traccc/device/algorithm_base.hpp"
 #include "traccc/edm/device/sort_key.hpp"
+#include "traccc/finding/device/apply_interaction.hpp"
 #include "traccc/finding/device/build_tracks.hpp"
 #include "traccc/finding/device/fill_finding_duplicate_removal_sort_keys.hpp"
 #include "traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
@@ -111,28 +112,17 @@ class combinatorial_kalman_filter_algorithm
         const edm::measurement_collection<default_algebra>::const_view&
             measurements) const = 0;
 
-    /// Payload for the @c apply_interaction_kernel function
-    struct apply_interaction_kernel_payload {
-        /// The track finding configuration
-        const finding_config& config;
-        /// The number of "live" track parameters
-        bound_track_parameters_collection_types::const_view::size_type n_params;
-        /// The detector object
-        const detector_buffer& det;
-        /// The input track parameters
-        bound_track_parameters_collection_types::view& params;
-        /// The liveness of the input track parameters
-        const vecmem::data::vector_view<unsigned int>& params_liveness;
-    };
-
     /// Material interaction application kernel launcher
     ///
     /// @param n_threads The number of threads to launch the kernel with
+    /// @param config The track finding configuration
+    /// @param det The detector object
     /// @param payload The payload for the kernel
     ///
     virtual void apply_interaction_kernel(
-        unsigned int n_threads,
-        const apply_interaction_kernel_payload& payload) const = 0;
+        unsigned int n_threads, const finding_config& config,
+        const detector_buffer& det,
+        const device::apply_interaction_payload& payload) const = 0;
 
     /// Payload for the @c find_tracks_kernel function
     struct find_tracks_kernel_payload {

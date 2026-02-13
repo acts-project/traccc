@@ -60,11 +60,14 @@ class combinatorial_kalman_filter_algorithm
     /// Material interaction application kernel launcher
     ///
     /// @param n_threads The number of threads to launch the kernel with
+    /// @param config The track finding configuration
+    /// @param det The detector object
     /// @param payload The payload for the kernel
     ///
     void apply_interaction_kernel(
-        unsigned int n_threads,
-        const apply_interaction_kernel_payload& payload) const override;
+        unsigned int n_threads, const finding_config& config,
+        const detector_buffer& det,
+        const device::apply_interaction_payload& payload) const override;
 
     /// Track finding kernel launcher
     ///

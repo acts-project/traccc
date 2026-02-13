@@ -37,11 +37,13 @@ struct apply_interaction {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, const finding_config& cfg,
-        const device::apply_interaction_payload<detector_t>& payload) const {
+        const typename detector_t::const_view_type& det_data,
+        const device::apply_interaction_payload& payload) const {
 
         const device::global_index_t globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
-        device::apply_interaction<detector_t>(globalThreadIdx, cfg, payload);
+        device::apply_interaction<detector_t>(globalThreadIdx, cfg, det_data,
+                                              payload);
     }
 };
 
@@ -251,8 +253,9 @@ combinatorial_kalman_filter_algorithm::build_measurement_ranges_buffer(
 }
 
 void combinatorial_kalman_filter_algorithm::apply_interaction_kernel(
-    unsigned int n_threads,
-    const apply_interaction_kernel_payload& payload) const {
+    unsigned int n_threads, const finding_config& config,
+    const detector_buffer& detector,
+    const device::apply_interaction_payload& payload) const {
 
     // Establish the kernel launch parameters.
     const unsigned int deviceThreads = warp_size() * 2;
@@ -261,20 +264,13 @@ void combinatorial_kalman_filter_algorithm::apply_interaction_kernel(
 
     // Launch the kernel for the appropriate detector type.
     detector_buffer_visitor<detector_type_list>(
-        payload.det, [&]<typename detector_traits_t>(
-                         const typename detector_traits_t::view& det) {
-            ::alpaka::exec<Acc>(
-                details::get_queue(queue()),
-                makeWorkDiv<Acc>(deviceBlocks, deviceThreads),
-                kernels::apply_interaction<
-                    typename detector_traits_t::device>{},
-                payload.config,
-                device::apply_interaction_payload<
-                    typename detector_traits_t::device>{
-                    .det_data = det,
-                    .n_params = payload.n_params,
-                    .params_view = payload.params,
-                    .params_liveness_view = payload.params_liveness});
+        detector, [&]<typename detector_traits_t>(
+                      const typename detector_traits_t::view& det) {
+            ::alpaka::exec<Acc>(details::get_queue(queue()),
+                                makeWorkDiv<Acc>(deviceBlocks, deviceThreads),
+                                kernels::apply_interaction<
+                                    typename detector_traits_t::device>{},
+                                config, det, payload);
         });
 }
 
