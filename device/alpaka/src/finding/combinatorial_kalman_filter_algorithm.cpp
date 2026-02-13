@@ -53,7 +53,8 @@ struct find_tracks {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, const finding_config& cfg,
-        const device::find_tracks_payload<detector_t>* payload) const {
+        const typename detector_t::const_view_type* det_data,
+        const device::find_tracks_payload& payload) const {
 
         auto& shared_num_out_params =
             ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
@@ -74,7 +75,7 @@ struct find_tracks {
                 &shared_insertion_mutex[blockDimX]);
 
         device::find_tracks<detector_t>(
-            thread_id, barrier, cfg, *payload,
+            thread_id, barrier, cfg, *det_data, payload,
             {shared_num_out_params, shared_out_offset, shared_insertion_mutex,
              shared_candidates, shared_candidates_size});
     }
@@ -275,7 +276,9 @@ void combinatorial_kalman_filter_algorithm::apply_interaction_kernel(
 }
 
 void combinatorial_kalman_filter_algorithm::find_tracks_kernel(
-    unsigned int n_threads, const find_tracks_kernel_payload& payload) const {
+    unsigned int n_threads, const finding_config& config,
+    const detector_buffer& detector,
+    const device::find_tracks_payload& payload) const {
 
     // Establish the kernel launch parameters.
     const unsigned int deviceThreads = warp_size() * 2;
@@ -284,50 +287,20 @@ void combinatorial_kalman_filter_algorithm::find_tracks_kernel(
 
     // Launch the kernel for the appropriate detector type.
     detector_buffer_visitor<detector_type_list>(
-        payload.det, [&]<typename detector_traits_t>(
-                         const typename detector_traits_t::view& det) {
-            // Allocate the kernel's payload in host memory.
-            using payload_t =
-                device::find_tracks_payload<typename detector_traits_t::device>;
-            const payload_t host_payload{
-                .det_data = det,
-                .measurements_view = payload.measurements,
-                .in_params_view = payload.in_params,
-                .in_params_liveness_view = payload.in_params_liveness,
-                .n_in_params = payload.n_params,
-                .measurement_ranges_view = payload.measurement_ranges,
-                .links_view = payload.links,
-                .prev_links_idx = payload.prev_links_idx,
-                .curr_links_idx = payload.curr_links_idx,
-                .step = payload.step,
-                .out_params_view = payload.out_params,
-                .out_params_liveness_view = payload.out_params_liveness,
-                .tips_view = payload.tips,
-                .tip_lengths_view = payload.tip_lengths,
-                .n_tracks_per_seed_view = payload.n_tracks_per_seed,
-                .tmp_params_view = payload.tmp_params,
-                .tmp_links_view = payload.tmp_links,
-                .jacobian_ptr = payload.jacobian.ptr(),
-                .tmp_jacobian_ptr = payload.tmp_jacobian.ptr(),
-                .link_predicted_parameter_view =
-                    payload.link_predicted_parameter,
-                .link_filtered_parameter_view =
-                    payload.link_filtered_parameter};
-            // Now copy it to device memory.
-            vecmem::data::vector_buffer<payload_t> device_payload(1u,
-                                                                  mr().main);
-            copy().setup(device_payload)->ignore();
-            copy()(
-                vecmem::data::vector_view<const payload_t>(1u, &host_payload),
-                device_payload)
-                ->ignore();
+        detector, [&]<typename detector_traits_t>(
+                      const typename detector_traits_t::view& det) {
+            // Copy the detector data to device memory.
+            vecmem::data::vector_buffer<typename detector_traits_t::view>
+                device_det(1u, mr().main);
+            copy().setup(device_det)->ignore();
+            copy()({1u, &det}, device_det)->ignore();
 
             // Submit the kernel to the queue.
             ::alpaka::exec<Acc>(
                 details::get_queue(queue()),
                 makeWorkDiv<Acc>(deviceBlocks, deviceThreads),
                 kernels::find_tracks<typename detector_traits_t::device>{},
-                payload.config, device_payload.ptr());
+                config, device_det.ptr(), payload);
         });
 }
 

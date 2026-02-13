@@ -256,30 +256,30 @@ auto combinatorial_kalman_filter_algorithm::operator()(
 
             // Launch the kernel.
             find_tracks_kernel(
-                n_in_params,
-                {.config = m_data->m_config,
-                 .n_params = n_in_params,
-                 .det = det,
-                 .measurements = measurements_view,
-                 .in_params = in_params_buffer,
-                 .in_params_liveness = param_liveness_buffer,
-                 .measurement_ranges = meas_ranges_buffer,
-                 .links = links_buffer,
+                n_in_params, m_data->m_config, det,
+                {.measurements_view = measurements_view,
+                 .in_params_view = in_params_buffer,
+                 .in_params_liveness_view = param_liveness_buffer,
+                 .n_in_params = n_in_params,
+                 .measurement_ranges_view = meas_ranges_buffer,
+                 .links_view = links_buffer,
                  .prev_links_idx =
                      (step == 0 ? 0 : step_to_link_idx_map[step - 1]),
                  .curr_links_idx = step_to_link_idx_map[step],
                  .step = step,
-                 .out_params = updated_params_buffer,
-                 .out_params_liveness = updated_liveness_buffer,
-                 .tips = tips_buffer,
-                 .tip_lengths = tip_length_buffer,
-                 .n_tracks_per_seed = n_tracks_per_seed_buffer,
-                 .tmp_params = tmp_params_buffer,
-                 .tmp_links = tmp_links_buffer,
-                 .jacobian = jacobian_buffer,
-                 .tmp_jacobian = tmp_jacobian_buffer,
-                 .link_predicted_parameter = link_predicted_parameter_buffer,
-                 .link_filtered_parameter = link_filtered_parameter_buffer});
+                 .out_params_view = updated_params_buffer,
+                 .out_params_liveness_view = updated_liveness_buffer,
+                 .tips_view = tips_buffer,
+                 .tip_lengths_view = tip_length_buffer,
+                 .n_tracks_per_seed_view = n_tracks_per_seed_buffer,
+                 .tmp_params_view = tmp_params_buffer,
+                 .tmp_links_view = tmp_links_buffer,
+                 .jacobian_view = jacobian_buffer,
+                 .tmp_jacobian_view = tmp_jacobian_buffer,
+                 .link_predicted_parameter_view =
+                     link_predicted_parameter_buffer,
+                 .link_filtered_parameter_view =
+                     link_filtered_parameter_buffer});
 
             std::swap(in_params_buffer, updated_params_buffer);
             std::swap(param_liveness_buffer, updated_liveness_buffer);
