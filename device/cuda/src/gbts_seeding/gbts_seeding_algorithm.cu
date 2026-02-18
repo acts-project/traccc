@@ -139,7 +139,6 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     // 0. bin spacepoints by the maping supplied to config.m_surfaceToLayerMap
     ctx.nSp = m_copy.get().get_size(spacepoints);
     if (ctx.nSp == 0) {
-        TRACCC_ERROR("No spacepoints found. Returning.");
         return {0, m_mr.main};
     }
 
@@ -571,7 +570,6 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
                      << ctx.nEdges - ctx.nMaxEdges << " edges");
         ctx.nEdges = ctx.nMaxEdges;
     } else if (ctx.nEdges == 0) {
-        TRACCC_ERROR("No edges found. Returning.");
         return {0, m_mr.main};
     }
 
@@ -877,7 +875,6 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
                      << ctx.nSeeds - nMaxSeeds << " seeds");
         ctx.nSeeds = nMaxSeeds;
     } else if (ctx.nSeeds == 0) {
-        TRACCC_ERROR("No seeds found. Returning.");
         return {0, m_mr.main};
     }
 
@@ -906,8 +903,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
         return {0, m_mr.main};
     }
 
-    // TRACCC_DEBUG("GBTS found " << ctx.nSeeds << " seeds"); // Temporary
-    // remove because of nSeeds is never set so it allways returns 0
+    TRACCC_DEBUG("GBTS found " << ctx.nSeeds << " seeds");
     return output_seeds;
 }
 
