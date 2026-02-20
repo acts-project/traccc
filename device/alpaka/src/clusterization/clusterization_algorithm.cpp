@@ -20,6 +20,9 @@
 #include "traccc/utils/projections.hpp"
 #include "traccc/utils/relations.hpp"
 
+// System include(s).
+#include <stdexcept>
+
 namespace traccc::alpaka {
 namespace kernels {
 
@@ -97,11 +100,26 @@ clusterization_algorithm::clusterization_algorithm(
     : device::clusterization_algorithm(mr, copy, config, std::move(logger)),
       alpaka::algorithm_base(q) {}
 
-bool clusterization_algorithm::input_is_valid(
+bool clusterization_algorithm::input_is_contiguous(
     const edm::silicon_cell_collection::const_view&) const {
 
     // TODO: implement sanity checks for the input data in Alpaka
     return true;
+}
+
+bool clusterization_algorithm::input_is_sorted(
+    const edm::silicon_cell_collection::const_view&) const {
+
+    // TODO: implement sanity checks for the input data in Alpaka
+    return true;
+}
+
+void clusterization_algorithm::sort_cells(
+    const unsigned int, const edm::silicon_cell_collection::const_view&,
+    edm::silicon_cell_collection::view&) const {
+
+    throw std::runtime_error(
+        "Cell sorting is not yet implemented for the Alpaka backend.");
 }
 
 void clusterization_algorithm::ccl_kernel(

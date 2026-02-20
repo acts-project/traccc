@@ -26,6 +26,9 @@
 // Vecmem include(s).
 #include <vecmem/utils/sycl/local_accessor.hpp>
 
+// System include(s).
+#include <stdexcept>
+
 namespace traccc::sycl {
 namespace kernels {
 
@@ -43,15 +46,28 @@ clusterization_algorithm::clusterization_algorithm(
     : device::clusterization_algorithm(mr, copy, config, std::move(logger)),
       sycl::algorithm_base(queue) {}
 
-bool clusterization_algorithm::input_is_valid(
+bool clusterization_algorithm::input_is_contiguous(
     const edm::silicon_cell_collection::const_view& cells) const {
 
-    return (is_contiguous_on<edm::silicon_cell_collection::const_device>(
-                cell_module_projection(), mr().main, copy(),
-                details::get_queue(queue()), cells) &&
-            is_ordered_on<edm::silicon_cell_collection::const_device>(
-                channel0_major_cell_order_relation(), mr().main, copy(),
-                details::get_queue(queue()), cells));
+    return is_contiguous_on<edm::silicon_cell_collection::const_device>(
+        cell_module_projection(), mr().main, copy(),
+        details::get_queue(queue()), cells);
+}
+
+bool clusterization_algorithm::input_is_sorted(
+    const edm::silicon_cell_collection::const_view& cells) const {
+
+    return is_ordered_on<edm::silicon_cell_collection::const_device>(
+        channel0_major_cell_order_relation(), mr().main, copy(),
+        details::get_queue(queue()), cells);
+}
+
+void clusterization_algorithm::sort_cells(
+    const unsigned int, const edm::silicon_cell_collection::const_view&,
+    edm::silicon_cell_collection::view&) const {
+
+    throw std::runtime_error(
+        "Cell sorting is not yet implemented for the SYCL backend.");
 }
 
 void clusterization_algorithm::ccl_kernel(
