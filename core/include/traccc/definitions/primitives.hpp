@@ -23,9 +23,9 @@ using channel_id = unsigned int;
 // Default algebra type
 using default_algebra = detray::array<DETRAY_CUSTOM_SCALARTYPE>;
 
-using algebra::cmath::operator*;
-using algebra::cmath::operator-;
-using algebra::cmath::operator+;
+using detray::algebra::array::operator*;
+using detray::algebra::array::operator-;
+using detray::algebra::array::operator+;
 
 using scalar = detray::dscalar<default_algebra>;
 using point2 = detray::dpoint2D<default_algebra>;

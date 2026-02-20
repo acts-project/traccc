@@ -158,26 +158,6 @@ endif()
 # would be picked up from VecMem.
 include( vecmem-check-language )
 
-# Set up Eigen3.
-option( TRACCC_SETUP_EIGEN3
-   "Set up the Eigen3 target(s) explicitly" TRUE )
-if (TRACCC_USE_SYSTEM_LIBS OR TRACCC_USE_SPACK_LIBS)
-   set(TRACCC_USE_SYSTEM_EIGEN3_DEFAULT ON)
-else()
-   set(TRACCC_USE_SYSTEM_EIGEN3_DEFAULT OFF)
-endif()
-option( TRACCC_USE_SYSTEM_EIGEN3
-   "Pick up an existing installation of Eigen3 from the build environment"
-   ${TRACCC_USE_SYSTEM_EIGEN3_DEFAULT} )
-unset(TRACCC_USE_SYSTEM_EIGEN3_DEFAULT)
-if( TRACCC_SETUP_EIGEN3 )
-   if( TRACCC_USE_SYSTEM_EIGEN3 )
-      find_package( Eigen3 REQUIRED )
-   else()
-      add_subdirectory( extern/eigen3 )
-   endif()
-endif()
-
 # Set up TBB.
 option( TRACCC_SETUP_TBB
    "Set up the TBB target(s) explicitly" TRUE )

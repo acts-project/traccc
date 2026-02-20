@@ -36,8 +36,18 @@ set( DETRAY_BUILD_CLI_TOOLS FALSE CACHE BOOL
    "Turn off the build of the Detray CLI tools" )
 set( DETRAY_BUILD_TUTORIALS FALSE CACHE BOOL
    "Turn off the build of the Detray tutorials" )
+set( DETRAY_ARRAY_PLUGIN TRUE CACHE BOOL
+   "Turn on the build of the Detray std::array code" )
 set( DETRAY_EIGEN_PLUGIN FALSE CACHE BOOL
-   "Turn on the build of the Detray Eigen code" )
+   "Turn off the build of the Detray Eigen code" )
+set( DETRAY_FASTOR_PLUGIN FALSE CACHE BOOL
+   "Turn off the build of the Detray Fastor code" )
+set( DETRAY_SMATRIX_PLUGIN FALSE CACHE BOOL
+   "Turn off the build of the Detray SMatrix code" )
+set( DETRAY_VC_AOS_PLUGIN FALSE CACHE BOOL
+   "Turn off the build of the Detray Vc AoS plugin" )
+set( DETRAY_VC_SOA_PLUGIN FALSE CACHE BOOL
+   "Turn off the build of the Detray Vc SoA plugin" )
 
 set( DETRAY_BUILD_TEST_UTILS TRUE CACHE BOOL
    "Turn on the build of the Detray tests utilities, needed in this project" )
