@@ -58,8 +58,8 @@ inline TRACCC_HOST_DEVICE void seed_to_bound_param_vector(
     const edm::spacepoint_collection::const_device::const_proxy_type spT =
         spacepoints.at(seed.top_index());
 
-    darray<vector3, 3> sp_global_positions{spB.global(), spM.global(),
-                                           spT.global()};
+    std::array<vector3, 3> sp_global_positions{spB.global(), spM.global(),
+                                               spT.global()};
 
     // Define a new coordinate frame with its origin at the bottom space
     // point, z axis long the magnetic field direction and y axis

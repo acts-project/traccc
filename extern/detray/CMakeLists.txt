@@ -36,7 +36,7 @@ set( DETRAY_BUILD_CLI_TOOLS FALSE CACHE BOOL
    "Turn off the build of the Detray CLI tools" )
 set( DETRAY_BUILD_TUTORIALS FALSE CACHE BOOL
    "Turn off the build of the Detray tutorials" )
-set( DETRAY_EIGEN_PLUGIN TRUE CACHE BOOL
+set( DETRAY_EIGEN_PLUGIN FALSE CACHE BOOL
    "Turn on the build of the Detray Eigen code" )
 
 set( DETRAY_BUILD_TEST_UTILS TRUE CACHE BOOL
@@ -46,8 +46,6 @@ set( DETRAY_BUILD_VALIDATION_TOOLS FALSE CACHE BOOL
 
 set( DETRAY_SETUP_VECMEM FALSE CACHE BOOL
    "Do not set up VecMem as part of Detray" )
-set( DETRAY_SETUP_ALGEBRA_PLUGINS FALSE CACHE BOOL
-   "Do not set up Algebra Plugins as part of Detray" )
 set( DETRAY_SETUP_GOOGLETEST FALSE CACHE BOOL
    "Do not set up GoogleTest as part of Detray" )
 set( DETRAY_SETUP_BENCHMARK FALSE CACHE BOOL
