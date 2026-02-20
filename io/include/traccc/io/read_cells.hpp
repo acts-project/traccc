@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -35,13 +35,14 @@ namespace traccc::io {
 /// @param[in]  use_acts_geometry_id Whether to treat the geometry ID as an
 ///                                  "Acts geometry ID", or a
 ///                                  "Detray geometry ID"
+/// @param[in]  randomize    Whether to randomize the order of the cells or not
 ///
 void read_cells(edm::silicon_cell_collection::host& cells, std::size_t event,
                 std::string_view directory,
                 std::unique_ptr<const Logger> logger = getDummyLogger().clone(),
                 const silicon_detector_description::host* dd = nullptr,
                 data_format format = data_format::csv, bool deduplicate = true,
-                bool use_acts_geometry_id = true);
+                bool use_acts_geometry_id = true, bool randomize = false);
 
 /// Read cell data into memory
 ///
@@ -55,12 +56,13 @@ void read_cells(edm::silicon_cell_collection::host& cells, std::size_t event,
 /// @param[in]  use_acts_geometry_id Whether to treat the geometry ID as an
 ///                                  "Acts geometry ID", or a
 ///                                  "Detray geometry ID"
+/// @param[in]  randomize    Whether to randomize the order of the cells or not
 ///
 void read_cells(edm::silicon_cell_collection::host& cells,
                 std::string_view filename,
                 std::unique_ptr<const Logger> logger = getDummyLogger().clone(),
                 const silicon_detector_description::host* dd = nullptr,
                 data_format format = data_format::csv, bool deduplicate = true,
-                bool use_acts_geometry_id = true);
+                bool use_acts_geometry_id = true, bool randomize = false);
 
 }  // namespace traccc::io

@@ -55,6 +55,12 @@ class clusterization_algorithm : public device::clusterization_algorithm,
 
     /// Main CCL kernel launcher
     void ccl_kernel(const ccl_kernel_payload& payload) const override;
+    
+    void sort_cells(const unsigned int num_cells,
+                            const edm::silicon_cell_collection::const_view& cells,
+                            edm::silicon_cell_collection::view& new_cells) const override;
+
+
 
     /// Cluster data reification kernel launcher
     ///

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -16,6 +16,7 @@
 #include <cassert>
 #include <iostream>
 #include <map>
+#include <random>
 #include <set>
 #include <stdexcept>
 #include <utility>
@@ -115,7 +116,7 @@ void read_cells(edm::silicon_cell_collection::host& cells,
                 std::string_view filename,
                 std::unique_ptr<const Logger> ilogger,
                 const silicon_detector_description::host* dd, bool deduplicate,
-                bool use_acts_geometry_id) {
+                bool use_acts_geometry_id, bool randomize) {
 
     // Clear the output container.
     cells.resize(0u);
@@ -140,8 +141,12 @@ void read_cells(edm::silicon_cell_collection::host& cells,
         }
     }
 
+    // Make a random number generator. In case we need to shuffle the cells.
+    std::mt19937 rng;
+    rng.seed(static_cast<std::mt19937::result_type>(0u));
+
     // Fill the output containers with the ordered cells and modules.
-    for (const auto& [geometry_id, cellz] : cellsMap) {
+    for (auto& [geometry_id, cellz] : cellsMap) {
 
         // Figure out the index of the detector description object, for this
         // group of cells.
@@ -154,6 +159,13 @@ void read_cells(edm::silicon_cell_collection::host& cells,
                                          ") in the detector description");
             }
             ddIndex = it->second;
+        }
+
+        // If the user asked for the cells to be randomized, then let's do so.
+        // But still, in a deterministic way, so that we could compare results
+        // across runs.
+        if (randomize) {
+            std::shuffle(cellz.begin(), cellz.end(), rng);
         }
 
         // Add the cells to the output.

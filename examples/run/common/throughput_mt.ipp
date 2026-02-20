@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -134,10 +134,11 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
                 for (std::size_t event = event_range.begin();
                      event != event_range.end(); ++event) {
                     static constexpr bool DEDUPLICATE = true;
+                    static constexpr bool RANDOMIZE = true;
                     io::read_cells(input.at(event - input_opts.skip), event,
                                    input_opts.directory, logger().clone(),
                                    &det_descr, input_opts.format, DEDUPLICATE,
-                                   input_opts.use_acts_geom_source);
+                                   input_opts.use_acts_geom_source, RANDOMIZE);
                 }
             });
     }
@@ -275,10 +276,9 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
             // Launch the processing of the event.
             arena.execute([&, event]() {
                 group.run([&, event]() {
-                    rec_track_params.fetch_add(algs.at(static_cast<std::size_t>(
-                        tbb::this_task_arena::current_thread_index()))(
-                                                       input[event])
-                                                   .size());
+                    rec_track_params.fetch_add(process_event(
+                        tbb::this_task_arena::current_thread_index(),
+                        input[event]));
                     progress_bar.tick();
                 });
             });

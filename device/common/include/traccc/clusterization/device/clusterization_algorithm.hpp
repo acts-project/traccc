@@ -110,6 +110,11 @@ class clusterization_algorithm
     virtual bool input_is_valid(
         const edm::silicon_cell_collection::const_view& cells) const = 0;
 
+    virtual void sort_cells(const unsigned int num_cells,
+                            const edm::silicon_cell_collection::const_view& cells,
+                            edm::silicon_cell_collection::view& new_cells) const {};
+
+
     /// Payload for the @c ccl_kernel function
     struct ccl_kernel_payload {
         /// Number of cells in the event
