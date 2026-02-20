@@ -26,6 +26,9 @@
 // Vecmem include(s).
 #include <vecmem/utils/sycl/local_accessor.hpp>
 
+// System include(s).
+#include <stdexcept>
+
 namespace traccc::sycl {
 namespace kernels {
 
@@ -43,15 +46,29 @@ clusterization_algorithm::clusterization_algorithm(
     : device::clusterization_algorithm(mr, copy, config, std::move(logger)),
       sycl::algorithm_base(queue) {}
 
-bool clusterization_algorithm::input_is_valid(
+bool clusterization_algorithm::input_is_contiguous(
     const edm::silicon_cell_collection::const_view& cells) const {
 
-    return (is_contiguous_on<edm::silicon_cell_collection::const_device>(
-                cell_module_projection(), mr().main, copy(),
-                details::get_queue(queue()), cells) &&
-            is_ordered_on<edm::silicon_cell_collection::const_device>(
-                channel0_major_cell_order_relation(), mr().main, copy(),
-                details::get_queue(queue()), cells));
+    return is_contiguous_on<edm::silicon_cell_collection::const_device>(
+        cell_module_projection(), mr().main, copy(),
+        details::get_queue(queue()), cells);
+}
+
+bool clusterization_algorithm::input_is_sorted(
+    const edm::silicon_cell_collection::const_view& cells) const {
+
+    return is_ordered_on<edm::silicon_cell_collection::const_device>(
+        channel0_major_cell_order_relation(), mr().main, copy(),
+        details::get_queue(queue()), cells);
+}
+
+void clusterization_algorithm::sort_cells_kernel(
+    const unsigned int, const edm::silicon_cell_collection::const_view&,
+    edm::silicon_cell_collection::view&,
+    vecmem::data::vector_view<unsigned int>&, const bool) const {
+
+    throw std::runtime_error(
+        "Cell sorting is not yet implemented for the SYCL backend.");
 }
 
 void clusterization_algorithm::ccl_kernel(
@@ -126,17 +143,20 @@ void clusterization_algorithm::ccl_kernel(
 void clusterization_algorithm::cluster_maker_kernel(
     unsigned int num_cells,
     const vecmem::data::vector_view<unsigned int>& disjoint_set,
-    edm::silicon_cluster_collection::view& cluster_data) const {
+    edm::silicon_cluster_collection::view& cluster_data,
+    const vecmem::data::vector_view<const unsigned int>& permutation_map_view)
+    const {
 
     const ::sycl::nd_range range =
         details::calculate1DimNdRange(num_cells, warp_size() * 8u);
     details::get_queue(queue())
         .submit([&](::sycl::handler& h) {
             h.parallel_for<kernels::reify_cluster_data>(
-                range, [disjoint_set, cluster_data](::sycl::nd_item<1> item) {
+                range, [disjoint_set, permutation_map_view,
+                        cluster_data](::sycl::nd_item<1> item) {
                     device::reify_cluster_data(
                         static_cast<unsigned int>(item.get_global_linear_id()),
-                        disjoint_set, cluster_data);
+                        disjoint_set, permutation_map_view, cluster_data);
                 });
         })
         .wait_and_throw();

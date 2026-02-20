@@ -109,13 +109,39 @@ class clusterization_algorithm
     /// @name Function(s) to be implemented by derived classes
     /// @{
 
-    /// Function meant to perform sanity checks on the input data
+    /// Function meant to perform sanity checks on the input data, namely to
+    /// assert that the input is contiguous.
     ///
     /// @param cells     All cells in an event
     /// @return @c true if the input data is valid, @c false otherwise
     ///
-    virtual bool input_is_valid(
+    virtual bool input_is_contiguous(
         const edm::silicon_cell_collection::const_view& cells) const = 0;
+
+    /// Function to assert that the input is sorted, which it might only be
+    /// after the sorting step has been completed.
+    virtual bool input_is_sorted(
+        const edm::silicon_cell_collection::const_view& cells) const = 0;
+
+    /// Sort cells before running the CCL kernel.
+    ///
+    /// @param num_cells            Number of cells in the event
+    /// @param cells                The unsorted input cells
+    /// @param new_cells            Output collection receiving the sorted
+    ///                             cells
+    /// @param permutation_map_view Buffer mapping sorted cell indices back to
+    ///                             indices in the input collection
+    /// @param write_permutation    If @c false, the implementation is not
+    ///                             required to fill the permutation map (it
+    ///                             may still use the buffer as scratch
+    ///                             space); if @c true, the map must be
+    ///                             complete on return
+    virtual void sort_cells_kernel(
+        const unsigned int num_cells,
+        const edm::silicon_cell_collection::const_view& cells,
+        edm::silicon_cell_collection::view& new_cells,
+        vecmem::data::vector_view<unsigned int>& permutation_map_view,
+        bool write_permutation) const = 0;
 
     /// Payload for the @c ccl_kernel function
     struct ccl_kernel_payload {
@@ -149,20 +175,33 @@ class clusterization_algorithm
 
     /// Main CCL kernel launcher
     ///
+    /// If the configuration enables cell sorting, implementations must not
+    /// return until the kernel has finished executing: the sorted cell
+    /// collection and the permutation map are destroyed soon after this call
+    /// returns.
+    ///
     /// @param payload The payload containing all necessary data for the kernel
     ///
     virtual void ccl_kernel(const ccl_kernel_payload& payload) const = 0;
 
     /// Cluster data reification kernel launcher
     ///
+    /// Implementations must not return until the kernel has finished
+    /// executing: the disjoint set and permutation map buffers are destroyed
+    /// soon after this call returns.
+    ///
     /// @param num_cells    Number of cells in the event
     /// @param disjoint_set Buffer for the disjoint set data structure
     /// @param cluster_data The cluster collection to fill
+    /// @param permutation_map_view Map from sorted cell indices back to
+    ///                             indices in the original input collection
     ///
     virtual void cluster_maker_kernel(
         unsigned int num_cells,
         const vecmem::data::vector_view<unsigned int>& disjoint_set,
-        edm::silicon_cluster_collection::view& cluster_data) const = 0;
+        edm::silicon_cluster_collection::view& cluster_data,
+        const vecmem::data::vector_view<const unsigned int>&
+            permutation_map_view) const = 0;
 
     /// @}
 
