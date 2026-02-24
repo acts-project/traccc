@@ -19,8 +19,10 @@ namespace kernels {
 
 template <typename propagator_t, typename bfield_t>
 __global__ __launch_bounds__(128) void propagate_to_next_surface(
-    const finding_config cfg,
-    device::propagate_to_next_surface_payload<propagator_t, bfield_t> payload) {
+    const __grid_constant__ finding_config cfg,
+    const __grid_constant__
+        device::propagate_to_next_surface_payload<propagator_t, bfield_t>
+            payload) {
 
     device::propagate_to_next_surface<propagator_t, bfield_t>(
         details::global_index1(), cfg, payload);

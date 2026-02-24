@@ -19,8 +19,9 @@ namespace kernels {
 
 template <typename detector_t>
 __global__ void apply_interaction(
-    const finding_config cfg,
-    device::apply_interaction_payload<detector_t> payload) {
+    const __grid_constant__ finding_config cfg,
+    const __grid_constant__ device::apply_interaction_payload<detector_t>
+        payload) {
 
     device::apply_interaction<detector_t>(details::global_index1(), cfg,
                                           payload);
