@@ -15,7 +15,7 @@
 #include "traccc/edm/track_container.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/host_detector.hpp"
-#include "traccc/geometry/silicon_detector_description.hpp"
+#include "traccc/geometry/detector_design_description.hpp"
 #include "traccc/io/data_format.hpp"
 #include "traccc/io/digitization_config.hpp"
 

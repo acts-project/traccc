@@ -16,7 +16,7 @@ namespace traccc::io::csv {
 
 void write_cells(std::string_view filename,
                  traccc::edm::silicon_cell_collection::const_view cells_view,
-                 traccc::silicon_detector_description::const_view dd_view,
+                 traccc::detector_design_description::const_view dd_view,
                  bool use_acts_geometry_id) {
 
     // Make sure that a valid detector description would've been given to the
@@ -34,7 +34,7 @@ void write_cells(std::string_view filename,
 
     // Create device objects.
     const edm::silicon_cell_collection::const_device cells(cells_view);
-    const silicon_detector_description::const_device dd(dd_view);
+    const detector_design_description::const_device dd(dd_view);
 
     // Write the header.
     ofile << "geometry_id,measurement_id,channel0,channel1,timestamp,value\n";

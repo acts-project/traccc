@@ -35,20 +35,22 @@ clusterization_algorithm::clusterization_algorithm(
 edm::measurement_collection<default_algebra>::buffer
 clusterization_algorithm::operator()(
     const edm::silicon_cell_collection::const_view& cells,
-    const silicon_detector_description::const_view& det_descr) const {
+    const detector_design_description::const_view& det_descr,
+    const detector_conditions_description::const_view& det_cond) const {
 
-    return this->operator()(cells, det_descr,
+    return this->operator()(cells, det_descr, det_cond,
                             clustering_discard_disjoint_set{});
 }
 
 edm::measurement_collection<default_algebra>::buffer
 clusterization_algorithm::operator()(
     const edm::silicon_cell_collection::const_view& cells,
-    const silicon_detector_description::const_view& det_descr,
+    const detector_design_description::const_view& det_descr,
+    const detector_conditions_description::const_view& det_cond,
     clustering_discard_disjoint_set&&) const {
 
     static constexpr bool KEEP_DISJOINT_SET = false;
-    auto [res, djs] = this->execute_impl(cells, det_descr, KEEP_DISJOINT_SET);
+    auto [res, djs] = this->execute_impl(cells, det_descr, det_cond, KEEP_DISJOINT_SET);
     assert(!djs.has_value());
     return std::move(res);
 }
@@ -57,11 +59,12 @@ std::pair<edm::measurement_collection<default_algebra>::buffer,
           edm::silicon_cluster_collection::buffer>
 clusterization_algorithm::operator()(
     const edm::silicon_cell_collection::const_view& cells,
-    const silicon_detector_description::const_view& det_descr,
+    const detector_design_description::const_view& det_descr,
+    const detector_conditions_description::const_view& det_cond,
     clustering_keep_disjoint_set&&) const {
 
     static constexpr bool KEEP_DISJOINT_SET = true;
-    auto [res, djs] = this->execute_impl(cells, det_descr, KEEP_DISJOINT_SET);
+    auto [res, djs] = this->execute_impl(cells, det_descr, det_cond, KEEP_DISJOINT_SET);
     assert(djs.has_value());
     return {std::move(res), std::move(*djs)};
 }
@@ -70,7 +73,8 @@ std::pair<edm::measurement_collection<default_algebra>::buffer,
           std::optional<edm::silicon_cluster_collection::buffer>>
 clusterization_algorithm::execute_impl(
     const edm::silicon_cell_collection::const_view& cells,
-    const silicon_detector_description::const_view& det_descr,
+    const detector_design_description::const_view& det_descr,
+    const detector_conditions_description::const_view& det_cond,
     bool keep_disjoint_set) const {
 
     // Check the input data in debug mode.

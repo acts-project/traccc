@@ -9,7 +9,7 @@
 
 // Project include(s).
 #include "traccc/edm/silicon_cell_collection.hpp"
-#include "traccc/geometry/silicon_detector_description.hpp"
+#include "traccc/geometry/detector_design_description.hpp"
 
 // System include(s).
 #include <string_view>
@@ -26,7 +26,7 @@ namespace traccc::io::csv {
 ///
 void write_cells(std::string_view filename,
                  traccc::edm::silicon_cell_collection::const_view cells,
-                 traccc::silicon_detector_description::const_view dd,
+                 traccc::detector_design_description::const_view dd,
                  bool use_acts_geometry_id);
 
 }  // namespace traccc::io::csv

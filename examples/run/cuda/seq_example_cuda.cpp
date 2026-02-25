@@ -98,9 +98,17 @@ int seq_run(const traccc::opts::detector& detector_opts,
     traccc::silicon_detector_description::data host_det_descr_data{
         vecmem::get_data(host_det_descr)};
     traccc::silicon_detector_description::buffer device_det_descr{
-        static_cast<traccc::silicon_detector_description::buffer::size_type>(
-            host_det_descr.size()),
-        device_mr};
+        [&]() {
+            std::vector<unsigned int> sizes(host_det_descr.size());
+            for (std::size_t i = 0; i < host_det_descr.size(); ++i) {
+                sizes[i] = static_cast<unsigned int>(
+                    host_det_descr.bin_edges_x().at(i).size());
+            }
+            return sizes;
+        }(),
+        device_mr,
+        &host_mr,
+        vecmem::data::buffer_type::fixed_size};
     copy.setup(device_det_descr)->wait();
     copy(host_det_descr_data, device_det_descr)->wait();
 

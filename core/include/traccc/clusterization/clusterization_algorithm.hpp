@@ -12,7 +12,8 @@
 #include "traccc/clusterization/sparse_ccl_algorithm.hpp"
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
-#include "traccc/geometry/silicon_detector_description.hpp"
+#include "traccc/geometry/detector_design_description.hpp"
+#include "traccc/geometry/detector_conditions_description.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/messaging.hpp"
 
@@ -33,7 +34,8 @@ namespace traccc::host {
 class clusterization_algorithm
     : public algorithm<edm::measurement_collection<default_algebra>::host(
           const edm::silicon_cell_collection::const_view&,
-          const silicon_detector_description::const_view&)>,
+          const detector_design_description::const_view&,
+          const detector_conditions_description::const_view&)>,
       public messaging {
 
     public:
@@ -50,12 +52,14 @@ class clusterization_algorithm
     /// Construct measurements for each detector module
     ///
     /// @param cells_view The cells for every detector module in the event
-    /// @param dd_view The detector description
+    /// @param dmd_view The detector segmentation description
+    /// @param dcd_view The detector conditins description
     /// @return The measurements reconstructed for every detector module
     ///
     output_type operator()(
         const edm::silicon_cell_collection::const_view& cells_view,
-        const silicon_detector_description::const_view& dd_view) const override;
+        const detector_design_description::const_view& dmd_view,
+        const detector_conditions_description::const_view& dcd_view) const override;
 
     private:
     /// @name Sub-algorithms used by this algorithm

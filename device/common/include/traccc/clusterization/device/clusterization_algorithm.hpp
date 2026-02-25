@@ -17,7 +17,8 @@
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/silicon_cluster_collection.hpp"
-#include "traccc/geometry/silicon_detector_description.hpp"
+#include "traccc/geometry/detector_design_description.hpp"
+#include "traccc/geometry/detector_conditions_description.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
@@ -43,16 +44,16 @@ namespace traccc::device {
 class clusterization_algorithm
     : public algorithm<edm::measurement_collection<default_algebra>::buffer(
           const edm::silicon_cell_collection::const_view&,
-          const silicon_detector_description::const_view&)>,
+          const detector_design_description::const_view&)>,
       public algorithm<edm::measurement_collection<default_algebra>::buffer(
           const edm::silicon_cell_collection::const_view&,
-          const silicon_detector_description::const_view&,
+          const detector_design_description::const_view&,
           clustering_discard_disjoint_set&&)>,
       public algorithm<
           std::pair<edm::measurement_collection<default_algebra>::buffer,
                     edm::silicon_cluster_collection::buffer>(
               const edm::silicon_cell_collection::const_view&,
-              const silicon_detector_description::const_view&,
+              const detector_design_description::const_view&,
               clustering_keep_disjoint_set&&)>,
       public messaging,
       public algorithm_base {
@@ -77,24 +78,27 @@ class clusterization_algorithm
     /// Callable operator for clusterization algorithm
     ///
     /// @param cells     All cells in an event
-    /// @param det_descr The detector description
+    /// @param det_descr The detector segmnentation description
+    /// @param det_cond The detector conditions description
     /// @return a measurement collection (buffer)
     ///
     /// @{
     edm::measurement_collection<default_algebra>::buffer operator()(
         const edm::silicon_cell_collection::const_view& cells,
-        const silicon_detector_description::const_view& det_descr)
-        const override;
+        const detector_design_description::const_view& det_descr,
+        const detector_conditions_description::const_view& det_cond) const override;
 
     edm::measurement_collection<default_algebra>::buffer operator()(
         const edm::silicon_cell_collection::const_view& cells,
-        const silicon_detector_description::const_view& det_descr,
+        const detector_design_description::const_view& det_descr,
+        const detector_conditions_description::const_view& det_cond,
         clustering_discard_disjoint_set&&) const override;
 
     std::pair<edm::measurement_collection<default_algebra>::buffer,
               edm::silicon_cluster_collection::buffer>
     operator()(const edm::silicon_cell_collection::const_view& cells,
-               const silicon_detector_description::const_view& det_descr,
+               const detector_design_description::const_view& det_descr,
+               const detector_conditions_description::const_view& det_cond,
                clustering_keep_disjoint_set&&) const override;
     /// @}
 
@@ -119,7 +123,9 @@ class clusterization_algorithm
         /// All cells in an event
         const edm::silicon_cell_collection::const_view& cells;
         /// The detector description
-        const silicon_detector_description::const_view& det_descr;
+        const detector_design_description::const_view& det_descr;
+        /// The detector conditions description
+        const detector_conditions_description::const_view& det_cond;
         /// The measurement collection to fill
         edm::measurement_collection<default_algebra>::view& measurements;
         /// Buffer for linking cells to measurements
@@ -164,7 +170,7 @@ class clusterization_algorithm
     std::pair<edm::measurement_collection<default_algebra>::buffer,
               std::optional<edm::silicon_cluster_collection::buffer>>
     execute_impl(const edm::silicon_cell_collection::const_view& cells,
-                 const silicon_detector_description::const_view& det_descr,
+                 const detector_design_description::const_view& det_descr,
                  bool keep_disjoint_set) const;
 
     /// Clusterization configuration

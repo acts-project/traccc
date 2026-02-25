@@ -12,7 +12,7 @@
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/host_detector.hpp"
-#include "traccc/geometry/silicon_detector_description.hpp"
+#include "traccc/geometry/detector_design_description.hpp"
 
 // System include(s).
 #include <string_view>

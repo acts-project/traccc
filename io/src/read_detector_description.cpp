@@ -24,89 +24,105 @@
 // System include(s).
 #include <sstream>
 #include <stdexcept>
+#include <set>
 
 namespace {
 
-void fill_digi_info(traccc::silicon_detector_description::host& dd,
+void fill_digi_info(traccc::detector_module_description::host& dmd,
                     const traccc::module_digitization_config& data) {
 
-    // Set a hard-coded threshold for which cells should be considered for
-    // clusterization on this module / surface.
-    dd.threshold().back() = 0.f;
 
-    // Fill the new element with the digitization configuration for the
-    // surface.
-    const auto& binning_data = data.segmentation.binningData();
-    dd.reference_x().back() = binning_data.at(0).min;
-    dd.reference_y().back() = binning_data.at(1).min;
-    dd.pitch_x().back() = binning_data.at(0).step;
-    dd.pitch_y().back() = binning_data.at(1).step;
-    dd.dimensions().back() = data.dimensions;
+    dmd.dimensions().back() = data.dimensions;
+
+    dmd.bin_edges_x().back().assign(
+        data.bin_edges[0].begin(), data.bin_edges[0].end());
+
+    dmd.bin_edges_y().back().assign(
+        data.bin_edges[1].begin(), data.bin_edges[1].end());
+
 }
 
 template <typename detector_traits_t>
-void read_json_dd_impl(traccc::silicon_detector_description::host& dd,
+void read_json_dd_impl(traccc::detector_module_description::host& dmd,
+                       traccc::detector_conditions_description::host& dcd,
                        const traccc::host_detector& detector,
                        const traccc::digitization_config& digi)
-    requires(traccc::is_detector_traits<detector_traits_t>)
+requires(traccc::is_detector_traits<detector_traits_t>)
 {
     const typename detector_traits_t::host& detector_host =
         detector.as<detector_traits_t>();
 
-    // Iterate over the surfaces of the detector.
-    const typename detector_traits_t::host::surface_lookup_container& surfaces =
-        detector_host.surfaces();
-    dd.reserve(surfaces.size());
-    for (const auto& surface_desc : detector_host.surfaces()) {
 
-        // Acts geometry identifier(s) for the surface.
+    dmd.reserve(digi.designs.size());
+    dcd.reserve(detector_host.surfaces().size());
+
+    std::unordered_map<uint64_t, int> id_to_design_index = digi.id_to_design_index;
+    std::set<int> design_indices;
+
+    std::unordered_map<int, unsigned int> design_index_to_dd_pos;
+
+    // Will be populated in surface order — one entry per sensitive surface
+    std::vector<unsigned int> module_to_design;
+
+    for (const auto& surface_desc : detector_host.surfaces()) {
         const traccc::geometry_id geom_id{surface_desc.source};
         const Acts::GeometryIdentifier acts_geom_id{geom_id};
 
-        // Skip non-sensitive surfaces. They are not needed in the
-        // "detector description".
         if (acts_geom_id.sensitive() == 0) {
             continue;
         }
 
-        // Add a new element to the detector description.
-        dd.resize(dd.size() + 1);
+        dcd.geometry_id().back() = surface_desc.barcode();
+        dcd.acts_geometry_id().back() = geom_id;
+        dcd.threshold().back() = ;
+        dcd.measurement_translation().back() = ;
 
-        // Construct a Detray surface object.
-        const detray::tracking_surface surface{detector_host, surface_desc};
+        int design_index = id_to_design_index[surface_desc.barcode().value()];
 
-        // Fill the new element with the geometry ID and the transformation of
-        // the surface in question.
-        dd.geometry_id().back() = surface_desc.barcode();
-        dd.acts_geometry_id().back() = geom_id;
-        dd.measurement_translation().back() = {0.f, 0.f};
-        dd.subspace().back() = {0, 1};
+        if (design_indices.contains(design_index)) {
+            // Design already added — just record the index
+            module_to_design.push_back(design_index_to_dd_pos[design_index]);
 
-        // ITk specific type
-        using annulus_t =
-            detray::mask<detray::annulus2D, traccc::default_algebra>;
-        using mask_registry_t = typename detector_traits_t::host::masks;
-        if constexpr (detray::types::contains<mask_registry_t, annulus_t>) {
-            if (surface_desc.mask().id() ==
-                detray::types::id<mask_registry_t, annulus_t>) {
-                dd.subspace().back() = {1, 0};
+        } else {
+            // New design — add it to dd
+            dd.resize(dd.size() + 1);
+            design_indices.insert(design_index);
+
+            const traccc::module_digitization_config* digi_cfg =
+                digi.get(surface_desc.barcode().value());
+
+            if (digi_cfg == nullptr) {
+                std::ostringstream msg;
+                msg << "Could not find digitization config for barcode: "
+                    << surface_desc.barcode();
+                throw std::runtime_error(msg.str());
             }
-        }
 
-        // Find the module's digitization configuration.
-        const traccc::digitization_config::Iterator digi_it =
-            digi.find(acts_geom_id);
-        if (digi_it == digi.end()) {
-            std::ostringstream msg;
-            msg << "Could not find digitization config for geometry ID: "
-                << acts_geom_id;
-            throw std::runtime_error(msg.str());
-        }
+            // The position this design will occupy in dd
+            const unsigned int dd_pos =
+                static_cast<unsigned int>(design_index_to_dd_pos.size());
+            design_index_to_dd_pos[design_index] = dd_pos;
 
-        // Fill the new element with the digitization configuration for the
-        // surface.
-        fill_digi_info(dd, *digi_it);
+            dd.subspace().back() = {0, 1};
+            using annulus_t =
+                detray::mask<detray::annulus2D, traccc::default_algebra>;
+            using mask_registry_t = typename detector_traits_t::host::masks;
+            if constexpr (detray::types::contains<mask_registry_t, annulus_t>) {
+                if (surface_desc.mask().id() ==
+                    detray::types::id<mask_registry_t, annulus_t>) {
+                    dd.subspace().back() = {1, 0};
+                }
+            }
+
+            fill_digi_info(dd, *digi_cfg);
+
+            // Record the indirection for this module too
+            module_to_design.push_back(dd_pos);
+        }
     }
+
+    dd.module_to_design().assign(module_to_design.begin(), module_to_design.end());
+
 }
 
 void read_json_dd(traccc::silicon_detector_description::host& dd,

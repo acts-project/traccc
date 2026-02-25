@@ -11,7 +11,10 @@
 #include "traccc/io/data_format.hpp"
 
 // Project include(s).
-#include "traccc/geometry/silicon_detector_description.hpp"
+#include "traccc/geometry/detector_design_description.hpp"
+
+// ACTS includes
+#include "Acts/Geometry/GeometryIdentifier.hpp"
 
 // System include(s).
 #include <cstdint>

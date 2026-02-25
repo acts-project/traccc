@@ -55,9 +55,17 @@ full_chain_algorithm::full_chain_algorithm(
       m_field(make_magnetic_field(field)),
       m_det_descr(det_descr),
       m_device_det_descr(
-          static_cast<silicon_detector_description::buffer::size_type>(
-              m_det_descr.get().size()),
-          m_device_mr),
+        [&]() {
+            std::vector<unsigned int> sizes(m_det_descr.get().size());
+            for (std::size_t i = 0; i < m_det_descr.get().size(); ++i) {
+                sizes[i] = static_cast<unsigned int>(
+                    m_det_descr.get().bin_edges_x().at(i).size());
+            }
+            return sizes;
+        }(),
+        m_device_mr,
+        &m_host_mr,
+        vecmem::data::buffer_type::fixed_size),
       m_detector(detector),
       m_clusterization({m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy,
                        m_stream, clustering_config),
@@ -116,9 +124,17 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_field(parent.m_field),
       m_det_descr(parent.m_det_descr),
       m_device_det_descr(
-          static_cast<silicon_detector_description::buffer::size_type>(
-              m_det_descr.get().size()),
-          m_device_mr),
+        [&]() {
+            std::vector<unsigned int> sizes(m_det_descr.get().size());
+            for (std::size_t i = 0; i < m_det_descr.get().size(); ++i) {
+                sizes[i] = static_cast<unsigned int>(
+                    m_det_descr.get().bin_edges_x().at(i).size());
+            }
+            return sizes;
+        }(),
+        m_device_mr,
+        &m_host_mr,
+        vecmem::data::buffer_type::fixed_size),
       m_detector(parent.m_detector),
       m_clusterization({m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy,
                        m_stream, parent.m_clustering_config),

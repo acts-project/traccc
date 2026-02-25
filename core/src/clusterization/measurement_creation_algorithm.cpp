@@ -24,12 +24,14 @@ measurement_creation_algorithm::output_type
 measurement_creation_algorithm::operator()(
     const edm::silicon_cell_collection::const_view &cells_view,
     const edm::silicon_cluster_collection::const_view &clusters_view,
-    const silicon_detector_description::const_view &dd_view) const {
+    const detector_design_description::const_view &dmd_view,
+    const detector_conditions_description::const_view &dcd_view) const {
 
     // Create device containers for the input variables.
     const edm::silicon_cell_collection::const_device cells{cells_view};
     const edm::silicon_cluster_collection::const_device clusters{clusters_view};
-    const silicon_detector_description::const_device det_descr{dd_view};
+    const detector_design_description::const_device det_descr{dmd_view};
+    const detector_conditions_description::const_device det_cond{dcd_view};
 
     // Create the result object.
     output_type result(m_mr.get());
@@ -48,7 +50,7 @@ measurement_creation_algorithm::operator()(
         assert(cluster.cell_indices().empty() == false);
 
         // Fill measurement from cluster
-        details::fill_measurement(measurement, cluster, i, cells, det_descr);
+        details::fill_measurement(measurement, cluster, i, cells, det_descr, det_cond);
     }
 
     return result;

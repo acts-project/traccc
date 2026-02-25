@@ -13,6 +13,7 @@
 
 // System include(s).
 #include <string>
+#include <stdexcept>
 
 namespace traccc::io {
 
