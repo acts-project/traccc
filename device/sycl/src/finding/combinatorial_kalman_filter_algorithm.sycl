@@ -301,7 +301,7 @@ void combinatorial_kalman_filter_algorithm::propagate_to_next_surface_kernel(
                 h.parallel_for<kernels::propagate_to_next_surface<
                     detector_tag_selector_t<detector_traits_t>,
                     bfield_tag_selector_t<typename bfield_view_t::backend_t>>>(
-                    details::calculate1DimNdRange(n_threads, warp_size() * 2),
+                    details::calculate1DimNdRange(n_threads, warp_size() * 4),
                     [config, det = device_det.ptr(), bfield,
                      payload](::sycl::nd_item<1> item) {
                         device::propagate_to_next_surface<
