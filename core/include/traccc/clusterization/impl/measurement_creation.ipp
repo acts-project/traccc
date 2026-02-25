@@ -51,12 +51,17 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
 
     point2 offset{0.f, 0.f}, width{0.f, 0.f};
     bool first_processed = false;
+    std::vector<int> phiIndices;
+    std::vector<int> etaIndices;
 
     // Loop over the cell indices of the cluster.
     for (const unsigned int cell_idx : cluster.cell_indices()) {
 
         // The cell object.
         const edm::silicon_cell cell = cells.at(cell_idx);
+
+        phiIndices.push_back(cell.channel0());
+        etaIndices.push_back(cell.channel1());
 
         // Translate the cell readout value into a weight.
         const scalar weight =

@@ -128,10 +128,8 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
                 mean = mean + diff_old * weight_factor;
                 const point2 diff_new = cell_position - mean;
 
-                var[0] = (1.f - weight_factor) * var[0] +
-                         weight_factor * (diff_old[0] * diff_new[0]);
-                var[1] = (1.f - weight_factor) * var[1] +
-                         weight_factor * (diff_old[1] * diff_new[1]);
+                var[0] = var[0] + cell_width[0];
+                var[1] = var[1] + cell_width[1];
             }
 
             cell_links_device.at(pos) = link;

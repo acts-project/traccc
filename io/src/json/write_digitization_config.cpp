@@ -79,15 +79,12 @@ namespace io::json {
 
 void write_digitization_config(std::string_view filename,
                                const digitization_config& config) {
-
     // Construct the JSON object to be written.
-    static const Acts::GeometryHierarchyMapJsonConverter<
-        module_digitization_config>
-        converter{"digitization-configuration"};
-    const nlohmann::json json = converter.toJson(config, nullptr);
+    nlohmann::json json;
+    to_json(json, config);
 
-    // Open the input file. Relying on exceptions for the error handling.
-    std::ofstream outfile(filename.data(), std::ifstream::binary);
+    // Open the output file. Relying on exceptions for the error handling.
+    std::ofstream outfile(filename.data(), std::ofstream::binary);
     outfile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
 
     // Write the JSON object to the file.

@@ -14,6 +14,11 @@
 #include "traccc/geometry/detector_conditions_description.hpp"
 #include "traccc/geometry/detector_design_description.hpp"
 #include "traccc/geometry/host_detector.hpp"
+<<<<<<< HEAD
+=======
+#include "traccc/geometry/detector_design_description.hpp"
+#include "traccc/geometry/detector_conditions_description.hpp"
+>>>>>>> 64d60ac8 (refactoring digi cfg)
 
 // System include(s).
 #include <string_view>
