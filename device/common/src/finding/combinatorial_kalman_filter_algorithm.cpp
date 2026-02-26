@@ -146,7 +146,6 @@ auto combinatorial_kalman_filter_algorithm::operator()(
     vecmem::data::vector_buffer<unsigned int> tip_length_buffer{
         tips_buffer_capacity, mr().main};
     copy().setup(tip_length_buffer)->ignore();
-    copy().memset(tip_length_buffer, 0)->ignore();
 
     std::map<unsigned int, unsigned int> step_to_link_idx_map;
     step_to_link_idx_map[0u] = 0u;
@@ -222,20 +221,13 @@ auto combinatorial_kalman_filter_algorithm::operator()(
                                                        mr().main};
 
                 // Copy old data to new buffers.
-                vecmem::copy::event_type ev1 =
-                    copy()(jacobian_buffer, new_jacobian_buffer);
-                vecmem::copy::event_type ev2 =
-                    copy()(link_predicted_parameter_buffer,
-                           new_link_predicted_parameter_buffer);
-                vecmem::copy::event_type ev3 =
-                    copy()(link_filtered_parameter_buffer,
-                           new_link_filtered_parameter_buffer);
-
-                // Here we could give control back to the caller, once our code
-                // allows for it. (coroutines...)
-                ev1->wait();
-                ev2->wait();
-                ev3->wait();
+                copy()(jacobian_buffer, new_jacobian_buffer)->ignore();
+                copy()(link_predicted_parameter_buffer,
+                       new_link_predicted_parameter_buffer)
+                    ->ignore();
+                copy()(link_filtered_parameter_buffer,
+                       new_link_filtered_parameter_buffer)
+                    ->wait();
 
                 // Replace old buffers with the new ones.
                 jacobian_buffer = std::move(new_jacobian_buffer);
