@@ -10,7 +10,7 @@ traccc_add_test(
     # Define the sources for the test.
     test_thrust.hip
     LINK_LIBRARIES
-    rocthrust
+    ${_rocthrust_target}
     GTest::gtest_main
     vecmem::core
     vecmem::hip

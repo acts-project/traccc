@@ -230,11 +230,13 @@ if( TRACCC_SETUP_ROCTHRUST )
    mark_as_advanced( ROCM_WARN_TOOLCHAIN_VAR ROCM_ERROR_TOOLCHAIN_VAR )
    if( TRACCC_USE_SYSTEM_ROCTHRUST )
       find_package( rocThrust REQUIRED )
+      set( _rocthrust_target roc::rocthrust )
    else()
       add_subdirectory( extern/rocThrust )
+      set( _rocthrust_target rocthrust )
    endif()
    # Dress up the rocthrust target a little.
-   target_compile_definitions( rocthrust INTERFACE
+   target_compile_definitions( ${_rocthrust_target} INTERFACE
       THRUST_IGNORE_CUB_VERSION_CHECK )
 endif()
 
