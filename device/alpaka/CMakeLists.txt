@@ -69,7 +69,7 @@ if(alpaka_ACC_GPU_CUDA_ENABLE)
   target_link_libraries(traccc::cuda_thrust INTERFACE CUDA::cudart)
   list(APPEND PRIVATE_LIBRARIES traccc::cuda_thrust)
 elseif(alpaka_ACC_GPU_HIP_ENABLE)
-  list(APPEND PRIVATE_LIBRARIES rocthrust)
+  list(APPEND PRIVATE_LIBRARIES roc::rocthrust)
 else()
   thrust_create_target (traccc::alpaka_thrust
     HOST CPP
