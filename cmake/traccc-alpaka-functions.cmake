@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2024 CERN for the benefit of the ACTS project
+# (c) 2024-2026 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -67,6 +67,32 @@ function( traccc_add_alpaka_library fullname basename )
    endif()
 
 endfunction( traccc_add_alpaka_library )
+
+# Helper function for setting up the Alpaka traccc test(s).
+#
+# Usage: traccc_add_alpaka_test( core_containers source1.cpp source2.cpp
+#                                LINK_LIBRARIES traccc::core )
+#
+function( traccc_add_alpaka_test name )
+
+   # Parse the function's options.
+   cmake_parse_arguments( ARG "" "" "LINK_LIBRARIES" ${ARGN} )
+
+   # Create the test executable.
+   set( test_exe_name "traccc_test_${name}" )
+   alpaka_add_executable( ${test_exe_name} ${ARG_UNPARSED_ARGUMENTS} )
+   if( ARG_LINK_LIBRARIES )
+      target_link_libraries( ${test_exe_name} PRIVATE ${ARG_LINK_LIBRARIES} )
+   endif()
+
+   # Discover all of the tests from the execuable, and set them up as individual
+   # CTest tests. All the while ensuring that they would find their data files.
+   gtest_discover_tests( ${test_exe_name}
+      PROPERTIES ENVIRONMENT
+                 TRACCC_TEST_DATA_DIR=${PROJECT_SOURCE_DIR}/data
+      DISCOVERY_TIMEOUT 20 )
+
+endfunction( traccc_add_alpaka_test )
 
 macro (traccc_enable_language_alpaka)
    #enable_language cannot be called by a function: put it in a macro
