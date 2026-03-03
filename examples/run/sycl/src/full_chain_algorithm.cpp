@@ -118,9 +118,9 @@ full_chain_algorithm::full_chain_algorithm(
       usingGBTS(useGBTS) {
 
     if (usingGBTS) {
-        std::cout << "ERROR: GBTS not implemented for sycl, this will run with "
-                     "default seeding"
-                  << std::endl;
+				//TRACCC_LOCAL_LOGGER(std::move(log));
+				TRACCC_ERROR("GBTS not implemented for sycl, this will run with "
+                     "triplet seeding");
     }
     // Tell the user what device is being used.
     TRACCC_INFO("Using SYCL device: " << m_data->m_queue.device_name());
