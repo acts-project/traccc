@@ -13,10 +13,10 @@
 #include "traccc/cuda/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
+#include "traccc/cuda/gbts_seeding/gbts_seeding_algorithm.hpp"
 #include "traccc/cuda/seeding/seed_parameter_estimation_algorithm.hpp"
 #include "traccc/cuda/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/cuda/seeding/triplet_seeding_algorithm.hpp"
-#include "traccc/cuda/gbts_seeding/gbts_seeding_algorithm.hpp"
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/track_collection.hpp"
@@ -160,8 +160,8 @@ class full_chain_algorithm
     spacepoint_formation_algorithm m_spacepoint_formation;
     /// Seeding algorithm
     triplet_seeding_algorithm m_seeding;
-		/// Seeding with GBTS algorithm
-		gbts_seeding_algorithm m_gbts_seeding;
+    /// Seeding with GBTS algorithm
+    gbts_seeding_algorithm m_gbts_seeding;
     /// Track parameter estimation algorithm
     seed_parameter_estimation_algorithm m_track_parameter_estimation;
 
