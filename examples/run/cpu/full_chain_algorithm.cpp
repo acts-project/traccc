@@ -51,8 +51,9 @@ full_chain_algorithm::full_chain_algorithm(
 
     if (usingGBTS) {
         TRACCC_LOCAL_LOGGER(std::move(logger));
-        TRACCC_ERROR("GBTS not implemented for CPU, this will run with "
-                     "triplet seeding");
+        TRACCC_ERROR(
+            "GBTS not implemented for CPU, this will run with "
+            "triplet seeding");
     }
 }
 
