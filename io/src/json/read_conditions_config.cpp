@@ -6,7 +6,7 @@
  */
 
 // Local include(s).
-#include "read_digitization_config.hpp"
+#include "read_conditions_config.hpp"
 
 // Acts include(s).
 #if __has_include(<ActsPlugins/Json/ActsJson.hpp>)
@@ -24,16 +24,20 @@
 
 namespace traccc {
 
-
-traccc::digitization_config read_digitization_config(const nlohmann::json& json) {
-    traccc::digitization_config result;
+/// Function allowing the read of @c traccc::module_conditions_config objects
+///
+/// Note that this function must be declared in the same namespace as
+/// @c traccc::module_conditions_config for nlohmann_json to work correctly.
+///
+traccc::conditions_config read_conditions_config(const nlohmann::json& json) {
+    traccc::conditions_config result;
 
     static const char* entries_key      = "entries";
     static const char* binningdata_key  = "binningdata";
     static const char* geometric        = "geometric";
     static const char* segmentation     = "segmentation";
 
-    std::vector<traccc::digitization_config::InputElement> elements;
+    std::vector<traccc::conditions_config::InputElement> elements;
 
     for(const auto& entry : json[entries_key]) {
         
@@ -45,45 +49,31 @@ traccc::digitization_config read_digitization_config(const nlohmann::json& json)
 
         const auto& json_geom = entry[geometric];
         const auto& json_segm = json_geom[segmentation];
-        std::vector<std::vector<float>> bin_edges;
-        unsigned char dimensions = 0;
-        for (const auto& bindata : json_segm[binningdata_key]) {    
-            std::vector<float> bins;
-            
-            if (bindata["bins"].get<int>() == 1) {
-                dimensions = 1;
-                if(bindata["type"].get<std::string>() == "equidistant"){
-                    float pitch = (bindata["max"].get<float>() - bindata["min"].get<float>()) / bindata["bins"].get<float>();
-                    for (int i = 0; i <= bindata["bins"].get<int>(); ++i) {
-                        bins.push_back(bindata["min"].get<float>() + static_cast<float>(i)  * pitch);
-                    }
-                }else{
-                    for (const auto& edge : bindata["edges"]) {
-                        bins.push_back(edge.get<float>());
-                    }
-                }    
-            }else{
-                dimensions = 2;
-                float pitch = (bindata["max"].get<float>() - bindata["min"].get<float>()) / bindata["bins"].get<float>();
-                for (int i = 0; i <= bindata["bins"].get<int>(); ++i) {
-                    bins.push_back(bindata["min"].get<float>() + static_cast<float>(i)  * pitch);
-                }
-            }
+        const auto& json_binning = json_segm[binningdata_key];
+        vector2 shift = {0.f, 0.f};
 
-            bin_edges.push_back(bins);
+        if (json_binning.contains("shift"))
+        {
+            shift[0] = json_binning["shift"][0].get<float>();
+            shift[1] = json_binning["shift"][1].get<float>(); 
         }
 
-        elements.push_back({geoId, {bin_edges, dimensions}});
+        elements.push_back({geoId, {entry["threshold"].get<float>(), shift}});
               
     }
 
-    return traccc::digitization_config(std::move(elements));
+    return traccc::conditions_config(std::move(elements));
+
 }
+
+
+
 
 namespace io::json {
 
+conditions_config read_conditions_config(std::string_view filename) {
+    conditions_config result;
 
-digitization_config read_digitization_config(std::string_view filename) {
     // Open the input file. Relying on exceptions for the error handling.
     std::ifstream infile(filename.data(), std::ifstream::binary);
     infile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
@@ -93,8 +83,10 @@ digitization_config read_digitization_config(std::string_view filename) {
     infile >> json;
 
     // Construct the object from the JSON configuration.
-    return traccc::read_digitization_config(json);
-}
+    return traccc::read_conditions_config(json);
+    
+}    
+
 
 }  // namespace io::json
 }  // namespace traccc

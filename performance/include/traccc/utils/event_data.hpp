@@ -15,7 +15,7 @@
 #include "traccc/edm/track_container.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/host_detector.hpp"
-#include "traccc/geometry/silicon_detector_description.hpp"
+#include "traccc/geometry/detector_conditions_description.hpp"
 #include "traccc/io/csv/cell.hpp"
 #include "traccc/io/csv/hit.hpp"
 #include "traccc/io/csv/measurement.hpp"
@@ -61,14 +61,14 @@ struct event_data {
     /// @param[in] cells cell EDM
     /// @param[in] cca_clusters cluster EDM from CCL algorithm
     /// @param[in] cca_measurements measurement EDM from measurement creation
-    /// @param[in] dd    Detector description
+    /// @param[in] det_desc    Detector design description
     ///
     void fill_cca_result(
         const edm::silicon_cell_collection::host& cells,
         const edm::silicon_cluster_collection::host& cca_clusters,
         const edm::measurement_collection<default_algebra>::host&
             cca_measurements,
-        const silicon_detector_description::host& dd);
+        const detector_conditions_description::host& det_cond);
 
     /// Generate truth candidate used for truth fitting
     ///

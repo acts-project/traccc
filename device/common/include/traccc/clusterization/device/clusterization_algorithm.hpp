@@ -44,16 +44,19 @@ namespace traccc::device {
 class clusterization_algorithm
     : public algorithm<edm::measurement_collection<default_algebra>::buffer(
           const edm::silicon_cell_collection::const_view&,
-          const detector_design_description::const_view&)>,
+          const detector_design_description::const_view&,
+         const detector_conditions_description::const_view&)>,
       public algorithm<edm::measurement_collection<default_algebra>::buffer(
           const edm::silicon_cell_collection::const_view&,
           const detector_design_description::const_view&,
+          const detector_conditions_description::const_view&,
           clustering_discard_disjoint_set&&)>,
       public algorithm<
           std::pair<edm::measurement_collection<default_algebra>::buffer,
                     edm::silicon_cluster_collection::buffer>(
               const edm::silicon_cell_collection::const_view&,
               const detector_design_description::const_view&,
+              const detector_conditions_description::const_view&,
               clustering_keep_disjoint_set&&)>,
       public messaging,
       public algorithm_base {
@@ -171,6 +174,7 @@ class clusterization_algorithm
               std::optional<edm::silicon_cluster_collection::buffer>>
     execute_impl(const edm::silicon_cell_collection::const_view& cells,
                  const detector_design_description::const_view& det_descr,
+                 const detector_conditions_description::const_view& det_cond,
                  bool keep_disjoint_set) const;
 
     /// Clusterization configuration

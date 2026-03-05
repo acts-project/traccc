@@ -18,7 +18,7 @@
 #include "traccc/fitting/triplet_fitting_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/host_detector.hpp"
-#include "traccc/geometry/silicon_detector_description.hpp"
+#include "traccc/geometry/detector_design_description.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
@@ -78,7 +78,8 @@ class full_chain_algorithm
         const track_params_estimation_config& track_params_estimation_config,
         const finding_algorithm::config_type& finding_config,
         const fitting_algorithm::config_type& fitting_config,
-        const silicon_detector_description::host& det_descr,
+        const detector_design_description::host& det_descr,
+        const detector_conditions_description::host& det_cond,
         const magnetic_field& field, const host_detector* detector,
         std::unique_ptr<const traccc::Logger> logger);
 
@@ -109,8 +110,10 @@ class full_chain_algorithm
     magnetic_field m_field;
 
     /// Detector description
-    std::reference_wrapper<const silicon_detector_description::host>
+    std::reference_wrapper<const detector_design_description::host>
         m_det_descr;
+    std::reference_wrapper<const detector_conditions_description::host> 
+        m_det_cond;    
     /// Detector
     const host_detector* m_detector;
 

@@ -55,7 +55,7 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
     const edm::silicon_cell_collection::const_device& cells,
     const traccc::detector_design_description_interface<T>& module_dd,
     const traccc::detector_conditions_description_interface<T>& module_cd, 
-    point2& mean, point2& var, scalar& totalWeight);
+    point2& mean, point2& var, scalar& totalWeight, point2& pitch);
 
 /// Function used for calculating the properties of the cluster during
 /// measurement creation

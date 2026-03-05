@@ -9,6 +9,7 @@
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/geometry/detector_design_description.hpp"
+#include "traccc/geometry/detector_conditions_description.hpp"
 
 // Local include(s).
 #include "traccc/io/csv/measurement.hpp"
@@ -27,7 +28,7 @@ void make_measurement_edm(
     const traccc::io::csv::measurement& csv_meas,
     edm::measurement_collection<default_algebra>::host::proxy_type& meas,
     const std::map<geometry_id, geometry_id>* acts_to_detray_id,
-    const traccc::detector_design_description::host* detector_description =
+    const traccc::detector_design_description::host* det_desc =
         nullptr,
     const std::map<geometry_id, std::size_t>*
         geometry_id_to_detector_description_index = nullptr);

@@ -124,7 +124,7 @@ clusterization_algorithm::execute_impl(
     }
 
     // Launch the CCL kernel.
-    ccl_kernel({num_cells, m_config, cells, det_descr, measurements, cell_links,
+    ccl_kernel({num_cells, m_config, cells, det_descr, det_cond, measurements, cell_links,
                 m_f_backup, m_gf_backup, m_adjc_backup, m_adjv_backup,
                 m_backup_mutex.get(), disjoint_set, cluster_sizes});
 

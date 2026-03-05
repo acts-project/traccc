@@ -13,7 +13,7 @@
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/silicon_cluster_collection.hpp"
-#include "traccc/geometry/silicon_detector_description.hpp"
+#include "traccc/geometry/detector_design_description.hpp"
 #include "traccc/io/csv/make_cell_reader.hpp"
 #include "traccc/io/read_cells.hpp"
 
@@ -43,7 +43,8 @@ using cca_function_t = std::function<
                                                 traccc::default_algebra>::host>,
               std::optional<traccc::edm::silicon_cluster_collection::host>>(
         const traccc::edm::silicon_cell_collection::host &,
-        const traccc::silicon_detector_description::host &)>;
+        const traccc::detector_design_description::host &,
+        const traccc::detector_conditions_description::host &)>;
 
 inline traccc::clustering_config default_ccl_test_config() {
     traccc::clustering_config rv;
@@ -148,23 +149,34 @@ class ConnectedComponentAnalysisTests
         // detector modules for all the input files that the test uses.
         static constexpr std::size_t NMODULES = 2500;
         static constexpr traccc::scalar pitch = 1.f;
-        traccc::silicon_detector_description::host dd{mr};
-        dd.resize(NMODULES);
+        traccc::detector_design_description::host det_desc{mr};
+        traccc::detector_conditions_description::host det_cond{mr};
+        det_desc.resize(NMODULES);
+        det_cond.resize(NMODULES);
         for (std::size_t i = 0; i < NMODULES; ++i) {
-            dd.geometry_id()[i] = detray::geometry::barcode{i};
-            dd.acts_geometry_id()[i] = i;
-            dd.reference_x()[i] = -0.5f;
-            dd.reference_y()[i] = -0.5f;
-            dd.pitch_x()[i] = pitch;
-            dd.pitch_y()[i] = pitch;
-            dd.measurement_translation()[i] = {0.f, 0.f};
+            det_cond.module_to_design_id()[i] = static_cast<int>(i);
+            det_cond.geometry_id()[i] = detray::geometry::barcode{i};
+            det_cond.threshold()[i] = 0.f;
+            det_cond.acts_geometry_id()[i] = i;
+            det_cond.measurement_translation()[i] = {0.f, 0.f};
+
+            std::vector<float, std::pmr::polymorphic_allocator<float>> bin_edges_x(10001), bin_edges_y(10001);
+            std::iota(bin_edges_x.begin(), bin_edges_x.end(), -0.5f);
+            std::iota(bin_edges_y.begin(), bin_edges_y.end(), -0.5f);
+            det_desc.bin_edges_x()[i] = std::move(bin_edges_x);
+            det_desc.bin_edges_y()[i] = std::move(bin_edges_y);
+            det_desc.dimensions()[i] = 2;
+            det_desc.subspace()[i]  = {0, 1};
+            det_desc.design_id()[i] = static_cast<float>(i);
         }
+
+        ASSERT_EQ(det_desc.size(), det_cond.size()) << "not of same size";
 
         traccc::edm::silicon_cell_collection::host cells{mr};
         traccc::io::read_cells(cells, file_hits,
-                               traccc::getDummyLogger().clone(), &dd);
+                               traccc::getDummyLogger().clone(), &det_cond);
 
-        auto [result, cluster_data] = f(cells, dd);
+        auto [result, cluster_data] = f(cells, det_desc, det_cond);
 
         std::size_t total_truth = 0, total_found = 0;
 
@@ -188,6 +200,7 @@ class ConnectedComponentAnalysisTests
 
             std::size_t meas_idx = static_cast<std::size_t>(-1);
             for (std::size_t i = 0; i < meas.size(); ++i) {
+                
                 if ((std::abs(meas.at(i).local_position()[0] -
                               io_truth.channel0) < tol) &&
                     (std::abs(meas.at(i).local_position()[1] -
@@ -196,10 +209,10 @@ class ConnectedComponentAnalysisTests
                     break;
                 }
             }
-            ASSERT_TRUE(meas_idx < meas.size());
+            ASSERT_TRUE(meas_idx < meas.size()) << "measurement not found " << meas.size() << " " << meas_idx;
 
             const auto match = meas.at(meas_idx);
-            EXPECT_NEAR(match.local_position()[0], io_truth.channel0, tol);
+            EXPECT_NEAR(match.local_position()[0], io_truth.channel0, tol) << "string";
             EXPECT_NEAR(match.local_position()[1], io_truth.channel1, tol);
             EXPECT_NEAR(match.local_variance()[0],
                         io_truth.variance0 + var_adjustment, tol);

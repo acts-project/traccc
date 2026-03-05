@@ -13,6 +13,7 @@
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/host_detector.hpp"
 #include "traccc/geometry/detector_design_description.hpp"
+#include "traccc/geometry/detector_conditions_description.hpp"
 
 // System include(s).
 #include <string_view>
@@ -43,8 +44,9 @@ void read_particles(
     std::string_view particles_file, std::string_view hits_file,
     std::string_view measurements_file, std::string_view hit_map_file,
     const traccc::host_detector* detector,
-    const traccc::silicon_detector_description::host* detector_description =
+    const traccc::detector_design_description::host* detector_design_description =
         nullptr,
+    const traccc::detector_conditions_description::host* detector_conditions_description = nullptr,     
     const bool sort_measurements = true);
 
 }  // namespace traccc::io::csv

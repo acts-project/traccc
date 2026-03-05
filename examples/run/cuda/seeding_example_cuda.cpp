@@ -127,9 +127,10 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
      * Build a geometry
      *****************************/
 
-    traccc::silicon_detector_description::host host_det_descr{host_mr};
+    traccc::detector_design_description::host host_det_descr{host_mr};
+    traccc::detector_conditions_description::host host_det_cond{host_mr};
     traccc::io::read_detector_description(
-        host_det_descr, detector_opts.detector_file,
+        host_det_descr, host_det_cond, detector_opts.detector_file,
         detector_opts.digitization_file, traccc::data_format::json);
 
     // B field value
@@ -231,7 +232,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                     spacepoints_per_event, measurements_per_event, event,
                     input_opts.directory,
                     (input_opts.use_acts_geom_source ? &host_det : nullptr),
-                    &host_det_descr, input_opts.format);
+                    &host_det_descr, &host_det_cond, input_opts.format);
 
             }  // stop measuring hit reading timer
 

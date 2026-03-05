@@ -90,9 +90,10 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
     vecmem::host_memory_resource host_mr;
 
     // Construct the detector description object.
-    traccc::silicon_detector_description::host det_descr{host_mr};
+    traccc::detector_design_description::host det_descr{host_mr};
+    traccc::detector_conditions_description::host det_cond{host_mr};
     traccc::io::read_detector_description(
-        det_descr, detector_opts.detector_file, detector_opts.digitization_file,
+        det_descr, det_cond, detector_opts.detector_file, detector_opts.digitization_file,
         traccc::data_format::json);
 
     // Construct a Detray detector object, if supported by the configuration.
@@ -115,7 +116,7 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
             input.emplace_back(host_mr);
             static constexpr bool DEDUPLICATE = true;
             io::read_cells(input.back(), i, input_opts.directory,
-                           logger().clone(), &det_descr, input_opts.format,
+                           logger().clone(), &det_cond, input_opts.format,
                            DEDUPLICATE, input_opts.use_acts_geom_source);
         }
     }
@@ -144,7 +145,7 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
     std::unique_ptr<FULL_CHAIN_ALG> alg = std::make_unique<FULL_CHAIN_ALG>(
         host_mr, clustering_cfg, seedfinder_config, spacepoint_grid_config,
         seedfilter_config, track_params_estimation_config, finding_cfg,
-        fitting_cfg, det_descr, field, &detector,
+        fitting_cfg, det_descr, det_cond, field, &detector,
         logger().clone("FullChainAlg"));
 
     // Seed the random number generator.

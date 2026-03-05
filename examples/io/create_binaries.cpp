@@ -31,9 +31,10 @@ int create_binaries(const traccc::opts::detector& detector_opts,
     vecmem::host_memory_resource host_mr;
 
     // Construct the detector description object.
-    traccc::silicon_detector_description::host det_descr{host_mr};
+    traccc::detector_design_description::host det_descr{host_mr};
+    traccc::detector_conditions_description::host det_cond{host_mr};
     traccc::io::read_detector_description(
-        det_descr, detector_opts.detector_file, detector_opts.digitization_file,
+        det_descr, det_cond, detector_opts.detector_file, detector_opts.digitization_file,
         traccc::data_format::json);
 
     // Loop over events
@@ -43,7 +44,7 @@ int create_binaries(const traccc::opts::detector& detector_opts,
         // Read the cells from the relevant event file
         traccc::edm::silicon_cell_collection::host cells{host_mr};
         traccc::io::read_cells(cells, event, input_opts.directory,
-                               logger->clone(), &det_descr, input_opts.format);
+                               logger->clone(), &det_cond, input_opts.format);
 
         // Write binary file
         traccc::io::write(event, output_opts.directory,
@@ -54,7 +55,8 @@ int create_binaries(const traccc::opts::detector& detector_opts,
             measurements{host_mr};
         traccc::edm::spacepoint_collection::host spacepoints{host_mr};
         traccc::io::read_spacepoints(spacepoints, measurements, event,
-                                     input_opts.directory, nullptr, nullptr,
+                                     input_opts.directory, 
+                                     nullptr, nullptr, nullptr,
                                      input_opts.format);
 
         // Write binary file(s)

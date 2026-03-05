@@ -289,7 +289,7 @@ void event_data::fill_cca_result(
     const edm::silicon_cell_collection::host& cells,
     const edm::silicon_cluster_collection::host& cca_clusters,
     const edm::measurement_collection<default_algebra>::host& cca_measurements,
-    const silicon_detector_description::host& dd) {
+    const detector_conditions_description::host& det_cond) {
 
     const std::size_t n_cca_clusters = cca_measurements.size();
 
@@ -304,7 +304,7 @@ void event_data::fill_cca_result(
         for (const unsigned int cell_idx : cluster.cell_indices()) {
 
             const auto cell = cells.at(cell_idx);
-            io::csv::cell iocell{dd.acts_geometry_id().at(cell.module_index()),
+            io::csv::cell iocell{det_cond.acts_geometry_id().at(cell.module_index()),
                                  0u,
                                  cell.channel0(),
                                  cell.channel1(),

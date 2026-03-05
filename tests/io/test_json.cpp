@@ -50,7 +50,9 @@ TEST(io_json, digitization_config) {
     auto orig_it = orig.begin();
     auto copy_it = copy.begin();
     for (; orig_it != orig.end(); ++orig_it, ++copy_it) {
-        EXPECT_EQ(orig_it->segmentation, copy_it->segmentation);
+
         EXPECT_EQ(orig_it->dimensions, copy_it->dimensions);
+        EXPECT_EQ(orig_it->bin_edges, copy_it->bin_edges);
+
     }
 }

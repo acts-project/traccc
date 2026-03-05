@@ -18,15 +18,14 @@
 
 namespace traccc {
 
-/// Type describing the digitization configuration of a detector module
-struct module_digitization_config {
-    std::vector<std::vector<float>> bin_edges;
-    unsigned char dimensions = 2;
+/// Type describing the conditions configuration of a detector module
+struct conditions_data_config{
+    float threshold = 0.f;
+    vector2 shift{0.f, 0.f};
 };
 
-/// Type describing the digitization configuration for the whole detector
-using digitization_config =
-    Acts::GeometryHierarchyMap<module_digitization_config>;
+using conditions_config = 
+    Acts::GeometryHierarchyMap<conditions_data_config>;  
 
 }
  // namespace traccc

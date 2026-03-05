@@ -22,7 +22,8 @@ void read_spacepoints(
     edm::measurement_collection<default_algebra>::host& measurements,
     std::size_t event, std::string_view directory,
     const traccc::host_detector* detector,
-    const traccc::silicon_detector_description::host* detector_description,
+    const traccc::detector_design_description::host* det_desc,
+    const traccc::detector_conditions_description::host* det_cond,
     data_format format) {
 
     switch (format) {
@@ -41,7 +42,7 @@ void read_spacepoints(
                                    std::filesystem::path(get_event_filename(
                                        event, "-measurement-simhit-map.csv")))
                                       .native()),
-                detector, detector_description, format);
+                detector, det_desc, det_cond, format);
             break;
         }
         case data_format::binary: {
@@ -55,7 +56,7 @@ void read_spacepoints(
                                    std::filesystem::path(get_event_filename(
                                        event, "-measurements.dat")))
                                       .native()),
-                "", detector, detector_description, format);
+                "", detector, det_desc, det_cond, format);
             break;
         }
         default:
@@ -69,14 +70,15 @@ void read_spacepoints(
     std::string_view hit_filename, std::string_view meas_filename,
     std::string_view meas_hit_map_filename,
     const traccc::host_detector* detector,
-    const traccc::silicon_detector_description::host* detector_description,
+    const traccc::detector_design_description::host* det_desc,
+    const traccc::detector_conditions_description::host* det_cond,
     data_format format) {
 
     switch (format) {
         case data_format::csv:
             csv::read_spacepoints(spacepoints, measurements, hit_filename,
                                   meas_filename, meas_hit_map_filename,
-                                  detector, detector_description);
+                                  detector, det_desc, det_cond);
             break;
         case data_format::binary:
             details::read_binary_soa(spacepoints, hit_filename);

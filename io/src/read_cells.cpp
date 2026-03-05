@@ -20,7 +20,7 @@ namespace traccc::io {
 void read_cells(edm::silicon_cell_collection::host& cells, std::size_t event,
                 std::string_view directory,
                 std::unique_ptr<const Logger> ilogger,
-                const silicon_detector_description::host* dd,
+                const detector_conditions_description::host* det_cond,
                 data_format format, bool deduplicate,
                 bool use_acts_geometry_id) {
 
@@ -32,7 +32,7 @@ void read_cells(edm::silicon_cell_collection::host& cells, std::size_t event,
                                    std::filesystem::path(
                                        get_event_filename(event, "-cells.csv")))
                                       .native()),
-                ilogger->clone(), dd, format, deduplicate,
+                ilogger->clone(), det_cond, format, deduplicate,
                 use_acts_geometry_id);
             break;
 
@@ -43,7 +43,7 @@ void read_cells(edm::silicon_cell_collection::host& cells, std::size_t event,
                                    std::filesystem::path(
                                        get_event_filename(event, "-cells.dat")))
                                       .native()),
-                ilogger->clone(), dd, format, deduplicate);
+                ilogger->clone(), det_cond, format, deduplicate);
             break;
 
         default:
@@ -54,13 +54,13 @@ void read_cells(edm::silicon_cell_collection::host& cells, std::size_t event,
 void read_cells(edm::silicon_cell_collection::host& cells,
                 std::string_view filename,
                 std::unique_ptr<const Logger> ilogger,
-                const silicon_detector_description::host* dd,
+                const detector_conditions_description::host* det_cond,
                 data_format format, bool deduplicate,
                 bool use_acts_geometry_id) {
 
     switch (format) {
         case data_format::csv:
-            csv::read_cells(cells, filename, ilogger->clone(), dd, deduplicate,
+            csv::read_cells(cells, filename, ilogger->clone(), det_cond, deduplicate,
                             use_acts_geometry_id);
             break;
 

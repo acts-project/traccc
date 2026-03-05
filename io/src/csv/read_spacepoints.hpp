@@ -38,6 +38,7 @@ void read_spacepoints(
     const traccc::host_detector* detector = nullptr,
     const traccc::detector_design_description::host* detector_description =
         nullptr,
+    const traccc::detector_conditions_description::host* detector_conditions_description = nullptr,      
     const bool sort_measurements = true);
 
 }  // namespace traccc::io::csv

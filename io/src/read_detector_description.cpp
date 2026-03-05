@@ -11,6 +11,7 @@
 #include "traccc/geometry/host_detector.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_digitization_config.hpp"
+#include "traccc/io/read_conditions_config.hpp"
 #include "traccc/io/utils.hpp"
 
 // Detray include(s)
@@ -25,44 +26,46 @@
 #include <sstream>
 #include <stdexcept>
 #include <set>
+#include <iterator>
 
 namespace {
 
-void fill_digi_info(traccc::detector_module_description::host& dmd,
+void fill_digi_info(traccc::detector_design_description::host& det_desc,
                     const traccc::module_digitization_config& data) {
 
 
-    dmd.dimensions().back() = data.dimensions;
+    det_desc.dimensions().back() = data.dimensions;
 
-    dmd.bin_edges_x().back().assign(
+    det_desc.bin_edges_x().back().assign(
         data.bin_edges[0].begin(), data.bin_edges[0].end());
 
-    dmd.bin_edges_y().back().assign(
+    det_desc.bin_edges_y().back().assign(
         data.bin_edges[1].begin(), data.bin_edges[1].end());
 
 }
 
 template <typename detector_traits_t>
-void read_json_dd_impl(traccc::detector_module_description::host& dmd,
-                       traccc::detector_conditions_description::host& dcd,
+void read_json_dd_impl(traccc::detector_design_description::host& det_desc,
+                       traccc::detector_conditions_description::host& det_cond,
                        const traccc::host_detector& detector,
-                       const traccc::digitization_config& digi)
+                       const traccc::digitization_config& digi,
+                       const traccc::conditions_config& cond)
 requires(traccc::is_detector_traits<detector_traits_t>)
 {
     const typename detector_traits_t::host& detector_host =
         detector.as<detector_traits_t>();
 
 
-    dmd.reserve(digi.designs.size());
-    dcd.reserve(detector_host.surfaces().size());
+    det_desc.reserve(digi.size());
+    det_cond.reserve(detector_host.surfaces().size());
 
-    std::unordered_map<uint64_t, int> id_to_design_index = digi.id_to_design_index;
-    std::set<int> design_indices;
+    for(const auto& digi_it: digi){
+        
+        det_desc.resize(det_desc.size() + 1);
+        fill_digi_info(det_desc, digi_it);
+    }
 
-    std::unordered_map<int, unsigned int> design_index_to_dd_pos;
-
-    // Will be populated in surface order — one entry per sensitive surface
-    std::vector<unsigned int> module_to_design;
+    std::vector<int> module_to_design;
 
     for (const auto& surface_desc : detector_host.surfaces()) {
         const traccc::geometry_id geom_id{surface_desc.source};
@@ -72,62 +75,57 @@ requires(traccc::is_detector_traits<detector_traits_t>)
             continue;
         }
 
-        dcd.geometry_id().back() = surface_desc.barcode();
-        dcd.acts_geometry_id().back() = geom_id;
-        dcd.threshold().back() = ;
-        dcd.measurement_translation().back() = ;
 
-        int design_index = id_to_design_index[surface_desc.barcode().value()];
+        // New module — add it to detector conditions description
+        det_cond.resize(det_cond.size() + 1);
+        det_cond.geometry_id().back() = surface_desc.barcode();
+        det_cond.acts_geometry_id().back() = geom_id;
 
-        if (design_indices.contains(design_index)) {
-            // Design already added — just record the index
-            module_to_design.push_back(design_index_to_dd_pos[design_index]);
-
-        } else {
-            // New design — add it to dd
-            dd.resize(dd.size() + 1);
-            design_indices.insert(design_index);
-
-            const traccc::module_digitization_config* digi_cfg =
-                digi.get(surface_desc.barcode().value());
-
-            if (digi_cfg == nullptr) {
-                std::ostringstream msg;
-                msg << "Could not find digitization config for barcode: "
-                    << surface_desc.barcode();
-                throw std::runtime_error(msg.str());
+        std::array<detray::dsize_type<traccc::default_algebra>, 2u> subspace = {0, 1};
+        using annulus_t =
+            detray::mask<detray::annulus2D, traccc::default_algebra>;
+        using mask_registry_t = typename detector_traits_t::host::masks;
+        if constexpr (detray::types::contains<mask_registry_t, annulus_t>) {
+            if (surface_desc.mask().id() ==
+                detray::types::id<mask_registry_t, annulus_t>) {
+                subspace = {1, 0};
             }
-
-            // The position this design will occupy in dd
-            const unsigned int dd_pos =
-                static_cast<unsigned int>(design_index_to_dd_pos.size());
-            design_index_to_dd_pos[design_index] = dd_pos;
-
-            dd.subspace().back() = {0, 1};
-            using annulus_t =
-                detray::mask<detray::annulus2D, traccc::default_algebra>;
-            using mask_registry_t = typename detector_traits_t::host::masks;
-            if constexpr (detray::types::contains<mask_registry_t, annulus_t>) {
-                if (surface_desc.mask().id() ==
-                    detray::types::id<mask_registry_t, annulus_t>) {
-                    dd.subspace().back() = {1, 0};
-                }
-            }
-
-            fill_digi_info(dd, *digi_cfg);
-
-            // Record the indirection for this module too
-            module_to_design.push_back(dd_pos);
         }
+
+        for(std::size_t i = 0; i < digi.size(); ++i){
+            if(digi.idAt(i) == Acts::GeometryIdentifier(surface_desc.barcode().value())){
+
+                det_desc.subspace()[i] = subspace;
+
+                module_to_design.push_back(static_cast<int>(i));
+                break;
+            }
+        }
+
+        // Find the module's conditions configuration.
+        const traccc::conditions_config::Iterator cond_it =
+            cond.find(acts_geom_id);
+        if (cond_it == cond.end()) {
+            std::ostringstream msg;
+            msg << "Could not find conditions config for geometry ID: "
+                << acts_geom_id;
+            throw std::runtime_error(msg.str());
+        }
+
+        det_cond.threshold().back() = cond_it->threshold;
+        det_cond.measurement_translation().back() = cond_it->shift;
+        
     }
 
-    dd.module_to_design().assign(module_to_design.begin(), module_to_design.end());
+    det_cond.module_to_design_id().assign(module_to_design.begin(), module_to_design.end());
 
 }
 
-void read_json_dd(traccc::silicon_detector_description::host& dd,
+void read_json_dd(traccc::detector_design_description::host& det_desc,
+                  traccc::detector_conditions_description::host& det_cond,
                   std::string_view geometry_file,
-                  const traccc::digitization_config& digi) {
+                  const traccc::digitization_config& digi,
+                  const traccc::conditions_config& cond) {
 
     // Construct a (temporary) Detray detector object from the geometry
     // configuration file.
@@ -141,20 +139,21 @@ void read_json_dd(traccc::silicon_detector_description::host& dd,
         traccc::io::get_absolute_path(geometry_file));
 
     if (header.detector == "Cylindrical detector from DD4hep blueprint") {
-        read_json_dd_impl<traccc::odd_detector>(dd, detector, digi);
+        read_json_dd_impl<traccc::odd_detector>(det_desc, det_cond, detector, digi, cond);
     } else if (header.detector == "detray_detector") {
-        read_json_dd_impl<traccc::itk_detector>(dd, detector, digi);
+        read_json_dd_impl<traccc::itk_detector>(det_desc, det_cond, detector, digi, cond);
     } else {
         // TODO: Warning here
-        read_json_dd_impl<traccc::default_detector>(dd, detector, digi);
+        read_json_dd_impl<traccc::default_detector>(det_desc, det_cond, detector, digi, cond);
     }
 }
 
 }  // namespace
 
 namespace traccc::io {
-
-void read_detector_description(silicon_detector_description::host& dd,
+    
+void read_detector_description(detector_design_description::host& det_desc,
+                               detector_conditions_description::host& det_cond,
                                std::string_view geometry_file,
                                std::string_view digitization_file,
                                const data_format geometry_format,
@@ -163,11 +162,12 @@ void read_detector_description(silicon_detector_description::host& dd,
     // Read the digitization configuration.
     const digitization_config digi =
         read_digitization_config(digitization_file, digitization_format);
-
+    const conditions_config cond =
+        read_conditions_config(digitization_file, digitization_format);
     // Fill the detector description with the correct type of geometry file.
     switch (geometry_format) {
         case data_format::json:
-            ::read_json_dd(dd, geometry_file, digi);
+            ::read_json_dd(det_desc, det_cond, geometry_file, digi, cond);
             break;
         default:
             throw std::invalid_argument("Unsupported geometry format.");

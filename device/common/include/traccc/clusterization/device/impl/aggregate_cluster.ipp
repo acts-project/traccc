@@ -15,7 +15,8 @@ namespace traccc::device {
 TRACCC_HOST_DEVICE inline void aggregate_cluster(
     const clustering_config& cfg,
     const edm::silicon_cell_collection::const_device& cells,
-    const silicon_detector_description::const_device& det_descr,
+    const detector_design_description::const_device& det_desc,
+    const detector_conditions_description::const_device& det_cond,
     const vecmem::device_vector<details::index_t>& f, const unsigned int start,
     const unsigned int end, const unsigned short cid,
     edm::measurement_collection<default_algebra>::device::proxy_type out,
@@ -54,16 +55,18 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
      * $$\sigma^2(x_1, \ldots, x_n) = \sigma^2(x_1 - C, \ldots, x_n - C)$$
      */
     scalar totalWeight = 0.f;
-    point2 mean{0.f, 0.f}, var{0.f, 0.f}, offset{0.f, 0.f};
+    point2 mean{0.f, 0.f}, var{0.f, 0.f}, offset{0.f, 0.f}, width{0.f, 0.f}, pitch{0.f, 0.f};
 
-    unsigned int min_channel0 = std::numeric_limits<scalar>::lowest();
-    unsigned int max_channel0 = std::numeric_limits<scalar>::max();
-    unsigned int min_channel1 = std::numeric_limits<scalar>::lowest();
-    unsigned int max_channel1 = std::numeric_limits<scalar>::max();
+    unsigned int min_channel0 = std::numeric_limits<unsigned int>::max();
+    unsigned int max_channel0 = std::numeric_limits<unsigned int>::lowest();
+    unsigned int min_channel1 = std::numeric_limits<unsigned int>::max();
+    unsigned int max_channel1 = std::numeric_limits<unsigned int>::lowest();
 
     const unsigned int module_idx = cells.module_index().at(cid + start);
-    const silicon_detector_description_interface module_descr =
-        det_descr.at(module_idx);
+    
+    const auto module_cond = det_cond.at(module_idx);
+    const auto module_desc =
+        det_desc.at(module_cond.module_to_design_id());
     const auto partition_size = static_cast<unsigned short>(end - start);
     unsigned int tmp_cluster_size = 0;
 
@@ -96,17 +99,18 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
             }
 
             const scalar weight = traccc::details::signal_cell_modelling(
-                cell.activation(), det_descr);
+                cell.activation(), module_cond);
 
-            if (weight > module_descr.threshold()) {
+            if (weight > module_cond.threshold()) {
                 totalWeight += weight;
                 scalar weight_factor = weight / totalWeight;
 
                 point2 cell_width = {0, 0};
                 point2 cell_position = traccc::details::position_from_cell(
-                    cell, det_descr, &cell_width);
+                    cell, module_desc, &cell_width);
+                width[0] += cell_width[0];
+                width[1] += cell_width[1];
 
-                // calculated from the most-extreme cell edges
                 min_channel0 = std::min(min_channel0, cell.channel0());
                 max_channel0 = std::max(max_channel0, cell.channel0());
                 min_channel1 = std::min(min_channel1, cell.channel1());
@@ -123,8 +127,10 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
                 mean = mean + diff_old * weight_factor;
                 const point2 diff_new = cell_position - mean;
 
-                var[0] = var[0] + cell_width[0];
-                var[1] = var[1] + cell_width[1];
+                var[0] = (1.f - weight_factor) * var[0] +
+                         weight_factor * (diff_old[0] * diff_new[0]);
+                var[1] = (1.f - weight_factor) * var[1] +
+                         weight_factor * (diff_old[1] * diff_new[1]);
             }
 
             cell_links_device.at(pos) = link;
@@ -150,28 +156,30 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
     }
 
 
-    scalar delta0 = max_channel0 - min_channel0;
-    scalar delta1 = max_channel1 - min_channel1;
+    int delta0 = max_channel0 - min_channel0;
+    int delta1 = max_channel1 - min_channel1;
 
-    vector2 diameter = {var[0] / (delta0 +1),
-                        var[1] / (delta1 +1)};
+    pitch[0] = width[0] / static_cast<scalar>(tmp_cluster_size);
+    pitch[1] = width[1] / static_cast<scalar>(tmp_cluster_size);
 
-    var =  point2{diameter[0] * diameter[0] / static_cast<scalar>(12.),
-                  diameter[1] * diameter[1] / static_cast<scalar>(12.)};
+    var = var + point2{pitch[0] * pitch[0] / static_cast<scalar>(12.),
+                       pitch[1] * pitch[1] / static_cast<scalar>(12.)};   
+                       
+    point2 diameter = { width[0] / static_cast<scalar>(delta0+1), width[1] / static_cast<scalar>(delta1+1) };
 
     /*
      * Fill output vector with calculated cluster properties
      */
     out.local_position() =
-        mean + offset + module_descr.measurement_translation();
+        mean + offset + module_cond.measurement_translation();
     out.local_variance() = var;
-    out.surface_link() = module_descr.geometry_id();
+    out.surface_link() = module_cond.geometry_id();
     // Set a unique identifier for the measurement.
     out.identifier() = link;
     // Set the dimensionality of the measurement.
-    out.dimensions() = module_descr.dimensions();
+    out.dimensions() = module_desc.dimensions();
     // Set the measurement's subspace.
-    out.subspace() = module_descr.subspace();
+    out.subspace() = module_desc.subspace();
     // Set the index of the cluster that would be created for this measurement
     out.cluster_index() = link;
 
@@ -181,7 +189,7 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
                clustering_diameter_strategy::CHANNEL1) {
         out.diameter() = diameter[1];
     } else if (cfg.diameter_strategy == clustering_diameter_strategy::MAXIMUM) {
-        out.diameter() = std::max(diameter[0], diameter[1]);
+        out.diameter() = std::max( diameter[0], diameter[1] );
     } else if (cfg.diameter_strategy ==
                clustering_diameter_strategy::DIAGONAL) {
         out.diameter() = math::sqrt(diameter[0] * diameter[0] + diameter[1] * diameter[1]);

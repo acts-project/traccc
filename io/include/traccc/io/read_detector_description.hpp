@@ -12,6 +12,7 @@
 
 // Project include(s).
 #include "traccc/geometry/detector_design_description.hpp"
+#include "traccc/geometry/detector_conditions_description.hpp"
 
 // ACTS includes
 #include "Acts/Geometry/GeometryIdentifier.hpp"
@@ -23,9 +24,9 @@
 
 namespace traccc::io {
 
-/// Populate a @c traccc::silicon_detector_description object from text files.
+/// Populate a @c traccc::detector_design_description object from text files.
 ///
-/// @param dd The detector description object to set up.
+/// @param dd The detector design description object to set up.
 /// @param geometry_file The path to the geometry description file.
 /// @param digitization_file The path to the digitization configuration file.
 /// @param geometry_format The format of the geometry description file.
@@ -33,7 +34,9 @@ namespace traccc::io {
 ///                            file.
 ///
 void read_detector_description(
-    silicon_detector_description::host& dd, std::string_view geometry_file,
+    detector_design_description::host& det_desc,
+    detector_conditions_description::host& det_cond,
+    std::string_view geometry_file,
     std::string_view digitization_file,
     data_format geometry_format = data_format::json,
     data_format digitization_format = data_format::json);

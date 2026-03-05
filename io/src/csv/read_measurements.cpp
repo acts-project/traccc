@@ -20,7 +20,8 @@ namespace traccc::io::csv {
 std::vector<measurement_id_type> read_measurements(
     edm::measurement_collection<default_algebra>::host& measurements,
     std::string_view filename, const traccc::host_detector* detector,
-    const traccc::silicon_detector_description::host* detector_description,
+    const traccc::detector_design_description::host* det_desc,
+    const traccc::detector_conditions_description::host* det_cond,
     const bool do_sort) {
 
     // Construct the measurement reader object.
@@ -41,11 +42,12 @@ std::vector<measurement_id_type> read_measurements(
             });
     }
 
-    if (detector_description) {
-        for (std::size_t i = 0; i < detector_description->geometry_id().size();
+    if (det_cond) {
+
+        for (std::size_t i = 0; i < det_cond->geometry_id().size();
              ++i) {
             geometry_id_to_detector_description_index
-                [detector_description->geometry_id().at(i).value()] = i;
+                [det_cond->geometry_id().at(i).value()] = det_cond->module_to_design_id().at(i);
         }
     }
 
@@ -58,8 +60,8 @@ std::vector<measurement_id_type> read_measurements(
         edm::measurement meas = measurements.at(measurements.size() - 1u);
         make_measurement_edm(
             iomeas, meas, (detector == nullptr ? nullptr : &acts_to_detray_id),
-            detector_description,
-            (detector_description == nullptr
+            det_desc,
+            (det_cond == nullptr
                  ? nullptr
                  : &geometry_id_to_detector_description_index));
     }

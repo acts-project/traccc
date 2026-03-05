@@ -143,7 +143,8 @@ TRACCC_DEVICE inline void ccl_core(
     vecmem::data::vector_view<unsigned int> cell_links, details::index_t* adjv,
     unsigned char* adjc,
     const edm::silicon_cell_collection::const_device& cells_device,
-    const silicon_detector_description::const_device& det_descr,
+    const detector_design_description::const_device& det_desc,
+    const detector_conditions_description::const_device& det_cond,
     edm::measurement_collection<default_algebra>::device measurements_device,
     const barrier_t& barrier, vecmem::device_vector<unsigned int>& disjoint_set,
     vecmem::device_vector<unsigned int>& cluster_size) {
@@ -207,7 +208,7 @@ TRACCC_DEVICE inline void ccl_core(
                 measurements_device.push_back_default();
             // Set up the measurement under the appropriate index.
             aggregate_cluster(
-                cfg, cells_device, det_descr, f,
+                cfg, cells_device, det_desc, det_cond, f,
                 static_cast<unsigned int>(partition_start),
                 static_cast<unsigned int>(partition_end), cid,
                 measurements_device.at(meas_pos), cell_links, meas_pos,
@@ -225,7 +226,8 @@ template <device::concepts::barrier barrier_t,
 TRACCC_DEVICE inline void ccl_kernel(
     const clustering_config cfg, const thread_id_t& thread_id,
     const edm::silicon_cell_collection::const_view& cells_view,
-    const silicon_detector_description::const_view& det_descr_view,
+    const detector_design_description::const_view& det_desc_view,
+    const detector_conditions_description::const_view& det_cond_view,
     std::size_t& partition_start, std::size_t& partition_end, std::size_t& outi,
     vecmem::data::vector_view<details::index_t> f_view,
     vecmem::data::vector_view<details::index_t> gf_view,
@@ -242,7 +244,8 @@ TRACCC_DEVICE inline void ccl_kernel(
 
     // Construct device containers around the views.
     const edm::silicon_cell_collection::const_device cells_device(cells_view);
-    const silicon_detector_description::const_device det_descr(det_descr_view);
+    const detector_design_description::const_device det_desc(det_desc_view);
+    const detector_conditions_description::const_device det_cond(det_cond_view);
     edm::measurement_collection<default_algebra>::device measurements_device(
         measurements_view);
     vecmem::device_vector<details::index_t> f_primary(f_view);
@@ -367,7 +370,7 @@ TRACCC_DEVICE inline void ccl_kernel(
     ccl_core(cfg, thread_id, partition_start, partition_end,
              use_scratch ? f_backup : f_primary,
              use_scratch ? gf_backup : gf_primary, cell_links, adjv, adjc,
-             cells_device, det_descr, measurements_device, barrier,
+             cells_device, det_desc, det_cond, measurements_device, barrier,
              disjoint_set, cluster_size);
 
     barrier.blockBarrier();

@@ -145,12 +145,14 @@ TEST(event_data, mock_data) {
     /// Test with CCA
 
     // Construct the detector description object.
-    traccc::silicon_detector_description::host det_descr{resource};
-    traccc::io::read_detector_description(det_descr, det_file, digi_file,
+    traccc::detector_design_description::host det_descr{resource};
+    traccc::detector_conditions_description::host det_cond{resource};
+    traccc::io::read_detector_description(det_descr, det_cond, det_file, digi_file,
                                           traccc::data_format::json);
-    traccc::silicon_detector_description::data det_descr_data{
+    traccc::detector_design_description::data det_descr_data{
         vecmem::get_data(det_descr)};
-
+    traccc::detector_conditions_description::data det_cond_data{
+        vecmem::get_data(det_cond)};
     // Algorithms
     traccc::host::sparse_ccl_algorithm cc(resource);
     traccc::host::measurement_creation_algorithm mc(resource);
@@ -158,14 +160,14 @@ TEST(event_data, mock_data) {
     // Read cells
     traccc::edm::silicon_cell_collection::host cells{resource};
     traccc::io::read_cells(cells, 0u, path, traccc::getDummyLogger().clone(),
-                           &det_descr, traccc::data_format::csv);
+                           &det_cond, traccc::data_format::csv);
     const auto cells_view = vecmem::get_data(cells);
 
     auto clusters = cc(cells_view);
     auto measurements =
-        mc(cells_view, vecmem::get_data(clusters), det_descr_data);
+        mc(cells_view, vecmem::get_data(clusters), det_descr_data, det_cond_data);
 
-    evt_data.fill_cca_result(cells, clusters, measurements, det_descr);
+    evt_data.fill_cca_result(cells, clusters, measurements, det_cond);
 
     EXPECT_EQ(evt_data.m_found_meas_to_ptc_map.size(), 2u);
     EXPECT_EQ(evt_data.m_found_meas_to_param_map.size(), 2u);
