@@ -102,10 +102,13 @@ int seq_run(const traccc::opts::detector& detector_opts,
         vecmem::get_data(host_det_cond)};    
     traccc::detector_design_description::buffer device_det_descr{
         [&]() {
-            std::vector<unsigned int> sizes(host_det_descr.size());
-            for (std::size_t i = 0; i < host_det_descr.size(); ++i) {
-                sizes[i] = static_cast<unsigned int>(
-                    host_det_descr.bin_edges_x().at(i).size());
+        
+            // number of elements in the detector design description
+            std::vector<unsigned int> sizes(det_descr.size());
+            for (std::size_t i = 0; i < det_descr.size(); ++i) {
+                auto this_design = det_descr.at(i);
+                // now for each element, set the size to the largest size of that element across all modules
+                sizes[i] = std::max(static_cast<unsigned int>(((this_design.bin_edges_x()).size())), static_cast<unsigned int>(((this_design.bin_edges_y()).size())));
             }
             return sizes;
         }(),

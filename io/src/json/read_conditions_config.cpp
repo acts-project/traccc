@@ -47,10 +47,12 @@ traccc::conditions_config read_conditions_config(const nlohmann::json& json) {
               .withLayer(entry.value("layer", null))
               .withSensitive(entry.value("sensitive", null));
 
-        const auto& json_geom = entry[geometric];
+        const auto& json_val = entry["value"];
+        const auto& json_geom = json_val[geometric];
         const auto& json_segm = json_geom[segmentation];
         const auto& json_binning = json_segm[binningdata_key];
         vector2 shift = {0.f, 0.f};
+        scalar threshold = 0.f;
 
         if (json_binning.contains("shift"))
         {
@@ -58,7 +60,12 @@ traccc::conditions_config read_conditions_config(const nlohmann::json& json) {
             shift[1] = json_binning["shift"][1].get<float>(); 
         }
 
-        elements.push_back({geoId, {entry["threshold"].get<float>(), shift}});
+        if(json_geom.contains("threshold"))
+        {
+            threshold = json_geom["threshold"].get<float>();
+        }
+
+        elements.push_back({geoId, {threshold, shift}});
               
     }
 

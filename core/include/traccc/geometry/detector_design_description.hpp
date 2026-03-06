@@ -134,7 +134,7 @@ class detector_design_description_interface : public BASE {
 /// SoA container describing the detector module segmentation information
 using detector_design_description = vecmem::edm::container<
     detector_design_description_interface,
-    vecmem::edm::type::vector<scalar>,
+    vecmem::edm::type::vector<int>,
     vecmem::edm::type::jagged_vector<scalar>, vecmem::edm::type::jagged_vector<scalar>,
     vecmem::edm::type::vector<unsigned char>,
     vecmem::edm::type::vector<

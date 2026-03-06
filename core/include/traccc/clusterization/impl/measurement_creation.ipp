@@ -11,9 +11,9 @@
 
 namespace traccc::details {
 
-template <typename T>
+template <typename TDesign>
 TRACCC_HOST_DEVICE inline scalar signal_cell_modelling(
-    scalar signal_in, const traccc::detector_conditions_description_interface<T>&) {
+    scalar signal_in, const traccc::detector_conditions_description_interface<TDesign>&) {
     return signal_in;
 }
 

@@ -126,8 +126,8 @@ void read_cells(edm::silicon_cell_collection::host& cells,
         (deduplicate ? read_deduplicated_cells(filename, ilogger->clone())
                      : read_all_cells(filename));
 
-    // // If there is a detector description object, build a map of geometry IDs
-    // // to indices inside the detector description.
+    // If there is a detector description object, build a map of geometry IDs
+    // to indices inside the detector description.
     std::map<geometry_id, unsigned int> geomIdMap;
     if (det_cond) {
         

@@ -59,9 +59,11 @@ requires(traccc::is_detector_traits<detector_traits_t>)
     det_desc.reserve(digi.size());
     det_cond.reserve(detector_host.surfaces().size());
 
+    int n_design = 0;
     for(const auto& digi_it: digi){
         
         det_desc.resize(det_desc.size() + 1);
+        det_desc.design_id().back() = n_design++;
         fill_digi_info(det_desc, digi_it);
     }
 
@@ -74,13 +76,11 @@ requires(traccc::is_detector_traits<detector_traits_t>)
         if (acts_geom_id.sensitive() == 0) {
             continue;
         }
-
-
         // New module — add it to detector conditions description
         det_cond.resize(det_cond.size() + 1);
         det_cond.geometry_id().back() = surface_desc.barcode();
         det_cond.acts_geometry_id().back() = geom_id;
-
+        
         std::array<detray::dsize_type<traccc::default_algebra>, 2u> subspace = {0, 1};
         using annulus_t =
             detray::mask<detray::annulus2D, traccc::default_algebra>;
@@ -92,13 +92,17 @@ requires(traccc::is_detector_traits<detector_traits_t>)
             }
         }
 
-        for(std::size_t i = 0; i < digi.size(); ++i){
-            if(digi.idAt(i) == Acts::GeometryIdentifier(surface_desc.barcode().value())){
-
-                det_desc.subspace()[i] = subspace;
-
-                module_to_design.push_back(static_cast<int>(i));
-                break;
+        if(!digi.contains(acts_geom_id)){
+            std::ostringstream msg;
+            msg << "Could not find digitization config for geometry ID: "
+                << acts_geom_id;
+            throw std::runtime_error(msg.str());
+        }else{
+            auto digi_it = digi.find(acts_geom_id);
+            if (digi_it != digi.end()) {
+                std::size_t idx = std::distance(digi.begin(), digi_it);
+                det_desc.subspace()[idx] = subspace;
+                module_to_design.push_back(static_cast<int>(idx));
             }
         }
 

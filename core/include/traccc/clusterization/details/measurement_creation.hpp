@@ -19,10 +19,11 @@
 
 namespace traccc::details {
 
-/// Function used for retrieving the cell signal based on the module id
-template <typename T>
+/// Function used for retrieving the cell weight based on the activation
+/// and the detector  module conditions. 
+template <typename TDesign>
 TRACCC_HOST_DEVICE inline scalar signal_cell_modelling(
-    scalar signal_in, const detector_design_description::const_device&);
+    scalar signal_in, const traccc::detector_conditions_description_interface<TDesign>&);
 
 /// Get the local position of a cell on a module
 ///

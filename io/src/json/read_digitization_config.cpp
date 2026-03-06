@@ -43,7 +43,8 @@ traccc::digitization_config read_digitization_config(const nlohmann::json& json)
               .withLayer(entry.value("layer", null))
               .withSensitive(entry.value("sensitive", null));
 
-        const auto& json_geom = entry[geometric];
+        const auto& json_val = entry["value"];
+        const auto& json_geom = json_val[geometric];
         const auto& json_segm = json_geom[segmentation];
         std::vector<std::vector<float>> bin_edges;
         unsigned char dimensions = 0;

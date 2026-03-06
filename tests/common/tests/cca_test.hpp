@@ -167,7 +167,7 @@ class ConnectedComponentAnalysisTests
             det_desc.bin_edges_y()[i] = std::move(bin_edges_y);
             det_desc.dimensions()[i] = 2;
             det_desc.subspace()[i]  = {0, 1};
-            det_desc.design_id()[i] = static_cast<float>(i);
+            det_desc.design_id()[i] = static_cast<int>(i);
         }
 
         ASSERT_EQ(det_desc.size(), det_cond.size()) << "not of same size";
