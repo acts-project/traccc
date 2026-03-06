@@ -515,7 +515,7 @@ combinatorial_kalman_filter(
             propagation.set_particle(detail::correct_particle_hypothesis(
                 config.ptc_hypothesis, param));
 
-            propagation._stepping
+            propagation.stepping()
                 .template set_constraint<detray::step::constraint::e_accuracy>(
                     config.propagation.stepping.step_constraint);
 
@@ -557,13 +557,13 @@ combinatorial_kalman_filter(
             // step
             bool valid_track{ckf_aborter_state.success};
             if (valid_track) {
-                assert(propagation._navigation.is_on_sensitive());
-                assert(!propagation._stepping.bound_params().is_invalid());
+                assert(propagation.navigation().is_on_sensitive());
+                assert(!propagation.stepping().bound_params().is_invalid());
                 TRACCC_DEBUG_HOST(
-                    "On surface: " << propagation._navigation.barcode());
+                    "On surface: " << propagation.navigation().barcode());
 
                 const bound_track_parameters<algebra_type>& out_param =
-                    propagation._stepping.bound_params();
+                    propagation.stepping().bound_params();
 
                 const scalar theta = out_param.theta();
                 if (theta <= 0.f ||

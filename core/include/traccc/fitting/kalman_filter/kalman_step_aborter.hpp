@@ -47,7 +47,7 @@ struct kalman_step_aborter : public detray::actor {
                                        propagator_state_t& prop_state) const {
 
         // Convenience reference to the navigation state.
-        auto& navigation = prop_state._navigation;
+        auto& navigation = prop_state.navigation();
 
         TRACCC_VERBOSE_HOST_DEVICE("Check Kalman step aborter...");
 
@@ -61,7 +61,7 @@ struct kalman_step_aborter : public detray::actor {
             navigation.abort(
                 "Kalman Fitter: Maximum number of steps to reach next "
                 "sensitive surface exceeded");
-            prop_state._heartbeat = false;
+            prop_state.heartbeat(false);
         }
     }
 

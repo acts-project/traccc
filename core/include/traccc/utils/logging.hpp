@@ -11,7 +11,7 @@
 #include <Acts/Utilities/Logger.hpp>
 
 // detray include(s)
-#include <detray/utils/log.hpp>
+#include <detray/utils/logging.hpp>
 
 namespace traccc {
 
@@ -71,11 +71,11 @@ const Logger& getDummyLogger();
 
 // Host-device log messages for host-device code
 #define TRACCC_WARNING_HOST_DEVICE(x, ...) \
-    DETRAY_LOG_PRINTF("TRACCC", "WARNING", x, __VA_ARGS__)
+    DETRAY_WARN_PRINTF("TRACCC", x, __VA_ARGS__)
 #define TRACCC_ERROR_HOST_DEVICE(x, ...) \
-    DETRAY_LOG_PRINTF("TRACCC", "ERROR", x, __VA_ARGS__)
+    DETRAY_ERROR_PRINTF("TRACCC", x, __VA_ARGS__)
 #define TRACCC_FATAL_HOST_DEVICE(x, ...) \
-    DETRAY_LOG_PRINTF("TRACCC", "FATAL", x, __VA_ARGS__)
+    DETRAY_FATAL_PRINTF("TRACCC", x, __VA_ARGS__)
 #else
 #define TRACCC_VERBOSE_HOST(x)
 #define TRACCC_DEBUG_HOST(x)
@@ -91,14 +91,14 @@ const Logger& getDummyLogger();
 
 #if DETRAY_LOG_LVL > 0 && !defined(__EXCLUDE_LOGS__)
 #define TRACCC_INFO_HOST_DEVICE(x, ...) \
-    DETRAY_LOG_PRINTF("TRACCC", "INFO", x, __VA_ARGS__)
+    DETRAY_INFO_PRINTF("TRACCC", x, __VA_ARGS__)
 #else
 #define TRACCC_INFO_HOST_DEVICE(x, ...)
 #endif
 
 #if DETRAY_LOG_LVL > 1 && !defined(__EXCLUDE_LOGS__)
 #define TRACCC_VERBOSE_HOST_DEVICE(x, ...) \
-    DETRAY_LOG_PRINTF("TRACCC", "VERBOSE", x, __VA_ARGS__)
+    DETRAY_VERBOSE_PRINTF("TRACCC", x, __VA_ARGS__)
 #else
 #define TRACCC_VERBOSE_HOST_DEVICE(x, ...)
 #endif

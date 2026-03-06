@@ -199,7 +199,7 @@ struct kalman_actor_state {
     TRACCC_HOST_DEVICE bool match_surface_to_track_state(
         propagation_state_t& propagation) {
 
-        const auto& navigation = propagation._navigation;
+        const auto& navigation = propagation.navigation();
         edm::track_state trk_state = (*this)();
 
         TRACCC_VERBOSE_HOST("Found: " << navigation.barcode());
@@ -345,8 +345,8 @@ struct kalman_actor : detray::actor {
     TRACCC_HOST_DEVICE void operator()(state& actor_state,
                                        propagator_state_t& propagation) const {
 
-        auto& stepping = propagation._stepping;
-        auto& navigation = propagation._navigation;
+        auto& stepping = propagation.stepping();
+        auto& navigation = propagation.navigation();
 
         TRACCC_VERBOSE_HOST_DEVICE("In Kalman actor (status %d)...",
                                    actor_state.fit_result);
@@ -385,7 +385,7 @@ struct kalman_actor : detray::actor {
                        kalman_fitter_status::SUCCESS) {
                 // Surface matched but encountered error: Abort fit
                 navigation.abort(fitter_debug_msg{actor_state.fit_result});
-                propagation._heartbeat = false;
+                propagation.heartbeat(false);
                 return;
             }
 
@@ -471,7 +471,7 @@ struct kalman_actor : detray::actor {
                                           actor_state.fit_result}());
                 }
                 navigation.abort(fitter_debug_msg{actor_state.fit_result});
-                propagation._heartbeat = false;
+                propagation.heartbeat(false);
                 return;
             }
 
@@ -487,7 +487,7 @@ struct kalman_actor : detray::actor {
             // No need to continue
             if (actor_state.finished() && !actor_state.do_precise_hole_count) {
                 navigation.exit();
-                propagation._heartbeat = false;
+                propagation.heartbeat(false);
                 return;
             }
 

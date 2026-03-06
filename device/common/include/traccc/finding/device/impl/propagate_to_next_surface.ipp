@@ -72,7 +72,7 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
     typename propagator_t::state propagation(in_par, payload.field_data, det);
     propagation.set_particle(
         detail::correct_particle_hypothesis(cfg.ptc_hypothesis, in_par));
-    propagation._stepping
+    propagation.stepping()
         .template set_constraint<detray::step::constraint::e_accuracy>(
             cfg.propagation.stepping.step_constraint);
 
@@ -124,10 +124,10 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
 
     // If a surface found, add the parameter for the next step
     if (s6.success) {
-        assert(propagation._navigation.is_on_sensitive());
-        assert(!propagation._stepping.bound_params().is_invalid());
+        assert(propagation.navigation().is_on_sensitive());
+        assert(!propagation.stepping().bound_params().is_invalid());
 
-        params[param_id] = propagation._stepping.bound_params();
+        params[param_id] = propagation.stepping().bound_params();
         params_liveness[param_id] = 1u;
 
         const scalar theta = params[param_id].theta();
