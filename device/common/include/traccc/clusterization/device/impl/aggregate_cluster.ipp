@@ -64,9 +64,12 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
 
     const unsigned int module_idx = cells.module_index().at(cid + start);
     
-    const auto module_cond = det_cond.at(module_idx);
-    const auto module_desc =
-        det_desc.at(module_cond.module_to_design_id());
+    const auto module_cd = det_cond.at(module_idx);
+    const unsigned int design_idx =
+        module_cd.module_to_design_id();
+    const auto module_dd =
+        det_desc.at(design_idx);
+
     const auto partition_size = static_cast<unsigned short>(end - start);
     unsigned int tmp_cluster_size = 0;
 
@@ -77,7 +80,7 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
     for (unsigned short j = cid; j < partition_size; j++) {
 
         const unsigned int pos = j + start;
-        const edm::silicon_cell cell = cells.at(pos);
+        const edm::silicon_cell cell = cells.at(pos);  
 
         /*
          * Terminate the process earlier if we have reached a cell sufficiently
@@ -99,15 +102,15 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
             }
 
             const scalar weight = traccc::details::signal_cell_modelling(
-                cell.activation(), module_cond);
+                cell.activation(), module_cd);
 
-            if (weight > module_cond.threshold()) {
+            if (weight > module_cd.threshold()) {
                 totalWeight += weight;
                 scalar weight_factor = weight / totalWeight;
 
                 point2 cell_width = {0, 0};
                 point2 cell_position = traccc::details::position_from_cell(
-                    cell, module_desc, &cell_width);
+                    cell, module_dd, &cell_width);
                 width[0] += cell_width[0];
                 width[1] += cell_width[1];
 
@@ -171,15 +174,15 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
      * Fill output vector with calculated cluster properties
      */
     out.local_position() =
-        mean + offset + module_cond.measurement_translation();
+        mean + offset + module_cd.measurement_translation();
     out.local_variance() = var;
-    out.surface_link() = module_cond.geometry_id();
+    out.surface_link() = module_cd.geometry_id();
     // Set a unique identifier for the measurement.
     out.identifier() = link;
     // Set the dimensionality of the measurement.
-    out.dimensions() = module_desc.dimensions();
+    out.dimensions() = module_dd.dimensions();
     // Set the measurement's subspace.
-    out.subspace() = module_desc.subspace();
+    out.subspace() = module_dd.subspace();
     // Set the index of the cluster that would be created for this measurement
     out.cluster_index() = link;
 

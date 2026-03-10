@@ -65,10 +65,16 @@ traccc::digitization_config read_digitization_config(const nlohmann::json& json)
                 }    
             }else{
                 dimensions = 2;
-                float pitch = (bindata["max"].get<float>() - bindata["min"].get<float>()) / bindata["bins"].get<float>();
-                for (int i = 0; i <= bindata["bins"].get<int>(); ++i) {
-                    bins.push_back(bindata["min"].get<float>() + static_cast<float>(i)  * pitch);
-                }
+                if(bindata["type"].get<std::string>() == "equidistant"){
+                    float pitch = (bindata["max"].get<float>() - bindata["min"].get<float>()) / bindata["bins"].get<float>();
+                    for (int i = 0; i <= bindata["bins"].get<int>(); ++i) {
+                        bins.push_back(bindata["min"].get<float>() + static_cast<float>(i)  * pitch);
+                    }
+                }else{
+                    for (const auto& edge : bindata["edges"]) {
+                        bins.push_back(edge.get<float>());
+                    }
+                } 
             }
 
             bin_edges.push_back(bins);

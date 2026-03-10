@@ -92,6 +92,7 @@ requires(traccc::is_detector_traits<detector_traits_t>)
             }
         }
 
+        std::size_t idx = 0;
         if(!digi.contains(acts_geom_id)){
             std::ostringstream msg;
             msg << "Could not find digitization config for geometry ID: "
@@ -100,7 +101,7 @@ requires(traccc::is_detector_traits<detector_traits_t>)
         }else{
             auto digi_it = digi.find(acts_geom_id);
             if (digi_it != digi.end()) {
-                std::size_t idx = std::distance(digi.begin(), digi_it);
+                idx = std::distance(digi.begin(), digi_it);
                 det_desc.subspace()[idx] = subspace;
                 module_to_design.push_back(static_cast<int>(idx));
             }
@@ -118,10 +119,11 @@ requires(traccc::is_detector_traits<detector_traits_t>)
 
         det_cond.threshold().back() = cond_it->threshold;
         det_cond.measurement_translation().back() = cond_it->shift;
-        
+
     }
 
     det_cond.module_to_design_id().assign(module_to_design.begin(), module_to_design.end());
+
 
 }
 

@@ -113,7 +113,9 @@ full_chain_algorithm::full_chain_algorithm(
               << ", device: " << props.pciDeviceID << "]" << std::endl;
 
     // Copy the detector (description) to the device.
-    m_copy(vecmem::get_data(m_det_descr.get()), m_device_det_descr)->ignore();
+    m_copy.setup(m_device_det_descr)->wait();
+    m_copy(vecmem::get_data(m_det_descr.get()), m_device_det_descr)->wait();
+    m_copy(vecmem::get_data(m_det_cond.get()), m_device_det_cond)->wait();
     if (m_detector != nullptr) {
         m_device_detector =
             traccc::buffer_from_host_detector(*m_detector, m_device_mr, m_copy);
@@ -135,10 +137,11 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_det_cond(parent.m_det_cond),
       m_device_det_descr(
         [&]() {
-            std::vector<unsigned int> sizes(m_det_descr.get().size());
-            for (std::size_t i = 0; i < m_det_descr.get().size(); ++i) {
-                sizes[i] = static_cast<unsigned int>(
-                    m_det_descr.get().bin_edges_x().at(i).size());
+            std::vector<unsigned int> sizes((parent.m_det_descr).get().size());
+            for (std::size_t i = 0; i < (parent.m_det_descr).get().size(); ++i) {
+                auto this_design = (parent.m_det_descr).get().at(i);
+                // now for each element, set the size to the largest size of that element across all modules
+                sizes[i] = std::max(static_cast<unsigned int>(((this_design.bin_edges_x()).size())), static_cast<unsigned int>(((this_design.bin_edges_y()).size())));
             }
             return sizes;
         }(),
@@ -180,8 +183,10 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_finding_config(parent.m_finding_config),
       m_fitting_config(parent.m_fitting_config) {
 
-    // Copy the detector (description) to the device.
-    m_copy(vecmem::get_data(m_det_descr.get()), m_device_det_descr)->ignore();
+    
+    m_copy.setup(m_device_det_descr)->wait();
+    m_copy(vecmem::get_data(m_det_descr.get()), m_device_det_descr)->wait();
+    m_copy(vecmem::get_data(m_det_cond.get()), m_device_det_cond)->wait();
     if (m_detector != nullptr) {
         m_device_detector =
             traccc::buffer_from_host_detector(*m_detector, m_device_mr, m_copy);
