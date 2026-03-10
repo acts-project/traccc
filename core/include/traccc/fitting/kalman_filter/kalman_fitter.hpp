@@ -264,7 +264,7 @@ class kalman_fitter {
             m_cfg.ptc_hypothesis, seed_params));
 
         // Set overstep tolerance, stepper constraint and mask tolerance
-        propagation._stepping
+        propagation.stepping()
             .template set_constraint<detray::step::constraint::e_accuracy>(
                 m_cfg.propagation.stepping.step_constraint);
 
@@ -357,24 +357,24 @@ class kalman_fitter {
             fitter_state.m_sequence_buffer, m_cfg.propagation.context);
 
         // Configure backward propagation state
-        propagation._navigation.set_direction(
+        propagation.navigation().set_direction(
             detray::navigation::direction::e_backward);
-        propagation._navigation.reset();
+        propagation.navigation().reset();
 
         // Synchronize the current barcode with the input track parameter
         TRACCC_DEBUG_HOST(
             "Expecting: " << last.smoothed_params().surface_link());
-        while (propagation._navigation.has_next_external() &&
-               propagation._navigation.next_external().barcode() !=
+        while (propagation.navigation().has_next_external() &&
+               propagation.navigation().next_external().barcode() !=
                    last.smoothed_params().surface_link()) {
             TRACCC_DEBUG_HOST(
                 "Advancing to next external surface from: "
-                << propagation._navigation.next_external().barcode());
-            propagation._navigation.advance();
+                << propagation.navigation().next_external().barcode());
+            propagation.navigation().advance();
         }
 
         // No valid states produced by forward pass
-        if (propagation._navigation.finished()) {
+        if (propagation.navigation().finished()) {
             return kalman_fitter_status::ERROR_UPDATER_SKIPPED_STATE;
         }
 
@@ -383,10 +383,10 @@ class kalman_fitter {
             m_cfg.ptc_hypothesis, last.smoothed_params()));
 
         assert(std::signbit(
-                   propagation._stepping.particle_hypothesis().charge()) ==
-               std::signbit(propagation._stepping.bound_params().qop()));
+                   propagation.stepping().particle_hypothesis().charge()) ==
+               std::signbit(propagation.stepping().bound_params().qop()));
 
-        inflate_covariance(propagation._stepping.bound_params(),
+        inflate_covariance(propagation.stepping().bound_params(),
                            m_cfg.covariance_inflation_factor);
 
         // Run the smoothing
