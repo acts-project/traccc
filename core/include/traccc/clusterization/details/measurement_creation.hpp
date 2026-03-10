@@ -32,10 +32,10 @@ TRACCC_HOST_DEVICE inline scalar signal_cell_modelling(
 /// @return The local position of the cell (upper bound) and optionality the
 /// lower bound
 ///
-template <typename T>
+template <typename TCell, typename TDesign>
 TRACCC_HOST_DEVICE inline vector2 position_from_cell(
-    const edm::silicon_cell<T>& cell,
-    const traccc::detector_design_description_interface<T>& module_dd,
+    const edm::silicon_cell<TCell>& cell,
+    const traccc::detector_design_description_interface<TDesign>& module_dd,
     vector2* cell_width = nullptr);
 
 /// Function used for calculating the properties of the cluster during
@@ -50,12 +50,12 @@ TRACCC_HOST_DEVICE inline vector2 position_from_cell(
 ///                         cluster/measurement
 /// @param[out] totalWeight The total weight of the cluster/measurement
 ///
-template <typename T>
+template <typename T, typename TDesign, typename TCond>
 TRACCC_HOST_DEVICE inline void calc_cluster_properties(
     const edm::silicon_cluster<T>& cluster,
     const edm::silicon_cell_collection::const_device& cells,
-    const traccc::detector_design_description_interface<T>& module_dd,
-    const traccc::detector_conditions_description_interface<T>& module_cd, 
+    const traccc::detector_design_description_interface<TDesign>& module_dd,
+    const traccc::detector_conditions_description_interface<TCond>& module_cd, 
     point2& mean, point2& var, scalar& totalWeight, point2& pitch);
 
 /// Function used for calculating the properties of the cluster during
