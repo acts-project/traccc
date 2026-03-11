@@ -90,7 +90,6 @@ void read_json_dd_impl(traccc::detector_design_description::host& det_desc,
             }
         }
 
-        std::size_t idx = 0;
         if (!digi.contains(acts_geom_id)) {
             std::ostringstream msg;
             msg << "Could not find digitization config for geometry ID: "
@@ -99,7 +98,7 @@ void read_json_dd_impl(traccc::detector_design_description::host& det_desc,
         } else {
             auto digi_it = digi.find(acts_geom_id);
             if (digi_it != digi.end()) {
-                idx = std::distance(digi.begin(), digi_it);
+                unsigned long idx = std::distance(digi.begin(), digi_it);
                 det_desc.subspace()[idx] = subspace;
                 module_to_design.push_back(static_cast<int>(idx));
             }

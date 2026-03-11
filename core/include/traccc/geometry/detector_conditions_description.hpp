@@ -109,7 +109,7 @@ using detector_conditions_description =
                            vecmem::edm::type::vector<unsigned int>,
                            vecmem::edm::type::vector<detray::geometry::barcode>,
                            vecmem::edm::type::vector<geometry_id>,
-                           vecmem::edm::type::vector<scalar>,
+                           vecmem::edm::type::vector<float>,
                            vecmem::edm::type::vector<vector2>>;
 
 }  // namespace traccc
