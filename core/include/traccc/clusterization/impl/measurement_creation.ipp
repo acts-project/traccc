@@ -148,8 +148,9 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
     measurement.surface_link() = module_cd.geometry_id();
 
     // apply lorentz shift to the cell position
-    std::array<double, 2> shift = module_cd.measurement_translation();
-    measurement.local_position() = {mean[0] + shift[0], mean[1] + shift[1]};
+    std::array<scalar, 2> shift = module_cd.measurement_translation();
+    measurement.local_position() = {static_cast<float>(mean[0]) + shift[0],
+                                    static_cast<float>(mean[1]) + shift[1]};
 
     // plus pitch^2 / 12
     measurement.local_variance() =
