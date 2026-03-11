@@ -94,12 +94,12 @@ int seq_run(const traccc::opts::input_data& input_opts,
     traccc::detector_design_description::host det_descr{host_mr};
     traccc::detector_conditions_description::host det_cond{host_mr};
     traccc::io::read_detector_description(
-        det_descr, det_cond, detector_opts.detector_file, detector_opts.digitization_file,
-        traccc::data_format::json);
+        det_descr, det_cond, detector_opts.detector_file,
+        detector_opts.digitization_file, traccc::data_format::json);
     traccc::detector_design_description::data det_descr_data{
         vecmem::get_data(det_descr)};
     traccc::detector_conditions_description::data det_cond_data{
-        vecmem::get_data(det_cond)};    
+        vecmem::get_data(det_cond)};
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::host_detector polymorphic_detector;
@@ -215,8 +215,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
                 static constexpr bool DEDUPLICATE = true;
                 traccc::io::read_cells(
                     cells_per_event, event, input_opts.directory,
-                    logger().clone(), &det_cond, input_opts.format,
-                    DEDUPLICATE, input_opts.use_acts_geom_source);
+                    logger().clone(), &det_cond, input_opts.format, DEDUPLICATE,
+                    input_opts.use_acts_geom_source);
             }
 
             /*-------------------
@@ -230,7 +230,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
                 clusters_per_event = cc(vecmem::get_data(cells_per_event));
                 measurements_per_event =
                     mc(vecmem::get_data(cells_per_event),
-                       vecmem::get_data(clusters_per_event), det_descr_data, det_cond_data);
+                       vecmem::get_data(clusters_per_event), det_descr_data,
+                       det_cond_data);
             }
 
             // Perform seeding, track finding and fitting only when using a

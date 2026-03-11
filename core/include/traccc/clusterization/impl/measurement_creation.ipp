@@ -13,7 +13,8 @@ namespace traccc::details {
 
 template <typename TDesign>
 TRACCC_HOST_DEVICE inline scalar signal_cell_modelling(
-    scalar signal_in, const traccc::detector_conditions_description_interface<TDesign>&) {
+    scalar signal_in,
+    const traccc::detector_conditions_description_interface<TDesign>&) {
     return signal_in;
 }
 
@@ -21,21 +22,19 @@ template <typename TCell, typename TDesign>
 TRACCC_HOST_DEVICE inline vector2 position_from_cell(
     const edm::silicon_cell<TCell>& cell,
     const traccc::detector_design_description_interface<TDesign>& module_dd,
-    vector2* cell_width)
-{   
+    vector2* cell_width) {
     // Calculate / construct the local cell position.
     vector2 cell_lower_position = {
         (module_dd.bin_edges_x()).at(cell.channel0()),
-        (module_dd.bin_edges_y()).at(cell.channel1()) };
+        (module_dd.bin_edges_y()).at(cell.channel1())};
 
     vector2 cell_upper_position = {
-        (module_dd.bin_edges_x()).at(cell.channel0()+1),
-        (module_dd.bin_edges_y()).at(cell.channel1()+1) };
+        (module_dd.bin_edges_x()).at(cell.channel0() + 1),
+        (module_dd.bin_edges_y()).at(cell.channel1() + 1)};
 
     vector2 cell_middle_position = {
         scalar{0.5f} * (cell_upper_position[0] + cell_lower_position[0]),
-        scalar{0.5f} * (cell_upper_position[1] + cell_lower_position[1])
-    };
+        scalar{0.5f} * (cell_upper_position[1] + cell_lower_position[1])};
 
     *cell_width = cell_upper_position - cell_lower_position;
 
@@ -70,8 +69,9 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
             totalWeight += weight;
             scalar weight_factor = weight / totalWeight;
 
-            point2 cell_width ={0.f, 0.f};
-            point2 cell_position = position_from_cell(cell, module_dd, &cell_width);
+            point2 cell_width = {0.f, 0.f};
+            point2 cell_position =
+                position_from_cell(cell, module_dd, &cell_width);
             width[0] += cell_width[0];
             width[1] += cell_width[1];
             if (!first_processed) {
@@ -89,7 +89,6 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
                      weight_factor * (diff_old[0] * diff_new[0]);
             var[1] = (1.f - weight_factor) * var[1] +
                      weight_factor * (diff_old[1] * diff_new[1]);
-
         }
     }
 
@@ -130,19 +129,18 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
         return true;
     }() == true);
 
-
     // The index of the module the cluster is on.
     const unsigned int module_idx =
         cells.module_index().at(cluster.cell_indices().front());
     const auto module_cd = det_cond.at(module_idx);
-    const unsigned int design_idx =
-        module_cd.module_to_design_id();
+    const unsigned int design_idx = module_cd.module_to_design_id();
     const auto module_dd = det_descr.at(design_idx);
 
     // Calculate the cluster properties
     scalar totalWeight = 0.f;
     point2 mean{0.f, 0.f}, var{0.f, 0.f}, pitch{0.f, 0.f};
-    calc_cluster_properties(cluster, cells, module_dd, module_cd, mean, var, totalWeight, pitch);
+    calc_cluster_properties(cluster, cells, module_dd, module_cd, mean, var,
+                            totalWeight, pitch);
 
     assert(totalWeight > 0.f);
 
@@ -151,7 +149,7 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
 
     // apply lorentz shift to the cell position
     std::array<float, 2> shift = module_cd.measurement_translation();
-    measurement.local_position() = {mean[0]+shift[0],mean[1]+shift[1]};
+    measurement.local_position() = {mean[0] + shift[0], mean[1] + shift[1]};
 
     // plus pitch^2 / 12
     measurement.local_variance() =

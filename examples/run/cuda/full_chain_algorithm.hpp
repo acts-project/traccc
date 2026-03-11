@@ -22,8 +22,8 @@
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/detector_buffer.hpp"
-#include "traccc/geometry/host_detector.hpp"
 #include "traccc/geometry/detector_design_description.hpp"
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/messaging.hpp"
 #include "traccc/utils/propagation.hpp"
@@ -136,10 +136,9 @@ class full_chain_algorithm
     magnetic_field m_field;
 
     /// Detector description
-    std::reference_wrapper<const detector_design_description::host>
-        m_det_descr;
+    std::reference_wrapper<const detector_design_description::host> m_det_descr;
     std::reference_wrapper<const detector_conditions_description::host>
-        m_det_cond;    
+        m_det_cond;
     /// Detector description buffer
     detector_design_description::buffer m_device_det_descr;
     /// Detector conditions description buffer

@@ -30,8 +30,8 @@ namespace traccc {
 /// @c traccc::module_digitization_config for nlohmann_json to work correctly.
 ///
 void to_json(nlohmann::json& json, const module_digitization_config& cfg) {
-    static const char* geometric       = "geometric";
-    static const char* segmentation    = "segmentation";
+    static const char* geometric = "geometric";
+    static const char* segmentation = "segmentation";
     static const char* binningdata_key = "binningdata";
 
     nlohmann::json binning_array = nlohmann::json::array();
@@ -51,9 +51,11 @@ void to_json(nlohmann::json& json, const module_digitization_config& cfg) {
         // Detect equidistant vs irregular binning
         bool equidistant = true;
         if (nbins > 1) {
-            float expected_pitch = (edges.back() - edges.front()) / static_cast<float>(nbins);
+            float expected_pitch =
+                (edges.back() - edges.front()) / static_cast<float>(nbins);
             for (int i = 1; i < static_cast<int>(edges.size()); ++i) {
-                if (std::abs((edges[i] - edges[i-1]) - expected_pitch) > 1e-5f) {
+                if (std::abs((edges[i] - edges[i - 1]) - expected_pitch) >
+                    1e-5f) {
                     equidistant = false;
                     break;
                 }

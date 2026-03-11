@@ -93,8 +93,8 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
     traccc::detector_design_description::host det_descr{host_mr};
     traccc::detector_conditions_description::host det_cond{host_mr};
     traccc::io::read_detector_description(
-        det_descr, det_cond, detector_opts.detector_file, detector_opts.digitization_file,
-        traccc::data_format::json);
+        det_descr, det_cond, detector_opts.detector_file,
+        detector_opts.digitization_file, traccc::data_format::json);
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::host_detector detector;

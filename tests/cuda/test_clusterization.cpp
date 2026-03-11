@@ -63,7 +63,8 @@ TEST(CUDAClustering, SingleModule) {
                                                    default_ccl_test_config());
 
     auto measurements_buffer =
-        ca_cuda(vecmem::get_data(cells), vecmem::get_data(det_desc), vecmem::get_data(det_cond));
+        ca_cuda(vecmem::get_data(cells), vecmem::get_data(det_desc),
+                vecmem::get_data(det_cond));
     edm::measurement_collection<default_algebra>::const_device measurements(
         measurements_buffer);
 

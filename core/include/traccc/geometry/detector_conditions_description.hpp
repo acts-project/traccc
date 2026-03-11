@@ -74,8 +74,6 @@ class detector_conditions_description_interface : public BASE {
     TRACCC_HOST_DEVICE
     const auto& acts_geometry_id() const { return BASE::template get<2>(); }
 
-
-
     TRACCC_HOST_DEVICE
     auto& threshold() { return BASE::template get<3>(); }
     /// Signal threshold for detection elements (const)
@@ -104,14 +102,14 @@ class detector_conditions_description_interface : public BASE {
 
 };  // class silicon_detector_description_interface
 
-
-/// SoA container describing module to design map and conditions (module specific) data
-using detector_conditions_description = vecmem::edm::container<
-    detector_conditions_description_interface,
-    vecmem::edm::type::vector<unsigned int>,
-    vecmem::edm::type::vector<detray::geometry::barcode>,
-    vecmem::edm::type::vector<geometry_id>,
-    vecmem::edm::type::vector<scalar>,
-    vecmem::edm::type::vector<vector2>>;
+/// SoA container describing module to design map and conditions
+/// (module specific) data
+using detector_conditions_description =
+    vecmem::edm::container<detector_conditions_description_interface,
+                           vecmem::edm::type::vector<unsigned int>,
+                           vecmem::edm::type::vector<detray::geometry::barcode>,
+                           vecmem::edm::type::vector<geometry_id>,
+                           vecmem::edm::type::vector<scalar>,
+                           vecmem::edm::type::vector<vector2>>;
 
 }  // namespace traccc

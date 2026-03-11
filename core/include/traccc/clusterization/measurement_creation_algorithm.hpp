@@ -11,8 +11,8 @@
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/silicon_cluster_collection.hpp"
-#include "traccc/geometry/detector_design_description.hpp"
 #include "traccc/geometry/detector_conditions_description.hpp"
+#include "traccc/geometry/detector_design_description.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/messaging.hpp"
 
@@ -59,7 +59,8 @@ class measurement_creation_algorithm
         const edm::silicon_cell_collection::const_view &cells_view,
         const edm::silicon_cluster_collection::const_view &clusters_view,
         const detector_design_description::const_view &dmd_view,
-        const detector_conditions_description::const_view &dcd_view) const override;
+        const detector_conditions_description::const_view &dcd_view)
+        const override;
 
     private:
     /// The memory resource used by the algorithm

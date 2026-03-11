@@ -12,8 +12,8 @@
 #include "traccc/clusterization/sparse_ccl_algorithm.hpp"
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
-#include "traccc/geometry/detector_design_description.hpp"
 #include "traccc/geometry/detector_conditions_description.hpp"
+#include "traccc/geometry/detector_design_description.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/messaging.hpp"
 
@@ -59,7 +59,8 @@ class clusterization_algorithm
     output_type operator()(
         const edm::silicon_cell_collection::const_view& cells_view,
         const detector_design_description::const_view& dmd_view,
-        const detector_conditions_description::const_view& dcd_view) const override;
+        const detector_conditions_description::const_view& dcd_view)
+        const override;
 
     private:
     /// @name Sub-algorithms used by this algorithm

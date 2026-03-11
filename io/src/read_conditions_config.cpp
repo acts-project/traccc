@@ -12,13 +12,13 @@
 #include "traccc/io/utils.hpp"
 
 // System include(s).
-#include <string>
 #include <stdexcept>
+#include <string>
 
 namespace traccc::io {
 
 conditions_config read_conditions_config(std::string_view filename,
-                                             data_format format) {
+                                         data_format format) {
 
     // Construct the full filename.
     std::string full_filename = get_absolute_path(filename);

@@ -11,9 +11,9 @@
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/geometry/detector.hpp"
-#include "traccc/geometry/host_detector.hpp"
-#include "traccc/geometry/detector_design_description.hpp"
 #include "traccc/geometry/detector_conditions_description.hpp"
+#include "traccc/geometry/detector_design_description.hpp"
+#include "traccc/geometry/host_detector.hpp"
 
 // System include(s).
 #include <string_view>
@@ -38,7 +38,8 @@ void read_spacepoints(
     const traccc::host_detector* detector = nullptr,
     const traccc::detector_design_description::host* detector_description =
         nullptr,
-    const traccc::detector_conditions_description::host* detector_conditions_description = nullptr,      
+    const traccc::detector_conditions_description::host*
+        detector_conditions_description = nullptr,
     const bool sort_measurements = true);
 
 }  // namespace traccc::io::csv

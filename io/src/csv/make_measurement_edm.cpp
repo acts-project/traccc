@@ -59,7 +59,6 @@ void make_measurement_edm(
     } else {
         meas.surface_link() = detray::geometry::barcode{csv_meas.geometry_id};
     }
-    
     if (det_desc != nullptr) {
         std::size_t dd_idx = geometry_id_to_detector_description_index->at(
             meas.surface_link().value());

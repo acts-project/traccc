@@ -6,12 +6,11 @@
  */
 
 #pragma once
-//Project includes
+// Project includes
 #include "traccc/definitions/primitives.hpp"
 
-//Acts includes
+// Acts includes
 #include <Acts/Geometry/GeometryHierarchyMap.hpp>
-
 #include <cstdint>
 #include <unordered_map>
 #include <vector>
@@ -28,5 +27,4 @@ struct module_digitization_config {
 using digitization_config =
     Acts::GeometryHierarchyMap<module_digitization_config>;
 
-}
- // namespace traccc
+}  // namespace traccc

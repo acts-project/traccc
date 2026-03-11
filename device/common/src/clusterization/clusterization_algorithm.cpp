@@ -50,7 +50,8 @@ clusterization_algorithm::operator()(
     clustering_discard_disjoint_set&&) const {
 
     static constexpr bool KEEP_DISJOINT_SET = false;
-    auto [res, djs] = this->execute_impl(cells, det_descr, det_cond, KEEP_DISJOINT_SET);
+    auto [res, djs] =
+        this->execute_impl(cells, det_descr, det_cond, KEEP_DISJOINT_SET);
     assert(!djs.has_value());
     return std::move(res);
 }
@@ -64,7 +65,8 @@ clusterization_algorithm::operator()(
     clustering_keep_disjoint_set&&) const {
 
     static constexpr bool KEEP_DISJOINT_SET = true;
-    auto [res, djs] = this->execute_impl(cells, det_descr, det_cond, KEEP_DISJOINT_SET);
+    auto [res, djs] =
+        this->execute_impl(cells, det_descr, det_cond, KEEP_DISJOINT_SET);
     assert(djs.has_value());
     return {std::move(res), std::move(*djs)};
 }
@@ -124,9 +126,10 @@ clusterization_algorithm::execute_impl(
     }
 
     // Launch the CCL kernel.
-    ccl_kernel({num_cells, m_config, cells, det_descr, det_cond, measurements, cell_links,
-                m_f_backup, m_gf_backup, m_adjc_backup, m_adjv_backup,
-                m_backup_mutex.get(), disjoint_set, cluster_sizes});
+    ccl_kernel({num_cells, m_config, cells, det_descr, det_cond, measurements,
+                cell_links, m_f_backup, m_gf_backup, m_adjc_backup,
+                m_adjv_backup, m_backup_mutex.get(), disjoint_set,
+                cluster_sizes});
 
     std::optional<traccc::edm::silicon_cluster_collection::buffer>
         cluster_data = std::nullopt;

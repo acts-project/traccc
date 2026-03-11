@@ -9,8 +9,8 @@
 
 // Project include(s).
 #include "traccc/edm/silicon_cell_collection.hpp"
-#include "traccc/geometry/detector_design_description.hpp"
 #include "traccc/geometry/detector_conditions_description.hpp"
+#include "traccc/geometry/detector_design_description.hpp"
 #include "traccc/utils/logging.hpp"
 
 // System include(s).

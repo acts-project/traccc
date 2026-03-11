@@ -60,8 +60,8 @@ void read_cells(edm::silicon_cell_collection::host& cells,
 
     switch (format) {
         case data_format::csv:
-            csv::read_cells(cells, filename, ilogger->clone(), det_cond, deduplicate,
-                            use_acts_geometry_id);
+            csv::read_cells(cells, filename, ilogger->clone(), det_cond,
+                            deduplicate, use_acts_geometry_id);
             break;
 
         case data_format::binary:

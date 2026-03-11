@@ -99,22 +99,23 @@ int seq_run(const traccc::opts::detector& detector_opts,
     traccc::detector_design_description::data host_det_descr_data{
         vecmem::get_data(host_det_descr)};
     traccc::detector_conditions_description::data host_det_cond_data{
-        vecmem::get_data(host_det_cond)};    
+        vecmem::get_data(host_det_cond)};
     traccc::detector_design_description::buffer device_det_descr{
         [&]() {
-        
             // number of elements in the detector design description
             std::vector<unsigned int> sizes(host_det_descr.size());
             for (std::size_t i = 0; i < host_det_descr.size(); ++i) {
                 auto this_design = host_det_descr.at(i);
-                // now for each element, set the size to the largest size of that element across all modules
-                sizes[i] = std::max(static_cast<unsigned int>(((this_design.bin_edges_x()).size())), static_cast<unsigned int>(((this_design.bin_edges_y()).size())));
+                // now for each element, set the size to the largest size of
+                // that element across all modules
+                sizes[i] = std::max(static_cast<unsigned int>(
+                                        ((this_design.bin_edges_x()).size())),
+                                    static_cast<unsigned int>(
+                                        ((this_design.bin_edges_y()).size())));
             }
             return sizes;
         }(),
-        device_mr,
-        &host_mr,
-        vecmem::data::buffer_type::resizable};
+        device_mr, &host_mr, vecmem::data::buffer_type::resizable};
     copy.setup(device_det_descr)->wait();
     copy(host_det_descr_data, device_det_descr)->wait();
 
@@ -305,7 +306,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 traccc::performance::timer t("Clusterization  (cpu)",
                                              elapsedTimes);
                 measurements_per_event =
-                    ca(vecmem::get_data(cells_per_event), host_det_descr_data, host_det_cond_data);
+                    ca(vecmem::get_data(cells_per_event), host_det_descr_data,
+                       host_det_cond_data);
             }  // stop measuring clusterization cpu timer
 
             // Perform seeding, track finding and fitting only when using a

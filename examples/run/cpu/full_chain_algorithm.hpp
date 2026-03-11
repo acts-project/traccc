@@ -17,8 +17,8 @@
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/fitting/triplet_fitting_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"
-#include "traccc/geometry/host_detector.hpp"
 #include "traccc/geometry/detector_design_description.hpp"
+#include "traccc/geometry/host_detector.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
@@ -110,10 +110,9 @@ class full_chain_algorithm
     magnetic_field m_field;
 
     /// Detector description
-    std::reference_wrapper<const detector_design_description::host>
-        m_det_descr;
-    std::reference_wrapper<const detector_conditions_description::host> 
-        m_det_cond;    
+    std::reference_wrapper<const detector_design_description::host> m_det_descr;
+    std::reference_wrapper<const detector_conditions_description::host>
+        m_det_cond;
     /// Detector
     const host_detector* m_detector;
 

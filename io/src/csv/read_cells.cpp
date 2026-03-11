@@ -113,10 +113,9 @@ namespace traccc::io::csv {
 
 void read_cells(edm::silicon_cell_collection::host& cells,
                 std::string_view filename,
-                std::unique_ptr<const Logger> ilogger, 
-                const detector_conditions_description::host* det_cond, 
-                bool deduplicate,
-                bool use_acts_geometry_id) {
+                std::unique_ptr<const Logger> ilogger,
+                const detector_conditions_description::host* det_cond,
+                bool deduplicate, bool use_acts_geometry_id) {
 
     // Clear the output container.
     cells.resize(0u);
@@ -130,9 +129,9 @@ void read_cells(edm::silicon_cell_collection::host& cells,
     // to indices inside the detector description.
     std::map<geometry_id, unsigned int> geomIdMap;
     if (det_cond) {
-        
-        if(use_acts_geometry_id) {
-            for (unsigned int i = 0; i < det_cond->acts_geometry_id().size(); ++i) {
+        if (use_acts_geometry_id) {
+            for (unsigned int i = 0; i < det_cond->acts_geometry_id().size();
+                 ++i) {
                 geomIdMap[det_cond->acts_geometry_id()[i]] = i;
             }
         } else {
@@ -140,7 +139,6 @@ void read_cells(edm::silicon_cell_collection::host& cells,
                 geomIdMap[det_cond->geometry_id()[i].value()] = i;
             }
         }
-
     }
 
     // Fill the output containers with the ordered cells and modules.
@@ -149,7 +147,6 @@ void read_cells(edm::silicon_cell_collection::host& cells,
         // Figure out the index of the detector description object, for this
         // group of cells.
         unsigned int ddIndex = 0;
-
 
         if (det_cond) {
             auto it = geomIdMap.find(geometry_id);

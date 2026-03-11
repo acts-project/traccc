@@ -37,7 +37,7 @@ TEST(algorithms, seq_single_module) {
     cells.push_back({3, 13, 7.f, 0.f, 0});
     cells.push_back({11, 13, 8.f, 0.f, 0});
     cells.push_back({4, 14, 9.f, 0.f, 0});
-    
+
     // Create a dummy detector description. With a description of enough
     // detector modules for all the input files that the test uses.
     static constexpr std::size_t NMODULES = 1;
@@ -52,13 +52,15 @@ TEST(algorithms, seq_single_module) {
         det_cond.acts_geometry_id()[i] = i;
         det_cond.measurement_translation()[i] = {0.f, 0.f};
 
-        std::vector<float, std::pmr::polymorphic_allocator<float>> bin_edges_x(10001), bin_edges_y(10001);
+        std::vector<float, std::pmr::polymorphic_allocator<float>> bin_edges_x(
+            10001),
+            bin_edges_y(10001);
         std::iota(bin_edges_x.begin(), bin_edges_x.end(), -0.5f);
         std::iota(bin_edges_y.begin(), bin_edges_y.end(), -0.5f);
         det_desc.bin_edges_x()[i] = std::move(bin_edges_x);
         det_desc.bin_edges_y()[i] = std::move(bin_edges_y);
         det_desc.dimensions()[i] = 2;
-        det_desc.subspace()[i]  = {0, 1};
+        det_desc.subspace()[i] = {0, 1};
         det_desc.design_id()[i] = static_cast<int>(i);
     }
 
@@ -69,7 +71,8 @@ TEST(algorithms, seq_single_module) {
     auto clusters_data = vecmem::get_data(clusters);
     auto det_desc_data = vecmem::get_data(det_desc);
     auto det_cond_data = vecmem::get_data(det_cond);
-    auto measurements = mc(cells_data, clusters_data, det_desc_data, det_cond_data);
+    auto measurements =
+        mc(cells_data, clusters_data, det_desc_data, det_cond_data);
 
     EXPECT_EQ(measurements.size(), 4u);
 }

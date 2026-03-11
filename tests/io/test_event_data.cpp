@@ -147,8 +147,8 @@ TEST(event_data, mock_data) {
     // Construct the detector description object.
     traccc::detector_design_description::host det_descr{resource};
     traccc::detector_conditions_description::host det_cond{resource};
-    traccc::io::read_detector_description(det_descr, det_cond, det_file, digi_file,
-                                          traccc::data_format::json);
+    traccc::io::read_detector_description(det_descr, det_cond, det_file,
+                                          digi_file, traccc::data_format::json);
     traccc::detector_design_description::data det_descr_data{
         vecmem::get_data(det_descr)};
     traccc::detector_conditions_description::data det_cond_data{
@@ -164,8 +164,8 @@ TEST(event_data, mock_data) {
     const auto cells_view = vecmem::get_data(cells);
 
     auto clusters = cc(cells_view);
-    auto measurements =
-        mc(cells_view, vecmem::get_data(clusters), det_descr_data, det_cond_data);
+    auto measurements = mc(cells_view, vecmem::get_data(clusters),
+                           det_descr_data, det_cond_data);
 
     evt_data.fill_cca_result(cells, clusters, measurements, det_cond);
 

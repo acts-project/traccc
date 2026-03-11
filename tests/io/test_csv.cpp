@@ -166,8 +166,8 @@ TEST_F(io, csv_write_odd_single_muon_cells) {
             // Read the cells back in.
             traccc::io::read_cells(
                 copy, event, std::filesystem::temp_directory_path().native(),
-                traccc::getDummyLogger().clone(), &det_cond, traccc::data_format::csv,
-                false, use_acts_geometry_id);
+                traccc::getDummyLogger().clone(), &det_cond,
+                traccc::data_format::csv, false, use_acts_geometry_id);
 
             // Compare the two cell collections.
             compare_cells(orig, copy);

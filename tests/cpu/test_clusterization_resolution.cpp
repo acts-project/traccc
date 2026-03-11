@@ -40,12 +40,12 @@ TEST_P(SurfaceBinningTests, Run) {
     // Read the detector description.
     traccc::detector_design_description::host det_desc{host_mr};
     traccc::detector_conditions_description::host det_cond{host_mr};
-    traccc::io::read_detector_description(det_desc, det_cond, detector_file, digi_config_file,
-                                          traccc::json);
+    traccc::io::read_detector_description(det_desc, det_cond, detector_file,
+                                          digi_config_file, traccc::json);
     const traccc::detector_design_description::data det_desc_data =
         vecmem::get_data(det_desc);
     const traccc::detector_conditions_description::data det_cond_data =
-         vecmem::get_data(det_cond);
+        vecmem::get_data(det_cond);
 
     // Read the detector
     traccc::host_detector detector;
@@ -61,7 +61,8 @@ TEST_P(SurfaceBinningTests, Run) {
                            traccc::getDummyLogger().clone(), &det_cond);
 
     // Get Reconstructed Spacepoints
-    auto measurements_recon = ca(vecmem::get_data(cells_truth), det_desc_data, det_cond_data);
+    auto measurements_recon =
+        ca(vecmem::get_data(cells_truth), det_desc_data, det_cond_data);
     auto spacepoints_recon = sf(detector, vecmem::get_data(measurements_recon));
 
     // Read the hits from the relevant event file

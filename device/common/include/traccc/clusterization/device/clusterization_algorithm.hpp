@@ -17,8 +17,8 @@
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/silicon_cluster_collection.hpp"
-#include "traccc/geometry/detector_design_description.hpp"
 #include "traccc/geometry/detector_conditions_description.hpp"
+#include "traccc/geometry/detector_design_description.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/messaging.hpp"
@@ -45,7 +45,7 @@ class clusterization_algorithm
     : public algorithm<edm::measurement_collection<default_algebra>::buffer(
           const edm::silicon_cell_collection::const_view&,
           const detector_design_description::const_view&,
-         const detector_conditions_description::const_view&)>,
+          const detector_conditions_description::const_view&)>,
       public algorithm<edm::measurement_collection<default_algebra>::buffer(
           const edm::silicon_cell_collection::const_view&,
           const detector_design_description::const_view&,
@@ -89,7 +89,8 @@ class clusterization_algorithm
     edm::measurement_collection<default_algebra>::buffer operator()(
         const edm::silicon_cell_collection::const_view& cells,
         const detector_design_description::const_view& det_descr,
-        const detector_conditions_description::const_view& det_cond) const override;
+        const detector_conditions_description::const_view& det_cond)
+        const override;
 
     edm::measurement_collection<default_algebra>::buffer operator()(
         const edm::silicon_cell_collection::const_view& cells,

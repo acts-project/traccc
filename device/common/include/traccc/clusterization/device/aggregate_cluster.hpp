@@ -12,8 +12,8 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
-#include "traccc/geometry/detector_design_description.hpp"
 #include "traccc/geometry/detector_conditions_description.hpp"
+#include "traccc/geometry/detector_design_description.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>

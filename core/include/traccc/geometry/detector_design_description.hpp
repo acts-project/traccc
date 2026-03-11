@@ -52,7 +52,6 @@ class detector_design_description_interface : public BASE {
     TRACCC_HOST_DEVICE
     const auto& design_id() const { return BASE::template get<0>(); }
 
-
     /// Reference for local position calculation in X direction const
     ///
     /// The position of a detector element (pixel or strip) is calculated
@@ -130,12 +129,11 @@ class detector_design_description_interface : public BASE {
 
 };  // class silicon_detector_description_interface
 
-
 /// SoA container describing the detector module segmentation information
 using detector_design_description = vecmem::edm::container<
-    detector_design_description_interface,
-    vecmem::edm::type::vector<int>,
-    vecmem::edm::type::jagged_vector<scalar>, vecmem::edm::type::jagged_vector<scalar>,
+    detector_design_description_interface, vecmem::edm::type::vector<int>,
+    vecmem::edm::type::jagged_vector<scalar>,
+    vecmem::edm::type::jagged_vector<scalar>,
     vecmem::edm::type::vector<unsigned char>,
     vecmem::edm::type::vector<
         std::array<detray::dsize_type<default_algebra>, 2u>>>;

@@ -50,9 +50,7 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
                 }
                 return sizes;
             }(),
-            device_mr,
-            &host_mr,
-            vecmem::data::buffer_type::fixed_size};
+            device_mr, &host_mr, vecmem::data::buffer_type::fixed_size};
         copy.setup(det_descr_buffer)->wait();
         copy(vecmem::get_data(det_desc), det_descr_buffer)->wait();
         traccc::detector_conditions_description::buffer det_cond_buffer{

@@ -14,8 +14,8 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
-#include "traccc/geometry/detector_design_description.hpp"
 #include "traccc/geometry/detector_conditions_description.hpp"
+#include "traccc/geometry/detector_design_description.hpp"
 
 namespace traccc::device {
 

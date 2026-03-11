@@ -55,7 +55,8 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
      * $$\sigma^2(x_1, \ldots, x_n) = \sigma^2(x_1 - C, \ldots, x_n - C)$$
      */
     scalar totalWeight = 0.f;
-    point2 mean{0.f, 0.f}, var{0.f, 0.f}, offset{0.f, 0.f}, width{0.f, 0.f}, pitch{0.f, 0.f};
+    point2 mean{0.f, 0.f}, var{0.f, 0.f}, offset{0.f, 0.f}, width{0.f, 0.f},
+        pitch{0.f, 0.f};
 
     unsigned int min_channel0 = std::numeric_limits<unsigned int>::max();
     unsigned int max_channel0 = std::numeric_limits<unsigned int>::lowest();
@@ -63,12 +64,9 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
     unsigned int max_channel1 = std::numeric_limits<unsigned int>::lowest();
 
     const unsigned int module_idx = cells.module_index().at(cid + start);
-    
     const auto module_cd = det_cond.at(module_idx);
-    const unsigned int design_idx =
-        module_cd.module_to_design_id();
-    const auto module_dd =
-        det_desc.at(design_idx);
+    const unsigned int design_idx = module_cd.module_to_design_id();
+    const auto module_dd = det_desc.at(design_idx);
 
     const auto partition_size = static_cast<unsigned short>(end - start);
     unsigned int tmp_cluster_size = 0;
@@ -80,7 +78,7 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
     for (unsigned short j = cid; j < partition_size; j++) {
 
         const unsigned int pos = j + start;
-        const edm::silicon_cell cell = cells.at(pos);  
+        const edm::silicon_cell cell = cells.at(pos);
 
         /*
          * Terminate the process earlier if we have reached a cell sufficiently
@@ -158,7 +156,6 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
         }
     }
 
-
     int delta0 = max_channel0 - min_channel0;
     int delta1 = max_channel1 - min_channel1;
 
@@ -166,15 +163,15 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
     pitch[1] = width[1] / static_cast<scalar>(tmp_cluster_size);
 
     var = var + point2{pitch[0] * pitch[0] / static_cast<scalar>(12.),
-                       pitch[1] * pitch[1] / static_cast<scalar>(12.)};   
-                       
-    point2 diameter = { width[0] / static_cast<scalar>(delta0+1), width[1] / static_cast<scalar>(delta1+1) };
+                       pitch[1] * pitch[1] / static_cast<scalar>(12.)};
+
+    point2 diameter = {width[0] / static_cast<scalar>(delta0 + 1),
+                       width[1] / static_cast<scalar>(delta1 + 1)};
 
     /*
      * Fill output vector with calculated cluster properties
      */
-    out.local_position() =
-        mean + offset + module_cd.measurement_translation();
+    out.local_position() = mean + offset + module_cd.measurement_translation();
     out.local_variance() = var;
     out.surface_link() = module_cd.geometry_id();
     // Set a unique identifier for the measurement.
@@ -192,10 +189,11 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
                clustering_diameter_strategy::CHANNEL1) {
         out.diameter() = diameter[1];
     } else if (cfg.diameter_strategy == clustering_diameter_strategy::MAXIMUM) {
-        out.diameter() = std::max( diameter[0], diameter[1] );
+        out.diameter() = std::max(diameter[0], diameter[1]);
     } else if (cfg.diameter_strategy ==
                clustering_diameter_strategy::DIAGONAL) {
-        out.diameter() = math::sqrt(diameter[0] * diameter[0] + diameter[1] * diameter[1]);
+        out.diameter() =
+            math::sqrt(diameter[0] * diameter[0] + diameter[1] * diameter[1]);
     }
 }
 

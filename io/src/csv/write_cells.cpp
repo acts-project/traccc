@@ -49,7 +49,9 @@ void write_cells(std::string_view filename,
         const edm::silicon_cell cell = cells.at(i);
 
         // Write the cell info to the file.
-        ofile << ( use_acts_geometry_id ? det_cond.acts_geometry_id().at(cell.module_index()) : det_cond.geometry_id().at(cell.module_index()).value() )
+        ofile << (use_acts_geometry_id
+                      ? det_cond.acts_geometry_id().at(cell.module_index())
+                      : det_cond.geometry_id().at(cell.module_index()).value())
               << ",0," << cell.channel0() << ',' << cell.channel1() << ','
               << cell.time() << ',' << cell.activation() << '\n';
     }

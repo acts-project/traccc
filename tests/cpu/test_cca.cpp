@@ -29,9 +29,10 @@ vecmem::host_memory_resource resource;
 traccc::host::sparse_ccl_algorithm cc(resource);
 traccc::host::measurement_creation_algorithm mc(resource);
 
-cca_function_t f = [](const traccc::edm::silicon_cell_collection::host& cells,
-                      const traccc::detector_design_description::host& det_desc,
-                      const traccc::detector_conditions_description::host& det_cond)
+cca_function_t f =
+    [](const traccc::edm::silicon_cell_collection::host& cells,
+       const traccc::detector_design_description::host& det_desc,
+       const traccc::detector_conditions_description::host& det_cond)
     -> std::pair<
         std::map<traccc::geometry_id, traccc::edm::measurement_collection<
                                           traccc::default_algebra>::host>,
@@ -48,7 +49,8 @@ cca_function_t f = [](const traccc::edm::silicon_cell_collection::host& cells,
         vecmem::get_data(det_cond);
     const auto clusters = cc(cells_data);
     const auto clusters_data = vecmem::get_data(clusters);
-    auto measurements = mc(cells_data, clusters_data, det_desc_data, det_cond_data);
+    auto measurements =
+        mc(cells_data, clusters_data, det_desc_data, det_cond_data);
 
     for (std::size_t i = 0; i < measurements.size(); i++) {
         if (result.contains(measurements.at(i).surface_link().value()) ==

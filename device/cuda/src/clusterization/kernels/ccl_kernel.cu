@@ -49,10 +49,11 @@ __global__ void ccl_kernel(
     traccc::cuda::barrier barry_r;
     const details::thread_id1 thread_id;
 
-    device::ccl_kernel(
-        cfg, thread_id, cells_view, det_desc_view, det_cond_view, partition_start,
-        partition_end, outi, f_view, gf_view, f_backup_view, gf_backup_view,
-        adjc_backup_view, adjv_backup_view, backup_mutex, disjoint_set_view,
-        cluster_size_view, barry_r, measurements_view, cell_links);
+    device::ccl_kernel(cfg, thread_id, cells_view, det_desc_view, det_cond_view,
+                       partition_start, partition_end, outi, f_view, gf_view,
+                       f_backup_view, gf_backup_view, adjc_backup_view,
+                       adjv_backup_view, backup_mutex, disjoint_set_view,
+                       cluster_size_view, barry_r, measurements_view,
+                       cell_links);
 }
 }  // namespace traccc::cuda::kernels

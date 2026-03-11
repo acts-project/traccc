@@ -32,20 +32,20 @@ namespace traccc {
 traccc::conditions_config read_conditions_config(const nlohmann::json& json) {
     traccc::conditions_config result;
 
-    static const char* entries_key      = "entries";
-    static const char* binningdata_key  = "binningdata";
-    static const char* geometric        = "geometric";
-    static const char* segmentation     = "segmentation";
+    static const char* entries_key = "entries";
+    static const char* binningdata_key = "binningdata";
+    static const char* geometric = "geometric";
+    static const char* segmentation = "segmentation";
 
     std::vector<traccc::conditions_config::InputElement> elements;
 
-    for(const auto& entry : json[entries_key]) {
-        
+    for (const auto& entry : json[entries_key]) {
+
         Acts::GeometryIdentifier geoId;
         Acts::GeometryIdentifier::Value null(0u);
         geoId = geoId.withVolume(entry.value("volume", null))
-              .withLayer(entry.value("layer", null))
-              .withSensitive(entry.value("sensitive", null));
+                    .withLayer(entry.value("layer", null))
+                    .withSensitive(entry.value("sensitive", null));
 
         const auto& json_val = entry["value"];
         const auto& json_geom = json_val[geometric];
@@ -54,27 +54,20 @@ traccc::conditions_config read_conditions_config(const nlohmann::json& json) {
         vector2 shift = {0.f, 0.f};
         scalar threshold = 0.f;
 
-        if (json_binning.contains("shift"))
-        {
+        if (json_binning.contains("shift")) {
             shift[0] = json_binning["shift"][0].get<float>();
-            shift[1] = json_binning["shift"][1].get<float>(); 
+            shift[1] = json_binning["shift"][1].get<float>();
         }
 
-        if(json_geom.contains("threshold"))
-        {
+        if (json_geom.contains("threshold")) {
             threshold = json_geom["threshold"].get<float>();
         }
 
         elements.push_back({geoId, {threshold, shift}});
-              
     }
 
     return traccc::conditions_config(std::move(elements));
-
 }
-
-
-
 
 namespace io::json {
 
@@ -91,9 +84,7 @@ conditions_config read_conditions_config(std::string_view filename) {
 
     // Construct the object from the JSON configuration.
     return traccc::read_conditions_config(json);
-    
-}    
-
+}
 
 }  // namespace io::json
 }  // namespace traccc

@@ -34,8 +34,8 @@ void read_spacepoints(
 
     // Read all measurements.
     const std::vector<measurement_id_type> new_idx_map =
-        read_measurements(measurements, meas_filename, detector,
-                          det_desc, det_cond, sort_measurements);
+        read_measurements(measurements, meas_filename, detector, det_desc,
+                          det_cond, sort_measurements);
 
     // Measurement hit id reader
     auto mhid_reader =

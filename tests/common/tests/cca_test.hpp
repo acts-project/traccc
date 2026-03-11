@@ -160,13 +160,14 @@ class ConnectedComponentAnalysisTests
             det_cond.acts_geometry_id()[i] = i;
             det_cond.measurement_translation()[i] = {0.f, 0.f};
 
-            std::vector<float, std::pmr::polymorphic_allocator<float>> bin_edges_x(10001), bin_edges_y(10001);
+            std::vector<float, std::pmr::polymorphic_allocator<float>>
+                bin_edges_x(10001), bin_edges_y(10001);
             std::iota(bin_edges_x.begin(), bin_edges_x.end(), -0.5f);
             std::iota(bin_edges_y.begin(), bin_edges_y.end(), -0.5f);
             det_desc.bin_edges_x()[i] = std::move(bin_edges_x);
             det_desc.bin_edges_y()[i] = std::move(bin_edges_y);
             det_desc.dimensions()[i] = 2;
-            det_desc.subspace()[i]  = {0, 1};
+            det_desc.subspace()[i] = {0, 1};
             det_desc.design_id()[i] = static_cast<int>(i);
         }
 
@@ -200,7 +201,7 @@ class ConnectedComponentAnalysisTests
 
             std::size_t meas_idx = static_cast<std::size_t>(-1);
             for (std::size_t i = 0; i < meas.size(); ++i) {
-                
+
                 if ((std::abs(meas.at(i).local_position()[0] -
                               io_truth.channel0) < tol) &&
                     (std::abs(meas.at(i).local_position()[1] -
@@ -209,10 +210,11 @@ class ConnectedComponentAnalysisTests
                     break;
                 }
             }
-            ASSERT_TRUE(meas_idx < meas.size()) << "measurement not found " << meas.size() << " " << meas_idx;
+            ASSERT_TRUE(meas_idx < meas.size())
+                << "measurement not found " << meas.size() << " " << meas_idx;
 
             const auto match = meas.at(meas_idx);
-            EXPECT_NEAR(match.local_position()[0], io_truth.channel0, tol) << "string";
+            EXPECT_NEAR(match.local_position()[0], io_truth.channel0, tol);
             EXPECT_NEAR(match.local_position()[1], io_truth.channel1, tol);
             EXPECT_NEAR(match.local_variance()[0],
                         io_truth.variance0 + var_adjustment, tol);

@@ -11,11 +11,8 @@
 #include "traccc/io/data_format.hpp"
 
 // Project include(s).
-#include "traccc/geometry/detector_design_description.hpp"
 #include "traccc/geometry/detector_conditions_description.hpp"
-
-// ACTS includes
-#include "Acts/Geometry/GeometryIdentifier.hpp"
+#include "traccc/geometry/detector_design_description.hpp"
 
 // System include(s).
 #include <cstdint>
@@ -36,8 +33,7 @@ namespace traccc::io {
 void read_detector_description(
     detector_design_description::host& det_desc,
     detector_conditions_description::host& det_cond,
-    std::string_view geometry_file,
-    std::string_view digitization_file,
+    std::string_view geometry_file, std::string_view digitization_file,
     data_format geometry_format = data_format::json,
     data_format digitization_format = data_format::json);
 

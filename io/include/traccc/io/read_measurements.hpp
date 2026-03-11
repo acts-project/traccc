@@ -8,8 +8,8 @@
 #pragma once
 
 // Local include(s).
-#include "traccc/geometry/detector_design_description.hpp"
 #include "traccc/geometry/detector_conditions_description.hpp"
+#include "traccc/geometry/detector_design_description.hpp"
 #include "traccc/io/data_format.hpp"
 
 // Project include(s).
@@ -39,9 +39,8 @@ std::vector<measurement_id_type> read_measurements(
     edm::measurement_collection<default_algebra>::host& measurements,
     std::size_t event, std::string_view directory,
     const traccc::host_detector* detector = nullptr,
-    const traccc::detector_design_description::host* det_desc =
-        nullptr,
-    const traccc::detector_conditions_description::host* det_cond = nullptr,    
+    const traccc::detector_design_description::host* det_desc = nullptr,
+    const traccc::detector_conditions_description::host* det_cond = nullptr,
     const bool sort_measurements = true, data_format format = data_format::csv);
 
 /// Read measurement data into memory
@@ -56,10 +55,8 @@ std::vector<measurement_id_type> read_measurements(
 std::vector<measurement_id_type> read_measurements(
     edm::measurement_collection<default_algebra>::host& measurements,
     std::string_view filename, const traccc::host_detector* detector = nullptr,
-    const traccc::detector_design_description::host* det_desc =
-        nullptr,
-    const traccc::detector_conditions_description::host* det_cond =
-        nullptr,    
+    const traccc::detector_design_description::host* det_desc = nullptr,
+    const traccc::detector_conditions_description::host* det_cond = nullptr,
     const bool sort_measurements = true, data_format format = data_format::csv);
 
 }  // namespace traccc::io

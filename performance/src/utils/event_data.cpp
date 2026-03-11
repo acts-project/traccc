@@ -304,12 +304,13 @@ void event_data::fill_cca_result(
         for (const unsigned int cell_idx : cluster.cell_indices()) {
 
             const auto cell = cells.at(cell_idx);
-            io::csv::cell iocell{det_cond.acts_geometry_id().at(cell.module_index()),
-                                 0u,
-                                 cell.channel0(),
-                                 cell.channel1(),
-                                 static_cast<float>(cell.time()),
-                                 static_cast<float>(cell.activation())};
+            io::csv::cell iocell{
+                det_cond.acts_geometry_id().at(cell.module_index()),
+                0u,
+                cell.channel0(),
+                cell.channel1(),
+                static_cast<float>(cell.time()),
+                static_cast<float>(cell.activation())};
 
             iocells.push_back(iocell);
         }

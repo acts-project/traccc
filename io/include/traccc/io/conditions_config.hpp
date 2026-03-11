@@ -6,12 +6,11 @@
  */
 
 #pragma once
-//Project includes
+// Project includes
 #include "traccc/definitions/primitives.hpp"
 
-//Acts includes
+// Acts includes
 #include <Acts/Geometry/GeometryHierarchyMap.hpp>
-
 #include <cstdint>
 #include <unordered_map>
 #include <vector>
@@ -19,13 +18,11 @@
 namespace traccc {
 
 /// Type describing the conditions configuration of a detector module
-struct conditions_data_config{
+struct conditions_data_config {
     float threshold = 0.f;
     vector2 shift{0.f, 0.f};
 };
 
-using conditions_config = 
-    Acts::GeometryHierarchyMap<conditions_data_config>;  
+using conditions_config = Acts::GeometryHierarchyMap<conditions_data_config>;
 
-}
- // namespace traccc
+}  // namespace traccc

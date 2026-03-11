@@ -44,10 +44,10 @@ std::vector<measurement_id_type> read_measurements(
 
     if (det_cond) {
 
-        for (std::size_t i = 0; i < det_cond->geometry_id().size();
-             ++i) {
+        for (std::size_t i = 0; i < det_cond->geometry_id().size(); ++i) {
             geometry_id_to_detector_description_index
-                [det_cond->geometry_id().at(i).value()] = det_cond->module_to_design_id().at(i);
+                [det_cond->geometry_id().at(i).value()] =
+                    det_cond->module_to_design_id().at(i);
         }
     }
 
@@ -61,9 +61,8 @@ std::vector<measurement_id_type> read_measurements(
         make_measurement_edm(
             iomeas, meas, (detector == nullptr ? nullptr : &acts_to_detray_id),
             det_desc,
-            (det_cond == nullptr
-                 ? nullptr
-                 : &geometry_id_to_detector_description_index));
+            (det_cond == nullptr ? nullptr
+                                 : &geometry_id_to_detector_description_index));
     }
 
     // Contains the index of the new position at the entry of the old position

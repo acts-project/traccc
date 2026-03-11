@@ -34,8 +34,8 @@ int create_binaries(const traccc::opts::detector& detector_opts,
     traccc::detector_design_description::host det_descr{host_mr};
     traccc::detector_conditions_description::host det_cond{host_mr};
     traccc::io::read_detector_description(
-        det_descr, det_cond, detector_opts.detector_file, detector_opts.digitization_file,
-        traccc::data_format::json);
+        det_descr, det_cond, detector_opts.detector_file,
+        detector_opts.digitization_file, traccc::data_format::json);
 
     // Loop over events
     for (std::size_t event = input_opts.skip;
@@ -55,9 +55,8 @@ int create_binaries(const traccc::opts::detector& detector_opts,
             measurements{host_mr};
         traccc::edm::spacepoint_collection::host spacepoints{host_mr};
         traccc::io::read_spacepoints(spacepoints, measurements, event,
-                                     input_opts.directory, 
-                                     nullptr, nullptr, nullptr,
-                                     input_opts.format);
+                                     input_opts.directory, nullptr, nullptr,
+                                     nullptr, input_opts.format);
 
         // Write binary file(s)
         traccc::io::write(

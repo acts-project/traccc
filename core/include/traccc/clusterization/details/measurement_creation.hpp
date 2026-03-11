@@ -13,17 +13,17 @@
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/silicon_cluster_collection.hpp"
-#include "traccc/geometry/detector_design_description.hpp"
 #include "traccc/geometry/detector_conditions_description.hpp"
-
+#include "traccc/geometry/detector_design_description.hpp"
 
 namespace traccc::details {
 
 /// Function used for retrieving the cell weight based on the activation
-/// and the detector  module conditions. 
+/// and the detector  module conditions.
 template <typename TDesign>
 TRACCC_HOST_DEVICE inline scalar signal_cell_modelling(
-    scalar signal_in, const traccc::detector_conditions_description_interface<TDesign>&);
+    scalar signal_in,
+    const traccc::detector_conditions_description_interface<TDesign>&);
 
 /// Get the local position of a cell on a module
 ///
@@ -55,7 +55,7 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
     const edm::silicon_cluster<T>& cluster,
     const edm::silicon_cell_collection::const_device& cells,
     const traccc::detector_design_description_interface<TDesign>& module_dd,
-    const traccc::detector_conditions_description_interface<TCond>& module_cd, 
+    const traccc::detector_conditions_description_interface<TCond>& module_cd,
     point2& mean, point2& var, scalar& totalWeight, point2& pitch);
 
 /// Function used for calculating the properties of the cluster during
