@@ -98,9 +98,10 @@ void read_json_dd_impl(traccc::detector_design_description::host& det_desc,
         } else {
             auto digi_it = digi.find(acts_geom_id);
             if (digi_it != digi.end()) {
-                unsigned long idx = std::distance(digi.begin(), digi_it);
+                int idx =
+                    static_cast<int>(std::distance(digi.begin(), digi_it));
                 det_desc.subspace()[idx] = subspace;
-                module_to_design.push_back(static_cast<int>(idx));
+                module_to_design.push_back(idx);
             }
         }
 
