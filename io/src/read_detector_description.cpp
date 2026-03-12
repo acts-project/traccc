@@ -100,7 +100,7 @@ void read_json_dd_impl(traccc::detector_design_description::host& det_desc,
             if (digi_it != digi.end()) {
                 int idx =
                     static_cast<int>(std::distance(digi.begin(), digi_it));
-                det_desc.subspace()[idx] = subspace;
+                det_desc.subspace()[static_cast<unsigned long>(idx)] = subspace;
                 module_to_design.push_back(idx);
             }
         }
