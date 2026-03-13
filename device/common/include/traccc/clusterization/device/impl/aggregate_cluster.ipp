@@ -156,8 +156,8 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
         }
     }
 
-    assert(max_channel0 > min_channel0);
-    assert(max_channel1 > min_channel1);
+    assert(max_channel0 >= min_channel0);
+    assert(max_channel1 >= min_channel1);
     unsigned int delta0 = max_channel0 - min_channel0;
     unsigned int delta1 = max_channel1 - min_channel1;
 
