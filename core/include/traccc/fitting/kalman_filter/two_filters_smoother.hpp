@@ -24,7 +24,7 @@ template <typename algebra_t>
 struct two_filters_smoother {
 
     // Type declarations
-    using size_type = detray::dsize_type<algebra_t>;
+    using size_type = detray::dindex_type<algebra_t>;
     template <size_type ROWS, size_type COLS>
     using matrix_type = detray::dmatrix<algebra_t, ROWS, COLS>;
 
@@ -160,15 +160,14 @@ struct two_filters_smoother {
         // Eq (3.39) of "Pattern Recognition, Tracking and Vertex
         // Reconstruction in Particle Detectors"
         const matrix_type<D, D> R_smt =
-            V - H * algebra::matrix::transposed_product<false, true>(
-                        smoothed_cov, H);
+            V - H * matrix::transposed_product<false, true>(smoothed_cov, H);
 
         // Eq (3.40) of "Pattern Recognition, Tracking and Vertex
         // Reconstruction in Particle Detectors"
         assert(matrix::determinant(R_smt) != 0.f);
         const matrix_type<1, 1> chi2_smt =
-            algebra::matrix::transposed_product<true, false>(
-                residual_smt, matrix::inverse(R_smt)) *
+            matrix::transposed_product<true, false>(residual_smt,
+                                                    matrix::inverse(R_smt)) *
             residual_smt;
 
         const scalar chi2_smt_value{getter::element(chi2_smt, 0, 0)};
@@ -211,7 +210,7 @@ struct two_filters_smoother {
         const auto I_m = matrix::identity<matrix_type<D, D>>();
 
         const matrix_type<e_bound_size, D> projected_cov =
-            algebra::matrix::transposed_product<false, true>(predicted_cov, H);
+            matrix::transposed_product<false, true>(predicted_cov, H);
 
         const matrix_type<D, D> M = H * projected_cov + V;
 
@@ -271,10 +270,9 @@ struct two_filters_smoother {
         const matrix_type<D, D> R = (I_m - H * K) * V;
         // assert(matrix::determinant(R) != 0.f); // @TODO: This fails
         assert(std::isfinite(matrix::determinant(R)));
-        const matrix_type<1, 1> chi2 =
-            algebra::matrix::transposed_product<true, false>(
-                residual, matrix::inverse(R)) *
-            residual;
+        const matrix_type<1, 1> chi2 = matrix::transposed_product<true, false>(
+                                           residual, matrix::inverse(R)) *
+                                       residual;
 
         const scalar chi2_val{getter::element(chi2, 0, 0)};
 

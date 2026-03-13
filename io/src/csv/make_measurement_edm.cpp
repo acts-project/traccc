@@ -25,7 +25,7 @@ void make_measurement_edm(
         geometry_id_to_detector_description_index) {
 
     // Construct the measurement object.
-    std::array<detray::dsize_type<default_algebra>, 2u> indices{0u, 0u};
+    std::array<detray::dindex_type<default_algebra>, 2u> indices{0u, 0u};
     meas.dimensions() = 0u;
 
     // Local key is a 8 bit char and first and last bit are dummy value. 2 -

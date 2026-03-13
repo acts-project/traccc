@@ -74,7 +74,7 @@ struct measurement_smearer {
             iomeas.local_key = 6;
         }
 
-        std::array<detray::dsize_type<algebra_t>, 2u> indices{0u, 0u};
+        std::array<detray::dindex_type<algebra_t>, 2u> indices{0u, 0u};
         unsigned int meas_dim = 0u;
         for (unsigned int ipar = 0; ipar < 2u; ++ipar) {
             if (((iomeas.local_key) & (1 << (ipar + 1))) != 0) {
