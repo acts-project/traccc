@@ -131,7 +131,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     traccc::detector_conditions_description::host host_det_cond{host_mr};
     traccc::io::read_detector_description(
         host_det_descr, host_det_cond, detector_opts.detector_file,
-        detector_opts.digitization_file, traccc::data_format::json);
+        detector_opts.digitization_file, detector_opts.conditions_file,
+        traccc::data_format::json);
 
     // B field value
     const traccc::vector3 field_vec(seeding_opts);

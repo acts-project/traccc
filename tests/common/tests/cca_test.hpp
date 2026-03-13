@@ -154,7 +154,7 @@ class ConnectedComponentAnalysisTests
         det_desc.resize(NMODULES);
         det_cond.resize(NMODULES);
         for (std::size_t i = 0; i < NMODULES; ++i) {
-            det_cond.module_to_design_id()[i] = static_cast<int>(i);
+            det_cond.module_to_design_id()[i] = static_cast<unsigned int>(i);
             det_cond.geometry_id()[i] = detray::geometry::barcode{i};
             det_cond.threshold()[i] = 0.f;
             det_cond.acts_geometry_id()[i] = i;

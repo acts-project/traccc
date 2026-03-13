@@ -181,7 +181,8 @@ for NTHREAD in $(seq ${TRACCC_MIN_THREADS} ${TRACCC_THREAD_STEP} ${TRACCC_MAX_TH
             --detector-file="${TRACCC_INPUT_DIR}/ITk_DetectorBuilder_geometry.json" \
             --material-file="${TRACCC_INPUT_DIR}/ITk_detector_material.json"   \
             --grid-file="${TRACCC_INPUT_DIR}/ITk_DetectorBuilder_surface_grids.json" \
-            --digitization-file="${TRACCC_INPUT_DIR}/ITk_digitization_config_with_strips_with_shift_annulus_flip.json" \
+            --digitization-file="${TRACCC_INPUT_DIR}/ITk_digitization_config.json" \
+            --conditions-file="${TRACCC_INPUT_DIR}/ITk_conditions_config.json" \
             --read-bfield-from-file                                            \
             --bfield-file="${TRACCC_INPUT_DIR}/ITk_bfield.cvf"                 \
             --input-directory="${TRACCC_INPUT_DIR}/${EVTDIR}/"                 \

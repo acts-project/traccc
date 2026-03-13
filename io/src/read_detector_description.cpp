@@ -161,14 +161,16 @@ void read_detector_description(detector_design_description::host& det_desc,
                                detector_conditions_description::host& det_cond,
                                std::string_view geometry_file,
                                std::string_view digitization_file,
+                               std::string_view conditions_file,
                                const data_format geometry_format,
-                               const data_format digitization_format) {
+                               const data_format digitization_format,
+                               const data_format conditions_format) {
 
     // Read the digitization configuration.
     const digitization_config digi =
         read_digitization_config(digitization_file, digitization_format);
     const conditions_config cond =
-        read_conditions_config(digitization_file, digitization_format);
+        read_conditions_config(conditions_file, conditions_format);
     // Fill the detector description with the correct type of geometry file.
     switch (geometry_format) {
         case data_format::json:

@@ -95,7 +95,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
     traccc::detector_conditions_description::host det_cond{host_mr};
     traccc::io::read_detector_description(
         det_descr, det_cond, detector_opts.detector_file,
-        detector_opts.digitization_file, traccc::data_format::json);
+        detector_opts.digitization_file, detector_opts.conditions_file,
+        traccc::data_format::json);
     traccc::detector_design_description::data det_descr_data{
         vecmem::get_data(det_descr)};
     traccc::detector_conditions_description::data det_cond_data{

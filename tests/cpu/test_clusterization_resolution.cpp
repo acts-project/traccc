@@ -31,6 +31,7 @@ TEST_P(SurfaceBinningTests, Run) {
 
     std::string detector_file = std::get<0>(GetParam());
     std::string digi_config_file = std::get<1>(GetParam());
+    std::string det_cond_file = std::get<1>(GetParam());
     std::string data_dir = std::get<2>(GetParam());
     unsigned int event = std::get<3>(GetParam());
 
@@ -41,7 +42,8 @@ TEST_P(SurfaceBinningTests, Run) {
     traccc::detector_design_description::host det_desc{host_mr};
     traccc::detector_conditions_description::host det_cond{host_mr};
     traccc::io::read_detector_description(det_desc, det_cond, detector_file,
-                                          digi_config_file, traccc::json);
+                                          digi_config_file, det_cond_file,
+                                          traccc::json);
     const traccc::detector_design_description::data det_desc_data =
         vecmem::get_data(det_desc);
     const traccc::detector_conditions_description::data det_cond_data =
@@ -111,8 +113,10 @@ INSTANTIATE_TEST_SUITE_P(
         /* The commented event files does not pass the test
                 std::make_tuple("geometries/odd/odd-detray_geometry_detray.json",
                                 "geometries/odd/odd-digi-geometric-config.json",
+                                "geometries/odd/odd-digi-geometric-config.json",
                                 "odd/geant4_1muon_100GeV", 1),
                 std::make_tuple("geometries/odd/odd-detray_geometry_detray.json",
+                                "geometries/odd/odd-digi-geometric-config.json",
                                 "geometries/odd/odd-digi-geometric-config.json",
                                 "odd/geant4_1muon_100GeV", 2),
         */

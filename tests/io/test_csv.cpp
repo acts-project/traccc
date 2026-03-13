@@ -131,6 +131,7 @@ TEST_F(io, csv_write_odd_single_muon_cells) {
     traccc::detector_conditions_description::host det_cond{mr};
     traccc::io::read_detector_description(
         det_desc, det_cond, "geometries/odd/odd-detray_geometry_detray.json",
+        "geometries/odd/odd-digi-geometric-config.json",
         "geometries/odd/odd-digi-geometric-config.json");
 
     // Lambda comparing two cell collections.

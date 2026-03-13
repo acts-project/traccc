@@ -237,6 +237,7 @@ def main():
                     str(args.exec.resolve()),
                     "--input-directory=%s" % params["input"]["event_dir"],
                     "--digitization-file=%s" % params["input"]["digitization_file"],
+                    "--conditions-file=%s" % params["input"]["conditions_file"],
                     "--detector-file=%s" % params["input"]["detector_file"],
                     "--grid-file=%s" % params["input"]["grid_file"],
                     "--material-file=%s" % params["input"]["material_file"],

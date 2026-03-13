@@ -104,6 +104,8 @@ TEST(event_data, mock_data) {
         "geometries/odd/odd-detray_geometry_detray.json";
     const std::string digi_file =
         "geometries/odd/odd-digi-geometric-config.json";
+    const std::string cond_file =
+        "geometries/odd/odd-digi-geometric-config.json";
 
     // Read detector file
     detray::io::detector_reader_config reader_cfg{};
@@ -148,7 +150,8 @@ TEST(event_data, mock_data) {
     traccc::detector_design_description::host det_descr{resource};
     traccc::detector_conditions_description::host det_cond{resource};
     traccc::io::read_detector_description(det_descr, det_cond, det_file,
-                                          digi_file, traccc::data_format::json);
+                                          digi_file, cond_file,
+                                          traccc::data_format::json);
     traccc::detector_design_description::data det_descr_data{
         vecmem::get_data(det_descr)};
     traccc::detector_conditions_description::data det_cond_data{

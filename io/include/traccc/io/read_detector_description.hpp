@@ -26,15 +26,20 @@ namespace traccc::io {
 /// @param dd The detector design description object to set up.
 /// @param geometry_file The path to the geometry description file.
 /// @param digitization_file The path to the digitization configuration file.
+/// @param conditions_file The path to the conditions configuration file.
 /// @param geometry_format The format of the geometry description file.
 /// @param digitization_format The format of the digitization configuration
 ///                            file.
+/// @param conditions_format The format of the conditions configuration
+///                           file.
 ///
 void read_detector_description(
     detector_design_description::host& det_desc,
     detector_conditions_description::host& det_cond,
     std::string_view geometry_file, std::string_view digitization_file,
+    std::string_view conditions_file,
     data_format geometry_format = data_format::json,
-    data_format digitization_format = data_format::json);
+    data_format digitization_format = data_format::json,
+    data_format conditions_format = data_format::json);
 
 }  // namespace traccc::io

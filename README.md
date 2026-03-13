@@ -260,6 +260,7 @@ cmake --build build/
    --material-file=geometries/odd/odd-detray_material_detray.json \
    --grid-file=geometries/odd/odd-detray_surface_grids_detray.json \
    --digitization-file=geometries/odd/odd-digi-geometric-config.json \
+   --conditions-file=geomteries/odd/odd-digi-geometric-config.json \
    --use-acts-geom-source --input-directory=odd/geant4_10muon_10GeV/ \
    --input-events=10
 
@@ -268,6 +269,7 @@ cmake --build build/
    --material-file=geometries/odd/odd-detray_material_detray.json \
    --grid-file=geometries/odd/odd-detray_surface_grids_detray.json \
    --digitization-file=geometries/odd/odd-digi-geometric-config.json \
+   --conditions-file=geometries/odd/odd-digi-geometric-config.json \
    --use-acts-geom-source --input-directory=odd/geant4_10muon_10GeV/ \
    --input-events=10 --processed-events=1000 --threads=1
 ```

@@ -35,7 +35,8 @@ int create_binaries(const traccc::opts::detector& detector_opts,
     traccc::detector_conditions_description::host det_cond{host_mr};
     traccc::io::read_detector_description(
         det_descr, det_cond, detector_opts.detector_file,
-        detector_opts.digitization_file, traccc::data_format::json);
+        detector_opts.digitization_file, detector_opts.conditions_file,
+        traccc::data_format::json);
 
     // Loop over events
     for (std::size_t event = input_opts.skip;
