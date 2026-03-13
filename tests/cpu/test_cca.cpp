@@ -9,6 +9,7 @@
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
+#include "traccc/geometry/detector_conditions_description.hpp"
 #include "traccc/geometry/detector_design_description.hpp"
 
 // Test include(s).

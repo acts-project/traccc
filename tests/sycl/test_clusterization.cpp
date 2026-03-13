@@ -8,7 +8,8 @@
 // Project include(s).
 #include "tests/cca_test.hpp"
 #include "traccc/definitions/common.hpp"
-#include "traccc/geometry/silicon_detector_description.hpp"
+#include "traccc/geometry/detector_conditions_description.hpp"
+#include "traccc/geometry/detector_design_description.hpp"
 #include "traccc/performance/collection_comparator.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 
@@ -48,21 +49,24 @@ TEST(SYCLClustering, SingleModule) {
     cells.push_back({6u, 6u, 1.f, 0.f, 0u});
 
     // Create a dummy detector description.
-    traccc::silicon_detector_description::host dd{shared_mr};
-    dd.resize(1u);
-    dd.reference_x()[0] = 0.f;
-    dd.reference_y()[0] = 0.f;
-    dd.pitch_x()[0] = 1.f;
-    dd.pitch_y()[0] = 1.f;
-    dd.dimensions()[0] = 2;
-    dd.geometry_id()[0] = detray::geometry::barcode{0u};
+    traccc::detector_design_description::host det_desc{shared_mr};
+    traccc::detector_conditions_description::host det_cond{shared_mr};
+    det_desc.resize(1u);
+    det_cond.resize(1u);
+    det_desc.bin_edges_x()[0] = {0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f};
+    det_desc.bin_edges_y()[0] = {0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f};
+    det_desc.dimensions()[0] = 2;
+    det_cond.geometry_id()[0] = detray::geometry::barcode{0u};
+    det_cond.threshold()[0] = 0.f;
+    det_cond.measurement_translation()[0] = {0.f, 0.f};
 
     // Run Clusterization
     traccc::sycl::clusterization_algorithm ca_sycl(mr, copy, traccc_queue,
                                                    default_ccl_test_config());
 
     auto measurements_buffer =
-        ca_sycl(vecmem::get_data(cells), vecmem::get_data(dd));
+        ca_sycl(vecmem::get_data(cells), vecmem::get_data(det_desc),
+                vecmem::get_data(det_cond));
 
     edm::measurement_collection<default_algebra>::device measurements(
         measurements_buffer);

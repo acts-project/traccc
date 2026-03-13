@@ -78,7 +78,7 @@ void clusterization_algorithm::ccl_kernel(
             h.parallel_for<kernels::ccl_kernel>(
                 cclKernelRange,
                 [shared_uint, shared_idx, cells = payload.cells,
-                 det_descr = payload.det_descr,
+                 det_descr = payload.det_descr, det_cond = payload.det_cond,
                  measurements = payload.measurements,
                  cell_links = payload.cell_links, f_backup = payload.f_backup,
                  gf_backup = payload.gf_backup,
@@ -111,11 +111,11 @@ void clusterization_algorithm::ccl_kernel(
 
                     // Run the algorithm for this thread.
                     device::ccl_kernel(config, thread_id, cells, det_descr,
-                                       partition_start, partition_end, outi,
-                                       f_view, gf_view, f_backup, gf_backup,
-                                       adjc_backup, adjv_backup, mutex,
-                                       disjoint_set, cluster_sizes, barrier,
-                                       measurements, cell_links);
+                                       det_cond, partition_start, partition_end,
+                                       outi, f_view, gf_view, f_backup,
+                                       gf_backup, adjc_backup, adjv_backup,
+                                       mutex, disjoint_set, cluster_sizes,
+                                       barrier, measurements, cell_links);
                 });
         })
         .wait_and_throw();

@@ -10,7 +10,8 @@
 
 // Project include(s).
 #include "traccc/clusterization/clustering_config.hpp"
-#include "traccc/geometry/silicon_detector_description.hpp"
+#include "traccc/geometry/detector_conditions_description.hpp"
+#include "traccc/geometry/detector_design_description.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 
 // VecMem include(s).
@@ -29,7 +30,8 @@ vecmem::host_memory_resource host_mr;
 cca_function_t get_f_with(traccc::clustering_config cfg) {
     return
         [cfg](const traccc::edm::silicon_cell_collection::host& cells,
-              const traccc::silicon_detector_description::host& dd)
+              const traccc::detector_design_description::host& det_desc,
+              const traccc::detector_conditions_description::host& det_cond)
             -> std::pair<
                 std::map<traccc::geometry_id,
                          traccc::edm::measurement_collection<
@@ -47,16 +49,27 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
             traccc::sycl::clusterization_algorithm cc({device_mr, &host_mr},
                                                       copy, traccc_queue, cfg);
 
-            traccc::silicon_detector_description::buffer dd_buffer{
+            traccc::detector_design_description::buffer det_descr_buffer{
+                [&]() {
+                    std::vector<unsigned int> sizes(det_desc.size());
+                    for (std::size_t i = 0; i < det_desc.size(); ++i) {
+                        sizes[i] = static_cast<unsigned int>(
+                            det_desc.bin_edges_x().at(i).size());
+                    }
+                    return sizes;
+                }(),
+                device_mr, &host_mr, vecmem::data::buffer_type::fixed_size};
+            copy.setup(det_descr_buffer)->wait();
+            copy(vecmem::get_data(det_desc), det_descr_buffer)->wait();
+            traccc::detector_conditions_description::buffer det_cond_buffer{
                 static_cast<
-                    traccc::silicon_detector_description::buffer::size_type>(
-                    dd.size()),
+                    traccc::detector_conditions_description::buffer::size_type>(
+                    det_cond.size()),
                 device_mr};
-            copy.setup(dd_buffer)->ignore();
-            copy(vecmem::get_data(dd), dd_buffer,
+            copy.setup(det_cond_buffer)->ignore();
+            copy(vecmem::get_data(det_cond), det_cond_buffer,
                  vecmem::copy::type::host_to_device)
-                ->wait();
-
+                ->ignore();
             traccc::edm::silicon_cell_collection::buffer cells_buffer{
                 static_cast<
                     traccc::edm::silicon_cell_collection::buffer::size_type>(
@@ -66,7 +79,7 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
             copy(vecmem::get_data(cells), cells_buffer)->wait();
 
             auto [measurements_buffer, cluster_buffer] =
-                cc(cells_buffer, dd_buffer,
+                cc(cells_buffer, det_descr_buffer, det_cond_buffer,
                    traccc::device::clustering_keep_disjoint_set{});
             traccc::edm::measurement_collection<traccc::default_algebra>::host
                 measurements{host_mr};

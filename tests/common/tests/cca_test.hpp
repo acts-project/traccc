@@ -164,11 +164,8 @@ class ConnectedComponentAnalysisTests
                 bin_edges_x(10001), bin_edges_y(10001);
             std::iota(bin_edges_x.begin(), bin_edges_x.end(), -0.5f);
             std::iota(bin_edges_y.begin(), bin_edges_y.end(), -0.5f);
-            det_desc.bin_edges_x().back().assign(bin_edges_x.begin(),
-                                                 bin_edges_x.end());
-
-            det_desc.bin_edges_y().back().assign(bin_edges_y.begin(),
-                                                 bin_edges_y.end());
+            det_desc.bin_edges_x().at(i) = bin_edges_x;
+            det_desc.bin_edges_y().at(i) = bin_edges_y;
             det_desc.dimensions()[i] = 2;
             det_desc.subspace()[i] = {0, 1};
             det_desc.design_id()[i] = static_cast<int>(i);
