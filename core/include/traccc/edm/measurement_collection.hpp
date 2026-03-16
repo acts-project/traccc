@@ -217,7 +217,7 @@ using measurement_collection =
                            vecmem::edm::type::vector<detray::geometry::barcode>,
                            // subspace
                            vecmem::edm::type::vector<std::array<
-                               detray::dsize_type<default_algebra>, 2u>>,
+                               detray::dindex_type<default_algebra>, 2u>>,
                            // cluster_index
                            vecmem::edm::type::vector<unsigned int>>;
 

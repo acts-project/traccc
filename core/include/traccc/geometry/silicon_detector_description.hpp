@@ -242,6 +242,6 @@ using silicon_detector_description = vecmem::edm::container<
     vecmem::edm::type::vector<unsigned char>,
     vecmem::edm::type::vector<vector2>,
     vecmem::edm::type::vector<
-        std::array<detray::dsize_type<default_algebra>, 2u>>>;
+        std::array<detray::dindex_type<default_algebra>, 2u>>>;
 
 }  // namespace traccc

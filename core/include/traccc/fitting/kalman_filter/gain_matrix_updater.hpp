@@ -25,7 +25,7 @@ template <typename algebra_t>
 struct gain_matrix_updater {
 
     // Type declarations
-    using size_type = detray::dsize_type<algebra_t>;
+    using size_type = detray::dindex_type<algebra_t>;
     template <size_type ROWS, size_type COLS>
     using matrix_type = detray::dmatrix<algebra_t, ROWS, COLS>;
     using bound_vector_type = traccc::bound_vector<algebra_t>;
@@ -114,7 +114,7 @@ struct gain_matrix_updater {
                                                         H * predicted_vec);
 
         const matrix_type<e_bound_size, D> projected_cov =
-            algebra::matrix::transposed_product<false, true>(predicted_cov, H);
+            matrix::transposed_product<false, true>(predicted_cov, H);
 
         const matrix_type<D, D> M = H * projected_cov + V;
 
@@ -168,10 +168,9 @@ struct gain_matrix_updater {
 
         // Calculate the chi square
         const matrix_type<D, D> R = (I_m - H * K) * V;
-        const matrix_type<1, 1> chi2 =
-            algebra::matrix::transposed_product<true, false>(
-                residual, matrix::inverse(R)) *
-            residual;
+        const matrix_type<1, 1> chi2 = matrix::transposed_product<true, false>(
+                                           residual, matrix::inverse(R)) *
+                                       residual;
 
         const scalar chi2_val{getter::element(chi2, 0, 0)};
 

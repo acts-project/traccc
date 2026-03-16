@@ -9,7 +9,7 @@
 #pragma once
 
 // Detray include(s).
-#include <detray/plugins/algebra/array_definitions.hpp>
+#include <algebra/array.hpp>
 
 // VecMem include(s).
 #include <vecmem/containers/jagged_vector.hpp>
@@ -41,8 +41,8 @@ using dmap = std::map<key_type, value_type>;
 template <class... types>
 using dtuple = std::tuple<types...>;
 
-using algebra::cmath::operator*;
-using algebra::cmath::operator-;
-using algebra::cmath::operator+;
+using detray::algebra::array::operator*;
+using detray::algebra::array::operator-;
+using detray::algebra::array::operator+;
 
 }  // namespace traccc

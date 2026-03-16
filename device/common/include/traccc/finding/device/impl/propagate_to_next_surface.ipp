@@ -12,7 +12,6 @@
 #include "traccc/utils/particle.hpp"
 
 // Detray include(s).
-#include <detray/plugins/algebra/array_definitions.hpp>
 #include <detray/propagator/constrained_step.hpp>
 #include <detray/utils/tuple_helpers.hpp>
 
