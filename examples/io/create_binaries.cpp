@@ -49,7 +49,9 @@ int create_binaries(const traccc::opts::detector& detector_opts,
 
         // Write binary file
         traccc::io::write(event, output_opts.directory,
-                          traccc::data_format::binary, vecmem::get_data(cells));
+                          traccc::data_format::binary, vecmem::get_data(cells),
+                          vecmem::get_data(det_descr),
+                          vecmem::get_data(det_cond));
 
         // Read the measurements and hits from the relevant event file
         traccc::edm::measurement_collection<traccc::default_algebra>::host

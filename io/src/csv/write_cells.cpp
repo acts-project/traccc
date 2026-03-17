@@ -22,8 +22,9 @@ void write_cells(std::string_view filename,
 
     // Make sure that a valid detector description would've been given to the
     // function.
-    if (dd_view.capacity() == 0u) {
-        throw std::invalid_argument("Detector description must be provided");
+    if (dd_view.capacity() == 0u || cd_view.capacity() == 0u) {
+        throw std::invalid_argument(
+            "Valid detector description must be provided");
     }
 
     // Open the file for writing.

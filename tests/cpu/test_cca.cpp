@@ -48,7 +48,7 @@ cca_function_t f =
         vecmem::get_data(det_desc);
     const traccc::detector_conditions_description::const_data det_cond_data =
         vecmem::get_data(det_cond);
-    const auto clusters = cc(cells_data);
+    const auto clusters = cc(cells_data, det_cond_data);
     const auto clusters_data = vecmem::get_data(clusters);
     auto measurements =
         mc(cells_data, clusters_data, det_desc_data, det_cond_data);

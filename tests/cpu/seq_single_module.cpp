@@ -68,7 +68,7 @@ TEST(algorithms, seq_single_module) {
     }
 
     auto cells_data = vecmem::get_data(cells);
-    auto clusters = cc(cells_data);
+    auto clusters = cc(cells_data, vecmem::get_data(det_cond));
     EXPECT_EQ(clusters.size(), 4u);
 
     auto clusters_data = vecmem::get_data(clusters);

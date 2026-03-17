@@ -25,21 +25,23 @@ sparse_ccl_algorithm::sparse_ccl_algorithm(vecmem::memory_resource& mr,
     : messaging(std::move(logger)), m_mr(mr) {}
 
 sparse_ccl_algorithm::output_type sparse_ccl_algorithm::operator()(
-    const edm::silicon_cell_collection::const_view& cells_view) const {
+    const edm::silicon_cell_collection::const_view& cells_view,
+    const detector_conditions_description::const_view& det_cond_view) const {
 
     // Construct the device view of the cells.
     const edm::silicon_cell_collection::const_device cells{cells_view};
+    const detector_conditions_description::const_device det_cond{det_cond_view};
 
     // Run some sanity checks on it.
     assert(is_contiguous_on(cell_module_projection(), cells));
     assert(is_ordered_on(channel0_major_cell_order_relation(), cells));
 
     // Run SparseCCL to fill CCL indices.
-    vecmem::vector<unsigned int> cluster_indices{cells.size(), &(m_mr.get())};
-    vecmem::device_vector<unsigned int> cluster_indices_device{
+    vecmem::vector<int> cluster_indices{cells.size(), &(m_mr.get())};
+    vecmem::device_vector<int> cluster_indices_device{
         vecmem::get_data(cluster_indices)};
     const unsigned int num_clusters =
-        details::sparse_ccl(cells, cluster_indices_device);
+        details::sparse_ccl(cells, cluster_indices_device, det_cond);
 
     // Create the result container.
     output_type clusters{m_mr.get()};

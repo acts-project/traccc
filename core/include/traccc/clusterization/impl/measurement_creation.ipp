@@ -62,34 +62,32 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
         const scalar weight =
             signal_cell_modelling(cell.activation(), module_cd);
 
-        // Only consider cells over a minimum threshold.
-        if (weight > module_cd.threshold()) {
+        // Check cell is over a minimum threshold.
+        assert(weight >= module_cd.threshold());
 
-            // Update all output properties with this cell.
-            totalWeight += weight;
-            scalar weight_factor = weight / totalWeight;
+        // Update all output properties with this cell.
+        totalWeight += weight;
+        scalar weight_factor = weight / totalWeight;
 
-            point2 cell_width = {0.f, 0.f};
-            point2 cell_position =
-                position_from_cell(cell, module_dd, &cell_width);
-            width[0] += cell_width[0];
-            width[1] += cell_width[1];
-            if (!first_processed) {
-                offset = cell_position;
-                first_processed = true;
-            }
-
-            cell_position = cell_position - offset;
-
-            const point2 diff_old = cell_position - mean;
-            mean = mean + diff_old * weight_factor;
-            const point2 diff_new = cell_position - mean;
-
-            var[0] = (1.f - weight_factor) * var[0] +
-                     weight_factor * (diff_old[0] * diff_new[0]);
-            var[1] = (1.f - weight_factor) * var[1] +
-                     weight_factor * (diff_old[1] * diff_new[1]);
+        point2 cell_width = {0.f, 0.f};
+        point2 cell_position = position_from_cell(cell, module_dd, &cell_width);
+        width[0] += cell_width[0];
+        width[1] += cell_width[1];
+        if (!first_processed) {
+            offset = cell_position;
+            first_processed = true;
         }
+
+        cell_position = cell_position - offset;
+
+        const point2 diff_old = cell_position - mean;
+        mean = mean + diff_old * weight_factor;
+        const point2 diff_new = cell_position - mean;
+
+        var[0] = (1.f - weight_factor) * var[0] +
+                 weight_factor * (diff_old[0] * diff_new[0]);
+        var[1] = (1.f - weight_factor) * var[1] +
+                 weight_factor * (diff_old[1] * diff_new[1]);
     }
 
     pitch[0] = width[0] / static_cast<scalar>(cluster.cell_indices().size());
@@ -141,7 +139,6 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
     point2 mean{0.f, 0.f}, var{0.f, 0.f}, pitch{0.f, 0.f};
     calc_cluster_properties(cluster, cells, module_dd, module_cd, mean, var,
                             totalWeight, pitch);
-
     assert(totalWeight > 0.f);
 
     // Fill the measurement object.

@@ -228,7 +228,8 @@ int seq_run(const traccc::opts::input_data& input_opts,
                 traccc::performance::timer timer{"Clusterization",
                                                  elapsedTimes};
 
-                clusters_per_event = cc(vecmem::get_data(cells_per_event));
+                clusters_per_event = cc(vecmem::get_data(cells_per_event),
+                                        vecmem::get_data(det_cond));
                 measurements_per_event =
                     mc(vecmem::get_data(cells_per_event),
                        vecmem::get_data(clusters_per_event), det_descr_data,

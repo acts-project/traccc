@@ -166,7 +166,7 @@ TEST(event_data, mock_data) {
                            &det_cond, traccc::data_format::csv);
     const auto cells_view = vecmem::get_data(cells);
 
-    auto clusters = cc(cells_view);
+    auto clusters = cc(cells_view, det_cond_data);
     auto measurements = mc(cells_view, vecmem::get_data(clusters),
                            det_descr_data, det_cond_data);
 

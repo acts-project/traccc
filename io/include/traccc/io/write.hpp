@@ -39,8 +39,8 @@ namespace traccc::io {
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
            traccc::edm::silicon_cell_collection::const_view cells,
-           traccc::detector_design_description::const_view dd = {},
-           traccc::detector_conditions_description::const_view cd = {},
+           traccc::detector_design_description::const_view dd,
+           traccc::detector_conditions_description::const_view cd,
            bool use_acts_geometry_id = true);
 
 /// Function for hit file writing

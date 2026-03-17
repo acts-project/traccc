@@ -10,6 +10,7 @@
 // Library include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
+#include "traccc/geometry/detector_conditions_description.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>
@@ -73,7 +74,8 @@ TRACCC_HOST_DEVICE inline bool is_far_enough(const edm::silicon_cell<T1>& a,
 ///
 TRACCC_HOST_DEVICE inline unsigned int sparse_ccl(
     const edm::silicon_cell_collection::const_device& cells,
-    vecmem::device_vector<unsigned int>& labels);
+    vecmem::device_vector<unsigned int>& labels,
+    const detector_conditions_description::const_device& det_cond);
 
 }  // namespace traccc::details
 

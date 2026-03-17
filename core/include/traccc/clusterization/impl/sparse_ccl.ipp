@@ -13,20 +13,19 @@
 namespace traccc::details {
 
 TRACCC_HOST_DEVICE inline unsigned int find_root(
-    const vecmem::device_vector<unsigned int>& labels, unsigned int e) {
+    const vecmem::device_vector<int>& labels, unsigned int e) {
 
-    unsigned int r = e;
-    assert(r < labels.size());
+    int r = e;
+    assert(r < static_cast<int>(labels.size()));
     while (labels[r] != r) {
         r = labels[r];
-        assert(r < labels.size());
+        assert(r < static_cast<int>(labels.size()));
     }
     return r;
 }
 
 TRACCC_HOST_DEVICE inline unsigned int make_union(
-    vecmem::device_vector<unsigned int>& labels, unsigned int e1,
-    unsigned int e2) {
+    vecmem::device_vector<int>& labels, unsigned int e1, unsigned int e2) {
 
     unsigned int e;
     if (e1 < e2) {
@@ -62,7 +61,8 @@ TRACCC_HOST_DEVICE inline bool is_far_enough(const edm::silicon_cell<T1>& a,
 
 TRACCC_HOST_DEVICE inline unsigned int sparse_ccl(
     const edm::silicon_cell_collection::const_device& cells,
-    vecmem::device_vector<unsigned int>& labels) {
+    vecmem::device_vector<int>& labels,
+    const detector_conditions_description::const_device& det_cond) {
 
     unsigned int nlabels = 0;
 
@@ -72,26 +72,42 @@ TRACCC_HOST_DEVICE inline unsigned int sparse_ccl(
     // first scan: pixel association
     unsigned int start_j = 0;
     for (unsigned int i = 0; i < n_cells; ++i) {
+        auto reference_cell = cells.at(i);
+        const unsigned int module_idx_ref = reference_cell.module_index();
+        const auto module_cd_ref = det_cond.at(module_idx_ref);
+        if (reference_cell.activation() < module_cd_ref.threshold()) {
+            // If the cell is not active, we can skip it, as it cannot be part
+            // of any cluster.
+            labels[i] = -1;
+            continue;
+        }
         labels[i] = i;
         unsigned int ai = i;
         for (unsigned int j = start_j; j < i; ++j) {
-            if (is_adjacent(cells[i], cells[j])) {
-                ai = make_union(labels, ai, find_root(labels, j));
-            } else if (is_far_enough(cells[i], cells[j])) {
-                ++start_j;
+            auto comparison_cell = cells.at(j);
+            const unsigned int module_idx_comp = comparison_cell.module_index();
+            const auto module_cd_comp = det_cond.at(module_idx_comp);
+            if (comparison_cell.activation() >= module_cd_comp.threshold()) {
+                if (is_adjacent(reference_cell, cells.at(j))) {
+                    ai = make_union(labels, ai, find_root(labels, j));
+                } else if (is_far_enough(reference_cell, cells.at(j))) {
+                    ++start_j;
+                }
             }
         }
     }
 
     // second scan: transitive closure
-    for (unsigned int i = 0; i < n_cells; ++i) {
+    for (int i = 0; i < static_cast<int>(n_cells); ++i) {
+        if (labels[i] == -1) {
+            continue;
+        }
         if (labels[i] == i) {
             labels[i] = nlabels++;
         } else {
             labels[i] = labels[labels[i]];
         }
     }
-
     return nlabels;
 }
 

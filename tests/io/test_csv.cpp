@@ -157,12 +157,12 @@ TEST_F(io, csv_write_odd_single_muon_cells) {
             // Read the cells for the current event.
             traccc::io::read_cells(orig, event, "odd/geant4_1muon_1GeV/",
                                    traccc::getDummyLogger().clone(), &det_cond);
-
             // Write the cells into a temporary file.
             traccc::io::write(event,
                               std::filesystem::temp_directory_path().native(),
                               traccc::data_format::csv, vecmem::get_data(orig),
-                              vecmem::get_data(det_desc), use_acts_geometry_id);
+                              vecmem::get_data(det_desc),
+                              vecmem::get_data(det_cond), use_acts_geometry_id);
 
             // Read the cells back in.
             traccc::io::read_cells(

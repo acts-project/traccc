@@ -168,7 +168,7 @@ TRACCC_DEVICE inline void ccl_core(
         reduce_problem_cell(cells_device, cid,
                             static_cast<unsigned int>(partition_start),
                             static_cast<unsigned int>(partition_end), adjc[tst],
-                            &adjv[8 * tst]);
+                            &adjv[8 * tst], det_cond);
     }
 
     for (details::index_t tst = 0; tst < thread_cell_count; ++tst) {
@@ -178,8 +178,15 @@ TRACCC_DEVICE inline void ccl_core(
          * At the start, the values of f and gf should be equal to the
          * ID of the cell.
          */
-        f.at(cid) = cid;
-        gf.at(cid) = cid;
+        const unsigned int module_idx = cells_device.module_index().at(cid);
+        const auto module_cd = det_cond.at(module_idx);
+        if (cells_device.activation().at(cid) < module_cd.threshold()) {
+            f.at(cid) = static_cast<details::index_t>(-1);
+            gf.at(cid) = static_cast<details::index_t>(-1);
+        } else {
+            f.at(cid) = cid;
+            gf.at(cid) = cid;
+        }
     }
 
     /*
