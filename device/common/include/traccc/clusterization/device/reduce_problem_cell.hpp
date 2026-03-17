@@ -19,16 +19,19 @@ namespace traccc::device {
 ///
 /// @param[in] cells    Collection of cells
 /// @param[in] cid      Current cell id
+/// @param[in] module_cd Module conditions data
 /// @param[in] start    Current partition start point
 /// @param[in] end      Current partition end point
 /// @param[out] ajc     Number of adjacent cells
 /// @param[out] ajv     Indices of adjacent cells
 ///
-TRACCC_HOST_DEVICE
-inline void reduce_problem_cell(
+template <typename TDesign>
+TRACCC_HOST_DEVICE inline void reduce_problem_cell(
     const edm::silicon_cell_collection::const_device& cells, unsigned short cid,
     unsigned int start, unsigned int end, unsigned char& adjc,
-    unsigned short* adjv);
+    unsigned short* adjv,
+    const traccc::detector_conditions_description_interface<TDesign>&
+        module_cd);
 
 }  // namespace traccc::device
 

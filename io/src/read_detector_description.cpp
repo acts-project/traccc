@@ -79,8 +79,8 @@ void read_json_dd_impl(traccc::detector_design_description::host& det_desc,
         det_cond.geometry_id().back() = surface_desc.barcode();
         det_cond.acts_geometry_id().back() = geom_id;
 
-        std::array<detray::dsize_type<traccc::default_algebra>, 2u> subspace = {
-            0, 1};
+        std::array<detray::dindex_type<traccc::default_algebra>, 2u> subspace =
+            {0, 1};
         using annulus_t =
             detray::mask<detray::annulus2D, traccc::default_algebra>;
         using mask_registry_t = typename detector_traits_t::host::masks;

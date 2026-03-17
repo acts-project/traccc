@@ -165,21 +165,14 @@ TRACCC_DEVICE inline void ccl_core(
         const auto cid = static_cast<details::index_t>(
             tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX());
         adjc[tst] = 0;
+
+        const unsigned int module_idx = cells_device.module_index().at(cid);
+        const auto module_cd = det_cond.at(module_idx);
         reduce_problem_cell(cells_device, cid,
                             static_cast<unsigned int>(partition_start),
                             static_cast<unsigned int>(partition_end), adjc[tst],
-                            &adjv[8 * tst], det_cond);
-    }
+                            &adjv[8 * tst], module_cd);
 
-    for (details::index_t tst = 0; tst < thread_cell_count; ++tst) {
-        const auto cid = static_cast<details::index_t>(
-            tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX());
-        /*
-         * At the start, the values of f and gf should be equal to the
-         * ID of the cell.
-         */
-        const unsigned int module_idx = cells_device.module_index().at(cid);
-        const auto module_cd = det_cond.at(module_idx);
         if (cells_device.activation().at(cid) < module_cd.threshold()) {
             f.at(cid) = static_cast<details::index_t>(-1);
             gf.at(cid) = static_cast<details::index_t>(-1);

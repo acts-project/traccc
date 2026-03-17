@@ -136,6 +136,6 @@ using detector_design_description = vecmem::edm::container<
     vecmem::edm::type::jagged_vector<scalar>,
     vecmem::edm::type::vector<unsigned char>,
     vecmem::edm::type::vector<
-        std::array<detray::dsize_type<default_algebra>, 2u>>>;
+        std::array<detray::dindex_type<default_algebra>, 2u>>>;
 
 }  // namespace traccc

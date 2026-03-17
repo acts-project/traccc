@@ -15,12 +15,13 @@
 
 namespace traccc::device {
 
-TRACCC_HOST_DEVICE
-inline void reduce_problem_cell(
+template <typename TDesign>
+TRACCC_HOST_DEVICE inline void reduce_problem_cell(
     const edm::silicon_cell_collection::const_device& cells,
     const unsigned short cid, const unsigned int start, const unsigned int end,
     unsigned char& adjc, unsigned short* adjv,
-    const detector_conditions_description::const_device& det_cond) {
+    const traccc::detector_conditions_description_interface<TDesign>&
+        module_cd) {
 
     // Some sanity check(s).
     assert(start <= end);
@@ -51,8 +52,6 @@ inline void reduce_problem_cell(
          * If the cell examined is adjacent to the current cell, save it
          * in the current cell's adjacency set.
          */
-        const unsigned int module_idx = cells.module_index().at(pos);
-        const auto module_cd = det_cond.at(module_idx);
         if (traccc::details::is_adjacent(reference_cell, cells.at(j)) &&
             (reference_cell.activation() >= module_cd.threshold())) {
             assert(adjc < 8);
@@ -73,7 +72,8 @@ inline void reduce_problem_cell(
             break;
         }
 
-        if (traccc::details::is_adjacent(reference_cell, cells.at(j))) {
+        if (traccc::details::is_adjacent(reference_cell, cells.at(j)) &&
+            (reference_cell.activation() >= module_cd.threshold())) {
             assert(adjc < 8);
             adjv[adjc++] = static_cast<unsigned short>(j - start);
         }
