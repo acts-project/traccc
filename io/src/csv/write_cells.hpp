@@ -9,10 +9,7 @@
 
 // Project include(s).
 #include "traccc/edm/silicon_cell_collection.hpp"
-<<<<<<< HEAD
 #include "traccc/geometry/detector_conditions_description.hpp"
-=======
->>>>>>> 64d60ac8 (refactoring digi cfg)
 #include "traccc/geometry/detector_design_description.hpp"
 
 // System include(s).
@@ -30,12 +27,8 @@ namespace traccc::io::csv {
 ///
 void write_cells(std::string_view filename,
                  traccc::edm::silicon_cell_collection::const_view cells,
-<<<<<<< HEAD
                  traccc::detector_design_description::const_view dd_view,
                  traccc::detector_conditions_description::const_view cd_view,
-=======
-                 traccc::detector_design_description::const_view dd,
->>>>>>> 64d60ac8 (refactoring digi cfg)
                  bool use_acts_geometry_id);
 
 }  // namespace traccc::io::csv

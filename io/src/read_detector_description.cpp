@@ -89,7 +89,7 @@ void read_json_dd_impl(traccc::detector_design_description::host& det_desc,
                 detray::types::id<mask_registry_t, annulus_t>) {
                 subspace = {1, 0};
             }
-
+        }
         if (!digi.contains(acts_geom_id)) {
             std::ostringstream msg;
             msg << "Could not find digitization config for geometry ID: "
