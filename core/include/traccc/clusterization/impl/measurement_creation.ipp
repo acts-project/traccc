@@ -51,8 +51,8 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
 
     point2 offset{0.f, 0.f}, width{0.f, 0.f};
     bool first_processed = false;
-    std::vector<int> phiIndices;
-    std::vector<int> etaIndices;
+    std::vector<unsigned int> phiIndices;
+    std::vector<unsigned int> etaIndices;
 
     // Loop over the cell indices of the cluster.
     for (const unsigned int cell_idx : cluster.cell_indices()) {

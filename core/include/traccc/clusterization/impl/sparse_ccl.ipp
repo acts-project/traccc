@@ -13,19 +13,19 @@
 namespace traccc::details {
 
 TRACCC_HOST_DEVICE inline unsigned int find_root(
-    const vecmem::device_vector<int>& labels, unsigned int e) {
+    const vecmem::device_vector<unsigned int>& labels, unsigned int e) {
 
-    int r = e;
-    assert(r < static_cast<int>(labels.size()));
+    unsigned int r = e;
+    assert(r < labels.size());
     while (labels[r] != r) {
         r = labels[r];
-        assert(r < static_cast<int>(labels.size()));
+        assert(r < labels.size());
     }
     return r;
 }
 
 TRACCC_HOST_DEVICE inline unsigned int make_union(
-    vecmem::device_vector<int>& labels, unsigned int e1, unsigned int e2) {
+    vecmem::device_vector<unsigned int>& labels, unsigned int e1, unsigned int e2) {
 
     unsigned int e;
     if (e1 < e2) {
@@ -61,7 +61,7 @@ TRACCC_HOST_DEVICE inline bool is_far_enough(const edm::silicon_cell<T1>& a,
 
 TRACCC_HOST_DEVICE inline unsigned int sparse_ccl(
     const edm::silicon_cell_collection::const_device& cells,
-    vecmem::device_vector<int>& labels,
+    vecmem::device_vector<unsigned int>& labels,
     const detector_conditions_description::const_device& det_cond) {
 
     unsigned int nlabels = 0;
@@ -78,7 +78,7 @@ TRACCC_HOST_DEVICE inline unsigned int sparse_ccl(
         if (reference_cell.activation() < module_cd_ref.threshold()) {
             // If the cell is not active, we can skip it, as it cannot be part
             // of any cluster.
-            labels[i] = -1;
+            labels[i] = std::numeric_limits<unsigned int>::max();
             continue;
         }
         labels[i] = i;
@@ -98,8 +98,8 @@ TRACCC_HOST_DEVICE inline unsigned int sparse_ccl(
     }
 
     // second scan: transitive closure
-    for (int i = 0; i < static_cast<int>(n_cells); ++i) {
-        if (labels[i] == -1) {
+    for (unsigned int i = 0; i < n_cells; ++i) {
+        if (labels[i] == std::numeric_limits<unsigned int>::max()) {
             continue;
         }
         if (labels[i] == i) {

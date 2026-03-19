@@ -37,8 +37,8 @@ sparse_ccl_algorithm::output_type sparse_ccl_algorithm::operator()(
     assert(is_ordered_on(channel0_major_cell_order_relation(), cells));
 
     // Run SparseCCL to fill CCL indices.
-    vecmem::vector<int> cluster_indices{cells.size(), &(m_mr.get())};
-    vecmem::device_vector<int> cluster_indices_device{
+    vecmem::vector<unsigned int> cluster_indices{cells.size(), &(m_mr.get())};
+    vecmem::device_vector<unsigned int> cluster_indices_device{
         vecmem::get_data(cluster_indices)};
     const unsigned int num_clusters =
         details::sparse_ccl(cells, cluster_indices_device, det_cond);
