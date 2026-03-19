@@ -189,9 +189,9 @@ void finding_performance_writer::write_common(
             static_cast<double>(truth_measurements.size());
 
         const bool reco_matched =
-            purity > m_cfg.track_truth_config.matching_ratio;
+            purity >= m_cfg.track_truth_config.matching_ratio;
         const bool truth_matched =
-            completeness > m_cfg.track_truth_config.matching_ratio;
+            completeness >= m_cfg.track_truth_config.matching_ratio;
 
         m_data->m_stat_plot_tool.fill(m_data->m_stat_plot_cache, purity,
                                       completeness);
