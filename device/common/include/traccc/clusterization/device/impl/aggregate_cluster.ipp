@@ -76,8 +76,6 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
 
     channel_id maxChannel1 = std::numeric_limits<channel_id>::min();
 
-    printf("Looping over this cluster cells");
-
     for (unsigned short j = cid; j < partition_size; j++) {
 
         const unsigned int pos = j + start;
