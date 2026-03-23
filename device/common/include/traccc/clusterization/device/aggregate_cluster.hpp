@@ -20,6 +20,7 @@
 
 // System include(s).
 #include <optional>
+#include <set>
 
 namespace traccc::device {
 

@@ -156,11 +156,11 @@ class ConnectedComponentAnalysisTests
         for (std::size_t i = 0; i < NMODULES; ++i) {
             det_cond.module_to_design_id()[i] = static_cast<unsigned int>(i);
             det_cond.geometry_id()[i] = detray::geometry::barcode{i};
-            det_cond.threshold()[i] = 0.f;
             det_cond.acts_geometry_id()[i] = i;
             det_cond.measurement_translation()[i] = {0.f, 0.f};
 
-            std::vector<double, std::pmr::polymorphic_allocator<double>>
+            std::vector<traccc::scalar,
+                        std::pmr::polymorphic_allocator<traccc::scalar>>
                 bin_edges_x(10001), bin_edges_y(10001);
             std::iota(bin_edges_x.begin(), bin_edges_x.end(), -0.5);
             std::iota(bin_edges_y.begin(), bin_edges_y.end(), -0.5);

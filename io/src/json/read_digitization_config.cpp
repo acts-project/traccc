@@ -56,7 +56,7 @@ traccc::digitization_config read_digitization_config(
                 if (bindata["type"].get<std::string>() == "equidistant") {
                     float pitch = (bindata["max"].get<float>() -
                                    bindata["min"].get<float>()) /
-                                   bindata["bins"].get<float>();
+                                  bindata["bins"].get<float>();
                     for (int i = 0; i <= bindata["bins"].get<int>(); ++i) {
                         bins.push_back(bindata["min"].get<float>() +
                                        static_cast<float>(i) * pitch);
@@ -71,7 +71,7 @@ traccc::digitization_config read_digitization_config(
                 if (bindata["type"].get<std::string>() == "equidistant") {
                     float pitch = (bindata["max"].get<float>() -
                                    bindata["min"].get<float>()) /
-                                   bindata["bins"].get<float>();
+                                  bindata["bins"].get<float>();
                     for (int i = 0; i <= bindata["bins"].get<int>(); ++i) {
                         bins.push_back(bindata["min"].get<float>() +
                                        static_cast<float>(i) * pitch);

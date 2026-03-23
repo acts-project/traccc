@@ -68,8 +68,9 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
     const unsigned int design_idx = module_cd.module_to_design_id();
     const auto module_dd = det_desc.at(design_idx);
 
-    const auto partition_size = static_cast<unsigned short>(end - start);
     unsigned int tmp_cluster_size = 0;
+
+    const auto partition_size = static_cast<unsigned short>(end - start);
 
     bool first_processed = false;
 
@@ -99,45 +100,44 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
                 maxChannel1 = cell.channel1();
             }
 
-            const scalar weight = traccc::details::signal_cell_modelling(
-                cell.activation(), module_cd);
+            const scalar weight = cell.activation();
 
-            if (weight > module_cd.threshold()) {
-                totalWeight += weight;
-                scalar weight_factor = weight / totalWeight;
+            totalWeight += weight;
+            scalar weight_factor = weight / totalWeight;
 
-                point2 cell_width = {0, 0};
-                point2 cell_position = traccc::details::position_from_cell(
-                    cell, module_dd, &cell_width);
-                width[0] += cell_width[0];
-                width[1] += cell_width[1];
+            point2 cell_position =
+                traccc::details::position_from_cell(cell, module_dd);
 
-                min_channel0 = std::min(min_channel0, cell.channel0());
-                max_channel0 = std::max(max_channel0, cell.channel0());
-                min_channel1 = std::min(min_channel1, cell.channel1());
-                max_channel1 = std::max(max_channel1, cell.channel1());
+            min_channel0 = std::min(min_channel0, cell.channel0());
+            min_channel1 = std::min(min_channel1, cell.channel1());
+            max_channel0 = std::max(max_channel0, cell.channel0());
+            max_channel1 = std::max(max_channel1, cell.channel1());
 
-                if (!first_processed) {
-                    offset = cell_position;
-                    first_processed = true;
-                }
-
-                cell_position = cell_position - offset;
-
-                const point2 diff_old = cell_position - mean;
-                mean = mean + diff_old * weight_factor;
-                const point2 diff_new = cell_position - mean;
-
-                var[0] = (1.f-weight_factor)*var[0] + weight_factor*(diff_old[0]+diff_new[0]);
-                var[1] = (1.f-weight_factor)*var[1] + weight_factor*(diff_old[1]+diff_new[1]);
+            if (!first_processed) {
+                offset = cell_position;
+                first_processed = true;
             }
 
-            cell_links_device.at(pos) = link;
+            cell_position = cell_position - offset;
 
+            const point2 diff_old = cell_position - mean;
+            mean = mean + diff_old * weight_factor;
+            const point2 diff_new = cell_position - mean;
+
+            var[0] = (1.f - weight_factor) * var[0] +
+                     weight_factor * (diff_old[0] + diff_new[0]);
+            var[1] = (1.f - weight_factor) * var[1] +
+                     weight_factor * (diff_old[1] + diff_new[1]);
+
+            cell_links_device.at(pos) = link;
             tmp_cluster_size++;
 
             if (disjoint_set.capacity()) {
                 disjoint_set.at(pos) = link;
+            }
+
+            if (cluster_size.has_value()) {
+                (*cluster_size).get() = tmp_cluster_size;
             }
         }
 
@@ -148,19 +148,24 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
         if (cell.channel1() > maxChannel1 + 1) {
             break;
         }
-
-        if (cluster_size.has_value()) {
-            (*cluster_size).get() = tmp_cluster_size;
-        }
     }
 
-    assert(max_channel0 >= min_channel0);
-    assert(max_channel1 >= min_channel1);
     unsigned int delta0 = max_channel0 - min_channel0;
     unsigned int delta1 = max_channel1 - min_channel1;
 
-    pitch[0] = width[0] / static_cast<scalar>(tmp_cluster_size);
-    pitch[1] = width[1] / static_cast<scalar>(tmp_cluster_size);
+    vector2 cluster_lower_position = {
+        (module_dd.bin_edges_x()).at(min_channel0),
+        (module_dd.bin_edges_y()).at(min_channel1)};
+
+    vector2 cluster_upper_position = {
+        (module_dd.bin_edges_x()).at(max_channel0 + 1),
+        (module_dd.bin_edges_y()).at(max_channel1 + 1)};
+
+    width[0] = cluster_upper_position[0] - cluster_lower_position[0];
+    width[1] = cluster_upper_position[1] - cluster_lower_position[1];
+
+    pitch[0] = width[0] / static_cast<float>(delta0 + 1);
+    pitch[1] = width[1] / static_cast<float>(delta1 + 1);
 
     var = var + point2{pitch[0] * pitch[0] / static_cast<scalar>(12.),
                        pitch[1] * pitch[1] / static_cast<scalar>(12.)};

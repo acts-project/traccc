@@ -25,7 +25,8 @@ TRACCC_HOST_DEVICE inline unsigned int find_root(
 }
 
 TRACCC_HOST_DEVICE inline unsigned int make_union(
-    vecmem::device_vector<unsigned int>& labels, unsigned int e1, unsigned int e2) {
+    vecmem::device_vector<unsigned int>& labels, unsigned int e1,
+    unsigned int e2) {
 
     unsigned int e;
     if (e1 < e2) {
@@ -61,8 +62,7 @@ TRACCC_HOST_DEVICE inline bool is_far_enough(const edm::silicon_cell<T1>& a,
 
 TRACCC_HOST_DEVICE inline unsigned int sparse_ccl(
     const edm::silicon_cell_collection::const_device& cells,
-    vecmem::device_vector<unsigned int>& labels,
-    const detector_conditions_description::const_device& det_cond) {
+    vecmem::device_vector<unsigned int>& labels) {
 
     unsigned int nlabels = 0;
 
@@ -72,36 +72,21 @@ TRACCC_HOST_DEVICE inline unsigned int sparse_ccl(
     // first scan: pixel association
     unsigned int start_j = 0;
     for (unsigned int i = 0; i < n_cells; ++i) {
-        auto reference_cell = cells.at(i);
-        const unsigned int module_idx_ref = reference_cell.module_index();
-        const auto module_cd_ref = det_cond.at(module_idx_ref);
-        if (reference_cell.activation() < module_cd_ref.threshold()) {
-            // If the cell is not active, we can skip it, as it cannot be part
-            // of any cluster.
-            labels[i] = std::numeric_limits<unsigned int>::max();
-            continue;
-        }
+
         labels[i] = i;
         unsigned int ai = i;
         for (unsigned int j = start_j; j < i; ++j) {
-            auto comparison_cell = cells.at(j);
-            const unsigned int module_idx_comp = comparison_cell.module_index();
-            const auto module_cd_comp = det_cond.at(module_idx_comp);
-            if (comparison_cell.activation() >= module_cd_comp.threshold()) {
-                if (is_adjacent(reference_cell, cells.at(j))) {
-                    ai = make_union(labels, ai, find_root(labels, j));
-                } else if (is_far_enough(reference_cell, cells.at(j))) {
-                    ++start_j;
-                }
+
+            if (is_adjacent(cells.at(i), cells.at(j))) {
+                ai = make_union(labels, ai, find_root(labels, j));
+            } else if (is_far_enough(cells.at(i), cells.at(j))) {
+                ++start_j;
             }
         }
     }
 
     // second scan: transitive closure
     for (unsigned int i = 0; i < n_cells; ++i) {
-        if (labels[i] == std::numeric_limits<unsigned int>::max()) {
-            continue;
-        }
         if (labels[i] == i) {
             labels[i] = nlabels++;
         } else {

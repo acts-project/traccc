@@ -19,7 +19,6 @@ namespace traccc {
 
 /// Type describing the conditions configuration of a detector module
 struct conditions_data_config {
-    scalar threshold = 0.f;
     vector2 shift{0.f, 0.f};
 };
 

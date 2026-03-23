@@ -166,20 +166,13 @@ TRACCC_DEVICE inline void ccl_core(
             tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX());
         adjc[tst] = 0;
 
-        const unsigned int module_idx = cells_device.module_index().at(cid);
-        const auto module_cd = det_cond.at(module_idx);
         reduce_problem_cell(cells_device, cid,
                             static_cast<unsigned int>(partition_start),
                             static_cast<unsigned int>(partition_end), adjc[tst],
-                            &adjv[8 * tst], module_cd);
+                            &adjv[8 * tst]);
 
-        if (cells_device.activation().at(cid) < module_cd.threshold()) {
-            f.at(cid) = static_cast<details::index_t>(-1);
-            gf.at(cid) = static_cast<details::index_t>(-1);
-        } else {
-            f.at(cid) = cid;
-            gf.at(cid) = cid;
-        }
+        f.at(cid) = cid;
+        gf.at(cid) = cid;
     }
 
     /*

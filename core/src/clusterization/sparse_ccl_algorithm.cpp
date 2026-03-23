@@ -41,7 +41,7 @@ sparse_ccl_algorithm::output_type sparse_ccl_algorithm::operator()(
     vecmem::device_vector<unsigned int> cluster_indices_device{
         vecmem::get_data(cluster_indices)};
     const unsigned int num_clusters =
-        details::sparse_ccl(cells, cluster_indices_device, det_cond);
+        details::sparse_ccl(cells, cluster_indices_device);
 
     // Create the result container.
     output_type clusters{m_mr.get()};

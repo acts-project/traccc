@@ -12,8 +12,8 @@
 #include "traccc/io/utils.hpp"
 
 // System include(s).
-#include <string>
 #include <stdexcept>
+#include <string>
 
 namespace traccc::io {
 

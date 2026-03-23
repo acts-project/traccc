@@ -52,18 +52,13 @@ traccc::conditions_config read_conditions_config(const nlohmann::json& json) {
         const auto& json_segm = json_geom[segmentation];
         const auto& json_binning = json_segm[binningdata_key];
         vector2 shift = {0.f, 0.f};
-        scalar threshold = 0.f;
 
         if (json_binning.contains("shift")) {
             shift[0] = json_binning["shift"][0].get<float>();
             shift[1] = json_binning["shift"][1].get<float>();
         }
 
-        if (json_geom.contains("threshold")) {
-            threshold = json_geom["threshold"].get<float>();
-        }
-
-        elements.push_back({geoId, {threshold, shift}});
+        elements.push_back({geoId, {shift}});
     }
 
     return traccc::conditions_config(std::move(elements));

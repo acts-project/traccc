@@ -74,18 +74,6 @@ class detector_conditions_description_interface : public BASE {
     TRACCC_HOST_DEVICE
     const auto& acts_geometry_id() const { return BASE::template get<2>(); }
 
-    TRACCC_HOST_DEVICE
-    auto& threshold() { return BASE::template get<3>(); }
-    /// Signal threshold for detection elements (const)
-    ///
-    /// It controls which elements (pixels and strips) are considered during
-    /// clusterization.
-    ///
-    /// @return A (const) vector of @c traccc::scalar objects
-    ///
-    TRACCC_HOST_DEVICE
-    const auto& threshold() const { return BASE::template get<3>(); }
-
     /// The local translation vector to model e.g. Lorentz shifts
     ///
     /// @return A vector by which to translate the measurement in the local
@@ -93,11 +81,11 @@ class detector_conditions_description_interface : public BASE {
     ///
     /// @{
     TRACCC_HOST_DEVICE
-    auto& measurement_translation() { return BASE::template get<4>(); }
+    auto& measurement_translation() { return BASE::template get<3>(); }
 
     TRACCC_HOST_DEVICE
     const auto& measurement_translation() const {
-        return BASE::template get<4>();
+        return BASE::template get<3>();
     }
 
 };  // class silicon_detector_description_interface
@@ -109,7 +97,6 @@ using detector_conditions_description =
                            vecmem::edm::type::vector<unsigned int>,
                            vecmem::edm::type::vector<detray::geometry::barcode>,
                            vecmem::edm::type::vector<geometry_id>,
-                           vecmem::edm::type::vector<scalar>,
                            vecmem::edm::type::vector<vector2>>;
 
 }  // namespace traccc

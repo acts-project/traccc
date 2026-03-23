@@ -11,18 +11,10 @@
 
 namespace traccc::details {
 
-template <typename TDesign>
-TRACCC_HOST_DEVICE inline scalar signal_cell_modelling(
-    scalar signal_in,
-    const traccc::detector_conditions_description_interface<TDesign>&) {
-    return signal_in;
-}
-
 template <typename TCell, typename TDesign>
 TRACCC_HOST_DEVICE inline vector2 position_from_cell(
     const edm::silicon_cell<TCell>& cell,
-    const traccc::detector_design_description_interface<TDesign>& module_dd,
-    vector2* cell_width) {
+    const traccc::detector_design_description_interface<TDesign>& module_dd) {
     // Calculate / construct the local cell position.
     vector2 cell_lower_position = {
         (module_dd.bin_edges_x()).at(cell.channel0()),
@@ -36,23 +28,23 @@ TRACCC_HOST_DEVICE inline vector2 position_from_cell(
         scalar{0.5f} * (cell_upper_position[0] + cell_lower_position[0]),
         scalar{0.5f} * (cell_upper_position[1] + cell_lower_position[1])};
 
-    *cell_width = cell_upper_position - cell_lower_position;
-
     return cell_middle_position;
 }
 
-template <typename T, typename TDesign, typename TCond>
+template <typename T, typename TDesign>
 TRACCC_HOST_DEVICE inline void calc_cluster_properties(
     const edm::silicon_cluster<T>& cluster,
     const edm::silicon_cell_collection::const_device& cells,
     const traccc::detector_design_description_interface<TDesign>& module_dd,
-    const traccc::detector_conditions_description_interface<TCond>& module_cd,
     point2& mean, point2& var, scalar& totalWeight, point2& pitch) {
 
     point2 offset{0.f, 0.f}, width{0.f, 0.f};
     bool first_processed = false;
-    std::vector<unsigned int> phiIndices;
-    std::vector<unsigned int> etaIndices;
+
+    unsigned int min_channel0 = std::numeric_limits<unsigned int>::max();
+    unsigned int max_channel0 = std::numeric_limits<unsigned int>::lowest();
+    unsigned int min_channel1 = std::numeric_limits<unsigned int>::max();
+    unsigned int max_channel1 = std::numeric_limits<unsigned int>::lowest();
 
     // Loop over the cell indices of the cluster.
     for (const unsigned int cell_idx : cluster.cell_indices()) {
@@ -60,24 +52,20 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
         // The cell object.
         const edm::silicon_cell cell = cells.at(cell_idx);
 
-        phiIndices.push_back(cell.channel0());
-        etaIndices.push_back(cell.channel1());
-
         // Translate the cell readout value into a weight.
-        const scalar weight =
-            signal_cell_modelling(cell.activation(), module_cd);
-
-        // Check cell is over a minimum threshold.
-        assert(weight >= module_cd.threshold());
+        const scalar weight = cell.activation();
 
         // Update all output properties with this cell.
         totalWeight += weight;
         scalar weight_factor = weight / totalWeight;
 
-        point2 cell_width = {0.f, 0.f};
-        point2 cell_position = position_from_cell(cell, module_dd, &cell_width);
-        width[0] += cell_width[0];
-        width[1] += cell_width[1];
+        point2 cell_position = position_from_cell(cell, module_dd);
+
+        min_channel0 = std::min(min_channel0, cell.channel0());
+        min_channel1 = std::min(min_channel1, cell.channel1());
+        max_channel0 = std::max(max_channel0, cell.channel0());
+        max_channel1 = std::max(max_channel1, cell.channel1());
+
         if (!first_processed) {
             offset = cell_position;
             first_processed = true;
@@ -95,8 +83,23 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
                  weight_factor * (diff_old[1] * diff_new[1]);
     }
 
-    pitch[0] = width[0] / static_cast<scalar>(cluster.cell_indices().size());
-    pitch[1] = width[1] / static_cast<scalar>(cluster.cell_indices().size());
+    // cluster width in the number of cells
+    unsigned int delta0 = (max_channel0 - min_channel0) + 1;
+    unsigned int delta1 = (max_channel1 - min_channel1) + 1;
+
+    vector2 cluster_lower_position = {
+        (module_dd.bin_edges_x()).at(min_channel0),
+        (module_dd.bin_edges_y()).at(min_channel1)};
+
+    vector2 cluster_upper_position = {
+        (module_dd.bin_edges_x()).at(max_channel0 + 1),
+        (module_dd.bin_edges_y()).at(max_channel1 + 1)};
+
+    width[0] = cluster_upper_position[0] - cluster_lower_position[0];
+    width[1] = cluster_upper_position[1] - cluster_lower_position[1];
+
+    pitch[0] = width[0] / static_cast<float>(delta0);
+    pitch[1] = width[1] / static_cast<float>(delta1);
 
     mean = mean + offset;
 }
@@ -142,8 +145,8 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
     // Calculate the cluster properties
     scalar totalWeight = 0.f;
     point2 mean{0.f, 0.f}, var{0.f, 0.f}, pitch{0.f, 0.f};
-    calc_cluster_properties(cluster, cells, module_dd, module_cd, mean, var,
-                            totalWeight, pitch);
+    calc_cluster_properties(cluster, cells, module_dd, mean, var, totalWeight,
+                            pitch);
     assert(totalWeight > 0.f);
 
     // Fill the measurement object.

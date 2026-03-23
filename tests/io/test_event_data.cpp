@@ -153,10 +153,6 @@ TEST(event_data, mock_data) {
                                           digi_file, cond_file,
                                           traccc::data_format::json);
 
-    // for the tests to work, we have to set the thrshold in the conditions file to 0
-    for(unsigned int i = 0; i < det_cond.size(); i++){
-        det_cond.threshold().at(i) = 0.f;
-    }                                    
     traccc::detector_design_description::data det_descr_data{
         vecmem::get_data(det_descr)};
     traccc::detector_conditions_description::data det_cond_data{

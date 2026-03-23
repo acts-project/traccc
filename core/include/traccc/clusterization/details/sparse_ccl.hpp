@@ -74,8 +74,7 @@ TRACCC_HOST_DEVICE inline bool is_far_enough(const edm::silicon_cell<T1>& a,
 ///
 TRACCC_HOST_DEVICE inline unsigned int sparse_ccl(
     const edm::silicon_cell_collection::const_device& cells,
-    vecmem::device_vector<unsigned int>& labels,
-    const detector_conditions_description::const_device& det_cond);
+    vecmem::device_vector<unsigned int>& labels);
 
 }  // namespace traccc::details
 

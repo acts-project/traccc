@@ -27,7 +27,6 @@
 #include <set>
 #include <sstream>
 #include <stdexcept>
-#include <set>
 
 namespace {
 
@@ -115,7 +114,6 @@ void read_json_dd_impl(traccc::detector_design_description::host& det_desc,
             throw std::runtime_error(msg.str());
         }
 
-        det_cond.threshold().back() = cond_it->threshold;
         det_cond.measurement_translation().back() = cond_it->shift;
     }
 
