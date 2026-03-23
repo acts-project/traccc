@@ -46,7 +46,7 @@ class triplet_fitter {
     using config_type = fitting_config;
 
     // Matrix types
-    using size_type = detray::dsize_type<algebra_type>;
+    using size_type = detray::dindex_type<algebra_type>;
     template <size_type ROWS, size_type COLS>
     using matrix_type = detray::dmatrix<algebra_type, ROWS, COLS>;
 
@@ -305,7 +305,7 @@ class triplet_fitter {
                   0.5f * (t.m_hit_pos[0][1] + t.m_hit_pos[2][1])};
 
         vector3 x_02{t.m_hit_pos[2] - t.m_hit_pos[0]};
-        scalar d_02 = algebra::cmath::perp(x_02);
+        scalar d_02 = detray::algebra::array::perp(x_02);
 
         // Direction perpendicular to vector joining hits 0 & 2
         vector2 n{(t.m_hit_pos[2][1] - t.m_hit_pos[0][1]) / d_02,
@@ -334,8 +334,8 @@ class triplet_fitter {
             }
         }
 
-        if (algebra::cmath::norm(c_correct) == 0.f or
-            algebra::cmath::norm(x1 - m) == 0.f) {
+        if (detray::algebra::array::norm(c_correct) == 0.f or
+            detray::algebra::array::norm(x1 - m) == 0.f) {
             // Use vector joining hits
             // 0 and 2 as track direction if
             // center calculation fails or three
@@ -355,7 +355,7 @@ class triplet_fitter {
                 tangent2D = -1.f * tangent2D;
 
             vector2 tangent2D_norm = math::sin(t.m_theta) /
-                                     algebra::cmath::norm(tangent2D) *
+                                     detray::algebra::array::norm(tangent2D) *
                                      tangent2D;
 
             // track tangent normalized to 1
@@ -383,9 +383,9 @@ class triplet_fitter {
         vector3 x_02{t.m_hit_pos[2] - t.m_hit_pos[0]};
 
         // Transverse distances
-        scalar d_01 = algebra::cmath::perp(x_01);
-        scalar d_12 = algebra::cmath::perp(x_12);
-        scalar d_02 = algebra::cmath::perp(x_02);
+        scalar d_01 = detray::algebra::array::perp(x_01);
+        scalar d_12 = detray::algebra::array::perp(x_12);
+        scalar d_02 = detray::algebra::array::perp(x_02);
 
         // Longitudinal distances
         scalar z_01 = x_01[2];
@@ -894,7 +894,7 @@ class triplet_fitter {
         // Expression: p = mom_conv * B / c_3D
         //-------------------------------------------------
         // Magentic field to be converted from traccc native to Tesla
-        scalar p = mom_conv * algebra::cmath::norm(B_vec) /
+        scalar p = mom_conv * detray::algebra::array::norm(B_vec) /
                    (c_3D * unit<scalar>::mm * unit<scalar>::T *
                     1000.f);  // GeV (native)
 
@@ -987,9 +987,9 @@ class triplet_fitter {
 
         getter::element(fit_cov, e_bound_qoverp, e_bound_qoverp) =
             var_c_3D * unit<scalar>::mm2 /
-            math::pow(
-                (mom_conv * algebra::cmath::norm(B_vec)) / unit<scalar>::T,
-                2.f);
+            math::pow((mom_conv * detray::algebra::array::norm(B_vec)) /
+                          unit<scalar>::T,
+                      2.f);
         getter::element(fit_cov, e_bound_time, e_bound_time) = 0;
 
         // Store final results

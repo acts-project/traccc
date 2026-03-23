@@ -138,8 +138,9 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
 
     // 0. bin spacepoints by the maping supplied to config.m_surfaceToLayerMap
     ctx.nSp = m_copy.get().get_size(spacepoints);
-    if (ctx.nSp == 0)
+    if (ctx.nSp == 0) {
         return {0, m_mr.main};
+    }
 
     unsigned int nThreads = 128;
     unsigned int nBlocks = 1 + (ctx.nSp - 1) / nThreads;
@@ -531,7 +532,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     cudaStreamSynchronize(stream);
 
     // 2. Find edges between spacepoint pairs
-    ctx.nMaxEdges = 8 * ctx.nNodes;
+    ctx.nMaxEdges = m_config.max_edges_factor * ctx.nNodes;
     cudaMalloc(&ctx.d_edge_params, sizeof(kernels::half4) * ctx.nMaxEdges);
     cudaMalloc(&ctx.d_edge_nodes, sizeof(int2) * ctx.nMaxEdges);
 
@@ -564,10 +565,13 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     TRACCC_DEBUG("Created " << ctx.nEdges << " edges with a cap of "
                             << ctx.nMaxEdges);
 
-    if (ctx.nEdges > ctx.nMaxEdges)
+    if (ctx.nEdges > ctx.nMaxEdges) {
+        TRACCC_ERROR("Number of edges exceeds the maximum allowed, Removing "
+                     << ctx.nEdges - ctx.nMaxEdges << " edges");
         ctx.nEdges = ctx.nMaxEdges;
-    else if (ctx.nEdges == 0)
+    } else if (ctx.nEdges == 0) {
         return {0, m_mr.main};
+    }
 
     std::unique_ptr<int[]> cusum = std::make_unique<int[]>(ctx.nNodes + 1);
 
@@ -866,10 +870,13 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     cudaMemcpyAsync(&ctx.nSeeds, &ctx.d_counters[9], sizeof(unsigned int),
                     cudaMemcpyDeviceToHost, stream);
 
-    if (ctx.nSeeds > nMaxSeeds)
+    if (ctx.nSeeds > nMaxSeeds) {
+        TRACCC_ERROR("Number of seeds exceeds the maximum allowed, Removing "
+                     << ctx.nSeeds - nMaxSeeds << " seeds");
         ctx.nSeeds = nMaxSeeds;
-    if (ctx.nSeeds == 0)
+    } else if (ctx.nSeeds == 0) {
         return {0, m_mr.main};
+    }
 
     // 8. convert to 3sp seeds and make output buffer
 

@@ -121,6 +121,9 @@ struct gbts_seedfinder_config {
     unsigned char max_num_neighbours = 10;
     // graph extraction cuts
     int minLevel = 3;  // equivlent to a cut of #seed edges or #spacepoints-1
+
+    // maxium number of edges to be created per node(spacepoint)
+    unsigned int max_edges_factor = 10;
 };
 
 }  // namespace traccc

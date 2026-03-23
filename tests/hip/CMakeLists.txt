@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2024 CERN for the benefit of the ACTS project
+# (c) 2024-2026 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -10,7 +10,7 @@ traccc_add_test(
     # Define the sources for the test.
     test_thrust.hip
     LINK_LIBRARIES
-    rocthrust
+    roc::rocthrust
     GTest::gtest_main
     vecmem::core
     vecmem::hip

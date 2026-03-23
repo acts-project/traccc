@@ -38,8 +38,8 @@ struct ckf_aborter : detray::actor {
     TRACCC_HOST_DEVICE void operator()(state &abrt_state,
                                        propagator_state_t &prop_state) const {
 
-        auto &navigation = prop_state._navigation;
-        const auto &stepping = prop_state._stepping;
+        auto &navigation = prop_state.navigation();
+        const auto &stepping = prop_state.stepping();
 
         abrt_state.count++;
         abrt_state.path_from_surface += stepping.step_size();
@@ -50,7 +50,7 @@ struct ckf_aborter : detray::actor {
         if (navigation.is_on_sensitive() &&
             abrt_state.path_from_surface > abrt_state.min_step_length) {
             navigation.pause();
-            prop_state._heartbeat = false;
+            prop_state.heartbeat(false);
             abrt_state.success = true;
             abrt_state.path_from_surface = 0.f;
 
@@ -62,7 +62,7 @@ struct ckf_aborter : detray::actor {
             navigation.abort(
                 "CKF: Maximum number of steps to reach next sensitive surface "
                 "exceeded");
-            prop_state._heartbeat = false;
+            prop_state.heartbeat(false);
         }
     }
 };

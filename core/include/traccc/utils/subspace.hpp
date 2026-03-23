@@ -17,8 +17,8 @@
 
 namespace traccc {
 
-template <typename algebra_t, detray::dsize_type<algebra_t> kFullSize,
-          detray::dsize_type<algebra_t> kSize = 2u>
+template <typename algebra_t, detray::dindex_type<algebra_t> kFullSize,
+          detray::dindex_type<algebra_t> kSize = 2u>
 struct subspace {
     static_assert(1u <= kSize, "Subspace size must be at least 1");
     static_assert(kSize <= kFullSize,
@@ -26,7 +26,7 @@ struct subspace {
 
     public:
     // Type declarations
-    using size_type = detray::dsize_type<algebra_t>;
+    using size_type = detray::dindex_type<algebra_t>;
     template <size_type ROWS, size_type COLS>
     using matrix_type = detray::dmatrix<algebra_t, ROWS, COLS>;
 

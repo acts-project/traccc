@@ -11,8 +11,9 @@
 
 namespace traccc::cuda::kernels {
 
-__global__ void remove_duplicates(const finding_config cfg,
-                                  device::remove_duplicates_payload payload) {
+__global__ void remove_duplicates(
+    const __grid_constant__ finding_config cfg,
+    const __grid_constant__ device::remove_duplicates_payload payload) {
 
     device::remove_duplicates(details::global_index1(), cfg, payload);
 }

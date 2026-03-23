@@ -117,7 +117,7 @@ inline TRACCC_HOST_DEVICE bool is_valid_sp(const seedfinder_config& config,
     if (sp.z() > config.zMax || sp.z() < config.zMin) {
         return false;
     }
-    scalar spPhi = algebra::math::atan2(sp.y(), sp.x());
+    scalar spPhi = math::atan2(sp.y(), sp.x());
     if (spPhi > config.phiMax || spPhi < config.phiMin) {
         return false;
     }

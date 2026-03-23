@@ -49,6 +49,6 @@ namespace vector = detray::vector;
 namespace matrix = detray::matrix;
 
 // Pull in the print operator definitions for the algebra types
-using algebra::operator<<;
+using detray::algebra::operator<<;
 
 }  // namespace traccc

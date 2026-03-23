@@ -13,6 +13,6 @@
 namespace traccc::cuda::kernels {
 
 __global__ void gather_measurement_votes(
-    device::gather_measurement_votes_payload payload);
+    const __grid_constant__ device::gather_measurement_votes_payload payload);
 
 }  // namespace traccc::cuda::kernels

@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2024 CERN for the benefit of the ACTS project
+# (c) 2021-2026 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -34,7 +34,7 @@ jobs:
             run_tests: false
           - name: CUDA
             container: ghcr.io/acts-project/ubuntu2404_cuda:69
-            options: --preset cuda-fp32
+            options: --preset cuda-fp32 -DTRACCC_BUILD_TESTING=FALSE
             run_tests: false
           - name: "SYCL Intel"
             container: ghcr.io/acts-project/ubuntu2404_oneapi:69
@@ -98,8 +98,22 @@ jobs:
           curl --retry 5 --retry-delay 10 --output deps.tar.zst https://acts.web.cern.ch/ACTS/ci/ubuntu-24.04/deps.v6.tar.zst
           tar -xf deps.tar.zst -C /usr/local --strip-components=1
           rm deps.tar.zst
+      - name: Build nlohmann
+        run: |
+          wget https://github.com/nlohmann/json/archive/refs/tags/v3.11.3.tar.gz
+          tar -xzvf v3.11.3.tar.gz
+          export CXX=g++
+          cmake \
+            -S json-3.11.3 \
+            -B /json_build/ \
+            -DJSON_BuildTests=OFF \
+            -DCMAKE_INSTALL_PREFIX=/json_install/ \
+            -DCMAKE_BUILD_TYPE=Release
+          cmake --build /json_build/ -- -j $(nproc)
+          cmake --install /json_build/
       - name: Build ACTS
         run: |
+          export CMAKE_PREFIX_PATH=/json_install/:${CMAKE_PREFIX_PATH}
           wget https://github.com/acts-project/acts/archive/refs/tags/v44.0.1.tar.gz
           tar -xvf v44.0.1.tar.gz
           export CXX=g++
@@ -107,6 +121,7 @@ jobs:
             -S acts-44.0.1 \
             -B /acts_build/ \
             -DACTS_BUILD_PLUGIN_JSON=ON \
+            -DACTS_USE_SYSTEM_NLOHMANN_JSON=ON \
             -DCMAKE_INSTALL_PREFIX=/acts_install/ \
             -DCMAKE_BUILD_TYPE=Release
           cmake --build /acts_build/ -- -j $(nproc)
@@ -114,7 +129,7 @@ jobs:
       - name: Configure
         run: |
           source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
-          export CMAKE_PREFIX_PATH=/acts_install/:${CMAKE_PREFIX_PATH}
+          export CMAKE_PREFIX_PATH=/json_install/:/acts_install/:${CMAKE_PREFIX_PATH}
           cmake \
             -DCMAKE_BUILD_TYPE=${{ matrix.build }} \
             ${{ matrix.platform.options }} \
