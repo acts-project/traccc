@@ -46,6 +46,7 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
     unsigned int min_channel1 = std::numeric_limits<unsigned int>::max();
     unsigned int max_channel1 = std::numeric_limits<unsigned int>::lowest();
 
+    std::cout << "Looping over cells of this cluster" << std::endl;
     // Loop over the cell indices of the cluster.
     for (const unsigned int cell_idx : cluster.cell_indices()) {
 

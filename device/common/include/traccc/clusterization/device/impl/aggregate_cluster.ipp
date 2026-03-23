@@ -76,6 +76,8 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
 
     channel_id maxChannel1 = std::numeric_limits<channel_id>::min();
 
+    printf("Looping over this cluster cells");
+
     for (unsigned short j = cid; j < partition_size; j++) {
 
         const unsigned int pos = j + start;
@@ -125,9 +127,9 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
             const point2 diff_new = cell_position - mean;
 
             var[0] = (1.f - weight_factor) * var[0] +
-                     weight_factor * (diff_old[0] + diff_new[0]);
+                     weight_factor * (diff_old[0] * diff_new[0]);
             var[1] = (1.f - weight_factor) * var[1] +
-                     weight_factor * (diff_old[1] + diff_new[1]);
+                     weight_factor * (diff_old[1] * diff_new[1]);
 
             cell_links_device.at(pos) = link;
             tmp_cluster_size++;
@@ -150,8 +152,8 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
         }
     }
 
-    unsigned int delta0 = max_channel0 - min_channel0;
-    unsigned int delta1 = max_channel1 - min_channel1;
+    unsigned int delta0 = (max_channel0 - min_channel0) + 1;
+    unsigned int delta1 = (max_channel1 - min_channel1) + 1;
 
     vector2 cluster_lower_position = {
         (module_dd.bin_edges_x()).at(min_channel0),
@@ -164,14 +166,14 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
     width[0] = cluster_upper_position[0] - cluster_lower_position[0];
     width[1] = cluster_upper_position[1] - cluster_lower_position[1];
 
-    pitch[0] = width[0] / static_cast<float>(delta0 + 1);
-    pitch[1] = width[1] / static_cast<float>(delta1 + 1);
+    pitch[0] = width[0] / static_cast<float>(delta0);
+    pitch[1] = width[1] / static_cast<float>(delta1);
 
     var = var + point2{pitch[0] * pitch[0] / static_cast<scalar>(12.),
                        pitch[1] * pitch[1] / static_cast<scalar>(12.)};
 
-    point2 diameter = {width[0] / static_cast<scalar>(delta0 + 1),
-                       width[1] / static_cast<scalar>(delta1 + 1)};
+    point2 diameter = {width[0] / static_cast<scalar>(delta0),
+                       width[1] / static_cast<scalar>(delta1)};
 
     /*
      * Fill output vector with calculated cluster properties
