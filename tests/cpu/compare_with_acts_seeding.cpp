@@ -199,12 +199,6 @@ TEST_P(CompareWithActsSeedingTests, Run) {
         float phi = std::atan2(sp.xy()[1], sp.xy()[0]);
         grid.insert(i, phi, sp.zr()[0], sp.zr()[1]);
     }
-    // grid.sortBinsByR(actsSpacepoints);
-
-    // Perform some checks on the grid definition and its axes.
-    // It looks like traccc is usind a 2D grid, while ACTS uses 3D
-    // however, the first two axes should be the same: i.e. phi and z
-    // EXPECT_EQ(grid.numberOfBins(), 3ul);
 
     // Get the traccc axes:
     //  0 -> phi
@@ -246,27 +240,39 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     Acts::BroadTripletSeedFilter::Cache filterCache;
     Acts::BroadTripletSeedFilter seedFilter(
         filterConfig, filterState, filterCache, Acts::getDummyLogger());
-    Acts::TripletSeeder actsSeedfinder{
-        Acts::getDefaultLogger("TripletSeeder", Acts::Logging::Level::VERBOSE)};
+    Acts::TripletSeeder actsSeedfinder;
     Acts::TripletSeeder::Cache cache;
     const Acts::SpacePointContainer2& constActsSpacepoints = actsSpacepoints;
     for (const auto [bottom, middle, top] : grid.binnedGroup()) {
-        std::vector<unsigned int> bottomIndices(bottom.begin(), bottom.end());
-        std::vector<unsigned int> topIndices(top.begin(), top.end());
-        auto bottomSpacepoints = constActsSpacepoints.subset(bottomIndices);
-        std::cout << "Number of bottom space points: " << bottomSpacepoints.size()
-                  << std::endl;
-        auto topSpacepoints = constActsSpacepoints.subset(topIndices);
-        std::cout << "Number of top space points: " << topSpacepoints.size()
-                  << std::endl;
-        actsSeedfinder.createSeedsFromGroup(
-            cache, *bottomDoubletFinder, *topDoubletFinder, *tripletFinder,
-            seedFilter, actsSpacepoints, bottomSpacepoints,
-            constActsSpacepoints[static_cast<unsigned int>(middle)],
-            topSpacepoints, actsSeeds);
+
+        // Collect all the bottom and top spacepoints from the grid bins
+        // provided by "bottom" and "top".
+        std::vector<unsigned int> bottomIndices;
+        for (std::size_t binIndex : bottom) {
+            const Acts::CylindricalSpacePointGrid2::BinType& bottomBin =
+                grid.at(binIndex);
+            bottomIndices.insert(bottomIndices.end(), bottomBin.begin(),
+                                 bottomBin.end());
+        }
+        std::vector<unsigned int> topIndices;
+        for (std::size_t binIndex : top) {
+            const Acts::CylindricalSpacePointGrid2::BinType& topBin =
+                grid.at(binIndex);
+            topIndices.insert(topIndices.end(), topBin.begin(), topBin.end());
+        }
+
+        // Loop over all the middle spacepoints in the bin provided by "middle".
+        for (unsigned int middleIndex : grid.at(middle)) {
+
+            // Find the seeds for this specific middle spacepoint.
+            auto bottomSpacepoints = constActsSpacepoints.subset(bottomIndices);
+            auto topSpacepoints = constActsSpacepoints.subset(topIndices);
+            actsSeedfinder.createSeedsFromGroup(
+                cache, *bottomDoubletFinder, *topDoubletFinder, *tripletFinder,
+                seedFilter, actsSpacepoints, bottomSpacepoints,
+                constActsSpacepoints[middleIndex], topSpacepoints, actsSeeds);
+        }
     }
-    std::cout << "Number of seeds found by ACTS: " << actsSeeds.size()
-              << std::endl;
 
     // We have created seeds of proxies to space point at this point
     // From a proxy we can retrieve the original space point object with
