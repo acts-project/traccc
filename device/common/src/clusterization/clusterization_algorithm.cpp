@@ -87,6 +87,9 @@ clusterization_algorithm::execute_impl(
         num_cells = copy().get_size(cells);
     }
 
+    edm::silicon_cell_collection::buffer new_cells{num_cells, mr().main};
+    copy().setup(new_cells)->ignore();
+
     // If there are no cells, return right away.
     if (num_cells == 0) {
         if (keep_disjoint_set) {
@@ -119,8 +122,10 @@ clusterization_algorithm::execute_impl(
         cluster_sizes = {num_cells, mr().main};
     }
 
+    sort_cells(num_cells, cells, new_cells);
+
     // Launch the CCL kernel.
-    ccl_kernel({num_cells, m_config, cells, det_descr, measurements, cell_links,
+    ccl_kernel({num_cells, m_config, new_cells, det_descr, measurements, cell_links,
                 m_f_backup, m_gf_backup, m_adjc_backup, m_adjv_backup,
                 m_backup_mutex.get(), disjoint_set, cluster_sizes});
 

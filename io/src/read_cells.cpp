@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -21,8 +21,8 @@ void read_cells(edm::silicon_cell_collection::host& cells, std::size_t event,
                 std::string_view directory,
                 std::unique_ptr<const Logger> ilogger,
                 const silicon_detector_description::host* dd,
-                data_format format, bool deduplicate,
-                bool use_acts_geometry_id) {
+                data_format format, bool deduplicate, bool use_acts_geometry_id,
+                bool randomize) {
 
     switch (format) {
         case data_format::csv:
@@ -32,8 +32,8 @@ void read_cells(edm::silicon_cell_collection::host& cells, std::size_t event,
                                    std::filesystem::path(
                                        get_event_filename(event, "-cells.csv")))
                                       .native()),
-                ilogger->clone(), dd, format, deduplicate,
-                use_acts_geometry_id);
+                ilogger->clone(), dd, format, deduplicate, use_acts_geometry_id,
+                randomize);
             break;
 
         case data_format::binary:
@@ -43,7 +43,7 @@ void read_cells(edm::silicon_cell_collection::host& cells, std::size_t event,
                                    std::filesystem::path(
                                        get_event_filename(event, "-cells.dat")))
                                       .native()),
-                ilogger->clone(), dd, format, deduplicate);
+                ilogger->clone(), dd, format, deduplicate, randomize);
             break;
 
         default:
@@ -55,13 +55,13 @@ void read_cells(edm::silicon_cell_collection::host& cells,
                 std::string_view filename,
                 std::unique_ptr<const Logger> ilogger,
                 const silicon_detector_description::host* dd,
-                data_format format, bool deduplicate,
-                bool use_acts_geometry_id) {
+                data_format format, bool deduplicate, bool use_acts_geometry_id,
+                bool randomize) {
 
     switch (format) {
         case data_format::csv:
             csv::read_cells(cells, filename, ilogger->clone(), dd, deduplicate,
-                            use_acts_geometry_id);
+                            use_acts_geometry_id, randomize);
             break;
 
         case data_format::binary:

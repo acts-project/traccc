@@ -18,9 +18,82 @@
 
 // Vecmem include(s).
 #include <cstring>
+#include <cub/cub.cuh>
 #include <vecmem/utils/copy.hpp>
 
+#define SORT_THREADS_PER_BLOCK 128
+
 namespace traccc::cuda {
+namespace kernels {
+__global__ __launch_bounds__(SORT_THREADS_PER_BLOCK) void sort_cells(
+    const unsigned int cells_per_thread, const unsigned int num_cells,
+    const edm::silicon_cell_collection::const_view cells,
+    edm::silicon_cell_collection::view new_cells) {
+    using index_t = unsigned long;
+    const unsigned int PER_THREAD_MAX = 32;
+    using sort_t =
+        cub::BlockRadixSort<index_t, SORT_THREADS_PER_BLOCK, PER_THREAD_MAX>;
+
+    unsigned int partition_target_size = cells_per_thread * blockDim.x;
+    __shared__ typename sort_t::TempStorage tmp;
+    __shared__ unsigned int partition_start, partition_end;
+
+    const edm::silicon_cell_collection::const_device cells_device(cells);
+    edm::silicon_cell_collection::device new_cells_device(new_cells);
+
+    if (threadIdx.x == 0) {
+        unsigned int start = blockIdx.x * partition_target_size;
+        unsigned int end = std::min(num_cells, start + partition_target_size);
+
+        while (start != 0 && start < num_cells &&
+               cells_device.module_index().at(start - 1) ==
+                   cells_device.module_index().at(start)) {
+            ++start;
+        }
+
+        while (end < num_cells && cells_device.module_index().at(end - 1) ==
+                                      cells_device.module_index().at(end)) {
+            ++end;
+        }
+        partition_start = start;
+        partition_end = end;
+        assert(partition_start <= partition_end);
+    }
+
+    __syncthreads();
+
+    const unsigned int partition_size = partition_end - partition_start;
+
+    index_t keys[PER_THREAD_MAX];
+
+    for (unsigned int i = 0; i < PER_THREAD_MAX; ++i) {
+        unsigned int eff = i * blockDim.x + threadIdx.x;
+        keys[i] =
+            eff < partition_size
+                ? (static_cast<index_t>(
+                       cells_device.at(partition_start + eff).module_index())
+                       << 35 |
+                   static_cast<index_t>(
+                       cells_device.at(partition_start + eff).channel1())
+                       << 24 |
+                   static_cast<index_t>(
+                       cells_device.at(partition_start + eff).channel0())
+                       << 13 |
+                   static_cast<index_t>(eff))
+                : std::numeric_limits<index_t>::max();
+    }
+
+    sort_t(tmp).SortBlockedToStriped(keys);
+
+    for (unsigned int i = 0; i < PER_THREAD_MAX; ++i) {
+        unsigned int eff = i * blockDim.x + threadIdx.x;
+        if (eff < partition_size) {
+            new_cells_device.at(partition_start + eff) =
+                cells_device.at(partition_start + (keys[i] & 0b1111111111111));
+        }
+    }
+}
+}  // namespace kernels
 
 clusterization_algorithm::clusterization_algorithm(
     const traccc::memory_resource& mr, vecmem::copy& copy, cuda::stream& str,
@@ -36,6 +109,23 @@ bool clusterization_algorithm::input_is_valid(
             is_ordered_on<edm::silicon_cell_collection::const_device>(
                 channel0_major_cell_order_relation(), mr().main, copy(),
                 stream(), cells));
+}
+
+void clusterization_algorithm::sort_cells(
+    const unsigned int num_cells,
+    const edm::silicon_cell_collection::const_view& cells,
+    edm::silicon_cell_collection::view& new_cells) const {
+
+    const unsigned blockSize = SORT_THREADS_PER_BLOCK;
+    const unsigned int cellsPerThread = 16;
+    const unsigned int numBlocks =
+        (num_cells + (blockSize * cellsPerThread) - 1) /
+        (blockSize * cellsPerThread);
+
+    kernels::
+        sort_cells<<<numBlocks, blockSize, 0, details::get_stream(stream())>>>(
+            cellsPerThread, num_cells, cells, new_cells);
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 }
 
 void clusterization_algorithm::ccl_kernel(
