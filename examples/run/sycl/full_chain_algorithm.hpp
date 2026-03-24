@@ -16,6 +16,7 @@
 #include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 #include "traccc/sycl/clusterization/measurement_sorting_algorithm.hpp"
+#include "traccc/sycl/clusterization/silicon_cell_sorting_algorithm.hpp"
 #include "traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/sycl/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/sycl/seeding/seed_parameter_estimation_algorithm.hpp"
@@ -148,6 +149,8 @@ class full_chain_algorithm
     /// @name Sub-algorithms used by this full-chain algorithm
     /// @{
 
+    /// Cell sorting algorithm
+    silicon_cell_sorting_algorithm m_cell_sorting;
     /// Clusterization algorithm
     clusterization_algorithm m_clusterization;
     /// Measurement sorting algorithm

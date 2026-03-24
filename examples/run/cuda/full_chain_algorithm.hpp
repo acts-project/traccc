@@ -11,6 +11,7 @@
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/cuda/clusterization/measurement_sorting_algorithm.hpp"
+#include "traccc/cuda/clusterization/silicon_cell_sorting_algorithm.hpp"
 #include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/cuda/seeding/seed_parameter_estimation_algorithm.hpp"
@@ -146,6 +147,8 @@ class full_chain_algorithm
     /// @name Sub-algorithms used by this full-chain algorithm
     /// @{
 
+    /// Cell sorting algorithm
+    silicon_cell_sorting_algorithm m_cell_sorting;
     /// Clusterization algorithm
     clusterization_algorithm m_clusterization;
     /// Measurement sorting algorithm

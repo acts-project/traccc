@@ -34,6 +34,7 @@ traccc_add_library( traccc_device_common device_common
    "include/traccc/clusterization/device/barcode_based_sorter.hpp"
    "include/traccc/clusterization/device/ccl_kernel_definitions.hpp"
    "include/traccc/clusterization/device/ccl_kernel.hpp"
+   "include/traccc/clusterization/device/silicon_cell_sorter.hpp"
    "include/traccc/clusterization/device/sorting_index_filler.hpp"
    "include/traccc/clusterization/device/clusterization_algorithm.hpp"
    "src/clusterization/clusterization_algorithm.cpp"

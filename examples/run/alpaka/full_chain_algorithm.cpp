@@ -43,9 +43,13 @@ full_chain_algorithm::full_chain_algorithm(
               m_det_descr.get().size()),
           m_vecmem_objects.device_mr()),
       m_detector(detector),
+      m_cell_sorting({m_cached_device_mr, &m_cached_pinned_host_mr},
+                     m_vecmem_objects.async_copy(), m_queue,
+                     logger->cloneWithSuffix("CellSortingAlg")),
       m_clusterization({m_cached_device_mr, &m_cached_pinned_host_mr},
                        m_vecmem_objects.async_copy(), m_queue,
-                       clustering_config),
+                       clustering_config,
+                       logger->cloneWithSuffix("ClusteringAlg")),
       m_measurement_sorting({m_cached_device_mr, &m_cached_pinned_host_mr},
                             m_vecmem_objects.async_copy(), m_queue,
                             logger->cloneWithSuffix("MeasSortingAlg")),
@@ -103,9 +107,13 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
               m_det_descr.get().size()),
           m_vecmem_objects.device_mr()),
       m_detector(parent.m_detector),
+      m_cell_sorting({m_cached_device_mr, &m_cached_pinned_host_mr},
+                     m_vecmem_objects.async_copy(), m_queue,
+                     parent.logger().cloneWithSuffix("CellSortingAlg")),
       m_clusterization({m_cached_device_mr, &m_cached_pinned_host_mr},
                        m_vecmem_objects.async_copy(), m_queue,
-                       parent.m_clustering_config),
+                       parent.m_clustering_config,
+                       parent.logger().cloneWithSuffix("ClusteringAlg")),
       m_measurement_sorting({m_cached_device_mr, &m_cached_pinned_host_mr},
                             m_vecmem_objects.async_copy(), m_queue,
                             parent.logger().cloneWithSuffix("MeasSortingAlg")),
@@ -161,8 +169,9 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
         ->ignore();
 
     // Run the clusterization (asynchronously).
+    const auto sorted_cells = m_cell_sorting(cells_buffer);
     const auto unsorted_measurements =
-        m_clusterization(cells_buffer, m_device_det_descr);
+        m_clusterization(sorted_cells, m_device_det_descr);
     const measurement_sorting_algorithm::output_type measurements =
         m_measurement_sorting(unsorted_measurements);
 
@@ -218,8 +227,9 @@ bound_track_parameters_collection_types::host full_chain_algorithm::seeding(
         ->ignore();
 
     // Run the clusterization (asynchronously).
+    const auto sorted_cells = m_cell_sorting(cells_buffer);
     const auto unsorted_measurements =
-        m_clusterization(cells_buffer, m_device_det_descr);
+        m_clusterization(sorted_cells, m_device_det_descr);
     const measurement_sorting_algorithm::output_type measurements =
         m_measurement_sorting(unsorted_measurements);
 

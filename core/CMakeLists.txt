@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2025 CERN for the benefit of the ACTS project
+# (c) 2021-2026 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -78,6 +78,8 @@ traccc_add_library( traccc_core core TYPE SHARED
   "src/clusterization/measurement_sorting_algorithm.cpp"
   "include/traccc/clusterization/clusterization_algorithm.hpp"
   "src/clusterization/clusterization_algorithm.cpp"
+  "include/traccc/clusterization/silicon_cell_sorting_algorithm.hpp"
+  "src/clusterization/silicon_cell_sorting_algorithm.cpp"
   # Finding algorithmic code
   "include/traccc/finding/candidate_link.hpp"
   "include/traccc/finding/finding_config.hpp"
