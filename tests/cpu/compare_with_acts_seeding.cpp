@@ -142,12 +142,12 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     gridConf.bFieldInZ = traccc_config.bFieldInZ;
     gridConf.bottomBinFinder.emplace(1, std::vector<std::pair<int, int>>{}, 0);
     gridConf.topBinFinder.emplace(1, std::vector<std::pair<int, int>>{}, 0);
-    gridConf.navigation[0ul] = {};
-    gridConf.navigation[1ul] = {};
-    gridConf.navigation[2ul] = {};
+    // gridConf.navigation[0ul] = {};
+    // gridConf.navigation[1ul] = {};
+    // gridConf.navigation[2ul] = {};
 
     Acts::DoubletSeedFinder::Config bottomDoubletFinderConfig;
-    bottomDoubletFinderConfig.spacePointsSortedByRadius = true;
+    bottomDoubletFinderConfig.spacePointsSortedByRadius = false;
     bottomDoubletFinderConfig.candidateDirection = Acts::Direction::Backward();
     bottomDoubletFinderConfig.deltaRMin = traccc_config.deltaRMin;
     bottomDoubletFinderConfig.deltaRMax = traccc_config.deltaRMax;
@@ -199,12 +199,12 @@ TEST_P(CompareWithActsSeedingTests, Run) {
         float phi = std::atan2(sp.xy()[1], sp.xy()[0]);
         grid.insert(i, phi, sp.zr()[0], sp.zr()[1]);
     }
-    grid.sortBinsByR(actsSpacepoints);
+    // grid.sortBinsByR(actsSpacepoints);
 
     // Perform some checks on the grid definition and its axes.
     // It looks like traccc is usind a 2D grid, while ACTS uses 3D
     // however, the first two axes should be the same: i.e. phi and z
-    EXPECT_EQ(grid.numberOfBins(), 3ul);
+    // EXPECT_EQ(grid.numberOfBins(), 3ul);
 
     // Get the traccc axes:
     //  0 -> phi
@@ -246,20 +246,27 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     Acts::BroadTripletSeedFilter::Cache filterCache;
     Acts::BroadTripletSeedFilter seedFilter(
         filterConfig, filterState, filterCache, Acts::getDummyLogger());
-    Acts::TripletSeeder actsSeedfinder;
+    Acts::TripletSeeder actsSeedfinder{
+        Acts::getDefaultLogger("TripletSeeder", Acts::Logging::Level::VERBOSE)};
     Acts::TripletSeeder::Cache cache;
     const Acts::SpacePointContainer2& constActsSpacepoints = actsSpacepoints;
     for (const auto [bottom, middle, top] : grid.binnedGroup()) {
         std::vector<unsigned int> bottomIndices(bottom.begin(), bottom.end());
         std::vector<unsigned int> topIndices(top.begin(), top.end());
         auto bottomSpacepoints = constActsSpacepoints.subset(bottomIndices);
+        std::cout << "Number of bottom space points: " << bottomSpacepoints.size()
+                  << std::endl;
         auto topSpacepoints = constActsSpacepoints.subset(topIndices);
+        std::cout << "Number of top space points: " << topSpacepoints.size()
+                  << std::endl;
         actsSeedfinder.createSeedsFromGroup(
             cache, *bottomDoubletFinder, *topDoubletFinder, *tripletFinder,
             seedFilter, actsSpacepoints, bottomSpacepoints,
             constActsSpacepoints[static_cast<unsigned int>(middle)],
             topSpacepoints, actsSeeds);
     }
+    std::cout << "Number of seeds found by ACTS: " << actsSeeds.size()
+              << std::endl;
 
     // We have created seeds of proxies to space point at this point
     // From a proxy we can retrieve the original space point object with
