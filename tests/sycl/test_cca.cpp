@@ -53,8 +53,14 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
                 [&]() {
                     std::vector<unsigned int> sizes(det_desc.size());
                     for (std::size_t i = 0; i < det_desc.size(); ++i) {
-                        sizes[i] = static_cast<unsigned int>(
-                            det_desc.bin_edges_x().at(i).size());
+                        auto this_design = det_desc.at(i);
+                        // now for each element, set the size to the largest
+                        // size of that element across all modules
+                        sizes[i] =
+                            std::max(static_cast<unsigned int>(
+                                         ((this_design.bin_edges_x()).size())),
+                                     static_cast<unsigned int>(
+                                         ((this_design.bin_edges_y()).size())));
                     }
                     return sizes;
                 }(),
