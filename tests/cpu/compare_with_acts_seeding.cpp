@@ -83,8 +83,8 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     // Create Acts spacepoints from the traccc ones.
     Acts::SpacePointContainer2 actsSpacepoints{
-        Acts::SpacePointColumns::X | Acts::SpacePointColumns::Y |
-        Acts::SpacePointColumns::Z | Acts::SpacePointColumns::VarianceZ |
+        Acts::SpacePointColumns::PackedXY | Acts::SpacePointColumns::PackedZR |
+        Acts::SpacePointColumns::VarianceZ |
         Acts::SpacePointColumns::VarianceR |
         Acts::SpacePointColumns::CopyFromIndex};
     actsSpacepoints.reserve(
@@ -94,9 +94,8 @@ TEST_P(CompareWithActsSeedingTests, Run) {
         traccc::edm::spacepoint tsp = spacepoints_per_event[i];
         // Create the corresponding Acts spacepoint.
         auto asp = actsSpacepoints.createSpacePoint();
-        asp.x() = tsp.x();
-        asp.y() = tsp.y();
-        asp.z() = tsp.z();
+        asp.xy() = {tsp.x(), tsp.y()};
+        asp.zr() = {tsp.z(), tsp.radius()};
         asp.varianceR() = tsp.radius_variance();
         asp.varianceZ() = tsp.z_variance();
         asp.copyFromIndex() = static_cast<unsigned int>(i);
@@ -192,24 +191,13 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     filterConfig.zOriginWeightFactor = 0.f;
     filterConfig.maxSeedsPerSpM = traccc_config.maxSeedsPerSpM;
     filterConfig.compatSeedLimit = traccc_filter_config.compatSeedLimit;
-    // filterConfig.seedWeightIncrement = m_cfg.seedWeightIncrement;
-    // filterConfig.numSeedIncrement = m_cfg.numSeedIncrement;
-    // filterConfig.seedConfirmation = m_cfg.seedConfirmation;
-    // filterConfig.centralSeedConfirmationRange =
-    //     m_cfg.centralSeedConfirmationRange;
-    // filterConfig.forwardSeedConfirmationRange =
-    //     m_cfg.forwardSeedConfirmationRange;
-    // filterConfig.maxSeedsPerSpMConf = m_cfg.maxSeedsPerSpMConf;
-    // filterConfig.maxQualitySeedsPerSpMConf = m_cfg.maxQualitySeedsPerSpMConf;
-    // filterConfig.useDeltaRinsteadOfTopRadius =
-    //     m_cfg.useDeltaRinsteadOfTopRadius;
 
     // We fill the grid with the space points
     Acts::CylindricalSpacePointGrid2 grid(gridConf);
     for (unsigned int i = 0; i < actsSpacepoints.size(); ++i) {
         const auto& sp = actsSpacepoints[i];
-        float phi = std::atan2(sp.y(), sp.x());
-        grid.insert(i, phi, sp.z(), sp.r());
+        float phi = std::atan2(sp.xy()[1], sp.xy()[0]);
+        grid.insert(i, phi, sp.zr()[0], sp.zr()[1]);
     }
     grid.sortBinsByR(actsSpacepoints);
 
