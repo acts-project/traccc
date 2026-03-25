@@ -6,9 +6,9 @@
  */
 
 // Local include(s).
-#include "traccc/io/read_digitization_config.hpp"
+#include "traccc/io/read_conditions_config.hpp"
 
-#include "json/read_digitization_config.hpp"
+#include "json/read_conditions_config.hpp"
 #include "traccc/io/utils.hpp"
 
 // System include(s).
@@ -17,8 +17,8 @@
 
 namespace traccc::io {
 
-digitization_config read_digitization_config(std::string_view filename,
-                                             data_format format) {
+conditions_config read_conditions_config(std::string_view filename,
+                                         data_format format) {
 
     // Construct the full filename.
     std::string full_filename = get_absolute_path(filename);
@@ -26,7 +26,7 @@ digitization_config read_digitization_config(std::string_view filename,
     // Decide how to read the file.
     switch (format) {
         case data_format::json:
-            return json::read_digitization_config(full_filename);
+            return json::read_conditions_config(full_filename);
         default:
             throw std::invalid_argument("Unsupported data format");
     }

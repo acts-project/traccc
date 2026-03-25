@@ -12,8 +12,9 @@
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/detector_buffer.hpp"
+#include "traccc/geometry/detector_conditions_description.hpp"
+#include "traccc/geometry/detector_design_description.hpp"
 #include "traccc/geometry/host_detector.hpp"
-#include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 #include "traccc/sycl/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
@@ -80,7 +81,8 @@ class full_chain_algorithm
         const track_params_estimation_config& track_params_estimation_config,
         const finding_algorithm::config_type& finding_config,
         const fitting_algorithm::config_type& fitting_config,
-        const silicon_detector_description::host& det_descr,
+        const detector_design_description::host& det_descr,
+        const detector_conditions_description::host& det_cond,
         const magnetic_field& field, host_detector* detector,
         std::unique_ptr<const traccc::Logger> logger);
 
@@ -135,10 +137,12 @@ class full_chain_algorithm
     magnetic_field m_field;
 
     /// Detector description
-    std::reference_wrapper<const silicon_detector_description::host>
-        m_det_descr;
+    std::reference_wrapper<const detector_design_description::host> m_det_descr;
+    std::reference_wrapper<const detector_conditions_description::host>
+        m_det_cond;
     /// Detector description buffer
-    silicon_detector_description::buffer m_device_det_descr;
+    detector_design_description::buffer m_device_det_descr;
+    detector_conditions_description::buffer m_device_det_cond;
 
     /// Host detector
     host_detector* m_detector;

@@ -31,9 +31,13 @@ class detector : public interface {
     /// The file containing the surface grid description
     std::string grid_file =
         "geometries/odd/odd-detray_surface_grids_detray.json";
-
     /// The digitization configuration file
     std::string digitization_file =
+        "geometries/odd/odd-digi-geometric-config.json";
+    /// The conditions configuration file,
+    /// for ODD this is the same as the digitization configuration file
+    /// since ODD has no changing detector conditions
+    std::string conditions_file =
         "geometries/odd/odd-digi-geometric-config.json";
 
     /// @}

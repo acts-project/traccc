@@ -80,18 +80,41 @@ int seq_run(const traccc::opts::detector& detector_opts,
     vecmem::copy& copy = vo.async_copy();
 
     // Construct the detector description object.
-    traccc::silicon_detector_description::host host_det_descr{host_mr};
+    traccc::detector_design_description::host host_det_descr{host_mr};
+    traccc::detector_conditions_description::host host_det_cond{host_mr};
     traccc::io::read_detector_description(
-        host_det_descr, detector_opts.detector_file,
-        detector_opts.digitization_file, traccc::data_format::json);
-    traccc::silicon_detector_description::data host_det_descr_data{
+        host_det_descr, host_det_cond, detector_opts.detector_file,
+        detector_opts.digitization_file, detector_opts.conditions_file,
+        traccc::data_format::json);
+    traccc::detector_design_description::data host_det_descr_data{
         vecmem::get_data(host_det_descr)};
-    traccc::silicon_detector_description::buffer device_det_descr{
-        static_cast<traccc::silicon_detector_description::buffer::size_type>(
-            host_det_descr.size()),
-        device_mr};
+    traccc::detector_conditions_description::data host_det_cond_data{
+        vecmem::get_data(host_det_cond)};
+    traccc::detector_design_description::buffer device_det_descr{
+        [&]() {
+            std::vector<unsigned int> sizes(host_det_descr.size());
+            for (std::size_t i = 0; i < host_det_descr.size(); ++i) {
+                auto this_design = host_det_descr.at(i);
+
+                sizes[i] = std::max(static_cast<unsigned int>(
+                                        ((this_design.bin_edges_x()).size())),
+                                    static_cast<unsigned int>(
+                                        ((this_design.bin_edges_y()).size())));
+            }
+            return sizes;
+        }(),
+        device_mr, &host_mr, vecmem::data::buffer_type::resizable};
     copy.setup(device_det_descr)->wait();
-    copy(host_det_descr_data, device_det_descr)->wait();
+    copy(vecmem::get_data(host_det_descr), device_det_descr)->wait();
+
+    traccc::detector_conditions_description::buffer device_det_cond{
+        static_cast<traccc::detector_conditions_description::buffer::size_type>(
+            host_det_cond.size()),
+        device_mr};
+    copy.setup(device_det_cond)->ignore();
+    copy(vecmem::get_data(host_det_cond), device_det_cond,
+         vecmem::copy::type::host_to_device)
+        ->ignore();
 
     // Construct a Detray detector object, if supported by the configuration.
     traccc::host_detector host_det;
@@ -225,7 +248,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 static constexpr bool DEDUPLICATE = true;
                 traccc::io::read_cells(
                     cells_per_event, event, input_opts.directory,
-                    logger().clone(), &host_det_descr, input_opts.format,
+                    logger().clone(), &host_det_cond, input_opts.format,
                     DEDUPLICATE, input_opts.use_acts_geom_source);
             }  // stop measuring file reading timer
 
@@ -243,7 +266,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
                                              elapsedTimes);
                 // Reconstruct it into spacepoints on the device.
                 auto unsorted_measurements =
-                    ca_alpaka(cells_buffer, device_det_descr);
+                    ca_alpaka(cells_buffer, device_det_descr, device_det_cond);
                 measurements_alpaka_buffer = ms_alpaka(unsorted_measurements);
                 queue.synchronize();
             }  // stop measuring clusterization alpaka timer
@@ -253,7 +276,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
                 traccc::performance::timer t("Clusterization  (cpu)",
                                              elapsedTimes);
                 measurements_per_event =
-                    ca(vecmem::get_data(cells_per_event), host_det_descr_data);
+                    ca(vecmem::get_data(cells_per_event), host_det_descr_data,
+                       host_det_cond_data);
             }  // stop measuring clusterization cpu timer
 
             // Perform seeding, track finding and fitting only when using a

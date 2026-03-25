@@ -127,9 +127,11 @@ TEST_F(io, csv_write_odd_single_muon_cells) {
     vecmem::host_memory_resource mr;
 
     // Read the ODD detector description.
-    traccc::silicon_detector_description::host dd{mr};
+    traccc::detector_design_description::host det_desc{mr};
+    traccc::detector_conditions_description::host det_cond{mr};
     traccc::io::read_detector_description(
-        dd, "geometries/odd/odd-detray_geometry_detray.json",
+        det_desc, det_cond, "geometries/odd/odd-detray_geometry_detray.json",
+        "geometries/odd/odd-digi-geometric-config.json",
         "geometries/odd/odd-digi-geometric-config.json");
 
     // Lambda comparing two cell collections.
@@ -154,19 +156,19 @@ TEST_F(io, csv_write_odd_single_muon_cells) {
 
             // Read the cells for the current event.
             traccc::io::read_cells(orig, event, "odd/geant4_1muon_1GeV/",
-                                   traccc::getDummyLogger().clone(), &dd);
-
+                                   traccc::getDummyLogger().clone(), &det_cond);
             // Write the cells into a temporary file.
             traccc::io::write(event,
                               std::filesystem::temp_directory_path().native(),
                               traccc::data_format::csv, vecmem::get_data(orig),
-                              vecmem::get_data(dd), use_acts_geometry_id);
+                              vecmem::get_data(det_desc),
+                              vecmem::get_data(det_cond), use_acts_geometry_id);
 
             // Read the cells back in.
             traccc::io::read_cells(
                 copy, event, std::filesystem::temp_directory_path().native(),
-                traccc::getDummyLogger().clone(), &dd, traccc::data_format::csv,
-                false, use_acts_geometry_id);
+                traccc::getDummyLogger().clone(), &det_cond,
+                traccc::data_format::csv, false, use_acts_geometry_id);
 
             // Compare the two cell collections.
             compare_cells(orig, copy);

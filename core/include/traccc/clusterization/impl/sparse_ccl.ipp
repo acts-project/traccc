@@ -72,12 +72,14 @@ TRACCC_HOST_DEVICE inline unsigned int sparse_ccl(
     // first scan: pixel association
     unsigned int start_j = 0;
     for (unsigned int i = 0; i < n_cells; ++i) {
+
         labels[i] = i;
         unsigned int ai = i;
         for (unsigned int j = start_j; j < i; ++j) {
-            if (is_adjacent(cells[i], cells[j])) {
+
+            if (is_adjacent(cells.at(i), cells.at(j))) {
                 ai = make_union(labels, ai, find_root(labels, j));
-            } else if (is_far_enough(cells[i], cells[j])) {
+            } else if (is_far_enough(cells.at(i), cells.at(j))) {
                 ++start_j;
             }
         }
@@ -91,7 +93,6 @@ TRACCC_HOST_DEVICE inline unsigned int sparse_ccl(
             labels[i] = labels[labels[i]];
         }
     }
-
     return nlabels;
 }
 

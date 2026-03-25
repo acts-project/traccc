@@ -24,8 +24,8 @@ namespace traccc::device {
 /// @param[out] ajc     Number of adjacent cells
 /// @param[out] ajv     Indices of adjacent cells
 ///
-TRACCC_HOST_DEVICE
-inline void reduce_problem_cell(
+
+TRACCC_HOST_DEVICE inline void reduce_problem_cell(
     const edm::silicon_cell_collection::const_device& cells, unsigned short cid,
     unsigned int start, unsigned int end, unsigned char& adjc,
     unsigned short* adjv);

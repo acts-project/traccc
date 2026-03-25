@@ -12,7 +12,8 @@
 #include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
-#include "traccc/geometry/silicon_detector_description.hpp"
+#include "traccc/geometry/detector_conditions_description.hpp"
+#include "traccc/geometry/detector_design_description.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
@@ -23,7 +24,8 @@ namespace traccc::cuda::kernels {
 __global__ void ccl_kernel(
     const clustering_config cfg,
     const edm::silicon_cell_collection::const_view cells_view,
-    const silicon_detector_description::const_view det_descr_view,
+    const detector_design_description::const_view det_descr_view,
+    const detector_conditions_description::const_view det_cond_view,
     edm::measurement_collection<default_algebra>::view measurements_view,
     vecmem::data::vector_view<unsigned int> cell_links,
     vecmem::data::vector_view<device::details::index_t> f_backup_view,

@@ -17,7 +17,6 @@
 #include <iostream>
 #include <map>
 #include <set>
-#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -114,8 +113,8 @@ namespace traccc::io::csv {
 void read_cells(edm::silicon_cell_collection::host& cells,
                 std::string_view filename,
                 std::unique_ptr<const Logger> ilogger,
-                const silicon_detector_description::host* dd, bool deduplicate,
-                bool use_acts_geometry_id) {
+                const detector_conditions_description::host* det_cond,
+                bool deduplicate, bool use_acts_geometry_id) {
 
     // Clear the output container.
     cells.resize(0u);
@@ -128,14 +127,15 @@ void read_cells(edm::silicon_cell_collection::host& cells,
     // If there is a detector description object, build a map of geometry IDs
     // to indices inside the detector description.
     std::map<geometry_id, unsigned int> geomIdMap;
-    if (dd) {
+    if (det_cond) {
         if (use_acts_geometry_id) {
-            for (unsigned int i = 0; i < dd->acts_geometry_id().size(); ++i) {
-                geomIdMap[dd->acts_geometry_id()[i]] = i;
+            for (unsigned int i = 0; i < det_cond->acts_geometry_id().size();
+                 ++i) {
+                geomIdMap[det_cond->acts_geometry_id()[i]] = i;
             }
         } else {
-            for (unsigned int i = 0; i < dd->geometry_id().size(); ++i) {
-                geomIdMap[dd->geometry_id()[i].value()] = i;
+            for (unsigned int i = 0; i < det_cond->geometry_id().size(); ++i) {
+                geomIdMap[det_cond->geometry_id()[i].value()] = i;
             }
         }
     }
@@ -146,7 +146,8 @@ void read_cells(edm::silicon_cell_collection::host& cells,
         // Figure out the index of the detector description object, for this
         // group of cells.
         unsigned int ddIndex = 0;
-        if (dd) {
+
+        if (det_cond) {
             auto it = geomIdMap.find(geometry_id);
             if (it == geomIdMap.end()) {
                 throw std::runtime_error("Could not find geometry ID (" +

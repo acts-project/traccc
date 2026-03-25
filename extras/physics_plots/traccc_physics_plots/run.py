@@ -11,6 +11,7 @@ log = logging.getLogger("traccc_physics_plots.run")
 SEEDING_EXAMPLE_ARGS = [
     "--input-directory=/data/Acts/odd-simulations-20240506/geant4_ttbar_mu200",
     "--digitization-file=geometries/odd/odd-digi-geometric-config.json",
+    "--conditions-file=geometries/odd/odd-conditions.json",
     "--detector-file=geometries/odd/odd-detray_geometry_detray.json",
     "--grid-file=geometries/odd/odd-detray_surface_grids_detray.json",
     "--material-file=geometries/odd/odd-detray_material_detray.json",

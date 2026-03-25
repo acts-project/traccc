@@ -30,7 +30,8 @@ struct ccl_kernel {
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, const clustering_config cfg,
         const edm::silicon_cell_collection::const_view cells_view,
-        const silicon_detector_description::const_view det_descr_view,
+        const detector_design_description::const_view det_descr_view,
+        const detector_conditions_description::const_view det_cond_view,
         vecmem::data::vector_view<device::details::index_t> f_backup_view,
         vecmem::data::vector_view<device::details::index_t> gf_backup_view,
         vecmem::data::vector_view<unsigned char> adjc_backup_view,
@@ -60,11 +61,12 @@ struct ccl_kernel {
 
         alpaka::barrier<TAcc> barry_r(&acc);
 
-        device::ccl_kernel(
-            cfg, thread_id, cells_view, det_descr_view, partition_start,
-            partition_end, outi, f_view, gf_view, f_backup_view, gf_backup_view,
-            adjc_backup_view, adjv_backup_view, backup_mutex, disjoint_set_view,
-            cluster_size_view, barry_r, measurements_view, cell_links);
+        device::ccl_kernel(cfg, thread_id, cells_view, det_descr_view,
+                           det_cond_view, partition_start, partition_end, outi,
+                           f_view, gf_view, f_backup_view, gf_backup_view,
+                           adjc_backup_view, adjv_backup_view, backup_mutex,
+                           disjoint_set_view, cluster_size_view, barry_r,
+                           measurements_view, cell_links);
     }
 
 };  // struct ccl_kernel
@@ -112,10 +114,10 @@ void clusterization_algorithm::ccl_kernel(
         makeWorkDiv<Acc>(num_blocks, payload.config.threads_per_partition);
     ::alpaka::exec<Acc>(
         details::get_queue(queue()), workDiv, kernels::ccl_kernel{},
-        payload.config, payload.cells, payload.det_descr, payload.f_backup,
-        payload.gf_backup, payload.adjc_backup, payload.adjv_backup,
-        payload.backup_mutex, payload.disjoint_set, payload.cluster_sizes,
-        payload.measurements, payload.cell_links);
+        payload.config, payload.cells, payload.det_descr, payload.det_cond,
+        payload.f_backup, payload.gf_backup, payload.adjc_backup,
+        payload.adjv_backup, payload.backup_mutex, payload.disjoint_set,
+        payload.cluster_sizes, payload.measurements, payload.cell_links);
 }
 
 void clusterization_algorithm::cluster_maker_kernel(

@@ -8,7 +8,7 @@
 // Project include(s).
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"
-#include "traccc/geometry/silicon_detector_description.hpp"
+#include "traccc/geometry/detector_design_description.hpp"
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_detector_description.hpp"
@@ -31,6 +31,7 @@ TEST_P(SurfaceBinningTests, Run) {
 
     std::string detector_file = std::get<0>(GetParam());
     std::string digi_config_file = std::get<1>(GetParam());
+    std::string det_cond_file = std::get<1>(GetParam());
     std::string data_dir = std::get<2>(GetParam());
     unsigned int event = std::get<3>(GetParam());
 
@@ -38,11 +39,15 @@ TEST_P(SurfaceBinningTests, Run) {
     vecmem::host_memory_resource host_mr;
 
     // Read the detector description.
-    traccc::silicon_detector_description::host dd{host_mr};
-    traccc::io::read_detector_description(dd, detector_file, digi_config_file,
+    traccc::detector_design_description::host det_desc{host_mr};
+    traccc::detector_conditions_description::host det_cond{host_mr};
+    traccc::io::read_detector_description(det_desc, det_cond, detector_file,
+                                          digi_config_file, det_cond_file,
                                           traccc::json);
-    const traccc::silicon_detector_description::data dd_data =
-        vecmem::get_data(dd);
+    const traccc::detector_design_description::data det_desc_data =
+        vecmem::get_data(det_desc);
+    const traccc::detector_conditions_description::data det_cond_data =
+        vecmem::get_data(det_cond);
 
     // Read the detector
     traccc::host_detector detector;
@@ -55,10 +60,11 @@ TEST_P(SurfaceBinningTests, Run) {
     // Read the cells from the relevant event file
     traccc::edm::silicon_cell_collection::host cells_truth{host_mr};
     traccc::io::read_cells(cells_truth, event, data_dir,
-                           traccc::getDummyLogger().clone(), &dd);
+                           traccc::getDummyLogger().clone(), &det_cond);
 
     // Get Reconstructed Spacepoints
-    auto measurements_recon = ca(vecmem::get_data(cells_truth), dd_data);
+    auto measurements_recon =
+        ca(vecmem::get_data(cells_truth), det_desc_data, det_cond_data);
     auto spacepoints_recon = sf(detector, vecmem::get_data(measurements_recon));
 
     // Read the hits from the relevant event file
@@ -107,8 +113,10 @@ INSTANTIATE_TEST_SUITE_P(
         /* The commented event files does not pass the test
                 std::make_tuple("geometries/odd/odd-detray_geometry_detray.json",
                                 "geometries/odd/odd-digi-geometric-config.json",
+                                "geometries/odd/odd-digi-geometric-config.json",
                                 "odd/geant4_1muon_100GeV", 1),
                 std::make_tuple("geometries/odd/odd-detray_geometry_detray.json",
+                                "geometries/odd/odd-digi-geometric-config.json",
                                 "geometries/odd/odd-digi-geometric-config.json",
                                 "odd/geant4_1muon_100GeV", 2),
         */

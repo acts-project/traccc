@@ -34,6 +34,10 @@ detector::detector() : interface("Detector Options") {
         "digitization-file",
         po::value(&digitization_file)->default_value(digitization_file),
         "Digitization file");
+    m_desc.add_options()(
+        "conditions-file",
+        po::value(&conditions_file)->default_value(conditions_file),
+        "Conditions file");
 }
 
 std::unique_ptr<configuration_printable> detector::as_printable() const {
@@ -47,6 +51,8 @@ std::unique_ptr<configuration_printable> detector::as_printable() const {
                                                            grid_file));
     cat->add_child(std::make_unique<configuration_kv_pair>("Digitization file",
                                                            digitization_file));
+    cat->add_child(std::make_unique<configuration_kv_pair>("Conditions file",
+                                                           conditions_file));
 
     return cat;
 }

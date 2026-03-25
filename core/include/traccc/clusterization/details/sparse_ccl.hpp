@@ -10,6 +10,7 @@
 // Library include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
+#include "traccc/geometry/detector_conditions_description.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>

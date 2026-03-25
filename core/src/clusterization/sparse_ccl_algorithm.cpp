@@ -25,10 +25,12 @@ sparse_ccl_algorithm::sparse_ccl_algorithm(vecmem::memory_resource& mr,
     : messaging(std::move(logger)), m_mr(mr) {}
 
 sparse_ccl_algorithm::output_type sparse_ccl_algorithm::operator()(
-    const edm::silicon_cell_collection::const_view& cells_view) const {
+    const edm::silicon_cell_collection::const_view& cells_view,
+    const detector_conditions_description::const_view& det_cond_view) const {
 
     // Construct the device view of the cells.
     const edm::silicon_cell_collection::const_device cells{cells_view};
+    const detector_conditions_description::const_device det_cond{det_cond_view};
 
     // Run some sanity checks on it.
     assert(is_contiguous_on(cell_module_projection(), cells));

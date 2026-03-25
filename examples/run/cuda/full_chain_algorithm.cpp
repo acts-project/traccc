@@ -40,7 +40,8 @@ full_chain_algorithm::full_chain_algorithm(
     const track_params_estimation_config& track_params_estimation_config,
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
-    const silicon_detector_description::host& det_descr,
+    const detector_design_description::host& det_descr,
+    const detector_conditions_description::host& det_cond,
     const magnetic_field& field, host_detector* detector,
     std::unique_ptr<const traccc::Logger> logger)
     : messaging(logger->clone()),
@@ -54,9 +55,26 @@ full_chain_algorithm::full_chain_algorithm(
       m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
       m_field(make_magnetic_field(field)),
       m_det_descr(det_descr),
+      m_det_cond(det_cond),
       m_device_det_descr(
-          static_cast<silicon_detector_description::buffer::size_type>(
-              m_det_descr.get().size()),
+          [&]() {
+              // number of elements in the detector design description
+              std::vector<unsigned int> sizes(det_descr.size());
+              for (std::size_t i = 0; i < det_descr.size(); ++i) {
+                  auto this_design = det_descr.at(i);
+                  // now for each element, set the size to the largest size of
+                  // that element across all modules
+                  sizes[i] = std::max(static_cast<unsigned int>(
+                                          ((this_design.bin_edges_x()).size())),
+                                      static_cast<unsigned int>((
+                                          (this_design.bin_edges_y()).size())));
+              }
+              return sizes;
+          }(),
+          m_device_mr, &m_host_mr, vecmem::data::buffer_type::resizable),
+      m_device_det_cond(
+          static_cast<detector_conditions_description::buffer::size_type>(
+              m_det_cond.get().size()),
           m_device_mr),
       m_detector(detector),
       m_clusterization({m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy,
@@ -96,7 +114,9 @@ full_chain_algorithm::full_chain_algorithm(
               << ", device: " << props.pciDeviceID << "]" << std::endl;
 
     // Copy the detector (description) to the device.
-    m_copy(vecmem::get_data(m_det_descr.get()), m_device_det_descr)->ignore();
+    m_copy.setup(m_device_det_descr)->wait();
+    m_copy(vecmem::get_data(m_det_descr.get()), m_device_det_descr)->wait();
+    m_copy(vecmem::get_data(m_det_cond.get()), m_device_det_cond)->wait();
     if (m_detector != nullptr) {
         m_device_detector =
             traccc::buffer_from_host_detector(*m_detector, m_device_mr, m_copy);
@@ -115,9 +135,27 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_field_vec(parent.m_field_vec),
       m_field(parent.m_field),
       m_det_descr(parent.m_det_descr),
+      m_det_cond(parent.m_det_cond),
       m_device_det_descr(
-          static_cast<silicon_detector_description::buffer::size_type>(
-              m_det_descr.get().size()),
+          [&]() {
+              // number of elements in the detector design description
+              std::vector<unsigned int> sizes(parent.m_det_descr.get().size());
+              for (std::size_t i = 0; i < parent.m_det_descr.get().size();
+                   ++i) {
+                  auto this_design = parent.m_det_descr.get().at(i);
+                  // now for each element, set the size to the largest size of
+                  // that element across all modules
+                  sizes[i] = std::max(static_cast<unsigned int>(
+                                          ((this_design.bin_edges_x()).size())),
+                                      static_cast<unsigned int>((
+                                          (this_design.bin_edges_y()).size())));
+              }
+              return sizes;
+          }(),
+          m_device_mr, &m_host_mr, vecmem::data::buffer_type::resizable),
+      m_device_det_cond(
+          static_cast<detector_conditions_description::buffer::size_type>(
+              m_det_cond.get().size()),
           m_device_mr),
       m_detector(parent.m_detector),
       m_clusterization({m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy,
@@ -150,8 +188,9 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_finding_config(parent.m_finding_config),
       m_fitting_config(parent.m_fitting_config) {
 
-    // Copy the detector (description) to the device.
-    m_copy(vecmem::get_data(m_det_descr.get()), m_device_det_descr)->ignore();
+    m_copy.setup(m_device_det_descr)->wait();
+    m_copy(vecmem::get_data(m_det_descr.get()), m_device_det_descr)->wait();
+    m_copy(vecmem::get_data(m_det_cond.get()), m_device_det_cond)->wait();
     if (m_detector != nullptr) {
         m_device_detector =
             traccc::buffer_from_host_detector(*m_detector, m_device_mr, m_copy);
@@ -170,7 +209,7 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
 
     // Run the clusterization (asynchronously).
     const auto unsorted_measurements =
-        m_clusterization(cells_buffer, m_device_det_descr);
+        m_clusterization(cells_buffer, m_device_det_descr, m_device_det_cond);
     const measurement_sorting_algorithm::output_type measurements =
         m_measurement_sorting(unsorted_measurements);
 
@@ -221,7 +260,7 @@ bound_track_parameters_collection_types::host full_chain_algorithm::seeding(
 
     // Run the clusterization (asynchronously).
     const auto unsorted_measurements =
-        m_clusterization(cells_buffer, m_device_det_descr);
+        m_clusterization(cells_buffer, m_device_det_descr, m_device_det_cond);
     const measurement_sorting_algorithm::output_type measurements =
         m_measurement_sorting(unsorted_measurements);
 

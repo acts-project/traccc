@@ -26,7 +26,8 @@ namespace traccc::io {
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
            traccc::edm::silicon_cell_collection::const_view cells,
-           traccc::silicon_detector_description::const_view dd,
+           traccc::detector_design_description::const_view det_desc_view,
+           traccc::detector_conditions_description::const_view det_cond_view,
            bool use_acts_geometry_id) {
 
     switch (format) {
@@ -44,7 +45,7 @@ void write(std::size_t event, std::string_view directory,
                                    std::filesystem::path(
                                        get_event_filename(event, "-cells.csv")))
                                       .native()),
-                cells, dd, use_acts_geometry_id);
+                cells, det_desc_view, det_cond_view, use_acts_geometry_id);
             break;
         default:
             throw std::invalid_argument("Unsupported data format");

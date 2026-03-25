@@ -2,6 +2,7 @@
     "input": {
         "event_dir": "/data/Acts/odd-simulations-20240506/geant4_ttbar_mu200",
         "digitization_file": "geometries/odd/odd-digi-geometric-config.json",
+        "conditions_file" : "geometries/odd/odd-digi-geometric-config.json",
         "detector_file": "geometries/odd/odd-detray_geometry_detray.json",
         "grid_file": "geometries/odd/odd-detray_surface_grids_detray.json",
         "material_file": "geometries/odd/odd-detray_material_detray.json"

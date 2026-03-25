@@ -55,7 +55,8 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/geometry/module_map.hpp"
   "include/traccc/geometry/geometry.hpp"
   "include/traccc/geometry/pixel_data.hpp"
-  "include/traccc/geometry/silicon_detector_description.hpp"
+  "include/traccc/geometry/detector_design_description.hpp"
+  "include/traccc/geometry/detector_conditions_description.hpp"
   # Utilities.
   "include/traccc/utils/algorithm.hpp"
   "include/traccc/utils/type_traits.hpp"

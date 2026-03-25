@@ -28,13 +28,14 @@ void read_spacepoints(
     std::string_view hit_filename, std::string_view meas_filename,
     std::string_view meas_hit_map_filename,
     const traccc::host_detector* detector,
-    const traccc::silicon_detector_description::host* detector_description,
+    const traccc::detector_design_description::host* det_desc,
+    const traccc::detector_conditions_description::host* det_cond,
     const bool sort_measurements) {
 
     // Read all measurements.
     const std::vector<measurement_id_type> new_idx_map =
-        read_measurements(measurements, meas_filename, detector,
-                          detector_description, sort_measurements);
+        read_measurements(measurements, meas_filename, detector, det_desc,
+                          det_cond, sort_measurements);
 
     // Measurement hit id reader
     auto mhid_reader =

@@ -10,6 +10,7 @@
 // Library include(s).
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/silicon_cluster_collection.hpp"
+#include "traccc/geometry/detector_conditions_description.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/messaging.hpp"
 
@@ -28,7 +29,8 @@ namespace traccc::host {
 ///
 class sparse_ccl_algorithm
     : public algorithm<edm::silicon_cluster_collection::host(
-          const edm::silicon_cell_collection::const_view&)>,
+          const edm::silicon_cell_collection::const_view&,
+          const detector_conditions_description::const_view& det_cond_view)>,
       public messaging {
 
     public:
@@ -46,11 +48,14 @@ class sparse_ccl_algorithm
     /// Callable operator for the connected component labelling
     ///
     /// @param cells_view Collection of input cells sorted by module
+    /// @param det_cond_view Collection of detector conditions
     ///
     /// @return a cluster container
     ///
-    output_type operator()(const edm::silicon_cell_collection::const_view&
-                               cells_view) const override;
+    output_type operator()(
+        const edm::silicon_cell_collection::const_view& cells_view,
+        const detector_conditions_description::const_view& det_cond_view)
+        const override;
 
     /// @}
 

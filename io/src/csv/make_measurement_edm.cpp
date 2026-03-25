@@ -20,7 +20,7 @@ void make_measurement_edm(
     const traccc::io::csv::measurement& csv_meas,
     edm::measurement_collection<default_algebra>::host::proxy_type& meas,
     const std::map<geometry_id, geometry_id>* acts_to_detray_id,
-    const traccc::silicon_detector_description::host* detector_description,
+    const traccc::detector_design_description::host* det_desc,
     const std::map<geometry_id, std::size_t>*
         geometry_id_to_detector_description_index) {
 
@@ -59,13 +59,11 @@ void make_measurement_edm(
     } else {
         meas.surface_link() = detray::geometry::barcode{csv_meas.geometry_id};
     }
-
-    if (detector_description != nullptr) {
-        assert(geometry_id_to_detector_description_index != nullptr);
+    if (det_desc != nullptr) {
         std::size_t dd_idx = geometry_id_to_detector_description_index->at(
             meas.surface_link().value());
-        meas.dimensions() = detector_description->dimensions().at(dd_idx);
-        meas.subspace() = detector_description->subspace().at(dd_idx);
+        meas.dimensions() = det_desc->dimensions().at(dd_idx);
+        meas.subspace() = det_desc->subspace().at(dd_idx);
     } else {
         meas.subspace() = indices;
     }

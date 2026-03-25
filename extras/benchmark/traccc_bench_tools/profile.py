@@ -33,6 +33,7 @@ def run_profile(
         build_dir / "bin" / "traccc_throughput_st_cuda",
         "--input-directory=%s" % data_dir,
         "--digitization-file=geometries/odd/odd-digi-geometric-config.json",
+        "--conditions-file=geometries/odd/odd-digi-geometric-config.json",
         "--detector-file=geometries/odd/odd-detray_geometry_detray.json",
         "--grid-file=geometries/odd/odd-detray_surface_grids_detray.json",
         "--input-events=%d" % events,

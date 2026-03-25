@@ -14,8 +14,9 @@
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/edm/track_container.hpp"
 #include "traccc/geometry/detector.hpp"
+#include "traccc/geometry/detector_conditions_description.hpp"
+#include "traccc/geometry/detector_design_description.hpp"
 #include "traccc/geometry/host_detector.hpp"
-#include "traccc/geometry/silicon_detector_description.hpp"
 #include "traccc/io/data_format.hpp"
 #include "traccc/io/digitization_config.hpp"
 
@@ -38,7 +39,8 @@ namespace traccc::io {
 void write(std::size_t event, std::string_view directory,
            traccc::data_format format,
            traccc::edm::silicon_cell_collection::const_view cells,
-           traccc::silicon_detector_description::const_view dd = {},
+           traccc::detector_design_description::const_view dd,
+           traccc::detector_conditions_description::const_view cd,
            bool use_acts_geometry_id = true);
 
 /// Function for hit file writing

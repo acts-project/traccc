@@ -15,8 +15,7 @@
 
 namespace traccc::device {
 
-TRACCC_HOST_DEVICE
-inline void reduce_problem_cell(
+TRACCC_HOST_DEVICE inline void reduce_problem_cell(
     const edm::silicon_cell_collection::const_device& cells,
     const unsigned short cid, const unsigned int start, const unsigned int end,
     unsigned char& adjc, unsigned short* adjv) {

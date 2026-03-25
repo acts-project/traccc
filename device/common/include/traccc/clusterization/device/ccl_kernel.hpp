@@ -16,7 +16,8 @@
 #include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
-#include "traccc/geometry/silicon_detector_description.hpp"
+#include "traccc/geometry/detector_conditions_description.hpp"
+#include "traccc/geometry/detector_design_description.hpp"
 
 // Vecmem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
@@ -32,7 +33,8 @@ namespace traccc::device {
 /// @param[in] cfg clustering configuration
 /// @param[in] thread_id a thread identifier object
 /// @param[in] cells_view    collection of cells
-/// @param[in] det_descr_view The detector description
+/// @param[in] det_descr_view The detectorsegmentation description
+/// @param[in] det_cond_view The detector conditions description
 /// @param partition_start    partition start point for this thread block
 /// @param partition_end      partition end point for this thread block
 /// @param outi               number of measurements for this partition
@@ -65,7 +67,8 @@ template <device::concepts::barrier barrier_t,
 TRACCC_DEVICE inline void ccl_kernel(
     const clustering_config cfg, const thread_id_t& thread_id,
     const edm::silicon_cell_collection::const_view& cells_view,
-    const silicon_detector_description::const_view& det_descr_view,
+    const detector_design_description::const_view& det_descr_view,
+    const detector_conditions_description::const_view& det_cond_view,
     std::size_t& partition_start, std::size_t& partition_end, std::size_t& outi,
     vecmem::data::vector_view<details::index_t> f_view,
     vecmem::data::vector_view<details::index_t> gf_view,

@@ -148,6 +148,7 @@ for NTHREAD in $(seq ${TRACCC_MIN_THREADS} ${TRACCC_THREAD_STEP} ${TRACCC_MAX_TH
             --material-file="geometries/odd/odd-detray_material_detray.json"    \
             --grid-file="geometries/odd/odd-detray_surface_grids_detray.json"   \
             --digitization-file="geometries/odd/odd-digi-geometric-config.json" \
+            --conditions-file="geometries/odd/odd-conditions.json"               \
             --input-directory="${TRACCC_INPUT_DIR}/geant4_${EVTDIR}/"           \
             --input-events=500                                                  \
             --cpu-threads=${NTHREAD}                                            \

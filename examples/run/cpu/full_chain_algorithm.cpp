@@ -18,7 +18,8 @@ full_chain_algorithm::full_chain_algorithm(
     const track_params_estimation_config& track_params_estimation_config,
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
-    const silicon_detector_description::host& det_descr,
+    const detector_design_description::host& det_descr,
+    const detector_conditions_description::host& det_cond,
     const magnetic_field& field, const host_detector* detector,
     std::unique_ptr<const traccc::Logger> logger)
     : messaging(logger->clone()),
@@ -27,6 +28,7 @@ full_chain_algorithm::full_chain_algorithm(
       m_field_vec{0.f, 0.f, finder_config.bFieldInZ},
       m_field(field),
       m_det_descr(det_descr),
+      m_det_cond(det_cond),
       m_detector(detector),
       m_clusterization(mr, logger->cloneWithSuffix("ClusteringAlg")),
       m_spacepoint_formation(mr, logger->cloneWithSuffix("SpFormationAlg")),
@@ -48,13 +50,14 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     const edm::silicon_cell_collection::host& cells) const {
 
     // Create a data object for the detector description.
-    const silicon_detector_description::const_data det_descr_data =
+    const detector_design_description::const_data det_descr_data =
         vecmem::get_data(m_det_descr.get());
-
+    const detector_conditions_description::const_data det_cond_data =
+        vecmem::get_data(m_det_cond.get());
     // Run the clusterization.
     auto cells_data = vecmem::get_data(cells);
     const clustering_algorithm::output_type measurements =
-        m_clusterization(cells_data, det_descr_data);
+        m_clusterization(cells_data, det_descr_data, det_cond_data);
 
     // If we have a Detray detector, run the seeding track finding and fitting.
     if (m_detector != nullptr) {
@@ -98,13 +101,14 @@ bound_track_parameters_collection_types::host full_chain_algorithm::seeding(
     const edm::silicon_cell_collection::host& cells) const {
 
     // Create a data object for the detector description.
-    const silicon_detector_description::const_data det_descr_data =
+    const detector_design_description::const_data det_descr_data =
         vecmem::get_data(m_det_descr.get());
-
+    const detector_conditions_description::const_data det_cond_data =
+        vecmem::get_data(m_det_cond.get());
     // Run the clusterization.
     auto cells_data = vecmem::get_data(cells);
     const clustering_algorithm::output_type measurements =
-        m_clusterization(cells_data, det_descr_data);
+        m_clusterization(cells_data, det_descr_data, det_cond_data);
 
     // If we have a Detray detector, run the seeding track finding and fitting.
     if (m_detector != nullptr) {
