@@ -153,7 +153,7 @@ struct simulator {
     std::size_t m_events{0u};
     std::string m_directory = "";
     const detector_t& m_detector;
-    const bfield_type& m_field;
+    const typename bfield_type::view_t m_field;
     std::unique_ptr<track_generator_t> m_track_generator;
     typename writer_t::config m_writer_cfg;
 
