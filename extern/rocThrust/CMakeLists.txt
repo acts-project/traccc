@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2024 CERN for the benefit of the ACTS project
+# (c) 2024-2026 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -25,8 +25,12 @@ FetchContent_Declare( rocThrust SYSTEM
 
 # Settings for the rocThrust build.
 set( BUILD_TESTING FALSE )
-set( HIP_COMPILER "clang" )
-set( HIP_CXX_COMPILER "hipcc" )
+set( ROCM_WARN_TOOLCHAIN_VAR FALSE CACHE BOOL "Don't print ROCm warnings" )
+set( ROCM_ERROR_TOOLCHAIN_VAR FALSE CACHE BOOL "Don't print ROCm errors" )
+mark_as_advanced( ROCM_WARN_TOOLCHAIN_VAR ROCM_ERROR_TOOLCHAIN_VAR )
 
 # Get it into the current directory.
 FetchContent_MakeAvailable( rocThrust )
+
+# Set up an alias with the "imported name" of the rocThrust library.
+add_library( roc::rocthrust ALIAS rocthrust )

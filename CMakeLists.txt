@@ -6,7 +6,7 @@
 
 # Set up the project.
 cmake_minimum_required( VERSION 3.25 )
-project( traccc VERSION 0.24.0 LANGUAGES CXX )
+project( traccc VERSION 1.1.0 LANGUAGES CXX )
 
 # Set up the used C++ standard(s).
 set( CMAKE_CXX_STANDARD 20 CACHE STRING "The (host) C++ standard to use" )
@@ -225,17 +225,17 @@ option( TRACCC_USE_SYSTEM_ROCTHRUST
    "Pick up an existing installation of rocThrust from the build environment"
    ${TRACCC_USE_SYSTEM_LIBS} )
 if( TRACCC_SETUP_ROCTHRUST )
-   set( ROCM_WARN_TOOLCHAIN_VAR FALSE CACHE BOOL "Don't print ROCm warnings" )
-   set( ROCM_ERROR_TOOLCHAIN_VAR FALSE CACHE BOOL "Don't print ROCm errors" )
-   mark_as_advanced( ROCM_WARN_TOOLCHAIN_VAR ROCM_ERROR_TOOLCHAIN_VAR )
    if( TRACCC_USE_SYSTEM_ROCTHRUST )
-      find_package( rocThrust REQUIRED )
+      find_package( rocthrust REQUIRED )
+      # Dress up the rocthrust target a little.
+      target_compile_definitions( roc::rocthrust INTERFACE
+         THRUST_IGNORE_CUB_VERSION_CHECK )
    else()
       add_subdirectory( extern/rocThrust )
+      # Dress up the rocthrust target a little.
+      target_compile_definitions( rocthrust INTERFACE
+         THRUST_IGNORE_CUB_VERSION_CHECK )
    endif()
-   # Dress up the rocthrust target a little.
-   target_compile_definitions( rocthrust INTERFACE
-      THRUST_IGNORE_CUB_VERSION_CHECK )
 endif()
 
 # Set up DPL if SYCL is built.
