@@ -135,10 +135,6 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
             if (disjoint_set.capacity()) {
                 disjoint_set.at(pos) = link;
             }
-
-            if (cluster_size.has_value()) {
-                (*cluster_size).get() = tmp_cluster_size;
-            }
         }
 
         /*
@@ -147,6 +143,10 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
          */
         if (cell.channel1() > maxChannel1 + 1) {
             break;
+        }
+
+        if (cluster_size.has_value()) {
+            (*cluster_size).get() = tmp_cluster_size;
         }
     }
 
@@ -170,9 +170,6 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
     var = var + point2{pitch[0] * pitch[0] / static_cast<scalar>(12.),
                        pitch[1] * pitch[1] / static_cast<scalar>(12.)};
 
-    point2 diameter = {width[0] / static_cast<scalar>(delta0),
-                       width[1] / static_cast<scalar>(delta1)};
-
     /*
      * Fill output vector with calculated cluster properties
      */
@@ -189,16 +186,15 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
     out.cluster_index() = link;
 
     if (cfg.diameter_strategy == clustering_diameter_strategy::CHANNEL0) {
-        out.diameter() = diameter[0];
+        out.diameter() = width[0];
     } else if (cfg.diameter_strategy ==
                clustering_diameter_strategy::CHANNEL1) {
-        out.diameter() = diameter[1];
+        out.diameter() = width[1];
     } else if (cfg.diameter_strategy == clustering_diameter_strategy::MAXIMUM) {
-        out.diameter() = std::max(diameter[0], diameter[1]);
+        out.diameter() = std::max(width[0], width[1]);
     } else if (cfg.diameter_strategy ==
                clustering_diameter_strategy::DIAGONAL) {
-        out.diameter() =
-            math::sqrt(diameter[0] * diameter[0] + diameter[1] * diameter[1]);
+        out.diameter() = math::sqrt(width[0] * width[0] + width[1] * width[1]);
     }
 }
 

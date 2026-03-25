@@ -36,7 +36,7 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
     const edm::silicon_cluster<T>& cluster,
     const edm::silicon_cell_collection::const_device& cells,
     const traccc::detector_design_description_interface<TDesign>& module_dd,
-    point2& mean, point2& var, scalar& totalWeight, point2& pitch) {
+    point2& mean, point2& var, scalar& totalWeight) {
 
     point2 offset{0.f, 0.f}, width{0.f, 0.f};
     bool first_processed = false;
@@ -46,7 +46,6 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
     unsigned int min_channel1 = std::numeric_limits<unsigned int>::max();
     unsigned int max_channel1 = std::numeric_limits<unsigned int>::lowest();
 
-    std::cout << "Looping over cells of this cluster" << std::endl;
     // Loop over the cell indices of the cluster.
     for (const unsigned int cell_idx : cluster.cell_indices()) {
 
@@ -99,8 +98,11 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
     width[0] = cluster_upper_position[0] - cluster_lower_position[0];
     width[1] = cluster_upper_position[1] - cluster_lower_position[1];
 
-    pitch[0] = width[0] / static_cast<float>(delta0);
-    pitch[1] = width[1] / static_cast<float>(delta1);
+    point2 pitch = {width[0] / static_cast<float>(delta0),
+                    width[1] / static_cast<float>(delta1)};
+
+    var = var + point2{pitch[0] * pitch[0] / static_cast<scalar>(12.),
+                       pitch[1] * pitch[1] / static_cast<scalar>(12.)};
 
     mean = mean + offset;
 }
@@ -145,9 +147,8 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
 
     // Calculate the cluster properties
     scalar totalWeight = 0.f;
-    point2 mean{0.f, 0.f}, var{0.f, 0.f}, pitch{0.f, 0.f};
-    calc_cluster_properties(cluster, cells, module_dd, mean, var, totalWeight,
-                            pitch);
+    point2 mean{0.f, 0.f}, var{0.f, 0.f};
+    calc_cluster_properties(cluster, cells, module_dd, mean, var, totalWeight);
     assert(totalWeight > 0.f);
 
     // Fill the measurement object.
@@ -159,9 +160,7 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
                                     static_cast<float>(mean[1]) + shift[1]};
 
     // plus pitch^2 / 12
-    measurement.local_variance() =
-        var + point2{pitch[0] * pitch[0] / static_cast<scalar>(12.),
-                     pitch[1] * pitch[1] / static_cast<scalar>(12.)};
+    measurement.local_variance() = var;
 
     // For the ambiguity resolution algorithm, give a unique measurement ID
     measurement.identifier() = index;

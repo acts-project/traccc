@@ -16,9 +16,6 @@
 #include "traccc/geometry/detector_conditions_description.hpp"
 #include "traccc/geometry/detector_design_description.hpp"
 
-// System include(s).
-#include <set>
-
 namespace traccc::details {
 
 /// Get the local position of a cell on a module
@@ -50,7 +47,7 @@ TRACCC_HOST_DEVICE inline void calc_cluster_properties(
     const edm::silicon_cluster<T>& cluster,
     const edm::silicon_cell_collection::const_device& cells,
     const traccc::detector_design_description_interface<TDesign>& module_dd,
-    point2& mean, point2& var, scalar& totalWeight, point2& pitch);
+    point2& mean, point2& var, scalar& totalWeight);
 
 /// Function used for calculating the properties of the cluster during
 /// measurement creation
