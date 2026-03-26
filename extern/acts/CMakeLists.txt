@@ -19,8 +19,10 @@ mark_as_advanced( TRACCC_ACTS_SOURCE )
 FetchContent_Declare( Acts SYSTEM ${TRACCC_ACTS_SOURCE} )
 
 # Options used in the build of Acts.
-set( ACTS_SETUP_EIGEN3 FALSE CACHE BOOL
-   "Do not set up Eigen in the Acts code, we do it in this project" )
+set( ACTS_SETUP_EIGEN3 TRUE CACHE BOOL
+   "Set up Eigen in the Acts code" )
+set( ACTS_USE_SYSTEM_EIGEN3 FALSE CACHE BOOL
+   "Build Eigen3 from source" )
 set( ACTS_BUILD_PLUGIN_JSON TRUE CACHE BOOL
    "Build JSON plugin in Acts" )
 

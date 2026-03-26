@@ -10,6 +10,7 @@
 
 // System include(s).
 #include <fstream>
+#include <map>
 
 namespace traccc::io::obj {
 

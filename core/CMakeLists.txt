@@ -141,17 +141,8 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/ambiguity_resolution/legacy/greedy_ambiguity_resolution_algorithm.hpp"
   "src/ambiguity_resolution/legacy/greedy_ambiguity_resolution_algorithm.cpp")
 target_link_libraries( traccc_core
-  PUBLIC Eigen3::Eigen vecmem::core covfie::core detray::core detray::detectors
-         traccc::algebra Acts::Core )
-
-# Prevent Eigen from getting confused when building code for a
-# CUDA or HIP backend with SYCL.
-target_compile_definitions( traccc_core
-  PUBLIC $<$<COMPILE_LANGUAGE:SYCL>:EIGEN_NO_CUDA EIGEN_NO_HIP> )
-
-# Set the algebra-plugins plugin to use.
-message(STATUS "Building with plugin type: " ${TRACCC_ALGEBRA_PLUGINS})
-target_compile_definitions(traccc_core PUBLIC ALGEBRA_PLUGINS_INCLUDE_${TRACCC_ALGEBRA_PLUGINS})
+  PUBLIC vecmem::core covfie::core detray::core_array detray::detectors
+         Acts::Core )
 
 string(REPLACE ";" ", " TRACCC_DETECTOR_TYPES "${TRACCC_SUPPORTED_DETECTORS}")
 message(STATUS "Building with detector types: ${TRACCC_DETECTOR_TYPES}")

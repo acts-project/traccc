@@ -36,8 +36,18 @@ set( DETRAY_BUILD_CLI_TOOLS FALSE CACHE BOOL
    "Turn off the build of the Detray CLI tools" )
 set( DETRAY_BUILD_TUTORIALS FALSE CACHE BOOL
    "Turn off the build of the Detray tutorials" )
-set( DETRAY_EIGEN_PLUGIN TRUE CACHE BOOL
-   "Turn on the build of the Detray Eigen code" )
+set( DETRAY_ARRAY_PLUGIN TRUE CACHE BOOL
+   "Turn on the build of the Detray std::array code" )
+set( DETRAY_EIGEN_PLUGIN FALSE CACHE BOOL
+   "Turn off the build of the Detray Eigen code" )
+set( DETRAY_FASTOR_PLUGIN FALSE CACHE BOOL
+   "Turn off the build of the Detray Fastor code" )
+set( DETRAY_SMATRIX_PLUGIN FALSE CACHE BOOL
+   "Turn off the build of the Detray SMatrix code" )
+set( DETRAY_VC_AOS_PLUGIN FALSE CACHE BOOL
+   "Turn off the build of the Detray Vc AoS plugin" )
+set( DETRAY_VC_SOA_PLUGIN FALSE CACHE BOOL
+   "Turn off the build of the Detray Vc SoA plugin" )
 
 set( DETRAY_BUILD_TEST_UTILS TRUE CACHE BOOL
    "Turn on the build of the Detray tests utilities, needed in this project" )
@@ -46,8 +56,6 @@ set( DETRAY_BUILD_VALIDATION_TOOLS FALSE CACHE BOOL
 
 set( DETRAY_SETUP_VECMEM FALSE CACHE BOOL
    "Do not set up VecMem as part of Detray" )
-set( DETRAY_SETUP_ALGEBRA_PLUGINS FALSE CACHE BOOL
-   "Do not set up Algebra Plugins as part of Detray" )
 set( DETRAY_SETUP_GOOGLETEST FALSE CACHE BOOL
    "Do not set up GoogleTest as part of Detray" )
 set( DETRAY_SETUP_BENCHMARK FALSE CACHE BOOL

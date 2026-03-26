@@ -1,23 +1,11 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2024 CERN for the benefit of the ACTS project
+ * (c) 2021-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
-
-#if ALGEBRA_PLUGINS_INCLUDE_ARRAY
-#include "traccc/plugins/algebra/array_definitions.hpp"
-#elif ALGEBRA_PLUGINS_INCLUDE_EIGEN
-#include "traccc/plugins/algebra/eigen_definitions.hpp"
-#elif ALGEBRA_PLUGINS_INCLUDE_SMATRIX
-#include "traccc/plugins/algebra/smatrix_definitions.hpp"
-#elif ALGEBRA_PLUGINS_INCLUDE_VC
-#include "traccc/plugins/algebra/vc_aos_definitions.hpp"
-#elif ALGEBRA_PLUGINS_INCLUDE_VECMEM
-#include "traccc/plugins/algebra/vecmem_definitions.hpp"
-#endif
 
 // Detray include(s)
 #include <detray/definitions/algebra.hpp>
@@ -33,7 +21,11 @@ using geometry_id = std::uint64_t;
 using channel_id = unsigned int;
 
 // Default algebra type
-using default_algebra = ALGEBRA_PLUGIN<traccc::scalar>;
+using default_algebra = detray::array<DETRAY_CUSTOM_SCALARTYPE>;
+
+using detray::algebra::array::operator*;
+using detray::algebra::array::operator-;
+using detray::algebra::array::operator+;
 
 using scalar = detray::dscalar<default_algebra>;
 using point2 = detray::dpoint2D<default_algebra>;

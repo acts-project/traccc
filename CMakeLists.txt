@@ -158,26 +158,6 @@ endif()
 # would be picked up from VecMem.
 include( vecmem-check-language )
 
-# Set up Eigen3.
-option( TRACCC_SETUP_EIGEN3
-   "Set up the Eigen3 target(s) explicitly" TRUE )
-if (TRACCC_USE_SYSTEM_LIBS OR TRACCC_USE_SPACK_LIBS)
-   set(TRACCC_USE_SYSTEM_EIGEN3_DEFAULT ON)
-else()
-   set(TRACCC_USE_SYSTEM_EIGEN3_DEFAULT OFF)
-endif()
-option( TRACCC_USE_SYSTEM_EIGEN3
-   "Pick up an existing installation of Eigen3 from the build environment"
-   ${TRACCC_USE_SYSTEM_EIGEN3_DEFAULT} )
-unset(TRACCC_USE_SYSTEM_EIGEN3_DEFAULT)
-if( TRACCC_SETUP_EIGEN3 )
-   if( TRACCC_USE_SYSTEM_EIGEN3 )
-      find_package( Eigen3 REQUIRED )
-   else()
-      add_subdirectory( extern/eigen3 )
-   endif()
-endif()
-
 # Set up TBB.
 option( TRACCC_SETUP_TBB
    "Set up the TBB target(s) explicitly" TRUE )
@@ -296,20 +276,6 @@ if( TRACCC_SETUP_ALPAKA )
    endif()
 endif()
 
-# Set up Algebra Plugins.
-option( TRACCC_SETUP_ALGEBRA_PLUGINS
-   "Set up the Algebra Plugins target(s) explicitly" TRUE )
-option( TRACCC_USE_SYSTEM_ALGEBRA_PLUGINS
-   "Pick up an existing installation of Algebra Plugins from the build environment"
-   ${TRACCC_USE_SYSTEM_LIBS} )
-if( TRACCC_SETUP_ALGEBRA_PLUGINS )
-   if( TRACCC_USE_SYSTEM_ALGEBRA_PLUGINS )
-      find_package( algebra-plugins REQUIRED )
-   else()
-      add_subdirectory( extern/algebra-plugins )
-   endif()
-endif()
-
 # Set up covfie.
 option( TRACCC_SETUP_COVFIE
    "Set up the covfie target(s) explicitly" TRUE )
@@ -425,9 +391,6 @@ endif()
 option( TRACCC_ENABLE_NVTX_PROFILING
         "Use instrument functions to enable fine grained profiling" FALSE )
 
-# option for algebra plugins (ARRAY EIGEN SMATRIX VC VECMEM)
-set(TRACCC_ALGEBRA_PLUGINS ARRAY CACHE STRING "Algebra plugin to use in the build")
-
 # Build the traccc code.
 add_subdirectory( core )
 add_subdirectory( device/common )
@@ -453,8 +416,6 @@ if ( TRACCC_BUILD_IO )
 else()
    message(STATUS "traccc::io not built, traccc::performance and traccc::simulation are forcefully switched off.")
 endif()
-
-add_subdirectory( plugins )
 
 if ( TRACCC_BUILD_EXAMPLES )
    # Find Boost.
