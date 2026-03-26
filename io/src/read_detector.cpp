@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -10,12 +10,8 @@
 
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/host_detector.hpp"
+#include "traccc/io/detector.hpp"
 #include "traccc/io/utils.hpp"
-
-// Detray include(s).
-#include <detray/io/frontend/detector_reader.hpp>
-#include <detray/io/frontend/detector_reader_config.hpp>
-#include <detray/io/frontend/impl/json_readers.hpp>
 
 // System include(s).
 #include <string>

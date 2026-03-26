@@ -14,7 +14,6 @@
 
 // Detray include(s).
 #include <any>
-#include <detray/core/detector.hpp>
 
 namespace traccc {
 

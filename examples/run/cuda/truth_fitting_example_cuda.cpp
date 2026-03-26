@@ -34,9 +34,6 @@
 #include "traccc/utils/propagation.hpp"
 #include "traccc/utils/seed_generator.hpp"
 
-// Detray include(s).
-#include <detray/io/frontend/detector_reader.hpp>
-
 // VecMem include(s).
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/cuda/host_memory_resource.hpp>

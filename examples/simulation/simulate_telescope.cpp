@@ -10,6 +10,7 @@
 #include "traccc/bfield/magnetic_field_types.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/edm/track_parameters.hpp"
+#include "traccc/io/detector.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/options/generation.hpp"
 #include "traccc/options/output_data.hpp"
@@ -24,7 +25,6 @@
 // detray include(s).
 #include <detray/geometry/mask.hpp>
 #include <detray/geometry/shapes/rectangle2D.hpp>
-#include <detray/io/frontend/detector_writer.hpp>
 #include <detray/materials/material.hpp>
 #include <detray/test/common/build_telescope_detector.hpp>
 #include <detray/tracks/ray.hpp>
