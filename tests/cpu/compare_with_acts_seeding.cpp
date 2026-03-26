@@ -265,8 +265,8 @@ TEST_P(CompareWithActsSeedingTests, Run) {
     // Get the traccc axes:
     //  0 -> phi
     //  1 -> z
-    detray::axis2::circular axis0 = internal_spacepoints_per_event.axis_p0();
-    detray::axis2::regular axis1 = internal_spacepoints_per_event.axis_p1();
+    traccc::axis2::circular axis0 = internal_spacepoints_per_event.axis_p0();
+    traccc::axis2::regular axis1 = internal_spacepoints_per_event.axis_p1();
 
     const auto& gridAxes = grid.axes();
     auto acts_axis0 = gridAxes[0];

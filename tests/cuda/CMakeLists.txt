@@ -42,6 +42,8 @@ traccc_add_test(
     test_kalman_fitter_telescope.cpp
     test_clusterization.cpp
     test_copy.cu
+    test_grid2.cpp
+    test_grid2.cu
     test_spacepoint_formation.cpp
     test_thrust.cu
     test_sync.cu
