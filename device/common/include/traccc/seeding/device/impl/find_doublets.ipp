@@ -60,9 +60,9 @@ inline void find_doublets(
 
     // The the IDs of the neighbouring bins along the phi and Z axes of the
     // grid.
-    const detray::dindex_range phi_bins =
+    const std::array<unsigned int, 2> phi_bins =
         sp_grid.axis_p0().range(middle_sp.phi(), config.neighbor_scope);
-    const detray::dindex_range z_bins =
+    const std::array<unsigned int, 2> z_bins =
         sp_grid.axis_p1().range(middle_sp.z(), config.neighbor_scope);
     assert(z_bins[0] <= z_bins[1]);
 
@@ -70,7 +70,7 @@ inline void find_doublets(
     // the middle spacepoint is in. The loop over the phi bins needs to take
     // into account that we may iterate over the "wrap around point" of the
     // axis.
-    for (detray::dindex phi_bin_iterator = phi_bins[0];
+    for (unsigned int phi_bin_iterator = phi_bins[0];
          phi_bin_iterator <=
          (phi_bins[1] +
           (phi_bins[0] > phi_bins[1] ? sp_grid.axis_p0().n_bins : 0));
@@ -79,7 +79,7 @@ inline void find_doublets(
         // Set up the phi bin index that we are actually meant to use inside of
         // the loop. We could also use a modulo operation here, but that would
         // be slightly more expensive in this specific case.
-        const detray::dindex phi_bin =
+        const unsigned int phi_bin =
             (phi_bin_iterator >= sp_grid.axis_p0().n_bins
                  ? phi_bin_iterator - sp_grid.axis_p0().n_bins
                  : phi_bin_iterator);
@@ -87,7 +87,7 @@ inline void find_doublets(
         // Iterate over all of the neighboring Z bins, including the same bin
         // that the middle spacepoint is in. This is a much easier iteration, as
         // the Z axis does not "wrap around".
-        for (detray::dindex z_bin = z_bins[0]; z_bin <= z_bins[1]; ++z_bin) {
+        for (unsigned int z_bin = z_bins[0]; z_bin <= z_bins[1]; ++z_bin) {
 
             // Ask the grid for all of the spacepoint indices in this specific
             // bin.

@@ -19,7 +19,7 @@
 
 namespace traccc {
 
-inline std::pair<detray::axis2::circular<>, detray::axis2::regular<>> get_axes(
+inline std::pair<axis2::circular<>, axis2::regular<>> get_axes(
     const spacepoint_grid_config& grid_config, vecmem::memory_resource& mr) {
 
     detray::dindex phiBins;
@@ -90,8 +90,8 @@ inline std::pair<detray::axis2::circular<>, detray::axis2::regular<>> get_axes(
         // this number) of the maximum expected azimutal deflection.
     }
 
-    detray::axis2::circular m_phi_axis{phiBins, grid_config.phiMin,
-                                       grid_config.phiMax, mr};
+    axis2::circular m_phi_axis{phiBins, grid_config.phiMin, grid_config.phiMax,
+                               mr};
 
     // TODO: can probably be optimized using smaller z bins
     // and returning (multiple) neighbors only in one z-direction for forward
@@ -104,8 +104,7 @@ inline std::pair<detray::axis2::circular<>, detray::axis2::regular<>> get_axes(
         static_cast<detray::dindex>(
             std::floor((grid_config.zMax - grid_config.zMin) / zBinSize)));
 
-    detray::axis2::regular m_z_axis{zBins, grid_config.zMin, grid_config.zMax,
-                                    mr};
+    axis2::regular m_z_axis{zBins, grid_config.zMin, grid_config.zMax, mr};
 
     return {m_phi_axis, m_z_axis};
 }

@@ -73,7 +73,7 @@ void seed_filtering::operator()(
 
     // sort seeds based on their weights
     const traccc::details::spacepoint_grid_types::const_data sp_grid_data =
-        detray::get_data(sp_grid, m_mr.get());
+        traccc::get_data(sp_grid, m_mr.get());
     std::sort(triplets_passing_single_seed_cuts.begin(),
               triplets_passing_single_seed_cuts.end(),
               traccc::details::triplet_sorter{spacepoints, sp_grid_data});
