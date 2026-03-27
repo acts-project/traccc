@@ -71,8 +71,8 @@ class kalman_fitter {
         detray::actor::parameter_updater<algebra_type, interactor,
                                          forward_fit_actor>;
     using backward_updater =
-        detray::actor::parameter_updater<algebra_type, interactor,
-                                         backward_fit_actor>;
+        detray::actor::parameter_updater<algebra_type, backward_fit_actor,
+                                         interactor>;
 
     static_assert(std::is_same_v<typename forward_fit_actor::state,
                                  typename backward_fit_actor::state>);
@@ -140,8 +140,8 @@ class kalman_fitter {
         typename backward_actor_chain_type::state_ref_tuple
         backward_actor_state() {
             return detray::tie(m_step_aborter_state, m_momentum_aborter_state,
-                               m_pathlimit_aborter_state, m_interactor_state,
-                               m_fit_actor_state, m_updater_state);
+                               m_pathlimit_aborter_state, m_fit_actor_state,
+                               m_interactor_state, m_updater_state);
         }
 
         /// Individual actor states

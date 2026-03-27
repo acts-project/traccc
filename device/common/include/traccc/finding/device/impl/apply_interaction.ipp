@@ -19,11 +19,11 @@ namespace traccc::device {
 
 template <typename detector_t>
 TRACCC_HOST_DEVICE inline void apply_interaction(
-    const global_index_t globalIndex, const finding_config& cfg,
-    const apply_interaction_payload<detector_t>& payload) {
+    const global_index_t /*globalIndex*/, const finding_config& /*cfg*/,
+    const apply_interaction_payload<detector_t>& /*payload*/) {
 
     // Type definitions
-    using algebra_type = typename detector_t::algebra_type;
+    /*using algebra_type = typename detector_t::algebra_type;
     using interactor_type =
         detray::actor::pointwise_material_interactor<algebra_type>;
 
@@ -53,6 +53,6 @@ TRACCC_HOST_DEVICE inline void apply_interaction(
                                                 bound_param),
             bound_param, interactor_state,
             static_cast<int>(detray::navigation::direction::e_forward), sf);
-    }
+    }*/
 }
 }  // namespace traccc::device
