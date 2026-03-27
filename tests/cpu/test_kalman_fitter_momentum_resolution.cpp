@@ -248,7 +248,7 @@ INSTANTIATE_TEST_SUITE_P(
     KalmanFitMomentumResolutionValidation0,
     KalmanFittingMomentumResolutionTests,
     ::testing::Values(
-        /*std::make_tuple(
+        std::make_tuple(
             "mom_resolution_1_GeV_muon", std::array<scalar, 3u>{0.f, 0.f, 0.f},
             std::array<scalar, 3u>{0.f, 0.f, 0.f}, 1.f, 0.f, 0.f,
             traccc::muon<scalar>(), 100, 100, false, 20.f, 20u, 50.f,
@@ -263,7 +263,7 @@ INSTANTIATE_TEST_SUITE_P(
             vector3{0, 0, 2 * traccc::unit<scalar>::T},
             detray::vacuum<scalar>(),
             std::array<scalar, 2u>{50.f * traccc::unit<scalar>::um,
-                                   50.f * traccc::unit<scalar>::um}),*/
+                                   50.f * traccc::unit<scalar>::um}),
         std::make_tuple("mom_resolution_100_GeV_muon",
                         std::array<scalar, 3u>{0.f, 0.f, 0.f},
                         std::array<scalar, 3u>{0.f, 0.f, 0.f}, 100.f, 0.f, 0.f,

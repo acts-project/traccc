@@ -11,7 +11,6 @@
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/finding/actors/ckf_aborter.hpp"
-#include "traccc/finding/actors/interaction_register.hpp"
 
 // Detray include(s).
 #include "traccc/utils/propagation.hpp"

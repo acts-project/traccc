@@ -171,7 +171,6 @@ class kalman_fitter {
     [[nodiscard]] TRACCC_HOST_DEVICE kalman_fitter_status
     fit(const seed_parameters_t& seed_params, state& fitter_state) const {
         seed_parameters_t params = seed_params;
-        fitter_state.m_updater_state.init(seed_params);
         fitter_state.m_fit_actor_state.reset();
 
         // Run the kalman filtering for a given number of iterations
@@ -249,6 +248,9 @@ class kalman_fitter {
 
         // Create propagator
         forward_propagator_type propagator(m_cfg.propagation);
+
+        // Set initial track parameters for parameter transport
+        fitter_state.m_updater_state.init(seed_params);
 
         // Set minimum momentum
         fitter_state.m_momentum_aborter_state.min_pT(

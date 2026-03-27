@@ -11,7 +11,6 @@
 #include "traccc/edm/track_container.hpp"
 #include "traccc/edm/track_state_helpers.hpp"
 #include "traccc/finding/actors/ckf_aborter.hpp"
-#include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
 #include "traccc/finding/finding_config.hpp"
@@ -65,6 +64,8 @@ combinatorial_kalman_filter(
     const bound_track_parameters_collection_types::const_view& seeds_view,
     const finding_config& config, vecmem::memory_resource& mr,
     const Logger& /*log*/) {
+
+    TRACCC_VERBOSE_HOST_DEVICE("Running CKF...");
 
     assert(config.min_step_length_for_next_surface >
                math::fabs(config.propagation.navigation.intersection
@@ -513,6 +514,10 @@ combinatorial_kalman_filter(
             typename ckf_aborter::state ckf_aborter_state;
 
             // Update the actor config
+            // Notify the KF and material interaction only at the first
+            // propagation initialization. For all subsequent initializations,
+            // they will have run already on the previous step
+            updater_state.notify_on_initial(step == 0);
             momentum_aborter_state.min_pT(
                 static_cast<scalar_type>(config.min_pT));
             momentum_aborter_state.min_p(

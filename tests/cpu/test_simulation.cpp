@@ -38,11 +38,9 @@ constexpr scalar tol{1e-7f};
 
 TEST(traccc_simulation, simulation) {
 
-    const detray::mask<detray::line<false>, traccc::default_algebra> ln{
-        0u, 10.f * traccc::unit<scalar>::mm, 50.f * traccc::unit<scalar>::mm};
-
-    const detray::mask<detray::rectangle2D, traccc::default_algebra> re{
-        0u, 10.f * traccc::unit<scalar>::mm, 10.f * traccc::unit<scalar>::mm};
+    using line_t = detray::mask<detray::line<false>, traccc::default_algebra>;
+    using rectangle_t =
+        detray::mask<detray::rectangle2D, traccc::default_algebra>;
 
     traccc::bound_track_parameters<traccc::default_algebra> bound_params{};
     bound_params.set_bound_local({1.f, 2.f});
@@ -50,17 +48,18 @@ TEST(traccc_simulation, simulation) {
     measurement_smearer<traccc::default_algebra> smearer(0.f, 0.f);
 
     traccc::io::csv::measurement iomeas1;
-    smearer(ln, {-3.f, 2.f}, bound_params, iomeas1);
+    smearer.template operator()<line_t>({-3.f, 2.f}, bound_params, iomeas1);
     ASSERT_NEAR(iomeas1.local0, 0.f, tol);
     ASSERT_NEAR(iomeas1.local1, 0.f, tol);
 
     traccc::io::csv::measurement iomeas2;
-    smearer(ln, {2.f, -5.f}, bound_params, iomeas2);
+    smearer.template operator()<line_t>({2.f, -5.f}, bound_params, iomeas2);
     ASSERT_NEAR(iomeas2.local0, 3.f, tol);
     ASSERT_NEAR(iomeas2.local1, 0.f, tol);
 
     traccc::io::csv::measurement iomeas3;
-    smearer(re, {2.f, -5.f}, bound_params, iomeas3);
+    smearer.template operator()<rectangle_t>({2.f, -5.f}, bound_params,
+                                             iomeas3);
     ASSERT_NEAR(iomeas3.local0, 3.f, tol);
     ASSERT_NEAR(iomeas3.local1, -3.f, tol);
 }

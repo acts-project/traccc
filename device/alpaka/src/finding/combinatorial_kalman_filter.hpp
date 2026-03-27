@@ -17,10 +17,8 @@
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/track_container.hpp"
 #include "traccc/finding/actors/ckf_aborter.hpp"
-#include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
-#include "traccc/finding/device/apply_interaction.hpp"
 #include "traccc/finding/device/barcode_surface_comparator.hpp"
 #include "traccc/finding/device/build_tracks.hpp"
 #include "traccc/finding/device/fill_finding_duplicate_removal_sort_keys.hpp"
@@ -38,20 +36,6 @@
 
 namespace traccc::alpaka::details {
 namespace kernels {
-
-/// Alpaka kernel functor for @c traccc::device::apply_interaction
-template <typename detector_t>
-struct apply_interaction {
-    template <typename TAcc>
-    ALPAKA_FN_ACC void operator()(
-        TAcc const& acc, const finding_config cfg,
-        const device::apply_interaction_payload<detector_t> payload) const {
-
-        const device::global_index_t globalThreadIdx =
-            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
-        device::apply_interaction<detector_t>(globalThreadIdx, cfg, payload);
-    }
-};
 
 /// Alpaka kernel functor for @c traccc::device::find_tracks
 template <typename detector_t>
@@ -314,24 +298,7 @@ combinatorial_kalman_filter(
          step++) {
 
         /*****************************************************************
-         * Kernel2: Apply material interaction
-         ****************************************************************/
-
-        {
-            Idx blocksPerGrid =
-                (n_in_params + threadsPerBlock - 1) / threadsPerBlock;
-            auto workDiv = makeWorkDiv<Acc>(blocksPerGrid, threadsPerBlock);
-
-            ::alpaka::exec<Acc>(
-                queue, workDiv, kernels::apply_interaction<detector_t>{},
-                config,
-                device::apply_interaction_payload<detector_t>{
-                    det, n_in_params, in_params_buffer, param_liveness_buffer});
-            ::alpaka::wait(queue);
-        }
-
-        /*****************************************************************
-         * Kernel3: Find valid tracks
+         * Kernel2: Find valid tracks
          *****************************************************************/
 
         unsigned int n_candidates = 0;
@@ -511,7 +478,7 @@ combinatorial_kalman_filter(
 
         if (n_candidates > 0) {
             /*****************************************************************
-             * Kernel4: Get key and value for parameter sorting
+             * Kernel3: Get key and value for parameter sorting
              *****************************************************************/
 
             vecmem::data::vector_buffer<unsigned int> param_ids_buffer(
@@ -546,7 +513,7 @@ combinatorial_kalman_filter(
             }
 
             /*****************************************************************
-             * Kernel5: Propagate to the next surface
+             * Kernel4: Propagate to the next surface
              *****************************************************************/
 
             {
@@ -611,7 +578,7 @@ combinatorial_kalman_filter(
                  << "%)");
 
     /*****************************************************************
-     * Kernel6: Build tracks
+     * Kernel5: Build tracks
      *****************************************************************/
 
     // Get the number of tips

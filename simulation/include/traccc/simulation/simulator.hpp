@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -9,6 +9,7 @@
 
 // Project include(s).
 #include "traccc/simulation/smearing_writer.hpp"
+#include "traccc/utils/logging.hpp"
 #include "traccc/utils/particle.hpp"
 #include "traccc/utils/propagation.hpp"
 
@@ -96,6 +97,8 @@ struct simulator {
     config& get_config() { return m_cfg; }
 
     void run() {
+
+        TRACCC_VERBOSE_HOST("Running fast simulation...");
 
         // Update the actor config
         if (m_cfg.m_is_min_pT) {

@@ -7,6 +7,11 @@
 
 #pragma once
 
+// @TODO: Remove this once alpaka compiles without warning.
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic warning "-Wmaybe-uninitialized"
+#endif
+
 // Project include(s).
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
 #include "traccc/utils/logging.hpp"
@@ -104,6 +109,10 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
         updater_state.set_full_jacobian(&payload.tmp_jacobian_ptr[param_id]);
     }
 
+    // Notify the KF and material interaction only at the first propagation
+    // initialization. For all subsequent initializations, they will have run
+    // already on the previous step
+    updater_state.notify_on_initial(link.step == 0);
     momentum_aborter_state.min_pT(static_cast<scalar_t>(cfg.min_pT));
     momentum_aborter_state.min_p(static_cast<scalar_t>(cfg.min_p));
     ckf_aborter_state.min_step_length = cfg.min_step_length_for_next_surface;

@@ -20,10 +20,8 @@
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/track_container.hpp"
 #include "traccc/finding/actors/ckf_aborter.hpp"
-#include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
-#include "traccc/finding/device/apply_interaction.hpp"
 #include "traccc/finding/device/barcode_surface_comparator.hpp"
 #include "traccc/finding/device/build_tracks.hpp"
 #include "traccc/finding/device/fill_finding_duplicate_removal_sort_keys.hpp"
@@ -48,8 +46,6 @@
 
 namespace traccc::sycl::details {
 namespace kernels {
-template <typename T>
-struct apply_interaction {};
 template <typename T>
 struct find_tracks {};
 template <typename T>
@@ -228,26 +224,7 @@ combinatorial_kalman_filter(
          step++) {
 
         /*****************************************************************
-         * Kernel2: Apply material interaction
-         ****************************************************************/
-
-        queue
-            .submit([&](::sycl::handler& h) {
-                h.parallel_for<kernels::apply_interaction<kernel_t>>(
-                    calculate1DimNdRange(n_in_params, 64),
-                    [config, det, n_in_params,
-                     in_params = vecmem::get_data(in_params_buffer),
-                     param_liveness = vecmem::get_data(param_liveness_buffer)](
-                        ::sycl::nd_item<1> item) {
-                        device::apply_interaction<detector_t>(
-                            details::global_index(item), config,
-                            {det, n_in_params, in_params, param_liveness});
-                    });
-            })
-            .wait_and_throw();
-
-        /*****************************************************************
-         * Kernel3: Find valid tracks
+         * Kernel2: Find valid tracks
          *****************************************************************/
 
         unsigned int n_candidates = 0;
@@ -501,7 +478,7 @@ combinatorial_kalman_filter(
 
         if (n_candidates > 0) {
             /*****************************************************************
-             * Kernel4: Get key and value for parameter sorting
+             * Kernel3: Get key and value for parameter sorting
              *****************************************************************/
 
             vecmem::data::vector_buffer<unsigned int> param_ids_buffer(
@@ -545,7 +522,7 @@ combinatorial_kalman_filter(
             }
 
             /*****************************************************************
-             * Kernel5: Propagate to the next surface
+             * Kernel4: Propagate to the next surface
              *****************************************************************/
 
             {
@@ -605,7 +582,7 @@ combinatorial_kalman_filter(
     }
 
     /*****************************************************************
-     * Kernel6: Build tracks
+     * Kernel5: Build tracks
      *****************************************************************/
 
     // Get the number of tips

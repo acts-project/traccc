@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -15,6 +15,7 @@
 #include "traccc/io/csv/particle.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/simulation/measurement_smearer.hpp"
+#include "traccc/utils/logging.hpp"
 #include "traccc/utils/particle.hpp"
 
 // Detray core include(s).
@@ -106,20 +107,13 @@ struct smearing_writer : detray::base_actor {
 
         template <typename mask_group_t, typename index_range_t>
         inline void operator()(
-            const mask_group_t& mask_group, const index_range_t& index,
+            const mask_group_t& /*mask_group*/, const index_range_t& /*index*/,
             const traccc::bound_track_parameters<algebra_type>& bound_params,
             smearer_t& smearer, io::csv::measurement& iomeas) const {
+
             using mask_t = typename mask_group_t::value_type;
-
-            mask_t mask;
-            if constexpr (detray::concepts::interval<index_range_t>) {
-                // The measurement smearer only needs to deduce the mask type
-                mask = mask_group[index.lower()];
-            } else {
-                mask = mask_group[index];
-            }
-
-            smearer(mask, smearer.get_offset(), bound_params, iomeas);
+            smearer.template operator()<mask_t>(smearer.get_offset(),
+                                                bound_params, iomeas);
         }
     };
 
@@ -130,26 +124,29 @@ struct smearing_writer : detray::base_actor {
         const {
 
         auto& navigation = propagation.navigation();
-        auto& stepping = propagation.stepping();
 
         // triggered only for sensitive surfaces
-        if (navigation.is_on_sensitive()) {
+        if (res.status <= detray::actor::status::e_success &&
+            navigation.is_on_sensitive()) {
+            const auto sf = navigation.current_surface();
+
+            // Get the free param after the random scatterer update
+            const auto& bound_params = res.destination_params();
+            const auto free_param =
+                sf.bound_to_free_vector(propagation.context(), bound_params);
+
+            const auto pos = free_param.pos();
+            const auto mom = free_param.mom(
+                propagation.stepping().particle_hypothesis().charge());
 
             // Write hits
             io::csv::hit hit;
-
-            const auto track = stepping();
-            const auto pos = track.pos();
-            const auto mom = track.mom(stepping.particle_hypothesis().charge());
-
-            const auto sf = navigation.current_surface();
-
             hit.particle_id = writer_state.particle_id;
             hit.geometry_id = sf.barcode().value();
             hit.tx = static_cast<float>(pos[0]);
             hit.ty = static_cast<float>(pos[1]);
             hit.tz = static_cast<float>(pos[2]);
-            hit.tt = static_cast<float>(track.time());
+            hit.tt = static_cast<float>(free_param.time());
             hit.tpx = static_cast<float>(mom[0]);
             hit.tpy = static_cast<float>(mom[1]);
             hit.tpz = static_cast<float>(mom[2]);
@@ -158,7 +155,10 @@ struct smearing_writer : detray::base_actor {
 
             // Write measurements
             io::csv::measurement meas;
-            const auto& bound_params = res.destination_params();
+
+            assert(sf.barcode() == bound_params.surface_link());
+
+            TRACCC_DEBUG_HOST("Actor: Writing truth param.:\n" << bound_params);
 
             meas.measurement_id = writer_state.m_hit_count;
             meas.geometry_id = hit.geometry_id;
