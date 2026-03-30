@@ -777,8 +777,9 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
 
     // nPaths to terminus, nTerminusEdges
     unsigned int path_sizes[2];
-    cudaMemcpyAsync(&path_sizes, &ctx.d_counters[6], 2 * sizeof(unsigned int),
-                    cudaMemcpyDeviceToHost, stream);
+    cudaMemcpyAsync(&path_sizes[0], &ctx.d_counters[6],
+                    2 * sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
+    unsigned int pathsPerTerminus = 1 + (path_sizes[0] - 1) / path_sizes[1];
 
     TRACCC_DEBUG(path_sizes[0] << "size of path store | nTerminusEdges "
                                << path_sizes[1]);
@@ -794,16 +795,20 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
                     ctx.nConnectedEdges * sizeof(unsigned long long int),
                     stream);
 
+    nThreads = 128;
     kernels::add_terminus_to_path_store<<<nBlocks, nThreads, 0, stream>>>(
         ctx.d_path_store, ctx.d_outgoing_paths, ctx.d_counters,
         ctx.nConnectedEdges);
 
-    nBlocks = 1 + (path_sizes[1] - 1) / 16;
-    nThreads = 128;
+    unsigned int terminusPerBlock = std::min(
+        nThreads, 1 + (traccc::device::gbts_consts::live_path_buffer - 1) /
+                          pathsPerTerminus);
+    nBlocks = 1 + (path_sizes[1] - 1) / terminusPerBlock;
 
     kernels::fill_path_store<<<nBlocks, nThreads, 0, stream>>>(
         ctx.d_path_store, ctx.d_output_graph, ctx.d_levels, ctx.d_counters,
-        path_sizes[1], m_config.max_num_neighbours);
+        path_sizes[1], terminusPerBlock, m_config.max_num_neighbours,
+        path_sizes[0] + path_sizes[1]);
 
     nThreads = 128;
     nBlocks = 1 + (path_sizes[0] + path_sizes[1] - 1) / nThreads;
@@ -851,6 +856,13 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
             ctx.d_path_store, ctx.d_seed_proposals, ctx.d_edge_bids,
             ctx.d_seed_ambiguity, ctx.d_counters, round);
     }
+    unsigned int nRejectedProps = 0;
+    cudaMemcpyAsync(&nRejectedProps, &ctx.d_counters[9], sizeof(unsigned int),
+                    cudaMemcpyDeviceToHost, stream);
+    ctx.nSeeds = nProps - nRejectedProps;
+
+    TRACCC_DEBUG("Rejecetd " << nRejectedProps << " out of " << nProps
+                             << " seed proposals");
 
     cudaFree(ctx.d_edge_bids);
     cudaFree(ctx.d_counters);
@@ -859,7 +871,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     // 8. convert to 3sp seeds and make output buffer
 
     edm::seed_collection::buffer output_seeds(
-        nProps, m_mr.main, vecmem::data::buffer_type::resizable);
+        ctx.nSeeds, m_mr.main, vecmem::data::buffer_type::resizable);
     m_copy.get().setup(output_seeds)->ignore();
 
     kernels::gbts_seed_conversion_kernel<<<nBlocks, nThreads, 0, stream>>>(

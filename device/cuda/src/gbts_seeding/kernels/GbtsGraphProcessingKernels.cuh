@@ -211,7 +211,9 @@ void __global__ add_terminus_to_path_store(int2* d_path_store,
 void __global__ fill_path_store(int2* d_path_store, int* d_output_graph,
                                 char* d_levels, unsigned int* d_counters,
                                 unsigned int nTerminus,
-                                unsigned int max_num_neighbours) {
+                                unsigned int nTerminusPerBlock,
+                                unsigned int max_num_neighbours,
+                                unsigned int nPaths) {
 
     __shared__ int2 live_paths[traccc::device::gbts_consts::live_path_buffer];
     __shared__ int n_live_paths;
@@ -222,10 +224,9 @@ void __global__ fill_path_store(int2* d_path_store, int* d_output_graph,
     __syncthreads();
 
     int edge_size = 2 + 1 + max_num_neighbours;
-
-    unsigned int path_idx = threadIdx.x + blockIdx.x * 16;
+    unsigned int path_idx = threadIdx.x + blockIdx.x * nTerminusPerBlock;
     // populate live_paths with terminus to start exploration from
-    if (threadIdx.x < 16 && path_idx < nTerminus) {
+    if (threadIdx.x < nTerminusPerBlock && path_idx < nTerminus) {
         int2 path = d_path_store[path_idx];
         int nNei = d_output_graph[traccc::device::gbts_consts::nNei +
                                   edge_size * path.x];
@@ -283,11 +284,14 @@ void __global__ fill_path_store(int2* d_path_store, int* d_output_graph,
                 if (level != d_levels[edge_idx] + 1) {
                     continue;
                 }
+                path_idx = atomicAdd(&d_counters[7], 1);
+                if (path_idx >= nPaths) {
+                    break;
+                }
                 int live_idx = atomicAdd(&n_live_paths, 1);
                 if (live_idx >= traccc::device::gbts_consts::live_path_buffer) {
                     break;
                 }
-                path_idx = atomicAdd(&d_counters[7], 1);
                 // head edge idx, link back
                 d_path_store[path_idx] = make_int2(edge_idx, path.y);
                 live_paths[live_idx] = make_int2(edge_idx, path_idx);
@@ -633,6 +637,8 @@ void __global__ reset_edge_bids(int2* d_path_store, int2* d_seed_proposals,
                 continue;
             } else {
                 d_seed_ambiguity[prop_idx] = -2;
+                // count rejected props to calculate nSeeds
+                atomicAdd(&d_counters[9], 1);
                 continue;
             }
         } else if (ambi == -2 | ambi == 0) {
@@ -656,10 +662,11 @@ void __global__ reset_edge_bids(int2* d_path_store, int2* d_seed_proposals,
         }
         if (isgood) {
             d_seed_ambiguity[prop_idx] = 1;
-        }  // flag as maybe seed
+        }  // flag as maybe seed, shares with a loser
         else {
             d_seed_ambiguity[prop_idx] = -2;
-            // definate fake (never the best)
+            atomicAdd(&d_counters[9], 1);
+            // definate fake, shares with a winner
         }
     }
 }
