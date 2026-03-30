@@ -26,11 +26,11 @@ jobs:
         platform:
           - name: CPU
             container: ghcr.io/acts-project/ubuntu2404:69
-            options: --preset host-fp32 -DALGEBRA_PLUGINS_USE_SYSTEM_VC=FALSE
+            options: --preset host-fp32
             run_tests: true
           - name: CPU
             container: ghcr.io/acts-project/ubuntu2404:69
-            options: --preset host-fp64 -DALGEBRA_PLUGINS_USE_SYSTEM_VC=FALSE
+            options: --preset host-fp64
             run_tests: false
           - name: CUDA
             container: ghcr.io/acts-project/ubuntu2404_cuda:69
