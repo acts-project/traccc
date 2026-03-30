@@ -286,7 +286,7 @@ void __global__ fill_path_store(int2* d_path_store, int* d_output_graph,
                 }
                 path_idx = atomicAdd(&d_counters[7], 1);
                 if (path_idx >= nPaths) {
-									break;
+                    break;
                 }
                 int live_idx = atomicAdd(&n_live_paths, 1);
                 if (live_idx >= traccc::device::gbts_consts::live_path_buffer) {
