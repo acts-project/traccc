@@ -114,7 +114,7 @@ struct gbts_seed_extraction_params {
     // controls if seeds of shorter lengths
     // can win bidding against longer seeds
     float add_hit = 14.0f;
-    // m_J is stored in 30 + 1 bits
+    // seed quality is an int scaled up from a float
     // max qual = add_hit*max_length*qual_scale
     float qual_scale =
         0.01f * static_cast<float>(INT_MAX) /

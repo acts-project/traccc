@@ -286,7 +286,7 @@ void __global__ fill_path_store(int2* d_path_store, int* d_output_graph,
                 }
                 path_idx = atomicAdd(&d_counters[7], 1);
                 if (path_idx >= nPaths) {
-                    break;
+									break;
                 }
                 int live_idx = atomicAdd(&n_live_paths, 1);
                 if (live_idx >= traccc::device::gbts_consts::live_path_buffer) {
@@ -699,7 +699,6 @@ void __global__ gbts_seed_conversion_kernel(
     const unsigned int nProps, const unsigned int max_num_neighbours) {
 
     int edge_size = 2 + 1 + max_num_neighbours;
-
     edm::seed_collection::device seeds_device(output_seeds);
     for (int prop_idx = threadIdx.x + blockIdx.x * blockDim.x;
          prop_idx < nProps; prop_idx += blockDim.x * gridDim.x) {
