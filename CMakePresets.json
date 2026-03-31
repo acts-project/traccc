@@ -129,8 +129,7 @@
          "inherits": ["base-fp32"],
          "cacheVariables": {
             "TRACCC_USE_ROOT" : "TRUE",
-            "TRACCC_USE_SYSTEM_TBB" : "TRUE",
-            "ALGEBRA_PLUGINS_USE_SYSTEM_VC" : "TRUE"
+            "TRACCC_USE_SYSTEM_TBB" : "TRUE"
          }
       },
       {
@@ -139,8 +138,7 @@
          "inherits": ["base-fp64"],
          "cacheVariables": {
             "TRACCC_USE_ROOT" : "TRUE",
-            "TRACCC_USE_SYSTEM_TBB" : "TRUE",
-            "ALGEBRA_PLUGINS_USE_SYSTEM_VC" : "TRUE"
+            "TRACCC_USE_SYSTEM_TBB" : "TRUE"
          }
       },
       {
