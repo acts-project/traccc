@@ -47,7 +47,7 @@ traccc::digitization_config read_digitization_config(
         const auto& json_geom = json_val[geometric];
         const auto& json_segm = json_geom[segmentation];
         std::vector<std::vector<float>> bin_edges;
-        unsigned char dimensions = 0;
+        unsigned char dimensions = 2;
         for (const auto& bindata : json_segm[binningdata_key]) {
             std::vector<float> bins;
 
@@ -67,7 +67,6 @@ traccc::digitization_config read_digitization_config(
                     }
                 }
             } else {
-                dimensions = 2;
                 if (bindata["type"].get<std::string>() == "equidistant") {
                     float pitch = (bindata["max"].get<float>() -
                                    bindata["min"].get<float>()) /
