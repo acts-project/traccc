@@ -275,7 +275,8 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                 const unsigned int owner_global_thread_id =
                     owner_local_thread_id +
                     thread_id.getBlockDimX() * thread_id.getBlockIdX();
-                const float chi2 = std::get<0>(*result).filtered_chi2();
+                const traccc::scalar chi2 =
+                    std::get<0>(*result).filtered_chi2();
                 assert(chi2 >= 0.f);
                 unsigned long long int* mutex_ptr =
                     &shared_payload
@@ -366,6 +367,8 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                     const unsigned int p_offset =
                         owner_global_thread_id *
                         cfg.max_num_branches_per_surface;
+                    // No need to initialize this next variable. It always gets
+                    // a valid value in the proceeding expressions.
                     float new_max;
 
                     if (index == cfg.max_num_branches_per_surface) {
@@ -375,11 +378,13 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                          * replace it. Also keep track of what the new maximum
                          * $\chi^2$ value will be.
                          */
-                        float highest = 0.f;
+                        traccc::scalar highest =
+                            static_cast<traccc::scalar>(0.f);
 
                         for (unsigned int i = 0;
                              i < cfg.max_num_branches_per_surface; ++i) {
-                            float old_chi2 = tmp_links.at(p_offset + i).chi2;
+                            const traccc::scalar old_chi2 =
+                                tmp_links.at(p_offset + i).chi2;
 
                             if (old_chi2 > highest) {
                                 highest = old_chi2;
@@ -390,14 +395,15 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                         assert(l_pos !=
                                std::numeric_limits<unsigned int>::max());
 
-                        new_max = chi2;
+                        new_max = static_cast<float>(chi2);
 
                         for (unsigned int i = 0;
                              i < cfg.max_num_branches_per_surface; ++i) {
-                            float old_chi2 = tmp_links.at(p_offset + i).chi2;
+                            const traccc::scalar old_chi2 =
+                                tmp_links.at(p_offset + i).chi2;
 
                             if (i != l_pos && old_chi2 > new_max) {
-                                new_max = old_chi2;
+                                new_max = static_cast<float>(old_chi2);
                             }
 
                             assert(old_chi2 <=
@@ -407,7 +413,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                         assert(chi2 <= new_max);
                     } else {
                         l_pos = index;
-                        new_max = std::max(chi2, max);
+                        new_max = std::max(static_cast<float>(chi2), max);
                     }
 
                     assert(l_pos < cfg.max_num_branches_per_surface);
