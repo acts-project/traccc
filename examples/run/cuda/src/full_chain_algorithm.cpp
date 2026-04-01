@@ -229,29 +229,17 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
         const spacepoint_formation_algorithm::output_type spacepoints =
             m_spacepoint_formation(m_device_detector, measurements);
 
-<<<<<<< HEAD
-				seeding_algorithm::output_type seeds;
+        seeding_algorithm::output_type seeds;
 
-				if(usingGBTS) {
-					seeds = m_gbts_seeding(spacepoints, measurements);
-				}
-				else {
-					seeds = m_seeding(spacepoints);
-				}
-				const seed_parameter_estimation_algorithm::output_type track_params =
-						m_track_parameter_estimation(m_field, measurements, spacepoints,
-																				 seeds);
-=======
-        triplet_seeding_algorithm::output_type seeds;
-        if (usingGBTS) {
+        if(usingGBTS) {
             seeds = m_gbts_seeding(spacepoints, measurements);
-        } else {
+        }
+        else {
             seeds = m_seeding(spacepoints);
         }
         const seed_parameter_estimation_algorithm::output_type track_params =
-            m_track_parameter_estimation(m_field, measurements, spacepoints,
-                                         seeds);
->>>>>>> fa3ee41c (formatting)
+                m_track_parameter_estimation(m_field, measurements, spacepoints,
+                                                                            seeds);
 
         // Run the track finding (asynchronously).
         const finding_algorithm::output_type track_candidates =
