@@ -59,8 +59,7 @@ template <typename detector_t, typename bfield_t>
 edm::track_container<typename detector_t::algebra_type>::host
 combinatorial_kalman_filter(
     const detector_t& det, const bfield_t& field,
-    const typename edm::measurement_collection<
-        typename detector_t::algebra_type>::const_view& measurements_view,
+    const edm::measurement_collection::const_view& measurements_view,
     const bound_track_parameters_collection_types::const_view& seeds_view,
     const finding_config& config, vecmem::memory_resource& mr,
     const Logger& /*log*/) {
@@ -88,8 +87,7 @@ combinatorial_kalman_filter(
      *****************************************************************/
 
     // Create the measurement container.
-    typename edm::measurement_collection<algebra_type>::const_device
-        measurements{measurements_view};
+    edm::measurement_collection::const_device measurements{measurements_view};
 
     // Check contiguity of the measurements
     assert(is_contiguous_on([](const auto& value) { return value; },
@@ -120,8 +118,8 @@ combinatorial_kalman_filter(
             std::distance(measurements.surface_link().begin(), up)));
     }
 
-    const typename edm::measurement_collection<
-        algebra_type>::const_device::size_type n_meas = measurements.size();
+    const edm::measurement_collection::const_device::size_type n_meas =
+        measurements.size();
 
     std::vector<std::vector<candidate_link>> links;
     links.resize(config.max_track_candidates_per_track);

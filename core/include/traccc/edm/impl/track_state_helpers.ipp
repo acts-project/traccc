@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2025 CERN for the benefit of the ACTS project
+ * (c) 2025-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -12,8 +12,7 @@ namespace traccc::edm {
 template <typename algebra_t>
 TRACCC_HOST_DEVICE
     typename track_state_collection<algebra_t>::device::object_type
-    make_track_state(const typename measurement_collection<
-                         algebra_t>::const_device& measurements,
+    make_track_state(const measurement_collection::const_device& measurements,
                      unsigned int mindex) {
 
     // Create the result object.

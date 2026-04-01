@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -116,8 +116,7 @@ class kalman_fitter {
                 algebra_type>::device::proxy_type& track,
             const typename edm::track_state_collection<algebra_type>::device&
                 track_states,
-            const typename edm::measurement_collection<
-                algebra_type>::const_device& measurements,
+            const edm::measurement_collection::const_device& measurements,
             vecmem::data::vector_view<surface_type> sequence_buffer,
             const detray::propagation::config& prop_cfg)
             : m_updater_state{prop_cfg},

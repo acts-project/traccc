@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024-2025 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -39,8 +39,7 @@ struct two_filters_smoother {
     [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status operator()(
         typename edm::track_state_collection<algebra_t>::device::proxy_type&
             trk_state,
-        const typename edm::measurement_collection<algebra_t>::const_device&
-            measurements,
+        const edm::measurement_collection::const_device& measurements,
         bound_track_parameters<algebra_t>& bound_params,
         const bool is_line) const {
 

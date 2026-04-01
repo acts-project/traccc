@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -144,12 +144,10 @@ class triplet_fitter {
         /// @param dir_idx direction index
         /// @param multipler multipler
         /// @param detector detector
-        void shiftHit(
-            const unsigned& hit_idx, const unsigned& dir_idx,
-            const scalar& multipler,
-            typename edm::measurement_collection<algebra_type>::const_device
-                measurements,
-            const detector_t& detector) {
+        void shiftHit(const unsigned& hit_idx, const unsigned& dir_idx,
+                      const scalar& multipler,
+                      edm::measurement_collection::const_device measurements,
+                      const detector_t& detector) {
             // The shifts are applied to the global
             // positions of the hits
 
@@ -222,10 +220,8 @@ class triplet_fitter {
     /// Makes triplets from consecutive measurements on the track
     ///
     TRACCC_HOST_DEVICE
-    void make_triplets(
-        const vecmem::vector<unsigned int>& in_measurements,
-        typename edm::measurement_collection<algebra_type>::const_device
-            measurements) {
+    void make_triplets(const vecmem::vector<unsigned int>& in_measurements,
+                       edm::measurement_collection::const_device measurements) {
 
         // Assuming no holes
         const size_t n_triplets = in_measurements.size() - 2;
@@ -373,9 +369,7 @@ class triplet_fitter {
     /// @param t Triplet to linearize
     ///
     TRACCC_HOST_DEVICE void linearize_triplet(
-        triplet& t,
-        typename edm::measurement_collection<algebra_type>::const_device
-            measurements) {
+        triplet& t, edm::measurement_collection::const_device measurements) {
 
         // Vectors joining hits
         vector3 x_01{t.m_hit_pos[1] - t.m_hit_pos[0]};
@@ -487,10 +481,11 @@ class triplet_fitter {
             m_detector, measurements.at(t.m_meas_idx[1]).surface_link());
 
         // effective thickness
-        scalar t_eff = mat_scatter /
-                       detray::cos_angle(
-                           {}, scat_sf, tangent3D,
-                           measurements.at(t.m_meas_idx[1]).local_position());
+        scalar t_eff =
+            mat_scatter /
+            detray::cos_angle({}, scat_sf, tangent3D,
+                              measurements.at(t.m_meas_idx[1])
+                                  .template local_position_in<algebra_type>());
 
         auto scattering_unc = [](scalar curvature_3D, scalar eff_thickness,
                                  vector3 field_strength_vector) {
@@ -569,9 +564,7 @@ class triplet_fitter {
     /// @param t Triplet
     ///
     TRACCC_HOST_DEVICE void calculate_pos_derivs(
-        triplet& t,
-        typename edm::measurement_collection<algebra_type>::const_device
-            measurements) {
+        triplet& t, edm::measurement_collection::const_device measurements) {
 
         // Hits shifted by multiplier * sigma in every direction
         scalar multiplier = 1.f;
@@ -648,8 +641,7 @@ class triplet_fitter {
     typename edm::track_state_collection<algebra_type>::host::object_type
     do_global_fit(
         typename edm::track_collection<algebra_type>::host::proxy_type& track,
-        typename edm::measurement_collection<algebra_type>::const_device
-            measurements) {
+        edm::measurement_collection::const_device measurements) {
 
         // Allocate matrices with max possible sizes
         constexpr size_t max_nhits =
@@ -1027,8 +1019,7 @@ class triplet_fitter {
     TRACCC_HOST_DEVICE
     typename edm::track_state_collection<algebra_type>::host::object_type fit(
         typename edm::track_collection<algebra_type>::host::proxy_type& track,
-        typename edm::measurement_collection<algebra_type>::const_device
-            measurements) {
+        edm::measurement_collection::const_device measurements) {
 
         for (triplet& t : m_triplets) {
 

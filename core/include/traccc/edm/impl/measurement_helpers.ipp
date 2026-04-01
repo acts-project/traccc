@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2025 CERN for the benefit of the ACTS project
+ * (c) 2025-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -21,19 +21,20 @@ TRACCC_HOST_DEVICE void get_measurement_local(
     assert((meas.subspace()[0] == e_bound_loc0) ||
            (meas.subspace()[0] == e_bound_loc1));
 
-    const point2& local = meas.local_position();
+    const detray::dpoint2D<algebra_t> local =
+        meas.template local_position_in<algebra_t>();
 
     switch (meas.subspace()[0]) {
         case e_bound_loc0:
-            getter::element(pos, 0, 0) = local[0];
+            getter::element(pos, 0, 0) = getter::element(local, 0);
             if constexpr (D == 2u) {
-                getter::element(pos, 1, 0) = local[1];
+                getter::element(pos, 1, 0) = getter::element(local, 1);
             }
             break;
         case e_bound_loc1:
-            getter::element(pos, 0, 0) = local[1];
+            getter::element(pos, 0, 0) = getter::element(local, 1);
             if constexpr (D == 2u) {
-                getter::element(pos, 1, 0) = local[0];
+                getter::element(pos, 1, 0) = getter::element(local, 0);
             }
             break;
         default:
@@ -55,23 +56,24 @@ TRACCC_HOST_DEVICE void get_measurement_covariance(
     assert((meas.subspace()[0] == e_bound_loc0) ||
            (meas.subspace()[0] == e_bound_loc1));
 
-    const variance2& variance = meas.local_variance();
+    const detray::dpoint2D<algebra_t> variance =
+        meas.template local_variance_in<algebra_t>();
 
     switch (meas.subspace()[0]) {
         case e_bound_loc0:
-            getter::element(cov, 0, 0) = variance[0];
+            getter::element(cov, 0, 0) = getter::element(variance, 0);
             if constexpr (D == 2u) {
                 getter::element(cov, 0, 1) = 0.f;
                 getter::element(cov, 1, 0) = 0.f;
-                getter::element(cov, 1, 1) = variance[1];
+                getter::element(cov, 1, 1) = getter::element(variance, 1);
             }
             break;
         case e_bound_loc1:
-            getter::element(cov, 0, 0) = variance[1];
+            getter::element(cov, 0, 0) = getter::element(variance, 1);
             if constexpr (D == 2u) {
                 getter::element(cov, 0, 1) = 0.f;
                 getter::element(cov, 1, 0) = 0.f;
-                getter::element(cov, 1, 1) = variance[0];
+                getter::element(cov, 1, 1) = getter::element(variance, 0);
             }
             break;
         default:

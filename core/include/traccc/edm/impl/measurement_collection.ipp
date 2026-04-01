@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2025 CERN for the benefit of the ACTS project
+ * (c) 2025-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -12,6 +12,59 @@
 #include "traccc/definitions/math.hpp"
 
 namespace traccc::edm {
+
+template <typename BASE>
+template <detray::concepts::algebra ALGEBRA_TYPE>
+TRACCC_HOST_DEVICE detray::dpoint2D<ALGEBRA_TYPE>
+measurement<BASE>::local_position_in() const {
+
+    detray::dpoint2D<ALGEBRA_TYPE> result;
+    getter::element(result, 0) =
+        static_cast<typename ALGEBRA_TYPE::value_type>(local_position()[0]);
+    getter::element(result, 1) =
+        static_cast<typename ALGEBRA_TYPE::value_type>(local_position()[1]);
+    return result;
+}
+
+template <typename BASE>
+template <detray::concepts::algebra ALGEBRA_TYPE>
+TRACCC_HOST_DEVICE void measurement<BASE>::set_local_position_in(
+    const detray::dpoint2D<ALGEBRA_TYPE>& pos) {
+
+    local_position()[0] = static_cast<float>(getter::element(pos, 0));
+    local_position()[1] = static_cast<float>(getter::element(pos, 1));
+}
+
+template <typename BASE>
+template <detray::concepts::algebra ALGEBRA_TYPE>
+TRACCC_HOST_DEVICE detray::dpoint2D<ALGEBRA_TYPE>
+measurement<BASE>::local_variance_in() const {
+
+    detray::dpoint2D<ALGEBRA_TYPE> result;
+    getter::element(result, 0) =
+        static_cast<typename ALGEBRA_TYPE::value_type>(local_variance()[0]);
+    getter::element(result, 1) =
+        static_cast<typename ALGEBRA_TYPE::value_type>(local_variance()[1]);
+    return result;
+}
+
+template <typename BASE>
+template <detray::concepts::algebra ALGEBRA_TYPE>
+TRACCC_HOST_DEVICE void measurement<BASE>::set_local_variance_in(
+    const detray::dpoint2D<ALGEBRA_TYPE>& var) {
+
+    local_variance()[0] = static_cast<float>(getter::element(var, 0));
+    local_variance()[1] = static_cast<float>(getter::element(var, 1));
+}
+
+template <typename BASE>
+template <std::integral TYPE>
+TRACCC_HOST_DEVICE void measurement<BASE>::set_subspace(
+    const std::array<TYPE, 2u>& subs) {
+
+    subspace()[0] = static_cast<unsigned int>(subs[0]);
+    subspace()[1] = static_cast<unsigned int>(subs[1]);
+}
 
 template <typename BASE>
 template <typename T>
