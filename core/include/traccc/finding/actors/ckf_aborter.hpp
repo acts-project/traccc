@@ -21,7 +21,7 @@
 namespace traccc {
 
 /// Aborter triggered when the next surface is reached
-struct ckf_aborter : detray::actor {
+struct ckf_aborter : detray::base_actor {
     struct state {
         // minimal step length to prevent from staying on the same surface
         scalar min_step_length = 0.5f;
