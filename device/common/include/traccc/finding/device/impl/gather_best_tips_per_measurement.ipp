@@ -30,8 +30,8 @@ TRACCC_HOST_DEVICE inline void gather_best_tips_per_measurement(
 
     const vecmem::device_vector<const unsigned int> tips(payload.tips);
     const vecmem::device_vector<const candidate_link> links(payload.links);
-    const edm::measurement_collection<default_algebra>::const_device
-        measurements(payload.measurements);
+    const edm::measurement_collection::const_device measurements(
+        payload.measurements);
     vecmem::device_vector<unsigned long long int> insertion_mutex(
         payload.insertion_mutex);
     vecmem::device_vector<unsigned int> tip_index(payload.tip_index);

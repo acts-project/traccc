@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -52,7 +52,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
      * Initialize all of the device vectors from their vecmem views.
      */
     detector_t det(payload.det_data);
-    edm::measurement_collection<default_algebra>::const_device measurements(
+    edm::measurement_collection::const_device measurements(
         payload.measurements_view);
     bound_track_parameters_collection_types::const_device in_params(
         payload.in_params_view);

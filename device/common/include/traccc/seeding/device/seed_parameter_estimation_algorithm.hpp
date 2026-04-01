@@ -30,8 +30,7 @@ namespace traccc::device {
 ///
 struct seed_parameter_estimation_algorithm
     : public algorithm<bound_track_parameters_collection_types::buffer(
-          const magnetic_field&,
-          const edm::measurement_collection<default_algebra>::const_view&,
+          const magnetic_field&, const edm::measurement_collection::const_view&,
           const edm::spacepoint_collection::const_view&,
           const edm::seed_collection::const_view&)>,
       public messaging,
@@ -63,8 +62,7 @@ struct seed_parameter_estimation_algorithm
     ///
     output_type operator()(
         const magnetic_field& bfield,
-        const edm::measurement_collection<default_algebra>::const_view&
-            measurements,
+        const edm::measurement_collection::const_view& measurements,
         const edm::spacepoint_collection::const_view& spacepoints,
         const edm::seed_collection::const_view& seeds) const override;
 
@@ -81,8 +79,7 @@ struct seed_parameter_estimation_algorithm
         /// The magnetic field object
         const magnetic_field& bfield;
         /// All measurements of the event
-        const edm::measurement_collection<default_algebra>::const_view&
-            measurements;
+        const edm::measurement_collection::const_view& measurements;
         /// All spacepoints of the event
         const edm::spacepoint_collection::const_view& spacepoints;
         /// The reconstructed track seeds of the event

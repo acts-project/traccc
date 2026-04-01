@@ -49,7 +49,7 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
     const detector_conditions_description::const_device& det_cond,
     const vecmem::device_vector<details::index_t>& f, unsigned int start,
     unsigned int end, unsigned short cid,
-    edm::measurement_collection<default_algebra>::device::proxy_type out,
+    edm::measurement_collection::device::proxy_type out,
     vecmem::data::vector_view<unsigned int> cell_links, unsigned int link,
     vecmem::device_vector<unsigned int>& disjoint_set,
     std::optional<std::reference_wrapper<unsigned int>> cluster_size);

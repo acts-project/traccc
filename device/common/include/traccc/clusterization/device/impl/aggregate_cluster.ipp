@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -19,7 +19,7 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
     const detector_conditions_description::const_device& det_cond,
     const vecmem::device_vector<details::index_t>& f, const unsigned int start,
     const unsigned int end, const unsigned short cid,
-    edm::measurement_collection<default_algebra>::device::proxy_type out,
+    edm::measurement_collection::device::proxy_type out,
     vecmem::data::vector_view<unsigned int> cell_links, const unsigned int link,
     vecmem::device_vector<unsigned int>& disjoint_set,
     std::optional<std::reference_wrapper<unsigned int>> cluster_size) {
@@ -173,28 +173,30 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
     /*
      * Fill output vector with calculated cluster properties
      */
-    out.local_position() = mean + offset + module_cd.measurement_translation();
-    out.local_variance() = var;
+    const auto position = mean + offset + module_cd.measurement_translation();
+    out.template set_local_position_in<default_algebra>(position);
+    out.template set_local_variance_in<default_algebra>(var);
     out.surface_link() = module_cd.geometry_id();
     // Set a unique identifier for the measurement.
     out.identifier() = link;
     // Set the dimensionality of the measurement.
     out.dimensions() = module_dd.dimensions();
     // Set the measurement's subspace.
-    out.subspace() = module_dd.subspace();
+    out.set_subspace(module_dd.subspace());
     // Set the index of the cluster that would be created for this measurement
     out.cluster_index() = link;
 
     if (cfg.diameter_strategy == clustering_diameter_strategy::CHANNEL0) {
-        out.diameter() = width[0];
+        out.diameter() = static_cast<float>(width[0]);
     } else if (cfg.diameter_strategy ==
                clustering_diameter_strategy::CHANNEL1) {
-        out.diameter() = width[1];
+        out.diameter() = static_cast<float>(width[1]);
     } else if (cfg.diameter_strategy == clustering_diameter_strategy::MAXIMUM) {
-        out.diameter() = std::max(width[0], width[1]);
+        out.diameter() = static_cast<float>(std::max(width[0], width[1]));
     } else if (cfg.diameter_strategy ==
                clustering_diameter_strategy::DIAGONAL) {
-        out.diameter() = math::sqrt(width[0] * width[0] + width[1] * width[1]);
+        out.diameter() = static_cast<float>(
+            math::sqrt(width[0] * width[0] + width[1] * width[1]));
     }
 }
 
