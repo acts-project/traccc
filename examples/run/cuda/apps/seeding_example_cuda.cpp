@@ -59,6 +59,10 @@
 #include <vecmem/utils/cuda/async_copy.hpp>
 #include <vecmem/utils/cuda/copy.hpp>
 
+#include "traccc/options/track_gbts_seeding.hpp"
+#include "traccc/gbts_seeding/gbts_seeding_config.hpp"
+#include "traccc/cuda/gbts_seeding/gbts_seeding_algorithm.hpp"
+
 // System include(s).
 #include <exception>
 #include <iomanip>
@@ -78,6 +82,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::truth_finding& truth_finding_opts,
             const traccc::opts::seed_matching& seed_matching_opts,
             const traccc::opts::track_matching& track_matching_opts,
+            traccc::opts::track_gbts_seeding& gbts_seeding_opts,
             std::unique_ptr<const traccc::Logger> ilogger) {
     TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
@@ -155,7 +160,17 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     const traccc::detector_buffer detector_buffer =
         traccc::buffer_from_host_detector(host_det, mng_mr, host_copy);
-
+    
+    // GBTS seeding configuration
+    traccc::gbts_seedfinder_config gbts_config;
+    if (gbts_seeding_opts.useGBTS) {
+        if (!gbts_config.setLinkingScheme(
+                gbts_seeding_opts.binTables, gbts_seeding_opts.layerInfo,
+                gbts_seeding_opts.barcodeBinning, /*host_det,*/ 900.0f,
+                logger().clone("GBTSconfig"))) {
+            return -1;
+        }
+    }
     // Seeding algorithm
     const traccc::seedfinder_config seedfinder_config(seeding_opts);
     const traccc::seedfilter_config seedfilter_config(seeding_opts);
@@ -180,6 +195,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         async_copy,
         stream,
         logger().clone("CudaSeedingAlg")};
+    traccc::cuda::gbts_seeding_algorithm gbts_sa_cuda(
+        gbts_config, mr, copy, stream, logger().clone("CudaGbtsSeedingAlg"));
     traccc::cuda::seed_parameter_estimation_algorithm tp_cuda{
         track_params_estimation_config, mr, async_copy, stream,
         logger().clone("CudaTrackParEstAlg")};
@@ -264,7 +281,11 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             {
                 traccc::performance::timer t("Seeding (cuda)", elapsedTimes);
                 // Reconstruct the spacepoints into seeds.
-                seeds_cuda_buffer = sa_cuda(spacepoints_cuda_buffer);
+                if (gbts_seeding_opts.useGBTS) {
+                    seeds_cuda_buffer = gbts_sa_cuda(spacepoints_cuda_buffer, measurements_cuda_buffer);
+                } else {
+                    seeds_cuda_buffer = sa_cuda(spacepoints_cuda_buffer);
+                }
                 stream.synchronize();
             }  // stop measuring seeding cuda timer
 
@@ -460,11 +481,12 @@ int main(int argc, char* argv[]) {
     traccc::opts::truth_finding truth_finding_opts;
     traccc::opts::seed_matching seed_matching_opts;
     traccc::opts::track_matching track_matching_opts;
+    traccc::opts::track_gbts_seeding gbts_seeding_opts;
     traccc::opts::program_options program_opts{
         "Full Tracking Chain Using CUDA (without clusterization)",
         {detector_opts, bfield_opts, input_opts, seeding_opts, finding_opts,
          propagation_opts, fitting_opts, performance_opts, accelerator_opts,
-         truth_finding_opts, seed_matching_opts, track_matching_opts},
+         truth_finding_opts, seed_matching_opts, track_matching_opts, gbts_seeding_opts},
         argc,
         argv,
         logger->cloneWithSuffix("Options")};
@@ -473,5 +495,5 @@ int main(int argc, char* argv[]) {
     return seq_run(seeding_opts, finding_opts, propagation_opts, fitting_opts,
                    input_opts, detector_opts, bfield_opts, performance_opts,
                    accelerator_opts, truth_finding_opts, seed_matching_opts,
-                   track_matching_opts, logger->clone());
+                   track_matching_opts, gbts_seeding_opts, logger->clone());
 }
