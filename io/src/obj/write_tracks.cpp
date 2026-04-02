@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024-2025 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -48,8 +48,7 @@ void write_tracks(std::string_view filename,
              tracks.tracks.constituent_links().at(i)) {
 
             // Find the measurement of this constituent.
-            edm::measurement_collection<
-                default_algebra>::const_device::object_type meas;
+            edm::measurement_collection::const_device::object_type meas;
             if (type == edm::track_constituent_link::measurement) {
                 meas = tracks.measurements.at(idx);
             } else if (type == edm::track_constituent_link::track_state) {
@@ -66,8 +65,8 @@ void write_tracks(std::string_view filename,
                 detector, [meas]<typename detector_traits_t>(
                               const typename detector_traits_t::host& d) {
                     detray::tracking_surface surface{d, meas.surface_link()};
-                    return surface.local_to_global({}, meas.local_position(),
-                                                   {});
+                    return surface.local_to_global(
+                        {}, meas.local_position_in<default_algebra>(), {});
                 });
 
             // Write the 3D coordinates of the measurement / spacepoint.

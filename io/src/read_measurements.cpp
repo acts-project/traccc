@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -18,9 +18,8 @@
 namespace traccc::io {
 
 std::vector<measurement_id_type> read_measurements(
-    edm::measurement_collection<default_algebra>::host& measurements,
-    std::size_t event, std::string_view directory,
-    const traccc::host_detector* detector,
+    edm::measurement_collection::host& measurements, std::size_t event,
+    std::string_view directory, const traccc::host_detector* detector,
     const traccc::detector_design_description::host* det_desc,
     const traccc::detector_conditions_description::host* det_cond,
     const bool sort_measurements, data_format format) {
@@ -50,8 +49,8 @@ std::vector<measurement_id_type> read_measurements(
 }
 
 std::vector<measurement_id_type> read_measurements(
-    edm::measurement_collection<default_algebra>::host& measurements,
-    std::string_view filename, const traccc::host_detector* detector,
+    edm::measurement_collection::host& measurements, std::string_view filename,
+    const traccc::host_detector* detector,
     const traccc::detector_design_description::host* det_desc,
     const traccc::detector_conditions_description::host* det_cond,
     const bool sort_measurements, data_format format) {
