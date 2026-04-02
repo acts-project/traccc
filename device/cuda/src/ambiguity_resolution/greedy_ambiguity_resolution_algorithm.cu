@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2025 CERN for the benefit of the ACTS project
+ * (c) 2025-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -85,8 +85,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
     const edm::track_container<default_algebra>::const_view& tracks_view)
     const {
 
-    const edm::measurement_collection<default_algebra>::const_device
-        measurements(tracks_view.measurements);
+    const edm::measurement_collection::const_device measurements(
+        tracks_view.measurements);
 
     auto n_meas_total = m_copy.get().get_size(tracks_view.measurements);
 
