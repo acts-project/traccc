@@ -25,7 +25,7 @@ struct form_spacepoints {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, const typename detector_t::view* detector,
-        edm::measurement_collection<default_algebra>::const_view measurements,
+        edm::measurement_collection::const_view measurements,
         edm::spacepoint_collection::view spacepoints) const {
 
         auto const globalThreadIdx =
