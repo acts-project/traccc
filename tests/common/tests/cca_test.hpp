@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2024 CERN for the benefit of the ACTS project
+ * (c) 2021-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -38,13 +38,12 @@
 #include <sstream>
 #include <string>
 
-using cca_function_t = std::function<
-    std::pair<std::map<traccc::geometry_id, traccc::edm::measurement_collection<
-                                                traccc::default_algebra>::host>,
-              std::optional<traccc::edm::silicon_cluster_collection::host>>(
-        const traccc::edm::silicon_cell_collection::host &,
-        const traccc::detector_design_description::host &,
-        const traccc::detector_conditions_description::host &)>;
+using cca_function_t = std::function<std::pair<
+    std::map<traccc::geometry_id, traccc::edm::measurement_collection::host>,
+    std::optional<traccc::edm::silicon_cluster_collection::host>>(
+    const traccc::edm::silicon_cell_collection::host &,
+    const traccc::detector_design_description::host &,
+    const traccc::detector_conditions_description::host &)>;
 
 inline traccc::clustering_config default_ccl_test_config() {
     traccc::clustering_config rv;
@@ -195,8 +194,7 @@ class ConnectedComponentAnalysisTests
         while (truth_reader.read(io_truth)) {
             ASSERT_TRUE(result.find(io_truth.geometry_id) != result.end());
 
-            const traccc::edm::measurement_collection<
-                traccc::default_algebra>::host &meas =
+            const traccc::edm::measurement_collection::host &meas =
                 result.at(io_truth.geometry_id);
 
             const traccc::scalar tol = 0.0001f;

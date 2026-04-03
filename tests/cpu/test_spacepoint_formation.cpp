@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -50,8 +50,7 @@ TEST(spacepoint_formation, cpu) {
     // Surface lookup
 
     // Prepare measurement collection
-    typename edm::measurement_collection<default_algebra>::host measurements{
-        host_mr};
+    edm::measurement_collection::host measurements{host_mr};
 
     // Add a measurement at the first plane
     measurements.push_back({{7.f, 2.f},

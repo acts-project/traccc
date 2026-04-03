@@ -67,7 +67,7 @@ TEST(CUDASpacepointFormation, cuda) {
         traccc::buffer_from_host_detector(host_det, mng_mr, copy);
 
     // Prepare measurement collection
-    edm::measurement_collection<default_algebra>::host measurements{mng_mr};
+    edm::measurement_collection::host measurements{mng_mr};
 
     // Add a measurement at the first plane
     measurements.push_back({{7.f, 2.f},

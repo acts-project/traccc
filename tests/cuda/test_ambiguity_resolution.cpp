@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2025 CERN for the benefit of the ACTS project
+ * (c) 2025-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -29,9 +29,8 @@
 
 using namespace traccc;
 
-void fill_measurements(
-    edm::measurement_collection<default_algebra>::host& measurements,
-    const measurement_id_type max_meas_id) {
+void fill_measurements(edm::measurement_collection::host& measurements,
+                       const measurement_id_type max_meas_id) {
 
     measurements.reserve(max_meas_id + 1);
     for (measurement_id_type i = 0; i <= max_meas_id; i++) {
@@ -47,7 +46,7 @@ void fill_pattern(edm::track_container<default_algebra>::host& track_candidates,
     track_candidates.tracks.resize(track_candidates.tracks.size() + 1u);
     track_candidates.tracks.pval().back() = pval;
 
-    edm::measurement_collection<default_algebra>::const_device measurements{
+    edm::measurement_collection::const_device measurements{
         track_candidates.measurements};
 
     for (const auto& meas_id : pattern) {
@@ -86,7 +85,7 @@ std::vector<measurement_id_type> get_pattern(
     const edm::track_container<default_algebra>::host& track_candidates,
     const std::size_t idx) {
 
-    edm::measurement_collection<default_algebra>::const_device measurements{
+    edm::measurement_collection::const_device measurements{
         track_candidates.measurements};
     std::vector<measurement_id_type> ret;
     // A const reference would be fine here. But GCC fears that that would lead
@@ -111,7 +110,7 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest0) {
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    edm::measurement_collection<default_algebra>::host measurements{mng_mr};
+    edm::measurement_collection::host measurements{mng_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -163,7 +162,7 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest1) {
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    edm::measurement_collection<default_algebra>::host measurements{mng_mr};
+    edm::measurement_collection::host measurements{mng_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -203,7 +202,7 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest2) {
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    edm::measurement_collection<default_algebra>::host measurements{mng_mr};
+    edm::measurement_collection::host measurements{mng_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -239,7 +238,7 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest3) {
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    edm::measurement_collection<default_algebra>::host measurements{mng_mr};
+    edm::measurement_collection::host measurements{mng_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -278,7 +277,7 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest5) {
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    edm::measurement_collection<default_algebra>::host measurements{mng_mr};
+    edm::measurement_collection::host measurements{mng_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -315,7 +314,7 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest6) {
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    edm::measurement_collection<default_algebra>::host measurements{mng_mr};
+    edm::measurement_collection::host measurements{mng_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -353,7 +352,7 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest7) {
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    edm::measurement_collection<default_algebra>::host measurements{mng_mr};
+    edm::measurement_collection::host measurements{mng_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -388,7 +387,7 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest8) {
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    edm::measurement_collection<default_algebra>::host measurements{mng_mr};
+    edm::measurement_collection::host measurements{mng_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -427,7 +426,7 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest9) {
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    edm::measurement_collection<default_algebra>::host measurements{mng_mr};
+    edm::measurement_collection::host measurements{mng_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -462,7 +461,7 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest10) {
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    edm::measurement_collection<default_algebra>::host measurements{mng_mr};
+    edm::measurement_collection::host measurements{mng_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -501,7 +500,7 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest11) {
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    edm::measurement_collection<default_algebra>::host measurements{mng_mr};
+    edm::measurement_collection::host measurements{mng_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -536,7 +535,7 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest12) {
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    edm::measurement_collection<default_algebra>::host measurements{mng_mr};
+    edm::measurement_collection::host measurements{mng_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -574,7 +573,7 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest13) {
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    edm::measurement_collection<default_algebra>::host measurements{mng_mr};
+    edm::measurement_collection::host measurements{mng_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -616,7 +615,7 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest14) {
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    edm::measurement_collection<default_algebra>::host measurements{mng_mr};
+    edm::measurement_collection::host measurements{mng_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -653,7 +652,7 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest15) {
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    edm::measurement_collection<default_algebra>::host measurements{mng_mr};
+    edm::measurement_collection::host measurements{mng_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -690,7 +689,7 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest16) {
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    edm::measurement_collection<default_algebra>::host measurements{mng_mr};
+    edm::measurement_collection::host measurements{mng_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -730,7 +729,7 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest17) {
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
-    edm::measurement_collection<default_algebra>::host measurements{mng_mr};
+    edm::measurement_collection::host measurements{mng_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -789,8 +788,7 @@ TEST_P(CUDAGreedyResolutionCompareToCPU, Comparison) {
         std::mt19937 gen(sd);
         std::cout << "Event: " << i_evt << " Seed: " << sd << std::endl;
 
-        edm::measurement_collection<default_algebra>::host measurements{
-            host_mr};
+        edm::measurement_collection::host measurements{host_mr};
         fill_measurements(measurements, max_meas_id);
         edm::track_container<default_algebra>::host trk_cands{
             host_mr, vecmem::get_data(measurements)};
@@ -853,10 +851,9 @@ TEST_P(CUDAGreedyResolutionCompareToCPU, Comparison) {
             resolution_config, mr, copy, stream);
 
         // H2D transfer
-        edm::measurement_collection<default_algebra>::buffer
-            measurements_buffer =
-                copy.to(vecmem::get_data(measurements), device_mr, &host_mr,
-                        vecmem::copy::type::host_to_device);
+        edm::measurement_collection::buffer measurements_buffer =
+            copy.to(vecmem::get_data(measurements), device_mr, &host_mr,
+                    vecmem::copy::type::host_to_device);
         traccc::edm::track_container<default_algebra>::buffer trk_cands_buffer{
             copy.to(vecmem::get_data(trk_cands.tracks), device_mr, &host_mr,
                     vecmem::copy::type::host_to_device),

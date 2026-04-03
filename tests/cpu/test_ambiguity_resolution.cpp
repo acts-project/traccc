@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2025 CERN for the benefit of the ACTS project
+ * (c) 2025-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -26,9 +26,8 @@ namespace {
 vecmem::host_memory_resource host_mr;
 }  // namespace
 
-void fill_measurements(
-    edm::measurement_collection<default_algebra>::host& measurements,
-    const measurement_id_type max_meas_id) {
+void fill_measurements(edm::measurement_collection::host& measurements,
+                       const measurement_id_type max_meas_id) {
 
     measurements.reserve(max_meas_id + 1);
     for (measurement_id_type i = 0; i <= max_meas_id; i++) {
@@ -44,7 +43,7 @@ void fill_pattern(edm::track_container<default_algebra>::host& track_candidates,
     track_candidates.tracks.resize(track_candidates.tracks.size() + 1u);
     track_candidates.tracks.pval().back() = pval;
 
-    edm::measurement_collection<default_algebra>::const_device measurements{
+    edm::measurement_collection::const_device measurements{
         track_candidates.measurements};
 
     for (const auto& meas_id : pattern) {
@@ -64,7 +63,7 @@ std::vector<std::size_t> get_pattern(
     const edm::track_container<default_algebra>::host& track_candidates,
     const std::size_t idx) {
 
-    edm::measurement_collection<default_algebra>::const_device measurements{
+    edm::measurement_collection::const_device measurements{
         track_candidates.measurements};
     std::vector<std::size_t> ret;
     // A const reference would be fine here. But GCC fears that that would lead
@@ -80,7 +79,7 @@ std::vector<std::size_t> get_pattern(
 
 TEST(AmbiguitySolverTests, GreedyResolverTest0) {
 
-    edm::measurement_collection<default_algebra>::host measurements{host_mr};
+    edm::measurement_collection::host measurements{host_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -157,7 +156,7 @@ TEST(AmbiguitySolverTests, GreedyResolverTest0) {
 
 TEST(AmbiguitySolverTests, GreedyResolverTest1) {
 
-    edm::measurement_collection<default_algebra>::host measurements{host_mr};
+    edm::measurement_collection::host measurements{host_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -205,7 +204,7 @@ TEST(AmbiguitySolverTests, GreedyResolverTest1) {
 
 TEST(AmbiguitySolverTests, GreedyResolverTest2) {
 
-    edm::measurement_collection<default_algebra>::host measurements{host_mr};
+    edm::measurement_collection::host measurements{host_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -232,7 +231,7 @@ TEST(AmbiguitySolverTests, GreedyResolverTest2) {
 
 TEST(AmbiguitySolverTests, GreedyResolverTest3) {
 
-    edm::measurement_collection<default_algebra>::host measurements{host_mr};
+    edm::measurement_collection::host measurements{host_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -280,7 +279,7 @@ TEST(AmbiguitySolverTests, GreedyResolverTest3) {
 // Comparison to the legacy algorithm.
 TEST(AmbiguitySolverTests, GreedyResolverTest4) {
 
-    edm::measurement_collection<default_algebra>::host measurements{host_mr};
+    edm::measurement_collection::host measurements{host_mr};
     const measurement_id_type max_meas_id = 10000;
     fill_measurements(measurements, max_meas_id);
 
@@ -365,7 +364,7 @@ TEST(AmbiguitySolverTests, GreedyResolverTest4) {
 
 TEST(AmbiguitySolverTests, GreedyResolverTest5) {
 
-    edm::measurement_collection<default_algebra>::host measurements{host_mr};
+    edm::measurement_collection::host measurements{host_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
@@ -395,7 +394,7 @@ TEST(AmbiguitySolverTests, GreedyResolverTest5) {
 
 TEST(AmbiguitySolverTests, GreedyResolverTest6) {
 
-    edm::measurement_collection<default_algebra>::host measurements{host_mr};
+    edm::measurement_collection::host measurements{host_mr};
     fill_measurements(measurements, 100);
 
     edm::track_container<default_algebra>::host trk_cands{
