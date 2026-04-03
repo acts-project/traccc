@@ -50,7 +50,9 @@ full_chain_algorithm::full_chain_algorithm(
       usingGBTS(useGBTS) {
 
     if (usingGBTS) {
-			std::cout << "GBTS not implemented for CPU, this will run with triplet seeding" << std::endl;
+        std::cout << "GBTS not implemented for CPU, this will run with triplet "
+                     "seeding"
+                  << std::endl;
     }
 }
 

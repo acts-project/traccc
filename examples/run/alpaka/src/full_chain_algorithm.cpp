@@ -98,7 +98,9 @@ full_chain_algorithm::full_chain_algorithm(
       usingGBTS(useGBTS) {
 
     if (usingGBTS) {
-			std::cout << "GBTS not implemented for alpaka, this will run with triplet seeding" << std::endl;
+        std::cout << "GBTS not implemented for alpaka, this will run with "
+                     "triplet seeding"
+                  << std::endl;
     }
     std::cout << traccc::alpaka::get_device_info() << std::endl;
 
