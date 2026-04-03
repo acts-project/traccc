@@ -68,14 +68,14 @@ void track_gbts_seeding::read(const boost::program_options::variables_map &) {
     unsigned int nLayers = 0;
     layerInfoFile >> nLayers;
     layerInfo.reserve(nLayers);
-    char type = 0;
+    int type = 0;
     std::array<int, 2> info = {0, 0};
     std::array<float, 2> geo = {0, 0};
     for (; nLayers > 0u; --nLayers) {
         layerInfoFile >> type;
         layerInfoFile >> info[0] >> info[1];
         layerInfoFile >> geo[0] >> geo[1];
-        layerInfo.addLayer(type, info[0], info[1], geo[0], geo[1]);
+        layerInfo.addLayer(static_cast<char>(type), info[0], info[1], geo[0], geo[1]);
     }
 }
 
