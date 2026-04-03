@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -148,8 +148,8 @@ int main(int argc, char* argv[]) {
 
         // For the first half of events run Alg0
         if ((event - input_opts.skip) / (input_opts.events / 2) == 0) {
-            traccc::edm::measurement_collection<traccc::default_algebra>::host
-                truth_measurements{host_mr};
+            traccc::edm::measurement_collection::host truth_measurements{
+                host_mr};
             traccc::edm::track_container<default_algebra>::host
                 truth_track_candidates{host_mr};
             evt_data.generate_truth_candidates(
@@ -177,8 +177,8 @@ int main(int argc, char* argv[]) {
                 }
             }
         } else {
-            traccc::edm::measurement_collection<traccc::default_algebra>::host
-                truth_measurements{host_mr};
+            traccc::edm::measurement_collection::host truth_measurements{
+                host_mr};
             traccc::edm::track_container<default_algebra>::host
                 truth_track_candidates{host_mr};
             evt_data.generate_truth_candidates(

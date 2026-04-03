@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -63,8 +63,8 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     if (m_detector != nullptr) {
 
         // Run the seed-finding.
-        const edm::measurement_collection<default_algebra>::const_data
-            measurements_view = vecmem::get_data(measurements);
+        const edm::measurement_collection::const_data measurements_view =
+            vecmem::get_data(measurements);
         const spacepoint_formation_algorithm::output_type spacepoints =
             m_spacepoint_formation(*m_detector, measurements_view);
         const edm::spacepoint_collection::const_data spacepoints_data =
@@ -114,8 +114,8 @@ bound_track_parameters_collection_types::host full_chain_algorithm::seeding(
     if (m_detector != nullptr) {
 
         // Run the seed-finding.
-        const edm::measurement_collection<default_algebra>::const_data
-            measurements_view = vecmem::get_data(measurements);
+        const edm::measurement_collection::const_data measurements_view =
+            vecmem::get_data(measurements);
         const spacepoint_formation_algorithm::output_type spacepoints =
             m_spacepoint_formation(*m_detector, measurements_view);
         const edm::spacepoint_collection::const_data spacepoints_data =

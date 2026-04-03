@@ -241,8 +241,7 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
     else {
 
         // Copy the measurements back to the host.
-        edm::measurement_collection<default_algebra>::host measurements_host(
-            m_host_mr);
+        edm::measurement_collection::host measurements_host(m_host_mr);
         m_copy(measurements, measurements_host)->wait();
 
         // Return an empty object.
@@ -288,8 +287,7 @@ bound_track_parameters_collection_types::host full_chain_algorithm::seeding(
     else {
 
         // Copy the measurements back to the host.
-        edm::measurement_collection<default_algebra>::host measurements_host(
-            m_host_mr);
+        edm::measurement_collection::host measurements_host(m_host_mr);
         m_copy(measurements, measurements_host)->wait();
 
         // Return an empty object.

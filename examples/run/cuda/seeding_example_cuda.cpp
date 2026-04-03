@@ -205,8 +205,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
         // Instantiate host containers/collections
         traccc::edm::spacepoint_collection::host spacepoints_per_event{host_mr};
-        traccc::edm::measurement_collection<traccc::default_algebra>::host
-            measurements_per_event{host_mr};
+        traccc::edm::measurement_collection::host measurements_per_event{
+            host_mr};
         traccc::host::seeding_algorithm::output_type seeds{host_mr};
         traccc::host::track_params_estimation::output_type params;
         traccc::edm::track_container<traccc::default_algebra>::host
@@ -252,7 +252,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                        spacepoints_cuda_buffer)
                 ->wait();
 
-            traccc::edm::measurement_collection<traccc::default_algebra>::buffer
+            traccc::edm::measurement_collection::buffer
                 measurements_cuda_buffer(
                     static_cast<unsigned int>(measurements_per_event.size()),
                     mr.main);

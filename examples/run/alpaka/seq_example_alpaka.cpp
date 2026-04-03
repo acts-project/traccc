@@ -225,8 +225,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
         host_fitting_algorithm::output_type track_states{host_mr};
 
         // Instantiate alpaka containers/collections
-        traccc::edm::measurement_collection<traccc::default_algebra>::buffer
-            measurements_alpaka_buffer;
+        traccc::edm::measurement_collection::buffer measurements_alpaka_buffer;
         traccc::edm::spacepoint_collection::buffer spacepoints_alpaka_buffer;
         traccc::edm::seed_collection::buffer seeds_alpaka_buffer;
         traccc::bound_track_parameters_collection_types::buffer
@@ -373,8 +372,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
           compare cpu and alpaka result
           ----------------------------------*/
 
-        traccc::edm::measurement_collection<traccc::default_algebra>::host
-            measurements_per_event_alpaka{host_mr};
+        traccc::edm::measurement_collection::host measurements_per_event_alpaka{
+            host_mr};
         traccc::edm::spacepoint_collection::host spacepoints_per_event_alpaka{
             host_mr};
         traccc::edm::seed_collection::host seeds_alpaka{host_mr};
@@ -400,8 +399,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
             TRACCC_INFO("===>>> Event " << event << " <<<===");
 
             // Compare the measurements made on the host and on the device.
-            traccc::soa_comparator<
-                traccc::edm::measurement_collection<traccc::default_algebra>>
+            traccc::soa_comparator<traccc::edm::measurement_collection>
                 compare_measurements{"measurements"};
             compare_measurements(
                 vecmem::get_data(measurements_per_event),
