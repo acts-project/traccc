@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -28,10 +28,8 @@ class is_same_object<edm::track<T>> {
     public:
     /// Constructor with a reference object, and an allowed uncertainty
     is_same_object(
-        const edm::measurement_collection<default_algebra>::const_view&
-            ref_meas,
-        const edm::measurement_collection<default_algebra>::const_view&
-            test_meas,
+        const edm::measurement_collection::const_view& ref_meas,
+        const edm::measurement_collection::const_view& test_meas,
         const edm::track_state_collection<default_algebra>::const_view&
             ref_states,
         const edm::track_state_collection<default_algebra>::const_view&
@@ -75,10 +73,8 @@ class is_same_object<edm::track<T>> {
         }
 
         // Now compare the constituents one by one.
-        const edm::measurement_collection<default_algebra>::const_device
-            ref_meas{m_ref_meas};
-        const edm::measurement_collection<default_algebra>::const_device
-            test_meas{m_test_meas};
+        const edm::measurement_collection::const_device ref_meas{m_ref_meas};
+        const edm::measurement_collection::const_device test_meas{m_test_meas};
         const edm::track_state_collection<default_algebra>::const_device
             ref_states{m_ref_states};
         const edm::track_state_collection<default_algebra>::const_device
@@ -94,8 +90,8 @@ class is_same_object<edm::track<T>> {
             if (obj.constituent_links()[i].type ==
                 edm::track_constituent_link::measurement) {
 
-                if (!is_same_object<edm::measurement_collection<
-                        default_algebra>::const_device::const_proxy_type>(
+                if (!is_same_object<edm::measurement_collection::const_device::
+                                        const_proxy_type>(
                         ref_meas.at(m_ref.constituent_links()[i].index), m_unc)(
                         test_meas.at(obj.constituent_links()[i].index))) {
                     return false;
@@ -126,9 +122,9 @@ class is_same_object<edm::track<T>> {
 
     private:
     /// Measurements for the reference object
-    const edm::measurement_collection<default_algebra>::const_view m_ref_meas;
+    const edm::measurement_collection::const_view m_ref_meas;
     /// Measurements for the test object
-    const edm::measurement_collection<default_algebra>::const_view m_test_meas;
+    const edm::measurement_collection::const_view m_test_meas;
     /// States for the reference object
     const edm::track_state_collection<default_algebra>::const_view m_ref_states;
     /// States for the test object

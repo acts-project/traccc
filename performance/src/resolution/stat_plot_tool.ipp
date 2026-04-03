@@ -34,8 +34,7 @@ template <typename track_state_backend_t>
 void stat_plot_tool::fill(
     stat_plot_cache& cache,
     const edm::track_state<track_state_backend_t>& trk_state,
-    const edm::measurement_collection<default_algebra>::host& measurements)
-    const {
+    const edm::measurement_collection::host& measurements) const {
 
     // Avoid unused variable warnings when building the code without ROOT.
     (void)cache;
