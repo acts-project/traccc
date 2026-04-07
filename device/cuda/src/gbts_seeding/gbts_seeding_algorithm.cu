@@ -893,7 +893,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     kernels::gbts_seed_conversion_kernel<<<nBlocks, nThreads, 0, stream>>>(
         ctx.d_seed_proposals, ctx.d_seed_ambiguity, ctx.d_path_store,
         ctx.d_output_graph, ctx.d_reducedSP, output_seeds, ctx.d_hit_bids, nProps, m_config.max_num_neighbours,
-		0.7e-2f);
+		0.7e-2f, 0.5f, 0.5f, 0.2f);
 
     cudaStreamSynchronize(stream);
 	

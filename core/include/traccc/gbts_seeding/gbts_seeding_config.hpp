@@ -125,6 +125,11 @@ struct gbts_seed_extraction_params {
     float max_z0 = 160.0f;
 };
 
+struct gbts_seed_ambi_params {
+const float tight_bid_eta_threshold, const float best_hit_frac, const float dropout_maxium_curv_m
+}
+
+
 struct gbts_seedfinder_config {
     bool setLinkingScheme(
         const std::vector<std::pair<int, std::vector<int>>>& binTables,

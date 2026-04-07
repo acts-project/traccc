@@ -614,9 +614,8 @@ void __global__ fit_segments(
         qual = static_cast<int>(seed_extraction_params.qual_scale * state1.m_J);
     }
     int prop_idx = atomicAdd(&d_counters[8], 1);
-
     // perform first round of bidding for disambiguation
-    // only on the outermost edge    
+    // only on the outermost edge   
 	add_seed_proposal(qual, path_idx, prop_idx, d_seed_ambiguity,
                       d_seed_proposals, d_edge_bids, d_path_store, 1);
 }
@@ -697,7 +696,7 @@ void __global__ seeds_rebid_for_edges(int2* d_path_store,
 
 void __global__ seeds_bid_for_hits(int* d_output_graph, int2* d_seed_proposals, int2* d_path_store, char* d_seed_ambiguity,  unsigned long long int* d_hit_bids, const unsigned int nProps, int edge_size) {
 	
-	for(unsigned int prop_idx = threadIdx.x + gridDim.x*blockIdx.x; prop_idx < nProps; prop_idx+=gridDim.x*blockDim.x) {
+	for(unsigned int prop_idx = threadIdx.x + blockDim.x*blockIdx.x; prop_idx < nProps; prop_idx+=gridDim.x*blockDim.x) {
 		if(d_seed_ambiguity[prop_idx] == -2) {
 			continue;
 		}
@@ -751,7 +750,7 @@ inline __device__ float3 estimate_params(float4 sps[3]) {
 	}
 
 	const float du = u[0] - u[1];
-	// low cot theta to cause drop out
+	// low cot theta and curv to cause drop out
 	if (du == 0.0) return make_float3(0, 0, 0);
 		  
 	const float A = (v[0] - v[1])/du;
@@ -762,14 +761,14 @@ inline __device__ float3 estimate_params(float4 sps[3]) {
 
 	// signed curvature in 1/m
 	const float curv = 1000*B/sqrtf(1 + A*A);
-	const float cot_t =  (sps[2].z - sps[0].z)/(sqrtf(sps[2].x*sps[2].x+sps[2].y*sps[2].y) - r0);
+	const float cot_t =  (sps[2].z - sps[1].z)/(sqrtf(sps[2].x*sps[2].x+sps[2].y*sps[2].y) - r0);
 	return make_float3(curv, d0, cot_t);
 }
 
 void __global__ gbts_seed_conversion_kernel(
     int2* d_seed_proposals, char* d_seed_ambiguity, int2* d_path_store,
     int* d_output_graph, float4* d_sp_params, edm::seed_collection::view output_seeds, unsigned long long int* d_hit_bids,
-    const unsigned int nProps, const unsigned int max_num_neighbours, const float dcurv_cut_m) {
+    const unsigned int nProps, const unsigned int max_num_neighbours, const float dcurv_cut_m, const float tight_bid_cot_threshold, const float best_hit_frac, const float dropout_max_curv_m) {
 
     int edge_size = 2 + 1 + max_num_neighbours;
     edm::seed_collection::device seeds_device(output_seeds);
@@ -797,34 +796,36 @@ void __global__ gbts_seed_conversion_kernel(
             d_output_graph[traccc::device::gbts_consts::node2 +
                            edge_size * path.x];
 		best_for_hit += (prop_idx == (d_hit_bids[seed.nodes[seed.size-1]] & 0xFFFFFFFFLL));
-		printf(" last bid %llu ", (d_hit_bids[seed.nodes[seed.size-1]] & 0xFFFFFFFFLL));
-		if(best_for_hit == 0) {
+		
+		float4 sps[3];
+		sps[0] = d_sp_params[seed.nodes[seed.size-1]];
+		sps[1] = d_sp_params[seed.nodes[(1+seed.size-1)/2 - 1]];
+		sps[2] = d_sp_params[seed.nodes[0]];
+		float3 curv_d0_1 = estimate_params(sps);
+		// estimate params to inform it dropout
+		sps[0] = d_sp_params[seed.nodes[seed.size-2]];
+		float3 curv_d0_2 = estimate_params(sps);
+		float abs_curv_sum = abs(curv_d0_1.x+curv_d0_2.x);
+		if((best_for_hit < best_hit_frac*seed.size)) {
 			continue;
 		}
-        // sample begining, middle, end sp from tracklet for now
+		// for low eta (higher fake rate) seeds perform a stronger cut	
+		if((best_for_hit < seed.size-1) & (abs(curv_d0_1.z+curv_d0_2.z)< 2.0f*tight_bid_cot_threshold) & (seed.size < 5)) { 
+			continue;
+		}
+        // sample begining, middle, end sp from tracklet for seed
         seeds_device.push_back({seed.nodes[seed.size - 1],
                                 seed.nodes[(1 + seed.size) / 2 - 1],
                                 seed.nodes[0]});
-		if (seed.size > 3 & seed.size < 6) {
-			//check for outliers and drop hits
-			float4 sps[3];
-			sps[0] = d_sp_params[seed.nodes[seed.size-1]];
-			sps[1] = d_sp_params[seed.nodes[(1+seed.size-1)/2 - 1]];
-			sps[2] = d_sp_params[seed.nodes[0]];
-			float3 curv_d0_1 = estimate_params(sps);
-			sps[0] = d_sp_params[seed.nodes[seed.size-2]];
-			float3 curv_d0_2 = estimate_params(sps);
+		if (seed.size > 3 & seed.size < 6) { 
 			// drop out for high pT or inconsistant seeds
-			if(abs(curv_d0_1.z) > 36.0f) {
+			if(abs_curv_sum > 2.0f*dropout_max_curv_m) {
 				continue;
 			}
-			if(abs(curv_d0_1.x) > 0.15f & abs(curv_d0_2.x) > 0.15f) {
+			if((abs_curv_sum > 4*dcurv_cut_m) & (abs(curv_d0_1.x-curv_d0_2.x) < dcurv_cut_m)) {
 				continue;
 			}
-			if((abs(curv_d0_1.x) > 4*dcurv_cut_m) & (abs(curv_d0_1.x-curv_d0_2.x) < dcurv_cut_m)) {
-				continue;
-			}
-			//printf(" curv %f dcurv %f Dd0 %f |> ",curv_d0_1.x, abs(curv_d0_1.x-curv_d0_2.x), abs(curv_d0_1.y - curv_d0_2.y)); 
+			// also add seed permutaion if estimates are diffrent
 			seeds_device.push_back({seed.nodes[seed.size - 2],
 								seed.nodes[(1 + seed.size) / 2 - 1],
 								seed.nodes[0]});
