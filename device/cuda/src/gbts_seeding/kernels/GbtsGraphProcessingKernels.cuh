@@ -768,7 +768,8 @@ inline __device__ float3 estimate_params(float4 sps[3]) {
 void __global__ gbts_seed_conversion_kernel(
     int2* d_seed_proposals, char* d_seed_ambiguity, int2* d_path_store,
     int* d_output_graph, float4* d_sp_params, edm::seed_collection::view output_seeds, unsigned long long int* d_hit_bids,
-    const unsigned int nProps, const unsigned int max_num_neighbours, const float dcurv_cut_m, const float tight_bid_cot_threshold, const float best_hit_frac, const float dropout_max_curv_m) {
+    const unsigned int nProps, const unsigned int max_num_neighbours, const float dcurv_cut_m, const float dropout_max_curv_m,
+	const float best_hit_frac, const float tight_bid_cot_threshold) {
 
     int edge_size = 2 + 1 + max_num_neighbours;
     edm::seed_collection::device seeds_device(output_seeds);
