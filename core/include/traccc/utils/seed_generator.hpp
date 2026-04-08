@@ -9,6 +9,7 @@
 
 // Library include(s).
 #include "traccc/edm/track_parameters.hpp"
+#include "traccc/utils/logging.hpp"
 #include "traccc/utils/particle.hpp"
 
 // detray include(s).
@@ -51,19 +52,25 @@ struct seed_generator {
         // Get bound parameter
         const detray::tracking_surface sf{m_detector, surface_link};
 
+        TRACCC_DEBUG_HOST("Surface:\n" << sf);
+        TRACCC_DEBUG_HOST("Input free param. on surface:\n" << free_param);
+
         auto bound_vec = sf.free_to_bound_vector(m_ctx, free_param);
         auto bound_cov = matrix::identity<traccc::bound_matrix<algebra_type>>();
 
         bound_track_parameters<algebra_type> bound_param{surface_link,
                                                          bound_vec, bound_cov};
 
+        TRACCC_DEBUG_HOST("-> Bound param.:\n" << bound_param);
+
         // Type definitions
         using interactor_type =
-            detray::pointwise_material_interactor<algebra_type>;
+            detray::actor::pointwise_material_interactor<algebra_type>;
 
         assert(ptc_type.charge() * bound_param.qop() > 0.f);
 
         // Apply interactor
+        TRACCC_DEBUG_HOST("Update material:");
         if (sf.has_material()) {
             typename interactor_type::state interactor_state;
             interactor_state.do_multiple_scattering = false;
@@ -83,6 +90,8 @@ struct seed_generator {
             getter::element(bound_param.covariance(), i, i) =
                 m_stddevs[i] * m_stddevs[i];
         }
+
+        TRACCC_VERBOSE_HOST("Generated seed param.:\n" << bound_param);
 
         assert(!bound_param.is_invalid());
 

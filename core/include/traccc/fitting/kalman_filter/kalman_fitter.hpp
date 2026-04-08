@@ -55,31 +55,35 @@ class kalman_fitter {
     using bfield_type = typename stepper_t::magnetic_field_type;
 
     // Actor types
-    using pathlimit_aborter = detray::pathlimit_aborter<scalar_type>;
-    using momentum_aborter = detray::momentum_aborter<scalar_type>;
-    using transporter = detray::parameter_transporter<algebra_type>;
-    using interactor = detray::pointwise_material_interactor<algebra_type>;
+    using pathlimit_aborter = detray::actor::pathlimit_aborter<scalar_type>;
+    using momentum_aborter = detray::actor::momentum_aborter<scalar_type>;
+    using interactor =
+        detray::actor::pointwise_material_interactor<algebra_type>;
     using forward_fit_actor =
         traccc::kalman_actor<algebra_type, surface_type,
                              kalman_actor_direction::FORWARD_ONLY>;
     using backward_fit_actor =
         traccc::kalman_actor<algebra_type, surface_type,
                              kalman_actor_direction::BACKWARD_ONLY>;
-    using resetter = detray::parameter_resetter<algebra_type>;
-    using surface_sequencer = detray::surface_sequencer<surface_type>;
+    using surface_sequencer = detray::actor::surface_sequencer<surface_type>;
+
+    using forward_updater =
+        detray::actor::parameter_updater<algebra_type, interactor,
+                                         forward_fit_actor>;
+    using backward_updater =
+        detray::actor::parameter_updater<algebra_type, backward_fit_actor,
+                                         interactor>;
 
     static_assert(std::is_same_v<typename forward_fit_actor::state,
                                  typename backward_fit_actor::state>);
 
     using forward_actor_chain_type =
-        detray::actor_chain<momentum_aborter, pathlimit_aborter, transporter,
-                            interactor, forward_fit_actor, resetter,
-                            kalman_step_aborter>;
+        detray::actor_chain<momentum_aborter, pathlimit_aborter,
+                            forward_updater, kalman_step_aborter>;
 
     using backward_actor_chain_type =
-        detray::actor_chain<momentum_aborter, pathlimit_aborter, transporter,
-                            backward_fit_actor, interactor, resetter,
-                            kalman_step_aborter>;
+        detray::actor_chain<momentum_aborter, pathlimit_aborter,
+                            backward_updater, kalman_step_aborter>;
 
     // Navigator type for backward propagator
     using direct_navigator_type = detray::direct_navigator<detector_type>;
@@ -116,40 +120,38 @@ class kalman_fitter {
                 algebra_type>::const_device& measurements,
             vecmem::data::vector_view<surface_type> sequence_buffer,
             const detray::propagation::config& prop_cfg)
-            : m_fit_actor_state{track, track_states, measurements,
-                                vecmem::device_vector<surface_type>(
-                                    sequence_buffer)},
-              m_parameter_resetter{prop_cfg},
+            : m_updater_state{prop_cfg},
+              m_fit_actor_state{
+                  track, track_states, measurements,
+                  vecmem::device_vector<surface_type>(sequence_buffer)},
               m_fit_res{track},
               m_sequence_buffer{sequence_buffer} {}
 
         /// @return the actor chain state
         TRACCC_HOST_DEVICE
         typename forward_actor_chain_type::state_ref_tuple operator()() {
-            return detray::tie(m_momentum_aborter_state,
-                               m_pathlimit_aborter_state, m_transporter_state,
-                               m_interactor_state, m_fit_actor_state,
-                               m_parameter_resetter, m_step_aborter_state);
+            return detray::tie(m_step_aborter_state, m_momentum_aborter_state,
+                               m_pathlimit_aborter_state, m_interactor_state,
+                               m_fit_actor_state, m_updater_state);
         }
 
         /// @return the actor chain state
         TRACCC_HOST_DEVICE
         typename backward_actor_chain_type::state_ref_tuple
         backward_actor_state() {
-            return detray::tie(m_momentum_aborter_state,
-                               m_pathlimit_aborter_state, m_transporter_state,
-                               m_fit_actor_state, m_interactor_state,
-                               m_parameter_resetter, m_step_aborter_state);
+            return detray::tie(m_step_aborter_state, m_momentum_aborter_state,
+                               m_pathlimit_aborter_state, m_fit_actor_state,
+                               m_interactor_state, m_updater_state);
         }
 
         /// Individual actor states
         typename pathlimit_aborter::state m_pathlimit_aborter_state{};
         typename momentum_aborter::state m_momentum_aborter_state{};
-        typename transporter::state m_transporter_state{};
+        typename detray::actor::parameter_updater_state<algebra_type>
+            m_updater_state{};
         typename interactor::state m_interactor_state{};
         typename forward_fit_actor::state m_fit_actor_state;
         kalman_step_aborter::state m_step_aborter_state{};
-        typename resetter::state m_parameter_resetter{};
 
         /// Fitting result per track
         typename edm::track_collection<algebra_type>::device::proxy_type
@@ -190,6 +192,7 @@ class kalman_fitter {
                                  .index)
                          .filtered_params();
             // Reset the iterator of kalman actor
+            fitter_state.m_updater_state.init(params);
             fitter_state.m_fit_actor_state.reset();
         }
 
@@ -245,6 +248,9 @@ class kalman_fitter {
 
         // Create propagator
         forward_propagator_type propagator(m_cfg.propagation);
+
+        // Set initial track parameters for parameter transport
+        fitter_state.m_updater_state.init(seed_params);
 
         // Set minimum momentum
         fitter_state.m_momentum_aborter_state.min_pT(
@@ -348,7 +354,9 @@ class kalman_fitter {
         TRACCC_DEBUG_HOST("Start smoothing at: " << last.smoothed_params());
 
         // Configure actors
-        fitter_state.m_parameter_resetter.estimate_scattering_noise = false;
+        fitter_state.m_updater_state.init(last.smoothed_params());
+        fitter_state.m_updater_state.noise_estimation_cfg()
+            .estimate_scattering_noise = false;
 
         backward_propagator_type propagator(m_cfg.propagation);
 
@@ -384,9 +392,9 @@ class kalman_fitter {
 
         assert(std::signbit(
                    propagation.stepping().particle_hypothesis().charge()) ==
-               std::signbit(propagation.stepping().bound_params().qop()));
+               std::signbit(fitter_state.m_updater_state.bound_params().qop()));
 
-        inflate_covariance(propagation.stepping().bound_params(),
+        inflate_covariance(fitter_state.m_updater_state.bound_params(),
                            m_cfg.covariance_inflation_factor);
 
         // Run the smoothing

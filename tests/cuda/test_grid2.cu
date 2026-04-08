@@ -45,7 +45,7 @@ void grid_replace_test(grid2_view<host_grid2_replace> grid_view) {
     const auto& axis0 = grid_view._axis_p0_view;
     const auto& axis1 = grid_view._axis_p1_view;
 
-    int block_dim = 1;
+    unsigned int block_dim = 1;
     dim3 thread_dim(axis0.n_bins, axis1.n_bins);
 
     // run the kernel
@@ -83,7 +83,7 @@ void grid_replace_ci_test(grid2_view<host_grid2_replace_ci> grid_view) {
     const auto& axis0 = grid_view._axis_p0_view;
     const auto& axis1 = grid_view._axis_p1_view;
 
-    int block_dim = 1;
+    unsigned int block_dim = 1;
     dim3 thread_dim(axis0.n_bins, axis1.n_bins);
 
     // run the kernel
@@ -127,7 +127,7 @@ void grid_complete_test(grid2_view<host_grid2_complete> grid_view) {
     const auto& axis0 = grid_view._axis_p0_view;
     const auto& axis1 = grid_view._axis_p1_view;
 
-    int block_dim = 1;
+    unsigned int block_dim = 1;
     dim3 thread_dim(axis0.n_bins, axis1.n_bins);
 
     // run the kernel
@@ -162,7 +162,7 @@ void grid_attach_read_test(const_grid2_view<host_grid2_attach> grid_view) {
     const auto& axis0 = grid_view._axis_p0_view;
     const auto& axis1 = grid_view._axis_p1_view;
 
-    int block_dim = 1;
+    unsigned int block_dim = 1;
     dim3 thread_dim(axis0.n_bins, axis1.n_bins);
 
     // run the kernel
@@ -206,7 +206,7 @@ void grid_attach_fill_test(grid2_view<host_grid2_attach> grid_view) {
     const auto& axis1 = grid_view._axis_p1_view;
 
     dim3 block_dim(axis0.n_bins, axis1.n_bins);
-    int thread_dim = 100;
+    unsigned int thread_dim = 100;
 
     // run the kernel
     grid_attach_fill_test_kernel<<<block_dim, thread_dim>>>(grid_view);
@@ -237,7 +237,7 @@ __global__ void grid_attach_assign_test_kernel(
 // attach_fill_test implementation
 void grid_attach_assign_test(grid2_view<host_grid2_attach> grid_view) {
 
-    int block_dim = 1;
+    unsigned int block_dim = 1;
     dim3 thread_dim(2, 2);
 
     // run the kernel

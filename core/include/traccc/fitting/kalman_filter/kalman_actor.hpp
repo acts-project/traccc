@@ -21,6 +21,7 @@
 
 // detray include(s).
 #include <detray/definitions/navigation.hpp>
+#include <detray/propagator/actors/parameter_updater.hpp>
 #include <detray/propagator/actors/surface_sequencer.hpp>
 #include <detray/propagator/base_actor.hpp>
 
@@ -38,7 +39,8 @@ enum class kalman_actor_direction {
 template <typename algebra_t, typename surface_t>
 struct kalman_actor_state {
 
-    using sequencer_t = typename detray::surface_sequencer<surface_t>::state;
+    using sequencer_t =
+        typename detray::actor::surface_sequencer<surface_t>::state;
 
     /// Constructor with the vector of track states
     TRACCC_HOST_DEVICE
@@ -215,8 +217,8 @@ struct kalman_actor_state {
             }
 
             TRACCC_VERBOSE_HOST_DEVICE(
-                "-> Matched current surface to next track state: %d/%d", m_idx,
-                size());
+                "-> Matched current surface to next track state: %d/%d",
+                m_idx + 1, size());
             // If track finding did not find measurement on this surface: skip
             return !trk_state.is_hole();
         }
@@ -332,7 +334,7 @@ struct kalman_actor_state {
 /// Detray actor for Kalman filtering
 template <typename algebra_t, typename surface_t,
           kalman_actor_direction direction_e>
-struct kalman_actor : detray::actor {
+struct kalman_actor : detray::base_actor {
 
     // Actor state
     using state = kalman_actor_state<algebra_t, surface_t>;
@@ -342,8 +344,9 @@ struct kalman_actor : detray::actor {
     /// @param actor_state the actor state
     /// @param propagation the propagator state
     template <typename propagator_state_t>
-    TRACCC_HOST_DEVICE void operator()(state& actor_state,
-                                       propagator_state_t& propagation) const {
+    TRACCC_HOST_DEVICE void operator()(
+        state& actor_state, propagator_state_t& propagation,
+        detray::actor::parameter_transporter_result<algebra_t>& res) const {
 
         auto& stepping = propagation.stepping();
         auto& navigation = propagation.navigation();
@@ -378,7 +381,7 @@ struct kalman_actor : detray::actor {
                     navigation.current_surface().has_material()) {
                     // Add this to the surface sequence for the backward fit
                     actor_state.add_to_sequence(
-                        std::as_const(navigation).current().sf_desc);
+                        std::as_const(navigation).current().surface());
                 }
                 return;
             } else if (actor_state.fit_result !=
@@ -401,7 +404,7 @@ struct kalman_actor : detray::actor {
             // Fetch matched track state
             edm::track_state trk_state = actor_state();
             bound_track_parameters<algebra_t>& bound_param =
-                stepping.bound_params();
+                res.destination_params();
 
             // Run Kalman Gain Updater
             const auto sf = navigation.current_surface();
@@ -426,7 +429,7 @@ struct kalman_actor : detray::actor {
 
                     // Add this to the surface sequence for the backward fit
                     actor_state.add_to_sequence(
-                        std::as_const(navigation).current().sf_desc);
+                        std::as_const(navigation).current().surface());
                 } else {
                     assert(false);
                 }
@@ -486,6 +489,7 @@ struct kalman_actor : detray::actor {
 
             // No need to continue
             if (actor_state.finished() && !actor_state.do_precise_hole_count) {
+                TRACCC_VERBOSE_HOST_DEVICE("Kalman Actor: finished");
                 navigation.exit();
                 propagation.heartbeat(false);
                 return;
@@ -498,6 +502,9 @@ struct kalman_actor : detray::actor {
                 TRACCC_DEBUG_HOST_DEVICE(
                     "Encountered overlap, jump to next surface");
             }
+
+            // Signal that paramter update is needed
+            res.status = detray::actor::status::e_success;
         } else if (!actor_state.backward_mode &&
                    navigation.encountered_sf_material()) {
             assert(std::as_const(navigation).is_on_passive() ||
@@ -505,7 +512,7 @@ struct kalman_actor : detray::actor {
 
             // Add this to the surface sequence for the backward fit
             actor_state.add_to_sequence(
-                std::as_const(navigation).current().sf_desc);
+                std::as_const(navigation).current().surface());
         }
     }
 };

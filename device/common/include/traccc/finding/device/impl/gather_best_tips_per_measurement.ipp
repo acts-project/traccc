@@ -121,12 +121,12 @@ TRACCC_HOST_DEVICE inline void gather_best_tips_per_measurement(
                     tip_index.at(offset + out_idx) = thread_id;
                     tip_pval.at(offset + out_idx) = pval;
 
-                    typename algebra_t::scalar new_worst =
-                        std::numeric_limits<typename algebra_t::scalar>::max();
+                    float new_worst = std::numeric_limits<float>::max();
 
                     for (unsigned int i = 0; i < new_size; ++i) {
-                        new_worst =
-                            std::min(new_worst, tip_pval.at(offset + i));
+                        new_worst = std::min(
+                            new_worst,
+                            static_cast<float>(tip_pval.at(offset + i)));
                     }
 
                     [[maybe_unused]] bool cas_result =
