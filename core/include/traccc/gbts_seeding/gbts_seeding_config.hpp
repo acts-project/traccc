@@ -126,11 +126,11 @@ struct gbts_seed_extraction_params {
 };
 
 struct gbts_seed_ambi_params {
-	// these curvatures are in 1/m
-	float dropout_dcurv_m = 0.007f;
-	float dropout_max_curv_m = 0.2f; //~1.5 GeV
-	float best_hit_frac = 0.5f;
-	float tight_bid_cot_threshold = 0.5f;
+    // these curvatures are in 1/m
+    float dropout_dcurv_m = 0.007f;
+    float dropout_max_curv_m = 0.2f;  //~1.5 GeV
+    float best_hit_frac = 0.5f;
+    float tight_bid_cot_threshold = 0.5f;
 };
 
 struct gbts_seedfinder_config {
@@ -151,7 +151,7 @@ struct gbts_seedfinder_config {
     // tuned for 900 MeV pT cut and scaled by input minPt
     gbts_graph_building_params graph_building_params{};
     gbts_seed_extraction_params seed_extraction_params{};
-	gbts_seed_ambi_params seed_ambi_params{};
+    gbts_seed_ambi_params seed_ambi_params{};
 
     // node making bin counts
     unsigned int n_eta_bins = 0;  // calculated from input layerInfo

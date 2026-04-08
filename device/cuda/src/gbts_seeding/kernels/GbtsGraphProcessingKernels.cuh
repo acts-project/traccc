@@ -578,7 +578,7 @@ void __global__ fit_segments(
 
     int2 path = d_path_store[path_idx];
 
-	float4 triplet_params[2];
+    float4 triplet_params[2];
     int nodeidx =
         d_output_graph[traccc::device::gbts_consts::node1 + edge_size * path.x];
     triplet_params[0] = d_sp_params[nodeidx];
@@ -589,15 +589,19 @@ void __global__ fit_segments(
     state1.initialize(triplet_params[1], triplet_params[0]);
     while (path.y >= 0) {
         path = d_path_store[path.y];
-		
-		triplet_params[1] = d_sp_params[d_output_graph[traccc::device::gbts_consts::node2 + edge_size * path.x]];
+
+        triplet_params[1] =
+            d_sp_params[d_output_graph[traccc::device::gbts_consts::node2 +
+                                       edge_size * path.x]];
 
         if (toggle) {
-            if (!update(&state1, &state2, triplet_params[1], seed_extraction_params)) {
+            if (!update(&state1, &state2, triplet_params[1],
+                        seed_extraction_params)) {
                 state1 = state2;
                 break;
             }
-        } else if (!update(&state2, &state1, triplet_params[1], seed_extraction_params)) {
+        } else if (!update(&state2, &state1, triplet_params[1],
+                           seed_extraction_params)) {
             break;
         }
         toggle = !toggle;
@@ -608,15 +612,15 @@ void __global__ fit_segments(
         return;
     }
     int qual = 0;
-	if (toggle) {
+    if (toggle) {
         qual = static_cast<int>(seed_extraction_params.qual_scale * state2.m_J);
     } else {
         qual = static_cast<int>(seed_extraction_params.qual_scale * state1.m_J);
     }
     int prop_idx = atomicAdd(&d_counters[8], 1);
     // perform first round of bidding for disambiguation
-    // only on the outermost edge   
-	add_seed_proposal(qual, path_idx, prop_idx, d_seed_ambiguity,
+    // only on the outermost edge
+    add_seed_proposal(qual, path_idx, prop_idx, d_seed_ambiguity,
                       d_seed_proposals, d_edge_bids, d_path_store, 1);
 }
 
@@ -694,82 +698,92 @@ void __global__ seeds_rebid_for_edges(int2* d_path_store,
     }
 }
 
-void __global__ seeds_bid_for_hits(int* d_output_graph, int2* d_seed_proposals, int2* d_path_store, char* d_seed_ambiguity,  unsigned long long int* d_hit_bids, const unsigned int nProps, int edge_size) {
-	
-	for(unsigned int prop_idx = threadIdx.x + blockDim.x*blockIdx.x; prop_idx < nProps; prop_idx+=gridDim.x*blockDim.x) {
-		if(d_seed_ambiguity[prop_idx] == -2) {
-			continue;
-		}
-		int2 prop = d_seed_proposals[prop_idx];
-		unsigned long long int seed_bid =
-			(static_cast<unsigned long long int>(prop.x) << 32) |
-			(static_cast<unsigned long long int>(prop_idx));
+void __global__ seeds_bid_for_hits(int* d_output_graph, int2* d_seed_proposals,
+                                   int2* d_path_store, char* d_seed_ambiguity,
+                                   unsigned long long int* d_hit_bids,
+                                   const unsigned int nProps, int edge_size) {
+
+    for (unsigned int prop_idx = threadIdx.x + blockDim.x * blockIdx.x;
+         prop_idx < nProps; prop_idx += gridDim.x * blockDim.x) {
+        if (d_seed_ambiguity[prop_idx] == -2) {
+            continue;
+        }
+        int2 prop = d_seed_proposals[prop_idx];
+        unsigned long long int seed_bid =
+            (static_cast<unsigned long long int>(prop.x) << 32) |
+            (static_cast<unsigned long long int>(prop_idx));
 
         int2 path = make_int2(0, prop.y);
         while (path.y >= 0) {
             path = d_path_store[path.y];
-			int sp_idx = d_output_graph[traccc::device::gbts_consts::node1 + edge_size * path.x];
+            int sp_idx = d_output_graph[traccc::device::gbts_consts::node1 +
+                                        edge_size * path.x];
             atomicMax(&d_hit_bids[sp_idx], seed_bid);
         }
-		int sp_idx = d_output_graph[traccc::device::gbts_consts::node2 + edge_size * path.x];
-		atomicMax(&d_hit_bids[sp_idx], seed_bid);
-	}
+        int sp_idx = d_output_graph[traccc::device::gbts_consts::node2 +
+                                    edge_size * path.x];
+        atomicMax(&d_hit_bids[sp_idx], seed_bid);
+    }
 }
 
 inline __device__ float3 estimate_params(float4 sps[3]) {
-  
-	//conformal mapping with the center at the middle spacepoint
 
-	float u[2], v[2];
+    // conformal mapping with the center at the middle spacepoint
 
-	const float x0 = sps[1].x;
-	const float y0 = sps[1].y;
+    float u[2], v[2];
 
-	const float r0 = sqrtf(x0*x0 + y0*y0);
+    const float x0 = sps[1].x;
+    const float y0 = sps[1].y;
 
-	const float cosA = x0/r0;
+    const float r0 = sqrtf(x0 * x0 + y0 * y0);
 
-	const float sinA = y0/r0;
-  
-	for(unsigned int k=0;k<2;k++) {
+    const float cosA = x0 / r0;
 
-		int sp_idx = (k==1) ? 2 : k;
+    const float sinA = y0 / r0;
 
-		const float dx = sps[sp_idx].x - x0;
+    for (unsigned int k = 0; k < 2; k++) {
 
-		const float dy = sps[sp_idx].y - y0;
+        int sp_idx = (k == 1) ? 2 : k;
 
-		const float r2_inv = 1.0/(dx*dx+dy*dy);
+        const float dx = sps[sp_idx].x - x0;
 
-		const float xn = dx*cosA + dy*sinA;
+        const float dy = sps[sp_idx].y - y0;
 
-		const float yn =-dx*sinA + dy*cosA;
+        const float r2_inv = 1.0 / (dx * dx + dy * dy);
 
-		u[k] = xn*r2_inv;
-		v[k] = yn*r2_inv;    
-	}
+        const float xn = dx * cosA + dy * sinA;
 
-	const float du = u[0] - u[1];
-	// low cot theta and curv to cause drop out
-	if (du == 0.0) return make_float3(0, 0, 0);
-		  
-	const float A = (v[0] - v[1])/du;
+        const float yn = -dx * sinA + dy * cosA;
 
-	const float B = v[1] - A*u[1];
+        u[k] = xn * r2_inv;
+        v[k] = yn * r2_inv;
+    }
 
-	const float d0 = r0*(B*r0 - A);
+    const float du = u[0] - u[1];
+    // low cot theta and curv to cause drop out
+    if (du == 0.0)
+        return make_float3(0, 0, 0);
 
-	// signed curvature in 1/m
-	const float curv = 1000*B/sqrtf(1 + A*A);
-	const float cot_t =  (sps[2].z - sps[1].z)/(sqrtf(sps[2].x*sps[2].x+sps[2].y*sps[2].y) - r0);
-	return make_float3(curv, d0, cot_t);
+    const float A = (v[0] - v[1]) / du;
+
+    const float B = v[1] - A * u[1];
+
+    const float d0 = r0 * (B * r0 - A);
+
+    // signed curvature in 1/m
+    const float curv = 1000 * B / sqrtf(1 + A * A);
+    const float cot_t = (sps[2].z - sps[1].z) /
+                        (sqrtf(sps[2].x * sps[2].x + sps[2].y * sps[2].y) - r0);
+    return make_float3(curv, d0, cot_t);
 }
 
 void __global__ gbts_seed_conversion_kernel(
     int2* d_seed_proposals, char* d_seed_ambiguity, int2* d_path_store,
-    int* d_output_graph, float4* d_sp_params, edm::seed_collection::view output_seeds, unsigned long long int* d_hit_bids,
-    const unsigned int nProps, const unsigned int max_num_neighbours, const float dcurv_cut_m, const float dropout_max_curv_m,
-	const float best_hit_frac, const float tight_bid_cot_threshold) {
+    int* d_output_graph, float4* d_sp_params,
+    edm::seed_collection::view output_seeds, unsigned long long int* d_hit_bids,
+    const unsigned int nProps, const unsigned int max_num_neighbours,
+    const float dcurv_cut_m, const float dropout_max_curv_m,
+    const float best_hit_frac, const float tight_bid_cot_threshold) {
 
     int edge_size = 2 + 1 + max_num_neighbours;
     edm::seed_collection::device seeds_device(output_seeds);
@@ -780,9 +794,9 @@ void __global__ gbts_seed_conversion_kernel(
             // drop seeds that lost the bidding
             continue;
         }
-		// collect seed hits and reject those that lost the hit bidding
+        // collect seed hits and reject those that lost the hit bidding
         char best_for_hit = 0;
-		Tracklet seed;
+        Tracklet seed;
         seed.size = 0;
         // dummy path to start the loop
         int2 path = make_int2(0, d_seed_proposals[prop_idx].y);
@@ -791,46 +805,52 @@ void __global__ gbts_seed_conversion_kernel(
             seed.nodes[seed.size++] =
                 d_output_graph[traccc::device::gbts_consts::node1 +
                                edge_size * path.x];
-			best_for_hit += (prop_idx == (d_hit_bids[seed.nodes[seed.size-1]] & 0xFFFFFFFFLL)); 
+            best_for_hit +=
+                (prop_idx ==
+                 (d_hit_bids[seed.nodes[seed.size - 1]] & 0xFFFFFFFFLL));
         }
         seed.nodes[seed.size++] =
             d_output_graph[traccc::device::gbts_consts::node2 +
                            edge_size * path.x];
-		best_for_hit += (prop_idx == (d_hit_bids[seed.nodes[seed.size-1]] & 0xFFFFFFFFLL));
-		
-		float4 sps[3];
-		sps[0] = d_sp_params[seed.nodes[seed.size-1]];
-		sps[1] = d_sp_params[seed.nodes[(1+seed.size-1)/2 - 1]];
-		sps[2] = d_sp_params[seed.nodes[0]];
-		float3 curv_d0_1 = estimate_params(sps);
-		// estimate params to inform it dropout
-		sps[0] = d_sp_params[seed.nodes[seed.size-2]];
-		float3 curv_d0_2 = estimate_params(sps);
-		float abs_curv_sum = abs(curv_d0_1.x+curv_d0_2.x);
-		if((best_for_hit < best_hit_frac*seed.size)) {
-			continue;
-		}
-		// for low eta (higher fake rate) seeds perform a stronger cut	
-		if((best_for_hit < seed.size-1) & (abs(curv_d0_1.z+curv_d0_2.z)< 2.0f*tight_bid_cot_threshold) & (seed.size < 5)) { 
-			continue;
-		}
+        best_for_hit += (prop_idx == (d_hit_bids[seed.nodes[seed.size - 1]] &
+                                      0xFFFFFFFFLL));
+
+        float4 sps[3];
+        sps[0] = d_sp_params[seed.nodes[seed.size - 1]];
+        sps[1] = d_sp_params[seed.nodes[(1 + seed.size - 1) / 2 - 1]];
+        sps[2] = d_sp_params[seed.nodes[0]];
+        float3 curv_d0_1 = estimate_params(sps);
+        // estimate params to inform it dropout
+        sps[0] = d_sp_params[seed.nodes[seed.size - 2]];
+        float3 curv_d0_2 = estimate_params(sps);
+        float abs_curv_sum = abs(curv_d0_1.x + curv_d0_2.x);
+        if ((best_for_hit < best_hit_frac * seed.size)) {
+            continue;
+        }
+        // for low eta (higher fake rate) seeds perform a stronger cut
+        if ((best_for_hit < seed.size - 1) &
+            (abs(curv_d0_1.z + curv_d0_2.z) < 2.0f * tight_bid_cot_threshold) &
+            (seed.size < 5)) {
+            continue;
+        }
         // sample begining, middle, end sp from tracklet for seed
         seeds_device.push_back({seed.nodes[seed.size - 1],
                                 seed.nodes[(1 + seed.size) / 2 - 1],
                                 seed.nodes[0]});
-		if (seed.size > 3 & seed.size < 6) { 
-			// drop out for high pT or inconsistant seeds
-			if(abs_curv_sum > 2.0f*dropout_max_curv_m) {
-				continue;
-			}
-			if((abs_curv_sum > 4*dcurv_cut_m) & (abs(curv_d0_1.x-curv_d0_2.x) < dcurv_cut_m)) {
-				continue;
-			}
-			// also add seed permutaion if estimates are diffrent
-			seeds_device.push_back({seed.nodes[seed.size - 2],
-								seed.nodes[(1 + seed.size) / 2 - 1],
-								seed.nodes[0]});
-		}
+        if (seed.size > 3 & seed.size < 6) {
+            // drop out for high pT or inconsistant seeds
+            if (abs_curv_sum > 2.0f * dropout_max_curv_m) {
+                continue;
+            }
+            if ((abs_curv_sum > 4 * dcurv_cut_m) &
+                (abs(curv_d0_1.x - curv_d0_2.x) < dcurv_cut_m)) {
+                continue;
+            }
+            // also add seed permutaion if estimates are diffrent
+            seeds_device.push_back({seed.nodes[seed.size - 2],
+                                    seed.nodes[(1 + seed.size) / 2 - 1],
+                                    seed.nodes[0]});
+        }
     }
 }
 

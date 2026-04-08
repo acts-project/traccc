@@ -826,8 +826,8 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     TRACCC_DEBUG("nProps " << nProps);
 
     cudaStreamSynchronize(stream);
-    
-	if (error != cudaSuccess) {
+
+    if (error != cudaSuccess) {
         TRACCC_ERROR(
             "seed extraction: CUDA error: " << cudaGetErrorString(error));
         return {0, m_mr.main};
@@ -874,35 +874,37 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     cudaFree(ctx.d_graph_building_params);
 
     // 8. convert to 3sp seeds and make output buffer
-	// allocate extra seed space for hit permutation
+    // allocate extra seed space for hit permutation
     edm::seed_collection::buffer output_seeds(
-        2*ctx.nSeeds, m_mr.main, vecmem::data::buffer_type::resizable);
+        2 * ctx.nSeeds, m_mr.main, vecmem::data::buffer_type::resizable);
     m_copy.get().setup(output_seeds)->ignore();
 
-	cudaMalloc(&ctx.d_hit_bids,
-			   ctx.nSp * sizeof(unsigned long long int));
-    cudaMemsetAsync(ctx.d_hit_bids, 0,
-                    ctx.nSp * sizeof(unsigned long long int),
+    cudaMalloc(&ctx.d_hit_bids, ctx.nSp * sizeof(unsigned long long int));
+    cudaMemsetAsync(ctx.d_hit_bids, 0, ctx.nSp * sizeof(unsigned long long int),
                     stream);
 
-	nThreads = 128;
-	nBlocks = ctx.nSeeds/nThreads;
+    nThreads = 128;
+    nBlocks = ctx.nSeeds / nThreads;
 
-	kernels::seeds_bid_for_hits<<<nBlocks, nThreads, 0, stream>>>(
-		ctx.d_output_graph, ctx.d_seed_proposals, ctx.d_path_store, ctx.d_seed_ambiguity,
-		ctx.d_hit_bids, nProps, 1 + 2 + m_config.max_num_neighbours);
+    kernels::seeds_bid_for_hits<<<nBlocks, nThreads, 0, stream>>>(
+        ctx.d_output_graph, ctx.d_seed_proposals, ctx.d_path_store,
+        ctx.d_seed_ambiguity, ctx.d_hit_bids, nProps,
+        1 + 2 + m_config.max_num_neighbours);
 
     kernels::gbts_seed_conversion_kernel<<<nBlocks, nThreads, 0, stream>>>(
         ctx.d_seed_proposals, ctx.d_seed_ambiguity, ctx.d_path_store,
-        ctx.d_output_graph, ctx.d_reducedSP, output_seeds, ctx.d_hit_bids, nProps, m_config.max_num_neighbours,
-		m_config.seed_ambi_params.dropout_dcurv_m, m_config.seed_ambi_params.dropout_max_curv_m,
-		m_config.seed_ambi_params.best_hit_frac, m_config.seed_ambi_params.tight_bid_cot_threshold);
- 
+        ctx.d_output_graph, ctx.d_reducedSP, output_seeds, ctx.d_hit_bids,
+        nProps, m_config.max_num_neighbours,
+        m_config.seed_ambi_params.dropout_dcurv_m,
+        m_config.seed_ambi_params.dropout_max_curv_m,
+        m_config.seed_ambi_params.best_hit_frac,
+        m_config.seed_ambi_params.tight_bid_cot_threshold);
+
     cudaStreamSynchronize(stream);
-	
-	if (error != cudaSuccess) {
-        TRACCC_ERROR(
-            "Seed ambiguity solving: CUDA error: " << cudaGetErrorString(error));
+
+    if (error != cudaSuccess) {
+        TRACCC_ERROR("Seed ambiguity solving: CUDA error: "
+                     << cudaGetErrorString(error));
         return {0, m_mr.main};
     }
 
@@ -911,7 +913,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     cudaFree(ctx.d_path_store);
     cudaFree(ctx.d_seed_proposals);
     cudaFree(ctx.d_seed_ambiguity);
-	cudaFree(ctx.d_hit_bids);
+    cudaFree(ctx.d_hit_bids);
 
     error = cudaGetLastError();
 
