@@ -7,6 +7,10 @@
 
 #pragma once
 
+// Library include(s).
+#include "traccc/utils/detray_conversion.hpp"
+
+// System include(s).
 #include <cassert>
 
 namespace traccc::details {
@@ -155,11 +159,11 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
     measurement.surface_link() = module_cd.geometry_id();
 
     // apply lorentz shift to the cell position
-    measurement.template set_local_position_in<default_algebra>(
+    measurement.local_position() = utils::to_float_array<default_algebra>(
         mean + module_cd.measurement_translation());
 
     // plus pitch^2 / 12
-    measurement.template set_local_variance_in<default_algebra>(var);
+    measurement.local_variance() = utils::to_float_array<default_algebra>(var);
 
     // For the ambiguity resolution algorithm, give a unique measurement ID
     measurement.identifier() = index;

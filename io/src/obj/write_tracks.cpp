@@ -8,6 +8,9 @@
 // Local include(s).
 #include "write_tracks.hpp"
 
+// Project include(s).
+#include "traccc/edm/measurement_helpers.hpp"
+
 // Detray include(s)
 #include <detray/geometry/tracking_surface.hpp>
 
@@ -66,13 +69,18 @@ void write_tracks(std::string_view filename,
                               const typename detector_traits_t::host& d) {
                     detray::tracking_surface surface{d, meas.surface_link()};
                     return surface.local_to_global(
-                        {}, meas.local_position_in<default_algebra>(), {});
+                        {},
+                        edm::get_measurement_local<
+                            typename detector_traits_t::host::algebra_type>(
+                            meas),
+                        {});
                 });
 
             // Write the 3D coordinates of the measurement / spacepoint.
             assert(global.size() == 3);
-            file << "v " << global[0] << " " << global[1] << " " << global[2]
-                 << "\n";
+            file << "v " << getter::element(global, 0u) << " "
+                 << getter::element(global, 1u) << " "
+                 << getter::element(global, 2u) << "\n";
         }
     }
 

@@ -12,6 +12,7 @@
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/measurement_collection.hpp"
+#include "traccc/edm/measurement_helpers.hpp"
 #include "traccc/edm/track_container.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_state_collection.hpp"
@@ -484,8 +485,8 @@ class triplet_fitter {
         scalar t_eff =
             mat_scatter /
             detray::cos_angle({}, scat_sf, tangent3D,
-                              measurements.at(t.m_meas_idx[1])
-                                  .template local_position_in<algebra_type>());
+                              edm::get_measurement_local<algebra_type>(
+                                  measurements.at(t.m_meas_idx[1])));
 
         auto scattering_unc = [](scalar curvature_3D, scalar eff_thickness,
                                  vector3 field_strength_vector) {

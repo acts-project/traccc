@@ -9,6 +9,7 @@
 
 // Project include(s)
 #include "traccc/clusterization/details/measurement_creation.hpp"
+#include "traccc/utils/detray_conversion.hpp"
 
 namespace traccc::device {
 
@@ -174,8 +175,8 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
      * Fill output vector with calculated cluster properties
      */
     const auto position = mean + offset + module_cd.measurement_translation();
-    out.template set_local_position_in<default_algebra>(position);
-    out.template set_local_variance_in<default_algebra>(var);
+    out.local_position() = utils::to_float_array<default_algebra>(position);
+    out.local_variance() = utils::to_float_array<default_algebra>(var);
     out.surface_link() = module_cd.geometry_id();
     // Set a unique identifier for the measurement.
     out.identifier() = link;

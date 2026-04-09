@@ -8,7 +8,6 @@
 #pragma once
 
 // Local include(s).
-#include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 
 // Detray include(s).
@@ -20,6 +19,7 @@
 // System include(s).
 #include <array>
 #include <compare>
+#include <cstdint>
 
 namespace traccc::edm {
 
@@ -59,28 +59,6 @@ class measurement : public BASE {
     TRACCC_HOST_DEVICE
     const auto& local_position() const { return BASE::template get<0>(); }
 
-    /// Get the local position object in a specific (Detray) algebra
-    ///
-    /// @note This function must only be used on proxy objects, not on
-    ///       containers!
-    ///
-    /// @tparam ALGEBRA_TYPE The algebra to retrieve the local position in
-    /// @return An algebra specific 1D/2D point object
-    ///
-    template <detray::concepts::algebra ALGEBRA_TYPE>
-    TRACCC_HOST_DEVICE detray::dpoint2D<ALGEBRA_TYPE> local_position_in() const;
-    /// Set the local position expressed in a specific (Detray) algebra
-    ///
-    /// @note This function must only be used on proxy objects, not on
-    ///       containers!
-    ///
-    /// @tparam ALGEBRA_TYPE The algebra to set the local position in
-    /// @param pos The local position to set
-    ///
-    template <detray::concepts::algebra ALGEBRA_TYPE>
-    TRACCC_HOST_DEVICE void set_local_position_in(
-        const detray::dpoint2D<ALGEBRA_TYPE>& pos);
-
     /// Variance of the local position of the measurement (non-const)
     ///
     /// @return A (non-const) vector of 1D/2D variances
@@ -93,28 +71,6 @@ class measurement : public BASE {
     ///
     TRACCC_HOST_DEVICE
     const auto& local_variance() const { return BASE::template get<1>(); }
-
-    /// Get the local variance object in a specific (Detray) algebra
-    ///
-    /// @note This function must only be used on proxy objects, not on
-    ///       containers!
-    ///
-    /// @tparam ALGEBRA_TYPE The algebra to retrieve the local variance in
-    /// @return An algebra specific 1D/2D point object
-    ///
-    template <detray::concepts::algebra ALGEBRA_TYPE>
-    TRACCC_HOST_DEVICE detray::dpoint2D<ALGEBRA_TYPE> local_variance_in() const;
-    /// Set the local variance expressed in a specific (Detray) algebra
-    ///
-    /// @note This function must only be used on proxy objects, not on
-    ///       containers!
-    ///
-    /// @tparam ALGEBRA_TYPE The algebra to set the local variance in
-    /// @param var The local variance to set
-    ///
-    template <detray::concepts::algebra ALGEBRA_TYPE>
-    TRACCC_HOST_DEVICE void set_local_variance_in(
-        const detray::dpoint2D<ALGEBRA_TYPE>& var);
 
     /// Dimensionality of the measurement (non-const)
     ///
@@ -270,7 +226,7 @@ using measurement_collection = vecmem::edm::container<
     // surface_link
     vecmem::edm::type::vector<detray::geometry::barcode>,
     // subspace
-    vecmem::edm::type::vector<std::array<unsigned int, 2u>>,
+    vecmem::edm::type::vector<std::array<std::uint8_t, 2u>>,
     // cluster_index
     vecmem::edm::type::vector<unsigned int>>;
 
