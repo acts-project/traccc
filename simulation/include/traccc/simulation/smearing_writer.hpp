@@ -135,7 +135,7 @@ struct smearing_writer : detray::base_actor {
             const auto free_param =
                 sf.bound_to_free_vector(propagation.context(), bound_params);
 
-            assert(sf.barcode() == bound_params.surface_link());
+            assert(sf.identifier() == bound_params.surface_link());
 
             TRACCC_DEBUG_HOST("Actor: Writing truth param.:\n" << bound_params);
 

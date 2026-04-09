@@ -150,12 +150,12 @@ struct track_state_candidate_data {
 template <detray::concepts::algebra algebra_t, typename BASE>
 TRACCC_HOST_DEVICE inline void track_state_from_candidate(
     void* track_cand_ptr, const smoother_type mode, const unsigned int link_idx,
-    typename edm::measurement_collection<algebra_t>::const_device measurements,
+    typename edm::measurement_collection::const_device measurements,
     edm::track<BASE> track,
-    typename edm::track_state_collection<algebra_t>::view track_states_view) {
+    typename edm::track_container<algebra_t>::view track_container_view) {
 
     typename edm::track_state_collection<algebra_t>::device track_states(
-        track_states_view);
+        track_container_view.states);
 
     // The track_cand_ptr points at the first track state
     switch (mode) {

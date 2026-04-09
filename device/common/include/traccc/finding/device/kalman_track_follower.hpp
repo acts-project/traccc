@@ -51,7 +51,7 @@ struct kalman_track_follower_payload {
      *
      * @warning Measurements on the same surface must be adjacent
      */
-    edm::measurement_collection<algebra_t>::const_view measurements_view;
+    edm::measurement_collection::const_view measurements_view;
 
     /**
      * @brief View object to the vector of measurement index ranges per surface

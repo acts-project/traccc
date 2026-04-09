@@ -56,8 +56,7 @@ template <typename detector_t, typename bfield_t>
 edm::track_container<typename detector_t::algebra_type>::host
 kalman_track_follower(
     const detector_t& det, const bfield_t& field,
-    const typename edm::measurement_collection<
-        typename detector_t::algebra_type>::const_view& measurements_view,
+    const typename edm::measurement_collection::const_view& measurements_view,
     const bound_track_parameters_collection_types::const_view& seeds_view,
     const finding_config& cfg, vecmem::memory_resource& mr,
     const Logger& /*log*/) {
@@ -71,7 +70,7 @@ kalman_track_follower(
     using propagator_t = traccc::details::kf_propagator_t<detector_t, bfield_t>;
 
     // Create the measurement container.
-    typename edm::measurement_collection<algebra_t>::const_device measurements{
+    typename edm::measurement_collection::const_device measurements{
         measurements_view};
 
     // Check contiguity of the measurements
@@ -100,20 +99,26 @@ kalman_track_follower(
 
         auto up = std::upper_bound(measurements.surface_link().begin(),
                                    measurements.surface_link().end(),
-                                   sf_desc.barcode());
+                                   sf_desc.identifier());
         meas_ranges.push_back(static_cast<unsigned int>(
             std::distance(measurements.surface_link().begin(), up)));
     }
+
+    // Create the output track container
+    typename edm::track_container<algebra_t>::host track_container{
+        mr, measurements_view};
 
     // Create the input seeds container.
     bound_track_parameters_collection_types::const_device seeds{seeds_view};
     const unsigned int n_seeds{seeds.size()};
 
+    if (n_seeds == 0u) {
+        TRACCC_DEBUG_HOST_DEVICE("No input seeds: Quitting");
+        return track_container;
+    }
+
     // Number of found tracks = number of seeds
     const unsigned int max_cands{n_seeds * cfg.max_track_candidates_per_track};
-
-    typename edm::track_container<algebra_t>::host track_container{
-        mr, measurements_view};
     // Total number of tracks in one event
     track_container.tracks.reserve(n_seeds);
     // Total number of track states for all tracks in one event
@@ -218,7 +223,7 @@ kalman_track_follower(
                                         interactor_state, meas_updater_state);
 
         for (unsigned int step = 0u;
-             step < seeds.size() / cfg.duplicate_removal_minimum_length;
+             step < max_cands / cfg.duplicate_removal_minimum_length + 1u;
              ++step) {
 
             if (propagator.is_paused(propagation)) {
@@ -237,6 +242,8 @@ kalman_track_follower(
             // Stop propagation
             if (propagator.finished(propagation) ||
                 !propagator.is_paused(propagation)) {
+                TRACCC_VERBOSE_HOST_DEVICE(
+                    "Track following finished. Building track...");
                 break;
             }
             // Check if the track should be continued
@@ -267,6 +274,13 @@ kalman_track_follower(
         // Observe minimum track length
         const track_stats<scalar_t>& trk_stats = meas_updater_state.m_stats;
         const unsigned int n_track_states{trk_stats.n_track_states};
+
+        TRACCC_DEBUG_HOST("Seed params:\n" << seed);
+        TRACCC_VERBOSE_HOST("Found track for seed "
+                            << seed_idx << ": (" << n_track_states
+                            << " track states, " << trk_stats.n_holes
+                            << " holes)");
+
         if (n_track_states < cfg.min_track_candidates_per_track) {
             TRACCC_WARNING_HOST("Short track ("
                                 << n_track_states
@@ -278,15 +292,9 @@ kalman_track_follower(
         const int ndf_sum{static_cast<int>(trk_stats.ndf_sum) - 5};
 
         if (ndf_sum < 0) {
-            TRACCC_ERROR_HOST("Negative NDF sum for track");
+            TRACCC_ERROR_HOST("Negative NDF sum for track: discarding");
             continue;
         }
-
-        TRACCC_VERBOSE_HOST("Found track for seed "
-                            << seed_idx << ": (" << n_track_states
-                            << " track states, " << trk_stats.n_holes
-                            << " holes)");
-        TRACCC_DEBUG_HOST("Seed params:\n" << seed);
 
         // Link the new states to the final track
         vecmem::vector<edm::track_constituent_link> state_links;
@@ -331,11 +339,11 @@ kalman_track_follower(
                 state_idx);
 
             // Intermediate type required to build a view
-            typename edm::track_state_collection<algebra_t>::data state_data{
-                vecmem::get_data(track_container.states)};
+            typename edm::track_container<algebra_t>::data track_data{
+                track_container};
             traccc::track_state_from_candidate<algebra_t>(
                 candidate_data.ptr(), cfg.run_smoother, link_idx, measurements,
-                track, {state_data});
+                track, {track_data});
         }
 
         TRACCC_DEBUG_HOST("Added track " << track_container.tracks.size() - 1

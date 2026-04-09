@@ -219,8 +219,7 @@ struct measurement_selector {
     template <detray::concepts::algebra algebra_t>
     TRACCC_HOST_DEVICE static candidate_measurement find_optimal_measurement(
         const bound_track_parameters<algebra_t>& bound_params,
-        const typename edm::measurement_collection<algebra_t>::const_device&
-            measurements,
+        const typename edm::measurement_collection::const_device& measurements,
         vecmem::device_vector<unsigned int> meas_ranges, const config& cfg,
         const bool is_line) {
 
@@ -273,7 +272,7 @@ struct measurement_selector {
     TRACCC_HOST_DEVICE static vecmem::vector<candidate_measurement>
     find_compatible_measurements(
         const bound_track_parameters<algebra_t>& /*bound_params*/,
-        const typename edm::measurement_collection<algebra_t>::const_device&
+        const typename edm::measurement_collection::const_device&
         /*measurements*/,
         vecmem::device_vector<unsigned int> /*meas_ranges*/,
         const config& /*cfg*/, const bool /*is_line*/) {

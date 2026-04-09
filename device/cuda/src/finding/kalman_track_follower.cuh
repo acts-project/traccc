@@ -21,7 +21,7 @@
 #include "traccc/edm/track_container.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/details/kalman_track_follower_types.hpp"
-#include "traccc/finding/device/barcode_surface_comparator.hpp"
+#include "traccc/finding/device/geo_id_surface_comparator.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/finding/track_state_candidate.hpp"
 #include "traccc/utils/logging.hpp"
@@ -65,8 +65,7 @@ template <typename detector_t, typename bfield_t>
 edm::track_container<typename detector_t::algebra_type>::buffer
 kalman_track_follower(
     const typename detector_t::const_view_type& det, const bfield_t& field,
-    const typename edm::measurement_collection<
-        typename detector_t::algebra_type>::const_view& measurements_view,
+    const typename edm::measurement_collection::const_view& measurements_view,
     const bound_track_parameters_collection_types::const_view& seeds,
     const finding_config& config, const memory_resource& mr, vecmem::copy& copy,
     const Logger& /*log*/, stream& str, unsigned int warp_size) {
@@ -91,11 +90,11 @@ kalman_track_follower(
      * Measurement Operations
      *****************************************************************/
 
-    const typename edm::measurement_collection<algebra_t>::const_device
-        measurements{measurements_view};
+    const typename edm::measurement_collection::const_device measurements{
+        measurements_view};
 
     assert(is_contiguous_on<
-           vecmem::device_vector<const detray::geometry::barcode>>(
+           vecmem::device_vector<const detray::geometry::identifier>>(
         device::identity_projector{}, mr.main, copy, str,
         measurements_view.template get<6>()));
 
@@ -118,7 +117,7 @@ kalman_track_follower(
                         measurements.surface_link().begin() + n_measurements,
                         device_det.surfaces().begin(),
                         device_det.surfaces().end(), measurement_ranges.begin(),
-                        device::barcode_surface_comparator{});
+                        device::geo_id_surface_comparator{});
 
     /*****************************************************************
      * Run propagation

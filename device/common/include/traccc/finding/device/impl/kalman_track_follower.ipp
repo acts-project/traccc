@@ -49,7 +49,7 @@ TRACCC_HOST_DEVICE inline void kalman_track_follower(
     const bound_track_parameters<algebra_t>& seed = seeds.at(globalIndex);
 
     // Access to measurements and index ranges per surface
-    typename edm::measurement_collection<algebra_t>::const_device measurements(
+    typename edm::measurement_collection::const_device measurements(
         payload.measurements_view);
 
     // Collect the track statistics
@@ -233,7 +233,7 @@ TRACCC_HOST_DEVICE inline void kalman_track_follower(
             // Intermediate type required to build a view
             traccc::track_state_from_candidate<algebra_t>(
                 candidate_data.ptr(), cfg.run_smoother, link_idx, measurements,
-                track, payload.tracks_view.states);
+                track, payload.tracks_view);
         }
     }
 
