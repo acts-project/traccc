@@ -37,7 +37,7 @@ throughput::throughput() : interface("Throughput Measurement Options") {
         po::value(&cold_run_events)->default_value(cold_run_events),
         "Number of events to run 'cold'");
     m_desc.add_options()("deterministic",
-                         po::bool_switch(&deterministic_event_order)
+                         po::value<bool>(&deterministic_event_order)
                              ->default_value(deterministic_event_order),
                          "Process events in deterministic order");
     m_desc.add_options()("random-seed",
