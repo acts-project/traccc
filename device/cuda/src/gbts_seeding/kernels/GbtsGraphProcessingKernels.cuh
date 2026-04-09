@@ -779,11 +779,12 @@ inline __device__ float3 estimate_params(float4 sps[3]) {
 
 void __global__ gbts_seed_conversion_kernel(
     int2* d_seed_proposals, char* d_seed_ambiguity, int2* d_path_store,
-    int* d_output_graph, float4* d_sp_params,
+    int* d_output_graph, float4* d_sp_params, int* d_seed_quality,
     edm::seed_collection::view output_seeds, unsigned long long int* d_hit_bids,
     const unsigned int nProps, const unsigned int max_num_neighbours,
     const float dcurv_cut_m, const float dropout_max_curv_m,
-    const float best_hit_frac, const float tight_bid_cot_threshold) {
+    const float best_hit_frac, const float tight_bid_cot_threshold,
+	const bool sort_seeds) {
 
     int edge_size = 2 + 1 + max_num_neighbours;
     edm::seed_collection::device seeds_device(output_seeds);
@@ -799,7 +800,8 @@ void __global__ gbts_seed_conversion_kernel(
         Tracklet seed;
         seed.size = 0;
         // dummy path to start the loop
-        int2 path = make_int2(0, d_seed_proposals[prop_idx].y);
+		int2 prop = d_seed_proposals[prop_idx];
+        int2 path = make_int2(0, prop.y);
         while (path.y >= 0) {
             path = d_path_store[path.y];
             seed.nodes[seed.size++] =
@@ -823,33 +825,38 @@ void __global__ gbts_seed_conversion_kernel(
         // estimate params to inform it dropout
         sps[0] = d_sp_params[seed.nodes[seed.size - 2]];
         float3 curv_d0_2 = estimate_params(sps);
-        float abs_curv_sum = abs(curv_d0_1.x + curv_d0_2.x);
         if ((best_for_hit < best_hit_frac * seed.size)) {
             continue;
         }
         // for low eta (higher fake rate) seeds perform a stronger cut
         if ((best_for_hit < seed.size - 1) &
-            (abs(curv_d0_1.z + curv_d0_2.z) < 2.0f * tight_bid_cot_threshold) &
+            (abs(curv_d0_1.z) < tight_bid_cot_threshold) & (abs(curv_d0_2.z) < tight_bid_cot_threshold) &
             (seed.size < 5)) {
             continue;
         }
         // sample begining, middle, end sp from tracklet for seed
-        seeds_device.push_back({seed.nodes[seed.size - 1],
+        size_t pos = seeds_device.push_back({seed.nodes[seed.size - 1],
                                 seed.nodes[(1 + seed.size) / 2 - 1],
                                 seed.nodes[0]});
-        if (seed.size > 3 & seed.size < 6) {
+		if(sort_seeds) {
+			d_seed_quality[pos] = prop.x;
+		}
+        if (seed.size > 3) {
             // drop out for high pT or inconsistant seeds
-            if (abs_curv_sum > 2.0f * dropout_max_curv_m) {
-                continue;
+            if ((abs(curv_d0_1.x) > dropout_max_curv_m) & (abs(curv_d0_2.x) > dropout_max_curv_m)) {
+				continue;
             }
-            if ((abs_curv_sum > 4 * dcurv_cut_m) &
-                (abs(curv_d0_1.x - curv_d0_2.x) < dcurv_cut_m)) {
+            if (((abs(curv_d0_1.x) > 4 * dcurv_cut_m) & (abs(curv_d0_2.x) > 4 * dcurv_cut_m)) &
+				(abs(curv_d0_1.x - curv_d0_2.x) < dcurv_cut_m)) {
                 continue;
             }
             // also add seed permutaion if estimates are diffrent
-            seeds_device.push_back({seed.nodes[seed.size - 2],
+            pos = seeds_device.push_back({seed.nodes[seed.size - 2],
                                     seed.nodes[(1 + seed.size) / 2 - 1],
                                     seed.nodes[0]});
+			if(sort_seeds) {
+				d_seed_quality[pos] = prop.x;
+			}
         }
     }
 }

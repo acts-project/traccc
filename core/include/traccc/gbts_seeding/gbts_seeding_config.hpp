@@ -128,9 +128,10 @@ struct gbts_seed_extraction_params {
 struct gbts_seed_ambi_params {
     // these curvatures are in 1/m
     float dropout_dcurv_m = 0.007f;
-    float dropout_max_curv_m = 0.2f;  //~1.5 GeV
-    float best_hit_frac = 0.5f;
-    float tight_bid_cot_threshold = 0.5f;
+    float dropout_max_curv_m = 0.20f;  //~1.5 GeV
+    float best_hit_frac = 0.49f;
+    float tight_bid_cot_threshold = 1.0f;
+	bool sort_seeds = true;
 };
 
 struct gbts_seedfinder_config {
