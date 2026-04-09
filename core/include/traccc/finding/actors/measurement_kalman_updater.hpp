@@ -303,8 +303,27 @@ struct measurement_updater : detray::base_actor {
                 propagation.heartbeat(false);
             }
 
-            // Discasrd the current local track parameters
+            // Discard the current local track parameters
             transporter_result.status = detray::actor::status::e_failure;
+
+            // Recover the departure surface bound parameters
+            const auto i{
+                static_cast<int>(updater_state.m_stats.n_track_states) - 1};
+
+            auto* track_cand_ptr =
+                static_cast<filtered_track_state_candidate<algebra_t>*>(
+                    updater_state.m_cand_ptr);
+
+            detray::ranges::detail::advance(track_cand_ptr, i);
+
+            assert(track_cand_ptr);
+
+            transporter_result.destination_params() =
+                track_cand_ptr->filtered_params;
+
+            assert(!transporter_result.destination_params().is_invalid());
+            assert(transporter_result.destination_params().surface_link() !=
+                   navigation.geometry_identifier());
         }
     }
 };
