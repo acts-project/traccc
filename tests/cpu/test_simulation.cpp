@@ -175,7 +175,7 @@ GTEST_TEST(traccc_simulation, toy_detector_simulation) {
             const vector3 mom{hits[i].tpx, hits[i].tpy, hits[i].tpz};
             const auto truth_local =
                 detray::tracking_surface{
-                    detector, detray::geometry::barcode(hits[i].geometry_id)}
+                    detector, detray::geometry::identifier(hits[i].geometry_id)}
                     .global_to_local(ctx, pos, vector::normalize(mom));
 
             local0_diff.push_back(truth_local[0] - measurements[i].local0);

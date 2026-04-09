@@ -19,11 +19,11 @@
 #include "traccc/finding/actors/ckf_aborter.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
-#include "traccc/finding/device/barcode_surface_comparator.hpp"
 #include "traccc/finding/device/build_tracks.hpp"
 #include "traccc/finding/device/fill_finding_duplicate_removal_sort_keys.hpp"
 #include "traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
 #include "traccc/finding/device/find_tracks.hpp"
+#include "traccc/finding/device/geo_id_surface_comparator.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
 #include "traccc/finding/device/remove_duplicates.hpp"
 #include "traccc/finding/finding_config.hpp"
@@ -214,7 +214,7 @@ combinatorial_kalman_filter(
         // is), the end() function cannot be used in host code.
         measurements.surface_link().begin() + n_measurements,
         device_det.surfaces().begin(), device_det.surfaces().end(),
-        measurement_ranges.begin(), device::barcode_surface_comparator{});
+        measurement_ranges.begin(), device::geo_id_surface_comparator{});
 
     const unsigned int n_seeds = copy.get_size(seeds);
 

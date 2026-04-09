@@ -50,7 +50,7 @@ int simulate(const traccc::opts::generation& generation_opts,
      *****************************/
 
     // Detector type
-    using detector_type = traccc::default_detector::host;
+    using detector_type = traccc::wire_chamber::host;
 
     // B field value and its type
     // @TODO: Set B field as argument

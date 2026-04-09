@@ -144,7 +144,7 @@ void event_data::setup_csv(bool use_acts_geom_source, const host_detector* det,
                       const typename detector_traits_t::host& d) {
                 for (const auto& surface_desc : d.surfaces()) {
                     acts_to_detray_id[surface_desc.source] =
-                        surface_desc.barcode().value();
+                        surface_desc.identifier().value();
                 }
             });
     }

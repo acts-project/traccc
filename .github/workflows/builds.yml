@@ -136,6 +136,7 @@ jobs:
             -DTRACCC_USE_SYSTEM_ACTS=ON \
             -DDETRAY_USE_SYSTEM_NLOHMANN=ON \
             -DTRACCC_SUPPORTED_DETECTORS="default_detector;odd_detector;telescope_detector;toy_detector;itk_detector" \
+            -DDETRAY_GENERATE_METADATA="itk_metadata" \
             -S ${GITHUB_WORKSPACE} \
             -B build
       - name: Build
