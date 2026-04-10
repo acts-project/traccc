@@ -918,7 +918,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
 		std::vector<unsigned int> index_map(ctx.nSeeds); 
 		std::iota(index_map.begin(), index_map.end(), 0);
 		std::sort(index_map.begin(), index_map.end(), [&ctx](size_t i1, size_t i2) 
-            { return ctx.h_seed_quality[i1] < ctx.h_seed_quality[i2];});
+            { return ctx.h_seed_quality[i1] > ctx.h_seed_quality[i2];});
 
 		vecmem::copy host_copy;
 		

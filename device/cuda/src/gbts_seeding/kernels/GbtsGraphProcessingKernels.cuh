@@ -817,47 +817,59 @@ void __global__ gbts_seed_conversion_kernel(
         best_for_hit += (prop_idx == (d_hit_bids[seed.nodes[seed.size - 1]] &
                                       0xFFFFFFFFLL));
 
-        float4 sps[3];
-        sps[0] = d_sp_params[seed.nodes[seed.size - 1]];
-        sps[1] = d_sp_params[seed.nodes[(1 + seed.size - 1) / 2 - 1]];
-        sps[2] = d_sp_params[seed.nodes[0]];
-        float3 curv_d0_1 = estimate_params(sps);
-        // estimate params to inform it dropout
-        sps[0] = d_sp_params[seed.nodes[seed.size - 2]];
-        float3 curv_d0_2 = estimate_params(sps);
         if ((best_for_hit < best_hit_frac * seed.size)) {
             continue;
         }
-        // for low eta (higher fake rate) seeds perform a stronger cut
+        float4 sps[3];
+		// seed 1
+        sps[0] = d_sp_params[seed.nodes[seed.size - 1]];
+        sps[1] = d_sp_params[seed.nodes[(seed.size-1)/2 + 1]];
+        sps[2] = d_sp_params[seed.nodes[0]];
+        float3 curv_d0_1 = estimate_params(sps);
+        // seed 2
+		sps[1] = d_sp_params[seed.nodes[(seed.size-1)/2]];
+        float3 curv_d0_2 = estimate_params(sps);
+		sps[0] = d_sp_params[seed.nodes[seed.size-2]];
+		// seed 3
+		float3 curv_d0_3 = estimate_params(sps);
+		// for low eta (higher fake rate) seeds perform a stronger cut
         if ((best_for_hit < seed.size - 1) &
-            (abs(curv_d0_1.z) < tight_bid_cot_threshold) & (abs(curv_d0_2.z) < tight_bid_cot_threshold) &
+            (abs(curv_d0_1.z + curv_d0_2.z + curv_d0_3.z) < 3.0f*tight_bid_cot_threshold) &
             (seed.size < 5)) {
             continue;
         }
-        // sample begining, middle, end sp from tracklet for seed
-        size_t pos = seeds_device.push_back({seed.nodes[seed.size - 1],
-                                seed.nodes[(1 + seed.size) / 2 - 1],
-                                seed.nodes[0]});
-		if(sort_seeds) {
-			d_seed_quality[pos] = prop.x;
-		}
-        if (seed.size > 3) {
-            // drop out for high pT or inconsistant seeds
-            if ((abs(curv_d0_1.x) > dropout_max_curv_m) & (abs(curv_d0_2.x) > dropout_max_curv_m)) {
-				continue;
-            }
-            if (((abs(curv_d0_1.x) > 4 * dcurv_cut_m) & (abs(curv_d0_2.x) > 4 * dcurv_cut_m)) &
-				(abs(curv_d0_1.x - curv_d0_2.x) < dcurv_cut_m)) {
-                continue;
-            }
-            // also add seed permutaion if estimates are diffrent
-            pos = seeds_device.push_back({seed.nodes[seed.size - 2],
-                                    seed.nodes[(1 + seed.size) / 2 - 1],
-                                    seed.nodes[0]});
+        float diff[3] = {abs(curv_d0_1.x-curv_d0_2.x), abs(curv_d0_2.x-curv_d0_3.x), abs(curv_d0_1.x-curv_d0_3.x)};
+		char diff_code = 4*(diff[0]<dcurv_cut_m) + 2*(diff[1]<dcurv_cut_m) + (diff[2]<dcurv_cut_m);
+		// for high pt the diff many not be represent bad estimates
+		// sample spacepoints from tracklet to create seeds
+		// include 1 unless either 2 or 3 are consitant with the other and 1
+		bool high_pt = abs(curv_d0_1.x+curv_d0_2.x+curv_d0_3.x) < 3.0f*4.0f*dcurv_cut_m; 
+		if(diff_code != 3 & diff_code != 6 | high_pt) { 
+			size_t pos = seeds_device.push_back({seed.nodes[seed.size - 1],
+									seed.nodes[(seed.size-1) / 2 + 1],
+									seed.nodes[0]});
 			if(sort_seeds) {
 				d_seed_quality[pos] = prop.x;
 			}
-        }
+		}
+		// include if 2 is consistant with 1 and 3 or only 1 and 3 are consistant
+		if(diff_code == 1 | diff_code == 6) { 
+			size_t pos = seeds_device.push_back({seed.nodes[seed.size - 1],
+									seed.nodes[(seed.size-1) / 2],
+									seed.nodes[0]});
+			if(sort_seeds) {
+				d_seed_quality[pos] = prop.x;
+			}
+		}
+		// include if 3 is consistant with 1 and 2 or only 1 and 2 are consistant and if only 2 and 3 are consistant
+		if(diff_code == 2 | diff_code == 3 | diff_code == 4 | high_pt) { 
+			size_t pos = seeds_device.push_back({seed.nodes[seed.size - 2],
+									seed.nodes[(seed.size-1) / 2],
+									seed.nodes[0]});
+			if(sort_seeds) {
+				d_seed_quality[pos] = prop.x;
+			}
+		}
     }
 }
 
