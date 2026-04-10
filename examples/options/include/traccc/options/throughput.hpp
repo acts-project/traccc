@@ -25,8 +25,9 @@ class throughput : public interface {
 
     /// "Reconstruction stage" to run
     enum class stage {
-        seeding,  ///< Run until the end of seeding
-        full      ///< Run the full chain of reconstruction
+        clustering,  ///< Run until the end of clustering
+        seeding,     ///< Run until the end of seeding
+        full         ///< Run the full chain of reconstruction
     };
     /// The reconstruction stage to run
     stage reco_stage = stage::full;

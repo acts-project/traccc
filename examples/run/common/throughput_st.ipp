@@ -160,7 +160,10 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
     // Set up a lambda that calls the correct function on the algorithm.
     std::function<std::size_t(const edm::silicon_cell_collection::host&)>
         process_event;
-    if (throughput_opts.reco_stage == opts::throughput::stage::seeding) {
+    if (throughput_opts.reco_stage == opts::throughput::stage::clustering) {
+        process_event = [&](const edm::silicon_cell_collection::host& cells)
+            -> std::size_t { return alg->clustering(cells).size(); };
+    } else if (throughput_opts.reco_stage == opts::throughput::stage::seeding) {
         process_event = [&](const edm::silicon_cell_collection::host& cells)
             -> std::size_t { return alg->seeding(cells).size(); };
     } else if (throughput_opts.reco_stage == opts::throughput::stage::full) {

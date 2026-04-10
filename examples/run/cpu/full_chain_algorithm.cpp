@@ -146,4 +146,21 @@ bound_track_parameters_collection_types::host full_chain_algorithm::seeding(
     }
 }
 
+edm::measurement_collection<default_algebra>::host
+full_chain_algorithm::clustering(
+    const edm::silicon_cell_collection::host& cells) const {
+
+    // Create a data object for the detector description.
+    const detector_design_description::const_data det_descr_data =
+        vecmem::get_data(m_det_descr.get());
+    const detector_conditions_description::const_data det_cond_data =
+        vecmem::get_data(m_det_cond.get());
+    // Run the clusterization.
+    auto cells_data = vecmem::get_data(cells);
+    const clustering_algorithm::output_type measurements =
+        m_clusterization(cells_data, det_descr_data, det_cond_data);
+
+    return measurements;
+}
+
 }  // namespace traccc
