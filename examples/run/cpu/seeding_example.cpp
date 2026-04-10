@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -163,8 +163,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
          event < input_opts.events + input_opts.skip; ++event) {
 
         // Read the hits from the relevant event file
-        traccc::edm::measurement_collection<traccc::default_algebra>::host
-            measurements_per_event{host_mr};
+        traccc::edm::measurement_collection::host measurements_per_event{
+            host_mr};
         traccc::edm::spacepoint_collection::host spacepoints_per_event{host_mr};
         traccc::io::read_spacepoints(
             spacepoints_per_event, measurements_per_event, event,

@@ -219,8 +219,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
             track_candidates{host_mr};
 
         // Instantiate SYCL containers/collections
-        traccc::edm::measurement_collection<traccc::default_algebra>::buffer
-            measurements_sycl_buffer;
+        traccc::edm::measurement_collection::buffer measurements_sycl_buffer;
         traccc::sycl::silicon_pixel_spacepoint_formation_algorithm::output_type
             spacepoints_sycl_buffer;
         traccc::sycl::triplet_seeding_algorithm::output_type seeds_sycl_buffer;
@@ -349,8 +348,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
           compare cpu and sycl result
           ----------------------------------*/
 
-        traccc::edm::measurement_collection<traccc::default_algebra>::host
-            measurements_per_event_sycl{host_mr};
+        traccc::edm::measurement_collection::host measurements_per_event_sycl{
+            host_mr};
         traccc::edm::spacepoint_collection::host spacepoints_per_event_sycl{
             host_mr};
         traccc::edm::seed_collection::host seeds_sycl{host_mr};
@@ -373,8 +372,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
             TRACCC_INFO("===>>> Event " << event << " <<<===");
 
             // Compare the measurements made on the host and on the device.
-            traccc::soa_comparator<
-                traccc::edm::measurement_collection<traccc::default_algebra>>
+            traccc::soa_comparator<traccc::edm::measurement_collection>
                 compare_measurements{"measurements"};
             compare_measurements(vecmem::get_data(measurements_per_event),
                                  vecmem::get_data(measurements_per_event_sycl));

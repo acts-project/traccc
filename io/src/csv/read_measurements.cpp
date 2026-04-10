@@ -18,8 +18,8 @@
 namespace traccc::io::csv {
 
 std::vector<measurement_id_type> read_measurements(
-    edm::measurement_collection<default_algebra>::host& measurements,
-    std::string_view filename, const traccc::host_detector* detector,
+    edm::measurement_collection::host& measurements, std::string_view filename,
+    const traccc::host_detector* detector,
     const traccc::detector_design_description::host* det_desc,
     const traccc::detector_conditions_description::host* det_cond,
     const bool do_sort) {
@@ -80,7 +80,7 @@ std::vector<measurement_id_type> read_measurements(
                           });
 
         // Create a sorted measurement collection.
-        edm::measurement_collection<default_algebra>::host sorted_measurements(
+        edm::measurement_collection::host sorted_measurements(
             measurements.resource());
         sorted_measurements.resize(measurements.size());
 

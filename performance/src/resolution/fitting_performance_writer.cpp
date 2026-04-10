@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2023 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -87,7 +87,7 @@ void fitting_performance_writer::write_stat(
         track,
     const edm::track_state_collection<traccc::default_algebra>::host&
         track_states,
-    const edm::measurement_collection<default_algebra>::host& measurements) {
+    const edm::measurement_collection::host& measurements) {
 
     m_data->m_stat_plot_tool.fill(m_data->m_stat_plot_cache, track);
 

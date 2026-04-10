@@ -94,14 +94,12 @@ template <typename kernel_t, typename detector_t, typename bfield_t>
 edm::track_container<typename detector_t::algebra_type>::buffer
 combinatorial_kalman_filter(
     const typename detector_t::const_view_type& det, const bfield_t& field,
-    const typename edm::measurement_collection<
-        typename detector_t::algebra_type>::const_view& measurements_view,
+    const edm::measurement_collection::const_view& measurements_view,
     const bound_track_parameters_collection_types::const_view& seeds,
     const finding_config& config, const memory_resource& mr, vecmem::copy& copy,
     ::sycl::queue& queue) {
 
-    const typename edm::measurement_collection<
-        typename detector_t::algebra_type>::const_device measurements{
+    const edm::measurement_collection::const_device measurements{
         measurements_view};
 
     assert(config.min_step_length_for_next_surface >

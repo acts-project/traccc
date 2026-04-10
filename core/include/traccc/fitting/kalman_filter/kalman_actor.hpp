@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -49,8 +49,7 @@ struct kalman_actor_state {
             track,
         const typename edm::track_state_collection<algebra_t>::device&
             track_states,
-        const typename edm::measurement_collection<algebra_t>::const_device&
-            measurements,
+        const edm::measurement_collection::const_device& measurements,
         vecmem::device_vector<surface_t> sequence)
         : m_track{track},
           m_track_states{track_states},
@@ -307,8 +306,7 @@ struct kalman_actor_state {
     /// All track states in the event
     typename edm::track_state_collection<algebra_t>::device m_track_states;
     /// All measurements in the event
-    typename edm::measurement_collection<algebra_t>::const_device
-        m_measurements;
+    edm::measurement_collection::const_device m_measurements;
 
     /// The surface sequencer
     sequencer_t m_sequencer;

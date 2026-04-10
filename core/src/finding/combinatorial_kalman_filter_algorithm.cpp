@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -33,8 +33,7 @@ combinatorial_kalman_filter_algorithm::combinatorial_kalman_filter_algorithm(
 combinatorial_kalman_filter_algorithm::output_type
 combinatorial_kalman_filter_algorithm::operator()(
     const host_detector& det, const magnetic_field& bfield,
-    const edm::measurement_collection<default_algebra>::const_view&
-        measurements,
+    const edm::measurement_collection::const_view& measurements,
     const bound_track_parameters_collection_types::const_view& seeds) const {
 
     // Perform the track finding using the appropriate templated implementation.

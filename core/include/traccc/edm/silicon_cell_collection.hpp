@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -73,26 +73,26 @@ class silicon_cell : public BASE {
 
     /// The "activation" of the cell / strip (non-const)
     ///
-    /// @return A (non-const) vector of @c traccc::scalar values
+    /// @return A (non-const) vector of @c float values
     ///
     TRACCC_HOST_DEVICE
     auto& activation() { return BASE::template get<2>(); }
     /// The "activation" of the cell / strip (const)
     ///
-    /// @return A (const) vector of @c traccc::scalar values
+    /// @return A (const) vector of @c float values
     ///
     TRACCC_HOST_DEVICE
     const auto& activation() const { return BASE::template get<2>(); }
 
     /// The time associated with the cell / strip (non-const)
     ///
-    /// @return A (non-const) vector of @c traccc::scalar values
+    /// @return A (non-const) vector of @c float values
     ///
     TRACCC_HOST_DEVICE
     auto& time() { return BASE::template get<3>(); }
     /// The time associated with the cell / strip (const)
     ///
-    /// @return A (const) vector of @c traccc::scalar values
+    /// @return A (const) vector of @c float values
     ///
     TRACCC_HOST_DEVICE
     const auto& time() const { return BASE::template get<3>(); }
@@ -165,10 +165,16 @@ class silicon_cell : public BASE {
 
 /// SoA container describing silicon detector hits
 using silicon_cell_collection =
-    vecmem::edm::container<silicon_cell, vecmem::edm::type::vector<channel_id>,
+    vecmem::edm::container<silicon_cell,
+                           // channel0
                            vecmem::edm::type::vector<channel_id>,
-                           vecmem::edm::type::vector<scalar>,
-                           vecmem::edm::type::vector<scalar>,
+                           // channel1
+                           vecmem::edm::type::vector<channel_id>,
+                           // activation
+                           vecmem::edm::type::vector<float>,
+                           // time
+                           vecmem::edm::type::vector<float>,
+                           // module_index
                            vecmem::edm::type::vector<unsigned int> >;
 
 }  // namespace traccc::edm

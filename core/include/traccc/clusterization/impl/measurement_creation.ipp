@@ -1,12 +1,16 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2025 CERN for the benefit of the ACTS project
+ * (c) 2021-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
+// Library include(s).
+#include "traccc/utils/detray_conversion.hpp"
+
+// System include(s).
 #include <cassert>
 
 namespace traccc::details {
@@ -155,12 +159,11 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
     measurement.surface_link() = module_cd.geometry_id();
 
     // apply lorentz shift to the cell position
-    std::array<scalar, 2> shift = module_cd.measurement_translation();
-    measurement.local_position() = {static_cast<float>(mean[0]) + shift[0],
-                                    static_cast<float>(mean[1]) + shift[1]};
+    measurement.local_position() = utils::to_float_array<default_algebra>(
+        mean + module_cd.measurement_translation());
 
     // plus pitch^2 / 12
-    measurement.local_variance() = var;
+    measurement.local_variance() = utils::to_float_array<default_algebra>(var);
 
     // For the ambiguity resolution algorithm, give a unique measurement ID
     measurement.identifier() = index;
@@ -170,7 +173,7 @@ TRACCC_HOST_DEVICE inline void fill_measurement(
     measurement.dimensions() = module_dd.dimensions();
 
     // Set the measurement's subspace.
-    measurement.subspace() = module_dd.subspace();
+    measurement.set_subspace(module_dd.subspace());
 
     // Save the index of the cluster that produced this measurement
     measurement.cluster_index() = static_cast<unsigned int>(index);

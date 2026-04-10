@@ -65,7 +65,7 @@ TEST(SYCLSpacepointFormation, sycl) {
                                           copy);
 
     // Prepare measurement collection
-    edm::measurement_collection<default_algebra>::host measurements{shared_mr};
+    edm::measurement_collection::host measurements{shared_mr};
 
     // Add a measurement at the first plane
     measurements.push_back({{7.f, 2.f},

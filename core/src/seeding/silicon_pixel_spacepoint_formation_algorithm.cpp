@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -20,8 +20,7 @@ silicon_pixel_spacepoint_formation_algorithm::
 silicon_pixel_spacepoint_formation_algorithm::output_type
 silicon_pixel_spacepoint_formation_algorithm::operator()(
     const host_detector& det,
-    const edm::measurement_collection<default_algebra>::const_view& meas)
-    const {
+    const edm::measurement_collection::const_view& meas) const {
 
     return host_detector_visitor<detector_type_list>(
         det, [&]<typename detector_traits_t>(

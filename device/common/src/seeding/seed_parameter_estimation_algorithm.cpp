@@ -30,8 +30,7 @@ seed_parameter_estimation_algorithm::~seed_parameter_estimation_algorithm() =
 
 auto seed_parameter_estimation_algorithm::operator()(
     const magnetic_field& bfield,
-    const edm::measurement_collection<default_algebra>::const_view&
-        measurements,
+    const edm::measurement_collection::const_view& measurements,
     const edm::spacepoint_collection::const_view& spacepoints,
     const edm::seed_collection::const_view& seeds) const -> output_type {
 

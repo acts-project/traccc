@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,11 +8,9 @@
 #pragma once
 
 // Local include(s).
-#include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 
 // Detray include(s).
-#include <detray/definitions/algebra.hpp>
 #include <detray/geometry/barcode.hpp>
 
 // VecMem include(s).
@@ -21,6 +19,7 @@
 // System include(s).
 #include <array>
 #include <compare>
+#include <cstdint>
 
 namespace traccc::edm {
 
@@ -88,26 +87,26 @@ class measurement : public BASE {
 
     /// Time assigned to the measurement (non-const)
     ///
-    /// @return A (non-const) vector of scalar values
+    /// @return A (non-const) vector of @c float values
     ///
     TRACCC_HOST_DEVICE
     auto& time() { return BASE::template get<3>(); }
     /// Time assigned to the measurement (const)
     ///
-    /// @return A (const) vector of scalar values
+    /// @return A (const) vector of @c float values
     ///
     TRACCC_HOST_DEVICE
     const auto& time() const { return BASE::template get<3>(); }
 
     /// Diameter of the measurement (non-const)
     ///
-    /// @return A (non-const) vector of scalar values
+    /// @return A (non-const) vector of @c float values
     ///
     TRACCC_HOST_DEVICE
     auto& diameter() { return BASE::template get<4>(); }
     /// Diameter of the measurement (const)
     ///
-    /// @return A (const) vector of scalar values
+    /// @return A (const) vector of @c float values
     ///
     TRACCC_HOST_DEVICE
     const auto& diameter() const { return BASE::template get<4>(); }
@@ -150,6 +149,18 @@ class measurement : public BASE {
     ///
     TRACCC_HOST_DEVICE
     const auto& subspace() const { return BASE::template get<7>(); }
+    /// Set the subspace of the measurement
+    ///
+    /// Using a possibly slightly different array than the one used by the
+    /// object itself.
+    ///
+    /// @note This function must only be used on proxy objects, not on
+    ///       containers!
+    ///
+    /// @param subs The subspace to set
+    ///
+    template <std::integral TYPE>
+    TRACCC_HOST_DEVICE void set_subspace(const std::array<TYPE, 2u>& subs);
 
     /// Index of the cluster that the measurement was created from (non-const)
     ///
@@ -198,28 +209,26 @@ class measurement : public BASE {
 };  // class measurement
 
 /// SoA container of measurements
-template <detray::concepts::algebra ALGEBRA>
-using measurement_collection =
-    vecmem::edm::container<measurement,
-                           // local_position
-                           vecmem::edm::type::vector<detray::dpoint2D<ALGEBRA>>,
-                           // local_variance
-                           vecmem::edm::type::vector<detray::dpoint2D<ALGEBRA>>,
-                           // dimensions
-                           vecmem::edm::type::vector<unsigned int>,
-                           // time
-                           vecmem::edm::type::vector<detray::dscalar<ALGEBRA>>,
-                           // diameter
-                           vecmem::edm::type::vector<detray::dscalar<ALGEBRA>>,
-                           // identifier
-                           vecmem::edm::type::vector<unsigned int>,
-                           // surface_link
-                           vecmem::edm::type::vector<detray::geometry::barcode>,
-                           // subspace
-                           vecmem::edm::type::vector<std::array<
-                               detray::dindex_type<default_algebra>, 2u>>,
-                           // cluster_index
-                           vecmem::edm::type::vector<unsigned int>>;
+using measurement_collection = vecmem::edm::container<
+    measurement,
+    // local_position
+    vecmem::edm::type::vector<std::array<float, 2u>>,
+    // local_variance
+    vecmem::edm::type::vector<std::array<float, 2u>>,
+    // dimensions
+    vecmem::edm::type::vector<unsigned int>,
+    // time
+    vecmem::edm::type::vector<float>,
+    // diameter
+    vecmem::edm::type::vector<float>,
+    // identifier
+    vecmem::edm::type::vector<unsigned int>,
+    // surface_link
+    vecmem::edm::type::vector<detray::geometry::barcode>,
+    // subspace
+    vecmem::edm::type::vector<std::array<std::uint8_t, 2u>>,
+    // cluster_index
+    vecmem::edm::type::vector<unsigned int>>;
 
 }  // namespace traccc::edm
 

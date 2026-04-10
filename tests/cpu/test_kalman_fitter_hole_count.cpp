@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024-2025 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -132,8 +132,7 @@ TEST_P(KalmanFittingHoleCountTests, Run) {
     traccc::event_data evt_data(path, 0u, host_mr);
 
     // Truth Track Candidates
-    traccc::edm::measurement_collection<traccc::default_algebra>::host
-        measurements(host_mr);
+    traccc::edm::measurement_collection::host measurements(host_mr);
     traccc::edm::track_container<traccc::default_algebra>::host
         track_candidates{host_mr};
     evt_data.generate_truth_candidates(track_candidates, measurements, sg,

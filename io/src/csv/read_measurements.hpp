@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2024 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -29,8 +29,8 @@ namespace traccc::io::csv {
 /// @param[in]  do_sort      Whether to sort the measurements or not
 ///
 std::vector<measurement_id_type> read_measurements(
-    edm::measurement_collection<default_algebra>::host& measurements,
-    std::string_view filename, const traccc::host_detector* detector = nullptr,
+    edm::measurement_collection::host& measurements, std::string_view filename,
+    const traccc::host_detector* detector = nullptr,
     const traccc::detector_design_description::host* detector_description =
         nullptr,
     const traccc::detector_conditions_description::host* detector_conditions =

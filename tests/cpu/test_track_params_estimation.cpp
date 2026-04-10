@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -47,7 +47,7 @@ TEST(track_params_estimation, helix_negative_charge) {
         pos, time, vector::normalize(mom), q / vector::norm(mom), B);
 
     // Make three spacepoints with the helix
-    edm::measurement_collection<default_algebra>::host measurements(host_mr);
+    edm::measurement_collection::host measurements(host_mr);
     edm::spacepoint_collection::host spacepoints{host_mr};
     measurements.resize(3);
     spacepoints.reserve(3);
@@ -97,7 +97,7 @@ TEST(track_params_estimation, helix_positive_charge) {
         pos, time, vector::normalize(mom), q / vector::norm(mom), B);
 
     // Make three spacepoints with the helix
-    edm::measurement_collection<default_algebra>::host measurements(host_mr);
+    edm::measurement_collection::host measurements(host_mr);
     edm::spacepoint_collection::host spacepoints{host_mr};
     measurements.resize(3);
     spacepoints.reserve(3);

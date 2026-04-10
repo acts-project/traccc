@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024-2025 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -32,17 +32,14 @@ struct fill_sorted_measurements {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc,
-        const edm::measurement_collection<default_algebra>::const_view
-            input_view,
-        edm::measurement_collection<default_algebra>::view output_view,
+        const edm::measurement_collection::const_view input_view,
+        edm::measurement_collection::view output_view,
         const vecmem::data::vector_view<const unsigned int> sorted_indices_view)
         const {
 
         // Create the device objects.
-        const edm::measurement_collection<default_algebra>::const_device input{
-            input_view};
-        edm::measurement_collection<default_algebra>::device output{
-            output_view};
+        const edm::measurement_collection::const_device input{input_view};
+        edm::measurement_collection::device output{output_view};
         const vecmem::device_vector<const unsigned int> sorted_indices{
             sorted_indices_view};
 
@@ -66,8 +63,7 @@ measurement_sorting_algorithm::measurement_sorting_algorithm(
 
 measurement_sorting_algorithm::output_type
 measurement_sorting_algorithm::operator()(
-    const edm::measurement_collection<default_algebra>::const_view&
-        measurements_view) const {
+    const edm::measurement_collection::const_view& measurements_view) const {
 
     // Exit early if there are no measurements.
     if (measurements_view.capacity() == 0) {
@@ -78,8 +74,8 @@ measurement_sorting_algorithm::operator()(
     auto queue = details::get_queue(m_queue);
 
     // Create a device container on top of the view.
-    const edm::measurement_collection<default_algebra>::const_device
-        measurements{measurements_view};
+    const edm::measurement_collection::const_device measurements{
+        measurements_view};
 
     // Create a vector of measurement indices, which would be sorted.
     vecmem::data::vector_buffer<unsigned int> indices(
