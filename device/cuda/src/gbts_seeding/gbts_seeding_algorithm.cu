@@ -903,7 +903,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
         ctx.d_output_graph, ctx.d_reducedSP, ctx.d_seed_quality, output_seeds, ctx.d_hit_bids,
         nProps, m_config.max_num_neighbours,
         m_config.seed_ambi_params.dropout_dcurv_m,
-        m_config.seed_ambi_params.dropout_max_curv_m,
+        m_config.seed_ambi_params.force_dropout_max_curv_m,
         m_config.seed_ambi_params.best_hit_frac,
         m_config.seed_ambi_params.tight_bid_cot_threshold,
 		m_config.seed_ambi_params.sort_seeds);
