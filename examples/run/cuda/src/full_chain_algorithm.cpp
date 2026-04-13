@@ -58,20 +58,7 @@ full_chain_algorithm::full_chain_algorithm(
       m_det_descr(det_descr),
       m_det_cond(det_cond),
       m_device_det_descr(
-          [&]() {
-              // number of elements in the detector design description
-              std::vector<unsigned int> sizes(det_descr.size());
-              for (std::size_t i = 0; i < det_descr.size(); ++i) {
-                  auto this_design = det_descr.at(i);
-                  // now for each element, set the size to the largest size of
-                  // that element across all modules
-                  sizes[i] = std::max(static_cast<unsigned int>(
-                                          ((this_design.bin_edges_x()).size())),
-                                      static_cast<unsigned int>((
-                                          (this_design.bin_edges_y()).size())));
-              }
-              return sizes;
-          }(),
+          vecmem::edm::get_capacities(vecmem::get_data(m_det_descr.get())),
           m_device_mr, &m_host_mr, vecmem::data::buffer_type::resizable),
       m_device_det_cond(
           static_cast<detector_conditions_description::buffer::size_type>(
@@ -143,21 +130,7 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_det_descr(parent.m_det_descr),
       m_det_cond(parent.m_det_cond),
       m_device_det_descr(
-          [&]() {
-              // number of elements in the detector design description
-              std::vector<unsigned int> sizes(parent.m_det_descr.get().size());
-              for (std::size_t i = 0; i < parent.m_det_descr.get().size();
-                   ++i) {
-                  auto this_design = parent.m_det_descr.get().at(i);
-                  // now for each element, set the size to the largest size of
-                  // that element across all modules
-                  sizes[i] = std::max(static_cast<unsigned int>(
-                                          ((this_design.bin_edges_x()).size())),
-                                      static_cast<unsigned int>((
-                                          (this_design.bin_edges_y()).size())));
-              }
-              return sizes;
-          }(),
+          vecmem::edm::get_capacities(vecmem::get_data(m_det_descr.get())),
           m_device_mr, &m_host_mr, vecmem::data::buffer_type::resizable),
       m_device_det_cond(
           static_cast<detector_conditions_description::buffer::size_type>(
