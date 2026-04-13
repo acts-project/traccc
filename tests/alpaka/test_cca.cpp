@@ -55,19 +55,7 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
                 {device_mr, &pinned_host_mr}, copy, queue, cfg);
 
             traccc::detector_design_description::buffer det_desc_buffer{
-                [&]() {
-                    std::vector<unsigned int> sizes(det_desc.size());
-                    for (std::size_t i = 0; i < det_desc.size(); ++i) {
-                        auto this_design = det_desc.at(i);
-
-                        sizes[i] =
-                            std::max(static_cast<unsigned int>(
-                                         ((this_design.bin_edges_x()).size())),
-                                     static_cast<unsigned int>(
-                                         ((this_design.bin_edges_y()).size())));
-                    }
-                    return sizes;
-                }(),
+                vecmem::edm::get_capacities(vecmem::get_data(det_desc)),
                 device_mr, &host_mr, vecmem::data::buffer_type::resizable};
             copy.setup(det_desc_buffer)->wait();
             copy(vecmem::get_data(det_desc), det_desc_buffer)->wait();
