@@ -6,7 +6,6 @@
  */
 
 // Project include(s).
-#include "traccc/examples/make_magnetic_field.hpp"
 #include "traccc/alpaka/clusterization/clusterization_algorithm.hpp"
 #include "traccc/alpaka/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/alpaka/finding/combinatorial_kalman_filter_algorithm.hpp"
@@ -19,6 +18,7 @@
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
+#include "traccc/examples/make_magnetic_field.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"

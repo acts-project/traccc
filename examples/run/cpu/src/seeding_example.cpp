@@ -6,10 +6,10 @@
  */
 
 // Project include(s).
-#include "traccc/examples/make_magnetic_field.hpp"
-#include "traccc/examples/print_fitted_tracks_statistics.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
+#include "traccc/examples/make_magnetic_field.hpp"
+#include "traccc/examples/print_fitted_tracks_statistics.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/host_detector.hpp"
 #include "traccc/utils/memory_resource.hpp"

@@ -6,7 +6,6 @@
  */
 
 // Project include(s).
-#include "traccc/examples/make_magnetic_field.hpp"
 #include "traccc/alpaka/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/alpaka/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/alpaka/seeding/seed_parameter_estimation_algorithm.hpp"
@@ -20,6 +19,7 @@
 #include "traccc/efficiency/nseed_performance_writer.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/efficiency/track_filter.hpp"
+#include "traccc/examples/make_magnetic_field.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"

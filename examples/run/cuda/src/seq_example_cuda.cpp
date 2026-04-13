@@ -6,7 +6,6 @@
  */
 
 // Project include(s).
-#include "traccc/examples/make_magnetic_field.hpp"
 #include "traccc/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
@@ -21,6 +20,7 @@
 #include "traccc/cuda/utils/stream.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
+#include "traccc/examples/make_magnetic_field.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"

@@ -6,7 +6,6 @@
  */
 
 // Project include(s).
-#include "traccc/examples/make_magnetic_field.hpp"
 #include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/cuda/utils/make_magnetic_field.hpp"
@@ -16,6 +15,7 @@
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/device/container_h2d_copy_alg.hpp"
 #include "traccc/efficiency/finding_performance_writer.hpp"
+#include "traccc/examples/make_magnetic_field.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/geometry/detector.hpp"

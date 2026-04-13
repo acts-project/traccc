@@ -8,7 +8,7 @@
 # Set up the "throughput applications".
 #
 traccc_add_library( traccc_examples_cpu examples_cpu SHARED
-   "include/traccc/examples/full_chain_algorithm.hpp" 
+   "include/traccc/examples/full_chain_algorithm.hpp"
    "src/full_chain_algorithm.cpp" )
 target_link_libraries( traccc_examples_cpu
    PUBLIC vecmem::core detray::core detray::detectors traccc::core
@@ -44,4 +44,4 @@ traccc_add_executable( truth_fitting_example "src/truth_fitting_example.cpp"
 
 traccc_add_executable( misaligned_truth_fitting_example "src/misaligned_truth_fitting_example.cpp"
    LINK_LIBRARIES vecmem::core detray::io detray::detectors traccc::core
-   traccc::io traccc::performance traccc::options traccc::examples_common )                  
+   traccc::io traccc::performance traccc::options traccc::examples_common )

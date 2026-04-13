@@ -48,4 +48,4 @@ traccc_add_executable( truth_finding_example_cuda "src/truth_finding_example_cud
 traccc_add_executable( truth_fitting_example_cuda "src/truth_fitting_example_cuda.cpp"
    LINK_LIBRARIES vecmem::core vecmem::cuda traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::cuda_utils traccc::cuda
-                  traccc::options traccc::examples_common )                 
+                  traccc::options traccc::examples_common )
