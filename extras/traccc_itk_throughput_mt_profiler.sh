@@ -109,20 +109,21 @@ fi
 # Additional flags tuning the cuts for the G100/G200 pipelines.
 G200_CUTS=(--seedfinder-z-range=-3000.:3000.
            --seedfinder-r-range=33.:320.
-           --seedfinder-vertex-range=-200.:200.
+           --seedfinder-vertex-range=-114.:114.
            --seedfinder-minPt=0.9
            --seedfinder-cotThetaMax=27.2899
-           --seedfinder-deltaR-range=20.:200.
-           --seedfinder-impactMax=10.
+           --seedfinder-deltaR-range=20.:100.
+           --seedfinder-deltaZMax=800.
+           --seedfinder-impactMax=2.
            --seedfinder-sigmaScattering=3.
            --seedfinder-maxPtScattering=10.
-           --seedfinder-maxSeedsPerSpM=1
+           --seedfinder-maxSeedsPerSpM=2
            --max-num-branches-per-seed=3
-           --max-num-branches-per-surface=5
+           --max-num-branches-per-surface=1
            --track-candidates-range=7:20
            --min-step-length-for-next-surface=0.5
            --max-step-counts-for-next-surface=100
-           --chi2-max=10.
+           --chi2-max=30.
            --max-num-skipping-per-cand=2
            --stepping-min-stepsize=0.0001
            --rk-tolerance-mm=0.0001
@@ -133,9 +134,9 @@ G200_CUTS=(--seedfinder-z-range=-3000.:3000.
            --stepping-use-field-gradient=0
            --stepping-do-covariance-transport=1
            --overstep-tolerance-um=-300.
-           --min-mask-tolerance-mm=0.00001
-           --max-mask-tolerance-mm=3.
-           --search-window=0:0)
+           --max-num-tracks-per-measurement 1
+           --initial-links-per-seed 20
+           --seedfinder-compatSeedLimit 1)
 
 G100_CUTS=${G200_CUTS[@]}
 G100_CUTS+=(--reco-stage=seeding)
@@ -154,7 +155,7 @@ elif [[ "${TRACCC_THROUGPUT_TYPE}" != "traccc" ]]; then
 fi
 
 # The input directories to use.
-TRACCC_INPUT_DIRS=("ttbar_mu140/hits" "ttbar_mu200/hits")
+TRACCC_INPUT_DIRS=("ttbar_mu140" "ttbar_mu200")
 
 # Put a header on the CSV file.
 echo "directory,threads,loaded_events,cold_run_events,processed_events,warm_up_time,processing_time" \
