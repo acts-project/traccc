@@ -109,9 +109,9 @@ struct gbts_ctx {
     // 0 as default/is real seed, 1 as maybe seed,
     //-1 as maybe fake seed, -2 as fake
     char* d_seed_ambiguity{};
-	// will also be used to sore the seed index->sorted index LUT
-	int* d_seed_quality;
-	std::unique_ptr<float[]> h_seed_quality{};
+    // will also be used to sore the seed index->sorted index LUT
+    int* d_seed_quality;
+    std::unique_ptr<float[]> h_seed_quality{};
 };
 
 gbts_seeding_algorithm::gbts_seeding_algorithm(
@@ -881,17 +881,17 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     edm::seed_collection::buffer output_seeds(
         2 * ctx.nSeeds, m_mr.main, vecmem::data::buffer_type::resizable);
     m_copy.get().setup(output_seeds)->wait();
-    
+
     cudaMalloc(&ctx.d_hit_bids, ctx.nSp * sizeof(unsigned long long int));
     cudaMemsetAsync(ctx.d_hit_bids, 0, ctx.nSp * sizeof(unsigned long long int),
                     stream);
 
-	if(m_config.seed_ambi_params.sort_seeds) {
-		cudaMalloc(&ctx.d_seed_quality, 2*ctx.nSeeds * sizeof(int));
-	}
+    if (m_config.seed_ambi_params.sort_seeds) {
+        cudaMalloc(&ctx.d_seed_quality, 2 * ctx.nSeeds * sizeof(int));
+    }
 
     nThreads = 128;
-    nBlocks = 1 + (ctx.nSeeds-1) / nThreads;
+    nBlocks = 1 + (ctx.nSeeds - 1) / nThreads;
 
     kernels::seeds_bid_for_hits<<<nBlocks, nThreads, 0, stream>>>(
         ctx.d_output_graph, ctx.d_seed_proposals, ctx.d_path_store,
@@ -900,37 +900,44 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
 
     kernels::gbts_seed_conversion_kernel<<<nBlocks, nThreads, 0, stream>>>(
         ctx.d_seed_proposals, ctx.d_seed_ambiguity, ctx.d_path_store,
-        ctx.d_output_graph, ctx.d_reducedSP, ctx.d_seed_quality, output_seeds, ctx.d_hit_bids,
-        nProps, m_config.max_num_neighbours,
+        ctx.d_output_graph, ctx.d_reducedSP, ctx.d_seed_quality, output_seeds,
+        ctx.d_hit_bids, nProps, m_config.max_num_neighbours,
         m_config.seed_ambi_params.dropout_dcurv_m,
         m_config.seed_ambi_params.force_dropout_max_curv_m,
         m_config.seed_ambi_params.best_hit_frac,
         m_config.seed_ambi_params.tight_bid_cot_threshold,
-		m_config.seed_ambi_params.sort_seeds);
+        m_config.seed_ambi_params.sort_seeds);
 
     cudaStreamSynchronize(stream);
-		
-	ctx.nSeeds = m_copy.get().get_size(output_seeds);
-    	
-	if(m_config.seed_ambi_params.sort_seeds) {
-		ctx.h_seed_quality = std::make_unique<float[]>(ctx.nSeeds);
-		cudaMemcpy(ctx.h_seed_quality.get(), ctx.d_seed_quality, ctx.nSeeds*sizeof(float),  cudaMemcpyDeviceToHost);
-		std::vector<unsigned int> index_map(ctx.nSeeds); 
-		std::iota(index_map.begin(), index_map.end(), 0);
-		std::sort(index_map.begin(), index_map.end(), [&ctx](size_t i1, size_t i2) 
-            { return ctx.h_seed_quality[i1] > ctx.h_seed_quality[i2];});
 
-		vecmem::copy host_copy;
-		
-		edm::seed_collection::host host_seeds(*m_mr.host);
-		auto seed_tmp = m_copy.get().to(output_seeds, *m_mr.host, nullptr, vecmem::copy::type::device_to_host);
-		host_copy(seed_tmp, host_seeds)->wait();
-		edm::seed_collection::host sorted_host_seeds(*m_mr.host);
-		for(size_t i = 0; i<ctx.nSeeds;++i) {
-			sorted_host_seeds.push_back(host_seeds.at(index_map[i]));
-		}
-		m_copy.get()(vecmem::get_data(sorted_host_seeds), output_seeds, vecmem::copy::type::host_to_device)->wait();
-	}
+    ctx.nSeeds = m_copy.get().get_size(output_seeds);
+
+    if (m_config.seed_ambi_params.sort_seeds) {
+        ctx.h_seed_quality = std::make_unique<float[]>(ctx.nSeeds);
+        cudaMemcpy(ctx.h_seed_quality.get(), ctx.d_seed_quality,
+                   ctx.nSeeds * sizeof(float), cudaMemcpyDeviceToHost);
+        std::vector<unsigned int> index_map(ctx.nSeeds);
+        std::iota(index_map.begin(), index_map.end(), 0);
+        std::sort(index_map.begin(), index_map.end(),
+                  [&ctx](size_t i1, size_t i2) {
+                      return ctx.h_seed_quality[i1] > ctx.h_seed_quality[i2];
+                  });
+
+        vecmem::copy host_copy;
+
+        edm::seed_collection::host host_seeds(*m_mr.host);
+        auto seed_tmp = m_copy.get().to(output_seeds, *m_mr.host, nullptr,
+                                        vecmem::copy::type::device_to_host);
+        host_copy(seed_tmp, host_seeds)->wait();
+        edm::seed_collection::host sorted_host_seeds(*m_mr.host);
+        for (size_t i = 0; i < ctx.nSeeds; ++i) {
+            sorted_host_seeds.push_back(host_seeds.at(index_map[i]));
+        }
+        m_copy
+            .get()(vecmem::get_data(sorted_host_seeds), output_seeds,
+                   vecmem::copy::type::host_to_device)
+            ->wait();
+    }
 
     if (error != cudaSuccess) {
         TRACCC_ERROR("Seed ambiguity solving: CUDA error: "
@@ -944,7 +951,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     cudaFree(ctx.d_seed_proposals);
     cudaFree(ctx.d_seed_ambiguity);
     cudaFree(ctx.d_hit_bids);
-	cudaFree(ctx.d_seed_quality);
+    cudaFree(ctx.d_seed_quality);
 
     error = cudaGetLastError();
 
@@ -955,7 +962,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     }
 
     TRACCC_DEBUG("GBTS found " << ctx.nSeeds << " seeds");
-	return output_seeds;
+    return output_seeds;
 }
 
 }  // namespace traccc::cuda
