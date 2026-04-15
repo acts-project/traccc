@@ -818,62 +818,62 @@ void __global__ gbts_seed_conversion_kernel(
         if ((best_for_hit < best_hit_frac * seed.size)) {
             continue;
         }
-		char diff_code = 0;
-		bool force_dropout = false;
-		if(use_dropout) {
-			float4 sps[3];
-			// seed 1
-			sps[0] = d_sp_params[seed.nodes[seed.size - 1]];
-			sps[1] = d_sp_params[seed.nodes[(seed.size - 1) / 2 + 1]];
-			sps[2] = d_sp_params[seed.nodes[0]];
-			float2 curv_cot_1 = estimate_params(sps);
-			// seed 2
-			sps[1] = d_sp_params[seed.nodes[(seed.size - 1) / 2]];
-			float2 curv_cot_2 = estimate_params(sps);
-			sps[0] = d_sp_params[seed.nodes[seed.size - 2]];
-			// seed 3
-			float2 curv_cot_3 = estimate_params(sps);
-			// for low eta (higher fake rate) seeds perform a stronger cut
-			if ((best_for_hit < seed.size - 1) &
-				(abs(curv_cot_1.y + curv_cot_2.y + curv_cot_3.y) <
-				 3.0f * tight_bid_cot_threshold) &
-				(seed.size < 5)) {
-				continue;
-			}
-			float diff[3] = {abs(curv_cot_1.x - curv_cot_2.x),
-							 abs(curv_cot_2.x - curv_cot_3.x),
-							 abs(curv_cot_1.x - curv_cot_3.x)};
-			diff_code = 4 * (diff[0] < dcurv_cut_m) +
-				2 * (diff[1] < dcurv_cut_m) + (diff[2] < dcurv_cut_m);
-			// for high pt the diff may pass dispite bad estimates
-			force_dropout = abs(curv_cot_1.x + curv_cot_2.x + curv_cot_3.x) <
-								 3.0f * force_dropout_max_curv_m;
-			force_dropout |= (abs(curv_cot_1.y + curv_cot_2.y + curv_cot_3.y) <
-							  3.0f * tight_bid_cot_threshold) &
-							 diff_code == 0;
+        char diff_code = 0;
+        bool force_dropout = false;
+        if (use_dropout) {
+            float4 sps[3];
+            // seed 1
+            sps[0] = d_sp_params[seed.nodes[seed.size - 1]];
+            sps[1] = d_sp_params[seed.nodes[(seed.size - 1) / 2 + 1]];
+            sps[2] = d_sp_params[seed.nodes[0]];
+            float2 curv_cot_1 = estimate_params(sps);
+            // seed 2
+            sps[1] = d_sp_params[seed.nodes[(seed.size - 1) / 2]];
+            float2 curv_cot_2 = estimate_params(sps);
+            sps[0] = d_sp_params[seed.nodes[seed.size - 2]];
+            // seed 3
+            float2 curv_cot_3 = estimate_params(sps);
+            // for low eta (higher fake rate) seeds perform a stronger cut
+            if ((best_for_hit < seed.size - 1) &
+                (abs(curv_cot_1.y + curv_cot_2.y + curv_cot_3.y) <
+                 3.0f * tight_bid_cot_threshold) &
+                (seed.size < 5)) {
+                continue;
+            }
+            float diff[3] = {abs(curv_cot_1.x - curv_cot_2.x),
+                             abs(curv_cot_2.x - curv_cot_3.x),
+                             abs(curv_cot_1.x - curv_cot_3.x)};
+            diff_code = 4 * (diff[0] < dcurv_cut_m) +
+                        2 * (diff[1] < dcurv_cut_m) + (diff[2] < dcurv_cut_m);
+            // for high pt the diff may pass dispite bad estimates
+            force_dropout = abs(curv_cot_1.x + curv_cot_2.x + curv_cot_3.x) <
+                            3.0f * force_dropout_max_curv_m;
+            force_dropout |= (abs(curv_cot_1.y + curv_cot_2.y + curv_cot_3.y) <
+                              3.0f * tight_bid_cot_threshold) &
+                             diff_code == 0;
         }
-		// use one seed from a consistant pair/set + the inconsistant one
+        // use one seed from a consistant pair/set + the inconsistant one
         // sample spacepoints from tracklet to create seeds
         // include 1st order unless either 2 or 3 are consitant with the other
         // and 1
         if (diff_code != 3 & diff_code != 6 | force_dropout) {
-            seeds_device.push_back(
-                {seed.nodes[seed.size - 1], seed.nodes[(seed.size - 1) / 2 + 1],
-                 seed.nodes[0]});
+            seeds_device.push_back({seed.nodes[seed.size - 1],
+                                    seed.nodes[(seed.size - 1) / 2 + 1],
+                                    seed.nodes[0]});
         }
         // include 2nd order if it consistant with 1 and 3 or only 1 and 3 are
         // consistant
         if (diff_code == 1 | diff_code == 6) {
-            seeds_device.push_back(
-                {seed.nodes[seed.size - 1], seed.nodes[(seed.size - 1) / 2],
-                 seed.nodes[0]});
+            seeds_device.push_back({seed.nodes[seed.size - 1],
+                                    seed.nodes[(seed.size - 1) / 2],
+                                    seed.nodes[0]});
         }
         // include 3rd order if it is consistant with 1 and 2 or only 1 and 2
         // are consistant or if only 2 and 3 are consistant
         if (diff_code == 2 | diff_code == 3 | diff_code == 4 | force_dropout) {
-			seeds_device.push_back(
-                {seed.nodes[seed.size - 2], seed.nodes[(seed.size - 1) / 2],
-                 seed.nodes[0]});
+            seeds_device.push_back({seed.nodes[seed.size - 2],
+                                    seed.nodes[(seed.size - 1) / 2],
+                                    seed.nodes[0]});
         }
     }
 }

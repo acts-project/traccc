@@ -127,7 +127,7 @@ struct gbts_seed_extraction_params {
 
 struct gbts_seed_ambi_params {
     // sample multiple triplets when forming seeds to hedge against outliers
-	bool use_dropout = true;
+    bool use_dropout = true;
     // these curvatures are in 1/m
     float dropout_dcurv_m = 0.007f;
     float force_dropout_max_curv_m = 0.03f;

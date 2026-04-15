@@ -827,7 +827,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
 
     cudaStreamSynchronize(stream);
 
-	error = cudaGetLastError();
+    error = cudaGetLastError();
     if (error != cudaSuccess) {
         TRACCC_ERROR(
             "seed extraction: CUDA error: " << cudaGetErrorString(error));
@@ -894,8 +894,8 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
 
     kernels::gbts_seed_conversion_kernel<<<nBlocks, nThreads, 0, stream>>>(
         ctx.d_seed_proposals, ctx.d_seed_ambiguity, ctx.d_path_store,
-        ctx.d_output_graph, ctx.d_reducedSP, output_seeds,
-        ctx.d_hit_bids, nProps, m_config.max_num_neighbours,
+        ctx.d_output_graph, ctx.d_reducedSP, output_seeds, ctx.d_hit_bids,
+        nProps, m_config.max_num_neighbours,
         m_config.seed_ambi_params.dropout_dcurv_m,
         m_config.seed_ambi_params.force_dropout_max_curv_m,
         m_config.seed_ambi_params.best_hit_frac,
@@ -912,8 +912,8 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     cudaFree(ctx.d_seed_proposals);
     cudaFree(ctx.d_seed_ambiguity);
     cudaFree(ctx.d_hit_bids);
-    
-	error = cudaGetLastError();
+
+    error = cudaGetLastError();
     if (error != cudaSuccess) {
         TRACCC_ERROR("Seed ambiguity solving: CUDA error: "
                      << cudaGetErrorString(error));
