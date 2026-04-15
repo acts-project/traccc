@@ -67,6 +67,7 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
     opts::input_data input_opts;
     opts::clusterization clusterization_opts;
     opts::track_seeding seeding_opts;
+    opts::track_gbts_seeding seeding_gbts_opts;
     opts::track_finding finding_opts;
     opts::track_propagation propagation_opts;
     opts::track_fitting fitting_opts;
@@ -75,7 +76,7 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
     opts::program_options program_opts{
         description,
         {detector_opts, bfield_opts, input_opts, clusterization_opts,
-         seeding_opts, finding_opts, propagation_opts, fitting_opts,
+         seeding_opts, seeding_gbts_opts, finding_opts, propagation_opts, fitting_opts,
          throughput_opts, logging_opts},
         argc,
         argv,
@@ -132,8 +133,18 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
     const traccc::seedfinder_config seedfinder_config(seeding_opts);
     const traccc::seedfilter_config seedfilter_config(seeding_opts);
     const traccc::spacepoint_grid_config spacepoint_grid_config(seeding_opts);
-    traccc::gbts_seedfinder_config gbts_config;
     const traccc::track_params_estimation_config track_params_estimation_config;
+
+    traccc::gbts_seedfinder_config gbts_config;
+    if (seeding_gbts_opts.useGBTS) {
+        if (!gbts_config.setLinkingScheme(
+                seeding_gbts_opts.binTables, seeding_gbts_opts.layerInfo,
+                seeding_gbts_opts.barcodeBinning, 900.0f,
+                prelogger->clone("GBTSconfig"))) {
+            TRACCC_ERROR("failure in setting gbts linking scheme");
+            return -1;
+        }
+    }
 
     typename FULL_CHAIN_ALG::finding_algorithm::config_type finding_cfg(
         finding_opts);
@@ -148,7 +159,7 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
         host_mr, clustering_cfg, seedfinder_config, spacepoint_grid_config,
         seedfilter_config, gbts_config, track_params_estimation_config,
         finding_cfg, fitting_cfg, det_descr, det_cond, field, &detector,
-        logger().clone("FullChainAlg"));
+        logger().clone("FullChainAlg"), seeding_gbts_opts.useGBTS);
 
     // Seed the random number generator.
     if (throughput_opts.random_seed == 0) {
