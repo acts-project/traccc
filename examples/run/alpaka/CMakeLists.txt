@@ -43,3 +43,6 @@ traccc_add_executable( throughput_st_alpaka "throughput_st.cpp"
 
 traccc_add_executable( throughput_mt_alpaka "throughput_mt.cpp"
    LINK_LIBRARIES TBB::tbb indicators::indicators ${LIBRARIES} ${DETRAY} traccc_examples_alpaka )
+
+add_test( throughput_st_alpaka
+                 ${CMAKE_BINARY_DIR}/bin/traccc_throughput_st_alpaka --finding-run-mbf-smoother=0 --read-bfield-from-file --cold-run-events=1 --processed-events=1)
