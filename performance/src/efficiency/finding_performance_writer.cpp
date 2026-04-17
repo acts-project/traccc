@@ -219,7 +219,7 @@ void finding_performance_writer::write_common(
 
         auto ptc_particle =
             detail::particle_from_pdg_number<scalar>(ptc.particle_type);
-        if (ptc_particle.pdg_num() == 0) {
+        if (ptc_particle.pdg_num() == 0 && ptc.particle_type != static_cast<int>(0xdeadbeef)) {
             // TODO: Add some debug logging here.
             continue;
         }
@@ -233,17 +233,24 @@ void finding_performance_writer::write_common(
             continue;
         }
 
-        // Count only charged particles which satisfy pT_cut and vertex cut
-        if (ptc.charge == 0 ||
-            vector::perp(ptc.momentum) < m_cfg.truth_config.pT_min ||
-            ptc.vertex[2] < m_cfg.truth_config.z_min ||
-            ptc.vertex[2] > m_cfg.truth_config.z_max ||
-            vector::perp(ptc.vertex) > m_cfg.truth_config.r_max ||
-            std::abs(vector::eta(ptc.momentum)) > m_cfg.truth_config.eta_max ||
-            (m_cfg.truth_config.process_id >= 0 &&
-             m_cfg.truth_config.process_id != ptc.process) ||
-            num_measurements < m_cfg.truth_config.min_track_candidates) {
-            continue;
+        if (ptc.particle_type == static_cast<int>(0xdeadbeef)) {
+            if (num_measurements < m_cfg.truth_config.min_track_candidates) {
+                continue;
+            }
+        } else {
+            // Count only charged particles which satisfy pT_cut and vertex cut
+            if (ptc.charge == 0 ||
+                vector::perp(ptc.momentum) < m_cfg.truth_config.pT_min ||
+                ptc.vertex[2] < m_cfg.truth_config.z_min ||
+                ptc.vertex[2] > m_cfg.truth_config.z_max ||
+                vector::perp(ptc.vertex) > m_cfg.truth_config.r_max ||
+                std::abs(vector::eta(ptc.momentum)) >
+                    m_cfg.truth_config.eta_max ||
+                (m_cfg.truth_config.process_id >= 0 &&
+                 m_cfg.truth_config.process_id != ptc.process) ||
+                num_measurements < m_cfg.truth_config.min_track_candidates) {
+                continue;
+            }
         }
 
         total_truth_particles++;

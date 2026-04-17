@@ -174,39 +174,47 @@ void event_data::setup_csv(bool use_acts_geom_source,
                                    m_event_id, "-particles_initial.csv")))
                                   .native());
 
-    if (use_split_particle_id_format) {
-        auto preader =
-            io::csv::make_particle_reader_with_split_id(io_particles_file);
-        {
-            io::csv::particle_with_split_id tmp_ioptc;
-            while (preader.read(tmp_ioptc)) {
-                io::csv::particle ioptc;
+    bool have_particle_file = false;
 
-                ioptc.particle_id = convert_particle_id(
-                    tmp_ioptc.particle_id_pv, tmp_ioptc.particle_id_sv,
-                    tmp_ioptc.particle_id_part, tmp_ioptc.particle_id_gen,
-                    tmp_ioptc.particle_id_subpart);
-                ioptc.particle_type = tmp_ioptc.particle_type;
-                ioptc.process = tmp_ioptc.process;
-                ioptc.vx = tmp_ioptc.vx;
-                ioptc.vy = tmp_ioptc.vy;
-                ioptc.vz = tmp_ioptc.vz;
-                ioptc.px = tmp_ioptc.px;
-                ioptc.py = tmp_ioptc.py;
-                ioptc.pz = tmp_ioptc.pz;
-                ioptc.m = tmp_ioptc.m;
-                ioptc.q = tmp_ioptc.q;
+    if (std::filesystem::exists(std::filesystem::path(io_particles_file))) {
+        have_particle_file = true;
+    }
 
-                csv_particles.push_back(ioptc);
+    if (have_particle_file) {
+        if (use_split_particle_id_format) {
+            auto preader =
+                io::csv::make_particle_reader_with_split_id(io_particles_file);
+            {
+                io::csv::particle_with_split_id tmp_ioptc;
+                while (preader.read(tmp_ioptc)) {
+                    io::csv::particle ioptc;
+
+                    ioptc.particle_id = convert_particle_id(
+                        tmp_ioptc.particle_id_pv, tmp_ioptc.particle_id_sv,
+                        tmp_ioptc.particle_id_part, tmp_ioptc.particle_id_gen,
+                        tmp_ioptc.particle_id_subpart);
+                    ioptc.particle_type = tmp_ioptc.particle_type;
+                    ioptc.process = tmp_ioptc.process;
+                    ioptc.vx = tmp_ioptc.vx;
+                    ioptc.vy = tmp_ioptc.vy;
+                    ioptc.vz = tmp_ioptc.vz;
+                    ioptc.px = tmp_ioptc.px;
+                    ioptc.py = tmp_ioptc.py;
+                    ioptc.pz = tmp_ioptc.pz;
+                    ioptc.m = tmp_ioptc.m;
+                    ioptc.q = tmp_ioptc.q;
+
+                    csv_particles.push_back(ioptc);
+                }
             }
-        }
 
-    } else {
-        auto preader = io::csv::make_particle_reader(io_particles_file);
-        {
-            io::csv::particle ioptc;
-            while (preader.read(ioptc)) {
-                csv_particles.push_back(ioptc);
+        } else {
+            auto preader = io::csv::make_particle_reader(io_particles_file);
+            {
+                io::csv::particle ioptc;
+                while (preader.read(ioptc)) {
+                    csv_particles.push_back(ioptc);
+                }
             }
         }
     }
@@ -277,16 +285,27 @@ void event_data::setup_csv(bool use_acts_geom_source,
     }
 
     // Particle map
-    for (const auto& ioptc : csv_particles) {
+    if (have_particle_file) {
+        for (const auto& ioptc : csv_particles) {
 
-        point3 pos{ioptc.vx, ioptc.vy, ioptc.vz};
-        vector3 mom{ioptc.px, ioptc.py, ioptc.pz};
+            point3 pos{ioptc.vx, ioptc.vy, ioptc.vz};
+            vector3 mom{ioptc.px, ioptc.py, ioptc.pz};
 
-        m_particle_map[ioptc.particle_id] =
-            traccc::particle{ioptc.particle_id, ioptc.particle_type,
-                             ioptc.process,     pos,
-                             ioptc.vt,          mom,
-                             ioptc.m,           ioptc.q};
+            m_particle_map[ioptc.particle_id] =
+                traccc::particle{ioptc.particle_id, ioptc.particle_type,
+                                 ioptc.process,     pos,
+                                 ioptc.vt,          mom,
+                                 ioptc.m,           ioptc.q};
+        }
+    } else {
+        for (const auto& iohit : csv_hits) {
+
+            point3 pos{0.f, 0.f, 0.f};
+            vector3 mom{0.f, 0.f, 0.f};
+
+            m_particle_map[iohit.particle_id] =
+                traccc::particle{iohit.particle_id, static_cast<int>(0xdeadbeef), 0, pos, 0, mom, 1, 1};
+        }
     }
 
     /************************************
