@@ -31,6 +31,10 @@ input_data::input_data() : interface("Input Data Options") {
         "use-acts-geom-source",
         po::value(&use_acts_geom_source)->default_value(use_acts_geom_source),
         "Use acts geometry source");
+    m_desc.add_options()("use-split-particle-id-format",
+                         po::value(&use_split_particle_id_format)
+                             ->default_value(use_split_particle_id_format),
+                         "Use split particle ID format");
     m_desc.add_options()(data_format_option,
                          po::value<data_format_type>()->default_value("csv"),
                          "Format of the input file(s)");
@@ -67,6 +71,9 @@ std::unique_ptr<configuration_printable> input_data::as_printable() const {
 
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Use ACTS geometry source", std::format("{}", use_acts_geom_source)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Use split particle ID format",
+        std::format("{}", use_split_particle_id_format)));
     std::ostringstream format_ss;
     format_ss << format;
     cat->add_child(std::make_unique<configuration_kv_pair>("Input data format",

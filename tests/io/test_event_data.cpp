@@ -45,7 +45,7 @@ TEST(event_data, acts_odd) {
 
     {
         // without cell
-        traccc::event_data evt_data(path, 0u, resource, true,
+        traccc::event_data evt_data(path, 0u, resource, true, false,
                                     &polymorphic_detector,
                                     traccc::data_format::csv, false);
         EXPECT_EQ(evt_data.m_particle_map.size(), 4515u);
@@ -54,7 +54,7 @@ TEST(event_data, acts_odd) {
     }
     {
         // with cell
-        traccc::event_data evt_data(path, 0u, resource, true,
+        traccc::event_data evt_data(path, 0u, resource, true, false,
                                     &polymorphic_detector,
                                     traccc::data_format::csv, true);
         EXPECT_EQ(evt_data.m_particle_map.size(), 4515u);
@@ -115,8 +115,9 @@ TEST(event_data, mock_data) {
     traccc::host_detector polymorphic_detector;
     polymorphic_detector.set<traccc::default_detector>(std::move(host_det));
 
-    traccc::event_data evt_data(path, 0u, resource, true, &polymorphic_detector,
-                                traccc::data_format::csv, true);
+    traccc::event_data evt_data(path, 0u, resource, true, false,
+                                &polymorphic_detector, traccc::data_format::csv,
+                                true);
 
     // There are three measurements
     EXPECT_EQ(evt_data.m_meas_to_ptc_map.size(), 3u);

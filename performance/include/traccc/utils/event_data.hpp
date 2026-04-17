@@ -52,6 +52,7 @@ struct event_data {
     event_data(const std::string& event_dir, const std::size_t event_id,
                vecmem::memory_resource& resource,
                bool use_acts_geom_source = false,
+               bool use_split_particle_id_format = false,
                const host_detector* det = nullptr,
                data_format format = data_format::csv,
                bool include_silicon_cells = false);
@@ -152,8 +153,8 @@ struct event_data {
     std::reference_wrapper<vecmem::memory_resource> m_mr;
 
     private:
-    void setup_csv(bool use_acts_geom_source, const host_detector* det,
-                   bool include_silicon_cells);
+    void setup_csv(bool use_acts_geom_source, bool use_split_particle_id_format,
+                   const host_detector* det, bool include_silicon_cells);
 };
 
 }  // namespace traccc

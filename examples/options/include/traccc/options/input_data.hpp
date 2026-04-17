@@ -28,6 +28,8 @@ class input_data : public interface {
     bool use_acts_geom_source = true;
     /// The data format of the input files
     traccc::data_format format = data_format::csv;
+    /// Use the new ACTS split particle ID format
+    bool use_split_particle_id_format = false;
     /// Directory of the input files
     std::string directory = "odd/geant4_10muon_10GeV/";
     /// The number of events to process

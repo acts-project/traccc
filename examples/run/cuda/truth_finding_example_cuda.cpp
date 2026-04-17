@@ -162,6 +162,7 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
         // Truth Track Candidates
         traccc::event_data evt_data(input_opts.directory, event, host_mr,
                                     input_opts.use_acts_geom_source,
+                                    input_opts.use_split_particle_id_format,
                                     &polymorphic_detector, input_opts.format,
                                     false);
 

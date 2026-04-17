@@ -9,12 +9,14 @@
 #include "traccc/utils/event_data.hpp"
 
 #include "traccc/edm/measurement_collection.hpp"
+#include "traccc/io/csv/hit.hpp"
 #include "traccc/io/csv/make_cell_reader.hpp"
 #include "traccc/io/csv/make_hit_reader.hpp"
 #include "traccc/io/csv/make_measurement_edm.hpp"
 #include "traccc/io/csv/make_measurement_hit_id_reader.hpp"
 #include "traccc/io/csv/make_measurement_reader.hpp"
 #include "traccc/io/csv/make_particle_reader.hpp"
+#include "traccc/io/csv/particle.hpp"
 #include "traccc/io/read_cells.hpp"
 #include "traccc/io/read_digitization_config.hpp"
 #include "traccc/io/utils.hpp"
@@ -24,12 +26,25 @@
 #include <algorithm>
 #include <filesystem>
 
+namespace {
+uint64_t convert_particle_id(uint64_t particle_id_pv, uint64_t particle_id_sv,
+                             uint64_t particle_id_part,
+                             uint64_t particle_id_gen,
+                             uint64_t particle_id_subpart) {
+    return (particle_id_pv << 48) | (particle_id_sv << 36) |
+           (particle_id_part << 24) | (particle_id_gen << 12) |
+           (particle_id_subpart);
+}
+}  // namespace
+
 namespace traccc {
 
 event_data::event_data(const std::string& event_dir, const std::size_t event_id,
                        vecmem::memory_resource& resource,
-                       bool use_acts_geom_source, const host_detector* det,
-                       data_format format, bool include_silicon_cells)
+                       bool use_acts_geom_source,
+                       bool use_split_particle_id_format,
+                       const host_detector* det, data_format format,
+                       bool include_silicon_cells)
     : m_measurements(resource),
       m_event_dir(event_dir),
       m_event_id(event_id),
@@ -38,11 +53,14 @@ event_data::event_data(const std::string& event_dir, const std::size_t event_id,
     // Currently, we only support csv type for event data
     assert(format == data_format::csv);
     if (format == data_format::csv) {
-        setup_csv(use_acts_geom_source, det, include_silicon_cells);
+        setup_csv(use_acts_geom_source, use_split_particle_id_format, det,
+                  include_silicon_cells);
     }
 }
 
-void event_data::setup_csv(bool use_acts_geom_source, const host_detector* det,
+void event_data::setup_csv(bool use_acts_geom_source,
+                           bool use_split_particle_id_format,
+                           const host_detector* det,
                            bool include_silicon_cells) {
 
     /********************
@@ -78,11 +96,43 @@ void event_data::setup_csv(bool use_acts_geom_source, const host_detector* det,
          std::filesystem::path(io::get_event_filename(m_event_id, "-hits.csv")))
             .native());
 
-    auto hreader = io::csv::make_hit_reader(io_hits_file);
-    {
-        io::csv::hit iohit;
-        while (hreader.read(iohit)) {
-            csv_hits.push_back(iohit);
+    if (use_split_particle_id_format) {
+        auto hreader =
+            io::csv::make_hit_reader_with_split_particle_id(io_hits_file);
+        {
+            io::csv::hit_with_split_particle_id tmp_iohit;
+            while (hreader.read(tmp_iohit)) {
+                io::csv::hit iohit;
+
+                iohit.particle_id = convert_particle_id(
+                    tmp_iohit.particle_id_pv, tmp_iohit.particle_id_sv,
+                    tmp_iohit.particle_id_part, tmp_iohit.particle_id_gen,
+                    tmp_iohit.particle_id_subpart);
+                iohit.geometry_id = tmp_iohit.geometry_id;
+                iohit.tx = tmp_iohit.tx;
+                iohit.ty = tmp_iohit.ty;
+                iohit.tz = tmp_iohit.tz;
+                iohit.tt = tmp_iohit.tt;
+                iohit.tpx = tmp_iohit.tpx;
+                iohit.tpy = tmp_iohit.tpy;
+                iohit.tpz = tmp_iohit.tpz;
+                iohit.te = tmp_iohit.te;
+                iohit.deltapx = tmp_iohit.deltapx;
+                iohit.deltapy = tmp_iohit.deltapy;
+                iohit.deltapz = tmp_iohit.deltapz;
+                iohit.deltae = tmp_iohit.deltae;
+                iohit.index = tmp_iohit.index;
+
+                csv_hits.push_back(iohit);
+            }
+        }
+    } else {
+        auto hreader = io::csv::make_hit_reader(io_hits_file);
+        {
+            io::csv::hit iohit;
+            while (hreader.read(iohit)) {
+                csv_hits.push_back(iohit);
+            }
         }
     }
 
@@ -124,11 +174,40 @@ void event_data::setup_csv(bool use_acts_geom_source, const host_detector* det,
                                    m_event_id, "-particles_initial.csv")))
                                   .native());
 
-    auto preader = io::csv::make_particle_reader(io_particles_file);
-    {
-        io::csv::particle ioptc;
-        while (preader.read(ioptc)) {
-            csv_particles.push_back(ioptc);
+    if (use_split_particle_id_format) {
+        auto preader =
+            io::csv::make_particle_reader_with_split_id(io_particles_file);
+        {
+            io::csv::particle_with_split_id tmp_ioptc;
+            while (preader.read(tmp_ioptc)) {
+                io::csv::particle ioptc;
+
+                ioptc.particle_id = convert_particle_id(
+                    tmp_ioptc.particle_id_pv, tmp_ioptc.particle_id_sv,
+                    tmp_ioptc.particle_id_part, tmp_ioptc.particle_id_gen,
+                    tmp_ioptc.particle_id_subpart);
+                ioptc.particle_type = tmp_ioptc.particle_type;
+                ioptc.process = tmp_ioptc.process;
+                ioptc.vx = tmp_ioptc.vx;
+                ioptc.vy = tmp_ioptc.vy;
+                ioptc.vz = tmp_ioptc.vz;
+                ioptc.px = tmp_ioptc.px;
+                ioptc.py = tmp_ioptc.py;
+                ioptc.pz = tmp_ioptc.pz;
+                ioptc.m = tmp_ioptc.m;
+                ioptc.q = tmp_ioptc.q;
+
+                csv_particles.push_back(ioptc);
+            }
+        }
+
+    } else {
+        auto preader = io::csv::make_particle_reader(io_particles_file);
+        {
+            io::csv::particle ioptc;
+            while (preader.read(ioptc)) {
+                csv_particles.push_back(ioptc);
+            }
         }
     }
 
@@ -255,6 +334,7 @@ void event_data::setup_csv(bool use_acts_geom_source, const host_detector* det,
         point3 global_mom{iohit.tpx, iohit.tpy, iohit.tpz};
 
         // Make particle
+        //
         const auto& ptc = m_particle_map.at(iohit.particle_id);
 
         // Construct the measurement object.

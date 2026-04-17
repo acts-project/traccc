@@ -335,6 +335,7 @@ int seq_run(const traccc::opts::input_data& input_opts,
 
             traccc::event_data evt_data(input_opts.directory, event, host_mr,
                                         input_opts.use_acts_geom_source,
+                                        input_opts.use_split_particle_id_format,
                                         &polymorphic_detector,
                                         input_opts.format, true);
             evt_data.fill_cca_result(cells_per_event, clusters_per_event,

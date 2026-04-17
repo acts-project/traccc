@@ -26,4 +26,7 @@ namespace traccc::io::csv {
 dfe::NamedTupleCsvReader<particle> make_particle_reader(
     std::string_view filename);
 
+dfe::NamedTupleCsvReader<particle_with_split_id>
+make_particle_reader_with_split_id(std::string_view filename);
+
 }  // namespace traccc::io::csv
