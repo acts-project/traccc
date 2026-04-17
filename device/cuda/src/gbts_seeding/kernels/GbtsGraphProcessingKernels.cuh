@@ -578,30 +578,25 @@ void __global__ fit_segments(
 
     int2 path = d_path_store[path_idx];
 
-    float4 triplet_params[2];
     int nodeidx =
         d_output_graph[traccc::device::gbts_consts::node1 + edge_size * path.x];
-    triplet_params[0] = d_sp_params[nodeidx];
+    float4 node1 = d_sp_params[nodeidx];
     nodeidx =
         d_output_graph[traccc::device::gbts_consts::node2 + edge_size * path.x];
-    triplet_params[1] = d_sp_params[nodeidx];
+    float4 node2 = d_sp_params[nodeidx];
 
-    state1.initialize(triplet_params[1], triplet_params[0]);
+    state1.initialize(node2, node1);
     while (path.y >= 0) {
         path = d_path_store[path.y];
 
-        triplet_params[1] =
-            d_sp_params[d_output_graph[traccc::device::gbts_consts::node2 +
-                                       edge_size * path.x]];
-
+        node2 = d_sp_params[d_output_graph[traccc::device::gbts_consts::node2 +
+                                           edge_size * path.x]];
         if (toggle) {
-            if (!update(&state1, &state2, triplet_params[1],
-                        seed_extraction_params)) {
+            if (!update(&state1, &state2, node2, seed_extraction_params)) {
                 state1 = state2;
                 break;
             }
-        } else if (!update(&state2, &state1, triplet_params[1],
-                           seed_extraction_params)) {
+        } else if (!update(&state2, &state1, node2, seed_extraction_params)) {
             break;
         }
         toggle = !toggle;
