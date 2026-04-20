@@ -151,7 +151,7 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
 
     // Seed the random number generator.
     if (throughput_opts.random_seed == 0) {
-        std::srand(static_cast<unsigned int>(std::time(0)));
+        std::srand(static_cast<unsigned int>(std::time(nullptr)));
     } else {
         std::srand(throughput_opts.random_seed);
     }
