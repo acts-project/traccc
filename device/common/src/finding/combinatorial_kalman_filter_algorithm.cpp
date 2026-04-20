@@ -42,24 +42,19 @@ combinatorial_kalman_filter_algorithm::
 
 auto combinatorial_kalman_filter_algorithm::operator()(
     const detector_buffer& det, const magnetic_field& bfield,
-    const edm::measurement_collection<default_algebra>::const_view&
-        measurements_view,
+    const edm::measurement_collection::const_view& measurements_view,
     const bound_track_parameters_collection_types::const_view& seeds) const
     -> output_type {
 
     assert(m_data);
     assert(input_is_valid(measurements_view));
 
-    //  const edm::measurement_collection<default_algebra>::const_device
-    //      measurements{measurements_view};
-
     /*****************************************************************
      * Measurement Operations
      *****************************************************************/
 
     // Get the number of measurements. In an asynchronous way if possible.
-    edm::measurement_collection<default_algebra>::const_view::size_type
-        n_measurements = 0u;
+    edm::measurement_collection::const_view::size_type n_measurements = 0u;
     if (mr().host) {
         vecmem::async_size size =
             copy().get_size(measurements_view, *(mr().host));
@@ -155,15 +150,6 @@ auto combinatorial_kalman_filter_algorithm::operator()(
          step < m_data->m_config.max_track_candidates_per_track &&
          n_in_params > 0;
          ++step) {
-
-        /*****************************************************************
-         * Apply material interaction
-         ****************************************************************/
-        apply_interaction_kernel(
-            n_in_params, m_data->m_config, det,
-            {.n_params = n_in_params,
-             .params_view = in_params_buffer,
-             .params_liveness_view = param_liveness_buffer});
 
         /*****************************************************************
          * Find valid tracks
