@@ -10,7 +10,6 @@
 // Library include(s).
 #include "traccc/device/algorithm_base.hpp"
 #include "traccc/edm/device/sort_key.hpp"
-#include "traccc/finding/device/apply_interaction.hpp"
 #include "traccc/finding/device/build_tracks.hpp"
 #include "traccc/finding/device/fill_finding_duplicate_removal_sort_keys.hpp"
 #include "traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
@@ -45,7 +44,7 @@ namespace traccc::device {
 class combinatorial_kalman_filter_algorithm
     : public algorithm<edm::track_container<default_algebra>::buffer(
           const detector_buffer&, const magnetic_field&,
-          const edm::measurement_collection<default_algebra>::const_view&,
+          const edm::measurement_collection::const_view&,
           const bound_track_parameters_collection_types::const_view&)>,
       public messaging,
       public algorithm_base {
@@ -80,8 +79,7 @@ class combinatorial_kalman_filter_algorithm
     ///
     output_type operator()(
         const detector_buffer& det, const magnetic_field& bfield,
-        const edm::measurement_collection<default_algebra>::const_view&
-            measurements,
+        const edm::measurement_collection::const_view& measurements,
         const bound_track_parameters_collection_types::const_view& seeds)
         const override;
 
@@ -95,8 +93,7 @@ class combinatorial_kalman_filter_algorithm
     /// @return @c true if the input data is valid, @c false otherwise
     ///
     virtual bool input_is_valid(
-        const edm::measurement_collection<default_algebra>::const_view&
-            measurements) const = 0;
+        const edm::measurement_collection::const_view& measurements) const = 0;
 
     /// Function building the measurement ranges buffer
     ///
@@ -106,25 +103,11 @@ class combinatorial_kalman_filter_algorithm
     /// @return The measurement ranges buffer
     ///
     virtual vecmem::data::vector_buffer<
-        edm::measurement_collection<default_algebra>::const_view::size_type>
+        edm::measurement_collection::const_view::size_type>
     build_measurement_ranges_buffer(
         const detector_buffer& det,
-        const edm::measurement_collection<
-            default_algebra>::const_view::size_type n_measurements,
-        const edm::measurement_collection<default_algebra>::const_view&
-            measurements) const = 0;
-
-    /// Material interaction application kernel launcher
-    ///
-    /// @param n_threads The number of threads to launch the kernel with
-    /// @param config The track finding configuration
-    /// @param det The detector object
-    /// @param payload The payload for the kernel
-    ///
-    virtual void apply_interaction_kernel(
-        unsigned int n_threads, const finding_config& config,
-        const detector_buffer& det,
-        const device::apply_interaction_payload& payload) const = 0;
+        const edm::measurement_collection::const_view::size_type n_measurements,
+        const edm::measurement_collection::const_view& measurements) const = 0;
 
     /// Track finding kernel launcher
     ///

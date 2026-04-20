@@ -18,7 +18,6 @@
 // Project include(s).
 #include "traccc/bfield/magnetic_field_types.hpp"
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
-#include "traccc/finding/device/apply_interaction.hpp"
 #include "traccc/finding/device/build_tracks.hpp"
 #include "traccc/finding/device/fill_finding_duplicate_removal_sort_keys.hpp"
 #include "traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
@@ -30,22 +29,6 @@
 
 namespace traccc::alpaka {
 namespace kernels {
-
-/// Alpaka kernel functor for @c traccc::device::apply_interaction
-template <typename detector_t>
-struct apply_interaction {
-    template <typename TAcc>
-    ALPAKA_FN_ACC void operator()(
-        TAcc const& acc, const finding_config& cfg,
-        const typename detector_t::const_view_type& det_data,
-        const device::apply_interaction_payload& payload) const {
-
-        const device::global_index_t globalThreadIdx =
-            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
-        device::apply_interaction<detector_t>(globalThreadIdx, cfg, det_data,
-                                              payload);
-    }
-};
 
 /// Alpaka kernel functor for @c traccc::device::find_tracks
 template <typename detector_t>
@@ -207,20 +190,17 @@ combinatorial_kalman_filter_algorithm::combinatorial_kalman_filter_algorithm(
       alpaka::algorithm_base(q) {}
 
 bool combinatorial_kalman_filter_algorithm::input_is_valid(
-    const edm::measurement_collection<default_algebra>::const_view&) const {
+    const edm::measurement_collection::const_view&) const {
 
     // TODO: Implement sanity check(s).
     return true;
 }
 
-vecmem::data::vector_buffer<
-    edm::measurement_collection<default_algebra>::const_view::size_type>
+vecmem::data::vector_buffer<edm::measurement_collection::const_view::size_type>
 combinatorial_kalman_filter_algorithm::build_measurement_ranges_buffer(
     const detector_buffer& detector,
-    const edm::measurement_collection<default_algebra>::const_view::size_type
-        n_measurements,
-    const edm::measurement_collection<default_algebra>::const_view&
-        measurements) const {
+    const edm::measurement_collection::const_view::size_type n_measurements,
+    const edm::measurement_collection::const_view& measurements) const {
 
     return detector_buffer_visitor<detector_type_list>(
         detector, [&]<typename detector_traits_t>(
@@ -229,14 +209,14 @@ combinatorial_kalman_filter_algorithm::build_measurement_ranges_buffer(
             typename detector_traits_t::device device_det{det};
 
             // Create the result buffer.
-            vecmem::data::vector_buffer<edm::measurement_collection<
-                default_algebra>::const_view::size_type>
+            vecmem::data::vector_buffer<
+                edm::measurement_collection::const_view::size_type>
                 result{device_det.surfaces().size(), mr().main};
             copy().setup(result)->ignore();
 
             // Create a measurement device object for convenience.
-            const edm::measurement_collection<default_algebra>::const_device
-                measurements_device{measurements};
+            const edm::measurement_collection::const_device measurements_device{
+                measurements};
 
             // Fill it with Thrust's help.
             details::upper_bound(
@@ -251,28 +231,6 @@ combinatorial_kalman_filter_algorithm::build_measurement_ranges_buffer(
 
             // Return the filled buffer.
             return result;
-        });
-}
-
-void combinatorial_kalman_filter_algorithm::apply_interaction_kernel(
-    unsigned int n_threads, const finding_config& config,
-    const detector_buffer& detector,
-    const device::apply_interaction_payload& payload) const {
-
-    // Establish the kernel launch parameters.
-    const unsigned int deviceThreads = warp_size() * 2;
-    const unsigned int deviceBlocks =
-        (n_threads + deviceThreads - 1) / deviceThreads;
-
-    // Launch the kernel for the appropriate detector type.
-    detector_buffer_visitor<detector_type_list>(
-        detector, [&]<typename detector_traits_t>(
-                      const typename detector_traits_t::view& det) {
-            ::alpaka::exec<Acc>(details::get_queue(queue()),
-                                makeWorkDiv<Acc>(deviceBlocks, deviceThreads),
-                                kernels::apply_interaction<
-                                    typename detector_traits_t::device>{},
-                                config, det, payload);
         });
 }
 

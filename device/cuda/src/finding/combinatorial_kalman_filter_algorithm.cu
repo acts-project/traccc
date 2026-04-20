@@ -8,7 +8,6 @@
 // Local include(s).
 #include "../sanity/contiguous_on.cuh"
 #include "../utils/magnetic_field_types.hpp"
-#include "./kernels/apply_interaction.hpp"
 #include "./kernels/build_tracks.cuh"
 #include "./kernels/fill_finding_duplicate_removal_sort_keys.cuh"
 #include "./kernels/fill_finding_propagation_sort_keys.cuh"
@@ -35,8 +34,7 @@
 namespace traccc::cuda {
 
 bool combinatorial_kalman_filter_algorithm::input_is_valid(
-    const edm::measurement_collection<default_algebra>::const_view&
-        measurements) const {
+    const edm::measurement_collection::const_view& measurements) const {
 
     static constexpr std::size_t GEOMID_INDEX = 6u;
     return is_contiguous_on<
@@ -45,14 +43,11 @@ bool combinatorial_kalman_filter_algorithm::input_is_valid(
         measurements.template get<GEOMID_INDEX>());
 }
 
-vecmem::data::vector_buffer<
-    edm::measurement_collection<default_algebra>::const_view::size_type>
+vecmem::data::vector_buffer<edm::measurement_collection::const_view::size_type>
 combinatorial_kalman_filter_algorithm::build_measurement_ranges_buffer(
     const detector_buffer& det,
-    const edm::measurement_collection<default_algebra>::const_view::size_type
-        n_measurements,
-    const edm::measurement_collection<default_algebra>::const_view&
-        measurements) const {
+    const edm::measurement_collection::const_view::size_type n_measurements,
+    const edm::measurement_collection::const_view& measurements) const {
 
     return detector_buffer_visitor<detector_type_list>(
         det, [&]<typename detector_traits_t>(
@@ -61,14 +56,14 @@ combinatorial_kalman_filter_algorithm::build_measurement_ranges_buffer(
             typename detector_traits_t::device device_det{det};
 
             // Create the result buffer.
-            vecmem::data::vector_buffer<edm::measurement_collection<
-                default_algebra>::const_view::size_type>
+            vecmem::data::vector_buffer<
+                edm::measurement_collection::const_view::size_type>
                 result{device_det.surfaces().size(), mr().main};
             copy().setup(result)->ignore();
 
             // Create a measurement device object for convenience.
-            const edm::measurement_collection<default_algebra>::const_device
-                measurements_device{measurements};
+            const edm::measurement_collection::const_device measurements_device{
+                measurements};
 
             // Fill it with Thrust's help.
             thrust::upper_bound(
@@ -86,27 +81,6 @@ combinatorial_kalman_filter_algorithm::build_measurement_ranges_buffer(
             // Return the filled buffer.
             return result;
         });
-}
-
-void combinatorial_kalman_filter_algorithm::apply_interaction_kernel(
-    unsigned int n_threads, const finding_config& config,
-    const detector_buffer& detector,
-    const device::apply_interaction_payload& payload) const {
-
-    // Establish the kernel launch parameters.
-    const unsigned int deviceThreads = warp_size() * 2;
-    const unsigned int deviceBlocks =
-        (n_threads + deviceThreads - 1) / deviceThreads;
-
-    // Launch the kernel for the appropriate detector type.
-    detector_buffer_visitor<detector_type_list>(
-        detector, [&]<typename detector_traits_t>(
-                      const typename detector_traits_t::view& det) {
-            apply_interaction<typename detector_traits_t::device>(
-                deviceBlocks, deviceThreads, 0, details::get_stream(stream()),
-                config, det, payload);
-        });
-    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 }
 
 void combinatorial_kalman_filter_algorithm::find_tracks_kernel(

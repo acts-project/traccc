@@ -37,9 +37,8 @@ class combinatorial_kalman_filter_algorithm
     /// @param measurements All measurements in an event
     /// @return @c true if the input data is valid, @c false otherwise
     ///
-    bool input_is_valid(
-        const edm::measurement_collection<default_algebra>::const_view&
-            measurements) const override;
+    bool input_is_valid(const edm::measurement_collection::const_view&
+                            measurements) const override;
 
     /// Function building the measurement ranges buffer
     ///
@@ -49,25 +48,12 @@ class combinatorial_kalman_filter_algorithm
     /// @return The measurement ranges buffer
     ///
     vecmem::data::vector_buffer<
-        edm::measurement_collection<default_algebra>::const_view::size_type>
+        edm::measurement_collection::const_view::size_type>
     build_measurement_ranges_buffer(
         const detector_buffer& det,
-        const edm::measurement_collection<
-            default_algebra>::const_view::size_type n_measurements,
-        const edm::measurement_collection<default_algebra>::const_view&
-            measurements) const override;
-
-    /// Material interaction application kernel launcher
-    ///
-    /// @param n_threads The number of threads to launch the kernel with
-    /// @param config The track finding configuration
-    /// @param det The detector object
-    /// @param payload The payload for the kernel
-    ///
-    void apply_interaction_kernel(
-        unsigned int n_threads, const finding_config& config,
-        const detector_buffer& det,
-        const device::apply_interaction_payload& payload) const override;
+        const edm::measurement_collection::const_view::size_type n_measurements,
+        const edm::measurement_collection::const_view& measurements)
+        const override;
 
     /// Track finding kernel launcher
     ///
