@@ -32,6 +32,8 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/edm/silicon_cluster_collection.hpp"
   "include/traccc/edm/spacepoint_collection.hpp"
   "include/traccc/edm/impl/spacepoint_collection.ipp"
+  "include/traccc/edm/spacepoint_helpers.hpp"
+  "include/traccc/edm/impl/spacepoint_helpers.ipp"
   "include/traccc/edm/seed_collection.hpp"
   "include/traccc/edm/impl/seed_collection.ipp"
   "include/traccc/edm/track_state_collection.hpp"
