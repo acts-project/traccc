@@ -97,9 +97,13 @@ full_chain_algorithm::full_chain_algorithm(
     std::cout << traccc::alpaka::get_device_info() << std::endl;
 
     // Copy the detector (description) to the device.
+    m_vecmem_objects.async_copy().setup(m_device_det_descr)->wait();
     m_vecmem_objects
         .async_copy()(::vecmem::get_data(m_det_descr.get()), m_device_det_descr)
-        ->ignore();
+        ->wait();
+    m_vecmem_objects
+        .async_copy()(::vecmem::get_data(m_det_cond.get()), m_device_det_cond)
+        ->wait();
     if (m_detector != nullptr) {
         m_device_detector = traccc::buffer_from_host_detector(
             *m_detector, m_vecmem_objects.device_mr(),
@@ -177,9 +181,13 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_fitting_config(parent.m_fitting_config) {
 
     // Copy the detector (description) to the device.
+    m_vecmem_objects.async_copy().setup(m_device_det_descr)->wait();
     m_vecmem_objects
         .async_copy()(::vecmem::get_data(m_det_descr.get()), m_device_det_descr)
-        ->ignore();
+        ->wait();
+    m_vecmem_objects
+        .async_copy()(::vecmem::get_data(m_det_cond.get()), m_device_det_cond)
+        ->wait();
     if (m_detector != nullptr) {
         m_device_detector = traccc::buffer_from_host_detector(
             *m_detector, m_vecmem_objects.device_mr(),
