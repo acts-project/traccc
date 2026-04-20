@@ -219,7 +219,8 @@ void finding_performance_writer::write_common(
 
         auto ptc_particle =
             detail::particle_from_pdg_number<scalar>(ptc.particle_type);
-        if (ptc_particle.pdg_num() == 0 && ptc.particle_type != static_cast<int>(0xdeadbeef)) {
+        if (ptc_particle.pdg_num() == 0 &&
+            ptc.particle_type != static_cast<int>(0xdeadbeef)) {
             // TODO: Add some debug logging here.
             continue;
         }

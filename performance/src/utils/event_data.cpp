@@ -269,10 +269,19 @@ void event_data::setup_csv(bool use_acts_geom_source,
         }
 
         if (!csv_measurements_have_time) {
-            const auto hid = csv_meas_hit_ids.at(iomeas.measurement_id).hit_id;
-            const auto& iohit = csv_hits.at(hid);
+            const auto iohit_it = std::find_if(
+                csv_meas_hit_ids.begin(), csv_meas_hit_ids.end(),
+                [&iomeas](const io::csv::measurement_hit_id& i) {
+                    return i.measurement_id == iomeas.measurement_id;
+                });
 
-            meas.time() = iohit.tt;
+            if (iohit_it != csv_meas_hit_ids.end()) {
+                const auto& iohit = csv_hits.at(iohit_it->hit_id);
+
+                meas.time() = iohit.tt;
+            } else {
+                std::cout << "BAD 1" << std::endl;
+            }
         }
 
         if (iomeas.measurement_id <=
@@ -304,7 +313,14 @@ void event_data::setup_csv(bool use_acts_geom_source,
             vector3 mom{0.f, 0.f, 0.f};
 
             m_particle_map[iohit.particle_id] =
-                traccc::particle{iohit.particle_id, static_cast<int>(0xdeadbeef), 0, pos, 0, mom, 1, 1};
+                traccc::particle{iohit.particle_id,
+                                 static_cast<int>(0xdeadbeef),
+                                 0,
+                                 pos,
+                                 0,
+                                 mom,
+                                 1,
+                                 1};
         }
     }
 
@@ -322,15 +338,25 @@ void event_data::setup_csv(bool use_acts_geom_source,
 
             // Fill the measurement_to_cluster_map
             auto meas_id = iocell.measurement_id;
-            auto hid = csv_meas_hit_ids[meas_id].hit_id;
-            const auto& iohit = csv_hits[hid];
 
-            measurement_proxy meas =
-                m_measurement_map.at(static_cast<measurement_id_type>(meas_id));
-            meas_to_cluster_map[meas].push_back(iocell);
+            const auto iohit_it =
+                std::find_if(csv_meas_hit_ids.begin(), csv_meas_hit_ids.end(),
+                             [&meas_id](const io::csv::measurement_hit_id& i) {
+                                 return i.measurement_id == meas_id;
+                             });
 
-            const auto& ptc = m_particle_map.at(iohit.particle_id);
-            m_cell_to_particle_map[iocell] = ptc;
+            if (iohit_it != csv_meas_hit_ids.end()) {
+                const auto& iohit = csv_hits.at(iohit_it->hit_id);
+
+                measurement_proxy meas = m_measurement_map.at(
+                    static_cast<measurement_id_type>(meas_id));
+                meas_to_cluster_map[meas].push_back(iocell);
+
+                const auto& ptc = m_particle_map.at(iohit.particle_id);
+                m_cell_to_particle_map[iocell] = ptc;
+            } else {
+                std::cout << "BAD 2" << std::endl;
+            }
         }
 
         // Fill the meas_to_particle_map
@@ -343,43 +369,51 @@ void event_data::setup_csv(bool use_acts_geom_source,
     }
 
     for (const auto& iomeas : csv_measurements) {
+        const auto iohit_it =
+            std::find_if(csv_meas_hit_ids.begin(), csv_meas_hit_ids.end(),
+                         [&iomeas](const io::csv::measurement_hit_id& i) {
+                             return i.measurement_id == iomeas.measurement_id;
+                         });
 
-        // Hit index
-        const auto hid = csv_meas_hit_ids.at(iomeas.measurement_id).hit_id;
+        if (iohit_it != csv_meas_hit_ids.end()) {
+            const auto& iohit = csv_hits.at(iohit_it->hit_id);
 
-        // Make spacepoint
-        const auto& iohit = csv_hits.at(hid);
-        point3 global_pos{iohit.tx, iohit.ty, iohit.tz};
-        point3 global_mom{iohit.tpx, iohit.tpy, iohit.tpz};
+            // Make spacepoint
+            point3 global_pos{iohit.tx, iohit.ty, iohit.tz};
+            point3 global_mom{iohit.tpx, iohit.tpy, iohit.tpz};
 
-        // Make particle
-        //
-        const auto& ptc = m_particle_map.at(iohit.particle_id);
+            // Make particle
+            //
+            const auto& ptc = m_particle_map.at(iohit.particle_id);
 
-        // Construct the measurement object.
-        measurement_proxy meas = m_measurement_map.at(
-            static_cast<measurement_id_type>(iomeas.measurement_id));
+            // Construct the measurement object.
+            measurement_proxy meas = m_measurement_map.at(
+                static_cast<measurement_id_type>(iomeas.measurement_id));
 
-        // Fill measurement to truth global position and momentum map
-        m_meas_to_param_map[meas] = std::make_pair(global_pos, global_mom);
+            // Fill measurement to truth global position and momentum map
+            m_meas_to_param_map[meas] = std::make_pair(global_pos, global_mom);
 
-        // Fill particle to measurement map
-        auto& meas_vec = m_ptc_to_meas_map[ptc];
+            // Fill particle to measurement map
+            auto& meas_vec = m_ptc_to_meas_map[ptc];
 
-        meas_vec.insert(std::upper_bound(meas_vec.begin(), meas_vec.end(), meas,
-                                         [](const measurement_proxy& val,
-                                            const measurement_proxy& old) {
-                                             return old.time() > val.time();
-                                         }),
-                        meas);
+            meas_vec.insert(
+                std::upper_bound(meas_vec.begin(), meas_vec.end(), meas,
+                                 [](const measurement_proxy& val,
+                                    const measurement_proxy& old) {
+                                     return old.time() > val.time();
+                                 }),
+                meas);
 
-        if (!include_silicon_cells) {
-            auto insert_return = m_meas_to_ptc_map.insert({meas, {}});
-            if (insert_return.second == false) {
-                // TODO: Put some logging here when that's ready
-            } else {
-                (*(insert_return.first)).second[ptc] = 1u;
+            if (!include_silicon_cells) {
+                auto insert_return = m_meas_to_ptc_map.insert({meas, {}});
+                if (insert_return.second == false) {
+                    // TODO: Put some logging here when that's ready
+                } else {
+                    (*(insert_return.first)).second[ptc] = 1u;
+                }
             }
+        } else {
+            std::cout << "BAD 3" << std::endl;
         }
     }
 }
