@@ -86,7 +86,7 @@ __global__ void count_sp_by_layer(
         // count and store x,y,z,cw info
         atomicAdd(&d_layerCounts[layerIdx], 1);
         spacepointsLayer[spIdx] = layerIdx;
-        const traccc::point3 pos = spacepoint.global();
+        const std::array<float, 3u> pos = spacepoint.global();
         reducedSP[spIdx] =
             make_float4(pos[0], pos[1], pos[2], cluster_diameter);
     }

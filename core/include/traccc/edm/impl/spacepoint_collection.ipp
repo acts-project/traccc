@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2025 CERN for the benefit of the ACTS project
+ * (c) 2021-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -51,8 +51,8 @@ TRACCC_HOST_DEVICE const auto& spacepoint<BASE>::z() const {
 template <typename BASE>
 TRACCC_HOST_DEVICE auto spacepoint<BASE>::radius() const {
 
-    const scalar xx = x();
-    const scalar yy = y();
+    const float xx = x();
+    const float yy = y();
     return math::sqrt(xx * xx + yy * yy);
 }
 
