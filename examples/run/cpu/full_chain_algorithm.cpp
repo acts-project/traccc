@@ -15,13 +15,14 @@ full_chain_algorithm::full_chain_algorithm(
     const seedfinder_config& finder_config,
     const spacepoint_grid_config& grid_config,
     const seedfilter_config& filter_config,
+    const gbts_seedfinder_config& gbts_config,
     const track_params_estimation_config& track_params_estimation_config,
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
     const detector_design_description::host& det_descr,
     const detector_conditions_description::host& det_cond,
     const magnetic_field& field, const host_detector* detector,
-    std::unique_ptr<const traccc::Logger> logger)
+    std::unique_ptr<const traccc::Logger> logger, const bool useGBTS)
     : messaging(logger->clone()),
       m_mr(mr),
       m_copy{std::make_unique<vecmem::copy>()},
@@ -42,9 +43,19 @@ full_chain_algorithm::full_chain_algorithm(
       m_finder_config(finder_config),
       m_grid_config(grid_config),
       m_filter_config(filter_config),
+      m_gbts_config(gbts_config),
       m_track_params_estimation_config(track_params_estimation_config),
       m_finding_config(finding_config),
-      m_fitting_config(fitting_config) {}
+      m_fitting_config(fitting_config),
+      usingGBTS(useGBTS) {
+
+    if (usingGBTS) {
+        TRACCC_LOCAL_LOGGER(std::move(logger));
+        TRACCC_ERROR(
+            "GBTS not implemented for CPU, this will run with "
+            "triplet seeding");
+    }
+}
 
 full_chain_algorithm::output_type full_chain_algorithm::operator()(
     const edm::silicon_cell_collection::host& cells) const {
@@ -133,6 +144,23 @@ bound_track_parameters_collection_types::host full_chain_algorithm::seeding(
         // Return an empty object.
         return {};
     }
+}
+
+edm::measurement_collection<default_algebra>::host
+full_chain_algorithm::clustering(
+    const edm::silicon_cell_collection::host& cells) const {
+
+    // Create a data object for the detector description.
+    const detector_design_description::const_data det_descr_data =
+        vecmem::get_data(m_det_descr.get());
+    const detector_conditions_description::const_data det_cond_data =
+        vecmem::get_data(m_det_cond.get());
+    // Run the clusterization.
+    auto cells_data = vecmem::get_data(cells);
+    const clustering_algorithm::output_type measurements =
+        m_clusterization(cells_data, det_descr_data, det_cond_data);
+
+    return measurements;
 }
 
 }  // namespace traccc

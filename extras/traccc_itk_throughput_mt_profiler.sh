@@ -29,7 +29,7 @@ usage() {
    echo "  -r <repetitions>     The number of repetitions in the test"
    echo "  -e <eventMultiplier> Multiplier for the number of events per thread"
    echo "  -c <csvFile>         Name of the output CSV file"
-   echo "  -y <throughputType>  Type of throughput test to run (traccc/g200/g100)"
+   echo "  -y <throughputType>  Type of throughput test to run (traccc/g200/g100, or with GBTS, g230/g130)"
    echo "  -h                   Print this help"
    echo ""
 }
@@ -43,7 +43,7 @@ TRACCC_THREAD_STEP=${TRACCC_THREAD_STEP:-1}
 TRACCC_REPETITIONS=${TRACCC_REPETITIONS:-5}
 TRACCC_CSV_FILE=${TRACCC_CSV_FILE:-"output.csv"}
 TRACCC_THROUGPUT_TYPE=${TRACCC_THROUGPUT_TYPE:-"traccc"}
-while getopts ":x:i:m:t:r:c:y:h" opt; do
+while getopts ":x:i:m:t:s:r:c:y:h" opt; do
    case $opt in
       x)
          TRACCC_EXECUTABLE=$OPTARG
@@ -109,20 +109,21 @@ fi
 # Additional flags tuning the cuts for the G100/G200 pipelines.
 G200_CUTS=(--seedfinder-z-range=-3000.:3000.
            --seedfinder-r-range=33.:320.
-           --seedfinder-vertex-range=-200.:200.
+           --seedfinder-vertex-range=-114.:114.
            --seedfinder-minPt=0.9
            --seedfinder-cotThetaMax=27.2899
-           --seedfinder-deltaR-range=20.:200.
-           --seedfinder-impactMax=10.
+           --seedfinder-deltaR-range=20.:100.
+           --seedfinder-deltaZMax=800.
+           --seedfinder-impactMax=2.
            --seedfinder-sigmaScattering=3.
            --seedfinder-maxPtScattering=10.
-           --seedfinder-maxSeedsPerSpM=1
+           --seedfinder-maxSeedsPerSpM=2
            --max-num-branches-per-seed=3
-           --max-num-branches-per-surface=5
+           --max-num-branches-per-surface=1
            --track-candidates-range=7:20
            --min-step-length-for-next-surface=0.5
            --max-step-counts-for-next-surface=100
-           --chi2-max=10.
+           --chi2-max=30.
            --max-num-skipping-per-cand=2
            --stepping-min-stepsize=0.0001
            --rk-tolerance-mm=0.0001
@@ -133,12 +134,15 @@ G200_CUTS=(--seedfinder-z-range=-3000.:3000.
            --stepping-use-field-gradient=0
            --stepping-do-covariance-transport=1
            --overstep-tolerance-um=-300.
-           --min-mask-tolerance-mm=0.00001
-           --max-mask-tolerance-mm=3.
-           --search-window=0:0)
+           --max-num-tracks-per-measurement 1
+           --initial-links-per-seed 20
+           --seedfinder-compatSeedLimit 1)
 
 G100_CUTS=${G200_CUTS[@]}
 G100_CUTS+=(--reco-stage=seeding)
+
+G050_CUTS=${G200_CUTS[@]}
+G050_CUTS+=(--reco-stage=clustering)
 
 # Select which of these flags to use.
 TRACCC_CUTS=()
@@ -146,6 +150,14 @@ if [[ "${TRACCC_THROUGPUT_TYPE}" == "g200" ]]; then
    TRACCC_CUTS=${G200_CUTS[@]}
 elif [[ "${TRACCC_THROUGPUT_TYPE}" == "g100" ]]; then
    TRACCC_CUTS=${G100_CUTS[@]}
+elif [[ "${TRACCC_THROUGPUT_TYPE}" == "g230" ]]; then
+   TRACCC_CUTS=${G200_CUTS[@]}
+   TRACCC_CUTS+=(--useGBTS --gbts_config_dir="${TRACCC_INPUT_DIR}")
+elif [[ "${TRACCC_THROUGPUT_TYPE}" == "g130" ]]; then
+   TRACCC_CUTS=${G100_CUTS[@]}
+   TRACCC_CUTS+=(--useGBTS --gbts_config_dir="${TRACCC_INPUT_DIR}")
+elif [[ "${TRACCC_THROUGPUT_TYPE}" == "g050" ]]; then
+   TRACCC_CUTS=${G050_CUTS[@]}
 elif [[ "${TRACCC_THROUGPUT_TYPE}" != "traccc" ]]; then
    echo "***"
    echo "*** Unknown throughput type: '${TRACCC_THROUGPUT_TYPE}'"
@@ -154,7 +166,9 @@ elif [[ "${TRACCC_THROUGPUT_TYPE}" != "traccc" ]]; then
 fi
 
 # The input directories to use.
-TRACCC_INPUT_DIRS=("ttbar_mu140/hits" "ttbar_mu200/hits")
+TRACCC_INPUT_DIRS=("ttbar_mu140" "ttbar_mu200")
+
+#TODO? implement event count multiplier as a function of mu as for ODD
 
 # Put a header on the CSV file.
 echo "directory,threads,loaded_events,cold_run_events,processed_events,warm_up_time,processing_time" \
@@ -178,19 +192,19 @@ for NTHREAD in $(seq ${TRACCC_MIN_THREADS} ${TRACCC_THREAD_STEP} ${TRACCC_MAX_TH
 
          # Run the throughput test.
          ${TRACCC_EXECUTABLE}                                                  \
-            --detector-file="${TRACCC_INPUT_DIR}/ITk_DetectorBuilder_geometry.json" \
-            --material-file="${TRACCC_INPUT_DIR}/ITk_detector_material.json"   \
-            --grid-file="${TRACCC_INPUT_DIR}/ITk_DetectorBuilder_surface_grids.json" \
+            --detector-file="${TRACCC_INPUT_DIR}/detray_detector_geometry.json" \
+            --material-file="${TRACCC_INPUT_DIR}/detray_detector_material_maps.json" \
+            --grid-file="${TRACCC_INPUT_DIR}/detray_detector_surface_grids.json" \
             --digitization-file="${TRACCC_INPUT_DIR}/ITk_digitization_config.json" \
             --conditions-file="${TRACCC_INPUT_DIR}/ITk_conditions_config.json" \
             --read-bfield-from-file                                            \
             --bfield-file="${TRACCC_INPUT_DIR}/ITk_bfield.cvf"                 \
             --input-directory="${TRACCC_INPUT_DIR}/${EVTDIR}/"                 \
             --use-acts-geom-source=0                                           \
-            --input-events=100                                                 \
+            --input-events=400                                                 \
             --cpu-threads=${NTHREAD}                                           \
             --cold-run-events=$((5*${NTHREAD}))                                \
-            --processed-events=$((100*${NTHREAD}))                             \
+            --processed-events=$((1000*${NTHREAD}))                            \
             --log-file="${TRACCC_CSV_FILE}"                                    \
             ${TRACCC_CUTS[@]}
       done

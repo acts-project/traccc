@@ -23,13 +23,14 @@ full_chain_algorithm::full_chain_algorithm(
     const seedfinder_config& finder_config,
     const spacepoint_grid_config& grid_config,
     const seedfilter_config& filter_config,
+    const gbts_seedfinder_config& gbts_config,
     const track_params_estimation_config& track_params_estimation_config,
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
     const detector_design_description::host& det_descr,
     const detector_conditions_description::host& det_cond,
     const magnetic_field& field, host_detector* detector,
-    std::unique_ptr<const traccc::Logger> logger)
+    std::unique_ptr<const traccc::Logger> logger, bool useGBTS)
     : messaging(logger->clone()),
       m_queue(),
       m_vecmem_objects(m_queue),
@@ -90,10 +91,18 @@ full_chain_algorithm::full_chain_algorithm(
       m_finder_config(finder_config),
       m_grid_config(grid_config),
       m_filter_config(filter_config),
+      m_gbts_config(gbts_config),
       m_track_params_estimation_config(track_params_estimation_config),
       m_finding_config(finding_config),
-      m_fitting_config(fitting_config) {
+      m_fitting_config(fitting_config),
+      usingGBTS(useGBTS) {
 
+    if (usingGBTS) {
+        TRACCC_LOCAL_LOGGER(std::move(logger));
+        TRACCC_ERROR(
+            "GBTS not implemented for alpaka, this will run with "
+            "triplet seeding");
+    }
     std::cout << traccc::alpaka::get_device_info() << std::endl;
 
     // Copy the detector (description) to the device.
@@ -172,9 +181,11 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_finder_config(parent.m_finder_config),
       m_grid_config(parent.m_grid_config),
       m_filter_config(parent.m_filter_config),
+      m_gbts_config(parent.m_gbts_config),
       m_track_params_estimation_config(parent.m_track_params_estimation_config),
       m_finding_config(parent.m_finding_config),
-      m_fitting_config(parent.m_fitting_config) {
+      m_fitting_config(parent.m_fitting_config),
+      usingGBTS(parent.usingGBTS) {
 
     // Copy the detector (description) to the device.
     m_vecmem_objects
@@ -291,6 +302,28 @@ bound_track_parameters_collection_types::host full_chain_algorithm::seeding(
         // Return an empty object.
         return {};
     }
+}
+
+edm::measurement_collection<default_algebra>::host
+full_chain_algorithm::clustering(
+    const edm::silicon_cell_collection::host& cells) const {
+
+    // Create device copy of input collections
+    edm::silicon_cell_collection::buffer cells_buffer(
+        static_cast<unsigned int>(cells.size()), m_cached_device_mr);
+    m_vecmem_objects.async_copy()(::vecmem::get_data(cells), cells_buffer)
+        ->ignore();
+
+    // Run the clusterization (asynchronously).
+    const auto unsorted_measurements =
+        m_clusterization(cells_buffer, m_device_det_descr, m_device_det_cond);
+    const measurement_sorting_algorithm::output_type measurements =
+        m_measurement_sorting(unsorted_measurements);
+
+    edm::measurement_collection<default_algebra>::host measurements_host(
+        m_host_mr);
+    m_vecmem_objects.async_copy()(measurements, measurements_host)->wait();
+    return measurements_host;
 }
 
 }  // namespace traccc::alpaka

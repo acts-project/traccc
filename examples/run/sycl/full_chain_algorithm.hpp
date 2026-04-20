@@ -24,6 +24,8 @@
 #include "traccc/sycl/seeding/triplet_seeding_algorithm.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/propagation.hpp"
+// GBTS include for placeholder input (not implemented)
+#include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/binary_page_memory_resource.hpp>
@@ -84,7 +86,7 @@ class full_chain_algorithm
         const detector_design_description::host& det_descr,
         const detector_conditions_description::host& det_cond,
         const magnetic_field& field, host_detector* detector,
-        std::unique_ptr<const traccc::Logger> logger);
+        std::unique_ptr<const traccc::Logger> logger, bool useGBTS = false);
 
     /// Copy constructor
     ///
@@ -113,6 +115,14 @@ class full_chain_algorithm
     /// @return The track seeds reconstructed
     ///
     bound_track_parameters_collection_types::host seeding(
+        const edm::silicon_cell_collection::host& cells) const;
+
+    /// Reconstruct cluster measurements in the entire detector
+    ///
+    /// @param cells The cells for every detector module in the event
+    /// @return The reconstruted measurements
+    ///
+    edm::measurement_collection<default_algebra>::host clustering(
         const edm::silicon_cell_collection::host& cells) const;
 
     private:
@@ -182,12 +192,17 @@ class full_chain_algorithm
     spacepoint_grid_config m_grid_config;
     /// Configuration for the seed filtering
     seedfilter_config m_filter_config;
+    /// placeholder GBTS config
+    [[maybe_unused]] m_gbts_seedfinder_config m_gbts_config;
     /// Configuration for track parameter estimation
     track_params_estimation_config m_track_params_estimation_config;
+
     /// Configuration for the track finding
     finding_algorithm::config_type m_finding_config;
     /// Configuration for the track fitting
     fitting_algorithm::config_type m_fitting_config;
+
+    bool usingGBTS;
 
     /// @}
 };  // class full_chain_algorithm
