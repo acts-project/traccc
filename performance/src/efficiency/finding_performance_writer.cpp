@@ -170,42 +170,48 @@ void finding_performance_writer::write_common(
                 found_measurements, evt_data.m_meas_to_ptc_map);
         }
 
-        const auto major_ptc = particle_hit_counts.at(0).ptc;
-        const auto n_major_hits = particle_hit_counts.at(0).hit_counts;
+        if (particle_hit_counts.size() > 0) {
 
-        // Truth measureemnt from the particle
-        const std::vector<event_data::measurement_proxy> truth_measurements =
-            evt_data.m_ptc_to_meas_map.at(major_ptc);
+            const auto major_ptc = particle_hit_counts.at(0).ptc;
+            const auto n_major_hits = particle_hit_counts.at(0).hit_counts;
 
-        // Consider it being matched if hit counts is larger than the half
-        // of the number of measurements
-        assert(found_measurements.size() > 0u);
-        assert(truth_measurements.size() > 0u);
+            // Truth measureemnt from the particle
+            const std::vector<event_data::measurement_proxy>
+                truth_measurements = evt_data.m_ptc_to_meas_map.at(major_ptc);
 
-        const double purity = static_cast<double>(n_major_hits) /
-                              static_cast<double>(found_measurements.size());
-        const double completeness =
-            static_cast<double>(n_major_hits) /
-            static_cast<double>(truth_measurements.size());
+            // Consider it being matched if hit counts is larger than the half
+            // of the number of measurements
+            assert(found_measurements.size() > 0u);
+            assert(truth_measurements.size() > 0u);
 
-        const bool reco_matched =
-            purity >= m_cfg.track_truth_config.matching_ratio;
-        const bool truth_matched =
-            completeness >= m_cfg.track_truth_config.matching_ratio;
+            const double purity =
+                static_cast<double>(n_major_hits) /
+                static_cast<double>(found_measurements.size());
+            const double completeness =
+                static_cast<double>(n_major_hits) /
+                static_cast<double>(truth_measurements.size());
 
-        m_data->m_stat_plot_tool.fill(m_data->m_stat_plot_cache, purity,
-                                      completeness);
+            const bool reco_matched =
+                purity >= m_cfg.track_truth_config.matching_ratio;
+            const bool truth_matched =
+                completeness >= m_cfg.track_truth_config.matching_ratio;
 
-        if ((!m_cfg.track_truth_config.double_matching && reco_matched) ||
-            (m_cfg.track_truth_config.double_matching && reco_matched &&
-             truth_matched)) {
-            const auto pid = major_ptc.particle_id;
-            match_counter[pid]++;
-        } else {
-            for (particle_hit_count const& phc : particle_hit_counts) {
-                const auto pid = phc.ptc.particle_id;
-                fake_counter[pid]++;
+            m_data->m_stat_plot_tool.fill(m_data->m_stat_plot_cache, purity,
+                                          completeness);
+
+            if ((!m_cfg.track_truth_config.double_matching && reco_matched) ||
+                (m_cfg.track_truth_config.double_matching && reco_matched &&
+                 truth_matched)) {
+                const auto pid = major_ptc.particle_id;
+                match_counter[pid]++;
+            } else {
+                for (particle_hit_count const& phc : particle_hit_counts) {
+                    const auto pid = phc.ptc.particle_id;
+                    fake_counter[pid]++;
+                }
+                total_fake_tracks++;
             }
+        } else {
             total_fake_tracks++;
         }
     }

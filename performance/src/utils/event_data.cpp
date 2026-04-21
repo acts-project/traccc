@@ -383,33 +383,37 @@ void event_data::setup_csv(bool use_acts_geom_source,
             point3 global_mom{iohit.tpx, iohit.tpy, iohit.tpz};
 
             // Make particle
-            //
-            const auto& ptc = m_particle_map.at(iohit.particle_id);
+            const auto ptc_it = m_particle_map.find(iohit.particle_id);
 
-            // Construct the measurement object.
-            measurement_proxy meas = m_measurement_map.at(
-                static_cast<measurement_id_type>(iomeas.measurement_id));
+            if (ptc_it != m_particle_map.end()) {
+                const auto& ptc = ptc_it->second;
 
-            // Fill measurement to truth global position and momentum map
-            m_meas_to_param_map[meas] = std::make_pair(global_pos, global_mom);
+                // Construct the measurement object.
+                measurement_proxy meas = m_measurement_map.at(
+                    static_cast<measurement_id_type>(iomeas.measurement_id));
 
-            // Fill particle to measurement map
-            auto& meas_vec = m_ptc_to_meas_map[ptc];
+                // Fill measurement to truth global position and momentum map
+                m_meas_to_param_map[meas] =
+                    std::make_pair(global_pos, global_mom);
 
-            meas_vec.insert(
-                std::upper_bound(meas_vec.begin(), meas_vec.end(), meas,
-                                 [](const measurement_proxy& val,
-                                    const measurement_proxy& old) {
-                                     return old.time() > val.time();
-                                 }),
-                meas);
+                // Fill particle to measurement map
+                auto& meas_vec = m_ptc_to_meas_map[ptc];
 
-            if (!include_silicon_cells) {
-                auto insert_return = m_meas_to_ptc_map.insert({meas, {}});
-                if (insert_return.second == false) {
-                    // TODO: Put some logging here when that's ready
-                } else {
-                    (*(insert_return.first)).second[ptc] = 1u;
+                meas_vec.insert(
+                    std::upper_bound(meas_vec.begin(), meas_vec.end(), meas,
+                                     [](const measurement_proxy& val,
+                                        const measurement_proxy& old) {
+                                         return old.time() > val.time();
+                                     }),
+                    meas);
+
+                if (!include_silicon_cells) {
+                    auto insert_return = m_meas_to_ptc_map.insert({meas, {}});
+                    if (insert_return.second == false) {
+                        // TODO: Put some logging here when that's ready
+                    } else {
+                        (*(insert_return.first)).second[ptc] = 1u;
+                    }
                 }
             }
         } else {

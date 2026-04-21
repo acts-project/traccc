@@ -106,31 +106,35 @@ class fitting_performance_writer : public messaging {
 
         // Find the contributing particle
         // @todo: Use identify_contributing_particles function
-        std::map<particle, std::size_t> contributing_particles =
-            meas_to_ptc_map.at(meas);
+        const auto contributing_particles_it = meas_to_ptc_map.find(meas);
 
-        const particle ptc = contributing_particles.begin()->first;
+        if (contributing_particles_it != meas_to_ptc_map.end()) {
+            std::map<particle, std::size_t> contributing_particles =
+                contributing_particles_it->second;
 
-        // Find the truth global position and momentum
-        const point3 global_pos = meas_to_param_map.at(meas).first;
-        const vector3 global_mom = meas_to_param_map.at(meas).second;
+            const particle ptc = contributing_particles.begin()->first;
 
-        const detray::tracking_surface sf{det, meas.surface_link()};
-        const point2 truth_bound =
-            sf.global_to_bound(ctx, global_pos, vector::normalize(global_mom));
+            // Find the truth global position and momentum
+            const point3 global_pos = meas_to_param_map.at(meas).first;
+            const vector3 global_mom = meas_to_param_map.at(meas).second;
 
-        // Return value
-        bound_track_parameters<> truth_param{};
-        truth_param.set_bound_local(truth_bound);
-        truth_param.set_phi(vector::phi(global_mom));
-        truth_param.set_theta(vector::theta(global_mom));
-        // @todo: Assign a proper value to time
-        truth_param.set_time(0.f);
-        truth_param.set_qop(ptc.charge / vector::norm(global_mom));
+            const detray::tracking_surface sf{det, meas.surface_link()};
+            const point2 truth_bound = sf.global_to_bound(
+                ctx, global_pos, vector::normalize(global_mom));
 
-        // For the moment, only fill with the first measurements
-        write_res(truth_param, trk_state.smoothed_params(), ptc);
-        write_stat(track, track_states, measurements);
+            // Return value
+            bound_track_parameters<> truth_param{};
+            truth_param.set_bound_local(truth_bound);
+            truth_param.set_phi(vector::phi(global_mom));
+            truth_param.set_theta(vector::theta(global_mom));
+            // @todo: Assign a proper value to time
+            truth_param.set_time(0.f);
+            truth_param.set_qop(ptc.charge / vector::norm(global_mom));
+
+            // For the moment, only fill with the first measurements
+            write_res(truth_param, trk_state.smoothed_params(), ptc);
+            write_stat(track, track_states, measurements);
+        }
     }
 
     /// Writing caches into the file
