@@ -32,12 +32,12 @@ traccc_add_executable( throughput_mt_cuda "src/throughput_mt.cpp"
                   detray::detectors detray::io traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::cuda_utils traccc::cuda
                   traccc::options traccc::examples_cuda )
-traccc_add_executable( seq_example_cuda "src/seq_example_cuda.cpp"
+traccc_add_executable( seq_example_cuda "apps/seq_example_cuda.cpp"
    LINK_LIBRARIES vecmem::core vecmem::cuda traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::cuda_utils traccc::cuda
                   traccc::options detray::detectors detray::io
                   traccc::examples_common )
-traccc_add_executable( seeding_example_cuda "src/seeding_example_cuda.cpp"
+traccc_add_executable( seeding_example_cuda "apps/seeding_example_cuda.cpp"
    LINK_LIBRARIES vecmem::core vecmem::cuda traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::cuda_utils traccc::cuda
                   traccc::options traccc::examples_common )

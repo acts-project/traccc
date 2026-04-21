@@ -23,9 +23,9 @@ set(LIBRARIES vecmem::core traccc::io traccc::performance
     traccc::options traccc_examples_common ${EXTRA_LIBS})
 set(DETRAY detray::io detray::detectors)
 
-traccc_add_executable( seq_example_alpaka "src/seq_example_alpaka.cpp"
+traccc_add_executable( seq_example_alpaka "apps/seq_example_alpaka.cpp"
     LINK_LIBRARIES ${LIBRARIES} ${DETRAY} )
-traccc_add_executable( seeding_example_alpaka "src/seeding_example_alpaka.cpp"
+traccc_add_executable( seeding_example_alpaka "apps/seeding_example_alpaka.cpp"
     LINK_LIBRARIES ${LIBRARIES} )
 
 #

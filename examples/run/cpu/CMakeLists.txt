@@ -24,12 +24,12 @@ traccc_add_executable( throughput_mt "src/throughput_mt.cpp"
                   detray::io traccc::core traccc::io traccc::performance
                   traccc::options traccc::examples_cpu )
 
-traccc_add_executable( seeding_example "src/seeding_example.cpp"
+traccc_add_executable( seeding_example "apps/seeding_example.cpp"
    LINK_LIBRARIES vecmem::core traccc::core traccc::io
    traccc::performance traccc::options detray::detectors detray::io
    traccc::examples_common )
 
-traccc_add_executable( seq_example "src/seq_example.cpp"
+traccc_add_executable( seq_example "apps/seq_example.cpp"
    LINK_LIBRARIES vecmem::core traccc::core traccc::io
    traccc::performance traccc::options detray::detectors detray::io
    traccc::examples_common )
