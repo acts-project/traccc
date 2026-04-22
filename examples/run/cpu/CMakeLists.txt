@@ -14,12 +14,12 @@ target_link_libraries( traccc_examples_cpu
    PUBLIC vecmem::core detray::core detray::detectors traccc::core
    traccc::examples_common )
 
-traccc_add_executable( throughput_st "src/throughput_st.cpp"
+traccc_add_executable( throughput_st "apps/throughput_st.cpp"
    LINK_LIBRARIES indicators::indicators vecmem::core detray::detectors
                   detray::io traccc::core traccc::io traccc::performance
                   traccc::options traccc::examples_cpu )
 
-traccc_add_executable( throughput_mt "src/throughput_mt.cpp"
+traccc_add_executable( throughput_mt "apps/throughput_mt.cpp"
    LINK_LIBRARIES indicators::indicators TBB::tbb vecmem::core detray::detectors
                   detray::io traccc::core traccc::io traccc::performance
                   traccc::options traccc::examples_cpu )
@@ -34,14 +34,14 @@ traccc_add_executable( seq_example "apps/seq_example.cpp"
    traccc::performance traccc::options detray::detectors detray::io
    traccc::examples_common )
 
-traccc_add_executable( truth_finding_example "src/truth_finding_example.cpp"
+traccc_add_executable( truth_finding_example "apps/truth_finding_example.cpp"
    LINK_LIBRARIES vecmem::core detray::detectors traccc::core traccc::io
    traccc::performance traccc::options traccc::examples_common )
 
-traccc_add_executable( truth_fitting_example "src/truth_fitting_example.cpp"
+traccc_add_executable( truth_fitting_example "apps/truth_fitting_example.cpp"
    LINK_LIBRARIES vecmem::core detray::io detray::detectors traccc::core
    traccc::io traccc::performance traccc::options traccc::examples_common )
 
-traccc_add_executable( misaligned_truth_fitting_example "src/misaligned_truth_fitting_example.cpp"
+traccc_add_executable( misaligned_truth_fitting_example "apps/misaligned_truth_fitting_example.cpp"
    LINK_LIBRARIES vecmem::core detray::io detray::detectors traccc::core
    traccc::io traccc::performance traccc::options traccc::examples_common )

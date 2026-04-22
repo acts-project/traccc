@@ -8,7 +8,7 @@
 // Local include(s).
 #include "traccc/examples/throughput_mt.hpp"
 
-#include "traccc/examples/full_chain_algorithm.hpp"
+#include "traccc/examples/cuda/full_chain_algorithm.hpp"
 
 int main(int argc, char* argv[]) {
 

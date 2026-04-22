@@ -21,13 +21,13 @@ target_link_libraries( traccc_examples_cuda
           traccc::core traccc::device_common traccc::cuda_utils traccc::cuda
           traccc::examples_common )
 
-traccc_add_executable( throughput_st_cuda "src/throughput_st.cpp"
+traccc_add_executable( throughput_st_cuda "apps/throughput_st.cpp"
    LINK_LIBRARIES indicators::indicators vecmem::core vecmem::cuda
                   detray::detectors detray::io traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::cuda_utils traccc::cuda
                   traccc::options traccc::examples_cuda )
 
-traccc_add_executable( throughput_mt_cuda "src/throughput_mt.cpp"
+traccc_add_executable( throughput_mt_cuda "apps/throughput_mt.cpp"
    LINK_LIBRARIES indicators::indicators TBB::tbb vecmem::core vecmem::cuda
                   detray::detectors detray::io traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::cuda_utils traccc::cuda
@@ -41,11 +41,11 @@ traccc_add_executable( seeding_example_cuda "apps/seeding_example_cuda.cpp"
    LINK_LIBRARIES vecmem::core vecmem::cuda traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::cuda_utils traccc::cuda
                   traccc::options traccc::examples_common )
-traccc_add_executable( truth_finding_example_cuda "src/truth_finding_example_cuda.cpp"
+traccc_add_executable( truth_finding_example_cuda "apps/truth_finding_example_cuda.cpp"
    LINK_LIBRARIES vecmem::core vecmem::cuda traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::cuda_utils traccc::cuda
                   traccc::options traccc::examples_common )
-traccc_add_executable( truth_fitting_example_cuda "src/truth_fitting_example_cuda.cpp"
+traccc_add_executable( truth_fitting_example_cuda "apps/truth_fitting_example_cuda.cpp"
    LINK_LIBRARIES vecmem::core vecmem::cuda traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::cuda_utils traccc::cuda
                   traccc::options traccc::examples_common )

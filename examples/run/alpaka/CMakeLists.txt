@@ -38,10 +38,10 @@ target_link_libraries( traccc_examples_alpaka
    PUBLIC vecmem::core detray::core detray::detectors
    traccc::core traccc::device_common traccc::alpaka traccc_examples_common ${EXTRA_LIBS})
 
-traccc_add_executable( throughput_st_alpaka "src/throughput_st.cpp"
+traccc_add_executable( throughput_st_alpaka "apps/throughput_st.cpp"
    LINK_LIBRARIES indicators::indicators ${LIBRARIES} ${DETRAY} traccc_examples_alpaka )
 
-traccc_add_executable( throughput_mt_alpaka "src/throughput_mt.cpp"
+traccc_add_executable( throughput_mt_alpaka "apps/throughput_mt.cpp"
    LINK_LIBRARIES TBB::tbb indicators::indicators ${LIBRARIES} ${DETRAY} traccc_examples_alpaka )
 
 add_test( NAME throughput_st_alpaka

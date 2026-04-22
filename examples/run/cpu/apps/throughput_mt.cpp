@@ -6,13 +6,13 @@
  */
 
 // Local include(s).
-#include "traccc/examples/throughput_st.hpp"
+#include "traccc/examples/throughput_mt.hpp"
 
-#include "traccc/examples/full_chain_algorithm.hpp"
+#include "traccc/examples/cpu/full_chain_algorithm.hpp"
 
 int main(int argc, char* argv[]) {
 
     // Execute the throughput test.
-    return traccc::throughput_st<traccc::full_chain_algorithm>(
-        "Single-threaded host-only throughput tests", argc, argv);
+    return traccc::throughput_mt<traccc::full_chain_algorithm>(
+        "Multi-threaded host-only throughput tests", argc, argv);
 }
