@@ -196,6 +196,63 @@ TRACCC_DEVICE inline void ccl_core(
 
     barrier.blockBarrier();
 
+    /*
+     * We'll now convert the parent array `f` into a linked list equivalent
+     * stored in array `gf`. The point of this linked list is that the ID of
+     * each cell is either:
+     *
+     * - An out-of-bounds value if there is no later cell in the same
+     *   cluster; or
+     * - An in-nounds index pointing to the next cell belonging to the same
+     *   cluster.
+     *
+     * If, for example, f would look like this:
+     *
+     *        0  1  2  3  4  5  6  7  8
+     * f  = [ 0, 0, 2, 0, 2, 5, 2, 5, 8]
+     *
+     * We would compute:
+     *
+     * gf = [ 1, 3, 4, 9, 6, 7, 9, 9, 9]
+     *
+     * This makes aggregating the clusters trivial.
+     *
+     * First, we start out by setting out-of-bounds values for all cells...
+     */
+    for (unsigned short i =
+             static_cast<unsigned short>(thread_id.getLocalThreadIdX());
+         i < (partition_end - partition_start); i += thread_id.getBlockDimX()) {
+        gf.at(i) = static_cast<unsigned short>(partition_end - partition_start);
+    }
+
+    barrier.blockBarrier();
+
+    /*
+     * Now we construct the actual linked list. We move backwards here,
+     * because we are much more likely to be able to exit our loop early
+     * compared to looping fowards.
+     */
+    for (unsigned short i = thread_id.getLocalThreadIdX();
+         i < (partition_end - partition_start); i += thread_id.getBlockDimX()) {
+        const unsigned short effi =
+            static_cast<unsigned short>(partition_end - partition_start) -
+            static_cast<unsigned short>(i + 1);
+
+        const auto fid = f.at(effi);
+
+        if (fid != effi) {
+            for (unsigned short j = effi - 1;
+                 j < (partition_end - partition_start); --j) {
+                if (fid == f.at(j)) {
+                    gf.at(j) = effi;
+                    break;
+                }
+            }
+        }
+    }
+
+    barrier.blockBarrier();
+
     for (details::index_t tst = 0; tst < thread_cell_count; ++tst) {
         const auto cid = static_cast<details::index_t>(
             tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX());
@@ -207,7 +264,7 @@ TRACCC_DEVICE inline void ccl_core(
                 measurements_device.push_back_default();
             // Set up the measurement under the appropriate index.
             aggregate_cluster(
-                cfg, cells_device, det_desc, det_cond, f,
+                cfg, cells_device, det_desc, det_cond, gf,
                 static_cast<unsigned int>(partition_start),
                 static_cast<unsigned int>(partition_end), cid,
                 measurements_device.at(meas_pos), cell_links, meas_pos,

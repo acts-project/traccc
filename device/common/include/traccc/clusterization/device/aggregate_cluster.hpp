@@ -29,8 +29,7 @@ namespace traccc::device {
 ///
 /// @param[in] cells     collection of cells
 /// @param[in] det_descr The detector description
-/// @param[in] f         array of "parent" indices for all cells in this
-///                      partition
+/// @param[in] fll       linked list of all cells in this partition
 /// @param[in] start     partition start point this cell belongs to
 /// @param[in] end       partition end point this cell belongs to
 /// @param[in] cid       current cell id
