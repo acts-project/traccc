@@ -76,7 +76,7 @@ TEST(CUDASpacepointFormation, cuda) {
                             0.f,
                             0.f,
                             0u,
-                            surfaces[0].barcode(),
+                            surfaces[0].identifier(),
                             {1u, 1u},
                             0u});
 
@@ -87,7 +87,7 @@ TEST(CUDASpacepointFormation, cuda) {
                             0.f,
                             0.f,
                             0u,
-                            surfaces[8u].barcode(),
+                            surfaces[8u].identifier(),
                             {1u, 1u},
                             1u});
 

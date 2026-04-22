@@ -11,7 +11,7 @@
 #include "traccc/definitions/qualifiers.hpp"
 
 // Detray include(s).
-#include <detray/geometry/barcode.hpp>
+#include <detray/geometry/identifier.hpp>
 
 // VecMem include(s).
 #include <vecmem/edm/container.hpp>
@@ -126,13 +126,13 @@ class measurement : public BASE {
 
     /// Identifier of the tracking sufrace of the measurement (non-const)
     ///
-    /// @return A (non-const) vector of geometry barcodes
+    /// @return A (non-const) vector of geometry identifiers
     ///
     TRACCC_HOST_DEVICE
     auto& surface_link() { return BASE::template get<6>(); }
     /// Identifier of the tracking sufrace of the measurement (const)
     ///
-    /// @return A (const) vector of geometry barcodes
+    /// @return A (const) vector of geometry identifiers
     ///
     TRACCC_HOST_DEVICE
     const auto& surface_link() const { return BASE::template get<6>(); }
@@ -224,7 +224,7 @@ using measurement_collection = vecmem::edm::container<
     // identifier
     vecmem::edm::type::vector<unsigned int>,
     // surface_link
-    vecmem::edm::type::vector<detray::geometry::barcode>,
+    vecmem::edm::type::vector<detray::geometry::identifier>,
     // subspace
     vecmem::edm::type::vector<std::array<std::uint8_t, 2u>>,
     // cluster_index

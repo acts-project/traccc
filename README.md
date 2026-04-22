@@ -247,6 +247,7 @@ cmake --build build/
 | TRACCC_USE_SYSTEM_ACTS | Pick up an existing installation of Acts from the build environment |
 | TRACCC_USE_SYSTEM_GOOGLETEST | Pick up an existing installation of GoogleTest from the build environment |
 | TRACCC_USE_ROOT | Build physics performance analysis code using an existing installation of ROOT from the build environment |
+| TRACCC_DEVICE_LOG_LVL  | Set device code log level (NONE, WARN, INFO, VERBOSE, DEBUG)
 
 ## Examples
 

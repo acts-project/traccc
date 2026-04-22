@@ -37,7 +37,7 @@ std::vector<measurement_id_type> read_measurements(
             *detector, [&]<typename detector_t>(const detector_t::host& det) {
                 for (const auto& surface_desc : det.surfaces()) {
                     acts_to_detray_id[surface_desc.source] =
-                        surface_desc.barcode().value();
+                        surface_desc.identifier().value();
                 }
             });
     }

@@ -156,7 +156,7 @@ class kalman_fitter {
         typename edm::track_collection<algebra_type>::device::proxy_type
             m_fit_res;
 
-        /// View object for barcode sequence
+        /// View object for identifier sequence
         vecmem::data::vector_view<surface_type> m_sequence_buffer;
     };
 
@@ -303,8 +303,8 @@ class kalman_fitter {
         TRACCC_VERBOSE_HOST_DEVICE("Run smoothing...");
 
         if (fitter_state.m_fit_actor_state.sequencer().overflow()) {
-            TRACCC_ERROR_HOST_DEVICE("Barcode sequence overlow");
-            return kalman_fitter_status::ERROR_BARCODE_SEQUENCE_OVERFLOW;
+            TRACCC_ERROR_HOST_DEVICE("Geometry identifer sequence overlow");
+            return kalman_fitter_status::ERROR_GEOID_SEQUENCE_OVERFLOW;
         }
         if (fitter_state.m_fit_actor_state.sequencer().sequence().empty()) {
             return kalman_fitter_status::ERROR_UPDATER_SKIPPED_STATE;
@@ -368,15 +368,15 @@ class kalman_fitter {
             detray::navigation::direction::e_backward);
         propagation.navigation().reset();
 
-        // Synchronize the current barcode with the input track parameter
+        // Synchronize the current geo ID with the input track parameter
         TRACCC_DEBUG_HOST(
             "Expecting: " << last.smoothed_params().surface_link());
         while (propagation.navigation().has_next_external() &&
-               propagation.navigation().next_external().barcode() !=
+               propagation.navigation().next_external().identifier() !=
                    last.smoothed_params().surface_link()) {
             TRACCC_DEBUG_HOST(
                 "Advancing to next external surface from: "
-                << propagation.navigation().next_external().barcode());
+                << propagation.navigation().next_external().identifier());
             propagation.navigation().advance();
         }
 

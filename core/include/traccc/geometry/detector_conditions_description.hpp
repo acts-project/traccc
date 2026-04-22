@@ -14,7 +14,7 @@
 #include "traccc/utils/subspace.hpp"
 
 // Detray include(s).
-#include <detray/geometry/barcode.hpp>
+#include <detray/geometry/identifier.hpp>
 
 // VecMem include(s).
 #include <vecmem/edm/container.hpp>
@@ -47,7 +47,7 @@ class detector_conditions_description_interface : public BASE {
     ///
     /// Can be used to look up the module in a @c detray::detector object.
     ///
-    /// @return A (const) vector of @c detray::geometry::barcode objects
+    /// @return A (const) vector of @c detray::geometry::identifier objects
     ///
     TRACCC_HOST_DEVICE
     const auto& module_to_design_id() const { return BASE::template get<0>(); }
@@ -58,7 +58,7 @@ class detector_conditions_description_interface : public BASE {
     ///
     /// Can be used to look up the module in a @c detray::detector object.
     ///
-    /// @return A (const) vector of @c detray::geometry::barcode objects
+    /// @return A (const) vector of @c detray::geometry::identifier objects
     ///
     TRACCC_HOST_DEVICE
     const auto& geometry_id() const { return BASE::template get<1>(); }
@@ -69,7 +69,7 @@ class detector_conditions_description_interface : public BASE {
     ///
     /// Can be used to look up the module in a @c detray::detector object.
     ///
-    /// @return A (const) vector of @c detray::geometry::barcode objects
+    /// @return A (const) vector of @c detray::geometry::identifier objects
     ///
     TRACCC_HOST_DEVICE
     const auto& acts_geometry_id() const { return BASE::template get<2>(); }
@@ -92,11 +92,10 @@ class detector_conditions_description_interface : public BASE {
 
 /// SoA container describing module to design map and conditions
 /// (module specific) data
-using detector_conditions_description =
-    vecmem::edm::container<detector_conditions_description_interface,
-                           vecmem::edm::type::vector<unsigned int>,
-                           vecmem::edm::type::vector<detray::geometry::barcode>,
-                           vecmem::edm::type::vector<geometry_id>,
-                           vecmem::edm::type::vector<vector2>>;
+using detector_conditions_description = vecmem::edm::container<
+    detector_conditions_description_interface,
+    vecmem::edm::type::vector<unsigned int>,
+    vecmem::edm::type::vector<detray::geometry::identifier>,
+    vecmem::edm::type::vector<geometry_id>, vecmem::edm::type::vector<vector2>>;
 
 }  // namespace traccc
