@@ -6,7 +6,7 @@
  */
 
 // Local include(s).
-#include "traccc/examples/full_chain_algorithm.hpp"
+#include "traccc/examples/sycl/full_chain_algorithm.hpp"
 
 // Project include(s).
 #include "traccc/sycl/utils/make_magnetic_field.hpp"

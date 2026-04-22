@@ -6,7 +6,7 @@
  */
 
 // Local include(s).
-#include "traccc/examples/full_chain_algorithm.hpp"
+#include "traccc/examples/cpu/full_chain_algorithm.hpp"
 
 namespace traccc {
 

@@ -6,7 +6,7 @@
  */
 
 // Local include(s).
-#include "traccc/examples/full_chain_algorithm.hpp"
+#include "traccc/examples/cuda/full_chain_algorithm.hpp"
 
 // Project include(s).
 #include "traccc/cuda/utils/make_magnetic_field.hpp"
