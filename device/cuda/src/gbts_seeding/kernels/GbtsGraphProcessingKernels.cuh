@@ -744,7 +744,7 @@ inline __device__ float2 estimate_params(float4 sps[3]) {
 
         const float dy = sps[sp_idx].y - y0;
 
-        const float r2_inv = 1.0 / (dx * dx + dy * dy);
+        const float r2_inv = 1.0f / (dx * dx + dy * dy);
 
         const float xn = dx * cosA + dy * sinA;
 
@@ -755,8 +755,8 @@ inline __device__ float2 estimate_params(float4 sps[3]) {
     }
 
     const float du = u[0] - u[1];
-    if (du == 0.0) {
-        return make_float2(0, 0);
+    if (du == 0.0f) {
+        return make_float2(0.0f, 0.0f);
     }
 
     const float A = (v[0] - v[1]) / du;
@@ -764,7 +764,7 @@ inline __device__ float2 estimate_params(float4 sps[3]) {
     const float B = v[1] - A * u[1];
 
     // signed curvature in 1/m
-    const float curv = 1000 * B / sqrtf(1 + A * A);
+    const float curv = 1000.0f * B / sqrtf(1 + A * A);
     const float cot_t = (sps[2].z - sps[1].z) /
                         (sqrtf(sps[2].x * sps[2].x + sps[2].y * sps[2].y) - r0);
     return make_float2(curv, cot_t);
