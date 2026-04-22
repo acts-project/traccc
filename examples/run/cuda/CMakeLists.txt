@@ -14,7 +14,7 @@ find_package( CUDAToolkit REQUIRED )
 # Set up the "throughput applications".
 #
 traccc_add_library( traccc_examples_cuda examples_cuda SHARED
-   "include/traccc/examples/full_chain_algorithm.hpp"
+   "include/traccc/examples/cuda/full_chain_algorithm.hpp"
    "src/full_chain_algorithm.cpp" )
 target_link_libraries( traccc_examples_cuda
    PUBLIC CUDA::cudart vecmem::core vecmem::cuda detray::core detray::detectors

@@ -8,7 +8,7 @@
 # Set up the "throughput applications".
 #
 traccc_add_library( traccc_examples_sycl examples_sycl SHARED
-   "include/traccc/examples/full_chain_algorithm.hpp"
+   "include/traccc/examples/sycl/full_chain_algorithm.hpp"
    "src/full_chain_algorithm.cpp" )
 target_link_libraries( traccc_examples_sycl
    PUBLIC vecmem::core vecmem::sycl detray::core detray::detectors

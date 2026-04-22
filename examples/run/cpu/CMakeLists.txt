@@ -8,7 +8,7 @@
 # Set up the "throughput applications".
 #
 traccc_add_library( traccc_examples_cpu examples_cpu SHARED
-   "include/traccc/examples/full_chain_algorithm.hpp"
+   "include/traccc/examples/cpu/full_chain_algorithm.hpp"
    "src/full_chain_algorithm.cpp" )
 target_link_libraries( traccc_examples_cpu
    PUBLIC vecmem::core detray::core detray::detectors traccc::core

@@ -32,7 +32,7 @@ traccc_add_executable( seeding_example_alpaka "apps/seeding_example_alpaka.cpp"
 # Set up the "throughput applications".
 #
 traccc_add_library( traccc_examples_alpaka examples_alpaka SHARED
-   "include/traccc/examples/full_chain_algorithm.hpp"
+   "include/traccc/examples/alpaka/full_chain_algorithm.hpp"
    "src/full_chain_algorithm.cpp" )
 target_link_libraries( traccc_examples_alpaka
    PUBLIC vecmem::core detray::core detray::detectors
