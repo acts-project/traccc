@@ -49,10 +49,12 @@ __global__ void count_sp_by_layer(
 
         // some volume_ids map one to one with layer others need searching
         if (geo_id.volume() > volumeMapSize) {
+            reducedSP[spIdx].w = -CHAR_MAX - 1;
             continue;  // unconfigured volume
         }
         short begin_or_bin = volumeToLayerMap[geo_id.volume()];
         if (begin_or_bin == SHRT_MAX) {
+            reducedSP[spIdx].w = -CHAR_MAX - 1;
             continue;  // unconfigured volume
         }
         unsigned int layerIdx;
