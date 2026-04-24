@@ -1,7 +1,7 @@
 /**
  * traccc library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -26,7 +26,7 @@ TEST(SYCLBarrier, BarrierAnd) {
     ::sycl::nd_range test_range(::sycl::range<1>(128), ::sycl::range<1>(128));
 
     queue
-        .submit([&, out = out.get()](::sycl::handler &h) {
+        .submit([&, out = out.get()](::sycl::handler& h) {
             h.parallel_for<class BarrierAndTest>(
                 test_range, [=](::sycl::nd_item<1> item) {
                     const traccc::sycl::details::barrier bar{item};
@@ -34,22 +34,22 @@ TEST(SYCLBarrier, BarrierAnd) {
                     bool v;
 
                     v = bar.blockAnd(false);
-                    if (item.get_local_id() == 0) {
+                    if (item.get_local_id()[0] == 0) {
                         out[0] = v;
                     }
 
                     v = bar.blockAnd(true);
-                    if (item.get_local_id() == 0) {
+                    if (item.get_local_id()[0] == 0) {
                         out[1] = v;
                     }
 
-                    v = bar.blockAnd(item.get_local_id() % 2 == 0);
-                    if (item.get_local_id() == 0) {
+                    v = bar.blockAnd(item.get_local_id()[0] % 2 == 0);
+                    if (item.get_local_id()[0] == 0) {
                         out[2] = v;
                     }
 
-                    v = bar.blockAnd(item.get_local_id() < 32);
-                    if (item.get_local_id() == 0) {
+                    v = bar.blockAnd(item.get_local_id()[0] < 32);
+                    if (item.get_local_id()[0] == 0) {
                         out[3] = v;
                     }
                 });
@@ -74,7 +74,7 @@ TEST(SYCLBarrier, BarrierOr) {
     ::sycl::nd_range test_range(::sycl::range<1>(128), ::sycl::range<1>(128));
 
     queue
-        .submit([&, out = out.get()](::sycl::handler &h) {
+        .submit([&, out = out.get()](::sycl::handler& h) {
             h.parallel_for<class BarrierOrTest>(
                 test_range, [=](::sycl::nd_item<1> item) {
                     const traccc::sycl::details::barrier bar{item};
@@ -82,22 +82,22 @@ TEST(SYCLBarrier, BarrierOr) {
                     bool v;
 
                     v = bar.blockOr(false);
-                    if (item.get_local_id() == 0) {
+                    if (item.get_local_id()[0] == 0) {
                         out[0] = v;
                     }
 
                     v = bar.blockOr(true);
-                    if (item.get_local_id() == 0) {
+                    if (item.get_local_id()[0] == 0) {
                         out[1] = v;
                     }
 
-                    v = bar.blockOr(item.get_local_id() % 2 == 0);
-                    if (item.get_local_id() == 0) {
+                    v = bar.blockOr(item.get_local_id()[0] % 2 == 0);
+                    if (item.get_local_id()[0] == 0) {
                         out[2] = v;
                     }
 
-                    v = bar.blockOr(item.get_local_id() < 32);
-                    if (item.get_local_id() == 0) {
+                    v = bar.blockOr(item.get_local_id()[0] < 32);
+                    if (item.get_local_id()[0] == 0) {
                         out[3] = v;
                     }
                 });
@@ -122,7 +122,7 @@ TEST(SYCLBarrier, BarrierCount) {
     ::sycl::nd_range test_range(::sycl::range<1>(128), ::sycl::range<1>(128));
 
     queue
-        .submit([&, out = out.get()](::sycl::handler &h) {
+        .submit([&, out = out.get()](::sycl::handler& h) {
             h.parallel_for<class BarrierCountTest>(
                 test_range, [=](::sycl::nd_item<1> item) {
                     const traccc::sycl::details::barrier bar{item};
@@ -130,22 +130,22 @@ TEST(SYCLBarrier, BarrierCount) {
                     unsigned int v;
 
                     v = bar.blockCount(false);
-                    if (item.get_local_id() == 0) {
+                    if (item.get_local_id()[0] == 0) {
                         out[0] = v;
                     }
 
                     v = bar.blockCount(true);
-                    if (item.get_local_id() == 0) {
+                    if (item.get_local_id()[0] == 0) {
                         out[1] = v;
                     }
 
-                    v = bar.blockCount(item.get_local_id() % 2 == 0);
-                    if (item.get_local_id() == 0) {
+                    v = bar.blockCount(item.get_local_id()[0] % 2 == 0);
+                    if (item.get_local_id()[0] == 0) {
                         out[2] = v;
                     }
 
-                    v = bar.blockCount(item.get_local_id() < 32);
-                    if (item.get_local_id() == 0) {
+                    v = bar.blockCount(item.get_local_id()[0] < 32);
+                    if (item.get_local_id()[0] == 0) {
                         out[3] = v;
                     }
                 });
