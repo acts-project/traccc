@@ -1,7 +1,7 @@
 /**
  * traccc library, part of the ACTS project (R&D line)
  *
- * (c) 2024-2025 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -37,12 +37,12 @@ TEST(SYCLUniqueLock, MassAdditionKernelTryLock) {
                                 ::sycl::range<1>(n_threads));
 
     queue
-        .submit([&, out = out.get(), _lock = lock.get()](::sycl::handler &h) {
+        .submit([&, out = out.get(), _lock = lock.get()](::sycl::handler& h) {
             h.parallel_for<class MassAdditionTryLockTest>(
                 test_range, [=](::sycl::nd_item<1> item) {
                     traccc::device::mutex m(*_lock);
 
-                    if (item.get_local_id() == 0) {
+                    if (item.get_local_id()[0] == 0) {
                         traccc::device::unique_lock lock(m, std::try_to_lock);
 
                         if (!lock.owns_lock()) {
@@ -81,13 +81,13 @@ TEST(SYCLUniqueLock, MassAdditionKernelDeferLock) {
                                 ::sycl::range<1>(n_threads));
 
     queue
-        .submit([&, out = out.get(), _lock = lock.get()](::sycl::handler &h) {
+        .submit([&, out = out.get(), _lock = lock.get()](::sycl::handler& h) {
             h.parallel_for<class MassAdditionDeferLockTest>(
                 test_range, [=](::sycl::nd_item<1> item) {
                     traccc::device::mutex m(*_lock);
                     traccc::device::unique_lock lock(m, std::defer_lock);
 
-                    if (item.get_local_id() == 0) {
+                    if (item.get_local_id()[0] == 0) {
                         lock.lock();
 
                         uint32_t tmp = *out;
@@ -122,12 +122,12 @@ TEST(SYCLUniqueLock, MassAdditionKernelAdoptLock) {
                                 ::sycl::range<1>(n_threads));
 
     queue
-        .submit([&, out = out.get(), _lock = lock.get()](::sycl::handler &h) {
+        .submit([&, out = out.get(), _lock = lock.get()](::sycl::handler& h) {
             h.parallel_for<class MassAdditionAdoptLockTest>(
                 test_range, [=](::sycl::nd_item<1> item) {
                     traccc::device::mutex m(*_lock);
 
-                    if (item.get_local_id() == 0) {
+                    if (item.get_local_id()[0] == 0) {
                         m.lock();
                         traccc::device::unique_lock lock(m, std::adopt_lock);
 

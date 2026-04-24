@@ -1,7 +1,7 @@
 /**
  * traccc library, part of the ACTS project (R&D line)
  *
- * (c) 2024-2025 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -41,7 +41,7 @@ TEST(SYCLMutex, MassAdditionKernel) {
                 test_range, [=](::sycl::nd_item<1> item) {
                     traccc::device::mutex m(*lock);
 
-                    if (item.get_local_id() == 0) {
+                    if (item.get_local_id()[0] == 0) {
                         m.lock();
                         uint32_t tmp = *out;
                         tmp += 1;

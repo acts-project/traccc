@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024-2025 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -66,7 +66,7 @@ TEST(dpl, sort) {
 
     vecmem::device_vector<unsigned int> device_vector(device_buffer);
 
-    oneapi::dpl::sort(oneapi::dpl::execution::dpcpp_default,
+    oneapi::dpl::sort(oneapi::dpl::execution::device_policy{q},
                       device_vector.begin(), device_vector.end());
 
     copy(device_buffer, host_buffer, vecmem::copy::type::device_to_host)
@@ -94,7 +94,7 @@ TEST(dpl, scan) {
 
     vecmem::device_vector<unsigned int> device_vector(device_buffer);
 
-    oneapi::dpl::inclusive_scan(oneapi::dpl::execution::dpcpp_default,
+    oneapi::dpl::inclusive_scan(oneapi::dpl::execution::device_policy{q},
                                 device_vector.begin(), device_vector.end(),
                                 device_vector.begin());
 
@@ -124,7 +124,7 @@ TEST(dpl, fill) {
 
     vecmem::device_vector<unsigned int> device_vector(device_buffer);
 
-    oneapi::dpl::fill(oneapi::dpl::execution::dpcpp_default,
+    oneapi::dpl::fill(oneapi::dpl::execution::device_policy{q},
                       device_vector.begin(), device_vector.end(), 112);
 
     copy(device_buffer, host_buffer, vecmem::copy::type::device_to_host)
