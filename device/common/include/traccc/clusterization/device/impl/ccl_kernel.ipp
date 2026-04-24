@@ -44,12 +44,12 @@ namespace traccc::device {
 ///
 template <device::concepts::barrier barrier_t,
           device::concepts::thread_id1 thread_id_t>
-TRACCC_DEVICE void fast_sv_1(const thread_id_t& thread_id,
-                             vecmem::device_vector<details::index_t>& f,
-                             vecmem::device_vector<details::index_t>& gf,
-                             unsigned char* adjc, details::index_t* adjv,
-                             details::index_t thread_cell_count,
-                             barrier_t& barrier) {
+TRACCC_HOST_DEVICE void fast_sv_1(const thread_id_t& thread_id,
+                                  vecmem::device_vector<details::index_t>& f,
+                                  vecmem::device_vector<details::index_t>& gf,
+                                  unsigned char* adjc, details::index_t* adjv,
+                                  details::index_t thread_cell_count,
+                                  barrier_t& barrier) {
     /*
      * The algorithm finishes if an iteration leaves the arrays unchanged.
      * This varible will be set if a change is made, and dictates if another
@@ -142,7 +142,7 @@ TRACCC_DEVICE void fast_sv_1(const thread_id_t& thread_id,
 
 template <device::concepts::barrier barrier_t,
           device::concepts::thread_id1 thread_id_t>
-TRACCC_DEVICE inline void ccl_core(
+TRACCC_HOST_DEVICE inline void ccl_core(
     const clustering_config& cfg, const thread_id_t& thread_id,
     std::size_t& partition_start, std::size_t& partition_end,
     vecmem::device_vector<details::index_t> f,
@@ -222,7 +222,7 @@ TRACCC_DEVICE inline void ccl_core(
 
 template <device::concepts::barrier barrier_t,
           device::concepts::thread_id1 thread_id_t>
-TRACCC_DEVICE inline void ccl_kernel(
+TRACCC_HOST_DEVICE inline void ccl_kernel(
     const clustering_config cfg, const thread_id_t& thread_id,
     const edm::silicon_cell_collection::const_view& cells_view,
     const detector_design_description::const_view& det_desc_view,

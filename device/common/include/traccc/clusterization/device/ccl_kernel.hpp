@@ -64,7 +64,7 @@ namespace traccc::device {
 /// put into
 template <device::concepts::barrier barrier_t,
           device::concepts::thread_id1 thread_id_t>
-TRACCC_DEVICE inline void ccl_kernel(
+TRACCC_HOST_DEVICE inline void ccl_kernel(
     const clustering_config cfg, const thread_id_t& thread_id,
     const edm::silicon_cell_collection::const_view& cells_view,
     const detector_design_description::const_view& det_descr_view,
