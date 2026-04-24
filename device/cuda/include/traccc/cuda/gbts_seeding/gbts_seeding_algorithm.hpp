@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2025 CERN for the benefit of the ACTS project
+ * (c) 2021-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -37,8 +37,7 @@ namespace traccc::cuda {
 class gbts_seeding_algorithm
     : public algorithm<edm::seed_collection::buffer(
           const edm::spacepoint_collection::const_view&,
-          const edm::measurement_collection<default_algebra>::const_view&
-              measurements)>,
+          const edm::measurement_collection::const_view&)>,
       public messaging {
 
     public:
@@ -59,8 +58,7 @@ class gbts_seeding_algorithm
     ///
     output_type operator()(
         const edm::spacepoint_collection::const_view& spacepoints,
-        const edm::measurement_collection<default_algebra>::const_view&
-            measurements) const;
+        const edm::measurement_collection::const_view& measurements) const;
 
     private:
     gbts_seedfinder_config m_config;

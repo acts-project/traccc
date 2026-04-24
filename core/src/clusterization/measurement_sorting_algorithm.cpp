@@ -20,12 +20,11 @@ measurement_sorting_algorithm::measurement_sorting_algorithm(
 
 measurement_sorting_algorithm::output_type
 measurement_sorting_algorithm::operator()(
-    const edm::measurement_collection<default_algebra>::const_view&
-        measurements_view) const {
+    const edm::measurement_collection::const_view& measurements_view) const {
 
     // Create a device container on top of the view.
-    const edm::measurement_collection<default_algebra>::const_device
-        measurements{measurements_view};
+    const edm::measurement_collection::const_device measurements{
+        measurements_view};
 
     // Create a vector of measurement indices, which would be sorted.
     vecmem::vector<unsigned int> indices(measurements.size(), &(m_mr.get()));
@@ -38,7 +37,7 @@ measurement_sorting_algorithm::operator()(
               });
 
     // Fill an output container with the sorted measurements.
-    edm::measurement_collection<default_algebra>::host result{m_mr.get()};
+    edm::measurement_collection::host result{m_mr.get()};
     for (unsigned int i : indices) {
         result.push_back(measurements.at(i));
     }

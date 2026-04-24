@@ -47,7 +47,7 @@ TEST(algorithms, seq_single_module) {
     det_cond.resize(NMODULES);
     for (std::size_t i = 0; i < NMODULES; ++i) {
         det_cond.module_to_design_id()[i] = static_cast<unsigned int>(i);
-        det_cond.geometry_id()[i] = detray::geometry::barcode{i};
+        det_cond.geometry_id()[i] = detray::geometry::identifier{i};
         det_cond.acts_geometry_id()[i] = i;
         det_cond.measurement_translation()[i] = {0.f, 0.f};
 

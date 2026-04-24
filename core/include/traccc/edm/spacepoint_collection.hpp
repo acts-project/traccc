@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2025 CERN for the benefit of the ACTS project
+ * (c) 2021-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,11 +8,15 @@
 #pragma once
 
 // Local include(s).
-#include "traccc/definitions/primitives.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 
 // VecMem include(s).
 #include <vecmem/edm/container.hpp>
+
+// System include(s).
+#include <array>
+#include <compare>
+#include <limits>
 
 namespace traccc::edm {
 
@@ -71,12 +75,12 @@ class spacepoint : public BASE {
 
     /// Global / 3D position of the spacepoint
     ///
-    /// @return A (non-const) vector of @c traccc::point3 values
+    /// @return A (non-const) vector of @c std::array<float,3> values
     ///
     TRACCC_HOST_DEVICE auto& global() { return BASE::template get<2>(); }
     /// Global / 3D position of the spacepoint
     ///
-    /// @return A (const) vector of @c traccc::point3 values
+    /// @return A (const) vector of @c std::array<float,3> values
     ///
     TRACCC_HOST_DEVICE const auto& global() const {
         return BASE::template get<2>();
@@ -87,7 +91,7 @@ class spacepoint : public BASE {
     /// @note This function must only be used on proxy objects, not on
     ///       containers!
     ///
-    /// @return A (non-const) reference to a @c traccc::scalar value
+    /// @return A (non-const) reference to a @c float value
     ///
     TRACCC_HOST_DEVICE
     auto& x();
@@ -96,7 +100,7 @@ class spacepoint : public BASE {
     /// @note This function must only be used on proxy objects, not on
     ///       containers!
     ///
-    /// @return A (const) reference to a @c traccc::scalar value
+    /// @return A (const) reference to a @c float value
     ///
     TRACCC_HOST_DEVICE
     const auto& x() const;
@@ -106,13 +110,13 @@ class spacepoint : public BASE {
     /// @note This function must only be used on proxy objects, not on
     ///       containers!
     ///
-    /// @return A (non-const) reference to a @c traccc::scalar value
+    /// @return A (non-const) reference to a @c float value
     ///
     TRACCC_HOST_DEVICE
     auto& y();
     /// The Y position of the spacepoint (const)
     ///
-    /// @return A (const) reference to a @c traccc::scalar value
+    /// @return A (const) reference to a @c float value
     ///
     TRACCC_HOST_DEVICE
     const auto& y() const;
@@ -122,7 +126,7 @@ class spacepoint : public BASE {
     /// @note This function must only be used on proxy objects, not on
     ///       containers!
     ///
-    /// @return A (non-const) reference to a @c traccc::scalar value
+    /// @return A (non-const) reference to a @c float value
     ///
     TRACCC_HOST_DEVICE
     auto& z();
@@ -131,19 +135,19 @@ class spacepoint : public BASE {
     /// @note This function must only be used on proxy objects, not on
     ///       containers!
     ///
-    /// @return A (const) reference to a @c traccc::scalar value
+    /// @return A (const) reference to a @c float value
     ///
     TRACCC_HOST_DEVICE
     const auto& z() const;
 
     /// The variation on the spacepoint's Z coordinate (non-const)
     ///
-    /// @return A (non-const) vector of @c traccc::scalar values
+    /// @return A (non-const) vector of @c float values
     ///
     TRACCC_HOST_DEVICE auto& z_variance() { return BASE::template get<3>(); }
     /// The variation on the spacepoint's Z coordinate (const)
     ///
-    /// @return A (const) vector of @c traccc::scalar values
+    /// @return A (const) vector of @c float values
     ///
     TRACCC_HOST_DEVICE const auto& z_variance() const {
         return BASE::template get<3>();
@@ -154,20 +158,20 @@ class spacepoint : public BASE {
     /// @note This function must only be used on proxy objects, not on
     ///       containers!
     ///
-    /// @return A @c traccc::scalar value
+    /// @return A @c float value
     ///
     TRACCC_HOST_DEVICE auto radius() const;
 
     /// The variation on the spacepoint radious (non-const)
     ///
-    /// @return A (non-const) vector of @c traccc::scalar values
+    /// @return A (non-const) vector of @c float values
     ///
     TRACCC_HOST_DEVICE auto& radius_variance() {
         return BASE::template get<4>();
     }
     /// The variation on the spacepoint radious (const)
     ///
-    /// @return A (non-const) vector of @c traccc::scalar values
+    /// @return A (non-const) vector of @c float values
     ///
     TRACCC_HOST_DEVICE const auto& radius_variance() const {
         return BASE::template get<4>();
@@ -178,7 +182,7 @@ class spacepoint : public BASE {
     /// @note This function must only be used on proxy objects, not on
     ///       containers!
     ///
-    /// @return A @c traccc::scalar value
+    /// @return A @c float value
     ///
     TRACCC_HOST_DEVICE auto phi() const;
 
@@ -216,10 +220,18 @@ class spacepoint : public BASE {
 };  // class spacepoint
 
 /// SoA container describing reconstructed spacepoints
-using spacepoint_collection = vecmem::edm::container<
-    spacepoint, vecmem::edm::type::vector<unsigned int>,
-    vecmem::edm::type::vector<unsigned int>, vecmem::edm::type::vector<point3>,
-    vecmem::edm::type::vector<scalar>, vecmem::edm::type::vector<scalar> >;
+using spacepoint_collection =
+    vecmem::edm::container<spacepoint,
+                           // measurement_index_1
+                           vecmem::edm::type::vector<unsigned int>,
+                           // measurement_index_2
+                           vecmem::edm::type::vector<unsigned int>,
+                           // global
+                           vecmem::edm::type::vector<std::array<float, 3u>>,
+                           // z_variance
+                           vecmem::edm::type::vector<float>,
+                           // radius_variance
+                           vecmem::edm::type::vector<float>>;
 
 }  // namespace traccc::edm
 

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -19,22 +19,20 @@ namespace traccc::alpaka {
 namespace kernels {
 
 /// Alpaka kernel for running @c traccc::device::estimate_track_params
-template <typename algebra_t, typename bfield_t>
+template <typename bfield_t>
 struct estimate_track_params {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, const track_params_estimation_config config,
-        typename edm::measurement_collection<algebra_t>::const_view
-            measurements,
+        typename edm::measurement_collection::const_view measurements,
         edm::spacepoint_collection::const_view spacepoints,
         edm::seed_collection::const_view seeds, const bfield_t bfield,
         bound_track_parameters_collection_types::view params) const {
         auto const globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0u];
 
-        device::estimate_track_params<algebra_t>(globalThreadIdx, config,
-                                                 measurements, spacepoints,
-                                                 seeds, bfield, params);
+        device::estimate_track_params(globalThreadIdx, config, measurements,
+                                      spacepoints, seeds, bfield, params);
     }
 };  // struct estimate_track_params
 
@@ -58,8 +56,7 @@ void seed_parameter_estimation_algorithm::estimate_seed_params_kernel(
         [&]<typename bfield_view_t>(const bfield_view_t& bfield) {
             ::alpaka::exec<Acc>(details::get_queue(queue()),
                                 makeWorkDiv<Acc>(n_blocks, n_threads),
-                                kernels::estimate_track_params<default_algebra,
-                                                               bfield_view_t>{},
+                                kernels::estimate_track_params<bfield_view_t>{},
                                 payload.config, payload.measurements,
                                 payload.spacepoints, payload.seeds, bfield,
                                 payload.params);

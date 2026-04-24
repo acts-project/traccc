@@ -17,7 +17,7 @@
 #include "traccc/utils/messaging.hpp"
 
 // Detray include(s).
-#include <detray/geometry/barcode.hpp>
+#include <detray/geometry/identifier.hpp>
 
 namespace traccc::device {
 
@@ -48,7 +48,7 @@ struct gbts_consts {
     static constexpr unsigned short max_cca_iter = 15;
     // shared memory allocation sizes
     static constexpr unsigned short node_buffer_length = 128;
-    static constexpr unsigned short shared_state_buffer_size = 608;
+    static constexpr unsigned short live_path_buffer = 1024;
 
     // access into output graph
     static constexpr char node1 = 0;
@@ -61,7 +61,7 @@ struct gbts_consts {
 
 namespace traccc {
 
-struct gbts_algo_params {
+struct gbts_graph_building_params {
 
     // edge making cuts
     float min_delta_phi = 0.015f;
@@ -73,13 +73,14 @@ struct gbts_algo_params {
 
     float min_z0 = -160.0f;
     float max_z0 = 160.0f;
-    float maxOuterRadius = 550.0f;
-    float cut_zMinU = min_z0 - maxOuterRadius * 45;
-    float cut_zMaxU = max_z0 + maxOuterRadius * 45;  // how to get ROI dzdr
+    float maxOuterRadius = 350.0f;
+    // how to get ROI dzdr
+    float cut_zMinU = min_z0 - maxOuterRadius * 45.0f;
+    float cut_zMaxU = max_z0 + maxOuterRadius * 45.0f;
 
     float max_Kappa = 3.75e-4f;
-    float low_Kappa_d0 = 0.0f;   // used to be 0.2f
-    float high_Kappa_d0 = 0.0f;  // used to be 1.0f
+    float low_Kappa_d0 = 0.00f;
+    float high_Kappa_d0 = 0.0f;
 
     // tau prediction cut
     float tMin_slope = 6.7f;
@@ -96,11 +97,39 @@ struct gbts_algo_params {
     float cut_tau_ratio_max = 0.01f;
 };
 
+struct gbts_seed_extraction_params {
+    // for 900 MeV track at eta=0
+    float sigmaMS = 0.016f;
+    // 2.5% per layer
+    float radLen = 0.025f;
+
+    float sigma_x = 0.08f;
+    float sigma_y = 0.25f;
+
+    float weight_x = 0.5f;
+    float weight_y = 0.5f;
+
+    float maxDChi2_x = 5.0f;
+    float maxDChi2_y = 6.0f;
+    // controls if seeds of shorter lengths
+    // can win bidding against longer seeds
+    float add_hit = 14.0f;
+    // seed quality is an int scaled up from a float
+    // max qual = add_hit*max_length*qual_scale
+    float qual_scale =
+        0.01f * static_cast<float>(INT_MAX) /
+        (add_hit *
+         static_cast<float>(traccc::device::gbts_consts::max_cca_iter));
+
+    float inv_max_curvature = 900.0f;
+    float max_z0 = 160.0f;
+};
+
 struct gbts_seedfinder_config {
     bool setLinkingScheme(
         const std::vector<std::pair<int, std::vector<int>>>& binTables,
         const device::gbts_layerInfo layerInfo,
-        std::vector<std::pair<uint64_t, short>>& detrayBarcodeBinning,
+        std::vector<std::pair<uint64_t, short>>& detrayGeoIDBinning,
         float minPt, std::unique_ptr<const traccc::Logger> logger);
 
     // layer linking and geometry
@@ -112,7 +141,9 @@ struct gbts_seedfinder_config {
     std::vector<std::array<unsigned int, 2>> surfaceToLayerMap{};
 
     // tuned for 900 MeV pT cut and scaled by input minPt
-    gbts_algo_params algo_params{};
+    gbts_graph_building_params graph_building_params{};
+
+    gbts_seed_extraction_params seed_extraction_params{};
 
     // node making bin counts
     unsigned int n_eta_bins = 0;  // calculated from input layerInfo

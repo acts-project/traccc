@@ -20,7 +20,7 @@ clusterization_algorithm::clusterization_algorithm(
       m_gf_backup{m_config.backup_size(), mr.main},
       m_backup_mutex{vecmem::make_unique_alloc<unsigned int>(mr.main)},
       m_adjc_backup{m_config.backup_size(), mr.main},
-      m_adjv_backup{m_config.backup_size() * 8, mr.main} {
+      m_adjv_backup{m_config.backup_size() * 4, mr.main} {
 
     copy().setup(m_f_backup)->wait();
     copy().setup(m_gf_backup)->wait();
@@ -32,8 +32,7 @@ clusterization_algorithm::clusterization_algorithm(
         ->wait();
 }
 
-edm::measurement_collection<default_algebra>::buffer
-clusterization_algorithm::operator()(
+edm::measurement_collection::buffer clusterization_algorithm::operator()(
     const edm::silicon_cell_collection::const_view& cells,
     const detector_design_description::const_view& det_descr,
     const detector_conditions_description::const_view& det_cond) const {
@@ -42,8 +41,7 @@ clusterization_algorithm::operator()(
                             clustering_discard_disjoint_set{});
 }
 
-edm::measurement_collection<default_algebra>::buffer
-clusterization_algorithm::operator()(
+edm::measurement_collection::buffer clusterization_algorithm::operator()(
     const edm::silicon_cell_collection::const_view& cells,
     const detector_design_description::const_view& det_descr,
     const detector_conditions_description::const_view& det_cond,
@@ -56,7 +54,7 @@ clusterization_algorithm::operator()(
     return std::move(res);
 }
 
-std::pair<edm::measurement_collection<default_algebra>::buffer,
+std::pair<edm::measurement_collection::buffer,
           edm::silicon_cluster_collection::buffer>
 clusterization_algorithm::operator()(
     const edm::silicon_cell_collection::const_view& cells,
@@ -71,7 +69,7 @@ clusterization_algorithm::operator()(
     return {std::move(res), std::move(*djs)};
 }
 
-std::pair<edm::measurement_collection<default_algebra>::buffer,
+std::pair<edm::measurement_collection::buffer,
           std::optional<edm::silicon_cluster_collection::buffer>>
 clusterization_algorithm::execute_impl(
     const edm::silicon_cell_collection::const_view& cells,
@@ -96,7 +94,7 @@ clusterization_algorithm::execute_impl(
     // If there are no cells, return right away.
     if (num_cells == 0) {
         if (keep_disjoint_set) {
-            return {edm::measurement_collection<default_algebra>::buffer{},
+            return {edm::measurement_collection::buffer{},
                     edm::silicon_cluster_collection::buffer{}};
         } else {
             return {};
@@ -104,7 +102,7 @@ clusterization_algorithm::execute_impl(
     }
 
     // Create the result object, overestimating the number of measurements.
-    edm::measurement_collection<default_algebra>::buffer measurements{
+    edm::measurement_collection::buffer measurements{
         num_cells, mr().main, vecmem::data::buffer_type::resizable};
     copy().setup(measurements)->ignore();
 
@@ -131,16 +129,15 @@ clusterization_algorithm::execute_impl(
                 m_adjv_backup, m_backup_mutex.get(), disjoint_set,
                 cluster_sizes});
 
-    std::optional<traccc::edm::silicon_cluster_collection::buffer>
-        cluster_data = std::nullopt;
+    std::optional<edm::silicon_cluster_collection::buffer> cluster_data =
+        std::nullopt;
 
     // Create the cluster data if requested.
     if (keep_disjoint_set) {
 
         // Get the number of reconstructed measurements, in an asynchronous way
         // if possible.
-        edm::measurement_collection<default_algebra>::buffer::size_type
-            num_measurements = 0u;
+        edm::measurement_collection::buffer::size_type num_measurements = 0u;
         if (mr().host) {
             const vecmem::async_size size =
                 copy().get_size(measurements, *(mr().host));

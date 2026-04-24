@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -52,7 +52,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
      * Initialize all of the device vectors from their vecmem views.
      */
     detector_t det(payload.det_data);
-    edm::measurement_collection<default_algebra>::const_device measurements(
+    edm::measurement_collection::const_device measurements(
         payload.measurements_view);
     bound_track_parameters_collection_types::const_device in_params(
         payload.in_params_view);
@@ -102,7 +102,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     if (in_param_id < payload.n_in_params &&
         in_params_liveness.at(in_param_id) > 0u) {
         /*
-         * Get the barcode of this thread's parameters, then find the first
+         * Get the geo ID of this thread's parameters, then find the first
          * measurement that matches it.
          */
         const unsigned int sf_idx{

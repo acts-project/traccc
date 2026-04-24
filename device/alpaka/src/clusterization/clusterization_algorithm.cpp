@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024-2025 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -39,7 +39,7 @@ struct ccl_kernel {
         uint32_t* backup_mutex_ptr,
         vecmem::data::vector_view<unsigned int> disjoint_set_view,
         vecmem::data::vector_view<unsigned int> cluster_size_view,
-        edm::measurement_collection<default_algebra>::view measurements_view,
+        edm::measurement_collection::view measurements_view,
         vecmem::data::vector_view<unsigned int> cell_links) const {
 
         details::thread_id1 thread_id(acc);

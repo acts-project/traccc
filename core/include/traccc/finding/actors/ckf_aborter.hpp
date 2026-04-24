@@ -21,7 +21,7 @@
 namespace traccc {
 
 /// Aborter triggered when the next surface is reached
-struct ckf_aborter : detray::actor {
+struct ckf_aborter : detray::base_actor {
     struct state {
         // minimal step length to prevent from staying on the same surface
         scalar min_step_length = 0.5f;
@@ -54,8 +54,9 @@ struct ckf_aborter : detray::actor {
             abrt_state.success = true;
             abrt_state.path_from_surface = 0.f;
 
-            TRACCC_VERBOSE_HOST_DEVICE("-> Found sensitive surface: %d",
-                                       navigation.barcode().index());
+            TRACCC_VERBOSE_HOST_DEVICE(
+                "-> Found sensitive surface: %d",
+                navigation.geometry_identifier().index());
         }
 
         if (abrt_state.count > abrt_state.max_count) {

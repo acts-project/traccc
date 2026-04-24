@@ -7,21 +7,8 @@
 # Project include(s).
 include( traccc-compiler-options-cpp )
 
-# Create the common library.
-add_library(traccc_examples_common STATIC
-   "common/make_magnetic_field.hpp"
-   "common/make_magnetic_field.cpp"
-   "common/print_fitted_tracks_statistics.hpp"
-   "common/print_fitted_tracks_statistics.cpp"
-   "common/throughput_mt.hpp"
-   "common/throughput_mt.ipp"
-   "common/throughput_st.hpp"
-   "common/throughput_st.ipp")
-target_link_libraries(traccc_examples_common
-   PUBLIC traccc::core traccc::options
-   PRIVATE traccc::io)
-
-# Add all the subdirectories that can be built.
+# # Add all the subdirectories that can be built.
+add_subdirectory(common)
 add_subdirectory(cpu)
 
 if (TRACCC_BUILD_CUDA)

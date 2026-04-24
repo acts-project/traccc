@@ -38,7 +38,7 @@ class throughput : public interface {
     std::size_t cold_run_events = 10;
 
     /// Enable or disable the randomization of event processing
-    bool deterministic_event_order = false;
+    bool deterministic_event_order = true;
     /// Set the random event processing seed
     unsigned int random_seed = 0;
 

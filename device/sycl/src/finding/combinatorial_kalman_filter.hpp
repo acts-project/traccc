@@ -20,17 +20,15 @@
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/track_container.hpp"
 #include "traccc/finding/actors/ckf_aborter.hpp"
-#include "traccc/finding/actors/interaction_register.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
-#include "traccc/finding/device/apply_interaction.hpp"
-#include "traccc/finding/device/barcode_surface_comparator.hpp"
 #include "traccc/finding/device/build_tracks.hpp"
 #include "traccc/finding/device/fill_finding_duplicate_removal_sort_keys.hpp"
 #include "traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
 #include "traccc/finding/device/find_tracks.hpp"
 #include "traccc/finding/device/gather_best_tips_per_measurement.hpp"
 #include "traccc/finding/device/gather_measurement_votes.hpp"
+#include "traccc/finding/device/geo_id_surface_comparator.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
 #include "traccc/finding/device/remove_duplicates.hpp"
 #include "traccc/finding/device/update_tip_length_buffer.hpp"
@@ -48,8 +46,6 @@
 
 namespace traccc::sycl::details {
 namespace kernels {
-template <typename T>
-struct apply_interaction {};
 template <typename T>
 struct find_tracks {};
 template <typename T>
@@ -98,14 +94,12 @@ template <typename kernel_t, typename detector_t, typename bfield_t>
 edm::track_container<typename detector_t::algebra_type>::buffer
 combinatorial_kalman_filter(
     const typename detector_t::const_view_type& det, const bfield_t& field,
-    const typename edm::measurement_collection<
-        typename detector_t::algebra_type>::const_view& measurements_view,
+    const edm::measurement_collection::const_view& measurements_view,
     const bound_track_parameters_collection_types::const_view& seeds,
     const finding_config& config, const memory_resource& mr, vecmem::copy& copy,
     ::sycl::queue& queue) {
 
-    const typename edm::measurement_collection<
-        typename detector_t::algebra_type>::const_device measurements{
+    const edm::measurement_collection::const_device measurements{
         measurements_view};
 
     assert(config.min_step_length_for_next_surface >
@@ -114,7 +108,7 @@ combinatorial_kalman_filter(
            "Min step length for the next surface should be higher than the "
            "overstep tolerance");
     assert(is_contiguous_on<
-           vecmem::device_vector<const detray::geometry::barcode>>(
+           vecmem::device_vector<const detray::geometry::identifier>>(
         device::identity_projector{}, mr.main, copy, queue,
         measurements_view.template get<6>()));
 
@@ -145,7 +139,7 @@ combinatorial_kalman_filter(
         // is), the end() function cannot be used in host code.
         measurements.surface_link().begin() + n_measurements,
         device_det.surfaces().begin(), device_det.surfaces().end(),
-        measurement_ranges.begin(), device::barcode_surface_comparator{});
+        measurement_ranges.begin(), device::geo_id_surface_comparator{});
     queue.wait_and_throw();
 
     const unsigned int n_seeds = copy.get_size(seeds);
@@ -228,26 +222,7 @@ combinatorial_kalman_filter(
          step++) {
 
         /*****************************************************************
-         * Kernel2: Apply material interaction
-         ****************************************************************/
-
-        queue
-            .submit([&](::sycl::handler& h) {
-                h.parallel_for<kernels::apply_interaction<kernel_t>>(
-                    calculate1DimNdRange(n_in_params, 64),
-                    [config, det, n_in_params,
-                     in_params = vecmem::get_data(in_params_buffer),
-                     param_liveness = vecmem::get_data(param_liveness_buffer)](
-                        ::sycl::nd_item<1> item) {
-                        device::apply_interaction<detector_t>(
-                            details::global_index(item), config,
-                            {det, n_in_params, in_params, param_liveness});
-                    });
-            })
-            .wait_and_throw();
-
-        /*****************************************************************
-         * Kernel3: Find valid tracks
+         * Kernel2: Find valid tracks
          *****************************************************************/
 
         unsigned int n_candidates = 0;
@@ -501,7 +476,7 @@ combinatorial_kalman_filter(
 
         if (n_candidates > 0) {
             /*****************************************************************
-             * Kernel4: Get key and value for parameter sorting
+             * Kernel3: Get key and value for parameter sorting
              *****************************************************************/
 
             vecmem::data::vector_buffer<unsigned int> param_ids_buffer(
@@ -545,7 +520,7 @@ combinatorial_kalman_filter(
             }
 
             /*****************************************************************
-             * Kernel5: Propagate to the next surface
+             * Kernel4: Propagate to the next surface
              *****************************************************************/
 
             {
@@ -605,7 +580,7 @@ combinatorial_kalman_filter(
     }
 
     /*****************************************************************
-     * Kernel6: Build tracks
+     * Kernel5: Build tracks
      *****************************************************************/
 
     // Get the number of tips

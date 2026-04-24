@@ -22,8 +22,8 @@ TRACCC_HOST_DEVICE inline void build_tracks(
     const global_index_t globalIndex, bool run_mbf,
     const build_tracks_payload& payload) {
 
-    const edm::measurement_collection<default_algebra>::const_device
-        measurements(payload.tracks_view.measurements);
+    const edm::measurement_collection::const_device measurements(
+        payload.tracks_view.measurements);
 
     const bound_track_parameters_collection_types::const_device seeds(
         payload.seeds_view);

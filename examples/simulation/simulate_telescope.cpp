@@ -25,7 +25,7 @@
 // detray include(s).
 #include <detray/geometry/mask.hpp>
 #include <detray/geometry/shapes/rectangle2D.hpp>
-#include <detray/materials/material.hpp>
+#include <detray/material/material.hpp>
 #include <detray/test/common/build_telescope_detector.hpp>
 #include <detray/tracks/ray.hpp>
 

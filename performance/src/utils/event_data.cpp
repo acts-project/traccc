@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024-2025 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -144,7 +144,7 @@ void event_data::setup_csv(bool use_acts_geom_source, const host_detector* det,
                       const typename detector_traits_t::host& d) {
                 for (const auto& surface_desc : d.surfaces()) {
                     acts_to_detray_id[surface_desc.source] =
-                        surface_desc.barcode().value();
+                        surface_desc.identifier().value();
                 }
             });
     }
@@ -288,7 +288,7 @@ void event_data::setup_csv(bool use_acts_geom_source, const host_detector* det,
 void event_data::fill_cca_result(
     const edm::silicon_cell_collection::host& cells,
     const edm::silicon_cluster_collection::host& cca_clusters,
-    const edm::measurement_collection<default_algebra>::host& cca_measurements,
+    const edm::measurement_collection::host& cca_measurements,
     const detector_conditions_description::host& det_cond) {
 
     const std::size_t n_cca_clusters = cca_measurements.size();

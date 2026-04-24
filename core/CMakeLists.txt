@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2025 CERN for the benefit of the ACTS project
+# (c) 2021-2026 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -32,6 +32,8 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/edm/silicon_cluster_collection.hpp"
   "include/traccc/edm/spacepoint_collection.hpp"
   "include/traccc/edm/impl/spacepoint_collection.ipp"
+  "include/traccc/edm/spacepoint_helpers.hpp"
+  "include/traccc/edm/impl/spacepoint_helpers.ipp"
   "include/traccc/edm/seed_collection.hpp"
   "include/traccc/edm/impl/seed_collection.ipp"
   "include/traccc/edm/track_state_collection.hpp"
@@ -59,6 +61,8 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/geometry/detector_conditions_description.hpp"
   # Utilities.
   "include/traccc/utils/algorithm.hpp"
+  "include/traccc/utils/detray_conversion.hpp"
+  "include/traccc/utils/impl/detray_conversion.ipp"
   "include/traccc/utils/type_traits.hpp"
   "include/traccc/utils/memory_resource.hpp"
   "include/traccc/utils/seed_generator.hpp"
@@ -83,7 +87,6 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/finding/candidate_link.hpp"
   "include/traccc/finding/finding_config.hpp"
   "include/traccc/finding/actors/ckf_aborter.hpp"
-  "include/traccc/finding/actors/interaction_register.hpp"
   "include/traccc/finding/details/combinatorial_kalman_filter_types.hpp"
   "include/traccc/finding/details/combinatorial_kalman_filter.hpp"
   "include/traccc/finding/combinatorial_kalman_filter_algorithm.hpp"

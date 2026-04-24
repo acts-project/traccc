@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024-2025 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -12,13 +12,13 @@
 #include "traccc/definitions/track_parametrization.hpp"
 
 // Detray include(s).
-#include <detray/geometry/barcode.hpp>
+#include <detray/geometry/identifier.hpp>
 
 namespace traccc::io::csv {
 
 void make_measurement_edm(
     const traccc::io::csv::measurement& csv_meas,
-    edm::measurement_collection<default_algebra>::host::proxy_type& meas,
+    edm::measurement_collection::host::proxy_type& meas,
     const std::map<geometry_id, geometry_id>* acts_to_detray_id,
     const traccc::detector_design_description::host* det_desc,
     const std::map<geometry_id, std::size_t>*
@@ -54,18 +54,19 @@ void make_measurement_edm(
     meas.time() = csv_meas.time;
 
     if (acts_to_detray_id) {
-        meas.surface_link() = detray::geometry::barcode{
+        meas.surface_link() = detray::geometry::identifier{
             acts_to_detray_id->at(csv_meas.geometry_id)};
     } else {
-        meas.surface_link() = detray::geometry::barcode{csv_meas.geometry_id};
+        meas.surface_link() =
+            detray::geometry::identifier{csv_meas.geometry_id};
     }
     if (det_desc != nullptr) {
         std::size_t dd_idx = geometry_id_to_detector_description_index->at(
             meas.surface_link().value());
         meas.dimensions() = det_desc->dimensions().at(dd_idx);
-        meas.subspace() = det_desc->subspace().at(dd_idx);
+        meas.set_subspace(det_desc->subspace().at(dd_idx));
     } else {
-        meas.subspace() = indices;
+        meas.set_subspace(indices);
     }
 }
 

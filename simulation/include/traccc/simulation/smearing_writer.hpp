@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -15,9 +15,11 @@
 #include "traccc/io/csv/particle.hpp"
 #include "traccc/io/utils.hpp"
 #include "traccc/simulation/measurement_smearer.hpp"
+#include "traccc/utils/logging.hpp"
 #include "traccc/utils/particle.hpp"
 
 // Detray core include(s).
+#include <detray/propagator/actors/parameter_updater.hpp>
 #include <detray/propagator/base_actor.hpp>
 #include <detray/utils/concepts.hpp>
 
@@ -32,7 +34,7 @@
 namespace traccc {
 
 template <typename smearer_t>
-struct smearing_writer : detray::actor {
+struct smearing_writer : detray::base_actor {
 
     using algebra_type = typename smearer_t::algebra_type;
     using scalar_type = detray::dscalar<algebra_type>;
@@ -105,48 +107,46 @@ struct smearing_writer : detray::actor {
 
         template <typename mask_group_t, typename index_range_t>
         inline void operator()(
-            const mask_group_t& mask_group, const index_range_t& index,
+            const mask_group_t& /*mask_group*/, const index_range_t& /*index*/,
             const traccc::bound_track_parameters<algebra_type>& bound_params,
             smearer_t& smearer, io::csv::measurement& iomeas) const {
+
             using mask_t = typename mask_group_t::value_type;
-
-            mask_t mask;
-            if constexpr (detray::concepts::interval<index_range_t>) {
-                // The measurement smearer only needs to deduce the mask type
-                mask = mask_group[index.lower()];
-            } else {
-                mask = mask_group[index];
-            }
-
-            smearer(mask, smearer.get_offset(), bound_params, iomeas);
+            smearer.template operator()<mask_t>(smearer.get_offset(),
+                                                bound_params, iomeas);
         }
     };
 
     template <typename propagator_state_t>
-    void operator()(state& writer_state,
-                    propagator_state_t& propagation) const {
+    void operator()(
+        state& writer_state, propagator_state_t& propagation,
+        const detray::actor::parameter_transporter_result<algebra_type>& res)
+        const {
 
         auto& navigation = propagation.navigation();
-        auto& stepping = propagation.stepping();
 
         // triggered only for sensitive surfaces
-        if (navigation.is_on_sensitive()) {
+        if (res.status <= detray::actor::status::e_success &&
+            navigation.is_on_sensitive()) {
+            const auto sf = navigation.current_surface();
+
+            // Get the free param after the random scatterer update
+            const auto& bound_params = res.destination_params();
+            const auto free_param =
+                sf.bound_to_free_vector(propagation.context(), bound_params);
+
+            const auto pos = free_param.pos();
+            const auto mom = free_param.mom(
+                propagation.stepping().particle_hypothesis().charge());
 
             // Write hits
             io::csv::hit hit;
-
-            const auto track = stepping();
-            const auto pos = track.pos();
-            const auto mom = track.mom(stepping.particle_hypothesis().charge());
-
-            const auto sf = navigation.current_surface();
-
             hit.particle_id = writer_state.particle_id;
-            hit.geometry_id = sf.barcode().value();
+            hit.geometry_id = sf.identifier().value();
             hit.tx = static_cast<float>(pos[0]);
             hit.ty = static_cast<float>(pos[1]);
             hit.tz = static_cast<float>(pos[2]);
-            hit.tt = static_cast<float>(track.time());
+            hit.tt = static_cast<float>(free_param.time());
             hit.tpx = static_cast<float>(mom[0]);
             hit.tpy = static_cast<float>(mom[1]);
             hit.tpz = static_cast<float>(mom[2]);
@@ -155,7 +155,10 @@ struct smearing_writer : detray::actor {
 
             // Write measurements
             io::csv::measurement meas;
-            const auto bound_params = stepping.bound_params();
+
+            assert(sf.identifier() == bound_params.surface_link());
+
+            TRACCC_DEBUG_HOST("Actor: Writing truth param.:\n" << bound_params);
 
             meas.measurement_id = writer_state.m_hit_count;
             meas.geometry_id = hit.geometry_id;

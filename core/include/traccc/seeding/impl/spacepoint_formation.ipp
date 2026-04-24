@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024-2025 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -9,6 +9,7 @@
 
 // Project include(s).
 #include "traccc/definitions/primitives.hpp"
+#include "traccc/edm/measurement_helpers.hpp"
 
 // Detray include(s).
 #include <detray/geometry/tracking_surface.hpp>
@@ -31,12 +32,16 @@ TRACCC_HOST_DEVICE inline void fill_pixel_spacepoint(
 
     // Get the global position of this silicon pixel measurement.
     const detray::tracking_surface sf{det, meas.surface_link()};
-    const point3 global = sf.local_to_global(gctx, meas.local_position(), {});
+    const detray::dpoint3D<typename detector_t::algebra_type> global =
+        sf.local_to_global(
+            gctx,
+            edm::get_measurement_local<typename detector_t::algebra_type>(meas),
+            {});
 
     // Fill the spacepoint with the global position and the measurement.
-    sp.x() = global[0];
-    sp.y() = global[1];
-    sp.z() = global[2];
+    sp.x() = static_cast<float>(getter::element(global, 0u));
+    sp.y() = static_cast<float>(getter::element(global, 1u));
+    sp.z() = static_cast<float>(getter::element(global, 2u));
     sp.radius_variance() = 0.f;
     sp.z_variance() = 0.f;
 }

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2025 CERN for the benefit of the ACTS project
+ * (c) 2021-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -12,6 +12,7 @@
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/seed_collection.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
+#include "traccc/edm/spacepoint_helpers.hpp"
 #include "traccc/edm/track_parameters.hpp"
 
 // System include(s).
@@ -46,8 +47,7 @@ inline TRACCC_HOST_DEVICE vector2 uv_transform(const scalar& x,
 template <typename T>
 inline TRACCC_HOST_DEVICE void seed_to_bound_param_vector(
     bound_track_parameters<>& params,
-    const edm::measurement_collection<default_algebra>::const_device&
-        measurements,
+    const edm::measurement_collection::const_device& measurements,
     const edm::spacepoint_collection::const_device& spacepoints,
     const edm::seed<T>& seed, const vector3& bfield) {
 
@@ -58,8 +58,10 @@ inline TRACCC_HOST_DEVICE void seed_to_bound_param_vector(
     const edm::spacepoint_collection::const_device::const_proxy_type spT =
         spacepoints.at(seed.top_index());
 
-    std::array<vector3, 3> sp_global_positions{spB.global(), spM.global(),
-                                               spT.global()};
+    std::array<vector3, 3> sp_global_positions{
+        edm::get_spacepoint_global<default_algebra>(spB),
+        edm::get_spacepoint_global<default_algebra>(spM),
+        edm::get_spacepoint_global<default_algebra>(spT)};
 
     // Define a new coordinate frame with its origin at the bottom space
     // point, z axis long the magnetic field direction and y axis

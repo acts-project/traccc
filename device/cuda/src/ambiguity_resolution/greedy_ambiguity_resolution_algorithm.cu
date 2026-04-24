@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2025 CERN for the benefit of the ACTS project
+ * (c) 2025-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -85,8 +85,8 @@ greedy_ambiguity_resolution_algorithm::operator()(
     const edm::track_container<default_algebra>::const_view& tracks_view)
     const {
 
-    const edm::measurement_collection<default_algebra>::const_device
-        measurements(tracks_view.measurements);
+    const edm::measurement_collection::const_device measurements(
+        tracks_view.measurements);
 
     auto n_meas_total = m_copy.get().get_size(tracks_view.measurements);
 
@@ -429,6 +429,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     int terminate = 0;
     vecmem::unique_alloc_ptr<int> terminate_device =
         vecmem::make_unique_alloc<int>(m_mr.main);
+    cudaMemsetAsync(terminate_device.get(), 0, sizeof(int), stream);
     auto max_shared = thrust::max_element(thrust::device, n_shared_buffer.ptr(),
                                           n_shared_buffer.ptr() + n_tracks);
 
@@ -437,7 +438,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     vecmem::unique_alloc_ptr<unsigned int> max_shared_device =
         vecmem::make_unique_alloc<unsigned int>(m_mr.main);
     cudaMemcpyAsync(max_shared_device.get(), max_shared, sizeof(unsigned int),
-                    cudaMemcpyHostToDevice, stream);
+                    cudaMemcpyDeviceToDevice, stream);
 
     // The number of tracks whose number of share measurements is updated
     vecmem::unique_alloc_ptr<unsigned int> n_updated_tracks_device =
@@ -485,7 +486,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     m_copy.get().setup(block_offsets_buffer)->ignore();
     vecmem::data::vector_buffer<int> scanned_block_offsets_buffer{nBlocks_scan,
                                                                   m_mr.main};
-    m_copy.get().setup(block_offsets_buffer)->ignore();
+    m_copy.get().setup(scanned_block_offsets_buffer)->ignore();
 
     // Start the iteration
     while (!terminate && n_accepted > 0) {
@@ -667,6 +668,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                         cudaMemcpyDeviceToHost, stream);
         cudaMemcpyAsync(&n_accepted, n_accepted_device.get(),
                         sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
+        m_stream.get().synchronize();
     }
 
     cudaMemcpyAsync(&n_accepted, n_accepted_device.get(), sizeof(unsigned int),
