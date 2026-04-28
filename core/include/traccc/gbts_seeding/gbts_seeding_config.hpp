@@ -149,7 +149,7 @@ struct gbts_seedfinder_config {
     unsigned int n_eta_bins = 0;  // calculated from input layerInfo
     unsigned int n_phi_bins = 128;
     // graph making maxiums
-    unsigned char max_num_neighbours = 10;
+    unsigned int max_num_neighbours = 10;
     // graph extraction cuts
     int minLevel = 3;  // equivlent to a cut of #seed edges or #spacepoints-1
 
