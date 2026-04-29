@@ -22,7 +22,8 @@ usage() {
    echo ""
    echo "Basic options:"
    echo "  -x <executable>      Selects the executable to use"
-   echo "  -i <inputDir>        Selects the input directory with all files"
+   echo "  -i <inputDir>        Selects the input directory with config files"
+   echo "  -f <eventFilesDir>   Selects the input directory for event files"
    echo "  -m <minThreads>      Minimum number of threads to test"
    echo "  -t <maxThreads>      Maximum number of threads to test"
    echo "  -s <threadStep>      Steps to increase the thread count by"
@@ -37,13 +38,15 @@ usage() {
 # Parse the command line arguments.
 TRACCC_EXECUTABLE=${TRACCC_EXECUTABLE:-"traccc_throughput_mt"}
 TRACCC_INPUT_DIR=${TRACCC_INPUT_DIR:-"ATLAS-P2-RUN4-03-00-01/"}
+TRACCC_EVENT_FILES=${TRACCC_EVENT_FILES:-"ATLAS-P2-RUN4-03-00-01/"}
 TRACCC_MIN_THREADS=${TRACCC_MIN_THREADS:-1}
 TRACCC_MAX_THREADS=${TRACCC_MAX_THREADS:-$(nproc)}
 TRACCC_THREAD_STEP=${TRACCC_THREAD_STEP:-1}
 TRACCC_REPETITIONS=${TRACCC_REPETITIONS:-5}
+TRACCC_N_EVENTS=${TRACCC_N_EVENTS:-100}
 TRACCC_CSV_FILE=${TRACCC_CSV_FILE:-"output.csv"}
 TRACCC_THROUGPUT_TYPE=${TRACCC_THROUGPUT_TYPE:-"traccc"}
-while getopts ":x:i:m:t:s:r:c:y:h" opt; do
+while getopts ":x:i:f:m:t:s:r:e:c:y:h" opt; do
    case $opt in
       x)
          TRACCC_EXECUTABLE=$OPTARG
@@ -51,6 +54,9 @@ while getopts ":x:i:m:t:s:r:c:y:h" opt; do
       i)
          TRACCC_INPUT_DIR=$OPTARG
          ;;
+	  f)
+		TRACCC_EVENT_FILES=$OPTARG
+		;;
       m)
          TRACCC_MIN_THREADS=$OPTARG
          ;;
@@ -63,6 +69,9 @@ while getopts ":x:i:m:t:s:r:c:y:h" opt; do
       r)
          TRACCC_REPETITIONS=$OPTARG
          ;;
+	  e)
+		TRACCC_N_EVENTS=$OPTARG
+		;;
       c)
          TRACCC_CSV_FILE=$OPTARG
          ;;
@@ -90,6 +99,7 @@ done
 echo "Using configuration:"
 echo "   EXECUTABLE      : ${TRACCC_EXECUTABLE}"
 echo "   INPUT_DIR       : ${TRACCC_INPUT_DIR}"
+echo "   EVENT_FILES     : ${TRACCC_EVENT_FILES}"
 echo "   MIN_THREADS     : ${TRACCC_MIN_THREADS}"
 echo "   MAX_THREADS     : ${TRACCC_MAX_THREADS}"
 echo "   THREAD_STEP     : ${TRACCC_THREAD_STEP}"
@@ -159,21 +169,19 @@ elif [[ "${TRACCC_THROUGPUT_TYPE}" != "traccc" ]]; then
    exit 1
 fi
 
-# The input directories to use.
-TRACCC_INPUT_DIRS=("ttbar_mu140/hits" "ttbar_mu200/hits")
-
 # Put a header on the CSV file.
 echo "directory,threads,loaded_events,cold_run_events,processed_events,warm_up_time,processing_time" \
    > "${TRACCC_CSV_FILE}"
 
 # Counter for a nice printout.
 COUNTER=1
-COUNT=$((${#TRACCC_INPUT_DIRS[@]}*${TRACCC_MAX_THREADS}*${TRACCC_REPETITIONS}))
+COUNT=$((${#TRACCC_EVENT_FILES[@]}*${TRACCC_MAX_THREADS}*${TRACCC_REPETITIONS}))
 
 # Iterate over the number of threads.
 for NTHREAD in $(seq ${TRACCC_MIN_THREADS} ${TRACCC_THREAD_STEP} ${TRACCC_MAX_THREADS}); do
    # Iterate over the input datasets.
-   for EVTDIR in ${TRACCC_INPUT_DIRS[@]}; do
+   echo "   EVENT_FILES     : ${TRACCC_EVENT_FILES}"
+   for EVTDIR in ${TRACCC_EVENT_FILES[@]}; do
       # Perform the requested number of repetitions.
       for REPEAT in $(seq ${TRACCC_REPETITIONS}); do
 
@@ -184,23 +192,22 @@ for NTHREAD in $(seq ${TRACCC_MIN_THREADS} ${TRACCC_THREAD_STEP} ${TRACCC_MAX_TH
 
          # Run the throughput test.
          ${TRACCC_EXECUTABLE}                                                  \
-            --detector-file="${TRACCC_INPUT_DIR}/ITk_DetectorBuilder_geometry.json" \
-            --material-file="${TRACCC_INPUT_DIR}/ITk_detector_material.json"   \
-            --grid-file="${TRACCC_INPUT_DIR}/ITk_DetectorBuilder_surface_grids.json" \
+            --detector-file="${TRACCC_INPUT_DIR}/detray_detector_geometry.json" \
+            --material-file="${TRACCC_INPUT_DIR}/detray_detector_material_maps.json"   \
+            --grid-file="${TRACCC_INPUT_DIR}/detray_detector_surface_grids.json" \
             --digitization-file="${TRACCC_INPUT_DIR}/ITk_digitization_config.json" \
             --conditions-file="${TRACCC_INPUT_DIR}/ITk_conditions_config.json" \
             --read-bfield-from-file                                            \
             --bfield-file="${TRACCC_INPUT_DIR}/ITk_bfield.cvf"                 \
-            --input-directory="${TRACCC_INPUT_DIR}/${EVTDIR}/"                 \
+            --input-directory="${EVTDIR}/"                                     \
             --use-acts-geom-source=0                                           \
-            --input-events=100                                                 \
+            --input-events=${TRACCC_N_EVENTS}                                  \
             --cpu-threads=${NTHREAD}                                           \
             --cold-run-events=$((5*${NTHREAD}))                                \
-            --processed-events=$((100*${NTHREAD}))                             \
+            --processed-events=$((${TRACCC_N_EVENTS}*${NTHREAD}))              \
             --log-file="${TRACCC_CSV_FILE}"                                    \
             ${TRACCC_CUTS[@]}                                                  \
-            --useGBTS="${TRACCC_USE_GBTS}"	                                  \
-            --gbts_config_dir="${TRACCC_INPUT_DIR}"
+
       done
    done
 done

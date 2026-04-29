@@ -9,8 +9,8 @@
 
 // Project include(s).
 #include "traccc/gbts_seeding/gbts_seeding_config.hpp"
-#include "traccc/options/details/interface.hpp"
 #include "traccc/options/details/config_provider.hpp"
+#include "traccc/options/details/interface.hpp"
 
 // System include(s).
 #include <cstddef>
@@ -19,19 +19,19 @@ namespace traccc::opts {
 
 /// Option(s) for multi-threaded code execution
 class track_gbts_seeding : public interface,
-						   public config_provider<gbts_seedfinder_config> {
+                           public config_provider<gbts_seedfinder_config> {
 
     public:
     /// @name Options
     /// @{
-	bool useGBTS = false;
+    bool useGBTS = false;
     std::string config_dir = "DEFAULT";
 
     /// @}
-	// algorithm config	
-	float min_pt = 900;
-	gbts_seedfinder_config gbts_config;
-	explicit operator gbts_seedfinder_config() const override;
+    // algorithm config
+    float min_pt = 900;
+    gbts_seedfinder_config gbts_config;
+    explicit operator gbts_seedfinder_config() const override;
 
     /// Constructor
     track_gbts_seeding();

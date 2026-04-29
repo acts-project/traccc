@@ -153,10 +153,10 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
     const traccc::seedfinder_config seedfinder_config(seeding_opts);
     const traccc::seedfilter_config seedfilter_config(seeding_opts);
     const traccc::spacepoint_grid_config spacepoint_grid_config(seeding_opts);
-    
-	const traccc::gbts_seedfinder_config gbts_config(seeding_gbts_opts);
 
-	const traccc::track_params_estimation_config track_params_estimation_config;
+    const traccc::gbts_seedfinder_config gbts_config(seeding_gbts_opts);
+
+    const traccc::track_params_estimation_config track_params_estimation_config;
 
     detray::propagation::config propagation_config(propagation_opts);
     typename FULL_CHAIN_ALG::finding_algorithm::config_type finding_cfg(
