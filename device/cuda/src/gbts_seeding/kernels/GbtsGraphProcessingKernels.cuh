@@ -61,34 +61,33 @@ struct Tracklet {
  *
  *  @param[in] d_output_graph see comments in device_context.h
  *  @param[in] d_levels is the maximum seed length originating at each edge
- *  @param[in/out] d_active_edges stores the edge_idx for edges that have not
- *  reached their level
+ *  @param[in/out] d_active_edges stores flags for edges that need more CCA
+ * iterations
  *  @param[out] d_outgoing_paths [#paths needed, is-terminus]
- *  @param[internal] d_counters[5 and 6] used for counting the last block and
- * for the number of active edges
  */
-__global__ static void CCA_IterationKernel(
-    const int* d_output_graph, char* d_levels, int* d_active_edges,
-    short2* d_outgoing_paths, unsigned int* d_counters, int iter,
-    unsigned int nEdges, unsigned int max_num_neighbours, int minLevel) {
+__global__ static void CCA_IterationKernel(const int* d_output_graph,
+                                           char* d_levels, char* d_active_edges,
+                                           short2* d_outgoing_paths, int iter,
+                                           unsigned int nEdges,
+                                           unsigned int max_num_neighbours,
+                                           int minLevel) {
 
-    __shared__ unsigned int nEdgesLeft;
     unsigned int edge_size = 2 + 1 + max_num_neighbours;
 
     int toggle = iter % 2;
     int levelLoad = toggle * nEdges;
     int levelStore = (1 - toggle) * nEdges;
 
-    if (threadIdx.x == 0) {
-        nEdgesLeft = d_counters[3 + toggle];  // from the previous iteration
-    }
     __syncthreads();
 
-    for (int globalIdx = threadIdx.x + blockIdx.x * blockDim.x;
-         globalIdx < nEdgesLeft; globalIdx += blockDim.x * gridDim.x) {
+    for (int edgeIdx = threadIdx.x + blockIdx.x * blockDim.x; edgeIdx < nEdges;
+         edgeIdx += blockDim.x * gridDim.x) {
 
-        int edgeIdx = iter == 0 ? globalIdx : d_active_edges[globalIdx];
-
+        if (iter != 0) {
+            if (d_active_edges[edgeIdx] != iter) {
+                continue;
+            }
+        }
         int edge_pos = edge_size * edgeIdx;
 
         int nNei = d_output_graph[edge_pos + traccc::device::gbts_consts::nNei];
@@ -115,13 +114,13 @@ __global__ static void CCA_IterationKernel(
             if (iter == traccc::device::gbts_consts::max_cca_iter - 1) {
                 // shorten paths longer than max_cca_iter
                 d_outgoing_paths[edgeIdx].y = -1;
+                d_active_edges[edgeIdx] = -1;
             } else {
-                unsigned int edgesLeftPlace =
-                    atomicAdd(&d_counters[4 - toggle], 1);
-                d_active_edges[edgesLeftPlace] =
-                    edgeIdx;  // for the next iteration
+                // flag edge fore next iteration
+                d_active_edges[edgeIdx] = iter + 1;
             }
         } else {
+            d_active_edges[edgeIdx] = -1;
             short out_paths = 0;
             for (int nIdx = 0; nIdx < nNei; ++nIdx) {
                 int nextEdgeIdx =
@@ -143,15 +142,6 @@ __global__ static void CCA_IterationKernel(
         // store new level and ensure all final
         // levels are on both sides of the array
         d_levels[levelStore + edgeIdx] = next_level;
-    }
-    __syncthreads();
-
-    if (threadIdx.x == 0) {
-        if (atomicAdd(&d_counters[5], 1) == gridDim.x - 1) {
-            // this is the last block
-            d_counters[3 + toggle] = 0;
-            d_counters[5] = 0;
-        }
     }
 }
 
