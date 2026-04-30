@@ -6,47 +6,349 @@
  */
 
 // Local include(s).
+#include "../sanity/contiguous_on.hpp"
+#include "../utils/barrier.hpp"
+#include "../utils/calculate1DimNdRange.hpp"
 #include "../utils/detector_types.hpp"
 #include "../utils/get_queue.hpp"
+#include "../utils/global_index.hpp"
 #include "../utils/magnetic_field_types.hpp"
-#include "combinatorial_kalman_filter.hpp"
+#include "../utils/oneDPL.hpp"
+#include "../utils/thread_id.hpp"
 #include "traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
 
 // Project include(s).
 #include "traccc/bfield/magnetic_field_types.hpp"
+#include "traccc/edm/device/identity_projector.hpp"
+#include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
+#include "traccc/finding/device/build_tracks.hpp"
+#include "traccc/finding/device/fill_finding_duplicate_removal_sort_keys.hpp"
+#include "traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
+#include "traccc/finding/device/find_tracks.hpp"
+#include "traccc/finding/device/gather_best_tips_per_measurement.hpp"
+#include "traccc/finding/device/gather_measurement_votes.hpp"
+#include "traccc/finding/device/geo_id_surface_comparator.hpp"
+#include "traccc/finding/device/propagate_to_next_surface.hpp"
+#include "traccc/finding/device/remove_duplicates.hpp"
+#include "traccc/finding/device/update_tip_length_buffer.hpp"
 #include "traccc/geometry/detector_type_list.hpp"
 #include "traccc/utils/detector_buffer_bfield_visitor.hpp"
 #include "traccc/utils/propagation.hpp"
 
-// System include(s).
-#include <stdexcept>
+// VecMem include(s).
+#include <vecmem/utils/sycl/local_accessor.hpp>
 
 namespace traccc::sycl {
 namespace kernels {
-template <typename detector_tag_t, typename bfield_tag_t>
-struct combinatorial_kalman_filter;
+
+template <typename detector_t>
+struct find_tracks {};
+
+struct fill_finding_duplicate_removal_sort_keys {};
+
+struct remove_duplicates {};
+
+struct fill_finding_propagation_sort_keys {};
+
+template <typename detector_t, typename bfield_t>
+struct propagate_to_next_surface {};
+
+struct gather_best_tips_per_measurement {};
+
+struct gather_measurement_votes {};
+
+struct update_tip_length_buffer {};
+
+struct build_tracks {};
+
 }  // namespace kernels
 
-combinatorial_kalman_filter_algorithm::output_type
-combinatorial_kalman_filter_algorithm::operator()(
-    const detector_buffer& detector, const magnetic_field& field,
-    const edm::measurement_collection::const_view& measurements,
-    const bound_track_parameters_collection_types::const_view& seeds) const {
+bool combinatorial_kalman_filter_algorithm::input_is_valid(
+    const edm::measurement_collection::const_view& measurements) const {
 
-    // Perform the track finding using the templated implementation.
-    return detector_buffer_magnetic_field_visitor<
-        traccc::detector_type_list, sycl::bfield_type_list<scalar>>(
-        detector, field,
-        [&]<typename detector_t, typename bfield_view_t>(
-            const typename detector_t::view& det, const bfield_view_t& bfield) {
-            return details::combinatorial_kalman_filter<
-                kernels::combinatorial_kalman_filter<
-                    detector_tag_selector_t<detector_t>,
-                    bfield_tag_selector_t<typename bfield_view_t::backend_t>>,
-                typename detector_t::device>(det, bfield, measurements, seeds,
-                                             m_config, m_mr, m_copy,
-                                             details::get_queue(m_queue));
+    static constexpr std::size_t GEOMID_INDEX = 6u;
+    return is_contiguous_on<
+        vecmem::device_vector<const detray::geometry::identifier>>(
+        device::identity_projector{}, mr().main, copy(),
+        details::get_queue(queue()), measurements.template get<GEOMID_INDEX>());
+}
+
+vecmem::data::vector_buffer<edm::measurement_collection::const_view::size_type>
+combinatorial_kalman_filter_algorithm::build_measurement_ranges_buffer(
+    const detector_buffer& det,
+    const edm::measurement_collection::const_view::size_type n_measurements,
+    const edm::measurement_collection::const_view& measurements) const {
+
+    return detector_buffer_visitor<detector_type_list>(
+        det, [&]<typename detector_traits_t>(
+                 const typename detector_traits_t::view& det) {
+            // Construct an appropriate device detector object.
+            typename detector_traits_t::device device_det{det};
+
+            // Create the result buffer.
+            vecmem::data::vector_buffer<
+                edm::measurement_collection::const_view::size_type>
+                result{device_det.surfaces().size(), mr().main};
+            copy().setup(result)->ignore();
+
+            // Create a measurement device object for convenience.
+            const edm::measurement_collection::const_device measurements_device{
+                measurements};
+
+            // Fill it with Thrust's help.
+            oneapi::dpl::upper_bound(
+                oneapi::dpl::execution::device_policy{
+                    details::get_queue(queue())},
+                measurements_device.surface_link().begin(),
+                // We have to use this ugly form here, because if the
+                // measurement collection is resizable (which it often
+                // is), the end() function cannot be used in host code.
+                measurements_device.surface_link().begin() + n_measurements,
+                device_det.surfaces().begin(), device_det.surfaces().end(),
+                result.ptr(), device::geo_id_surface_comparator{});
+
+            // Return the filled buffer.
+            return result;
         });
+}
+
+void combinatorial_kalman_filter_algorithm::find_tracks_kernel(
+    unsigned int n_threads, const finding_config& config,
+    const detector_buffer& detector,
+    const device::find_tracks_payload& payload) const {
+
+    const unsigned int deviceThreads = warp_size() * 2;
+    ::sycl::queue& squeue = details::get_queue(queue());
+    squeue.throw_asynchronous();
+    detector_buffer_visitor<detector_type_list>(
+        detector, [&]<typename detector_traits_t>(
+                      const typename detector_traits_t::view& det) {
+            // Copy the detector data to device memory.
+            vecmem::data::vector_buffer<typename detector_traits_t::view>
+                device_det(1u, mr().main);
+            copy().setup(device_det)->ignore();
+            copy()({1u, &det}, device_det)->ignore();
+
+            // Submit the kernel to the queue.
+            squeue.submit([&](::sycl::handler& h) {
+                // Allocate shared memory for the kernel.
+                vecmem::sycl::local_accessor<unsigned long long int>
+                    shared_insertion_mutex(deviceThreads, h);
+                vecmem::sycl::local_accessor<
+                    std::pair<unsigned int, unsigned int>>
+                    shared_candidates(2 * deviceThreads, h);
+                vecmem::sycl::local_accessor<unsigned int>
+                    shared_candidates_size(1, h);
+                vecmem::sycl::local_accessor<unsigned int>
+                    shared_num_out_params(1, h);
+                vecmem::sycl::local_accessor<unsigned int> shared_out_offset(1,
+                                                                             h);
+                // Launch the kernel.
+                h.parallel_for<kernels::find_tracks<
+                    detector_tag_selector_t<detector_traits_t>>>(
+                    details::calculate1DimNdRange(n_threads, deviceThreads),
+                    [config, det = device_det.ptr(), payload,
+                     shared_insertion_mutex, shared_candidates,
+                     shared_candidates_size, shared_num_out_params,
+                     shared_out_offset](::sycl::nd_item<1> item) {
+                        // SYCL wrappers used in the algorithm.
+                        const details::barrier barrier{item};
+                        const details::thread_id thread_id{item};
+
+                        // Call the device function to find tracks.
+                        device::find_tracks<typename detector_traits_t::device>(
+                            thread_id, barrier, config, *det, payload,
+                            {shared_num_out_params[0], shared_out_offset[0],
+                             &(shared_insertion_mutex[0]),
+                             &(shared_candidates[0]),
+                             shared_candidates_size[0]});
+                    });
+            });
+        });
+}
+
+void combinatorial_kalman_filter_algorithm::
+    fill_finding_duplicate_removal_sort_keys_kernel(
+        unsigned int n_threads,
+        const device::fill_finding_duplicate_removal_sort_keys_payload& payload)
+        const {
+
+    ::sycl::queue& squeue = details::get_queue(queue());
+    squeue.throw_asynchronous();
+    squeue.submit([&](::sycl::handler& h) {
+        h.parallel_for<kernels::fill_finding_duplicate_removal_sort_keys>(
+            details::calculate1DimNdRange(n_threads, warp_size() * 8),
+            [payload](::sycl::nd_item<1> item) {
+                device::fill_finding_duplicate_removal_sort_keys(
+                    details::global_index(item), payload);
+            });
+    });
+}
+
+void combinatorial_kalman_filter_algorithm::sort_param_ids_by_last_measurement(
+    vecmem::data::vector_view<unsigned int>& link_last_measurement,
+    vecmem::data::vector_view<unsigned int>& param_ids) const {
+
+    assert(link_last_measurement.capacity() == param_ids.capacity());
+    assert(link_last_measurement.size_ptr() == nullptr);
+    assert(param_ids.size_ptr() == nullptr);
+    oneapi::dpl::sort_by_key(
+        oneapi::dpl::execution::device_policy{details::get_queue(queue())},
+        link_last_measurement.ptr(),
+        link_last_measurement.ptr() + link_last_measurement.capacity(),
+        param_ids.ptr());
+}
+
+void combinatorial_kalman_filter_algorithm::remove_duplicates_kernel(
+    unsigned int n_threads, const finding_config& config,
+    const device::remove_duplicates_payload& payload) const {
+
+    ::sycl::queue& squeue = details::get_queue(queue());
+    squeue.throw_asynchronous();
+    squeue.submit([&](::sycl::handler& h) {
+        h.parallel_for<kernels::remove_duplicates>(
+            details::calculate1DimNdRange(n_threads, warp_size() * 8),
+            [config, payload](::sycl::nd_item<1> item) {
+                device::remove_duplicates(details::global_index(item), config,
+                                          payload);
+            });
+    });
+}
+
+void combinatorial_kalman_filter_algorithm::
+    fill_finding_propagation_sort_keys_kernel(
+        unsigned int n_threads,
+        const device::fill_finding_propagation_sort_keys_payload& payload)
+        const {
+
+    ::sycl::queue& squeue = details::get_queue(queue());
+    squeue.throw_asynchronous();
+    squeue.submit([&](::sycl::handler& h) {
+        h.parallel_for<kernels::fill_finding_propagation_sort_keys>(
+            details::calculate1DimNdRange(n_threads, warp_size() * 8),
+            [payload](::sycl::nd_item<1> item) {
+                device::fill_finding_propagation_sort_keys(
+                    details::global_index(item), payload);
+            });
+    });
+}
+
+void combinatorial_kalman_filter_algorithm::sort_param_ids_by_keys(
+    vecmem::data::vector_view<device::sort_key>& keys,
+    vecmem::data::vector_view<unsigned int>& param_ids) const {
+
+    assert(keys.capacity() == param_ids.capacity());
+    assert(keys.size_ptr() == nullptr);
+    assert(param_ids.size_ptr() == nullptr);
+    oneapi::dpl::sort_by_key(
+        oneapi::dpl::execution::device_policy{details::get_queue(queue())},
+        keys.ptr(), keys.ptr() + keys.capacity(), param_ids.ptr());
+}
+
+void combinatorial_kalman_filter_algorithm::propagate_to_next_surface_kernel(
+    unsigned int n_threads, const finding_config& config,
+    const detector_buffer& detector, const magnetic_field& field,
+    const device::propagate_to_next_surface_payload& payload) const {
+
+    ::sycl::queue& squeue = details::get_queue(queue());
+    squeue.throw_asynchronous();
+    detector_buffer_magnetic_field_visitor<detector_type_list,
+                                           sycl::bfield_type_list<scalar>>(
+        detector, field,
+        [&]<typename detector_traits_t, typename bfield_view_t>(
+            const typename detector_traits_t::view& det,
+            const bfield_view_t& bfield) {
+            // Copy the detector data to device memory.
+            vecmem::data::vector_buffer<typename detector_traits_t::view>
+                device_det(1u, mr().main);
+            copy().setup(device_det)->ignore();
+            copy()({1u, &det}, device_det)->ignore();
+
+            // Launch the kernel to propagate all active tracks to the next
+            // surface.
+            squeue.submit([&](::sycl::handler& h) {
+                h.parallel_for<kernels::propagate_to_next_surface<
+                    detector_tag_selector_t<detector_traits_t>,
+                    bfield_tag_selector_t<typename bfield_view_t::backend_t>>>(
+                    details::calculate1DimNdRange(n_threads, warp_size() * 4),
+                    [config, det = device_det.ptr(), bfield,
+                     payload](::sycl::nd_item<1> item) {
+                        device::propagate_to_next_surface<
+                            traccc::details::ckf_propagator_t<
+                                typename detector_traits_t::device,
+                                bfield_view_t>,
+                            bfield_view_t>(details::global_index(item), config,
+                                           *det, bfield, payload);
+                    });
+            });
+        });
+}
+
+void combinatorial_kalman_filter_algorithm::
+    gather_best_tips_per_measurement_kernel(
+        unsigned int n_threads,
+        const device::gather_best_tips_per_measurement_payload<default_algebra>&
+            payload) const {
+
+    ::sycl::queue& squeue = details::get_queue(queue());
+    squeue.throw_asynchronous();
+    squeue.submit([&](::sycl::handler& h) {
+        h.parallel_for<kernels::gather_best_tips_per_measurement>(
+            details::calculate1DimNdRange(n_threads, warp_size()),
+            [payload](::sycl::nd_item<1> item) {
+                device::gather_best_tips_per_measurement(
+                    details::global_index(item), details::barrier{item},
+                    payload);
+            });
+    });
+}
+
+void combinatorial_kalman_filter_algorithm::gather_measurement_votes_kernel(
+    unsigned int n_threads,
+    const device::gather_measurement_votes_payload& payload) const {
+
+    ::sycl::queue& squeue = details::get_queue(queue());
+    squeue.throw_asynchronous();
+    squeue.submit([&](::sycl::handler& h) {
+        h.parallel_for<kernels::gather_measurement_votes>(
+            details::calculate1DimNdRange(n_threads, warp_size() * 16),
+            [payload](::sycl::nd_item<1> item) {
+                device::gather_measurement_votes(details::global_index(item),
+                                                 payload);
+            });
+    });
+}
+
+void combinatorial_kalman_filter_algorithm::update_tip_length_buffer_kernel(
+    unsigned int n_threads,
+    const device::update_tip_length_buffer_payload& payload) const {
+
+    ::sycl::queue& squeue = details::get_queue(queue());
+    squeue.throw_asynchronous();
+    squeue.submit([&](::sycl::handler& h) {
+        h.parallel_for<kernels::update_tip_length_buffer>(
+            details::calculate1DimNdRange(n_threads, warp_size() * 16),
+            [payload](::sycl::nd_item<1> item) {
+                device::update_tip_length_buffer(details::global_index(item),
+                                                 payload);
+            });
+    });
+}
+
+void combinatorial_kalman_filter_algorithm::build_tracks_kernel(
+    unsigned int n_threads, bool run_mbf_smoother,
+    const device::build_tracks_payload& payload) const {
+
+    ::sycl::queue& squeue = details::get_queue(queue());
+    squeue.throw_asynchronous();
+    squeue.submit([&](::sycl::handler& h) {
+        h.parallel_for<kernels::build_tracks>(
+            details::calculate1DimNdRange(n_threads, warp_size() * 2),
+            [run_mbf_smoother, payload](::sycl::nd_item<1> item) {
+                device::build_tracks(details::global_index(item),
+                                     run_mbf_smoother, payload);
+            });
+    });
 }
 
 }  // namespace traccc::sycl

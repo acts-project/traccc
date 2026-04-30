@@ -29,7 +29,6 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "include/traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
   "src/finding/combinatorial_kalman_filter_algorithm.cpp"
   "src/finding/combinatorial_kalman_filter_algorithm.sycl"
-  "src/finding/combinatorial_kalman_filter.hpp"
   # Track fitting algorithm(s).
   "include/traccc/sycl/fitting/kalman_fitting_algorithm.hpp"
   "src/fitting/kalman_fitting_algorithm.cpp"

@@ -12,7 +12,9 @@
 #include "traccc/edm/track_state_collection.hpp"
 
 // Local include(s).
+#include "traccc/performance/details/is_same_scalar.hpp"
 #include "traccc/performance/impl/is_same_measurement.ipp"
+#include "traccc/performance/impl/is_same_track_parameters.ipp"
 
 namespace traccc::details {
 
