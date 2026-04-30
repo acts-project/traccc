@@ -693,10 +693,91 @@ void __global__ seeds_rebid_for_edges(int2* d_path_store,
     }
 }
 
+void __global__ seeds_bid_for_hits(int* d_output_graph, int2* d_seed_proposals,
+                                   int2* d_path_store, char* d_seed_ambiguity,
+                                   unsigned long long int* d_hit_bids,
+                                   const unsigned int nProps, int edge_size) {
+
+    for (unsigned int prop_idx = threadIdx.x + blockDim.x * blockIdx.x;
+         prop_idx < nProps; prop_idx += gridDim.x * blockDim.x) {
+        if (d_seed_ambiguity[prop_idx] == -2) {
+            continue;
+        }
+        int2 prop = d_seed_proposals[prop_idx];
+        unsigned long long int seed_bid =
+            (static_cast<unsigned long long int>(prop.x) << 32) |
+            (static_cast<unsigned long long int>(prop_idx));
+
+        int2 path = make_int2(0, prop.y);
+        while (path.y >= 0) {
+            path = d_path_store[path.y];
+            int sp_idx = d_output_graph[traccc::device::gbts_consts::node1 +
+                                        edge_size * path.x];
+            atomicMax(&d_hit_bids[sp_idx], seed_bid);
+        }
+        int sp_idx = d_output_graph[traccc::device::gbts_consts::node2 +
+                                    edge_size * path.x];
+        atomicMax(&d_hit_bids[sp_idx], seed_bid);
+    }
+}
+
+inline __device__ float2 estimate_params(float4 sps[3]) {
+
+    // conformal mapping with the center at the middle spacepoint
+
+    float u[2], v[2];
+
+    const float x0 = sps[1].x;
+    const float y0 = sps[1].y;
+
+    const float r0 = sqrtf(x0 * x0 + y0 * y0);
+
+    const float cosA = x0 / r0;
+
+    const float sinA = y0 / r0;
+
+    for (unsigned int k = 0; k < 2; k++) {
+
+        int sp_idx = (k == 1) ? 2 : k;
+
+        const float dx = sps[sp_idx].x - x0;
+
+        const float dy = sps[sp_idx].y - y0;
+
+        const float r2_inv = 1.0f / (dx * dx + dy * dy);
+
+        const float xn = dx * cosA + dy * sinA;
+
+        const float yn = -dx * sinA + dy * cosA;
+
+        u[k] = xn * r2_inv;
+        v[k] = yn * r2_inv;
+    }
+
+    const float du = u[0] - u[1];
+    if (du == 0.0f) {
+        return make_float2(0.0f, 0.0f);
+    }
+
+    const float A = (v[0] - v[1]) / du;
+
+    const float B = v[1] - A * u[1];
+
+    // signed curvature in 1/m
+    const float curv = 1000.0f * B / sqrtf(1 + A * A);
+    const float cot_t = (sps[2].z - sps[1].z) /
+                        (sqrtf(sps[2].x * sps[2].x + sps[2].y * sps[2].y) - r0);
+    return make_float2(curv, cot_t);
+}
+
 void __global__ gbts_seed_conversion_kernel(
     int2* d_seed_proposals, char* d_seed_ambiguity, int2* d_path_store,
-    int* d_output_graph, edm::seed_collection::view output_seeds,
-    const unsigned int nProps, const unsigned int max_num_neighbours) {
+    int* d_output_graph, float4* d_sp_params,
+    edm::seed_collection::view output_seeds, unsigned long long int* d_hit_bids,
+    const unsigned int nProps, const unsigned int max_num_neighbours,
+    const float dcurv_cut_m, const float force_dropout_max_curv_m,
+    const float best_hit_frac, const float tight_bid_cot_threshold,
+    const bool use_dropout) {
 
     int edge_size = 2 + 1 + max_num_neighbours;
     edm::seed_collection::device seeds_device(output_seeds);
@@ -707,23 +788,88 @@ void __global__ gbts_seed_conversion_kernel(
             // drop seeds that lost the bidding
             continue;
         }
+        // collect seed hits and reject those that lost the hit bidding
+        char best_for_hit = 0;
         Tracklet seed;
         seed.size = 0;
         // dummy path to start the loop
-        int2 path = make_int2(0, d_seed_proposals[prop_idx].y);
+        int2 prop = d_seed_proposals[prop_idx];
+        int2 path = make_int2(0, prop.y);
         while (path.y >= 0) {
             path = d_path_store[path.y];
             seed.nodes[seed.size++] =
                 d_output_graph[traccc::device::gbts_consts::node1 +
                                edge_size * path.x];
+            best_for_hit +=
+                (prop_idx ==
+                 (d_hit_bids[seed.nodes[seed.size - 1]] & 0xFFFFFFFFLL));
         }
         seed.nodes[seed.size++] =
             d_output_graph[traccc::device::gbts_consts::node2 +
                            edge_size * path.x];
-        // sample begining, middle, end sp from tracklet for now
-        seeds_device.push_back({seed.nodes[seed.size - 1],
-                                seed.nodes[(1 + seed.size) / 2 - 1],
-                                seed.nodes[0]});
+        best_for_hit += (prop_idx == (d_hit_bids[seed.nodes[seed.size - 1]] &
+                                      0xFFFFFFFFLL));
+
+        if ((best_for_hit < best_hit_frac * seed.size)) {
+            continue;
+        }
+        char diff_code = 0;
+        bool force_dropout = false;
+        if (use_dropout) {
+            float4 sps[3];
+            // seed 1
+            sps[0] = d_sp_params[seed.nodes[seed.size - 1]];
+            sps[1] = d_sp_params[seed.nodes[(seed.size - 1) / 2 + 1]];
+            sps[2] = d_sp_params[seed.nodes[0]];
+            float2 curv_cot_1 = estimate_params(sps);
+            // seed 2
+            sps[1] = d_sp_params[seed.nodes[(seed.size - 1) / 2]];
+            float2 curv_cot_2 = estimate_params(sps);
+            sps[0] = d_sp_params[seed.nodes[seed.size - 2]];
+            // seed 3
+            float2 curv_cot_3 = estimate_params(sps);
+            // for low eta (higher fake rate) seeds perform a stronger cut
+            if ((best_for_hit < seed.size - 1) &
+                (abs(curv_cot_1.y + curv_cot_2.y + curv_cot_3.y) <
+                 3.0f * tight_bid_cot_threshold) &
+                (seed.size < 5)) {
+                continue;
+            }
+            float diff[3] = {abs(curv_cot_1.x - curv_cot_2.x),
+                             abs(curv_cot_2.x - curv_cot_3.x),
+                             abs(curv_cot_1.x - curv_cot_3.x)};
+            diff_code = 4 * (diff[0] < dcurv_cut_m) +
+                        2 * (diff[1] < dcurv_cut_m) + (diff[2] < dcurv_cut_m);
+            // for high pt the diff may pass dispite bad estimates
+            force_dropout = abs(curv_cot_1.x + curv_cot_2.x + curv_cot_3.x) <
+                            3.0f * force_dropout_max_curv_m;
+            force_dropout |= (abs(curv_cot_1.y + curv_cot_2.y + curv_cot_3.y) <
+                              3.0f * tight_bid_cot_threshold) &
+                             diff_code == 0;
+        }
+        // use one seed from a consistant pair/set + the inconsistant one
+        // sample spacepoints from tracklet to create seeds
+        // include 1st order unless either 2 or 3 are consitant with the other
+        // and 1
+        if (diff_code != 3 & diff_code != 6 | force_dropout) {
+            seeds_device.push_back({seed.nodes[seed.size - 1],
+                                    seed.nodes[(seed.size - 1) / 2 + 1],
+                                    seed.nodes[0]});
+        }
+        // include 2nd order if it consistant with 1 and 3 or only 1 and 3 are
+        // consistant
+        if (diff_code == 1 | diff_code == 6) {
+            seeds_device.push_back({seed.nodes[seed.size - 1],
+                                    seed.nodes[(seed.size - 1) / 2],
+                                    seed.nodes[0]});
+        }
+        // include 3rd order if it is consistant with 1 and 2 or only 1 and 2
+        // are consistant or if only 2 and 3 are consistant
+        if (diff_code == 2 | diff_code == 3 | diff_code == 4 | force_dropout) {
+            seeds_device.push_back({seed.nodes[seed.size - 2],
+                                    seed.nodes[(seed.size - 1) / 2],
+                                    seed.nodes[0]});
+        }
     }
 }
 
