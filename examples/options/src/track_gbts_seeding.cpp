@@ -167,8 +167,11 @@ void track_gbts_seeding::read(const boost::program_options::variables_map &) {
     std::vector<std::pair<int, std::vector<int>>> binTables;
     traccc::device::gbts_layerInfo layerInfo;
 
-    std::ifstream barcodeBinningFile(
-        std::filesystem::path(config_dir + "/barcodeBinning.txt"));
+    std::filesystem::path barcodeBinningPath = std::filesystem::path(config_dir + "/barcodeBinning.txt");
+    if (!std::filesystem::exists(barcodeBinningPath)) {
+        throw std::runtime_error("barcodeBinning.txt file not found");
+    }
+    std::ifstream barcodeBinningFile(barcodeBinningPath);
 
     unsigned int nBarcodes = 0;
     barcodeBinningFile >> nBarcodes;
@@ -182,8 +185,11 @@ void track_gbts_seeding::read(const boost::program_options::variables_map &) {
         barcodeBinning.push_back(barcodeLayerPair);
     }
 
-    std::ifstream binTablesFile(
-        std::filesystem::path(config_dir + "/binTables.txt"));
+    std::filesystem::path binTablesPath = std::filesystem::path(config_dir + "/binTables.txt");
+    if (!std::filesystem::exists(binTablesPath)) {
+        throw std::runtime_error("binTables.txt file not found");
+    }
+    std::ifstream binTablesFile(binTablesPath);
 
     unsigned int nBinPairs = 0;
     binTablesFile >> nBinPairs;
@@ -195,9 +201,12 @@ void track_gbts_seeding::read(const boost::program_options::variables_map &) {
         binTablesFile >> bin2[0];
         binTables.emplace_back(bin1, bin2);
     }
-
-    std::ifstream layerInfoFile(
-        std::filesystem::path(config_dir + "/layerInfo.txt"));
+    
+    std::filesystem::path layerInfoPath = std::filesystem::path(config_dir + "/layerInfo.txt");
+    if (!std::filesystem::exists(layerInfoPath)) {
+        throw std::runtime_error("layerInfo.txt file not found");
+    }
+    std::ifstream layerInfoFile(layerInfoPath);
 
     unsigned int nLayers = 0;
     layerInfoFile >> nLayers;
