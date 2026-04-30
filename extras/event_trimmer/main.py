@@ -52,28 +52,28 @@ def main():
     destination_event_prefix = "event%09d-" % 0
 
     # Logic for processing the particle initial states
-    origin_particles_initial_file = args.input / (
-        origin_event_prefix + "particles_initial.csv"
+    origin_particles_simulated_file = args.input / (
+        origin_event_prefix + "particles_simulated.csv"
     )
-    particles_initial_df = pandas.read_csv(origin_particles_initial_file)
+    particles_simulated_df = pandas.read_csv(origin_particles_simulated_file)
     log.info(
         "Read data for %d initial input particles from %s",
-        particles_initial_df.shape[0],
-        origin_particles_initial_file,
+        particles_simulated_df.shape[0],
+        origin_particles_simulated_file,
     )
-    filtered_particles_initial_df = particles_initial_df[
-        particles_initial_df["particle_id"].isin(to_keep)
+    filtered_particles_simulated_df = particles_simulated_df[
+        particles_simulated_df["particle_id"].isin(to_keep)
     ]
-    destination_particles_initial_file = args.output / (
-        destination_event_prefix + "particles_initial.csv"
+    destination_particles_simulated_file = args.output / (
+        destination_event_prefix + "particles_simulated.csv"
     )
-    filtered_particles_initial_df.to_csv(
-        destination_particles_initial_file, index=False
+    filtered_particles_simulated_df.to_csv(
+        destination_particles_simulated_file, index=False
     )
     log.info(
         "Wrote data for %d initial output particles to %s",
-        filtered_particles_initial_df.shape[0],
-        destination_particles_initial_file,
+        filtered_particles_simulated_df.shape[0],
+        destination_particles_simulated_file,
     )
 
     # Logic for processing the particle final states

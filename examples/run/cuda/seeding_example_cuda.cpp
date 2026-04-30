@@ -203,6 +203,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     for (std::size_t event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
 
+        std::cout << "processing event " << event << std::endl;
+
         // Instantiate host containers/collections
         traccc::edm::spacepoint_collection::host spacepoints_per_event{host_mr};
         traccc::edm::measurement_collection::host measurements_per_event{

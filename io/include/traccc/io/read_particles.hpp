@@ -36,7 +36,7 @@ namespace traccc::io {
 void read_particles(particle_collection_types::host &particles,
                     std::size_t event, std::string_view directory,
                     data_format format = data_format::csv,
-                    std::string_view filename_postfix = "-particles_initial");
+                    std::string_view filename_postfix = "-particles_simulated");
 
 /// Read basic truth particle data into memory
 ///
@@ -68,7 +68,7 @@ void read_particles(particle_container_types::host &particles,
                     std::size_t event, std::string_view directory,
                     const traccc::host_detector *detector = nullptr,
                     data_format format = data_format::csv,
-                    std::string_view filename_postfix = "-particles_initial");
+                    std::string_view filename_postfix = "-particles_simulated");
 
 /// Read full truth particle data into memory
 ///

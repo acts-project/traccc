@@ -11,7 +11,7 @@ log = logging.getLogger("traccc_physics_plots.run")
 SEEDING_EXAMPLE_ARGS = [
     "--input-directory=/data/Acts/odd-simulations-20240506/geant4_ttbar_mu200",
     "--digitization-file=geometries/odd/odd-digi-geometric-config.json",
-    "--conditions-file=geometries/odd/odd-conditions.json",
+    "--conditions-file=geometries/odd/odd-digi-geometric-config.json",
     "--detector-file=geometries/odd/odd-detray_geometry_detray.json",
     "--grid-file=geometries/odd/odd-detray_surface_grids_detray.json",
     "--material-file=geometries/odd/odd-detray_material_detray.json",
@@ -25,8 +25,12 @@ SEEDING_EXAMPLE_ARGS = [
     "--truth-finding-max-r=10",
     "--seed-matching-ratio=0.99",
     "--track-matching-ratio=0.5",
-    "--track-candidates-range=5:100",
+    "--track-candidates-range=6:100",
     "--seedfinder-vertex-range=-150:150",
+    "--max-num-tracks-per-measurement=1",
+    "--min-measurement-voting-fraction=1.0",
+    "--track-double-matching=0",
+    "--use-split-particle-id-format=1"
 ]
 
 
@@ -48,13 +52,17 @@ def run_convert_seeding_example(
             seeding_example_executable.name,
         )
 
-    result = subprocess.run(
-        [seeding_example_executable] + seeding_example_args,
-        check=True,
-        cwd=tmpdirname,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-    )
+    try:
+        result = subprocess.run(
+            [seeding_example_executable] + seeding_example_args,
+            check=True,
+            cwd=tmpdirname,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+    except subprocess.CalledProcessError as exc:
+        print(f"reconstruction failed\nCommand: {exc.cmd}\nOutput: {exc.output}")
+        raise
 
     stdout = result.stdout.decode("utf-8")
 

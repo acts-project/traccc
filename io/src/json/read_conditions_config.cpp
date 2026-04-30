@@ -71,7 +71,13 @@ conditions_config read_conditions_config(std::string_view filename) {
 
     // Open the input file. Relying on exceptions for the error handling.
     std::ifstream infile(filename.data(), std::ifstream::binary);
-    infile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    try {
+        infile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    } catch (const std::ios_base::failure& fail) {
+        std::ostringstream oss;
+        oss << "error reading conditions file: " << filename.data();
+        throw std::runtime_error(oss.str());
+    }
 
     // Read the contents of the file into a JSON object.
     nlohmann::json json;

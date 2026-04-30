@@ -171,7 +171,7 @@ void event_data::setup_csv(bool use_acts_geom_source,
     std::string io_particles_file =
         io::get_absolute_path((std::filesystem::path(m_event_dir) /
                                std::filesystem::path(io::get_event_filename(
-                                   m_event_id, "-particles_initial.csv")))
+                                   m_event_id, "-particles_simulated.csv")))
                                   .native());
 
     bool have_particle_file = false;

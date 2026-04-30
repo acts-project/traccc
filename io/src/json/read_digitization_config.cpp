@@ -8,6 +8,9 @@
 // Local include(s).
 #include "read_digitization_config.hpp"
 
+#include <sstream>
+#include <stdexcept>
+
 // Acts include(s).
 #if __has_include(<ActsPlugins/Json/ActsJson.hpp>)
 #include <ActsPlugins/Json/ActsJson.hpp>
@@ -96,8 +99,13 @@ namespace io::json {
 digitization_config read_digitization_config(std::string_view filename) {
     // Open the input file. Relying on exceptions for the error handling.
     std::ifstream infile(filename.data(), std::ifstream::binary);
-    infile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-
+    try {
+        infile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    } catch (const std::ios_base::failure& fail) {
+        std::ostringstream oss;
+        oss << "error reading digitization file: " << filename.data();
+        throw std::runtime_error(oss.str());
+    }
     // Read the contents of the file into a JSON object.
     nlohmann::json json;
     infile >> json;

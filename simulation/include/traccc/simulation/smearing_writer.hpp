@@ -54,7 +54,7 @@ struct smearing_writer : detray::base_actor {
               const std::string directory)
             : m_particle_writer((std::filesystem::path{directory} /
                                  traccc::io::get_event_filename(
-                                     event_id, "-particles_initial.csv"))
+                                     event_id, "-particles_simulated.csv"))
                                     .native()),
               m_hit_writer(
                   (std::filesystem::path{directory} /
