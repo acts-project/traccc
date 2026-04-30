@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -15,7 +15,54 @@
 // detray include(s).
 #include <detray/propagator/propagation_config.hpp>
 
+// System include(s)
+#include <iostream>
+
 namespace traccc {
+
+/// Indicate the type of track state candidate collection
+enum class smoother_type : std::uint_least8_t {
+    e_none,
+    e_mbf,
+    e_kalman,
+    e_unknown,
+};
+
+TRACCC_HOST inline std::ostream &operator<<(std::ostream &os,
+                                            smoother_type st) {
+    using enum smoother_type;
+    switch (st) {
+        case e_none:
+            os << "none";
+            break;
+        case e_mbf:
+            os << "MBF";
+            break;
+        case e_kalman:
+            os << "Kalman";
+            break;
+        default:
+            os << "unknown";
+    }
+    return os;
+}
+
+TRACCC_HOST inline std::istream &operator>>(std::istream &is,
+                                            smoother_type &st) {
+    using enum smoother_type;
+    std::string tmp_str;
+    is >> tmp_str;
+    if (tmp_str == "none") {
+        st = e_none;
+    } else if (tmp_str == "MBF") {
+        st = e_mbf;
+    } else if (tmp_str == "Kalman") {
+        st = e_kalman;
+    } else {
+        st = e_unknown;
+    }
+    return is;
+}
 
 /// Configuration struct for track finding
 struct finding_config {
@@ -43,8 +90,8 @@ struct finding_config {
     /// each track that vote for it
     float min_measurement_voting_fraction = 0.5f;
 
-    /// Enable the MBF smoother
-    bool run_mbf_smoother = true;
+    /// The type of smoother to be run in track finding
+    smoother_type run_smoother = smoother_type::e_mbf;
 
     /// Minimum step length that track should make to reach the next surface. It
     /// should be set higher than the overstep tolerance not to make it stay on

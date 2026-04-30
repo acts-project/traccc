@@ -1,0 +1,30 @@
+/** TRACCC library, part of the ACTS project (R&D line)
+ *
+ * (c) 2026 CERN for the benefit of the ACTS project
+ *
+ * Mozilla Public License Version 2.0
+ */
+
+// Local include(s).
+#include "${SOURCE_DIR}/../../../utils/magnetic_field_types.hpp"
+#include "${SOURCE_DIR}/kalman_track_follower_src.cuh"
+
+// Project include(s).
+#include "traccc/finding/details/kalman_track_follower_types.hpp"
+#include "traccc/geometry/detector.hpp"
+#include "traccc/utils/propagation.hpp"
+
+// Covfie include(s).
+#include <covfie/core/field.hpp>
+
+namespace traccc::cuda {
+
+using bfield_t = covfie::field<${BFIELD_NAME}>::view_t;
+using propagator_t = traccc::details::kf_propagator_t<${DETECTOR_NAME}::device, bfield_t>;
+
+template void kalman_track_follower<propagator_t>(
+    const dim3& grid_size, const dim3& block_size, std::size_t shared_mem_size,
+    const cudaStream_t& stream, const finding_config cfg,
+    device::kalman_track_follower_payload<propagator_t> payload);
+
+}  // namespace traccc::cuda

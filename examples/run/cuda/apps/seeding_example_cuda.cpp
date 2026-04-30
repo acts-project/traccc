@@ -402,16 +402,19 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                     traccc::default_algebra>::const_data(track_candidates_cuda),
                 evt_data);
 
-            for (unsigned int i = 0; i < track_candidates_cuda.tracks.size();
-                 i++) {
-                host_detector_visitor<detector_type_list>(
-                    host_det, [&]<typename detector_traits_t>(
-                                  const typename detector_traits_t::host& det) {
-                        fit_performance_writer.write(
-                            track_candidates_cuda.tracks.at(i),
-                            track_candidates_cuda.states,
-                            measurements_per_event, det, evt_data);
-                    });
+            if (cfg.run_smoother != smoother_type::e_none) {
+                for (unsigned int i = 0;
+                     i < track_candidates_cuda.tracks.size(); i++) {
+                    host_detector_visitor<detector_type_list>(
+                        host_det,
+                        [&]<typename detector_traits_t>(
+                            const typename detector_traits_t::host& det) {
+                            fit_performance_writer.write(
+                                track_candidates_cuda.tracks.at(i),
+                                track_candidates_cuda.states,
+                                measurements_per_event, det, evt_data);
+                        });
+                }
             }
         }
     }
