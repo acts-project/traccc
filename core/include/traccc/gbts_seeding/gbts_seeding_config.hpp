@@ -125,6 +125,16 @@ struct gbts_seed_extraction_params {
     float max_z0 = 160.0f;
 };
 
+struct gbts_seed_ambi_params {
+    // sample multiple triplets when forming seeds to hedge against outliers
+    bool use_dropout = true;
+    // these curvatures are in 1/m
+    float dropout_dcurv_m = 0.007f;
+    float force_dropout_max_curv_m = 0.03f;
+    float best_hit_frac = 0.49f;
+    float tight_bid_cot_threshold = 1.0f;
+};
+
 struct gbts_seedfinder_config {
     bool setLinkingScheme(
         const std::vector<std::pair<int, std::vector<int>>>& binTables,
@@ -142,8 +152,8 @@ struct gbts_seedfinder_config {
 
     // tuned for 900 MeV pT cut and scaled by input minPt
     gbts_graph_building_params graph_building_params{};
-
     gbts_seed_extraction_params seed_extraction_params{};
+    gbts_seed_ambi_params seed_ambi_params{};
 
     // node making bin counts
     unsigned int n_eta_bins = 0;  // calculated from input layerInfo
