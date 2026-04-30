@@ -153,18 +153,10 @@ int throughput_mt(std::string_view description, int argc, char* argv[]) {
     const traccc::seedfinder_config seedfinder_config(seeding_opts);
     const traccc::seedfilter_config seedfilter_config(seeding_opts);
     const traccc::spacepoint_grid_config spacepoint_grid_config(seeding_opts);
-    const traccc::track_params_estimation_config track_params_estimation_config;
 
-    traccc::gbts_seedfinder_config gbts_config;
-    if (seeding_gbts_opts.useGBTS) {
-        if (!gbts_config.setLinkingScheme(
-                seeding_gbts_opts.binTables, seeding_gbts_opts.layerInfo,
-                seeding_gbts_opts.barcodeBinning, 900.0f,
-                prelogger->clone("GBTSconfig"))) {
-            TRACCC_ERROR("failure in setting gbts linking scheme");
-            return -1;
-        }
-    }
+    const traccc::gbts_seedfinder_config gbts_config(seeding_gbts_opts);
+
+    const traccc::track_params_estimation_config track_params_estimation_config;
 
     detray::propagation::config propagation_config(propagation_opts);
     typename FULL_CHAIN_ALG::finding_algorithm::config_type finding_cfg(

@@ -95,7 +95,7 @@ full_chain_algorithm::full_chain_algorithm(
       m_track_params_estimation_config(track_params_estimation_config),
       m_finding_config(finding_config),
       m_fitting_config(fitting_config),
-	  usingGBTS(useGBTS) {
+      usingGBTS(useGBTS) {
 
     // Tell the user what device is being used.
     int device = 0;
@@ -145,12 +145,13 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       m_spacepoint_formation({m_cached_device_mr, &m_cached_pinned_host_mr},
                              m_copy, m_stream,
                              parent.logger().cloneWithSuffix("SpFormationAlg")),
-	  m_seeding(parent.m_finder_config, parent.m_grid_config, parent.m_filter_config,
-		{m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy,
-		m_stream, parent.logger().cloneWithSuffix("SeedingAlg")),
-	  m_gbts_seeding(parent.m_gbts_config,
-		{m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy,
-		m_stream, parent.logger().cloneWithSuffix("GbtsAlg")),
+      m_seeding(parent.m_finder_config, parent.m_grid_config,
+                parent.m_filter_config,
+                {m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy,
+                m_stream, parent.logger().cloneWithSuffix("SeedingAlg")),
+      m_gbts_seeding(parent.m_gbts_config,
+                     {m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy,
+                     m_stream, parent.logger().cloneWithSuffix("GbtsAlg")),
       m_track_parameter_estimation(
           parent.m_track_params_estimation_config,
           {m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy, m_stream,
@@ -203,15 +204,14 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
             m_spacepoint_formation(m_device_detector, measurements);
 
         triplet_seeding_algorithm::output_type seeds;
-        if(usingGBTS) {
+        if (usingGBTS) {
             seeds = m_gbts_seeding(spacepoints, measurements);
-        }
-        else {
+        } else {
             seeds = m_seeding(spacepoints);
         }
         const seed_parameter_estimation_algorithm::output_type track_params =
-                m_track_parameter_estimation(m_field, measurements, spacepoints,
-                                                                            seeds);
+            m_track_parameter_estimation(m_field, measurements, spacepoints,
+                                         seeds);
 
         // Run the track finding (asynchronously).
         const finding_algorithm::output_type track_candidates =

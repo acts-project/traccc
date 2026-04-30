@@ -105,7 +105,6 @@ full_chain_algorithm::full_chain_algorithm(
       usingGBTS(useGBTS) {
 
     if (usingGBTS) {
-        TRACCC_LOCAL_LOGGER(std::move(log));
         TRACCC_ERROR(
             "GBTS not implemented for sycl, this will run with "
             "triplet seeding");

@@ -715,8 +715,6 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     data_size = ctx.nConnectedEdges * sizeof(int);
 
     cudaMalloc(&ctx.d_active_edges, data_size);
-    cudaMemsetAsync(ctx.d_active_edges, 0xFF, data_size,
-                    stream);  // initialize to -1
 
     data_size = 2 * ctx.nConnectedEdges * sizeof(unsigned char);
 
