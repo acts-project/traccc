@@ -122,7 +122,7 @@ struct kalman_actor_state {
     /// Add the next surface to the sequence
     TRACCC_HOST_DEVICE void add_to_sequence(
         typename sequencer_t::surface_type sf_desc) {
-        assert(!sf_desc.barcode().is_invalid());
+        assert(!sf_desc.identifier().is_invalid());
 
         m_sequencer.sequence().push_back(sf_desc);
         DETRAY_VERBOSE_HOST("Added: " << sf_desc);
@@ -203,10 +203,10 @@ struct kalman_actor_state {
         const auto& navigation = propagation.navigation();
         edm::track_state trk_state = (*this)();
 
-        TRACCC_VERBOSE_HOST("Found: " << navigation.barcode());
+        TRACCC_VERBOSE_HOST("Found: " << navigation.geometry_identifier());
 
         // Surface was found, continue with KF algorithm
-        if (navigation.barcode() ==
+        if (navigation.geometry_identifier() ==
             trk_state.filtered_params().surface_link()) {
             // Count a hole, if track finding did not find a measurement
             if (!backward_mode && trk_state.is_hole()) {
@@ -244,7 +244,7 @@ struct kalman_actor_state {
             for (int i = m_idx - 1; i >= 0; --i) {
                 if (at(static_cast<unsigned int>(i))
                         .filtered_params()
-                        .surface_link() == navigation.barcode()) {
+                        .surface_link() == navigation.geometry_identifier()) {
                     TRACCC_VERBOSE_HOST_DEVICE(
                         "--> bw: Matched to earlier state: navigator skipped "
                         "surfaces in between");
@@ -270,7 +270,7 @@ struct kalman_actor_state {
             for (unsigned int i = static_cast<unsigned int>(m_idx) + 1u;
                  i < size(); ++i) {
                 if (at(i).filtered_params().surface_link() ==
-                    navigation.barcode()) {
+                    navigation.geometry_identifier()) {
                     TRACCC_DEBUG_HOST_DEVICE(
                         "--> fw: Matched to later state: navigator skipped "
                         "surfaces in between");

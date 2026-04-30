@@ -113,7 +113,7 @@ combinatorial_kalman_filter(
 
         auto up = std::upper_bound(measurements.surface_link().begin(),
                                    measurements.surface_link().end(),
-                                   sf_desc.barcode());
+                                   sf_desc.identifier());
         meas_ranges.push_back(static_cast<unsigned int>(
             std::distance(measurements.surface_link().begin(), up)));
     }
@@ -540,7 +540,8 @@ combinatorial_kalman_filter(
                 assert(propagation.navigation().is_on_sensitive());
                 assert(!updater_state.bound_params().is_invalid());
                 TRACCC_DEBUG_HOST(
-                    "On surface: " << propagation.navigation().barcode());
+                    "On surface: "
+                    << propagation.navigation().geometry_identifier());
 
                 const bound_track_parameters<algebra_type>& out_param =
                     updater_state.bound_params();

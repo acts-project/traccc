@@ -35,15 +35,16 @@ track_fitting::track_fitting() : interface("Track Fitting Options") {
             ->default_value(m_config.covariance_inflation_factor),
         "Covariance inflation factor for the track fit");
     m_desc.add_options()(
-        "barcode-sequence-size-factor",
+        "geo_id-sequence-size-factor",
         po::value(&m_config.surface_sequence_size_factor)
             ->default_value(m_config.surface_sequence_size_factor),
-        "Size factor for the barcode sequence used in the backward filter");
+        "Size factor for the geometry identifier sequence used in the backward "
+        "filter");
     m_desc.add_options()(
-        "min-barcode-sequence-capacity",
+        "min-geo_id-sequence-capacity",
         po::value(&m_config.min_surface_sequence_capacity)
             ->default_value(m_config.min_surface_sequence_capacity),
-        "Minimum capacity of barcode sequence");
+        "Minimum capacity of geometry identifier sequence");
     m_desc.add_options()(
         "min-total-momentum",
         po::value(&m_config.min_p)->default_value(m_config.min_p),
@@ -80,10 +81,10 @@ std::unique_ptr<configuration_printable> track_fitting::as_printable() const {
         "Covariance inflation factor",
         std::to_string(m_config.covariance_inflation_factor)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
-        "Barcode sequence size factor",
+        "Geometry identifier sequence size factor",
         std::to_string(m_config.surface_sequence_size_factor)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
-        "Minimum capacity of barcode sequence",
+        "Minimum capacity of geometry identifier sequence",
         std::to_string(m_config.min_surface_sequence_capacity)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Minimum pT",

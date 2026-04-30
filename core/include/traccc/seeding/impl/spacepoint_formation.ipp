@@ -39,9 +39,9 @@ TRACCC_HOST_DEVICE inline void fill_pixel_spacepoint(
             {});
 
     // Fill the spacepoint with the global position and the measurement.
-    sp.x() = getter::element(global, 0u);
-    sp.y() = getter::element(global, 1u);
-    sp.z() = getter::element(global, 2u);
+    sp.x() = static_cast<float>(getter::element(global, 0u));
+    sp.y() = static_cast<float>(getter::element(global, 1u));
+    sp.z() = static_cast<float>(getter::element(global, 2u));
     sp.radius_variance() = 0.f;
     sp.z_variance() = 0.f;
 }

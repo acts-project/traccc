@@ -24,7 +24,7 @@ enum class kalman_fitter_status : uint32_t {
     ERROR_UPDATER_CHI2_NOT_FINITE = 9u,
     ERROR_UPDATER_INVALID_COVARIANCE = 10u,
     ERROR_UPDATER_SKIPPED_STATE = 11u,
-    ERROR_BARCODE_SEQUENCE_OVERFLOW = 12u,
+    ERROR_GEOID_SEQUENCE_OVERFLOW = 12u,
     ERROR_PROPAGATION_FAILURE = 13u,
     ERROR_OTHER = 14u,
     MAX_STATUS = 15u
@@ -73,8 +73,10 @@ struct fitter_debug_msg {
             case ERROR_UPDATER_SKIPPED_STATE: {
                 return msg + "Skipped track state during forward fit";
             }
-            case ERROR_BARCODE_SEQUENCE_OVERFLOW: {
-                return msg + "Barcode sequence overflow in direct navigator";
+            case ERROR_GEOID_SEQUENCE_OVERFLOW: {
+                return msg +
+                       "Geometry identifier sequence overflow in direct "
+                       "navigator";
             }
             case ERROR_PROPAGATION_FAILURE: {
                 return msg + "Propagation failure";

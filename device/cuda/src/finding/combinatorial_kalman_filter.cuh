@@ -30,7 +30,7 @@
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
-#include "traccc/finding/device/barcode_surface_comparator.hpp"
+#include "traccc/finding/device/geo_id_surface_comparator.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/utils/logging.hpp"
 #include "traccc/utils/memory_resource.hpp"
@@ -92,7 +92,7 @@ combinatorial_kalman_filter(
            "Min step length for the next surface should be higher than the "
            "overstep tolerance");
     assert(is_contiguous_on<
-           vecmem::device_vector<const detray::geometry::barcode>>(
+           vecmem::device_vector<const detray::geometry::identifier>>(
         device::identity_projector{}, mr.main, copy, str,
         measurements_view.template get<6>()));
 
@@ -141,7 +141,7 @@ combinatorial_kalman_filter(
                         measurements.surface_link().begin() + n_measurements,
                         device_det.surfaces().begin(),
                         device_det.surfaces().end(), measurement_ranges.begin(),
-                        device::barcode_surface_comparator{});
+                        device::geo_id_surface_comparator{});
 
     unsigned int n_seeds;
 

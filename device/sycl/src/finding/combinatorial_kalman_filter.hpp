@@ -22,13 +22,13 @@
 #include "traccc/finding/actors/ckf_aborter.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
-#include "traccc/finding/device/barcode_surface_comparator.hpp"
 #include "traccc/finding/device/build_tracks.hpp"
 #include "traccc/finding/device/fill_finding_duplicate_removal_sort_keys.hpp"
 #include "traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
 #include "traccc/finding/device/find_tracks.hpp"
 #include "traccc/finding/device/gather_best_tips_per_measurement.hpp"
 #include "traccc/finding/device/gather_measurement_votes.hpp"
+#include "traccc/finding/device/geo_id_surface_comparator.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
 #include "traccc/finding/device/remove_duplicates.hpp"
 #include "traccc/finding/device/update_tip_length_buffer.hpp"
@@ -108,7 +108,7 @@ combinatorial_kalman_filter(
            "Min step length for the next surface should be higher than the "
            "overstep tolerance");
     assert(is_contiguous_on<
-           vecmem::device_vector<const detray::geometry::barcode>>(
+           vecmem::device_vector<const detray::geometry::identifier>>(
         device::identity_projector{}, mr.main, copy, queue,
         measurements_view.template get<6>()));
 
@@ -139,7 +139,7 @@ combinatorial_kalman_filter(
         // is), the end() function cannot be used in host code.
         measurements.surface_link().begin() + n_measurements,
         device_det.surfaces().begin(), device_det.surfaces().end(),
-        measurement_ranges.begin(), device::barcode_surface_comparator{});
+        measurement_ranges.begin(), device::geo_id_surface_comparator{});
     queue.wait_and_throw();
 
     const unsigned int n_seeds = copy.get_size(seeds);

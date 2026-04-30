@@ -24,6 +24,7 @@
 #include <detray/detectors/odd_metadata.hpp>
 #include <detray/detectors/telescope_metadata.hpp>
 #include <detray/detectors/toy_metadata.hpp>
+#include <detray/detectors/wire_chamber_metadata.hpp>
 
 // VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>
@@ -103,5 +104,9 @@ using telescope_detector = detector_traits<
 /// Detray toy detector (test detector)
 using toy_detector =
     detector_traits<detray::toy_metadata<traccc::default_algebra>>;
+
+/// Detray wire chamber detector (test detector)
+using wire_chamber =
+    detector_traits<detray::wire_chamber_metadata<traccc::default_algebra>>;
 
 }  // namespace traccc

@@ -102,7 +102,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     if (in_param_id < payload.n_in_params &&
         in_params_liveness.at(in_param_id) > 0u) {
         /*
-         * Get the barcode of this thread's parameters, then find the first
+         * Get the geo ID of this thread's parameters, then find the first
          * measurement that matches it.
          */
         const unsigned int sf_idx{

@@ -69,7 +69,7 @@ typename edm::track_container<algebra_t>::host triplet_fitting(
             measurement_idx.push_back(link.index);
         }
 
-        vecmem::data::vector_buffer<detray::geometry::barcode> seqs_buffer{};
+        vecmem::data::vector_buffer<detray::geometry::identifier> seqs_buffer{};
         copy.setup(seqs_buffer)->wait();
 
         // Make triplets

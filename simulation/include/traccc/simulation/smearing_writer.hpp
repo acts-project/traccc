@@ -142,7 +142,7 @@ struct smearing_writer : detray::base_actor {
             // Write hits
             io::csv::hit hit;
             hit.particle_id = writer_state.particle_id;
-            hit.geometry_id = sf.barcode().value();
+            hit.geometry_id = sf.identifier().value();
             hit.tx = static_cast<float>(pos[0]);
             hit.ty = static_cast<float>(pos[1]);
             hit.tz = static_cast<float>(pos[2]);
@@ -156,7 +156,7 @@ struct smearing_writer : detray::base_actor {
             // Write measurements
             io::csv::measurement meas;
 
-            assert(sf.barcode() == bound_params.surface_link());
+            assert(sf.identifier() == bound_params.surface_link());
 
             TRACCC_DEBUG_HOST("Actor: Writing truth param.:\n" << bound_params);
 

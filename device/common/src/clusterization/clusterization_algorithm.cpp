@@ -20,7 +20,7 @@ clusterization_algorithm::clusterization_algorithm(
       m_gf_backup{m_config.backup_size(), mr.main},
       m_backup_mutex{vecmem::make_unique_alloc<unsigned int>(mr.main)},
       m_adjc_backup{m_config.backup_size(), mr.main},
-      m_adjv_backup{m_config.backup_size() * 8, mr.main} {
+      m_adjv_backup{m_config.backup_size() * 4, mr.main} {
 
     copy().setup(m_f_backup)->wait();
     copy().setup(m_gf_backup)->wait();

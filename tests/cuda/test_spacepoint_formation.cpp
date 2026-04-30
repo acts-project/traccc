@@ -76,7 +76,7 @@ TEST(CUDASpacepointFormation, cuda) {
                             0.f,
                             0.f,
                             0u,
-                            surfaces[0].barcode(),
+                            surfaces[0].identifier(),
                             {1u, 1u},
                             0u});
 
@@ -87,7 +87,7 @@ TEST(CUDASpacepointFormation, cuda) {
                             0.f,
                             0.f,
                             0u,
-                            surfaces[8u].barcode(),
+                            surfaces[8u].identifier(),
                             {1u, 1u},
                             1u});
 
@@ -101,11 +101,11 @@ TEST(CUDASpacepointFormation, cuda) {
 
     // Check the results
     EXPECT_EQ(copy.get_size(spacepoints_buffer), 2u);
-    std::set<point3> test;
+    std::set<std::array<float, 3u>> test;
     test.insert(spacepoints[0].global());
     test.insert(spacepoints[1].global());
 
-    std::set<point3> ref;
+    std::set<std::array<float, 3u>> ref;
     ref.insert({180.f, 10.f, 15.f});
     ref.insert({20.f, 7.f, 2.f});
 

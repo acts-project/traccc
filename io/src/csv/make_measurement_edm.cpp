@@ -12,7 +12,7 @@
 #include "traccc/definitions/track_parametrization.hpp"
 
 // Detray include(s).
-#include <detray/geometry/barcode.hpp>
+#include <detray/geometry/identifier.hpp>
 
 namespace traccc::io::csv {
 
@@ -54,10 +54,11 @@ void make_measurement_edm(
     meas.time() = csv_meas.time;
 
     if (acts_to_detray_id) {
-        meas.surface_link() = detray::geometry::barcode{
+        meas.surface_link() = detray::geometry::identifier{
             acts_to_detray_id->at(csv_meas.geometry_id)};
     } else {
-        meas.surface_link() = detray::geometry::barcode{csv_meas.geometry_id};
+        meas.surface_link() =
+            detray::geometry::identifier{csv_meas.geometry_id};
     }
     if (det_desc != nullptr) {
         std::size_t dd_idx = geometry_id_to_detector_description_index->at(

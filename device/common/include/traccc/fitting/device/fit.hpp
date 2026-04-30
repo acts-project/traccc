@@ -50,7 +50,7 @@ struct fit_payload {
         typename fitter_t::detector_type::algebra_type>::view tracks_view;
 
     /**
-     * @brief View object to the output barcode sequence
+     * @brief View object to the output geometry identifer sequence
      */
     vecmem::data::jagged_vector_view<typename fitter_t::surface_type>
         surfaces_view;
