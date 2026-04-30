@@ -111,7 +111,7 @@ struct gbts_ctx {
 };
 
 gbts_seeding_algorithm::gbts_seeding_algorithm(
-    const gbts_seedfinder_config& cfg, traccc::memory_resource& mr,
+    const gbts_seedfinder_config& cfg, const traccc::memory_resource& mr,
     vecmem::copy& copy, stream& str, std::unique_ptr<const Logger> logger)
     : messaging(logger->clone()),
       m_config(cfg),
@@ -280,7 +280,6 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
         nNodesPerBlock, ctx.nNodes, m_config.n_phi_bins);
 
     cudaStreamSynchronize(stream);
-
     error = cudaGetLastError();
 
     if (error != cudaSuccess) {
@@ -716,8 +715,6 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     data_size = ctx.nConnectedEdges * sizeof(int);
 
     cudaMalloc(&ctx.d_active_edges, data_size);
-    cudaMemsetAsync(ctx.d_active_edges, 0xFF, data_size,
-                    stream);  // initialize to -1
 
     data_size = 2 * ctx.nConnectedEdges * sizeof(unsigned char);
 

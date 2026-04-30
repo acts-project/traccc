@@ -15,13 +15,14 @@ full_chain_algorithm::full_chain_algorithm(
     const seedfinder_config& finder_config,
     const spacepoint_grid_config& grid_config,
     const seedfilter_config& filter_config,
+    const gbts_seedfinder_config& gbts_config,
     const track_params_estimation_config& track_params_estimation_config,
     const finding_algorithm::config_type& finding_config,
     const fitting_algorithm::config_type& fitting_config,
     const detector_design_description::host& det_descr,
     const detector_conditions_description::host& det_cond,
     const magnetic_field& field, const host_detector* detector,
-    std::unique_ptr<const traccc::Logger> logger)
+    std::unique_ptr<const traccc::Logger> logger, const bool useGBTS)
     : messaging(logger->clone()),
       m_mr(mr),
       m_copy{std::make_unique<vecmem::copy>()},
@@ -42,9 +43,18 @@ full_chain_algorithm::full_chain_algorithm(
       m_finder_config(finder_config),
       m_grid_config(grid_config),
       m_filter_config(filter_config),
+      m_gbts_config(gbts_config),
       m_track_params_estimation_config(track_params_estimation_config),
       m_finding_config(finding_config),
-      m_fitting_config(fitting_config) {}
+      m_fitting_config(fitting_config),
+      usingGBTS(useGBTS) {
+
+    if (usingGBTS) {
+        std::cout << "GBTS not implemented for CPU, this will run with triplet "
+                     "seeding"
+                  << std::endl;
+    }
+}
 
 full_chain_algorithm::output_type full_chain_algorithm::operator()(
     const edm::silicon_cell_collection::host& cells) const {
