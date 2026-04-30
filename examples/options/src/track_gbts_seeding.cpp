@@ -163,23 +163,23 @@ void track_gbts_seeding::read(const boost::program_options::variables_map &) {
         return;
     }
     // config info from file
-    std::vector<std::pair<uint64_t, short>> barcodeBinning;
+    std::vector<std::pair<uint64_t, short>> geoidBinning;
     std::vector<std::pair<int, std::vector<int>>> binTables;
     traccc::device::gbts_layerInfo layerInfo;
 
-    std::ifstream barcodeBinningFile(
-        std::filesystem::path(config_dir + "/barcodeBinning.txt"));
+    std::ifstream geoidBinningFile(
+        std::filesystem::path(config_dir + "/geoidBinning.txt"));
 
-    unsigned int nBarcodes = 0;
-    barcodeBinningFile >> nBarcodes;
-    barcodeBinning.reserve(nBarcodes);
+    unsigned int nGeoIDs = 0;
+    geoidBinningFile >> nGeoIDs;
+    geoidBinning.reserve(nGeoIDs);
 
-    std::pair<uint64_t, short> barcodeLayerPair;
-    for (; nBarcodes > 0u; --nBarcodes) {
-        barcodeBinningFile >> barcodeLayerPair.first;
-        barcodeBinningFile >> barcodeLayerPair.second;
+    std::pair<uint64_t, short> geoidLayerPair;
+    for (; nGeoIDs > 0u; --nGeoIDs) {
+        geoidBinningFile >> geoidLayerPair.first;
+        geoidBinningFile >> geoidLayerPair.second;
 
-        barcodeBinning.push_back(barcodeLayerPair);
+        geoidBinning.push_back(geoidLayerPair);
     }
 
     std::ifstream binTablesFile(
@@ -213,7 +213,7 @@ void track_gbts_seeding::read(const boost::program_options::variables_map &) {
                            geo[1]);
     }
     // Set linking scheme
-    gbts_config.setLinkingScheme(binTables, layerInfo, barcodeBinning, min_pt,
+    gbts_config.setLinkingScheme(binTables, layerInfo, geoidBinning, min_pt,
                                  getDefaultLogger("GBTSconfig"));
 }
 

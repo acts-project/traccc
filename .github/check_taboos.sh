@@ -10,6 +10,8 @@ INPUT="$@"
 
 INPUT_EX_THIS_FILE=${INPUT[@]/".github/check_taboos.sh"}
 
+${GREP} "barcode" ${INPUT_EX_THIS_FILE[@]} ; test $? -eq 1 || exit 1
+
 UNIT_CONSTANT_EXCUDE_FILE="core/include/traccc/definitions/common.hpp"
 INPUT_EX_UNIT_CONSTANT=${INPUT_EX_THIS_FILE[@]/$UNIT_CONSTANT_EXCUDE_FILE}
 
