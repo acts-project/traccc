@@ -55,10 +55,6 @@ struct ccl_kernel {
 
         device::details::index_t* const shared_v =
             ::alpaka::getDynSharedMem<device::details::index_t>(acc);
-        vecmem::data::vector_view<device::details::index_t> f_view{
-            cfg.max_partition_size(), shared_v};
-        vecmem::data::vector_view<device::details::index_t> gf_view{
-            cfg.max_partition_size(), shared_v + cfg.max_partition_size()};
 
         vecmem::device_atomic_ref<uint32_t> backup_mutex(*backup_mutex_ptr);
 
@@ -66,7 +62,7 @@ struct ccl_kernel {
 
         device::ccl_kernel(cfg, thread_id, cells_view, det_descr_view,
                            det_cond_view, partition_start, partition_end, outi,
-                           f_view, gf_view, f_backup_view, gf_backup_view,
+                           shared_v, f_backup_view, gf_backup_view,
                            adjc_backup_view, adjv_backup_view, backup_mutex,
                            disjoint_set_view, cluster_size_view, barry_r,
                            measurements_view, cell_links);

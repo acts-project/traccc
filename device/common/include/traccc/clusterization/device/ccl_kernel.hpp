@@ -28,6 +28,50 @@
 
 namespace traccc::device {
 
+/// Accessor for the in-shared-memory `f`/`gf` arrays used by the primary
+/// (fast) CCL code path. The two logical arrays are interleaved in a single
+/// buffer so cell `n` occupies elements `2n` (parent) and `2n+1`
+/// (grandparent), placing each pair in one 32-bit shared-memory bank slot
+/// and avoiding the 2-way bank conflict that a non-interleaved layout of
+/// 16-bit indices would produce.
+struct ccl_primary_accessor {
+    TRACCC_HOST_DEVICE ccl_primary_accessor(details::index_t* ptr)
+        : m_ptr(ptr) {}
+
+    TRACCC_HOST_DEVICE details::index_t& f_at(unsigned int n) {
+        return m_ptr[2 * n];
+    }
+
+    TRACCC_HOST_DEVICE details::index_t& gf_at(unsigned int n) {
+        return m_ptr[2 * n + 1];
+    }
+
+    private:
+    details::index_t* m_ptr;
+};
+
+/// Accessor for the global-memory `f`/`gf` fallback buffers used when a
+/// partition is too large to fit in the primary shared-memory buffer. The
+/// elements are stored as `fallback_index_t` (32-bit) rather than `index_t`
+/// (16-bit) because this is the code path whose partition size
+/// may exceed the `unsigned short` range.
+struct ccl_backup_accessor {
+    TRACCC_HOST_DEVICE ccl_backup_accessor(details::fallback_index_t* f_ptr,
+                                           details::fallback_index_t* gf_ptr)
+        : m_f_ptr(f_ptr), m_gf_ptr(gf_ptr) {}
+
+    TRACCC_HOST_DEVICE details::fallback_index_t& f_at(unsigned int n) {
+        return m_f_ptr[n];
+    }
+
+    TRACCC_HOST_DEVICE details::fallback_index_t& gf_at(unsigned int n) {
+        return m_gf_ptr[n];
+    }
+
+    private:
+    details::fallback_index_t *m_f_ptr, *m_gf_ptr;
+};
+
 /// Function which reads raw detector cells and turns them into measurements.
 ///
 /// @param[in] cfg clustering configuration
@@ -38,12 +82,10 @@ namespace traccc::device {
 /// @param partition_start    partition start point for this thread block
 /// @param partition_end      partition end point for this thread block
 /// @param outi               number of measurements for this partition
-/// @param f_view  array of "parent" indices for all cells in this partition
-/// @param gf_view array of "grandparent" indices for all cells in this
-///                partition
-/// @param f_backup_view global memory alternative to `f_view` for cases in
+/// @param fgf_ptr pointer to shared memory that will house both f and gf
+/// @param f_backup_view global memory alternative to fgf_ptr for cases in
 ///     which that array is not large enough
-/// @param gf_backup_view global memory alternative to `gf_view` for cases in
+/// @param gf_backup_view global memory alternative to fgf_ptr for cases in
 ///     which that array is not large enough
 /// @param adjc_backup_view global memory alternative to the adjacent cell
 ///     count vector
@@ -70,8 +112,7 @@ TRACCC_DEVICE inline void ccl_kernel(
     const detector_design_description::const_view& det_descr_view,
     const detector_conditions_description::const_view& det_cond_view,
     std::size_t& partition_start, std::size_t& partition_end, std::size_t& outi,
-    vecmem::data::vector_view<details::index_t> f_view,
-    vecmem::data::vector_view<details::index_t> gf_view,
+    details::index_t* fgf_ptr,
     vecmem::data::vector_view<details::fallback_index_t> f_backup_view,
     vecmem::data::vector_view<details::fallback_index_t> gf_backup_view,
     vecmem::data::vector_view<unsigned char> adjc_backup_view,

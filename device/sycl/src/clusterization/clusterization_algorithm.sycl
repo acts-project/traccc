@@ -88,15 +88,6 @@ void clusterization_algorithm::ccl_kernel(
                  disjoint_set = payload.disjoint_set,
                  cluster_sizes =
                      payload.cluster_sizes](::sycl::nd_item<1> item) {
-                    // Construct more readable variable names.
-                    using vector_size_t = vecmem::data::vector_view<
-                        device::details::index_t>::size_type;
-                    vecmem::data::vector_view<device::details::index_t> f_view{
-                        static_cast<vector_size_t>(config.max_partition_size()),
-                        &shared_idx[0]};
-                    vecmem::data::vector_view<device::details::index_t> gf_view{
-                        static_cast<vector_size_t>(config.max_partition_size()),
-                        &shared_idx[config.max_partition_size()]};
                     std::size_t& partition_start = shared_uint[0];
                     std::size_t& partition_end = shared_uint[1];
                     std::size_t& outi = shared_uint[2];
@@ -112,7 +103,7 @@ void clusterization_algorithm::ccl_kernel(
                     // Run the algorithm for this thread.
                     device::ccl_kernel(config, thread_id, cells, det_descr,
                                        det_cond, partition_start, partition_end,
-                                       outi, f_view, gf_view, f_backup,
+                                       outi, &shared_idx[0], f_backup,
                                        gf_backup, adjc_backup, adjv_backup,
                                        mutex, disjoint_set, cluster_sizes,
                                        barrier, measurements, cell_links);

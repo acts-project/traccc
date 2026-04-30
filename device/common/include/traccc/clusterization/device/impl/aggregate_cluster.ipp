@@ -20,8 +20,9 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
     const edm::silicon_cell_collection::const_device& cells,
     const detector_design_description::const_device& det_desc,
     const detector_conditions_description::const_device& det_cond,
-    const vecmem::device_vector<index_t>& fll, const unsigned int start,
-    const unsigned int end, const unsigned int cid,
+    std::conditional_t<std::same_as<index_t, details::fallback_index_t>,
+                       ccl_backup_accessor, ccl_primary_accessor>& acc,
+    const unsigned int start, const unsigned int end, const unsigned int cid,
     edm::measurement_collection::device::proxy_type out,
     vecmem::data::vector_view<unsigned int> cell_links, const unsigned int link,
     vecmem::device_vector<unsigned int>& disjoint_set,
@@ -117,7 +118,7 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
             disjoint_set.at(pos) = link;
         }
 
-        const auto next_j = fll.at(j);
+        const auto next_j = acc.gf_at(j);
 
         if (j == next_j) {
             break;
