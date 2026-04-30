@@ -220,13 +220,15 @@ TRACCC_HOST_DEVICE inline void build_tracks(
 #ifndef NDEBUG
     // Assert that we did not make any duplicate track states.
     for (const auto& i : track.constituent_links()) {
-        assert(i.type == edm::track_constituent_link::measurement);
+        if (run_mbf) {
+            assert(i.type == edm::track_constituent_link::track_state);
+        } else {
+            assert(i.type == edm::track_constituent_link::measurement);
+        }
         for (const auto& j : track.constituent_links()) {
-            assert(j.type == edm::track_constituent_link::measurement);
             if (i.index != j.index) {
-                // TODO: Re-enable me!
-                // assert(measurements.at(i->index).identifier() !=
-                //       measurement.at(j->index).identifier());
+                assert(measurements.at(i.index).identifier() !=
+                       measurements.at(j.index).identifier());
             }
         }
     }
