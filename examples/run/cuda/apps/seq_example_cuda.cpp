@@ -71,14 +71,14 @@ int seq_run(const traccc::opts::detector& detector_opts,
             const traccc::opts::input_data& input_opts,
             const traccc::opts::clusterization& clusterization_opts,
             const traccc::opts::track_seeding& seeding_opts,
-            traccc::opts::track_gbts_seeding& gbts_seeding_opts,
+            const traccc::opts::track_gbts_seeding& seeding_gbts_opts,
             const traccc::opts::track_finding& finding_opts,
             const traccc::opts::track_propagation& propagation_opts,
             const traccc::opts::track_resolution& resolution_opts,
             const traccc::opts::track_fitting& fitting_opts,
             const traccc::opts::performance& performance_opts,
             const traccc::opts::accelerator& accelerator_opts,
-            std::unique_ptr<const traccc::Logger> ilogger) {
+            std::unique_ptr<const traccc::Logger> ilogger, bool usingGBTS) {
     TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
     // Memory resources used by the application.
@@ -164,15 +164,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
     const traccc::spacepoint_grid_config spacepoint_grid_config(seeding_opts);
 
     // GBTS seeding configuration
-    traccc::gbts_seedfinder_config gbts_config;
-    if (gbts_seeding_opts.useGBTS) {
-        if (!gbts_config.setLinkingScheme(
-                gbts_seeding_opts.binTables, gbts_seeding_opts.layerInfo,
-                gbts_seeding_opts.barcodeBinning, 900.0f,
-                logger().clone("GBTSconfig"))) {
-            return -1;
-        }
-    }
+    traccc::gbts_seedfinder_config gbts_config(seeding_gbts_opts);
 
     traccc::finding_config finding_cfg(finding_opts);
     finding_cfg.propagation = propagation_config;
@@ -336,7 +328,7 @@ int seq_run(const traccc::opts::detector& detector_opts,
             // CUDA
             {
                 traccc::performance::timer t("Seeding (cuda)", elapsedTimes);
-                if (gbts_seeding_opts.useGBTS) {
+                if (usingGBTS) {
                     seeds_cuda_buffer = gbts_sa_cuda(
                         spacepoints_cuda_buffer, measurements_cuda_buffer);
                 } else {
@@ -602,7 +594,7 @@ int main(int argc, char* argv[]) {
     traccc::opts::input_data input_opts;
     traccc::opts::clusterization clusterization_opts;
     traccc::opts::track_seeding seeding_opts;
-    traccc::opts::track_gbts_seeding gbts_seeding_opts;
+    traccc::opts::track_gbts_seeding seeding_gbts_opts;
     traccc::opts::track_finding finding_opts;
     traccc::opts::track_propagation propagation_opts;
     traccc::opts::track_resolution resolution_opts;
@@ -612,7 +604,7 @@ int main(int argc, char* argv[]) {
     traccc::opts::program_options program_opts{
         "Full Tracking Chain Using CUDA",
         {detector_opts, bfield_opts, input_opts, clusterization_opts,
-         seeding_opts, gbts_seeding_opts, finding_opts, propagation_opts,
+         seeding_opts, seeding_gbts_opts, finding_opts, propagation_opts,
          resolution_opts, performance_opts, fitting_opts, accelerator_opts},
         argc,
         argv,
@@ -620,7 +612,7 @@ int main(int argc, char* argv[]) {
 
     // Run the application.
     return seq_run(detector_opts, bfield_opts, input_opts, clusterization_opts,
-                   seeding_opts, gbts_seeding_opts, finding_opts,
+                   seeding_opts, seeding_gbts_opts, finding_opts,
                    propagation_opts, resolution_opts, fitting_opts,
-                   performance_opts, accelerator_opts, logger->clone());
+                   performance_opts, accelerator_opts, logger->clone(), seeding_gbts_opts.useGBTS);
 }

@@ -71,6 +71,7 @@
 using namespace traccc;
 
 int seq_run(const traccc::opts::track_seeding& seeding_opts,
+            const traccc::opts::track_gbts_seeding& seeding_gbts_opts,
             const traccc::opts::track_finding& finding_opts,
             const traccc::opts::track_propagation& propagation_opts,
             [[maybe_unused]] const traccc::opts::track_fitting& fitting_opts,
@@ -82,8 +83,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::truth_finding& truth_finding_opts,
             const traccc::opts::seed_matching& seed_matching_opts,
             const traccc::opts::track_matching& track_matching_opts,
-            traccc::opts::track_gbts_seeding& gbts_seeding_opts,
-            std::unique_ptr<const traccc::Logger> ilogger) {
+            std::unique_ptr<const traccc::Logger> ilogger, bool usingGBTS) {
     TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
     // Memory resources used by the application.
@@ -162,15 +162,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         traccc::buffer_from_host_detector(host_det, mng_mr, host_copy);
     
     // GBTS seeding configuration
-    traccc::gbts_seedfinder_config gbts_config;
-    if (gbts_seeding_opts.useGBTS) {
-        if (!gbts_config.setLinkingScheme(
-                gbts_seeding_opts.binTables, gbts_seeding_opts.layerInfo,
-                gbts_seeding_opts.barcodeBinning, /*host_det,*/ 900.0f,
-                logger().clone("GBTSconfig"))) {
-            return -1;
-        }
-    }
+    const traccc::gbts_seedfinder_config gbts_config(seeding_gbts_opts);
     // Seeding algorithm
     const traccc::seedfinder_config seedfinder_config(seeding_opts);
     const traccc::seedfilter_config seedfilter_config(seeding_opts);
@@ -281,7 +273,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             {
                 traccc::performance::timer t("Seeding (cuda)", elapsedTimes);
                 // Reconstruct the spacepoints into seeds.
-                if (gbts_seeding_opts.useGBTS) {
+                if (usingGBTS) {
                     seeds_cuda_buffer = gbts_sa_cuda(spacepoints_cuda_buffer, measurements_cuda_buffer);
                 } else {
                     seeds_cuda_buffer = sa_cuda(spacepoints_cuda_buffer);
@@ -473,6 +465,7 @@ int main(int argc, char* argv[]) {
     traccc::opts::magnetic_field bfield_opts;
     traccc::opts::input_data input_opts;
     traccc::opts::track_seeding seeding_opts;
+    traccc::opts::track_gbts_seeding seeding_gbts_opts;
     traccc::opts::track_finding finding_opts;
     traccc::opts::track_propagation propagation_opts;
     traccc::opts::track_fitting fitting_opts;
@@ -481,19 +474,18 @@ int main(int argc, char* argv[]) {
     traccc::opts::truth_finding truth_finding_opts;
     traccc::opts::seed_matching seed_matching_opts;
     traccc::opts::track_matching track_matching_opts;
-    traccc::opts::track_gbts_seeding gbts_seeding_opts;
     traccc::opts::program_options program_opts{
         "Full Tracking Chain Using CUDA (without clusterization)",
-        {detector_opts, bfield_opts, input_opts, seeding_opts, finding_opts,
+        {detector_opts, bfield_opts, input_opts, seeding_opts, seeding_gbts_opts, finding_opts,
          propagation_opts, fitting_opts, performance_opts, accelerator_opts,
-         truth_finding_opts, seed_matching_opts, track_matching_opts, gbts_seeding_opts},
+         truth_finding_opts, seed_matching_opts, track_matching_opts},
         argc,
         argv,
         logger->cloneWithSuffix("Options")};
 
     // Run the application.
-    return seq_run(seeding_opts, finding_opts, propagation_opts, fitting_opts,
+    return seq_run(seeding_opts, seeding_gbts_opts, finding_opts, propagation_opts, fitting_opts,
                    input_opts, detector_opts, bfield_opts, performance_opts,
                    accelerator_opts, truth_finding_opts, seed_matching_opts,
-                   track_matching_opts, gbts_seeding_opts, logger->clone());
+                   track_matching_opts, logger->clone(), seeding_gbts_opts.useGBTS);
 }
