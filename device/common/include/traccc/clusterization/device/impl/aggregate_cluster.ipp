@@ -18,8 +18,8 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
     const edm::silicon_cell_collection::const_device& cells,
     const detector_design_description::const_device& det_desc,
     const detector_conditions_description::const_device& det_cond,
-    const vecmem::device_vector<details::index_t>& f, const unsigned int start,
-    const unsigned int end, const unsigned short cid,
+    const vecmem::device_vector<details::index_t>& fll,
+    const unsigned int start, const unsigned int end, const unsigned short cid,
     edm::measurement_collection::device::proxy_type out,
     vecmem::data::vector_view<unsigned int> cell_links, const unsigned int link,
     vecmem::device_vector<unsigned int>& disjoint_set,
@@ -73,82 +73,59 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
 
     const auto partition_size = static_cast<unsigned short>(end - start);
 
-    bool first_processed = false;
+    unsigned short j = cid;
 
-    channel_id maxChannel1 = std::numeric_limits<channel_id>::min();
-
-    for (unsigned short j = cid; j < partition_size; j++) {
-
+    while (j < partition_size) {
         const unsigned int pos = j + start;
         const edm::silicon_cell cell = cells.at(pos);
+        const channel_id c0 = cell.channel0();
+        const channel_id c1 = cell.channel1();
+        const scalar activation = cell.activation();
 
-        /*
-         * Terminate the process earlier if we have reached a cell sufficiently
-         * in a different module.
-         */
-        if (cell.module_index() != module_idx) {
+        totalWeight += activation;
+        scalar weight_factor = activation / totalWeight;
+
+        point2 cell_position =
+            traccc::details::position_from_cell(cell, module_dd);
+
+        min_channel0 = std::min(min_channel0, c0);
+        min_channel1 = std::min(min_channel1, c1);
+        max_channel0 = std::max(max_channel0, c0);
+        max_channel1 = std::max(max_channel1, c1);
+
+        if (j == cid) {
+            offset = cell_position;
+        }
+
+        cell_position = cell_position - offset;
+
+        const point2 diff_old = cell_position - mean;
+        mean = mean + diff_old * weight_factor;
+        const point2 diff_new = cell_position - mean;
+
+        var[0] = (1.f - weight_factor) * var[0] +
+                 weight_factor * (diff_old[0] * diff_new[0]);
+        var[1] = (1.f - weight_factor) * var[1] +
+                 weight_factor * (diff_old[1] * diff_new[1]);
+
+        cell_links_device.at(pos) = link;
+        tmp_cluster_size++;
+
+        if (disjoint_set.capacity()) {
+            disjoint_set.at(pos) = link;
+        }
+
+        const auto next_j = fll.at(j);
+
+        if (j == next_j) {
             break;
+        } else {
+            j = next_j;
         }
+    }
 
-        /*
-         * If the value of this cell is equal to our, that means it
-         * is part of our cluster. In that case, we take its values
-         * for position and add them to our accumulators.
-         */
-        if (f.at(j) == cid) {
-
-            if (cell.channel1() > maxChannel1) {
-                maxChannel1 = cell.channel1();
-            }
-
-            const scalar weight = cell.activation();
-
-            totalWeight += weight;
-            scalar weight_factor = weight / totalWeight;
-
-            point2 cell_position =
-                traccc::details::position_from_cell(cell, module_dd);
-
-            min_channel0 = std::min(min_channel0, cell.channel0());
-            min_channel1 = std::min(min_channel1, cell.channel1());
-            max_channel0 = std::max(max_channel0, cell.channel0());
-            max_channel1 = std::max(max_channel1, cell.channel1());
-
-            if (!first_processed) {
-                offset = cell_position;
-                first_processed = true;
-            }
-
-            cell_position = cell_position - offset;
-
-            const point2 diff_old = cell_position - mean;
-            mean = mean + diff_old * weight_factor;
-            const point2 diff_new = cell_position - mean;
-
-            var[0] = (1.f - weight_factor) * var[0] +
-                     weight_factor * (diff_old[0] * diff_new[0]);
-            var[1] = (1.f - weight_factor) * var[1] +
-                     weight_factor * (diff_old[1] * diff_new[1]);
-
-            cell_links_device.at(pos) = link;
-            tmp_cluster_size++;
-
-            if (disjoint_set.capacity()) {
-                disjoint_set.at(pos) = link;
-            }
-        }
-
-        /*
-         * Terminate the process earlier if we have reached a cell sufficiently
-         * far away from the cluster in the dominant axis.
-         */
-        if (cell.channel1() > maxChannel1 + 1) {
-            break;
-        }
-
-        if (cluster_size.has_value()) {
-            (*cluster_size).get() = tmp_cluster_size;
-        }
+    if (cluster_size.has_value()) {
+        (*cluster_size).get() = tmp_cluster_size;
     }
 
     unsigned int delta0 = (max_channel0 - min_channel0) + 1;
