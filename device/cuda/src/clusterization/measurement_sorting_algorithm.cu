@@ -12,7 +12,7 @@
 #include "traccc/cuda/clusterization/measurement_sorting_algorithm.hpp"
 
 // Project include(s).
-#include "traccc/clusterization/device/barcode_based_sorter.hpp"
+#include "traccc/clusterization/device/geo_id_based_sorter.hpp"
 #include "traccc/clusterization/device/sorting_index_filler.hpp"
 
 // VecMem include(s).
@@ -92,7 +92,7 @@ measurement_sorting_algorithm::operator()(
     // Sort the indices according to the surface identifiers of the
     // measurements.
     thrust::sort(policy, indices.ptr(), indices.ptr() + indices.capacity(),
-                 device::barcode_based_sorter{measurements.surface_link()});
+                 device::geo_id_based_sorter{measurements.surface_link()});
 
     // Create the output buffer.
     output_type result{measurements_view.capacity(), m_mr.main,

@@ -75,7 +75,7 @@ void read_json_dd_impl(traccc::detector_design_description::host& det_desc,
         }
         // New module — add it to detector conditions description
         det_cond.resize(det_cond.size() + 1);
-        det_cond.geometry_id().back() = surface_desc.barcode();
+        det_cond.geometry_id().back() = surface_desc.identifier();
         det_cond.acts_geometry_id().back() = geom_id;
 
         std::array<detray::dindex_type<traccc::default_algebra>, 2u> subspace =

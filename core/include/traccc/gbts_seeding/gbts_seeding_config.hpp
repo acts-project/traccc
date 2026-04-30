@@ -17,7 +17,7 @@
 #include "traccc/utils/messaging.hpp"
 
 // Detray include(s).
-#include <detray/geometry/barcode.hpp>
+#include <detray/geometry/identifier.hpp>
 
 namespace traccc::device {
 
@@ -139,7 +139,7 @@ struct gbts_seedfinder_config {
     bool setLinkingScheme(
         const std::vector<std::pair<int, std::vector<int>>>& binTables,
         const device::gbts_layerInfo layerInfo,
-        std::vector<std::pair<uint64_t, short>>& detrayBarcodeBinning,
+        std::vector<std::pair<uint64_t, short>>& detrayGeoIDBinning,
         float minPt, std::unique_ptr<const traccc::Logger> logger);
 
     // layer linking and geometry
@@ -159,7 +159,7 @@ struct gbts_seedfinder_config {
     unsigned int n_eta_bins = 0;  // calculated from input layerInfo
     unsigned int n_phi_bins = 128;
     // graph making maxiums
-    unsigned char max_num_neighbours = 10;
+    unsigned int max_num_neighbours = 10;
     // graph extraction cuts
     int minLevel = 3;  // equivlent to a cut of #seed edges or #spacepoints-1
 
