@@ -66,6 +66,14 @@ template <typename T>
 struct update_tip_length_buffer {};
 template <typename T>
 struct build_tracks {};
+
+template <typename T>
+struct upper_bound {};
+template <typename T>
+struct sort_by_key_1 {};
+template <typename T>
+struct sort_by_key_2 {};
+
 }  // namespace kernels
 
 /// Templated implementation of the track finding algorithm.
@@ -112,10 +120,6 @@ combinatorial_kalman_filter(
         device::identity_projector{}, mr.main, copy, queue,
         measurements_view.template get<6>()));
 
-    // oneDPL policy to use, forcing execution onto the same device that the
-    // hand-written kernels would run on.
-    auto policy = oneapi::dpl::execution::device_policy{queue};
-
     /*****************************************************************
      * Measurement Operations
      *****************************************************************/
@@ -133,7 +137,9 @@ combinatorial_kalman_filter(
     vecmem::device_vector<unsigned int> measurement_ranges(meas_ranges_buffer);
 
     oneapi::dpl::upper_bound(
-        policy, measurements.surface_link().begin(),
+        oneapi::dpl::execution::device_policy<kernels::upper_bound<kernel_t>>{
+            queue},
+        measurements.surface_link().begin(),
         // We have to use this ugly form here, because if the
         // measurement collection is resizable (which it often
         // is), the end() function cannot be used in host code.
@@ -433,9 +439,11 @@ combinatorial_kalman_filter(
                 link_last_measurement_buffer);
             vecmem::device_vector<unsigned int> param_ids_device(
                 param_ids_buffer);
-            oneapi::dpl::sort_by_key(policy, keys_device.begin(),
-                                     keys_device.end(),
-                                     param_ids_device.begin());
+            oneapi::dpl::sort_by_key(
+                oneapi::dpl::execution::device_policy<
+                    kernels::sort_by_key_1<kernel_t>>{queue},
+                keys_device.begin(), keys_device.end(),
+                param_ids_device.begin());
             queue.wait_and_throw();
 
             /*
@@ -513,9 +521,11 @@ combinatorial_kalman_filter(
                     keys_buffer);
                 vecmem::device_vector<unsigned int> param_ids_device(
                     param_ids_buffer);
-                oneapi::dpl::sort_by_key(policy, keys_device.begin(),
-                                         keys_device.end(),
-                                         param_ids_device.begin());
+                oneapi::dpl::sort_by_key(
+                    oneapi::dpl::execution::device_policy<
+                        kernels::sort_by_key_2<kernel_t>>{queue},
+                    keys_device.begin(), keys_device.end(),
+                    param_ids_device.begin());
                 queue.wait_and_throw();
             }
 
