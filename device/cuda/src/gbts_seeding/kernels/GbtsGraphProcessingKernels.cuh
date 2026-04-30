@@ -78,8 +78,6 @@ __global__ static void CCA_IterationKernel(const int* d_output_graph,
     int levelLoad = toggle * nEdges;
     int levelStore = (1 - toggle) * nEdges;
 
-    __syncthreads();
-
     for (int edgeIdx = threadIdx.x + blockIdx.x * blockDim.x; edgeIdx < nEdges;
          edgeIdx += blockDim.x * gridDim.x) {
 
@@ -116,7 +114,7 @@ __global__ static void CCA_IterationKernel(const int* d_output_graph,
                 d_outgoing_paths[edgeIdx].y = -1;
                 d_active_edges[edgeIdx] = -1;
             } else {
-                // flag edge fore next iteration
+                // flag edge for the next iteration
                 d_active_edges[edgeIdx] = iter + 1;
             }
         } else {
