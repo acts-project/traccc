@@ -13,8 +13,8 @@
 #include "traccc/cuda/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
-#include "traccc/cuda/seeding/seed_parameter_estimation_algorithm.hpp"
 #include "traccc/cuda/gbts_seeding/gbts_seeding_algorithm.hpp"
+#include "traccc/cuda/seeding/seed_parameter_estimation_algorithm.hpp"
 #include "traccc/cuda/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/cuda/seeding/triplet_seeding_algorithm.hpp"
 #include "traccc/cuda/utils/make_magnetic_field.hpp"
@@ -24,6 +24,7 @@
 #include "traccc/examples/make_magnetic_field.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
+#include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/detector_buffer.hpp"
 #include "traccc/geometry/host_detector.hpp"
@@ -31,7 +32,6 @@
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_detector_description.hpp"
 #include "traccc/io/utils.hpp"
-#include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 #include "traccc/options/accelerator.hpp"
 #include "traccc/options/clusterization.hpp"
 #include "traccc/options/detector.hpp"
@@ -41,9 +41,9 @@
 #include "traccc/options/program_options.hpp"
 #include "traccc/options/track_finding.hpp"
 #include "traccc/options/track_fitting.hpp"
+#include "traccc/options/track_gbts_seeding.hpp"
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/options/track_resolution.hpp"
-#include "traccc/options/track_gbts_seeding.hpp"
 #include "traccc/options/track_seeding.hpp"
 #include "traccc/performance/collection_comparator.hpp"
 #include "traccc/performance/container_comparator.hpp"
@@ -329,8 +329,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
             {
                 traccc::performance::timer t("Seeding (cuda)", elapsedTimes);
                 if (usingGBTS) {
-                    seeds_cuda_buffer = gbts_sa_cuda(
-                        spacepoints_cuda_buffer, measurements_cuda_buffer);
+                    seeds_cuda_buffer = gbts_sa_cuda(spacepoints_cuda_buffer,
+                                                     measurements_cuda_buffer);
                 } else {
                     seeds_cuda_buffer = sa_cuda(spacepoints_cuda_buffer);
                 }
@@ -614,5 +614,6 @@ int main(int argc, char* argv[]) {
     return seq_run(detector_opts, bfield_opts, input_opts, clusterization_opts,
                    seeding_opts, seeding_gbts_opts, finding_opts,
                    propagation_opts, resolution_opts, fitting_opts,
-                   performance_opts, accelerator_opts, logger->clone(), seeding_gbts_opts.useGBTS);
+                   performance_opts, accelerator_opts, logger->clone(),
+                   seeding_gbts_opts.useGBTS);
 }

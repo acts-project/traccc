@@ -59,9 +59,9 @@
 #include <vecmem/utils/cuda/async_copy.hpp>
 #include <vecmem/utils/cuda/copy.hpp>
 
-#include "traccc/options/track_gbts_seeding.hpp"
-#include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 #include "traccc/cuda/gbts_seeding/gbts_seeding_algorithm.hpp"
+#include "traccc/gbts_seeding/gbts_seeding_config.hpp"
+#include "traccc/options/track_gbts_seeding.hpp"
 
 // System include(s).
 #include <exception>
@@ -160,7 +160,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
 
     const traccc::detector_buffer detector_buffer =
         traccc::buffer_from_host_detector(host_det, mng_mr, host_copy);
-    
+
     // GBTS seeding configuration
     const traccc::gbts_seedfinder_config gbts_config(seeding_gbts_opts);
     // Seeding algorithm
@@ -274,7 +274,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                 traccc::performance::timer t("Seeding (cuda)", elapsedTimes);
                 // Reconstruct the spacepoints into seeds.
                 if (usingGBTS) {
-                    seeds_cuda_buffer = gbts_sa_cuda(spacepoints_cuda_buffer, measurements_cuda_buffer);
+                    seeds_cuda_buffer = gbts_sa_cuda(spacepoints_cuda_buffer,
+                                                     measurements_cuda_buffer);
                 } else {
                     seeds_cuda_buffer = sa_cuda(spacepoints_cuda_buffer);
                 }
@@ -476,16 +477,18 @@ int main(int argc, char* argv[]) {
     traccc::opts::track_matching track_matching_opts;
     traccc::opts::program_options program_opts{
         "Full Tracking Chain Using CUDA (without clusterization)",
-        {detector_opts, bfield_opts, input_opts, seeding_opts, seeding_gbts_opts, finding_opts,
-         propagation_opts, fitting_opts, performance_opts, accelerator_opts,
-         truth_finding_opts, seed_matching_opts, track_matching_opts},
+        {detector_opts, bfield_opts, input_opts, seeding_opts,
+         seeding_gbts_opts, finding_opts, propagation_opts, fitting_opts,
+         performance_opts, accelerator_opts, truth_finding_opts,
+         seed_matching_opts, track_matching_opts},
         argc,
         argv,
         logger->cloneWithSuffix("Options")};
 
     // Run the application.
-    return seq_run(seeding_opts, seeding_gbts_opts, finding_opts, propagation_opts, fitting_opts,
-                   input_opts, detector_opts, bfield_opts, performance_opts,
-                   accelerator_opts, truth_finding_opts, seed_matching_opts,
-                   track_matching_opts, logger->clone(), seeding_gbts_opts.useGBTS);
+    return seq_run(seeding_opts, seeding_gbts_opts, finding_opts,
+                   propagation_opts, fitting_opts, input_opts, detector_opts,
+                   bfield_opts, performance_opts, accelerator_opts,
+                   truth_finding_opts, seed_matching_opts, track_matching_opts,
+                   logger->clone(), seeding_gbts_opts.useGBTS);
 }

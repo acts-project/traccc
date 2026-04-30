@@ -76,8 +76,8 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
     opts::program_options program_opts{
         description,
         {detector_opts, bfield_opts, input_opts, clusterization_opts,
-         seeding_opts, seeding_gbts_opts, finding_opts, propagation_opts, fitting_opts,
-         throughput_opts, logging_opts},
+         seeding_opts, seeding_gbts_opts, finding_opts, propagation_opts,
+         fitting_opts, throughput_opts, logging_opts},
         argc,
         argv,
         prelogger->cloneWithSuffix("Options")};
