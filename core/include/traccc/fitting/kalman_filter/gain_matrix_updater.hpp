@@ -126,23 +126,10 @@ struct gain_matrix_updater {
         TRACCC_DEBUG_HOST("-> K:\n" << K);
 
         // Calculate the filtered track parameters
-        const matrix_type<6, 1> filtered_vec =
+        matrix_type<6, 1> filtered_vec =
             predicted_vec + K * (meas_local - H * predicted_vec);
-        const matrix_type<6, 6> i_minus_kh = I66 - K * H;
-        matrix_type<6, 6> filtered_cov =
-            i_minus_kh * predicted_cov * matrix::transpose(i_minus_kh) +
-            K * V * matrix::transpose(K);
 
         TRACCC_DEBUG_HOST("-> Filtered param:\n" << filtered_vec);
-        TRACCC_DEBUG_HOST("-> Filtered cov:\n" << filtered_cov);
-
-        // Check the covariance for consistency
-        // @TODO: Need to understand why negative variance happens
-        if (constexpr traccc::scalar min_var{-0.01f};
-            !details::regularize_covariance<algebra_t>(filtered_cov, min_var)) {
-            TRACCC_ERROR_HOST_DEVICE("Negative variance after filtering");
-            return kalman_fitter_status::ERROR_UPDATER_INVALID_COVARIANCE;
-        }
 
         // Return false if track is parallel to z-axis or phi is not finite
         if (!std::isfinite(getter::element(filtered_vec, e_bound_theta, 0))) {
@@ -161,6 +148,21 @@ struct gain_matrix_updater {
             0.f) {
             TRACCC_ERROR_HOST_DEVICE("q/p is zero after filtering");
             return kalman_fitter_status::ERROR_QOP_ZERO;
+        }
+
+        const matrix_type<6, 6> i_minus_kh = I66 - K * H;
+        matrix_type<6, 6> filtered_cov =
+            i_minus_kh * predicted_cov * matrix::transpose(i_minus_kh) +
+            K * V * matrix::transpose(K);
+
+        TRACCC_DEBUG_HOST("-> Filtered cov:\n" << filtered_cov);
+
+        // Check the covariance for consistency
+        // @TODO: Need to understand why negative variance happens
+        if (constexpr traccc::scalar min_var{-0.01f};
+            !details::regularize_covariance<algebra_t>(filtered_cov, min_var)) {
+            TRACCC_ERROR_HOST_DEVICE("Negative variance after filtering");
+            return kalman_fitter_status::ERROR_UPDATER_INVALID_COVARIANCE;
         }
 
         // Residual between measurement and (projected) filtered vector
@@ -192,28 +194,16 @@ struct gain_matrix_updater {
             return kalman_fitter_status::ERROR_UPDATER_CHI2_NOT_FINITE;
         }
 
+        // Wrap the phi and theta angles in their valid ranges
+        if (!normalize_angles<algebra_t>(filtered_vec)) {
+            TRACCC_ERROR_HOST_DEVICE("Hit theta pole in filtering!");
+            return kalman_fitter_status::ERROR_THETA_POLE;
+        }
+
         // Set the chi2 for this track and measurement
         trk_state.filtered_params().set_vector(filtered_vec);
         trk_state.filtered_params().set_covariance(filtered_cov);
         trk_state.filtered_chi2() = chi2_val;
-
-        if (math::fmod(trk_state.filtered_params().theta(),
-                       2.f * constant<traccc::scalar>::pi) == 0.f) {
-            TRACCC_ERROR_HOST_DEVICE(
-                "Hit theta pole after filtering : %f (unrecoverable error "
-                "pre-normalization)",
-                trk_state.filtered_params().theta());
-            return kalman_fitter_status::ERROR_THETA_POLE;
-        }
-
-        // Wrap the phi and theta angles in their valid ranges
-        normalize_angles(trk_state.filtered_params());
-
-        const scalar theta = trk_state.filtered_params().theta();
-        if (theta <= 0.f || theta >= 2.f * constant<traccc::scalar>::pi) {
-            TRACCC_ERROR_HOST_DEVICE("Hit theta pole in filtering : %f", theta);
-            return kalman_fitter_status::ERROR_THETA_POLE;
-        }
 
         assert(!trk_state.filtered_params().is_invalid());
 

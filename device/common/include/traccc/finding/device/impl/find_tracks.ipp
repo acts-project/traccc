@@ -379,7 +379,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                          * $\chi^2$ value will be.
                          */
                         traccc::scalar highest =
-                            static_cast<traccc::scalar>(0.f);
+                            static_cast<traccc::scalar>(-1.f);
 
                         for (unsigned int i = 0;
                              i < cfg.max_num_branches_per_surface; ++i) {

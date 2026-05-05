@@ -414,7 +414,7 @@ struct kalman_actor : detray::base_actor {
                               direction_e ==
                                   kalman_actor_direction::BIDIRECTIONAL) {
                     // Wrap the phi and theta angles in their valid ranges
-                    normalize_angles(bound_param);
+                    normalize_angles<algebra_t>(bound_param);
 
                     // Forward filter
                     TRACCC_DEBUG_HOST_DEVICE("Run filtering...");
