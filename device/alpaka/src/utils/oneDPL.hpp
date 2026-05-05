@@ -15,3 +15,4 @@
 // oneDPL include(s).
 #include <oneapi/dpl/algorithm>
 #include <oneapi/dpl/execution>
+#include <oneapi/dpl/numeric>
