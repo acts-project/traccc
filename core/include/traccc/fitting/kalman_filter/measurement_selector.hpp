@@ -274,8 +274,7 @@ struct measurement_selector {
     /// @param cfg the calibration configuration
     /// @param is_line whether the measurement belong to a line surface
     ///
-    /// @returns a collection of compatible measurements, sorted by pred.
-    /// chi2
+    /// @returns a collection of compatible measurements, sorted by pred. chi2
     template <detray::concepts::algebra algebra_t>
     TRACCC_HOST_DEVICE static vecmem::vector<candidate_measurement>
     find_compatible_measurements(
