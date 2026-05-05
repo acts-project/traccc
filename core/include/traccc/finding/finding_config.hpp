@@ -57,6 +57,10 @@ struct finding_config {
     /// Maximum Chi-square that is allowed for branching
     float chi2_max = 30.f;
 
+    // Maximal local radius a measurement is allowed to be away from the
+    // predicted track position in order to be considered as a condidate
+    float max_measurement_radius{10.f * traccc::unit<float>::mm};
+
     /// Propagation configuration
     detray::propagation::config propagation{};
     /// Measurement calibration configuration

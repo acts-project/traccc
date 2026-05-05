@@ -148,6 +148,7 @@ struct measurement_selector {
     /// @param bound_params predicted bound track parameters
     /// @param cfg the calibration configuration
     /// @param is_line whether the measurement belong to a line surface
+    /// @param max_dist maximal local distance under which to calculate the chi2
     ///
     /// @returns the predicted chi2 of the calibrated measurement
     template <typename measurement_backend_t,
@@ -155,7 +156,9 @@ struct measurement_selector {
     TRACCC_HOST_DEVICE static detray::dscalar<algebra_t> predicted_chi2(
         const edm::measurement<measurement_backend_t>& measurement,
         const bound_track_parameters<algebra_t>& bound_params,
-        const config& cfg, const bool is_line) {
+        const config& cfg, const bool is_line,
+        const detray::dscalar<algebra_t> max_dist =
+            std::numeric_limits<detray::dscalar<algebra_t>>::max()) {
 
         using scalar_t = detray::dscalar<algebra_t>;
 
@@ -174,12 +177,22 @@ struct measurement_selector {
         const matrix_t<algebra_t, D, 1> meas_local =
             calibrated_measurement_position<algebra_t, D>(measurement, cfg);
 
-        const matrix_t<algebra_t, D, D> V =
-            calibrated_measurement_covariance<algebra_t, D>(measurement, cfg);
-
         // Project the predicted covariance to the observation
         const matrix_t<algebra_t, D, e_bound_size> H =
             observation_model<algebra_t, D>(measurement, bound_params, is_line);
+
+        // Residual between measurement and (projected) vector (innovation)
+        const matrix_t<algebra_t, D, 1> residual =
+            meas_local - H * bound_params.vector();
+
+        const scalar_t loc_0{getter::element(residual, 0u, 0u)};
+        const scalar_t loc_1{getter::element(residual, 1u, 0u)};
+        if (math::sqrt(loc_0 * loc_0 + loc_1 * loc_1) > max_dist) {
+            return std::numeric_limits<scalar_t>::max();
+        }
+
+        const matrix_t<algebra_t, D, D> V =
+            calibrated_measurement_covariance<algebra_t, D>(measurement, cfg);
 
         const matrix_t<algebra_t, D, D> R =
             H * matrix::transposed_product<false, true>(
@@ -189,10 +202,6 @@ struct measurement_selector {
         TRACCC_DEBUG_HOST("--> R:\n" << R);
         TRACCC_DEBUG_HOST_DEVICE("--> det(R): %.10e", matrix::determinant(R));
         TRACCC_DEBUG_HOST("--> R_inv:\n" << matrix::inverse(R));
-
-        // Residual between measurement and (projected) vector (innovation)
-        const matrix_t<algebra_t, D, 1> residual =
-            meas_local - H * bound_params.vector();
 
         TRACCC_DEBUG_HOST("--> Predicted residual:\n" << residual);
 
@@ -274,8 +283,7 @@ struct measurement_selector {
     /// @param cfg the calibration configuration
     /// @param is_line whether the measurement belong to a line surface
     ///
-    /// @returns a collection of compatible measurements, sorted by pred.
-    /// chi2
+    /// @returns a collection of compatible measurements, sorted by pred. chi2
     template <detray::concepts::algebra algebra_t>
     TRACCC_HOST_DEVICE static vecmem::vector<candidate_measurement>
     find_compatible_measurements(

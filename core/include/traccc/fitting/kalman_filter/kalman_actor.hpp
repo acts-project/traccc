@@ -10,6 +10,7 @@
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/edm/measurement_collection.hpp"
+#include "traccc/edm/measurement_helpers.hpp"
 #include "traccc/edm/track_collection.hpp"
 #include "traccc/edm/track_state_collection.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"

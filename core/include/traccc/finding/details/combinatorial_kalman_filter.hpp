@@ -243,7 +243,8 @@ combinatorial_kalman_filter(
                 const edm::measurement meas = measurements.at(meas_id);
 
                 const scalar_type chi2 = measurement_selector::predicted_chi2(
-                    meas, in_param, config.meas_calibration, is_line);
+                    meas, in_param, config.meas_calibration, is_line,
+                    config.max_measurement_radius);
 
                 // If the measurement is outside the chi2 cut, skip it
                 if (chi2 > config.chi2_max || chi2 < 0.f) {

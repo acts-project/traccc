@@ -22,6 +22,7 @@
 
 // Project include(s).
 #include "traccc/device/array_insertion_mutex.hpp"
+#include "traccc/edm/measurement_helpers.hpp"
 #include "traccc/edm/track_state_helpers.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 #include "traccc/fitting/kalman_filter/is_line_visitor.hpp"
@@ -211,7 +212,8 @@ TRACCC_HOST_DEVICE inline void find_tracks(
 
                 const traccc::scalar chi2 =
                     measurement_selector::predicted_chi2(
-                        meas, in_par, cfg.meas_calibration, is_line);
+                        meas, in_par, cfg.meas_calibration, is_line,
+                        cfg.max_measurement_radius);
 
                 if (chi2 <= cfg.chi2_max && chi2 >= 0.f) {
 
