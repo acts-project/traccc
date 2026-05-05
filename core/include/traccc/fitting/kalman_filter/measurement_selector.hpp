@@ -59,22 +59,22 @@ struct measurement_selector {
         const bool is_line) {
 
         // Oservation model: Subspace of measurement space for this measurement
-        const subspace<algebra_t, e_bound_size> subs(measurement.subspace());
-        detray::dmatrix<algebra_t, D, e_bound_size> H =
-            subs.template projector<D>();
+        subspace<algebra_t, e_bound_size> subs(measurement.subspace());
 
         // Flip the sign of projector matrix element in case the first element
         // of a line measurement is negative
         if (is_line && bound_params.bound_local()[e_bound_loc0] < 0) {
-            getter::element(H, 0u, e_bound_loc0) = -1;
+            subs.set_sign(0, true);
         }
 
         detray::dmatrix<algebra_t, D, 1> meas_local;
         edm::get_measurement_local<algebra_t>(measurement, meas_local);
         if (measurement.dimensions() == 1) {
-            getter::element(H, 1u, 0u) = 0.f;
-            getter::element(H, 1u, 1u) = 0.f;
+            subs.set_invalid(1);
         }
+
+        const detray::dmatrix<algebra_t, D, e_bound_size> H =
+            subs.template projector<D>();
 
         TRACCC_DEBUG_HOST("--> Observation model (H):\n" << H);
 
