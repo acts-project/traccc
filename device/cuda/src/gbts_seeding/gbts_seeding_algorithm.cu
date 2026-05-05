@@ -887,7 +887,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     kernels::seeds_bid_for_hits<<<nBlocks, nThreads, 0, stream>>>(
         ctx.d_output_graph, ctx.d_seed_proposals, ctx.d_path_store,
         ctx.d_seed_ambiguity, ctx.d_hit_bids, nProps,
-        1 + 2 + m_config.max_num_neighbours);
+        static_cast<int>(1 + 2 + m_config.max_num_neighbours));
 
     kernels::gbts_seed_conversion_kernel<<<nBlocks, nThreads, 0, stream>>>(
         ctx.d_seed_proposals, ctx.d_seed_ambiguity, ctx.d_path_store,
