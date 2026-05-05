@@ -77,6 +77,18 @@ class seed : public BASE {
     ///
     TRACCC_HOST_DEVICE
     const auto& top_index() const { return BASE::template get<2>(); }
+    /// Quality of the seed (const)
+    ///
+    /// @return A (const) vector of <tt>float</tt> values
+    ///
+    TRACCC_HOST_DEVICE
+    const auto& quality() const { return BASE::template get<3>(); }
+    /// Quality of the seed (non-const)
+    ///
+    /// @return A (non-const) vector of <tt>float</tt> values
+    ///
+    TRACCC_HOST_DEVICE
+    auto& quality() { return BASE::template get<3>(); }
 
     /// @}
 
@@ -115,7 +127,8 @@ class seed : public BASE {
 using seed_collection =
     vecmem::edm::container<seed, vecmem::edm::type::vector<unsigned int>,
                            vecmem::edm::type::vector<unsigned int>,
-                           vecmem::edm::type::vector<unsigned int> >;
+                           vecmem::edm::type::vector<unsigned int>,
+                           vecmem::edm::type::vector<float> >;
 
 }  // namespace traccc::edm
 

@@ -70,7 +70,7 @@ TEST(track_params_estimation, helix_negative_charge) {
 
     // Make a seed from the three spacepoints
     edm::seed_collection::host seeds{host_mr};
-    seeds.push_back({0, 1, 2});
+    seeds.push_back({0, 1, 2, 0.0f});
 
     // Run track parameter estimation
     traccc::track_params_estimation_config track_params_estimation_config;
@@ -126,7 +126,7 @@ TEST(track_params_estimation, helix_positive_charge) {
 
     // Make a seed from the three spacepoints
     edm::seed_collection::host seeds{host_mr};
-    seeds.push_back({0, 1, 2});
+    seeds.push_back({0, 1, 2, 0.0f});
 
     // Run track parameter estimation
     traccc::track_params_estimation_config track_params_estimation_config;
