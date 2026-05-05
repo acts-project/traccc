@@ -117,12 +117,12 @@ struct gain_matrix_updater {
         const matrix_type<2, 1> projected_vec = H * predicted_vec;
         const matrix_type<D, D> R_inv =
             matrix::inverse(V + (H * projected_cov));
+        // Residual between measurement and predicted vector
+        const matrix_type<D, 1> residual = meas_local - projected_vec;
 
         // Calculate the chi square
         scalar chi2_val;
         {
-            // Residual between measurement and predicted vector
-            const matrix_type<D, 1> residual = meas_local - projected_vec;
             const matrix_type<1, 1> chi2_mat =
                 matrix::transposed_product<true, false>(residual, R_inv) *
                 residual;
@@ -146,8 +146,7 @@ struct gain_matrix_updater {
         TRACCC_DEBUG_HOST("-> K:\n" << K);
 
         // Calculate the filtered track parameters
-        const matrix_type<6, 1> filtered_vec =
-            predicted_vec + K * (meas_local - projected_vec);
+        const matrix_type<6, 1> filtered_vec = predicted_vec + K * residual;
         const matrix_type<6, 6> i_minus_kh = I66 - K * H;
         matrix_type<6, 6> filtered_cov =
             i_minus_kh * predicted_cov * matrix::transpose(i_minus_kh) +
