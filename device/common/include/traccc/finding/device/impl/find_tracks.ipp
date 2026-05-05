@@ -25,6 +25,7 @@
 #include "traccc/edm/track_state_helpers.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 #include "traccc/fitting/kalman_filter/is_line_visitor.hpp"
+#include "traccc/fitting/kalman_filter/measurement_selector.hpp"
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/utils/logging.hpp"
 
@@ -43,6 +44,8 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     const thread_id_t& thread_id, const barrier_t& barrier,
     const finding_config& cfg, const find_tracks_payload<detector_t>& payload,
     const find_tracks_shared_payload& shared_payload) {
+
+    using algebra_t = typename detector_t::algebra_type;
 
     const unsigned int in_param_id = thread_id.getGlobalThreadIdX();
     const bool last_step =
@@ -169,10 +172,9 @@ TRACCC_HOST_DEVICE inline void find_tracks(
 
         barrier.blockBarrier();
 
-        std::optional<std::tuple<
-            typename edm::track_state_collection<
-                typename detector_t::algebra_type>::device::object_type,
-            unsigned int, unsigned int>>
+        std::optional<std::tuple<typename edm::track_state_collection<
+                                     algebra_t>::device::object_type,
+                                 unsigned int, unsigned int>>
             result = std::nullopt;
 
         /*
@@ -199,52 +201,52 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                                               ? links.at(prev_link_idx).seed_idx
                                               : owner_global_thread_id;
 
-            bool use_measurement = true;
-
-            if (use_measurement) {
-                if (n_tracks_per_seed.at(seed_idx) >=
-                    cfg.max_num_branches_per_seed) {
-                    use_measurement = false;
-                }
-            }
-
-            if (use_measurement) {
-
-                edm::track_state trk_state =
-                    edm::make_track_state<typename detector_t::algebra_type>(
-                        measurements, meas_idx);
+            if (n_tracks_per_seed.at(seed_idx) <
+                cfg.max_num_branches_per_seed) {
 
                 const detray::tracking_surface sf{det, in_par.surface_link()};
-
                 const bool is_line = detail::is_line(sf);
 
-                // Run the Kalman update
-                const kalman_fitter_status res =
-                    gain_matrix_updater<typename detector_t::algebra_type>{}(
-                        trk_state, measurements, in_par, is_line);
+                measurement_selector::config calib_cfg{};
 
-                TRACCC_DEBUG_DEVICE("KF status: %d", res);
+                const edm::measurement meas = measurements.at(meas_idx);
 
-                /*
-                 * The $\chi^2$ value from the Kalman update should be less than
-                 * `chi2_max`, and the fit should have succeeded. If both
-                 * conditions are true, we emplace the state, the measurement
-                 * index, and the thread ID into an optional value.
-                 *
-                 * NOTE: Using the optional value here allows us to remove the
-                 * depth of if-statements which is important for code quality
-                 * but, more importantly, allows us to more easily use
-                 * block-wide synchronization primitives.
-                 */
-                if (const traccc::scalar chi2 = trk_state.filtered_chi2();
-                    res != kalman_fitter_status::SUCCESS ||
-                    chi2 >= cfg.chi2_max) {
-                    use_measurement = false;
-                }
+                const traccc::scalar chi2 =
+                    measurement_selector::predicted_chi2(meas, in_par,
+                                                         calib_cfg, is_line);
 
-                if (use_measurement) {
-                    TRACCC_VERBOSE_DEVICE("Found measurement: %d", meas_idx);
-                    result.emplace(trk_state, meas_idx, owner_local_thread_id);
+                if (chi2 <= cfg.chi2_max && chi2 >= 0.f) {
+                    // The filtered track state
+                    edm::track_state trk_state =
+                        edm::make_track_state<algebra_t>(measurements,
+                                                         meas_idx);
+                    trk_state.filtered_chi2() = chi2;
+
+                    // Run the Kalman update
+                    const kalman_fitter_status res =
+                        gain_matrix_updater<algebra_t>{}(
+                            trk_state, measurements, in_par, is_line);
+
+                    TRACCC_DEBUG_DEVICE("KF status: %d", res);
+
+                    /*
+                     * The $\chi^2$ value from the Kalman update should be less
+                     * than `chi2_max`, and the fit should have succeeded. If
+                     * both conditions are true, we emplace the state, the
+                     * measurement index, and the thread ID into an optional
+                     * value.
+                     *
+                     * NOTE: Using the optional value here allows us to remove
+                     * the depth of if-statements which is important for code
+                     * quality but, more importantly, allows us to more easily
+                     * use block-wide synchronization primitives.
+                     */
+                    if (res == kalman_fitter_status::SUCCESS) {
+                        TRACCC_VERBOSE_DEVICE("Found measurement: %d",
+                                              meas_idx);
+                        result.emplace(trk_state, meas_idx,
+                                       owner_local_thread_id);
+                    }
                 }
             }
         }

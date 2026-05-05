@@ -66,7 +66,6 @@ struct gain_matrix_updater {
         // Some identity matrices
         // @TODO: Make constexpr work
         const auto I66 = matrix::identity<bound_matrix_type>();
-        const auto I_m = matrix::identity<matrix_type<D, D>>();
 
         // Measurement data on surface
         matrix_type<D, 1> meas_local;
@@ -165,35 +164,6 @@ struct gain_matrix_updater {
             return kalman_fitter_status::ERROR_UPDATER_INVALID_COVARIANCE;
         }
 
-        // Residual between measurement and (projected) filtered vector
-        const matrix_type<D, 1> residual = meas_local - H * filtered_vec;
-
-        // Calculate the chi square
-        const matrix_type<D, D> R = (I_m - H * K) * V;
-        const matrix_type<1, 1> chi2 = matrix::transposed_product<true, false>(
-                                           residual, matrix::inverse(R)) *
-                                       residual;
-
-        const scalar chi2_val{getter::element(chi2, 0, 0)};
-
-        TRACCC_DEBUG_HOST("-> Filtered residual:\n" << residual);
-        TRACCC_DEBUG_HOST("-> R:\n" << R);
-        TRACCC_DEBUG_HOST("-> det(R): " << std::scientific
-                                        << matrix::determinant(R)
-                                        << std::defaultfloat);
-        TRACCC_DEBUG_HOST("-> R_inv:\n" << matrix::inverse(R));
-        TRACCC_VERBOSE_HOST_DEVICE("-> Chi2: %f", chi2_val);
-
-        if (chi2_val < 0.f) {
-            TRACCC_ERROR_HOST_DEVICE("Chi2 negative");
-            return kalman_fitter_status::ERROR_UPDATER_CHI2_NEGATIVE;
-        }
-
-        if (!std::isfinite(chi2_val)) {
-            TRACCC_ERROR_HOST_DEVICE("Chi2 infinite");
-            return kalman_fitter_status::ERROR_UPDATER_CHI2_NOT_FINITE;
-        }
-
         // Wrap the phi and theta angles in their valid ranges
         if (!normalize_angles<algebra_t>(filtered_vec)) {
             TRACCC_ERROR_HOST_DEVICE("Hit theta pole in filtering!");
@@ -203,7 +173,6 @@ struct gain_matrix_updater {
         // Set the chi2 for this track and measurement
         trk_state.filtered_params().set_vector(filtered_vec);
         trk_state.filtered_params().set_covariance(filtered_cov);
-        trk_state.filtered_chi2() = chi2_val;
 
         assert(!trk_state.filtered_params().is_invalid());
 
