@@ -112,17 +112,19 @@ struct gain_matrix_updater {
         TRACCC_DEBUG_HOST("-> Predicted residual:\n"
                           << meas_local - H * predicted_vec);
 
-        scalar chi2_val;
+        const matrix_type<e_bound_size, D> projected_cov =
+            matrix::transposed_product<false, true>(predicted_cov, H);
+        const matrix_type<2, 1> projected_vec = H * predicted_vec;
+        const matrix_type<D, D> R_inv =
+            matrix::inverse(V + (H * projected_cov));
 
+        // Calculate the chi square
+        scalar chi2_val;
         {
-            // Calculate the chi square
-            const matrix_type<D, D> R =
-                V + (H * predicted_cov * matrix::transpose(H));
             // Residual between measurement and predicted vector
-            const matrix_type<D, 1> residual = meas_local - H * predicted_vec;
+            const matrix_type<D, 1> residual = meas_local - projected_vec;
             const matrix_type<1, 1> chi2_mat =
-                matrix::transposed_product<true, false>(residual,
-                                                        matrix::inverse(R)) *
+                matrix::transposed_product<true, false>(residual, R_inv) *
                 residual;
             chi2_val = getter::element(chi2_mat, 0, 0);
 
@@ -137,21 +139,15 @@ struct gain_matrix_updater {
             }
         }
 
-        const matrix_type<e_bound_size, D> projected_cov =
-            matrix::transposed_product<false, true>(predicted_cov, H);
-
-        const matrix_type<D, D> M = H * projected_cov + V;
-
         // Kalman gain matrix
-        assert(matrix::determinant(M) != 0.f);
-        const matrix_type<6, D> K = projected_cov * matrix::inverse(M);
+        const matrix_type<6, D> K = projected_cov * R_inv;
 
         TRACCC_DEBUG_HOST("-> H:\n" << H);
         TRACCC_DEBUG_HOST("-> K:\n" << K);
 
         // Calculate the filtered track parameters
         const matrix_type<6, 1> filtered_vec =
-            predicted_vec + K * (meas_local - H * predicted_vec);
+            predicted_vec + K * (meas_local - projected_vec);
         const matrix_type<6, 6> i_minus_kh = I66 - K * H;
         matrix_type<6, 6> filtered_cov =
             i_minus_kh * predicted_cov * matrix::transpose(i_minus_kh) +
