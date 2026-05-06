@@ -101,35 +101,35 @@ struct two_filters_smoother {
 
         // Eq (3.38) of "Pattern Recognition, Tracking and Vertex
         // Reconstruction in Particle Detectors"
-        const matrix_type<e_bound_size, 1u> smoothed_vec =
+        matrix_type<e_bound_size, 1u> smoothed_vec =
             smoothed_cov *
             (filtered_cov_inv * trk_state.filtered_params().vector() +
              predicted_cov_inv * predicted_vec);
 
-        trk_state.smoothed_params().set_vector(smoothed_vec);
-
         // Return false if track is parallel to z-axis or phi is not finite
-        if (!std::isfinite(trk_state.smoothed_params().theta())) {
+        if (!std::isfinite(getter::element(smoothed_vec, e_bound_theta, 0))) {
             TRACCC_ERROR_HOST_DEVICE(
                 "Theta is infinite after smoothing (Matrix inversion)");
             return kalman_fitter_status::ERROR_INVERSION;
         }
 
-        if (!std::isfinite(trk_state.smoothed_params().phi())) {
+        if (!std::isfinite(getter::element(smoothed_vec, e_bound_phi, 0))) {
             TRACCC_ERROR_HOST_DEVICE(
                 "Phi is infinite after smoothing (Matrix inversion)");
             return kalman_fitter_status::ERROR_INVERSION;
         }
 
-        if (math::fabs(trk_state.smoothed_params().qop()) == 0.f) {
+        if (math::fabs(getter::element(smoothed_vec, e_bound_qoverp, 0)) ==
+            0.f) {
             TRACCC_ERROR_HOST_DEVICE("q/p is zero after smoothing");
             return kalman_fitter_status::ERROR_QOP_ZERO;
         }
 
-        trk_state.smoothed_params().set_covariance(smoothed_cov);
-
         // Wrap the phi and theta angles in their valid ranges
-        normalize_angles(trk_state.smoothed_params());
+        if (!normalize_angles<algebra_t>(smoothed_vec)) {
+            TRACCC_ERROR_HOST_DEVICE("Hit theta pole after smoothing!");
+            return kalman_fitter_status::ERROR_THETA_POLE;
+        }
 
         const subspace<algebra_t, e_bound_size> subs(
             measurements.at(trk_state.measurement_index()).subspace());
@@ -192,8 +192,6 @@ struct two_filters_smoother {
             return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NOT_FINITE;
         }
 
-        trk_state.smoothed_chi2() = getter::element(chi2_smt, 0, 0);
-
         /*************************************
          *  Set backward filtered parameter
          *************************************/
@@ -222,8 +220,37 @@ struct two_filters_smoother {
         TRACCC_DEBUG_HOST("K:\n" << K);
 
         // Calculate the filtered track parameters
-        const matrix_type<6, 1> filtered_vec =
+        matrix_type<6, 1> filtered_vec =
             predicted_vec + K * (meas_local - H * predicted_vec);
+
+        // Return false if track is parallel to z-axis or phi is not finite
+        if (!std::isfinite(getter::element(filtered_vec, e_bound_theta, 0))) {
+            TRACCC_ERROR_HOST_DEVICE(
+                "Theta is infinite after filering in smoother (Matrix "
+                "inversion)");
+            return kalman_fitter_status::ERROR_INVERSION;
+        }
+
+        if (!std::isfinite(getter::element(filtered_vec, e_bound_phi, 0))) {
+            TRACCC_ERROR_HOST_DEVICE(
+                "Phi is infinite after filering in smoother (Matrix "
+                "inversion)");
+            return kalman_fitter_status::ERROR_INVERSION;
+        }
+
+        if (math::fabs(getter::element(filtered_vec, e_bound_qoverp, 0)) ==
+            0.f) {
+            TRACCC_ERROR_HOST_DEVICE("q/p is zero after filering in smoother");
+            return kalman_fitter_status::ERROR_QOP_ZERO;
+        }
+
+        // Wrap the phi and theta angles in their valid ranges
+        if (!normalize_angles<algebra_t>(filtered_vec)) {
+            TRACCC_ERROR_HOST_DEVICE(
+                "Hit theta pole after filtering in smoother!");
+            return kalman_fitter_status::ERROR_THETA_POLE;
+        }
+
         const matrix_type<6, 6> i_minus_kh = I66 - K * H;
         matrix_type<6, 6> filtered_cov =
             i_minus_kh * predicted_cov * matrix::transpose(i_minus_kh) +
@@ -236,31 +263,6 @@ struct two_filters_smoother {
             TRACCC_ERROR_HOST_DEVICE("Negative variance after filtering");
             return kalman_fitter_status::ERROR_SMOOTHER_INVALID_COVARIANCE;
         }
-
-        // Update the bound track parameters
-        bound_params.set_vector(filtered_vec);
-
-        // Return false if track is parallel to z-axis or phi is not finite
-        if (!std::isfinite(bound_params.theta())) {
-            TRACCC_ERROR_HOST_DEVICE(
-                "Theta is infinite after filering in smoother (Matrix "
-                "inversion)");
-            return kalman_fitter_status::ERROR_INVERSION;
-        }
-
-        if (!std::isfinite(bound_params.phi())) {
-            TRACCC_ERROR_HOST_DEVICE(
-                "Phi is infinite after filering in smoother (Matrix "
-                "inversion)");
-            return kalman_fitter_status::ERROR_INVERSION;
-        }
-
-        if (math::fabs(bound_params.qop()) == 0.f) {
-            TRACCC_ERROR_HOST_DEVICE("q/p is zero after filering in smoother");
-            return kalman_fitter_status::ERROR_QOP_ZERO;
-        }
-
-        bound_params.set_covariance(filtered_cov);
 
         // Residual between measurement and (projected) filtered vector
         const matrix_type<D, 1> residual = meas_local - H * filtered_vec;
@@ -291,21 +293,18 @@ struct two_filters_smoother {
             return kalman_fitter_status::ERROR_SMOOTHER_CHI2_NOT_FINITE;
         }
 
-        // Set backward chi2
+        // Update the smoothed track parameters
+        trk_state.smoothed_params().set_vector(smoothed_vec);
+        trk_state.smoothed_params().set_covariance(smoothed_cov);
+        trk_state.smoothed_chi2() = getter::element(chi2_smt, 0, 0);
         trk_state.backward_chi2() = chi2_val;
-
-        // Wrap the phi and theta angles in their valid ranges
-        normalize_angles(bound_params);
-
-        const scalar theta = bound_params.theta();
-        if (theta <= 0.f || theta >= 2.f * constant<traccc::scalar>::pi) {
-            TRACCC_ERROR_HOST_DEVICE("Hit theta pole after smoothing : %f",
-                                     theta);
-            return kalman_fitter_status::ERROR_THETA_POLE;
-        }
-
         trk_state.set_smoothed();
 
+        // Update the filtered track parameters
+        bound_params.set_vector(filtered_vec);
+        bound_params.set_covariance(filtered_cov);
+
+        assert(!trk_state.smoothed_params().is_invalid());
         assert(!bound_params.is_invalid());
 
         return kalman_fitter_status::SUCCESS;
