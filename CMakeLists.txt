@@ -24,6 +24,10 @@ endif()
 set( CMAKE_CUDA_ARCHITECTURES "75" CACHE STRING
    "CUDA architectures to build device code for" )
 
+# Set the HIP architecture to build code for.
+set( CMAKE_HIP_ARCHITECTURES "gfx1101;gfx90a" CACHE STRING
+   "HIP architectures to build device code for" )
+
 # Flag controlling whether warnings should make the build fail.
 option( TRACCC_FAIL_ON_WARNINGS
    "Make the build fail on compiler/linker warnings" FALSE )
