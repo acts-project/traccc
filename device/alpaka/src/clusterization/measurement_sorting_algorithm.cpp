@@ -101,7 +101,7 @@ measurement_sorting_algorithm::operator()(
     static constexpr unsigned int BLOCK_SIZE = 256;
     const unsigned int n_blocks =
         (measurements_view.capacity() + BLOCK_SIZE - 1) / BLOCK_SIZE;
-    auto workDiv = makeWorkDiv<Acc>(BLOCK_SIZE, n_blocks);
+    auto workDiv = makeWorkDiv<Acc>(n_blocks, BLOCK_SIZE);
     ::alpaka::exec<Acc>(queue, workDiv, kernels::fill_sorted_measurements{},
                         measurements_view, vecmem::get_data(result),
                         vecmem::get_data(indices));
