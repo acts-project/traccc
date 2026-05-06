@@ -126,7 +126,9 @@ full_chain_algorithm::full_chain_algorithm(
     TRACCC_INFO("Using SYCL device: " << m_data->m_queue.device_name());
 
     // Copy the detector (description) to the device.
+    m_copy.setup(m_device_det_descr)->wait();
     m_copy(vecmem::get_data(m_det_descr.get()), m_device_det_descr)->wait();
+    m_copy(vecmem::get_data(m_det_cond.get()), m_device_det_cond)->wait();
     if (m_detector != nullptr) {
         m_device_detector =
             traccc::buffer_from_host_detector(*m_detector, m_device_mr, m_copy);
@@ -216,7 +218,9 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
       usingGBTS(parent.usingGBTS) {
 
     // Copy the detector (description) to the device.
+    m_copy.setup(m_device_det_descr)->wait();
     m_copy(vecmem::get_data(m_det_descr.get()), m_device_det_descr)->wait();
+    m_copy(vecmem::get_data(m_det_cond.get()), m_device_det_cond)->wait();
     if (m_detector != nullptr) {
         m_device_detector =
             traccc::buffer_from_host_detector(*m_detector, m_device_mr, m_copy);
