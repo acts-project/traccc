@@ -1,10 +1,13 @@
 /*
  * traccc library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
+
+// System include
+#include <sycl/sycl.hpp>
 
 // vecmem includes
 #include <vecmem/containers/device_vector.hpp>
@@ -16,9 +19,6 @@
 
 // GTest include(s).
 #include <gtest/gtest.h>
-
-// System include
-#include <sycl/sycl.hpp>
 
 struct int_lt_relation {
     bool operator()(const int& a, const int& b) const { return a < b; }

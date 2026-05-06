@@ -5,6 +5,9 @@
  * Mozilla Public License Version 2.0
  */
 
+// SYCL include(s).
+#include <sycl/sycl.hpp>
+
 // DPL include(s).
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wshadow"
@@ -21,9 +24,6 @@
 #include <oneapi/dpl/algorithm>
 #include <oneapi/dpl/execution>
 #pragma clang diagnostic pop
-
-// SYCL include(s).
-#include <sycl/sycl.hpp>
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_buffer.hpp>
