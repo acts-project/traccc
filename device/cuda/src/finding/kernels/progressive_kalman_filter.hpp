@@ -8,7 +8,7 @@
 #pragma once
 
 // Project include(s).
-#include "traccc/finding/device/kalman_track_follower.hpp"
+#include "traccc/finding/device/progressive_kalman_filter.hpp"
 #include "traccc/finding/finding_config.hpp"
 
 // CUDA include(s).
@@ -17,9 +17,9 @@
 namespace traccc::cuda {
 
 template <typename propagator_t>
-void kalman_track_follower(
+void progressive_kalman_filter(
     const dim3& grid_size, const dim3& block_size, std::size_t shared_mem_size,
     const cudaStream_t& stream, const finding_config cfg,
-    device::kalman_track_follower_payload<propagator_t> payload);
+    device::progressive_kalman_filter_payload<propagator_t> payload);
 
 }  // namespace traccc::cuda

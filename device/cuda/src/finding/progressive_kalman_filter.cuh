@@ -13,14 +13,14 @@
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/thread_id.hpp"
 #include "../utils/utils.hpp"
-#include "./kernels/kalman_track_follower.hpp"
+#include "./kernels/progressive_kalman_filter.hpp"
 
 // Project include(s).
 #include "traccc/edm/device/identity_projector.hpp"
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/track_container.hpp"
 #include "traccc/edm/track_parameters.hpp"
-#include "traccc/finding/details/kalman_track_follower_types.hpp"
+#include "traccc/finding/details/progressive_kalman_filter_types.hpp"
 #include "traccc/finding/device/geo_id_surface_comparator.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/finding/track_state_candidate.hpp"
@@ -35,6 +35,8 @@
 // Thrust include(s).
 #include <thrust/execution_policy.h>
 #include <thrust/sort.h>
+
+#include <iostream>
 
 namespace traccc::cuda::details {
 
@@ -63,7 +65,7 @@ namespace traccc::cuda::details {
 ///
 template <typename detector_t, typename bfield_t>
 edm::track_container<typename detector_t::algebra_type>::buffer
-kalman_track_follower(
+progressive_kalman_filter(
     const typename detector_t::const_view_type& det, const bfield_t& field,
     const typename edm::measurement_collection::const_view& measurements_view,
     const bound_track_parameters_collection_types::const_view& seeds,
@@ -166,14 +168,16 @@ kalman_track_follower(
     typename edm::track_container<algebra_t>::buffer track_candidates_buffer{
         {n_constituent_links, mr.main, mr.host,
          vecmem::data::buffer_type::resizable},
-        {n_seeds * config.max_track_candidates_per_track, mr.main,
-         vecmem::data::buffer_type::resizable},
+        {config.run_smoother == smoother_type::e_none
+             ? 0u
+             : n_seeds * config.max_track_candidates_per_track,
+         mr.main, vecmem::data::buffer_type::resizable},
         measurements_view};
     copy.setup(track_candidates_buffer.tracks)->ignore();
     copy.setup(track_candidates_buffer.states)->ignore();
 
     // Allocate the kernel's payload in host memory.
-    using payload_t = device::kalman_track_follower_payload<propagator_t>;
+    using payload_t = device::progressive_kalman_filter_payload<propagator_t>;
     const payload_t host_payload{
         .det_data = det,
         .field_data = field,
@@ -189,7 +193,7 @@ kalman_track_follower(
 
     const unsigned int nThreads = warp_size * 4;
     const unsigned int nBlocks = (n_seeds - 1) / nThreads;
-    traccc::cuda::kalman_track_follower<propagator_t>(
+    traccc::cuda::progressive_kalman_filter<propagator_t>(
         nBlocks, nThreads, 0u, stream, config, host_payload);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 

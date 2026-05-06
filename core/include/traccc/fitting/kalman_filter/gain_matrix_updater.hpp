@@ -12,6 +12,7 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/definitions/track_parametrization.hpp"
 #include "traccc/edm/measurement_helpers.hpp"
+#include "traccc/finding/measurement_selector.hpp"
 #include "traccc/fitting/details/regularize_covariance.hpp"
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/utils/logging.hpp"
@@ -45,12 +46,12 @@ struct gain_matrix_updater {
     template <typename track_state_backend_t, typename measurement_backend_t>
     [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status operator()(
         typename edm::track_state<track_state_backend_t>& trk_state,
-        const edm::measurement<measurement_backend_t>& measurement,
+        const edm::measurement<measurement_backend_t>& meas,
         const bound_track_parameters<algebra_t>& bound_params,
         const measurement_selector::config& calib_cfg,
         const bool is_line) const {
-        return this->operator()(trk_state.filtered_params(), measurement,
-                                bound_params, calib_cfg, is_line);
+        return this->operator()(trk_state.filtered_params(), meas, bound_params,
+                                calib_cfg, is_line);
     }
 
     /// Gain matrix updater operation
@@ -67,14 +68,14 @@ struct gain_matrix_updater {
     template <typename measurement_backend_t>
     [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status operator()(
         bound_track_parameters<algebra_t>& filtered_params,
-        const edm::measurement<measurement_backend_t>& measurement,
+        const edm::measurement<measurement_backend_t>& meas,
         const bound_track_parameters<algebra_t>& bound_params,
         const measurement_selector::config& calib_cfg,
         const bool is_line) const {
 
         static constexpr unsigned int D = 2;
 
-        const unsigned int dim{measurement.dimensions()};
+        const unsigned int dim{meas.dimensions()};
 
         TRACCC_VERBOSE_HOST_DEVICE("Perform Kalman filtering...");
         TRACCC_VERBOSE_HOST_DEVICE("-> Measurement dim: %d", dim);
@@ -93,17 +94,17 @@ struct gain_matrix_updater {
         // Measurement data on surface
         const matrix_type<D, 1> meas_local =
             measurement_selector::calibrated_measurement_position<algebra_t, D>(
-                measurement, calib_cfg);
+                meas, calib_cfg);
 
         // Spatial resolution (Measurement covariance)
         const matrix_type<D, D> V =
             measurement_selector::calibrated_measurement_covariance<algebra_t,
                                                                     D>(
-                measurement, calib_cfg);
+                meas, calib_cfg);
 
         const matrix_type<D, e_bound_size> H =
             measurement_selector::observation_model<algebra_t, D>(
-                measurement, bound_params, is_line);
+                meas, bound_params, is_line);
 
         TRACCC_DEBUG_HOST("-> Predicted residual:\n"
                           << meas_local - H * predicted_vec);

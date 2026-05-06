@@ -103,7 +103,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         traccc::finding_performance_writer::config{
             .truth_config = truth_finding_opts,
             .track_truth_config = track_matching_opts,
-            .require_fit = true},
+            .require_fit = (traccc::finding_config(finding_opts).run_smoother !=
+                            smoother_type::e_none)},
         logger().clone("FindingPerformanceWriter"));
     traccc::fitting_performance_writer fit_performance_writer(
         traccc::fitting_performance_writer::config{},
@@ -273,7 +274,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             {
                 traccc::performance::timer t("Seeding (cuda)", elapsedTimes);
                 // Reconstruct the spacepoints into seeds.
-                if (true) {
+                if (usingGBTS) {
                     seeds_cuda_buffer = gbts_sa_cuda(spacepoints_cuda_buffer,
                                                      measurements_cuda_buffer);
                 } else {
@@ -416,20 +417,19 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                     traccc::default_algebra>::const_data(track_candidates_cuda),
                 evt_data);
 
-            if (cfg.run_smoother != smoother_type::e_none) {
-                for (unsigned int i = 0;
-                     i < track_candidates_cuda.tracks.size(); i++) {
-                    host_detector_visitor<detector_type_list>(
-                        host_det,
-                        [&]<typename detector_traits_t>(
-                            const typename detector_traits_t::host& det) {
-                            fit_performance_writer.write(
-                                track_candidates_cuda.tracks.at(i),
-                                track_candidates_cuda.states,
-                                measurements_per_event, det, evt_data);
-                        });
-                }
+            // if (cfg.run_smoother != smoother_type::e_none) {
+            for (unsigned int i = 0; i < track_candidates_cuda.tracks.size();
+                 i++) {
+                host_detector_visitor<detector_type_list>(
+                    host_det, [&]<typename detector_traits_t>(
+                                  const typename detector_traits_t::host& det) {
+                        fit_performance_writer.write(
+                            track_candidates_cuda.tracks.at(i),
+                            track_candidates_cuda.states,
+                            measurements_per_event, det, evt_data);
+                    });
             }
+            //}
         }
     }
 

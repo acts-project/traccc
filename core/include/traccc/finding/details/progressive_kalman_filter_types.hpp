@@ -34,7 +34,8 @@ using parameter_updater_t = detray::actor::parameter_updater<
 
 using kf_actor_chain_t =
     detray::actor_chain<detray::actor::pathlimit_aborter<traccc::scalar>,
-                        parameter_updater_t>;
+                        parameter_updater_t,
+                        detray::actor::momentum_aborter<traccc::scalar>>;
 
 template <typename detector_t, typename bfield_t>
 using kf_propagator_t =

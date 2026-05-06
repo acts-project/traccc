@@ -119,6 +119,7 @@ struct measurement_updater : detray::base_actor {
         auto& bound_param = transporter_result.destination_params();
 
         TRACCC_DEBUG_HOST("-> Predicted param.:\n" << bound_param);
+        assert(!bound_param.is_invalid());
         TRACCC_VERBOSE_HOST_DEVICE("-> Calculate predicted chi2:");
 
         // Find the measurement with the smallest predicted chi2
@@ -199,6 +200,7 @@ struct measurement_updater : detray::base_actor {
                 }
             }
 
+            // Add the new measurement and track data to the track candidate
             TRACCC_VERBOSE_HOST_DEVICE("Assigned measurement: %d",
                                        cand.meas_idx);
 
@@ -270,7 +272,7 @@ struct measurement_updater : detray::base_actor {
                 propagation.heartbeat(false);
                 return;
             }
-            if (updater_state.m_stats.n_track_states %
+            /*if (updater_state.m_stats.n_track_states %
                     updater_state.n_track_states_until_pause ==
                 0u) {
                 TRACCC_VERBOSE_HOST_DEVICE(
@@ -279,8 +281,8 @@ struct measurement_updater : detray::base_actor {
                 navigation.pause();
                 propagation.heartbeat(false);
                 return;
-            }
-        } else {
+            }*/
+        } else {  //< no measurement found
             // If the surface was only hit due to tolerances, don't count holes
             if (!navigation.is_edge_candidate()) {
                 TRACCC_WARNING_HOST_DEVICE(
@@ -303,27 +305,48 @@ struct measurement_updater : detray::base_actor {
                 propagation.heartbeat(false);
             }
 
-            // Discard the current local track parameters
-            transporter_result.status = detray::actor::status::e_failure;
+            // Discard the current local track parameters if smoothing is
+            // required (no relevant update was performed)
+            if (updater_state.m_run_smoother != smoother_type::e_none &&
+                (!sf.has_material() || navigation.is_edge_candidate())) {
+                transporter_result.status = detray::actor::status::e_failure;
 
-            // Recover the departure surface bound parameters
-            const auto i{
-                static_cast<int>(updater_state.m_stats.n_track_states) - 1};
+                // Recover the departure surface bound parameters
+                auto* track_cand_ptr =
+                    static_cast<filtered_track_state_candidate<algebra_t>*>(
+                        updater_state.m_cand_ptr);
 
-            auto* track_cand_ptr =
-                static_cast<filtered_track_state_candidate<algebra_t>*>(
-                    updater_state.m_cand_ptr);
+                const auto i{
+                    static_cast<int>(updater_state.m_stats.n_track_states) - 1};
 
-            detray::ranges::detail::advance(track_cand_ptr, i);
+                if (track_cand_ptr == nullptr || i < 0) {
+                    navigation.abort(
+                        "Actor: Cannot restore previous track parameters! "
+                        "Aborting");
+                    propagation.heartbeat(false);
+                    return;
+                }
 
-            assert(track_cand_ptr);
+                detray::ranges::detail::advance(track_cand_ptr, i);
 
-            transporter_result.destination_params() =
-                track_cand_ptr->filtered_params;
+                assert(track_cand_ptr);
 
-            assert(!transporter_result.destination_params().is_invalid());
-            assert(transporter_result.destination_params().surface_link() !=
-                   navigation.geometry_identifier());
+                // Reset bound track parameters in the parameter updater state
+                transporter_result.destination_params() =
+                    track_cand_ptr->filtered_params;
+
+                TRACCC_WARNING_HOST(
+                    "Actor: No measurement found, restoring previous departure "
+                    "surface:\n"
+                    << transporter_result.destination_params());
+
+                assert(!transporter_result.destination_params().is_invalid());
+                assert(transporter_result.destination_params().surface_link() !=
+                       navigation.geometry_identifier());
+            } else {
+                // Update the free track parameters on the new material
+                transporter_result.status = detray::actor::status::e_success;
+            }
         }
     }
 };

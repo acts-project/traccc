@@ -24,10 +24,10 @@
 
 namespace traccc::device {
 
-/// (Event Data) Payload for the @c traccc::device::kalman_track_follower
+/// (Event Data) Payload for the @c traccc::device::progressive_kalman_filter
 /// function
 template <typename propagator_t>
-struct kalman_track_follower_payload {
+struct progressive_kalman_filter_payload {
     using algebra_t = typename propagator_t::detector_type::algebra_type;
     using scalar_t = detray::dscalar<algebra_t>;
 
@@ -85,11 +85,11 @@ struct kalman_track_follower_payload {
 /// @param[inout] payload         The function call payload
 ///
 template <typename propagator_t>
-TRACCC_HOST_DEVICE inline void kalman_track_follower(
+TRACCC_HOST_DEVICE inline void progressive_kalman_filter(
     global_index_t globalIndex, const finding_config& cfg,
-    const kalman_track_follower_payload<propagator_t>& payload);
+    const progressive_kalman_filter_payload<propagator_t>& payload);
 
 }  // namespace traccc::device
 
 // Include the implementation.
-#include "./impl/kalman_track_follower.ipp"
+#include "./impl/progressive_kalman_filter.ipp"

@@ -29,9 +29,9 @@
 namespace traccc::device {
 
 template <typename propagator_t>
-TRACCC_HOST_DEVICE inline void kalman_track_follower(
+TRACCC_HOST_DEVICE inline void progressive_kalman_filter(
     const global_index_t globalIndex, const finding_config& cfg,
-    const kalman_track_follower_payload<propagator_t>& payload) {
+    const progressive_kalman_filter_payload<propagator_t>& payload) {
 
     using detector_t = typename propagator_t::detector_type;
     using algebra_t = typename detector_t::algebra_type;
@@ -75,12 +75,12 @@ TRACCC_HOST_DEVICE inline void kalman_track_follower(
 
     // Check if the seed should be forwarded to the KF
     const scalar_t q{ptc_hypothesis.charge()};
-    if (seed.pT(q) <= static_cast<scalar_t>(cfg.min_pT)) {
+    if (seed.pT(q) <= static_cast<scalar_t>(cfg.min_pT) / 10.f) {
         TRACCC_WARNING_DEVICE(
             "Seed below min. transverse momentum: |pT| = %f MeV", seed.pT(q));
         return;
     }
-    if (seed.p(q) <= static_cast<scalar_t>(cfg.min_p)) {
+    if (seed.p(q) <= static_cast<scalar_t>(cfg.min_p) / 10.f) {
         TRACCC_WARNING_DEVICE("Seed below min. momentum: |p| = %f MeV",
                               seed.p(q));
         return;
@@ -99,7 +99,11 @@ TRACCC_HOST_DEVICE inline void kalman_track_follower(
     propagation.set_particle(ptc_hypothesis);
 
     // Pathlimit aborter
-    typename detray::actor::pathlimit_aborter<scalar_t>::state aborter_state;
+    typename detray::actor::pathlimit_aborter<scalar_t>::state
+        path_aborter_state;
+    // Momentum aborter
+    typename detray::actor::momentum_aborter<scalar_t>::state
+        momentum_aborter_state{};
     // Track parameter transporter
     typename detray::actor::parameter_updater_state<algebra_t> updater_state{
         prop_cfg, seed};
@@ -111,7 +115,12 @@ TRACCC_HOST_DEVICE inline void kalman_track_follower(
         measurements, payload.measurement_ranges_view, candidate_data.ptr(),
         cfg.run_smoother};
 
+    path_aborter_state.set_path_limit(cfg.propagation.stepping.path_limit);
+    momentum_aborter_state.min_pT(static_cast<scalar_t>(cfg.min_pT));
+    momentum_aborter_state.min_p(static_cast<scalar_t>(cfg.min_p));
+
     meas_updater_state.max_chi2 = cfg.chi2_max;
+    meas_updater_state.max_n_track_states = cfg.max_track_candidates_per_track;
     meas_updater_state.max_n_holes =
         static_cast<unsigned short>(cfg.max_num_skipping_per_cand);
     meas_updater_state.max_n_consecutive_holes =
@@ -119,49 +128,49 @@ TRACCC_HOST_DEVICE inline void kalman_track_follower(
     meas_updater_state.n_track_states_until_pause =
         static_cast<unsigned short>(cfg.duplicate_removal_minimum_length);
     meas_updater_state.m_calib_cfg = calib_cfg;
+    meas_updater_state.m_stats.seed_idx = globalIndex;
 
-    auto actor_states = detray::tie(aborter_state, updater_state,
-                                    interactor_state, meas_updater_state);
+    auto actor_states =
+        detray::tie(path_aborter_state, updater_state, interactor_state,
+                    meas_updater_state, momentum_aborter_state);
 
-    for (unsigned int step = 0u;
+    /*for (unsigned int step = 0u;
          step < seeds.size() / cfg.duplicate_removal_minimum_length; ++step) {
 
         if (propagator.is_paused(propagation)) {
             propagator.resume(propagation);
-        }
+        }*/
 
-        assert(meas_updater_state.m_stats.n_holes <
-               cfg.max_num_skipping_per_cand);
-        assert(meas_updater_state.m_stats.n_consecutive_holes <
-               cfg.max_num_consecutive_skipped);
+    assert(meas_updater_state.m_stats.n_holes < cfg.max_num_skipping_per_cand);
+    assert(meas_updater_state.m_stats.n_consecutive_holes <
+           cfg.max_num_consecutive_skipped);
 
-        updater_state.notify_on_initial(step == 0u);
-        propagator.propagate(propagation, actor_states);
+    updater_state.notify_on_initial(/*step == 0u*/ true);
+    propagator.propagate(propagation, actor_states);
 
-        // Stop propagation
-        if (propagator.finished(propagation) ||
-            !propagator.is_paused(propagation)) {
-            break;
-        }
+    // Stop propagation
+    /*if (propagator.finished(propagation) ||
+        !propagator.is_paused(propagation)) {
+        break;
+    }*/
 
-        // Check if the track should be continued
-        const auto& free_param = propagation.stepping()();
-        const scalar_t q_new{
-            propagation.stepping().particle_hypothesis().charge()};
-        if (free_param.pT(q_new) <= static_cast<scalar_t>(cfg.min_pT)) {
-            TRACCC_WARNING_HOST_DEVICE(
-                "Track below min. transverse momentum: |pT| = %f MeV",
-                free_param.pT(q_new));
-            break;
-        }
-        if (free_param.p(q_new) <= static_cast<scalar_t>(cfg.min_p)) {
-            TRACCC_WARNING_HOST_DEVICE(
-                "Track below min. momentum: |p| = %f MeV", free_param.p(q_new));
-            break;
-        }
-
-        // Run track deduplication
+    // Check if the track should be continued
+    const auto& free_param = propagation.stepping()();
+    const scalar_t q_new{propagation.stepping().particle_hypothesis().charge()};
+    if (free_param.pT(q_new) <= static_cast<scalar_t>(cfg.min_pT)) {
+        TRACCC_WARNING_HOST_DEVICE(
+            "Track below min. transverse momentum: |pT| = %f MeV",
+            free_param.pT(q_new));
+        return;
     }
+    if (free_param.p(q_new) <= static_cast<scalar_t>(cfg.min_p)) {
+        TRACCC_WARNING_HOST_DEVICE("Track below min. momentum: |p| = %f MeV",
+                                   free_param.p(q_new));
+        return;
+    }
+
+    // Run track deduplication
+    //}
 
     // TODO: Removing tracks with propagation failure can get the fake rate down
     // (e.g. if it triggered an aborter)
@@ -175,7 +184,7 @@ TRACCC_HOST_DEVICE inline void kalman_track_follower(
     const unsigned int n_track_states{trk_stats.n_track_states};
 
     assert(n_track_states <= cfg.max_track_candidates_per_track);
-    if (n_track_states < cfg.min_track_candidates_per_track) {
+    if (is_alive && n_track_states < cfg.min_track_candidates_per_track) {
         TRACCC_WARNING_DEVICE("Short track (%d track states): discarding",
                               n_track_states);
         is_alive = false;
@@ -184,7 +193,7 @@ TRACCC_HOST_DEVICE inline void kalman_track_follower(
     // Check track stats and build the new track object
     const int ndf_sum{static_cast<int>(trk_stats.ndf_sum) - 5};
 
-    if (ndf_sum < 0) {
+    if (is_alive && ndf_sum < 0) {
         TRACCC_ERROR_DEVICE("Negative NDF sum for track");
         is_alive = false;
     }
@@ -193,13 +202,11 @@ TRACCC_HOST_DEVICE inline void kalman_track_follower(
     assert(globalIndex < track_candidates.size());
 
     if (is_alive && trk_stats.n_holes > cfg.max_num_skipping_per_cand + 1) {
-        printf("Incorrect hole count!\n");
-        is_alive = false;
+        TRACCC_ERROR_DEVICE("Incorrect hole count!\n");
     }
     if (is_alive &&
         trk_stats.n_consecutive_holes > cfg.max_num_consecutive_skipped + 1) {
-        printf("Incorrect consecutive hole count!\n");
-        is_alive = false;
+        TRACCC_ERROR_DEVICE("Incorrect consecutive hole count!\n");
     }
 
     edm::track track = track_candidates.at(globalIndex);
@@ -235,9 +242,13 @@ TRACCC_HOST_DEVICE inline void kalman_track_follower(
                 candidate_data.ptr(), cfg.run_smoother, link_idx, measurements,
                 track, payload.tracks_view);
         }
-    }
 
-    TRACCC_DEBUG_DEVICE("Added track %d to track container", globalIndex);
+        TRACCC_INFO_DEVICE(
+            "Added track %d to track container (offset %d, #states %d, #tracks "
+            "%d)",
+            globalIndex, track_state_offset, n_track_states,
+            track_candidates.size());
+    }
 }
 
 }  // namespace traccc::device

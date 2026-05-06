@@ -8,7 +8,7 @@
 // Local include(s).
 #include "../utils/magnetic_field_types.hpp"
 #include "combinatorial_kalman_filter.cuh"
-#include "kalman_track_follower.cuh"
+#include "progressive_kalman_filter.cuh"
 #include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/utils/detector_buffer_bfield_visitor.hpp"
 
@@ -36,7 +36,7 @@ combinatorial_kalman_filter_algorithm::operator()(
             // In case there is no branching: run simpler Kalman track following
             if (m_config.max_num_branches_per_seed == 1 ||
                 m_config.max_num_branches_per_surface == 1) {
-                return details::kalman_track_follower<
+                return details::progressive_kalman_filter<
                     typename detector_t::device>(
                     detector, bfield, measurements, seeds, m_config, m_mr,
                     m_copy, logger(), m_stream, m_warp_size);
