@@ -273,7 +273,7 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             {
                 traccc::performance::timer t("Seeding (cuda)", elapsedTimes);
                 // Reconstruct the spacepoints into seeds.
-                if (usingGBTS) {
+                if (true) {
                     seeds_cuda_buffer = gbts_sa_cuda(spacepoints_cuda_buffer,
                                                      measurements_cuda_buffer);
                 } else {
