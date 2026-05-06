@@ -689,7 +689,7 @@ combinatorial_kalman_filter(
             .link_filtered_parameter_view = link_filtered_parameter_buffer,
         };
         kernels::build_tracks<<<nBlocks, nThreads, 0, stream>>>(
-            config.run_mbf_smoother, payload);
+            config.run_mbf_smoother, config.meas_calibration, payload);
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
         str.synchronize();

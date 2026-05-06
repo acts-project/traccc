@@ -14,6 +14,7 @@
 #include "traccc/edm/measurement_helpers.hpp"
 #include "traccc/edm/track_state_collection.hpp"
 #include "traccc/fitting/details/regularize_covariance.hpp"
+#include "traccc/fitting/kalman_filter/measurement_selector.hpp"
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/utils/logging.hpp"
 
@@ -36,17 +37,17 @@ struct two_filters_smoother {
     /// @param bound_params bound parameter
     ///
     /// @return true if the update succeeds
+    template <typename track_state_backend_t, typename measurement_backend_t>
     [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status operator()(
-        typename edm::track_state_collection<algebra_t>::device::proxy_type&
-            trk_state,
-        const edm::measurement_collection::const_device& measurements,
+        typename edm::track_state<track_state_backend_t>& trk_state,
+        const edm::measurement<measurement_backend_t>& measurement,
         bound_track_parameters<algebra_t>& bound_params,
+        const measurement_selector::config& calib_cfg,
         const bool is_line) const {
 
         static constexpr unsigned int D = 2;
 
-        [[maybe_unused]] const unsigned int dim{
-            measurements.at(trk_state.measurement_index()).dimensions()};
+        [[maybe_unused]] const unsigned int dim{measurement.dimensions()};
 
         assert(dim == 1u || dim == 2u);
 
@@ -61,13 +62,6 @@ struct two_filters_smoother {
             TRACCC_ERROR_HOST(trk_state.filtered_params());
             return kalman_fitter_status::ERROR_UPDATER_SKIPPED_STATE;
         }
-
-        // Measurement data on surface
-        matrix_type<D, 1> meas_local;
-        edm::get_measurement_local<algebra_t>(
-            measurements.at(trk_state.measurement_index()), meas_local);
-
-        assert((dim > 1) || (getter::element(meas_local, 1u, 0u) == 0.f));
 
         // Predicted vector of bound track parameters
         const matrix_type<e_bound_size, 1>& predicted_vec =
@@ -131,28 +125,23 @@ struct two_filters_smoother {
             return kalman_fitter_status::ERROR_THETA_POLE;
         }
 
-        const subspace<algebra_t, e_bound_size> subs(
-            measurements.at(trk_state.measurement_index()).subspace());
-        matrix_type<D, e_bound_size> H = subs.template projector<D>();
-        // @TODO: Fix properly
-        if (getter::element(meas_local, 1u, 0u) == 0.f /*dim == 1*/) {
-            getter::element(H, 1u, 0u) = 0.f;
-            getter::element(H, 1u, 1u) = 0.f;
-        }
+        // Measurement data on surface
+        const matrix_type<D, 1> meas_local =
+            measurement_selector::calibrated_measurement_position<algebra_t, D>(
+                measurement, calib_cfg);
+
+        // Spatial resolution (Measurement covariance)
+        const matrix_type<D, D> V =
+            measurement_selector::calibrated_measurement_covariance<algebra_t,
+                                                                    D>(
+                measurement, calib_cfg);
+
+        matrix_type<D, e_bound_size> H =
+            measurement_selector::observation_model<algebra_t, D>(
+                measurement, bound_params, is_line);
 
         const matrix_type<D, 1> residual_smt = meas_local - H * smoothed_vec;
 
-        // Spatial resolution (Measurement covariance)
-        matrix_type<D, D> V;
-        edm::get_measurement_covariance<algebra_t>(
-            measurements.at(trk_state.measurement_index()), V);
-        // @TODO: Fix properly
-        if (getter::element(meas_local, 1u, 0u) == 0.f /*dim == 1*/) {
-            getter::element(V, 1u, 1u) = 1000.f;
-        }
-
-        TRACCC_DEBUG_HOST("Measurement position: " << meas_local);
-        TRACCC_DEBUG_HOST("Measurement variance:\n" << V);
         TRACCC_DEBUG_HOST("Predicted residual: " << meas_local -
                                                         H * predicted_vec);
 
@@ -195,12 +184,6 @@ struct two_filters_smoother {
         /*************************************
          *  Set backward filtered parameter
          *************************************/
-
-        // Flip the sign of projector matrix element in case the first element
-        // of line measurement is negative
-        if (is_line && getter::element(predicted_vec, e_bound_loc0, 0u) < 0) {
-            getter::element(H, 0u, e_bound_loc0) = -1;
-        }
 
         const auto I66 =
             matrix::identity<matrix_type<e_bound_size, e_bound_size>>();

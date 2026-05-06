@@ -10,6 +10,7 @@
 // Local include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
+#include "traccc/fitting/kalman_filter/measurement_selector.hpp"
 #include "traccc/utils/particle.hpp"
 
 // detray include(s).
@@ -24,6 +25,8 @@ struct fitting_config {
 
     /// Propagation configuration
     detray::propagation::config propagation{};
+    /// Measurement calibration configuration
+    measurement_selector::config meas_calibration{};
 
     /// Minimum momentum for reconstructed tracks
     float min_p = 100.f * traccc::unit<float>::MeV;

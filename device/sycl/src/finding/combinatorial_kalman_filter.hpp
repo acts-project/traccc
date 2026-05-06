@@ -750,7 +750,7 @@ combinatorial_kalman_filter(
                         ::sycl::nd_item<1> item) {
                         device::build_tracks(
                             details::global_index(item),
-                            config.run_mbf_smoother,
+                            config.run_mbf_smoother, config.meas_calibration,
                             {.seeds_view = seeds,
                              .links_view = links,
                              .tips_view = tips,

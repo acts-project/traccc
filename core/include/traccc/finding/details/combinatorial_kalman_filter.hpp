@@ -233,7 +233,6 @@ combinatorial_kalman_filter(
                 best_links;
 
             const bool is_line = detail::is_line(sf);
-            measurement_selector::config calib_cfg{};
 
             // Iterate over the measurements
             TRACCC_VERBOSE_HOST("No. measurements: " << (up - lo));
@@ -244,7 +243,7 @@ combinatorial_kalman_filter(
                 const edm::measurement meas = measurements.at(meas_id);
 
                 const scalar_type chi2 = measurement_selector::predicted_chi2(
-                    meas, in_param, calib_cfg, is_line);
+                    meas, in_param, config.meas_calibration, is_line);
 
                 // If the measurement is outside the chi2 cut, skip it
                 if (chi2 > config.chi2_max || chi2 < 0.f) {
@@ -258,8 +257,9 @@ combinatorial_kalman_filter(
 
                 // Run the Kalman update on a copy of the track parameters
                 const kalman_fitter_status res =
-                    gain_matrix_updater<algebra_type>{}(trk_state, measurements,
-                                                        in_param, is_line);
+                    gain_matrix_updater<algebra_type>{}(
+                        trk_state, meas, in_param, config.meas_calibration,
+                        is_line);
 
                 TRACCC_DEBUG_HOST("KF status: " << fitter_debug_msg{res}());
 

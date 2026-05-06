@@ -13,6 +13,7 @@
 #include "traccc/definitions/track_parametrization.hpp"
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/measurement_helpers.hpp"
+#include "traccc/edm/track_parameters.hpp"
 #include "traccc/utils/logging.hpp"
 #include "traccc/utils/subspace.hpp"
 
@@ -202,7 +203,13 @@ struct measurement_selector {
 
         const scalar_t pred_chi2_val{getter::element(pred_chi2, 0, 0)};
 
-        TRACCC_VERBOSE_HOST_DEVICE("--> chi2: %.10e", pred_chi2_val);
+        if (!std::isfinite(pred_chi2_val)) {
+            TRACCC_WARNING_HOST_DEVICE("Infinite predicted chi2 value!");
+        } else if (pred_chi2_val < 0.f) {
+            TRACCC_WARNING_HOST_DEVICE("Negative predicted chi2 value!");
+        } else {
+            TRACCC_VERBOSE_HOST_DEVICE("--> chi2: %.10e", pred_chi2_val);
+        }
 
         return pred_chi2_val;
     }
@@ -267,7 +274,8 @@ struct measurement_selector {
     /// @param cfg the calibration configuration
     /// @param is_line whether the measurement belong to a line surface
     ///
-    /// @returns a collection of compatible measurements, sorted by pred. chi2
+    /// @returns a collection of compatible measurements, sorted by pred.
+    /// chi2
     template <detray::concepts::algebra algebra_t>
     TRACCC_HOST_DEVICE static vecmem::vector<candidate_measurement>
     find_compatible_measurements(

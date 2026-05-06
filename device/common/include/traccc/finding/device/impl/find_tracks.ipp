@@ -207,13 +207,11 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                 const detray::tracking_surface sf{det, in_par.surface_link()};
                 const bool is_line = detail::is_line(sf);
 
-                measurement_selector::config calib_cfg{};
-
                 const edm::measurement meas = measurements.at(meas_idx);
 
                 const traccc::scalar chi2 =
-                    measurement_selector::predicted_chi2(meas, in_par,
-                                                         calib_cfg, is_line);
+                    measurement_selector::predicted_chi2(
+                        meas, in_par, cfg.meas_calibration, is_line);
 
                 if (chi2 <= cfg.chi2_max && chi2 >= 0.f) {
                     // The filtered track state
@@ -225,7 +223,8 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                     // Run the Kalman update
                     const kalman_fitter_status res =
                         gain_matrix_updater<algebra_t>{}(
-                            trk_state, measurements, in_par, is_line);
+                            trk_state, meas, in_par, cfg.meas_calibration,
+                            is_line);
 
                     TRACCC_DEBUG_DEVICE("KF status: %d", res);
 
