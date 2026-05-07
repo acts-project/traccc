@@ -14,6 +14,7 @@
 #include "traccc/edm/track_state_collection.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 #include "traccc/fitting/kalman_filter/is_line_visitor.hpp"
+#include "traccc/fitting/kalman_filter/measurement_selector.hpp"
 #include "traccc/fitting/kalman_filter/two_filters_smoother.hpp"
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/utils/logging.hpp"
@@ -50,11 +51,13 @@ struct kalman_actor_state {
         const typename edm::track_state_collection<algebra_t>::device&
             track_states,
         const edm::measurement_collection::const_device& measurements,
-        vecmem::device_vector<surface_t> sequence)
+        vecmem::device_vector<surface_t> sequence,
+        const measurement_selector::config& calib_cfg)
         : m_track{track},
           m_track_states{track_states},
           m_measurements{measurements},
-          m_sequencer{sequence} {
+          m_sequencer{sequence},
+          m_calib_cfg{calib_cfg} {
 
         reset();
     }
@@ -311,6 +314,9 @@ struct kalman_actor_state {
     /// The surface sequencer
     sequencer_t m_sequencer;
 
+    /// Measurement calibration configuration
+    measurement_selector::config m_calib_cfg{};
+
     /// Index of the current track state
     int m_idx;
 
@@ -408,6 +414,9 @@ struct kalman_actor : detray::base_actor {
             const auto sf = navigation.current_surface();
             const bool is_line = detail::is_line(sf);
 
+            const auto measurement =
+                actor_state.m_measurements.at(trk_state.measurement_index());
+
             if (!actor_state.backward_mode) {
                 if constexpr (direction_e ==
                                   kalman_actor_direction::FORWARD_ONLY ||
@@ -419,11 +428,17 @@ struct kalman_actor : detray::base_actor {
                     // Forward filter
                     TRACCC_DEBUG_HOST_DEVICE("Run filtering...");
                     actor_state.fit_result = gain_matrix_updater<algebra_t>{}(
-                        trk_state, actor_state.m_measurements, bound_param,
-                        is_line);
+                        trk_state, measurement, bound_param,
+                        actor_state.m_calib_cfg, is_line);
 
                     // Update the propagation flow
                     bound_param = trk_state.filtered_params();
+
+                    // Calculate the chi2 on the filtered parameters
+                    trk_state.filtered_chi2() =
+                        measurement_selector::predicted_chi2(
+                            measurement, bound_param, actor_state.m_calib_cfg,
+                            is_line);
 
                     // Add this to the surface sequence for the backward fit
                     actor_state.add_to_sequence(
@@ -449,8 +464,8 @@ struct kalman_actor : detray::base_actor {
                     } else {
                         actor_state.fit_result =
                             two_filters_smoother<algebra_t>{}(
-                                trk_state, actor_state.m_measurements,
-                                bound_param, is_line);
+                                trk_state, measurement, bound_param,
+                                actor_state.m_calib_cfg, is_line);
                     }
                 } else {
                     assert(false);

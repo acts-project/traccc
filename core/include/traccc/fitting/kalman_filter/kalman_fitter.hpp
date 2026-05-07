@@ -17,6 +17,7 @@
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/fitting/kalman_filter/kalman_actor.hpp"
 #include "traccc/fitting/kalman_filter/kalman_step_aborter.hpp"
+#include "traccc/fitting/kalman_filter/measurement_selector.hpp"
 #include "traccc/fitting/kalman_filter/statistics_updater.hpp"
 #include "traccc/fitting/kalman_filter/two_filters_smoother.hpp"
 #include "traccc/fitting/status_codes.hpp"
@@ -118,11 +119,13 @@ class kalman_fitter {
                 track_states,
             const edm::measurement_collection::const_device& measurements,
             vecmem::data::vector_view<surface_type> sequence_buffer,
-            const detray::propagation::config& prop_cfg)
+            const detray::propagation::config& prop_cfg,
+            const measurement_selector::config& calib_cfg)
             : m_updater_state{prop_cfg},
               m_fit_actor_state{
                   track, track_states, measurements,
-                  vecmem::device_vector<surface_type>(sequence_buffer)},
+                  vecmem::device_vector<surface_type>(sequence_buffer),
+                  calib_cfg},
               m_fit_res{track},
               m_sequence_buffer{sequence_buffer} {}
 

@@ -86,7 +86,8 @@ typename edm::track_container<algebra_t>::host kalman_fitting(
             result_tracks_device.at(result_tracks_device.size() - 1),
             typename edm::track_state_collection<algebra_t>::device{
                 vecmem::get_data(result.states)},
-            tracks.measurements, seqs_buffer, fitter.config().propagation);
+            tracks.measurements, seqs_buffer, fitter.config().propagation,
+            fitter.config().meas_calibration);
 
         // Run the fitter. The status that it returns is not used here. The main
         // failure modes are saved onto the fitted track itself. Not sure what
