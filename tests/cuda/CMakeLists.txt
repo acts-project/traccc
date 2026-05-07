@@ -53,6 +53,7 @@ traccc_add_test(
     test_sanity_contiguous_on.cu
     test_sanity_ordered_on.cu
     test_sort.cu
+    test_strided_vector.cu
 
     LINK_LIBRARIES
     CUDA::cudart
