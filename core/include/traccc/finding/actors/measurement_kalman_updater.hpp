@@ -24,6 +24,7 @@
 
 // detray include(s)
 #include <detray/algebra/utils/approximately_equal.hpp>
+#include <detray/definitions/navigation.hpp>
 #include <detray/propagator/actors/parameter_updater.hpp>
 #include <detray/propagator/base_actor.hpp>
 #include <detray/utils/ranges/detail/iterator_functions.hpp>
@@ -307,8 +308,11 @@ struct measurement_updater : detray::base_actor {
 
             // Discard the current local track parameters if smoothing is
             // required (no relevant update was performed)
-            if (updater_state.m_run_smoother != smoother_type::e_none &&
+            /*if (updater_state.m_run_smoother != smoother_type::e_none &&
+                navigation.trust_level() ==
+                    detray::navigation::trust_level::e_full &&
                 (!sf.has_material() || navigation.is_edge_candidate())) {
+
                 transporter_result.status = detray::actor::status::e_failure;
 
                 // Recover the departure surface bound parameters
@@ -343,10 +347,10 @@ struct measurement_updater : detray::base_actor {
                 assert(!transporter_result.destination_params().is_invalid());
                 assert(transporter_result.destination_params().surface_link() !=
                        navigation.geometry_identifier());
-            } else {
-                // Update the free track parameters on the new material
-                transporter_result.status = detray::actor::status::e_success;
-            }
+            } else {*/
+            // Update the free track parameters on the new material
+            transporter_result.status = detray::actor::status::e_success;
+            //}
         }
     }
 };

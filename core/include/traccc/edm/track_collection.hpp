@@ -19,6 +19,9 @@
 // VecMem include(s).
 #include <vecmem/edm/container.hpp>
 
+// System include(s)
+#include <ostream>
+
 namespace traccc::edm {
 
 /// Interface for the @c traccc::edm::track_collection type.
@@ -156,6 +159,19 @@ class track : public BASE {
     TRACCC_HOST_DEVICE bool operator==(const track<T>& other) const;
 
     /// @}
+
+    private:
+    /// @returns a string stream that prints the track details
+    TRACCC_HOST
+    friend std::ostream& operator<<(std::ostream& os, const track& t) {
+        os << "Track: [states: " << t.constituent_links().size()
+           << ", holes: " << t.nholes() << ", chi2 sum: " << t.chi2()
+           << ", ndf: " << t.ndf() << ", pval: " << t.pval() << ", fit res. "
+           << fit_outcome_debug_msg{t.fit_outcome()}() << ", seed:\n "
+           << t.params() << "\n]";
+
+        return os;
+    }
 
 };  // class track_fit
 

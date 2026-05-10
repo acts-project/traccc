@@ -417,7 +417,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                     traccc::default_algebra>::const_data(track_candidates_cuda),
                 evt_data);
 
-            // if (cfg.run_smoother != smoother_type::e_none) {
             for (unsigned int i = 0; i < track_candidates_cuda.tracks.size();
                  i++) {
                 host_detector_visitor<detector_type_list>(
@@ -429,7 +428,6 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                             measurements_per_event, det, evt_data);
                     });
             }
-            //}
         }
     }
 

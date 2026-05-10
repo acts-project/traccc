@@ -13,7 +13,7 @@
 #include "traccc/edm/track_container.hpp"
 #include "traccc/edm/track_state_helpers.hpp"
 #include "traccc/finding/actors/measurement_kalman_updater.hpp"
-#include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
+#include "traccc/finding/details/progressive_kalman_filter.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/finding/measurement_selector.hpp"
 #include "traccc/finding/track_state_candidate.hpp"
@@ -52,10 +52,6 @@ TRACCC_HOST_DEVICE inline void progressive_kalman_filter(
     typename edm::measurement_collection::const_device measurements(
         payload.measurements_view);
 
-    // Collect the track statistics
-    vecmem::device_vector<track_stats<scalar_t>> track_stats(
-        payload.track_stats_view);
-
     // Set the data pointer to the beginning of the range of the track
     const auto cand_offset{
         static_cast<int>(globalIndex * cfg.max_track_candidates_per_track)};
@@ -70,161 +66,35 @@ TRACCC_HOST_DEVICE inline void progressive_kalman_filter(
     typename edm::track_state_collection<algebra_t>::device track_states(
         payload.tracks_view.states);
 
-    const auto ptc_hypothesis{
-        detail::correct_particle_hypothesis(cfg.ptc_hypothesis, seed)};
-
-    // Check if the seed should be forwarded to the KF
-    const scalar_t q{ptc_hypothesis.charge()};
-    if (seed.pT(q) <= static_cast<scalar_t>(cfg.min_pT) / 10.f) {
-        TRACCC_WARNING_DEVICE(
-            "Seed below min. transverse momentum: |pT| = %f MeV", seed.pT(q));
-        return;
-    }
-    if (seed.p(q) <= static_cast<scalar_t>(cfg.min_p) / 10.f) {
-        TRACCC_WARNING_DEVICE("Seed below min. momentum: |p| = %f MeV",
-                              seed.p(q));
-        return;
-    }
-
-    // Configuration for measurement calibration
-    measurement_selector::config calib_cfg{};
-
-    // Create propagator
-    auto prop_cfg{cfg.propagation};
-    prop_cfg.navigation.estimate_scattering_noise = false;
-    propagator_t propagator(prop_cfg);
-
-    // Create propagator state
-    typename propagator_t::state propagation(seed, payload.field_data, det);
-    propagation.set_particle(ptc_hypothesis);
-
-    // Pathlimit aborter
-    typename detray::actor::pathlimit_aborter<scalar_t>::state
-        path_aborter_state;
-    // Momentum aborter
-    typename detray::actor::momentum_aborter<scalar_t>::state
-        momentum_aborter_state{};
-    // Track parameter transporter
-    typename detray::actor::parameter_updater_state<algebra_t> updater_state{
-        prop_cfg, seed};
-    // Material interactor
-    typename detray::actor::pointwise_material_interactor<algebra_t>::state
-        interactor_state;
-    // Do the measurement selection
-    typename traccc::measurement_updater<algebra_t>::state meas_updater_state{
-        measurements, payload.measurement_ranges_view, candidate_data.ptr(),
-        cfg.run_smoother};
-
-    path_aborter_state.set_path_limit(cfg.propagation.stepping.path_limit);
-    momentum_aborter_state.min_pT(static_cast<scalar_t>(cfg.min_pT));
-    momentum_aborter_state.min_p(static_cast<scalar_t>(cfg.min_p));
-
-    meas_updater_state.max_chi2 = cfg.chi2_max;
-    meas_updater_state.max_n_track_states = cfg.max_track_candidates_per_track;
-    meas_updater_state.max_n_holes =
-        static_cast<unsigned short>(cfg.max_num_skipping_per_cand);
-    meas_updater_state.max_n_consecutive_holes =
-        static_cast<unsigned short>(cfg.max_num_consecutive_skipped);
-    meas_updater_state.n_track_states_until_pause =
-        static_cast<unsigned short>(cfg.duplicate_removal_minimum_length);
-    meas_updater_state.m_calib_cfg = calib_cfg;
-    meas_updater_state.m_stats.seed_idx = globalIndex;
-
-    auto actor_states =
-        detray::tie(path_aborter_state, updater_state, interactor_state,
-                    meas_updater_state, momentum_aborter_state);
-
-    /*for (unsigned int step = 0u;
-         step < seeds.size() / cfg.duplicate_removal_minimum_length; ++step) {
-
-        if (propagator.is_paused(propagation)) {
-            propagator.resume(propagation);
-        }*/
-
-    assert(meas_updater_state.m_stats.n_holes < cfg.max_num_skipping_per_cand);
-    assert(meas_updater_state.m_stats.n_consecutive_holes <
-           cfg.max_num_consecutive_skipped);
-
-    updater_state.notify_on_initial(/*step == 0u*/ true);
-    propagator.propagate(propagation, actor_states);
-
-    // Stop propagation
-    /*if (propagator.finished(propagation) ||
-        !propagator.is_paused(propagation)) {
-        break;
-    }*/
-
-    // Check if the track should be continued
-    const auto& free_param = propagation.stepping()();
-    const scalar_t q_new{propagation.stepping().particle_hypothesis().charge()};
-    if (free_param.pT(q_new) <= static_cast<scalar_t>(cfg.min_pT)) {
-        TRACCC_WARNING_HOST_DEVICE(
-            "Track below min. transverse momentum: |pT| = %f MeV",
-            free_param.pT(q_new));
-        return;
-    }
-    if (free_param.p(q_new) <= static_cast<scalar_t>(cfg.min_p)) {
-        TRACCC_WARNING_HOST_DEVICE("Track below min. momentum: |p| = %f MeV",
-                                   free_param.p(q_new));
-        return;
-    }
-
-    // Run track deduplication
-    //}
-
-    // TODO: Removing tracks with propagation failure can get the fake rate down
-    // (e.g. if it triggered an aborter)
-    bool is_alive{propagator.finished(propagation)};
-    if (!is_alive) {
-        TRACCC_ERROR_DEVICE("Propagation failure! Track: %d", globalIndex);
-    }
-
-    // Observe minimum track length
-    const traccc::track_stats<scalar_t>& trk_stats = meas_updater_state.m_stats;
-    const unsigned int n_track_states{trk_stats.n_track_states};
-
-    assert(n_track_states <= cfg.max_track_candidates_per_track);
-    if (is_alive && n_track_states < cfg.min_track_candidates_per_track) {
-        TRACCC_WARNING_DEVICE("Short track (%d track states): discarding",
-                              n_track_states);
-        is_alive = false;
-    }
-
-    // Check track stats and build the new track object
-    const int ndf_sum{static_cast<int>(trk_stats.ndf_sum) - 5};
-
-    if (is_alive && ndf_sum < 0) {
-        TRACCC_ERROR_DEVICE("Negative NDF sum for track");
-        is_alive = false;
-    }
-
-    // Link the new states to the final track
     assert(globalIndex < track_candidates.size());
 
-    if (is_alive && trk_stats.n_holes > cfg.max_num_skipping_per_cand + 1) {
-        TRACCC_ERROR_DEVICE("Incorrect hole count!\n");
-    }
-    if (is_alive &&
-        trk_stats.n_consecutive_holes > cfg.max_num_consecutive_skipped + 1) {
-        TRACCC_ERROR_DEVICE("Incorrect consecutive hole count!\n");
-    }
+    // Run the progressive filter for this seed
+    const traccc::track_stats<scalar_t> trk_stats =
+        traccc::details::progressive_kalman_filter(
+            det, payload.field_data, payload.measurements_view,
+            payload.measurement_ranges_view, seed, globalIndex,
+            candidate_data.ptr(), cfg);
 
+    // Check track stats and build the new track object
+    const unsigned int n_track_states{trk_stats.n_track_states};
+    const int ndf_sum{static_cast<int>(trk_stats.ndf_sum) - 5};
+    bool good_track{n_track_states > 0u};
+
+    // Link the new states to the final track
     edm::track track = track_candidates.at(globalIndex);
-    // Initial track state
-    track.fit_outcome() =
-        (is_alive && cfg.run_smoother != smoother_type::e_none)
-            ? track_fit_outcome::SUCCESS
-            : track_fit_outcome::UNKNOWN;
+
     track.params() = seed;
     track.ndf() = static_cast<scalar_t>(ndf_sum);
     track.chi2() = trk_stats.chi2_sum;
     track.pval() = prob(trk_stats.chi2_sum, static_cast<scalar_t>(ndf_sum));
     track.nholes() = static_cast<unsigned int>(trk_stats.n_holes);
-    track.constituent_links().resize(is_alive ? n_track_states : 0u);
+    track.constituent_links().resize(n_track_states);
 
-    assert(!is_alive || (n_track_states <= track.constituent_links().size()));
+    if (good_track) {
+        track.fit_outcome() = (cfg.run_smoother != smoother_type::e_none)
+                                  ? track_fit_outcome::SUCCESS
+                                  : track_fit_outcome::UNKNOWN;
 
-    if (is_alive) {
         const auto track_state_offset{globalIndex *
                                       cfg.max_track_candidates_per_track};
 
@@ -240,7 +110,7 @@ TRACCC_HOST_DEVICE inline void progressive_kalman_filter(
             // Intermediate type required to build a view
             traccc::track_state_from_candidate<algebra_t>(
                 candidate_data.ptr(), cfg.run_smoother, link_idx, measurements,
-                track, payload.tracks_view);
+                track, payload.tracks_view.states);
         }
 
         TRACCC_INFO_DEVICE(
@@ -248,6 +118,8 @@ TRACCC_HOST_DEVICE inline void progressive_kalman_filter(
             "%d)",
             globalIndex, track_state_offset, n_track_states,
             track_candidates.size());
+    } else {
+        track.fit_outcome() = track_fit_outcome::FAILURE_FITTER;
     }
 }
 

@@ -10,7 +10,7 @@
 
 #include "traccc/bfield/magnetic_field_types.hpp"
 #include "traccc/finding/details/combinatorial_kalman_filter.hpp"
-#include "traccc/finding/details/progressive_kalman_filter.hpp"
+#include "traccc/finding/details/run_progressive_kalman_filter.hpp"
 #include "traccc/utils/host_detector_bfield_visitor.hpp"
 
 // System include(s).
@@ -46,7 +46,7 @@ combinatorial_kalman_filter_algorithm::operator()(
             const bfield_view_t field) {
             if (m_config.max_num_branches_per_seed == 1 ||
                 m_config.max_num_branches_per_surface == 1) {
-                return details::progressive_kalman_filter(
+                return details::run_progressive_kalman_filter(
                     detector, field, measurements, seeds, m_config, m_mr.get(),
                     logger());
             } else {

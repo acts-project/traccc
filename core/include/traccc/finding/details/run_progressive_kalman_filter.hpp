@@ -11,6 +11,7 @@
 #include "traccc/edm/track_container.hpp"
 #include "traccc/edm/track_state_helpers.hpp"
 #include "traccc/finding/actors/measurement_kalman_updater.hpp"
+#include "traccc/finding/details/progressive_kalman_filter.hpp"
 #include "traccc/finding/details/progressive_kalman_filter_types.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/finding/measurement_selector.hpp"
@@ -23,6 +24,7 @@
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
+#include <vecmem/utils/copy.hpp>
 
 // System include(s).
 #include <algorithm>
@@ -32,11 +34,7 @@
 
 namespace traccc::host::details {
 
-/// Templated implementation of a progressive Kalman Filter for track finding.
-///
-/// Concrete track finding algorithms can use this function with the appropriate
-/// specializations, to find tracks on top of a specific detector type, magnetic
-/// field type, and track finding configuration.
+/// Run the progressive Kalman filter on the host
 ///
 /// @tparam detector_t The (host) detector type to use
 /// @tparam bfield_t   The magnetic field type to use
@@ -54,7 +52,7 @@ namespace traccc::host::details {
 ///
 template <typename detector_t, typename bfield_t>
 edm::track_container<typename detector_t::algebra_type>::host
-progressive_kalman_filter(
+run_progressive_kalman_filter(
     const detector_t& det, const bfield_t& field,
     const typename edm::measurement_collection::const_view& measurements_view,
     const bound_track_parameters_collection_types::const_view& seeds_view,
@@ -65,9 +63,6 @@ progressive_kalman_filter(
 
     using algebra_t = typename detector_t::algebra_type;
     using scalar_t = detray::dscalar<algebra_t>;
-
-    // Detray propagation types
-    using propagator_t = traccc::details::kf_propagator_t<detector_t, bfield_t>;
 
     // Create the measurement container.
     typename edm::measurement_collection::const_device measurements{
@@ -113,16 +108,24 @@ progressive_kalman_filter(
     const unsigned int n_seeds{seeds.size()};
 
     if (n_seeds == 0u) {
-        TRACCC_DEBUG_HOST_DEVICE("No input seeds: Quitting");
+        TRACCC_DEBUG_HOST("No input seeds: Quitting");
         return track_container;
     }
 
     // Number of found tracks = number of seeds
-    const unsigned int max_cands{n_seeds * cfg.max_track_candidates_per_track};
-    // Total number of tracks in one event
     track_container.tracks.reserve(n_seeds);
-    // Total number of track states for all tracks in one event
-    track_container.states.reserve(max_cands);
+
+    // Toal number of track states = number of tracks * max(states/track)
+    const unsigned int n_max_states{n_seeds *
+                                    cfg.max_track_candidates_per_track};
+
+    // Create track states buffer (to make sure the resulting device container
+    // is resizable)
+    vecmem::copy copy{};
+    typename edm::track_state_collection<algebra_t>::buffer track_states_buffer{
+        cfg.run_smoother == smoother_type::e_none ? 0u : n_max_states, mr,
+        vecmem::data::buffer_type::resizable};
+    copy.setup(track_states_buffer)->ignore();
 
     // Track data collected by the measurement updater during pattern recog.
     vecmem::vector<track_state_candidate> track_cands{};
@@ -132,15 +135,15 @@ progressive_kalman_filter(
 
     switch (cfg.run_smoother) {
         case smoother_type::e_none: {
-            track_cands.resize(max_cands);
+            track_cands.resize(n_max_states);
             break;
         }
         case smoother_type::e_kalman: {
-            filtered_track_cands.resize(max_cands);
+            filtered_track_cands.resize(n_max_states);
             break;
         }
         case smoother_type::e_mbf: {
-            full_track_cands.resize(max_cands);
+            full_track_cands.resize(n_max_states);
             break;
         }
         default: {
@@ -149,37 +152,8 @@ progressive_kalman_filter(
         }
     }
 
-    // Create detray propagator
-    auto prop_cfg{cfg.propagation};
-    prop_cfg.navigation.estimate_scattering_noise = false;
-    propagator_t propagator(prop_cfg);
-
-    // Configuration for measurement calibration
-    measurement_selector::config calib_cfg{};
-
     for (unsigned int seed_idx = 0u; seed_idx < seeds.size(); ++seed_idx) {
         const auto& seed = seeds[seed_idx];
-
-        TRACCC_INFO_HOST("Seed: " << seed_idx);
-        // Add the information also to the clog stream
-        TRACCC_VERBOSE_HOST("Seed: " << seed_idx);
-
-        const auto ptc_hypothesis{
-            detail::correct_particle_hypothesis(cfg.ptc_hypothesis, seed)};
-
-        // Check if the seed should be forwarded to the KF
-        const scalar_t q{ptc_hypothesis.charge()};
-        if (seed.pT(q) <= static_cast<scalar_t>(cfg.min_pT) / 10.f) {
-            TRACCC_WARNING_HOST_DEVICE(
-                "Seed below min. transverse momentum: |pT| = %f MeV",
-                seed.pT(q));
-            continue;
-        }
-        if (seed.p(q) <= static_cast<scalar_t>(cfg.min_p) / 10.f) {
-            TRACCC_WARNING_HOST_DEVICE("Seed below min. momentum: |p| = %f MeV",
-                                       seed.p(q));
-            continue;
-        }
 
         // Set the data pointer to the beginning of the range of the track
         const auto cand_offset{static_cast<unsigned int>(
@@ -190,143 +164,29 @@ progressive_kalman_filter(
             vecmem::get_data(filtered_track_cands),
             vecmem::get_data(full_track_cands));
 
-        // Construct propagation state
-        typename propagator_t::state propagation(seed, field, det);
-        propagation.set_particle(
-            detail::correct_particle_hypothesis(cfg.ptc_hypothesis, seed));
+        // Run the progressive filter for this seed
+        const track_stats<scalar_t> trk_stats =
+            traccc::details::progressive_kalman_filter(
+                det, field, measurements_view, vecmem::get_data(meas_ranges),
+                seed, seed_idx, candidate_data.ptr(), cfg);
 
-        // Pathlimit aborter
-        typename detray::actor::pathlimit_aborter<scalar_t>::state
-            path_aborter_state;
-        // Momentum aborter
-        typename detray::actor::momentum_aborter<scalar_t>::state
-            momentum_aborter_state{};
-        // Track parameter transporter
-        typename detray::actor::parameter_updater_state<algebra_t>
-            updater_state{prop_cfg, seed};
-        // Material interactor
-        typename detray::actor::pointwise_material_interactor<algebra_t>::state
-            interactor_state;
-        // Do the measurement selection
-        typename traccc::measurement_updater<algebra_t>::state
-            meas_updater_state{measurements, vecmem::get_data(meas_ranges),
-                               candidate_data.ptr(), cfg.run_smoother};
-
-        path_aborter_state.set_path_limit(cfg.propagation.stepping.path_limit);
-        momentum_aborter_state.min_pT(static_cast<scalar_t>(cfg.min_pT));
-        momentum_aborter_state.min_p(static_cast<scalar_t>(cfg.min_p));
-
-        meas_updater_state.max_chi2 = cfg.chi2_max;
-        meas_updater_state.max_n_track_states =
-            cfg.max_track_candidates_per_track;
-        meas_updater_state.max_n_holes =
-            static_cast<unsigned short>(cfg.max_num_skipping_per_cand);
-        meas_updater_state.max_n_consecutive_holes =
-            static_cast<unsigned short>(cfg.max_num_consecutive_skipped);
-        meas_updater_state.n_track_states_until_pause =
-            static_cast<unsigned short>(cfg.duplicate_removal_minimum_length);
-        meas_updater_state.m_calib_cfg = calib_cfg;
-        meas_updater_state.m_stats.seed_idx = seed_idx;
-
-        auto actor_states =
-            detray::tie(path_aborter_state, updater_state, interactor_state,
-                        meas_updater_state, momentum_aborter_state);
-
-        /*for (unsigned int step = 0u;
-             step < max_cands / cfg.duplicate_removal_minimum_length + 1u;
-             ++step) {
-
-            if (propagator.is_paused(propagation)) {
-                propagator.resume(propagation);
-            }*/
-
-        assert(meas_updater_state.m_stats.n_holes <
-               cfg.max_num_skipping_per_cand);
-        assert(meas_updater_state.m_stats.n_consecutive_holes <
-               cfg.max_num_consecutive_skipped);
-
-        // Do not rerun measurement selection when resuming
-        updater_state.notify_on_initial(true);
-        propagator.propagate(propagation, actor_states);
-
-        // Stop propagation
-        // if (propagator.finished(propagation) ||
-        //    !propagator.is_paused(propagation)) {
-        TRACCC_VERBOSE_HOST_DEVICE(
-            "Track following finished. Building track...");
-        //}
-        // Check if the track should be continued
-        const auto& free_param = propagation.stepping()();
-        const scalar_t q_new{
-            propagation.stepping().particle_hypothesis().charge()};
-        if (free_param.pT(q_new) <= static_cast<scalar_t>(cfg.min_pT)) {
-            TRACCC_WARNING_HOST_DEVICE(
-                "Track below min. transverse momentum: |pT| = %f MeV",
-                free_param.pT(q_new));
-            continue;
-        }
-        if (free_param.p(q_new) <= static_cast<scalar_t>(cfg.min_p)) {
-            TRACCC_WARNING_HOST_DEVICE(
-                "Track below min. momentum: |p| = %f MeV", free_param.p(q_new));
-            continue;
-        }
-
-        // Run track deduplication
-        //}
-
-        if (!propagator.finished(propagation)) {
-            TRACCC_ERROR_HOST("Propagation failure! Track: " << seed_idx);
-            continue;
-        }
-
-        // Observe minimum track length
-        const track_stats<scalar_t>& trk_stats = meas_updater_state.m_stats;
+        // Check track stats and build the new track object
         const unsigned int n_track_states{trk_stats.n_track_states};
-
-        TRACCC_DEBUG_HOST("Seed params:\n" << seed);
-        TRACCC_VERBOSE_HOST("Found track for seed "
-                            << seed_idx << ": (" << n_track_states
-                            << " track states, " << trk_stats.n_holes
-                            << " holes)");
-
-        if (n_track_states < cfg.min_track_candidates_per_track) {
-            TRACCC_WARNING_HOST("Short track ("
-                                << n_track_states
-                                << " track states): discarding");
-            continue;
-        }
-
-        // Check track stats
         const int ndf_sum{static_cast<int>(trk_stats.ndf_sum) - 5};
 
-        if (ndf_sum < 0) {
-            TRACCC_ERROR_HOST("Negative NDF sum for track: discarding");
+        // Bad track, don't write to container
+        if (n_track_states == 0u) {
             continue;
         }
-
-        // Link the new states to the final track
-        vecmem::vector<edm::track_constituent_link> state_links;
-        state_links.reserve(n_track_states);
 
         track_container.tracks.push_back({});
         edm::track track =
             track_container.tracks.at(track_container.tracks.size() - 1u);
 
-        if (trk_stats.n_holes > cfg.max_num_skipping_per_cand + 1) {
-            TRACCC_ERROR_HOST("Hole count incorrect: max = "
-                              << cfg.max_num_skipping_per_cand
-                              << ", found = " << trk_stats.n_holes);
-        }
-        if (trk_stats.n_consecutive_holes >
-            cfg.max_num_consecutive_skipped + 1) {
-            TRACCC_ERROR_HOST("Consecutive hole count incorrect: max = "
-                              << cfg.max_num_consecutive_skipped
-                              << ", found = " << trk_stats.n_consecutive_holes);
-        }
-
         track.fit_outcome() = cfg.run_smoother == smoother_type::e_none
                                   ? track_fit_outcome::UNKNOWN
                                   : track_fit_outcome::SUCCESS;
+
         track.params() = seed;
         track.ndf() = static_cast<scalar_t>(ndf_sum);
         track.chi2() = trk_stats.chi2_sum;
@@ -337,28 +197,29 @@ progressive_kalman_filter(
         const auto track_state_offset{
             static_cast<unsigned int>(track_container.states.size())};
 
+        // Generate the track states for this track
         for (unsigned int state_idx = track_state_offset;
              state_idx < track_state_offset + n_track_states; state_idx++) {
 
             const unsigned int link_idx{state_idx - track_state_offset};
 
-            TRACCC_DEBUG_HOST_DEVICE(
-                "Adding track state (local idx %d, global idx %d)", link_idx,
-                state_idx);
+            TRACCC_DEBUG_HOST("Adding track state (local idx "
+                              << link_idx << ", global idx " << state_idx
+                              << ")");
 
             // Intermediate type required to build a view
-            typename edm::track_container<algebra_t>::data track_data{
-                track_container};
             traccc::track_state_from_candidate<algebra_t>(
                 candidate_data.ptr(), cfg.run_smoother, link_idx, measurements,
-                track, {track_data});
+                track, track_states_buffer);
         }
 
         TRACCC_DEBUG_HOST("Added track " << track_container.tracks.size() - 1
-                                         << " to track container");
+                                         << " to track container: " << track);
     }
 
     TRACCC_INFO_HOST("Finished");
+
+    copy(track_states_buffer, track_container.states)->wait();
 
     return track_container;
 }

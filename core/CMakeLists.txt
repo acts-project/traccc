@@ -90,6 +90,7 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/finding/details/combinatorial_kalman_filter.hpp"
   "include/traccc/finding/details/progressive_kalman_filter_types.hpp"
   "include/traccc/finding/details/progressive_kalman_filter.hpp"
+  "include/traccc/finding/details/run_progressive_kalman_filter.hpp"
   "include/traccc/finding/candidate_link.hpp"
   "include/traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
   "include/traccc/finding/finding_config.hpp"
