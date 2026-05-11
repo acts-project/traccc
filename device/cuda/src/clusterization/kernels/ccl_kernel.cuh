@@ -28,10 +28,11 @@ __global__ void ccl_kernel(
     const detector_conditions_description::const_view det_cond_view,
     edm::measurement_collection::view measurements_view,
     vecmem::data::vector_view<unsigned int> cell_links,
-    vecmem::data::vector_view<device::details::index_t> f_backup_view,
-    vecmem::data::vector_view<device::details::index_t> gf_backup_view,
+    vecmem::data::vector_view<device::details::fallback_index_t> f_backup_view,
+    vecmem::data::vector_view<device::details::fallback_index_t> gf_backup_view,
     vecmem::data::vector_view<unsigned char> adjc_backup_view,
-    vecmem::data::vector_view<device::details::index_t> adjv_backup_view,
+    vecmem::data::vector_view<device::details::fallback_index_t>
+        adjv_backup_view,
     unsigned int* backup_mutex_ptr,
     vecmem::data::vector_view<unsigned int> disjoint_set_view,
     vecmem::data::vector_view<unsigned int> cluster_size_view);

@@ -9,16 +9,18 @@
 
 // Project include(s).
 #include "traccc/clusterization/details/sparse_ccl.hpp"
+#include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
 
 // System include(s).
 #include <cassert>
 
 namespace traccc::device {
 
+template <typename index_t>
 TRACCC_HOST_DEVICE inline void reduce_problem_cell(
     const edm::silicon_cell_collection::const_device& cells,
-    const unsigned short cid, const unsigned int start, const unsigned int end,
-    unsigned char& adjc, unsigned short* adjv) {
+    const unsigned int cid, const unsigned int start, const unsigned int end,
+    unsigned char& adjc, index_t* adjv) {
 
     // Some sanity check(s).
     assert(start <= end);
@@ -51,7 +53,7 @@ TRACCC_HOST_DEVICE inline void reduce_problem_cell(
          */
         if (traccc::details::is_adjacent(reference_cell, cells.at(j))) {
             assert(adjc < 4);
-            adjv[adjc++] = static_cast<unsigned short>(j - start);
+            adjv[adjc++] = static_cast<index_t>(j - start);
         }
     }
 }
