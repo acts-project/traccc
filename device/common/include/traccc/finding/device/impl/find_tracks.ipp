@@ -214,17 +214,41 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                         meas, in_par, cfg.meas_calibration, is_line);
 
                 if (chi2 <= cfg.chi2_max && chi2 >= 0.f) {
-                    // The filtered track state
+
                     edm::track_state trk_state =
                         edm::make_track_state<algebra_t>(measurements,
                                                          meas_idx);
                     trk_state.filtered_chi2() = chi2;
 
-                    // Run the Kalman update
-                    const kalman_fitter_status res =
-                        gain_matrix_updater<algebra_t>{}(
+                    // Kalman filter status code
+                    kalman_fitter_status res{kalman_fitter_status::ERROR_OTHER};
+
+                    if (payload.step == 0 && !sf.has_material()) {
+                        // Only do this for the actual seed measurement
+                        res = kalman_fitter_status::SUCCESS;
+
+                        trk_state.filtered_params() = in_par;
+
+                        // Update measurement covariance
+                        const auto V = measurement_selector::
+                            calibrated_measurement_covariance<algebra_t, 2>(
+                                meas, cfg.meas_calibration);
+
+                        auto& filtered_cov =
+                            trk_state.filtered_params().covariance();
+                        getter::element(filtered_cov, e_bound_loc0,
+                                        e_bound_loc0) =
+                            getter::element(V, 0, 0);
+                        getter::element(filtered_cov, e_bound_loc1,
+                                        e_bound_loc1) =
+                            getter::element(V, 1, 1);
+                    } else {
+                        // Run the Kalman update on a copy of the track
+                        // parameters
+                        res = gain_matrix_updater<algebra_t>{}(
                             trk_state, meas, in_par, cfg.meas_calibration,
                             is_line);
+                    }
 
                     TRACCC_DEBUG_DEVICE("KF status: %d", res);
 

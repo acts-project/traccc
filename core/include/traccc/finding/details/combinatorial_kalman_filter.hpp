@@ -255,11 +255,40 @@ combinatorial_kalman_filter(
                     edm::make_track_state<algebra_type>(measurements, meas_id);
                 trk_state.filtered_chi2() = chi2;
 
-                // Run the Kalman update on a copy of the track parameters
-                const kalman_fitter_status res =
-                    gain_matrix_updater<algebra_type>{}(
-                        trk_state, meas, in_param, config.meas_calibration,
-                        is_line);
+                // Kalman filter status code
+                kalman_fitter_status res{kalman_fitter_status::ERROR_OTHER};
+
+                // Don't run the filter on the first measurement
+                if (step == 0 && !sf.has_material()) {
+                    // Only do this for the actual seed measurement
+                    if (chi2 == 0.f) {
+                        res = kalman_fitter_status::SUCCESS;
+
+                        // Copy the full track parameters
+                        // TODO: Apply calibration ?
+                        trk_state.filtered_params() = in_param;
+
+                        // Update measurement covariance
+                        const auto V = measurement_selector::
+                            calibrated_measurement_covariance<algebra_type, 2>(
+                                meas, config.meas_calibration);
+
+                        auto& filtered_cov =
+                            trk_state.filtered_params().covariance();
+                        getter::element(filtered_cov, e_bound_loc0,
+                                        e_bound_loc0) =
+                            getter::element(V, 0, 0);
+                        getter::element(filtered_cov, e_bound_loc1,
+                                        e_bound_loc1) =
+                            getter::element(V, 1, 1);
+                    }
+                } else {
+                    // Run the Kalman update on the track state
+                    constexpr gain_matrix_updater<algebra_type>
+                        kalman_updater{};
+                    res = kalman_updater(trk_state, meas, in_param,
+                                         config.meas_calibration, is_line);
+                }
 
                 TRACCC_DEBUG_HOST("KF status: " << fitter_debug_msg{res}());
 
