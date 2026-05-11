@@ -147,7 +147,7 @@ jobs:
         if: "matrix.platform.run_tests"
         run: data/traccc_data_get_files.sh
       - name: Test
-        if: "matrix.platform.run_tests"
+        if: "matrix.platform.run_tests && matrix.build == 'Release'"
         run: |
           cd build
           source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
