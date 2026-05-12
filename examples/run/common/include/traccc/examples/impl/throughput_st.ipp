@@ -44,7 +44,7 @@
 #include <vecmem/memory/host_memory_resource.hpp>
 
 // Indicators include(s).
-#include <indicators/progress_bar.hpp>
+#include "traccc/examples/indicators.hpp"
 
 // System include(s).
 #include <cstdlib>

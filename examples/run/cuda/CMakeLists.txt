@@ -22,13 +22,13 @@ target_link_libraries( traccc_examples_cuda
           traccc::examples_common )
 
 traccc_add_executable( throughput_st_cuda "apps/throughput_st.cpp"
-   LINK_LIBRARIES indicators::indicators vecmem::core vecmem::cuda
+   LINK_LIBRARIES vecmem::core vecmem::cuda
                   detray::detectors detray::io traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::cuda_utils traccc::cuda
                   traccc::options traccc::examples_cuda )
 
 traccc_add_executable( throughput_mt_cuda "apps/throughput_mt.cpp"
-   LINK_LIBRARIES indicators::indicators TBB::tbb vecmem::core vecmem::cuda
+   LINK_LIBRARIES TBB::tbb vecmem::core vecmem::cuda
                   detray::detectors detray::io traccc::io traccc::performance
                   traccc::core traccc::device_common traccc::cuda_utils traccc::cuda
                   traccc::options traccc::examples_cuda )
