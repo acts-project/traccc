@@ -91,8 +91,8 @@ struct gbts_ctx {
     int* d_output_graph{};
 
     // message-passing CCA
-    // holds indices of the edges that need more CCA iterations
-    int* d_active_edges{};
+    // holds flags for edges that need more CCA iterations
+    char* d_active_edges{};
     // d_levels[edge_idx] = the maxium length of seeds starting with this edge
     char* d_levels{};
     // #paths, is terminus
@@ -743,7 +743,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
          iter++) {
         kernels::CCA_IterationKernel<<<nBlocks, nThreads, 0, stream>>>(
             ctx.d_output_graph, ctx.d_levels, ctx.d_active_edges,
-            ctx.d_outgoing_paths, ctx.d_counters, iter, ctx.nConnectedEdges,
+            ctx.d_outgoing_paths, iter, ctx.nConnectedEdges,
             m_config.max_num_neighbours, m_config.minLevel);
 
         cudaStreamSynchronize(stream);
