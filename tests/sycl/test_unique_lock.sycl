@@ -6,15 +6,20 @@
  * Mozilla Public License Version 2.0
  */
 
-#include <gtest/gtest.h>
-
+// SYCL include(s).
 #include <sycl/sycl.hpp>
+
+// Project include(s).
+#include "traccc/device/mutex.hpp"
+#include "traccc/device/unique_lock.hpp"
+
+// VecMem include(s).
 #include <vecmem/memory/sycl/device_memory_resource.hpp>
 #include <vecmem/memory/sycl/shared_memory_resource.hpp>
 #include <vecmem/memory/unique_ptr.hpp>
 
-#include "traccc/device/mutex.hpp"
-#include "traccc/device/unique_lock.hpp"
+// GoogleTest include(s).
+#include <gtest/gtest.h>
 
 TEST(SYCLUniqueLock, MassAdditionKernelTryLock) {
 

@@ -7,6 +7,9 @@
 
 #pragma once
 
+// SYCL include(s).
+#include <sycl/sycl.hpp>
+
 // Local include(s).
 #include "../sanity/contiguous_on.hpp"
 #include "../utils/barrier.hpp"
@@ -40,9 +43,6 @@
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
 #include <vecmem/utils/sycl/local_accessor.hpp>
-
-// SYCL include(s).
-#include <sycl/sycl.hpp>
 
 namespace traccc::sycl::details {
 namespace kernels {
