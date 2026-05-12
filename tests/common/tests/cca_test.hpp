@@ -14,6 +14,7 @@
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/silicon_cluster_collection.hpp"
 #include "traccc/geometry/detector_design_description.hpp"
+#include "traccc/io/csv/dfe.hpp"
 #include "traccc/io/csv/make_cell_reader.hpp"
 #include "traccc/io/read_cells.hpp"
 
@@ -26,10 +27,6 @@
 
 // GTest include(s).
 #include <gtest/gtest.h>
-
-// DFE include(s).
-#include <dfe/dfe_io_dsv.hpp>
-#include <dfe/dfe_namedtuple.hpp>
 
 // System include(s).
 #include <functional>
@@ -85,7 +82,8 @@ class ConnectedComponentAnalysisTests
                        channel0, channel1, variance0, variance1);
     };
 
-    using cca_truth_hit_reader = dfe::NamedTupleCsvReader<cca_truth_hit>;
+    using cca_truth_hit_reader =
+        ::traccc::io::dfe::NamedTupleCsvReader<cca_truth_hit>;
 
     inline static std::string get_test_name(
         const testing::TestParamInfo<ParamType> &info) {
