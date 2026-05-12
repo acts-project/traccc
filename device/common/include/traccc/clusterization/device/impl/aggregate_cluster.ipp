@@ -9,17 +9,19 @@
 
 // Project include(s)
 #include "traccc/clusterization/details/measurement_creation.hpp"
+#include "traccc/clusterization/device/ccl_kernel_definitions.hpp"
 #include "traccc/utils/detray_conversion.hpp"
 
 namespace traccc::device {
 
+template <typename index_t>
 TRACCC_HOST_DEVICE inline void aggregate_cluster(
     const clustering_config& cfg,
     const edm::silicon_cell_collection::const_device& cells,
     const detector_design_description::const_device& det_desc,
     const detector_conditions_description::const_device& det_cond,
-    const vecmem::device_vector<details::index_t>& f, const unsigned int start,
-    const unsigned int end, const unsigned short cid,
+    const vecmem::device_vector<index_t>& f, const unsigned int start,
+    const unsigned int end, const unsigned int cid,
     edm::measurement_collection::device::proxy_type out,
     vecmem::data::vector_view<unsigned int> cell_links, const unsigned int link,
     vecmem::device_vector<unsigned int>& disjoint_set,
@@ -71,13 +73,13 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
 
     unsigned int tmp_cluster_size = 0;
 
-    const auto partition_size = static_cast<unsigned short>(end - start);
+    const unsigned int partition_size = end - start;
 
     bool first_processed = false;
 
     channel_id maxChannel1 = std::numeric_limits<channel_id>::min();
 
-    for (unsigned short j = cid; j < partition_size; j++) {
+    for (unsigned int j = cid; j < partition_size; j++) {
 
         const unsigned int pos = j + start;
         const edm::silicon_cell cell = cells.at(pos);

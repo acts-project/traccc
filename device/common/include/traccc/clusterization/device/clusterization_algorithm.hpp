@@ -134,13 +134,13 @@ class clusterization_algorithm
         /// Buffer for linking cells to measurements
         vecmem::data::vector_view<unsigned int>& cell_links;
         /// Buffer for backup of the first element links
-        vecmem::data::vector_view<details::index_t>& f_backup;
+        vecmem::data::vector_view<details::fallback_index_t>& f_backup;
         /// Buffer for backup of the group first element links
-        vecmem::data::vector_view<details::index_t>& gf_backup;
+        vecmem::data::vector_view<details::fallback_index_t>& gf_backup;
         /// Buffer for backup of the adjacency matrix (counts)
         vecmem::data::vector_view<unsigned char>& adjc_backup;
         /// Buffer for backup of the adjacency matrix (values)
-        vecmem::data::vector_view<details::index_t>& adjv_backup;
+        vecmem::data::vector_view<details::fallback_index_t>& adjv_backup;
         /// Mutex for the backup structures
         unsigned int* backup_mutex;
         /// Buffer for the disjoint set data structure
@@ -180,11 +180,12 @@ class clusterization_algorithm
     /// Clusterization configuration
     config_type m_config;
     /// Memory reserved for edge cases
-    mutable vecmem::data::vector_buffer<details::index_t> m_f_backup;
-    mutable vecmem::data::vector_buffer<details::index_t> m_gf_backup;
+    mutable vecmem::data::vector_buffer<details::fallback_index_t> m_f_backup;
+    mutable vecmem::data::vector_buffer<details::fallback_index_t> m_gf_backup;
     mutable vecmem::unique_alloc_ptr<unsigned int> m_backup_mutex;
     mutable vecmem::data::vector_buffer<unsigned char> m_adjc_backup;
-    mutable vecmem::data::vector_buffer<details::index_t> m_adjv_backup;
+    mutable vecmem::data::vector_buffer<details::fallback_index_t>
+        m_adjv_backup;
 
 };  // class clusterization_algorithm
 

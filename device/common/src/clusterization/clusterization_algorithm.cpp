@@ -8,6 +8,8 @@
 // Local include(s).
 #include "traccc/clusterization/device/clusterization_algorithm.hpp"
 
+#include <limits>
+
 namespace traccc::device {
 
 clusterization_algorithm::clusterization_algorithm(
@@ -21,6 +23,13 @@ clusterization_algorithm::clusterization_algorithm(
       m_backup_mutex{vecmem::make_unique_alloc<unsigned int>(mr.main)},
       m_adjc_backup{m_config.backup_size(), mr.main},
       m_adjv_backup{m_config.backup_size() * 4, mr.main} {
+
+    if (config.max_partition_size() >
+        static_cast<unsigned int>(
+            std::numeric_limits<details::index_t>::max())) {
+        throw std::domain_error(
+            "Maximal partition size is too large for the chosen index type!");
+    }
 
     copy().setup(m_f_backup)->wait();
     copy().setup(m_gf_backup)->wait();
