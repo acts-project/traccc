@@ -16,6 +16,7 @@
 #include "traccc/fitting/kalman_filter/measurement_selector.hpp"
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/utils/logging.hpp"
+#include "traccc/utils/matrix_helpers.hpp"
 #include "traccc/utils/subspace.hpp"
 
 namespace traccc {
@@ -52,7 +53,7 @@ struct gain_matrix_updater {
 
         static constexpr unsigned int D = 2;
 
-        [[maybe_unused]] const unsigned int dim{measurement.dimensions()};
+        const unsigned int dim{measurement.dimensions()};
 
         TRACCC_VERBOSE_HOST_DEVICE("Perform Kalman filtering...");
         TRACCC_VERBOSE_HOST_DEVICE("-> Measurement dim: %d", dim);
@@ -91,11 +92,11 @@ struct gain_matrix_updater {
         const matrix_type<e_bound_size, D> projected_cov =
             matrix::transposed_product<false, true>(predicted_cov, H);
 
-        const matrix_type<D, D> M = H * projected_cov + V;
+        const matrix_type<D, D> M_inv =
+            masked_inverse<algebra_t>(H * projected_cov + V, dim);
 
         // Kalman gain matrix
-        assert(matrix::determinant(M) != 0.f);
-        const matrix_type<6, D> K = projected_cov * matrix::inverse(M);
+        const matrix_type<6, D> K = projected_cov * M_inv;
 
         TRACCC_DEBUG_HOST("-> H:\n" << H);
         TRACCC_DEBUG_HOST("-> K:\n" << K);

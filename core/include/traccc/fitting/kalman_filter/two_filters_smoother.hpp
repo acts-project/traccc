@@ -17,6 +17,7 @@
 #include "traccc/fitting/kalman_filter/measurement_selector.hpp"
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/utils/logging.hpp"
+#include "traccc/utils/matrix_helpers.hpp"
 
 namespace traccc {
 
@@ -47,7 +48,7 @@ struct two_filters_smoother {
 
         static constexpr unsigned int D = 2;
 
-        [[maybe_unused]] const unsigned int dim{measurement.dimensions()};
+        const unsigned int dim{measurement.dimensions()};
 
         assert(dim == 1u || dim == 2u);
 
@@ -150,20 +151,20 @@ struct two_filters_smoother {
         const matrix_type<D, D> R_smt =
             V - H * matrix::transposed_product<false, true>(smoothed_cov, H);
 
+        const matrix_type<D, D> R_smt_inv =
+            masked_inverse<algebra_t>(R_smt, dim);
+
         // Eq (3.40) of "Pattern Recognition, Tracking and Vertex
         // Reconstruction in Particle Detectors"
-        assert(matrix::determinant(R_smt) != 0.f);
         const matrix_type<1, 1> chi2_smt =
-            matrix::transposed_product<true, false>(residual_smt,
-                                                    matrix::inverse(R_smt)) *
+            matrix::transposed_product<true, false>(residual_smt, R_smt_inv) *
             residual_smt;
 
         const scalar chi2_smt_value{getter::element(chi2_smt, 0, 0)};
 
         TRACCC_VERBOSE_HOST("Smoothed residual: " << residual_smt);
         TRACCC_DEBUG_HOST("R_smt:\n" << R_smt);
-        TRACCC_DEBUG_HOST_DEVICE("det(R_smt): %f", matrix::determinant(R_smt));
-        TRACCC_DEBUG_HOST("R_smt_inv:\n" << matrix::inverse(R_smt));
+        TRACCC_DEBUG_HOST("R_smt_inv:\n" << R_smt_inv);
         TRACCC_VERBOSE_HOST_DEVICE("Smoothed chi2: %f", chi2_smt_value);
 
         if (chi2_smt_value < 0.f) {
@@ -192,12 +193,11 @@ struct two_filters_smoother {
         const matrix_type<e_bound_size, D> projected_cov =
             matrix::transposed_product<false, true>(predicted_cov, H);
 
-        const matrix_type<D, D> M = H * projected_cov + V;
+        const matrix_type<D, D> M_inv =
+            masked_inverse<algebra_t>(H * projected_cov + V, dim);
 
         // Kalman gain matrix
-        assert(matrix::determinant(M) != 0.f);
-        assert(std::isfinite(matrix::determinant(M)));
-        const matrix_type<6, D> K = projected_cov * matrix::inverse(M);
+        const matrix_type<6, D> K = projected_cov * M_inv;
 
         TRACCC_DEBUG_HOST("H:\n" << H);
         TRACCC_DEBUG_HOST("K:\n" << K);
@@ -252,18 +252,17 @@ struct two_filters_smoother {
 
         // Calculate backward chi2
         const matrix_type<D, D> R = (I_m - H * K) * V;
-        // assert(matrix::determinant(R) != 0.f); // @TODO: This fails
-        assert(std::isfinite(matrix::determinant(R)));
-        const matrix_type<1, 1> chi2 = matrix::transposed_product<true, false>(
-                                           residual, matrix::inverse(R)) *
-                                       residual;
+
+        const matrix_type<D, D> R_inv = masked_inverse<algebra_t>(R, dim);
+
+        const matrix_type<1, 1> chi2 =
+            matrix::transposed_product<true, false>(residual, R_inv) * residual;
 
         const scalar chi2_val{getter::element(chi2, 0, 0)};
 
         TRACCC_VERBOSE_HOST("Filtered residual: " << residual);
         TRACCC_DEBUG_HOST("R:\n" << R);
-        TRACCC_DEBUG_HOST_DEVICE("det(R): %f", matrix::determinant(R));
-        TRACCC_DEBUG_HOST("R_inv:\n" << matrix::inverse(R));
+        TRACCC_DEBUG_HOST("R_inv:\n" << R_inv);
         TRACCC_VERBOSE_HOST_DEVICE("Filtered chi2: %f", chi2_val);
 
         if (chi2_val < 0.f) {
