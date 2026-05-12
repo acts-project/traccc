@@ -23,10 +23,8 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
     const vecmem::device_vector<index_t>& fll, const unsigned int start,
     const unsigned int end, const unsigned int cid,
     edm::measurement_collection::device::proxy_type out,
-    vecmem::data::vector_view<unsigned int> cell_links, const unsigned int link,
-    vecmem::device_vector<unsigned int>& disjoint_set,
+    const unsigned int link, vecmem::device_vector<unsigned int>& disjoint_set,
     std::optional<std::reference_wrapper<unsigned int>> cluster_size) {
-    vecmem::device_vector<unsigned int> cell_links_device(cell_links);
 
     /*
      * Now, we iterate over all other cells to check if they belong to our
@@ -110,7 +108,6 @@ TRACCC_HOST_DEVICE inline void aggregate_cluster(
         var[1] = (1.f - weight_factor) * var[1] +
                  weight_factor * (diff_old[1] * diff_new[1]);
 
-        cell_links_device.at(pos) = link;
         tmp_cluster_size++;
 
         if (disjoint_set.capacity()) {

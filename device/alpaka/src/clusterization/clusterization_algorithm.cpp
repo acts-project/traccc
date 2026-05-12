@@ -42,8 +42,7 @@ struct ccl_kernel {
         uint32_t* backup_mutex_ptr,
         vecmem::data::vector_view<unsigned int> disjoint_set_view,
         vecmem::data::vector_view<unsigned int> cluster_size_view,
-        edm::measurement_collection::view measurements_view,
-        vecmem::data::vector_view<unsigned int> cell_links) const {
+        edm::measurement_collection::view measurements_view) const {
 
         details::thread_id1 thread_id(acc);
 
@@ -69,7 +68,7 @@ struct ccl_kernel {
                            f_view, gf_view, f_backup_view, gf_backup_view,
                            adjc_backup_view, adjv_backup_view, backup_mutex,
                            disjoint_set_view, cluster_size_view, barry_r,
-                           measurements_view, cell_links);
+                           measurements_view);
     }
 
 };  // struct ccl_kernel
@@ -120,7 +119,7 @@ void clusterization_algorithm::ccl_kernel(
         payload.config, payload.cells, payload.det_descr, payload.det_cond,
         payload.f_backup, payload.gf_backup, payload.adjc_backup,
         payload.adjv_backup, payload.backup_mutex, payload.disjoint_set,
-        payload.cluster_sizes, payload.measurements, payload.cell_links);
+        payload.cluster_sizes, payload.measurements);
 }
 
 void clusterization_algorithm::cluster_maker_kernel(
