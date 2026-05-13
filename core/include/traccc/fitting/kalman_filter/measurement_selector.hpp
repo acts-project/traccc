@@ -15,6 +15,7 @@
 #include "traccc/edm/measurement_helpers.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/utils/logging.hpp"
+#include "traccc/utils/matrix_helpers.hpp"
 #include "traccc/utils/subspace.hpp"
 
 // System include(s)
@@ -131,7 +132,8 @@ struct measurement_selector {
         // @TODO: Fix properly
         if (/*dim == 1*/ getter::element(meas_local, 1u, 0u) == 0.f) {
             // if (measurement.dimensions() == 1) {
-            getter::element(V, 1u, 1u) = 10000.f;
+            getter::element(V, 1u, 1u) =
+                std::numeric_limits<detray::dscalar<algebra_t>>::max();
         }
 
         TRACCC_DEBUG_HOST("--> Measurement covariance (uncalibrated):\n" << V);
@@ -186,9 +188,11 @@ struct measurement_selector {
                     bound_params.covariance(), H) +
             V;
 
+        const matrix_t<algebra_t, D, D> R_inv =
+            masked_inverse<algebra_t>(R, measurement.dimensions());
+
         TRACCC_DEBUG_HOST("--> R:\n" << R);
-        TRACCC_DEBUG_HOST_DEVICE("--> det(R): %.10e", matrix::determinant(R));
-        TRACCC_DEBUG_HOST("--> R_inv:\n" << matrix::inverse(R));
+        TRACCC_DEBUG_HOST("--> R_inv:\n" << R_inv);
 
         // Residual between measurement and (projected) vector (innovation)
         const matrix_t<algebra_t, D, 1> residual =
@@ -197,9 +201,7 @@ struct measurement_selector {
         TRACCC_DEBUG_HOST("--> Predicted residual:\n" << residual);
 
         const matrix_t<algebra_t, 1, 1> pred_chi2 =
-            matrix::transposed_product<true, false>(
-                residual, traccc::matrix::inverse(R)) *
-            residual;
+            matrix::transposed_product<true, false>(residual, R_inv) * residual;
 
         const scalar_t pred_chi2_val{getter::element(pred_chi2, 0, 0)};
 

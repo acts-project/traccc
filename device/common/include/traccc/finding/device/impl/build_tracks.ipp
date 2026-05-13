@@ -14,6 +14,7 @@
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_state_helpers.hpp"
 #include "traccc/fitting/kalman_filter/measurement_selector.hpp"
+#include "traccc/utils/matrix_helpers.hpp"
 #include "traccc/utils/prob.hpp"
 #include "traccc/utils/subspace.hpp"
 
@@ -151,8 +152,10 @@ TRACCC_HOST_DEVICE inline void build_tracks(
                 measurement_selector::observation_model<default_algebra, 2>(
                     meas, predicted_params, false);
 
-            const auto S = H * predicted_covariance * matrix::transpose(H) + V;
-            const auto S_inv = matrix::inverse(S);
+            const auto S_inv = masked_inverse<default_algebra>(
+                H * predicted_covariance * matrix::transpose(H) + V,
+                meas.dimensions());
+
             const auto K = predicted_covariance * matrix::transpose(H) * S_inv;
             const auto C_hat =
                 matrix::identity<detray::dmatrix<default_algebra, e_bound_size,
