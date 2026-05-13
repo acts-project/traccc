@@ -114,11 +114,11 @@ jobs:
       - name: Build ACTS
         run: |
           export CMAKE_PREFIX_PATH=/json_install/:${CMAKE_PREFIX_PATH}
-          wget https://github.com/acts-project/acts/archive/refs/tags/v46.0.0.tar.gz
-          tar -xvf v46.0.0.tar.gz
+          wget https://github.com/acts-project/acts/archive/refs/tags/v46.5.0.tar.gz
+          tar -xvf v46.5.0.tar.gz
           export CXX=g++
           cmake \
-            -S acts-46.0.0 \
+            -S acts-46.5.0 \
             -B /acts_build/ \
             -DACTS_BUILD_PLUGIN_JSON=ON \
             -DACTS_USE_SYSTEM_NLOHMANN_JSON=ON \
@@ -137,6 +137,7 @@ jobs:
             -DDETRAY_USE_SYSTEM_NLOHMANN=ON \
             -DTRACCC_SUPPORTED_DETECTORS="default_detector;odd_detector;telescope_detector;toy_detector;itk_detector" \
             -DDETRAY_GENERATE_METADATA="itk_metadata" \
+            -DFETCHCONTENT_SOURCE_DIR_DETRAY="acts-46.5.0/Detray" \
             -S ${GITHUB_WORKSPACE} \
             -B build
       - name: Build

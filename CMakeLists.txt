@@ -298,20 +298,6 @@ if( TRACCC_SETUP_COVFIE )
    endif()
 endif()
 
-# Set up Detray.
-option( TRACCC_SETUP_DETRAY
-   "Set up the Detray target(s) explicitly" TRUE )
-option( TRACCC_USE_SYSTEM_DETRAY
-   "Pick up an existing installation of Detray from the build environment"
-   ${TRACCC_USE_SYSTEM_LIBS} )
-if( TRACCC_SETUP_DETRAY )
-   if( TRACCC_USE_SYSTEM_DETRAY )
-      find_package( detray REQUIRED )
-   else()
-      add_subdirectory( extern/detray )
-   endif()
-endif()
-
 # Set up Acts.
 option( TRACCC_SETUP_ACTS
    "Set up the Acts target(s) explicitly" TRUE )

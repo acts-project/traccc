@@ -9,11 +9,11 @@ cmake_minimum_required( VERSION 3.25 )
 include( FetchContent )
 
 # Tell the user what's happening.
-message( STATUS "Building Acts as part of the TRACCC project" )
+message( STATUS "Building Acts (including Detray) as part of the TRACCC project" )
 
 # Declare where to get Acts from.
 set( TRACCC_ACTS_SOURCE
-   "URL;https://github.com/acts-project/acts/archive/refs/tags/v46.0.0.tar.gz;URL_MD5;1e0cc5c3db1b5605c792b66a366de6d1"
+   "URL;https://github.com/acts-project/acts/archive/refs/tags/v46.5.0.tar.gz;URL_MD5;3c9901b3e624f19aeb90ee251d93e717"
    CACHE STRING "Source for Acts, when built as part of this project" )
 mark_as_advanced( TRACCC_ACTS_SOURCE )
 FetchContent_Declare( Acts SYSTEM ${TRACCC_ACTS_SOURCE} )
@@ -25,6 +25,13 @@ set( ACTS_USE_SYSTEM_EIGEN3 FALSE CACHE BOOL
    "Build Eigen3 from source" )
 set( ACTS_BUILD_PLUGIN_JSON TRUE CACHE BOOL
    "Build JSON plugin in Acts" )
+set( ACTS_SETUP_DETRAY TRUE CACHE BOOL
+   "Set up Detray in the Acts code" )
+set(DETRAY_BUILD_TEST_UTILS TRUE CACHE BOOL "")
+# The ITk metadata is required, so explicitly request that it be built.
+if (NOT("itk_metadata" IN_LIST DETRAY_GENERATE_METADATA))
+   list(APPEND DETRAY_GENERATE_METADATA "itk_metadata")
+endif()
 
 # Get it into the current directory.
 FetchContent_MakeAvailable( Acts )
