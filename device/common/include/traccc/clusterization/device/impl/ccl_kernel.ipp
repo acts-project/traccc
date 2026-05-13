@@ -147,8 +147,7 @@ TRACCC_HOST_DEVICE inline void ccl_core(
     const clustering_config& cfg, const thread_id_t& thread_id,
     std::size_t& partition_start, std::size_t& partition_end,
     vecmem::device_vector<index_t> f, vecmem::device_vector<index_t> gf,
-    vecmem::data::vector_view<unsigned int> cell_links, index_t* adjv,
-    unsigned char* adjc,
+    index_t* adjv, unsigned char* adjc,
     const edm::silicon_cell_collection::const_device& cells_device,
     const detector_design_description::const_device& det_desc,
     const detector_conditions_description::const_device& det_cond,
@@ -267,8 +266,7 @@ TRACCC_HOST_DEVICE inline void ccl_core(
                 cfg, cells_device, det_desc, det_cond, gf,
                 static_cast<unsigned int>(partition_start),
                 static_cast<unsigned int>(partition_end), cid,
-                measurements_device.at(meas_pos), cell_links, meas_pos,
-                disjoint_set,
+                measurements_device.at(meas_pos), meas_pos, disjoint_set,
                 (cluster_size.capacity()
                      ? std::optional<std::reference_wrapper<
                            unsigned int>>{cluster_size.at(meas_pos)}
@@ -295,8 +293,7 @@ TRACCC_HOST_DEVICE inline void ccl_kernel(
     vecmem::data::vector_view<unsigned int> disjoint_set_view,
     vecmem::data::vector_view<unsigned int> cluster_size_view,
     const barrier_t& barrier,
-    edm::measurement_collection::view measurements_view,
-    vecmem::data::vector_view<unsigned int> cell_links) {
+    edm::measurement_collection::view measurements_view) {
 
     // Construct device containers around the views.
     const edm::silicon_cell_collection::const_device cells_device(cells_view);
@@ -404,9 +401,8 @@ TRACCC_HOST_DEVICE inline void ccl_kernel(
             (thread_id.getLocalThreadIdX() * 4 * cfg.max_cells_per_thread *
              cfg.backup_size_multiplier);
         ccl_core(cfg, thread_id, partition_start, partition_end, f_backup,
-                 gf_backup, cell_links, adjv, adjc, cells_device, det_desc,
-                 det_cond, measurements_device, barrier, disjoint_set,
-                 cluster_size);
+                 gf_backup, adjv, adjc, cells_device, det_desc, det_cond,
+                 measurements_device, barrier, disjoint_set, cluster_size);
     } else {
         /*
          * Vector of indices of the adjacent cells.
@@ -422,9 +418,8 @@ TRACCC_HOST_DEVICE inline void ccl_kernel(
         unsigned char adjc[details::CELLS_PER_THREAD_STACK_LIMIT];
 
         ccl_core(cfg, thread_id, partition_start, partition_end, f_primary,
-                 gf_primary, cell_links, adjv, adjc, cells_device, det_desc,
-                 det_cond, measurements_device, barrier, disjoint_set,
-                 cluster_size);
+                 gf_primary, adjv, adjc, cells_device, det_desc, det_cond,
+                 measurements_device, barrier, disjoint_set, cluster_size);
     }
 
     barrier.blockBarrier();

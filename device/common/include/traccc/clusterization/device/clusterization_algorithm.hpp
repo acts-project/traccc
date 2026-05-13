@@ -131,8 +131,6 @@ class clusterization_algorithm
         const detector_conditions_description::const_view& det_cond;
         /// The measurement collection to fill
         edm::measurement_collection::view& measurements;
-        /// Buffer for linking cells to measurements
-        vecmem::data::vector_view<unsigned int>& cell_links;
         /// Buffer for backup of the first element links
         vecmem::data::vector_view<details::fallback_index_t>& f_backup;
         /// Buffer for backup of the group first element links

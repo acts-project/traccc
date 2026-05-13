@@ -60,8 +60,6 @@ namespace traccc::device {
 ///     corresponding measurement.
 /// @param barrier  A generic object for block-wide synchronisation
 /// @param[out] measurements_view collection of measurements
-/// @param[out] cell_links    collection of links to measurements each cell is
-/// put into
 template <device::concepts::barrier barrier_t,
           device::concepts::thread_id1 thread_id_t>
 TRACCC_HOST_DEVICE inline void ccl_kernel(
@@ -80,8 +78,7 @@ TRACCC_HOST_DEVICE inline void ccl_kernel(
     vecmem::data::vector_view<unsigned int> disjoint_set_view,
     vecmem::data::vector_view<unsigned int> cluster_size_view,
     const barrier_t& barrier,
-    edm::measurement_collection::view measurements_view,
-    vecmem::data::vector_view<unsigned int> cell_links);
+    edm::measurement_collection::view measurements_view);
 
 }  // namespace traccc::device
 

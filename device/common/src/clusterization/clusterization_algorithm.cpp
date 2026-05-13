@@ -115,10 +115,6 @@ clusterization_algorithm::execute_impl(
         num_cells, mr().main, vecmem::data::buffer_type::resizable};
     copy().setup(measurements)->ignore();
 
-    // Create buffer for linking cells to their measurements.
-    vecmem::data::vector_buffer<unsigned int> cell_links(num_cells, mr().main);
-    copy().setup(cell_links)->ignore();
-
     // Ensure that the chosen maximum cell count is compatible with the maximum
     // stack size.
     assert(m_config.max_cells_per_thread <=
@@ -134,9 +130,8 @@ clusterization_algorithm::execute_impl(
 
     // Launch the CCL kernel.
     ccl_kernel({num_cells, m_config, cells, det_descr, det_cond, measurements,
-                cell_links, m_f_backup, m_gf_backup, m_adjc_backup,
-                m_adjv_backup, m_backup_mutex.get(), disjoint_set,
-                cluster_sizes});
+                m_f_backup, m_gf_backup, m_adjc_backup, m_adjv_backup,
+                m_backup_mutex.get(), disjoint_set, cluster_sizes});
 
     std::optional<edm::silicon_cluster_collection::buffer> cluster_data =
         std::nullopt;
