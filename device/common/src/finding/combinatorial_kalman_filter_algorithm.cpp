@@ -504,6 +504,7 @@ auto combinatorial_kalman_filter_algorithm::operator()(
     if (n_tips_total > 0) {
         build_tracks_kernel(
             n_tips_total, m_data->m_config.run_mbf_smoother,
+            m_data->m_config.meas_calibration,
             {.seeds_view = seeds,
              .links_view = links_buffer,
              .tips_view = tips_buffer,

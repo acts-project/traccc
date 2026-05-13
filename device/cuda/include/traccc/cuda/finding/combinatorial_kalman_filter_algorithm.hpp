@@ -161,10 +161,12 @@ class combinatorial_kalman_filter_algorithm
     ///
     /// @param n_threads The number of threads to launch the kernel with
     /// @param run_mbf_smoother Whether the MBF smoother was run
+    /// @param calib_cfg The measurement selector calibration configuration
     /// @param payload The payload for the kernel
     ///
     void build_tracks_kernel(
         unsigned int n_threads, bool run_mbf_smoother,
+        const measurement_selector::config& calib_cfg,
         const device::build_tracks_payload& payload) const override;
 
     /// @}

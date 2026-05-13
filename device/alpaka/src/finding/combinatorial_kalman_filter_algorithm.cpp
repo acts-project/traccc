@@ -172,11 +172,12 @@ struct build_tracks {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, bool run_mbf,
+        const measurement_selector::config& calib_cfg,
         const device::build_tracks_payload& payload) const {
 
         device::global_index_t globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
-        device::build_tracks(globalThreadIdx, run_mbf, payload);
+        device::build_tracks(globalThreadIdx, run_mbf, calib_cfg, payload);
     }
 };
 
@@ -422,6 +423,7 @@ void combinatorial_kalman_filter_algorithm::update_tip_length_buffer_kernel(
 
 void combinatorial_kalman_filter_algorithm::build_tracks_kernel(
     unsigned int n_threads, bool run_mbf_smoother,
+    const measurement_selector::config& calib_cfg,
     const device::build_tracks_payload& payload) const {
 
     // Establish the kernel launch parameters.
@@ -432,7 +434,8 @@ void combinatorial_kalman_filter_algorithm::build_tracks_kernel(
     // Launch the kernel.
     ::alpaka::exec<Acc>(details::get_queue(queue()),
                         makeWorkDiv<Acc>(deviceBlocks, deviceThreads),
-                        kernels::build_tracks{}, run_mbf_smoother, payload);
+                        kernels::build_tracks{}, run_mbf_smoother, calib_cfg,
+                        payload);
 }
 
 }  // namespace traccc::alpaka

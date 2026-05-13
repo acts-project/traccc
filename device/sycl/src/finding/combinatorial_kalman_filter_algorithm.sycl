@@ -340,6 +340,7 @@ void combinatorial_kalman_filter_algorithm::update_tip_length_buffer_kernel(
 
 void combinatorial_kalman_filter_algorithm::build_tracks_kernel(
     unsigned int n_threads, bool run_mbf_smoother,
+    const measurement_selector::config& calib_cfg,
     const device::build_tracks_payload& payload) const {
 
     ::sycl::queue& squeue = details::get_queue(queue());
@@ -347,9 +348,9 @@ void combinatorial_kalman_filter_algorithm::build_tracks_kernel(
     squeue.submit([&](::sycl::handler& h) {
         h.parallel_for<kernels::build_tracks>(
             details::calculate1DimNdRange(n_threads, warp_size() * 2),
-            [run_mbf_smoother, payload](::sycl::nd_item<1> item) {
+            [run_mbf_smoother, calib_cfg, payload](::sycl::nd_item<1> item) {
                 device::build_tracks(details::global_index(item),
-                                     run_mbf_smoother, payload);
+                                     run_mbf_smoother, calib_cfg, payload);
             });
     });
 }
