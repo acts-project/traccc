@@ -29,11 +29,9 @@ struct candidate_measurement {
     float chi2{std::numeric_limits<float>::max()};
 
     /// Define comparisons
-    TRACCC_HOST_DEVICE
     constexpr bool operator<=>(const candidate_measurement& other) const =
         default;
 };
-/// @}
 
 /// Associate a measurement to a candidate track
 struct measurement_selector {
