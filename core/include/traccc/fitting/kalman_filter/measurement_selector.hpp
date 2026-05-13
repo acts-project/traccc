@@ -71,8 +71,7 @@ struct measurement_selector {
 
         detray::dmatrix<algebra_t, D, 1> meas_local;
         edm::get_measurement_local<algebra_t>(measurement, meas_local);
-        if (/*dim == 1*/ getter::element(meas_local, 1u, 0u) == 0.f) {
-            // if (measurement.dimensions() == 1) {
+        if (measurement.dimensions() == 1) {
             getter::element(H, 1u, 0u) = 0.f;
             getter::element(H, 1u, 1u) = 0.f;
         }
@@ -127,9 +126,7 @@ struct measurement_selector {
 
         detray::dmatrix<algebra_t, D, 1> meas_local;
         edm::get_measurement_local<algebra_t>(measurement, meas_local);
-        // @TODO: Fix properly
-        if (/*dim == 1*/ getter::element(meas_local, 1u, 0u) == 0.f) {
-            // if (measurement.dimensions() == 1) {
+        if (measurement.dimensions() == 1) {
             getter::element(V, 1u, 1u) =
                 std::numeric_limits<detray::dscalar<algebra_t>>::max();
         }
