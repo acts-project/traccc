@@ -15,12 +15,12 @@ target_link_libraries( traccc_examples_cpu
    traccc::examples_common )
 
 traccc_add_executable( throughput_st "apps/throughput_st.cpp"
-   LINK_LIBRARIES indicators::indicators vecmem::core detray::detectors
+   LINK_LIBRARIES vecmem::core detray::detectors
                   detray::io traccc::core traccc::io traccc::performance
                   traccc::options traccc::examples_cpu )
 
 traccc_add_executable( throughput_mt "apps/throughput_mt.cpp"
-   LINK_LIBRARIES indicators::indicators TBB::tbb vecmem::core detray::detectors
+   LINK_LIBRARIES TBB::tbb vecmem::core detray::detectors
                   detray::io traccc::core traccc::io traccc::performance
                   traccc::options traccc::examples_cpu )
 

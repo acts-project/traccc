@@ -39,10 +39,10 @@ target_link_libraries( traccc_examples_alpaka
    traccc::core traccc::device_common traccc::alpaka traccc_examples_common ${EXTRA_LIBS})
 
 traccc_add_executable( throughput_st_alpaka "apps/throughput_st.cpp"
-   LINK_LIBRARIES indicators::indicators ${LIBRARIES} ${DETRAY} traccc_examples_alpaka )
+   LINK_LIBRARIES ${LIBRARIES} ${DETRAY} traccc_examples_alpaka )
 
 traccc_add_executable( throughput_mt_alpaka "apps/throughput_mt.cpp"
-   LINK_LIBRARIES TBB::tbb indicators::indicators ${LIBRARIES} ${DETRAY} traccc_examples_alpaka )
+   LINK_LIBRARIES TBB::tbb ${LIBRARIES} ${DETRAY} traccc_examples_alpaka )
 
 add_test( NAME throughput_st_alpaka
           COMMAND traccc_throughput_st_alpaka --finding-run-mbf-smoother=0 --read-bfield-from-file --cold-run-events=1 --processed-events=1)

@@ -52,7 +52,7 @@
 #include <tbb/task_group.h>
 
 // Indicators include(s).
-#include <indicators/progress_bar.hpp>
+#include "traccc/examples/indicators.hpp"
 
 // System include(s).
 #include <atomic>
