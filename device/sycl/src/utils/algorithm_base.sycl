@@ -5,6 +5,9 @@
  * Mozilla Public License Version 2.0
  */
 
+// SYCL include
+#include <sycl/sycl.hpp>
+
 // Local include(s).
 #include "get_queue.hpp"
 #include "traccc/sycl/utils/algorithm_base.hpp"

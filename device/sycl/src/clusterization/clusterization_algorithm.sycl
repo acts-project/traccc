@@ -5,6 +5,9 @@
  * Mozilla Public License Version 2.0
  */
 
+// SYCL include(s).
+#include <sycl/sycl.hpp>
+
 // Local include(s).
 #include "../sanity/contiguous_on.hpp"
 #include "../sanity/ordered_on.hpp"

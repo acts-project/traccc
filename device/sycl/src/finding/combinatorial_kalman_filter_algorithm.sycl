@@ -5,6 +5,9 @@
  * Mozilla Public License Version 2.0
  */
 
+// SYCL include(s).
+#include <sycl/sycl.hpp>
+
 // Local include(s).
 #include "../utils/detector_types.hpp"
 #include "../utils/get_queue.hpp"
