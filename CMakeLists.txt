@@ -248,15 +248,17 @@ if( TRACCC_SETUP_DPL )
       set(_sycl_support ON)
       set(SYCL_SUPPORT ON)
       find_package( oneDPL REQUIRED )
-      # OneDPL attaches the `-fsycl` flag to the C++ compiler, which causes
-      # it to incorrectly trigger some preprocessor definitions, thereby
-      # loading SYCL-specific header files which do not exist for e.g. a
-      # generic clang installation. Therefore, we have to manually wipe the
-      # compile flags that OneDPL sets.
-      set_target_properties(oneDPL PROPERTIES INTERFACE_COMPILE_OPTIONS "")
    else()
       add_subdirectory( extern/dpl )
    endif()
+   # OneDPL attaches the `-fsycl` flag to the C++ compiler, which causes
+   # it to incorrectly trigger some preprocessor definitions, thereby
+   # loading SYCL-specific header files which do not exist for e.g. a
+   # generic clang installation. Therefore, we have to manually wipe the
+   # compile flags that OneDPL sets.
+   set_target_properties(oneDPL PROPERTIES
+      INTERFACE_COMPILE_OPTIONS ""
+      INTERFACE_LINK_LIBRARIES "" )
 endif()
 
 # Set up Alpaka.
@@ -293,20 +295,6 @@ if( TRACCC_SETUP_COVFIE )
       find_package( covfie REQUIRED )
    else()
       add_subdirectory( extern/covfie )
-   endif()
-endif()
-
-# Set up dfelibs.
-option( TRACCC_SETUP_DFELIBS
-   "Set up the dfelibs target(s) explicitly" TRUE )
-option( TRACCC_USE_SYSTEM_DFELIBS
-   "Pick up an existing installation of dfelibs from the build environment"
-   ${TRACCC_USE_SYSTEM_LIBS} )
-if( TRACCC_SETUP_DFELIBS )
-   if( TRACCC_USE_SYSTEM_DFELIBS )
-      find_package( dfelibs REQUIRED )
-   else()
-      add_subdirectory( extern/dfelibs )
    endif()
 endif()
 

@@ -5,6 +5,9 @@
  * Mozilla Public License Version 2.0
  */
 
+// SYCL include(s).
+#include <sycl/sycl.hpp>
+
 // Local include(s).
 #include "../utils/calculate1DimNdRange.hpp"
 #include "../utils/get_queue.hpp"
@@ -14,9 +17,6 @@
 // Project include(s).
 #include "traccc/clusterization/device/geo_id_based_sorter.hpp"
 #include "traccc/clusterization/device/sorting_index_filler.hpp"
-
-// SYCL include(s).
-#include <sycl/sycl.hpp>
 
 namespace traccc::sycl {
 namespace kernels {

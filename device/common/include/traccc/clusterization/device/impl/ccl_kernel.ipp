@@ -44,12 +44,13 @@ namespace traccc::device {
 ///
 template <device::concepts::barrier barrier_t,
           device::concepts::thread_id1 thread_id_t, typename index_t>
-TRACCC_DEVICE void fast_sv_1(const thread_id_t& thread_id,
-                             vecmem::device_vector<index_t>& f,
-                             vecmem::device_vector<index_t>& gf,
-                             unsigned char* adjc, index_t* adjv,
-                             unsigned int thread_cell_count,
-                             barrier_t& barrier) {
+TRACCC_HOST_DEVICE void fast_sv_1(const thread_id_t& thread_id,
+                                  vecmem::device_vector<index_t>& f,
+                                  vecmem::device_vector<index_t>& gf,
+                                  unsigned char* adjc, index_t* adjv,
+                                  unsigned int thread_cell_count,
+                                  barrier_t& barrier) {
+
     /*
      * The algorithm finishes if an iteration leaves the arrays unchanged.
      * This varible will be set if a change is made, and dictates if another
@@ -142,7 +143,7 @@ TRACCC_DEVICE void fast_sv_1(const thread_id_t& thread_id,
 
 template <device::concepts::barrier barrier_t,
           device::concepts::thread_id1 thread_id_t, typename index_t>
-TRACCC_DEVICE inline void ccl_core(
+TRACCC_HOST_DEVICE inline void ccl_core(
     const clustering_config& cfg, const thread_id_t& thread_id,
     std::size_t& partition_start, std::size_t& partition_end,
     vecmem::device_vector<index_t> f, vecmem::device_vector<index_t> gf,
@@ -195,9 +196,66 @@ TRACCC_DEVICE inline void ccl_core(
 
     barrier.blockBarrier();
 
-    for (unsigned int tst = 0; tst < thread_cell_count; ++tst) {
-        const unsigned int cid =
-            tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX();
+    /*
+     * We'll now convert the parent array `f` into a linked list equivalent
+     * stored in array `gf`. The point of this linked list is that the ID of
+     * each cell is either:
+     *
+     * - An out-of-bounds value if there is no later cell in the same
+     *   cluster; or
+     * - An in-bounds index pointing to the next cell belonging to the same
+     *   cluster.
+     *
+     * If, for example, f would look like this:
+     *
+     *        0  1  2  3  4  5  6  7  8
+     * f  = [ 0, 0, 2, 0, 2, 5, 2, 5, 8]
+     *
+     * We would compute:
+     *
+     * gf = [ 1, 3, 4, 9, 6, 7, 9, 9, 9]
+     *
+     * This makes aggregating the clusters trivial.
+     *
+     * WARNING: After this point, the `gf` vector no longer contains the
+     * grandparent information it held before. Do not use it as such!
+     *
+     * First, we start out by setting out-of-bounds values for all cells...
+     */
+    for (unsigned int i = thread_id.getLocalThreadIdX(); i < size;
+         i += thread_id.getBlockDimX()) {
+        gf.at(i) = static_cast<index_t>(partition_end - partition_start);
+    }
+
+    barrier.blockBarrier();
+
+    /*
+     * Now we construct the actual linked list. We move backwards here,
+     * because we are much more likely to be able to exit our loop early
+     * compared to looping forwards.
+     */
+    for (unsigned int i = thread_id.getLocalThreadIdX(); i < size;
+         i += thread_id.getBlockDimX()) {
+        const index_t effi =
+            static_cast<index_t>((partition_end - partition_start) - (i + 1));
+
+        const auto fid = f.at(effi);
+
+        if (fid != effi) {
+            for (unsigned int j = effi - 1; j < size; --j) {
+                if (fid == f.at(j)) {
+                    gf.at(j) = effi;
+                    break;
+                }
+            }
+        }
+    }
+
+    barrier.blockBarrier();
+
+    for (details::index_t tst = 0; tst < thread_cell_count; ++tst) {
+        const auto cid = static_cast<details::index_t>(
+            tst * thread_id.getBlockDimX() + thread_id.getLocalThreadIdX());
 
         if (f.at(cid) == cid) {
             // Add a new measurement to the output buffer. Remembering its
@@ -206,7 +264,7 @@ TRACCC_DEVICE inline void ccl_core(
                 measurements_device.push_back_default();
             // Set up the measurement under the appropriate index.
             aggregate_cluster(
-                cfg, cells_device, det_desc, det_cond, f,
+                cfg, cells_device, det_desc, det_cond, gf,
                 static_cast<unsigned int>(partition_start),
                 static_cast<unsigned int>(partition_end), cid,
                 measurements_device.at(meas_pos), cell_links, meas_pos,
@@ -221,7 +279,7 @@ TRACCC_DEVICE inline void ccl_core(
 
 template <device::concepts::barrier barrier_t,
           device::concepts::thread_id1 thread_id_t>
-TRACCC_DEVICE inline void ccl_kernel(
+TRACCC_HOST_DEVICE inline void ccl_kernel(
     const clustering_config cfg, const thread_id_t& thread_id,
     const edm::silicon_cell_collection::const_view& cells_view,
     const detector_design_description::const_view& det_desc_view,
