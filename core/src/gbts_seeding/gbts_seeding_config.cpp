@@ -8,6 +8,7 @@
 #include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 
 #include <algorithm>
+#include <climits>
 #include <ranges>
 
 namespace traccc {
