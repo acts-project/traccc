@@ -11,8 +11,6 @@
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/finding/actors/measurement_kalman_updater.hpp"
-
-// Detray include(s).
 #include "traccc/utils/propagation.hpp"
 
 // System include(s).

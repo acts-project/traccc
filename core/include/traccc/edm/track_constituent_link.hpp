@@ -42,7 +42,7 @@ struct track_constituent_link {
         if (l.type == constituent_type::measurement) {
             os << "measurement index: " << l.index;
         } else if (l.type == constituent_type::track_state) {
-            os << "state index: " << l.index;
+            os << "track state index: " << l.index;
         } else {
             os << "ERROR: Unknown link type!";
         }

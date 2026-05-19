@@ -147,6 +147,54 @@ struct track_state_candidate_data {
 };
 
 /// Add a new track state to the track container
+template <detray::concepts::algebra algebra_t>
+TRACCC_HOST_DEVICE inline void make_track_state_candidate(
+    void* track_cand_ptr, const smoother_type mode, const int idx,
+    const candidate_measurement& cand,
+    const bound_track_parameters<algebra_t>& bound_param) {
+
+    switch (mode) {
+        case smoother_type::e_mbf: {
+            auto* data_ptr =
+                static_cast<full_track_state_candidate<algebra_t>*>(
+                    track_cand_ptr);
+            detray::ranges::detail::advance(data_ptr, idx);
+            assert(data_ptr);
+
+            // TODO: Get proper Jacobian
+            traccc::bound_track_parameters<algebra_t> predicted_params{};
+            traccc::bound_matrix<algebra_t> full_jac{};
+            *data_ptr = {cand.meas_idx, cand.chi2, bound_param,
+                         predicted_params, full_jac};
+            break;
+        }
+        case smoother_type::e_kalman: {
+            auto* data_ptr =
+                static_cast<filtered_track_state_candidate<algebra_t>*>(
+                    track_cand_ptr);
+            detray::ranges::detail::advance(data_ptr, idx);
+            assert(data_ptr);
+
+            *data_ptr = {cand.meas_idx, cand.chi2, bound_param};
+            break;
+        }
+        case smoother_type::e_none: {
+            auto* data_ptr =
+                static_cast<track_state_candidate*>(track_cand_ptr);
+            detray::ranges::detail::advance(data_ptr, idx);
+            assert(data_ptr);
+
+            *data_ptr = {cand.meas_idx};
+            break;
+        }
+        default: {
+            TRACCC_FATAL_HOST_DEVICE(
+                "Unknown data coll. type in measurement updater");
+        }
+    }
+}
+
+/// Add a new track state to the track container
 template <detray::concepts::algebra algebra_t, typename BASE>
 TRACCC_HOST_DEVICE inline void track_state_from_candidate(
     void* track_cand_ptr, const smoother_type mode, const unsigned int link_idx,

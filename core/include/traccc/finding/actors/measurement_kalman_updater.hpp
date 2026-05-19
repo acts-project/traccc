@@ -34,8 +34,7 @@ namespace traccc {
 /// Some statistics of a given candidate track
 template <detray::concepts::scalar scalar_t>
 struct track_stats {
-    scalar_t chi2_sum{0.f};
-    unsigned int seed_idx{std::numeric_limits<unsigned int>::max()};
+    float chi2_sum{0.f};
     std::uint_least16_t n_track_states{0u};
     std::uint_least16_t ndf_sum{0u};
     std::uint_least16_t n_holes{0u};
@@ -63,16 +62,16 @@ struct measurement_updater : detray::base_actor {
               m_run_smoother{smoother} {}
 
         /// Congfig params
-        scalar_t max_chi2{0.f};
+        float max_chi2{0.f};
         /// Max no. of track states this actor can accumulate
-        unsigned int max_n_track_states{100u};
+        std::uint_least16_t max_n_track_states{100u};
         /// Max no. holes on track
-        unsigned short max_n_holes{3u};
+        std::uint_least16_t max_n_holes{3u};
         /// Max no. consecutive holes on track
-        unsigned short max_n_consecutive_holes{2u};
+        std::uint_least16_t max_n_consecutive_holes{2u};
         /// Max no. of collected states until propagation is paused
-        unsigned short n_track_states_until_pause{
-            std::numeric_limits<unsigned short>::max()};
+        std::uint_least16_t n_track_states_until_pause{
+            std::numeric_limits<std::uint_least16_t>::max()};
 
         /// Statistics for the current track
         track_stats<scalar_t> m_stats{};
@@ -99,6 +98,9 @@ struct measurement_updater : detray::base_actor {
         detray::actor::parameter_transporter_result<algebra_t>&
             transporter_result) const {
         using scalar_t = detray::dscalar<algebra_t>;
+
+        // Check for a valid measurement updater state
+        assert(updater_state.m_cand_ptr != nullptr);
 
         auto& navigation = propagation.navigation();
         auto& stepping = propagation.stepping();
@@ -171,6 +173,7 @@ struct measurement_updater : detray::base_actor {
                                      updater_state.m_calib_cfg, is_line);
 
                 TRACCC_DEBUG_HOST("-> KF status: " << fitter_debug_msg{res}());
+
                 // Abandon measurement in case of filter failure
                 if (res != kalman_fitter_status::SUCCESS) {
                     TRACCC_ERROR_HOST(
@@ -205,55 +208,11 @@ struct measurement_updater : detray::base_actor {
             TRACCC_VERBOSE_HOST_DEVICE("Assigned measurement: %d",
                                        cand.meas_idx);
 
-            // TODO: Get host-device compatible visitor implementation
             const auto i{
                 static_cast<int>(updater_state.m_stats.n_track_states)};
-            switch (updater_state.m_run_smoother) {
-                case smoother_type::e_mbf: {
-                    auto* track_cand_ptr =
-                        static_cast<full_track_state_candidate<algebra_t>*>(
-                            updater_state.m_cand_ptr);
-
-                    detray::ranges::detail::advance(track_cand_ptr, i);
-
-                    // TODO: Get proper Jacobian
-                    traccc::bound_track_parameters<algebra_t>
-                        predicted_params{};
-                    traccc::bound_matrix<algebra_t> full_jac{};
-
-                    assert(track_cand_ptr);
-                    *track_cand_ptr = {cand.meas_idx, cand.chi2, bound_param,
-                                       predicted_params, full_jac};
-                    break;
-                }
-                case smoother_type::e_kalman: {
-                    auto* track_cand_ptr =
-                        static_cast<filtered_track_state_candidate<algebra_t>*>(
-                            updater_state.m_cand_ptr);
-
-                    detray::ranges::detail::advance(track_cand_ptr, i);
-
-                    assert(track_cand_ptr);
-                    *track_cand_ptr = {cand.meas_idx, cand.chi2, bound_param};
-                    break;
-                }
-                case smoother_type::e_none: {
-                    auto* track_cand_ptr = static_cast<track_state_candidate*>(
-                        updater_state.m_cand_ptr);
-
-                    detray::ranges::detail::advance(track_cand_ptr, i);
-
-                    assert(track_cand_ptr);
-                    *track_cand_ptr = {cand.meas_idx};
-                    break;
-                }
-                default: {
-                    navigation.abort(
-                        "Unknown data coll. type in measurement updater");
-                    propagation.heartbeat(false);
-                    return;
-                }
-            }
+            traccc::make_track_state_candidate(updater_state.m_cand_ptr,
+                                               updater_state.m_run_smoother, i,
+                                               cand, bound_param);
 
             // The updated track params. should be published to the propagation
             transporter_result.status = detray::actor::status::e_success;
@@ -273,17 +232,8 @@ struct measurement_updater : detray::base_actor {
                 propagation.heartbeat(false);
                 return;
             }
-            /*if (updater_state.m_stats.n_track_states %
-                    updater_state.n_track_states_until_pause ==
-                0u) {
-                TRACCC_VERBOSE_HOST_DEVICE(
-                    "Reached required number of states (%d): pause propgation",
-                    updater_state.m_stats.n_track_states);
-                navigation.pause();
-                propagation.heartbeat(false);
-                return;
-            }*/
         } else {  //< no measurement found
+
             // If the surface was only hit due to tolerances, don't count holes
             if (!navigation.is_edge_candidate()) {
                 TRACCC_WARNING_HOST_DEVICE(
@@ -291,12 +241,14 @@ struct measurement_updater : detray::base_actor {
                 updater_state.m_stats.n_holes++;
                 updater_state.m_stats.n_consecutive_holes++;
             }
+
             // If the total number of holes is too large, exit
             if (updater_state.m_stats.n_holes > updater_state.max_n_holes) {
                 TRACCC_WARNING_HOST_DEVICE("Maximum total number of holes");
                 navigation.exit();
                 propagation.heartbeat(false);
             }
+
             // If the number of consecutive holes is too large, exit
             if (updater_state.m_stats.n_consecutive_holes >
                 updater_state.max_n_consecutive_holes) {
@@ -306,51 +258,8 @@ struct measurement_updater : detray::base_actor {
                 propagation.heartbeat(false);
             }
 
-            // Discard the current local track parameters if smoothing is
-            // required (no relevant update was performed)
-            /*if (updater_state.m_run_smoother != smoother_type::e_none &&
-                navigation.trust_level() ==
-                    detray::navigation::trust_level::e_full &&
-                (!sf.has_material() || navigation.is_edge_candidate())) {
-
-                transporter_result.status = detray::actor::status::e_failure;
-
-                // Recover the departure surface bound parameters
-                auto* track_cand_ptr =
-                    static_cast<filtered_track_state_candidate<algebra_t>*>(
-                        updater_state.m_cand_ptr);
-
-                const auto i{
-                    static_cast<int>(updater_state.m_stats.n_track_states) - 1};
-
-                if (track_cand_ptr == nullptr || i < 0) {
-                    navigation.abort(
-                        "Actor: Cannot restore previous track parameters! "
-                        "Aborting");
-                    propagation.heartbeat(false);
-                    return;
-                }
-
-                detray::ranges::detail::advance(track_cand_ptr, i);
-
-                assert(track_cand_ptr);
-
-                // Reset bound track parameters in the parameter updater state
-                transporter_result.destination_params() =
-                    track_cand_ptr->filtered_params;
-
-                TRACCC_WARNING_HOST(
-                    "Actor: No measurement found, restoring previous departure "
-                    "surface:\n"
-                    << transporter_result.destination_params());
-
-                assert(!transporter_result.destination_params().is_invalid());
-                assert(transporter_result.destination_params().surface_link() !=
-                       navigation.geometry_identifier());
-            } else {*/
             // Update the free track parameters on the new material
             transporter_result.status = detray::actor::status::e_success;
-            //}
         }
     }
 };

@@ -13,8 +13,8 @@
 #include "traccc/edm/measurement_helpers.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_state_helpers.hpp"
-#include "traccc/utils/matrix_helpers.hpp"
 #include "traccc/finding/measurement_selector.hpp"
+#include "traccc/utils/matrix_helpers.hpp"
 #include "traccc/utils/prob.hpp"
 #include "traccc/utils/subspace.hpp"
 

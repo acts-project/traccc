@@ -55,8 +55,8 @@ progressive_kalman_filter(
     const typename edm::measurement_collection::const_view& measurements_view,
     const vecmem::data::vector_view<unsigned int> measurement_ranges_view,
     const bound_track_parameters<typename detector_t::algebra_type>& seed,
-    const unsigned int seed_idx, void* track_state_candidate_ptr,
-    const finding_config& cfg) {
+    [[maybe_unused]] const unsigned int seed_idx,
+    void* track_state_candidate_ptr, const finding_config& cfg) {
 
     using algebra_t = typename detector_t::algebra_type;
     using scalar_t = detray::dscalar<algebra_t>;
@@ -72,9 +72,6 @@ progressive_kalman_filter(
     auto prop_cfg{cfg.propagation};
     prop_cfg.navigation.estimate_scattering_noise = false;
     propagator_t propagator(prop_cfg);
-
-    // Configuration for measurement calibration
-    measurement_selector::config calib_cfg{};
 
     TRACCC_INFO_HOST("Seed: " << seed_idx);
     // Add the information also to the clog stream
@@ -123,27 +120,19 @@ progressive_kalman_filter(
     momentum_aborter_state.min_p(static_cast<scalar_t>(cfg.min_p));
 
     meas_updater_state.max_chi2 = cfg.chi2_max;
-    meas_updater_state.max_n_track_states = cfg.max_track_candidates_per_track;
+    meas_updater_state.max_n_track_states =
+        static_cast<std::uint_least16_t>(cfg.max_track_candidates_per_track);
     meas_updater_state.max_n_holes =
-        static_cast<unsigned short>(cfg.max_num_skipping_per_cand);
+        static_cast<std::uint_least16_t>(cfg.max_num_skipping_per_cand);
     meas_updater_state.max_n_consecutive_holes =
-        static_cast<unsigned short>(cfg.max_num_consecutive_skipped);
+        static_cast<std::uint_least16_t>(cfg.max_num_consecutive_skipped);
     meas_updater_state.n_track_states_until_pause =
-        static_cast<unsigned short>(cfg.duplicate_removal_minimum_length);
-    meas_updater_state.m_calib_cfg = calib_cfg;
-    meas_updater_state.m_stats.seed_idx = seed_idx;
+        static_cast<std::uint_least16_t>(cfg.duplicate_removal_minimum_length);
+    meas_updater_state.m_calib_cfg = cfg.meas_calibration;
 
     auto actor_states =
         detray::tie(path_aborter_state, updater_state, interactor_state,
                     meas_updater_state, momentum_aborter_state);
-
-    /*for (unsigned int step = 0u;
-            step < max_cands / cfg.duplicate_removal_minimum_length + 1u;
-            ++step) {
-
-        if (propagator.is_paused(propagation)) {
-            propagator.resume(propagation);
-        }*/
 
     assert(meas_updater_state.m_stats.n_holes < cfg.max_num_skipping_per_cand);
     assert(meas_updater_state.m_stats.n_consecutive_holes <
@@ -153,33 +142,25 @@ progressive_kalman_filter(
     updater_state.notify_on_initial(true);
     propagator.propagate(propagation, actor_states);
 
-    // Stop propagation
-    // if (propagator.finished(propagation) ||
-    //    !propagator.is_paused(propagation)) {
-    TRACCC_VERBOSE_HOST_DEVICE("Track following finished. Building track...");
-    //}
+    bool good_track = propagator.finished(propagation);
+
     // Check if the track should be continued
     const auto& free_param = propagation.stepping()();
     const scalar_t q_new{propagation.stepping().particle_hypothesis().charge()};
-    if (free_param.pT(q_new) <= static_cast<scalar_t>(cfg.min_pT)) {
+    if (good_track &&
+        free_param.pT(q_new) <= static_cast<scalar_t>(cfg.min_pT)) {
         TRACCC_WARNING_HOST_DEVICE(
             "Track below min. transverse momentum: |pT| = %f MeV",
             free_param.pT(q_new));
         return {};
     }
-    if (free_param.p(q_new) <= static_cast<scalar_t>(cfg.min_p)) {
+    if (good_track && free_param.p(q_new) <= static_cast<scalar_t>(cfg.min_p)) {
         TRACCC_WARNING_HOST_DEVICE("Track below min. momentum: |p| = %f MeV",
                                    free_param.p(q_new));
         return {};
     }
 
-    // Run track deduplication
-    //}
-
-    bool good_track = propagator.finished(propagation);
-    if (!good_track) {
-        TRACCC_ERROR_HOST_DEVICE("Propagation failure! Track: %d", seed_idx);
-    }
+    TRACCC_VERBOSE_HOST_DEVICE("Track following finished. Building track...");
 
     const traccc::track_stats<scalar_t>& trk_stats = meas_updater_state.m_stats;
     const unsigned int n_track_states{trk_stats.n_track_states};

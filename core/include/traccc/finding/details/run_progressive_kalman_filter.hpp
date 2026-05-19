@@ -174,12 +174,13 @@ run_progressive_kalman_filter(
         const unsigned int n_track_states{trk_stats.n_track_states};
         const int ndf_sum{static_cast<int>(trk_stats.ndf_sum) - 5};
 
+        track_container.tracks.push_back({});
+
         // Bad track, don't write to container
         if (n_track_states == 0u) {
             continue;
         }
 
-        track_container.tracks.push_back({});
         edm::track track =
             track_container.tracks.at(track_container.tracks.size() - 1u);
 
@@ -217,9 +218,9 @@ run_progressive_kalman_filter(
                                          << " to track container: " << track);
     }
 
-    TRACCC_INFO_HOST("Finished");
-
     copy(track_states_buffer, track_container.states)->wait();
+
+    TRACCC_INFO_HOST("Finished");
 
     return track_container;
 }
