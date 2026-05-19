@@ -16,6 +16,8 @@
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/finding/measurement_selector.hpp"
 #include "traccc/finding/track_state_candidate.hpp"
+#include "traccc/fitting/details/kalman_fitting_types.hpp"
+#include "traccc/fitting/kalman_smoother.hpp"
 #include "traccc/sanity/contiguous_on.hpp"
 #include "traccc/utils/logging.hpp"
 #include "traccc/utils/particle.hpp"
@@ -152,6 +154,24 @@ run_progressive_kalman_filter(
         }
     }
 
+    // Setup the surface sequence buffer
+    vecmem::data::jagged_vector_buffer<typename detector_t::surface_type>
+        sf_sequences_buffer{std::vector<unsigned int>{0u}, mr, &mr,
+                            vecmem::data::buffer_type::resizable};
+
+    if (cfg.run_smoother == smoother_type::e_kalman) {
+        const unsigned int n_surfaces_per_track{
+            std::max(cfg.max_track_candidates_per_track *
+                         cfg.kalman_smoother.surface_sequence_size_factor,
+                     cfg.kalman_smoother.min_surface_sequence_capacity)};
+        std::vector<unsigned int> seqs_sizes(n_seeds, n_surfaces_per_track);
+
+        sf_sequences_buffer = vecmem::data::jagged_vector_buffer<
+            typename detector_t::surface_type>{
+            seqs_sizes, mr, &mr, vecmem::data::buffer_type::resizable};
+        copy.setup(sf_sequences_buffer)->ignore();
+    }
+
     for (unsigned int seed_idx = 0u; seed_idx < seeds.size(); ++seed_idx) {
         const auto& seed = seeds[seed_idx];
 
@@ -168,7 +188,7 @@ run_progressive_kalman_filter(
         const track_stats<scalar_t> trk_stats =
             traccc::details::progressive_kalman_filter(
                 det, field, measurements_view, vecmem::get_data(meas_ranges),
-                seed, seed_idx, candidate_data.ptr(), cfg);
+                seed, seed_idx, candidate_data.ptr(), sf_sequences_buffer, cfg);
 
         // Check track stats and build the new track object
         const unsigned int n_track_states{trk_stats.n_track_states};
@@ -220,7 +240,23 @@ run_progressive_kalman_filter(
 
     copy(track_states_buffer, track_container.states)->wait();
 
-    TRACCC_INFO_HOST("Finished");
+    TRACCC_INFO_HOST("Track finding finished");
+
+    // Run a Kalman filter in back propagation mode to smoothe the tracks
+    if (cfg.run_smoother == smoother_type::e_kalman) {
+        TRACCC_INFO_HOST("Run Kalman Smoother");
+
+        using fitter_t = traccc::details::kalman_fitter_t<detector_t, bfield_t>;
+
+        // Run the backwards track fitting (forwards is covered by PKF)
+        traccc::host::kalman_smoother<fitter_t>(cfg.kalman_smoother, det, field,
+                                                track_container,
+                                                sf_sequences_buffer);
+
+        TRACCC_INFO_HOST("Kalman Smoother: Finished");
+    } else if (cfg.run_smoother == smoother_type::e_mbf) {
+        TRACCC_FATAL_HOST("MBF not implemented for progressive Kalman Filter!");
+    }
 
     return track_container;
 }

@@ -30,19 +30,22 @@ TRACCC_HOST_DEVICE inline void fit_backward(
         return;
     }
 
-    const unsigned int param_id = param_ids.at(globalIndex);
+    const unsigned int param_id =
+        param_ids.size() == 0u ? globalIndex : param_ids.at(globalIndex);
     edm::track track = tracks.tracks.at(param_id);
 
     // Run fitting
     fitter_t fitter(det, payload.field_data, cfg);
 
-    if (param_liveness.at(param_id) > 0u) {
+    if ((param_liveness.empty() && track.constituent_links().size() > 0u) ||
+        (param_id < param_liveness.size() &&
+         param_liveness.at(param_id) > 0u)) {
         typename fitter_t::state fitter_state(
             track, tracks.states, tracks.measurements,
             *(payload.surfaces_view.ptr() + param_id),
             fitter.config().propagation, fitter.config().meas_calibration);
 
-        kalman_fitter_status fit_status = fitter.smooth(fitter_state);
+        const kalman_fitter_status fit_status = fitter.smooth(fitter_state);
 
         fitter.update_statistics(fitter_state);
 
@@ -51,9 +54,8 @@ TRACCC_HOST_DEVICE inline void fit_backward(
         fitter.check_fitting_result(fitter_state, kalman_fitter_status::SUCCESS,
                                     fit_status);
 
-        if (fit_status == kalman_fitter_status::SUCCESS) {
-            track = fitter_state.m_fit_res;
-        } else {
+        if (!param_liveness.empty() &&
+            fit_status != kalman_fitter_status::SUCCESS) {
             param_liveness.at(param_id) = 0u;
         }
 

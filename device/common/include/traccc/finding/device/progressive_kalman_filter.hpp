@@ -73,6 +73,13 @@ struct progressive_kalman_filter_payload {
         full_track_cand_view;
 
     /**
+     * @brief View object to the output surface sequences
+     */
+    vecmem::data::jagged_vector_view<
+        typename propagator_t::detector_type::surface_type>
+        surfaces_view;
+
+    /**
      * @brief View object to the vector of track candidates
      */
     edm::track_container<algebra_t>::view tracks_view;

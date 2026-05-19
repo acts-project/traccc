@@ -56,13 +56,17 @@ progressive_kalman_filter(
     const vecmem::data::vector_view<unsigned int> measurement_ranges_view,
     const bound_track_parameters<typename detector_t::algebra_type>& seed,
     [[maybe_unused]] const unsigned int seed_idx,
-    void* track_state_candidate_ptr, const finding_config& cfg) {
+    void* track_state_candidate_ptr,
+    vecmem::data::jagged_vector_view<typename detector_t::surface_type>
+        surfaces_view,
+    const finding_config& cfg) {
 
     using algebra_t = typename detector_t::algebra_type;
     using scalar_t = detray::dscalar<algebra_t>;
 
     // Detray propagation types
-    using propagator_t = traccc::details::kf_propagator_t<detector_t, bfield_t>;
+    using propagator_t =
+        traccc::details::pkf_propagator_t<detector_t, bfield_t>;
 
     // Create the measurement container.
     typename edm::measurement_collection::const_device measurements{
@@ -114,6 +118,12 @@ progressive_kalman_filter(
     typename traccc::measurement_updater<algebra_t>::state meas_updater_state{
         measurements, measurement_ranges_view, track_state_candidate_ptr,
         cfg.run_smoother};
+    // Collect the surface geometry identifiers for the Kalman smoother
+    typename detray::actor::surface_sequencer<
+        typename detector_t::surface_type>::state sequencer_state{
+        vecmem::device_vector<typename detector_t::surface_type>(
+            *(surfaces_view.ptr() +
+              (cfg.run_smoother == smoother_type::e_kalman ? seed_idx : 0u)))};
 
     path_aborter_state.set_path_limit(cfg.propagation.stepping.path_limit);
     momentum_aborter_state.min_pT(static_cast<scalar_t>(cfg.min_pT));
@@ -130,9 +140,9 @@ progressive_kalman_filter(
         static_cast<std::uint_least16_t>(cfg.duplicate_removal_minimum_length);
     meas_updater_state.m_calib_cfg = cfg.meas_calibration;
 
-    auto actor_states =
-        detray::tie(path_aborter_state, updater_state, interactor_state,
-                    meas_updater_state, momentum_aborter_state);
+    auto actor_states = detray::tie(path_aborter_state, sequencer_state,
+                                    updater_state, interactor_state,
+                                    meas_updater_state, momentum_aborter_state);
 
     assert(meas_updater_state.m_stats.n_holes < cfg.max_num_skipping_per_cand);
     assert(meas_updater_state.m_stats.n_consecutive_holes <

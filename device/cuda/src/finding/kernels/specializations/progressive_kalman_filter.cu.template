@@ -20,7 +20,7 @@
 namespace traccc::cuda {
 
 using bfield_t = covfie::field<${BFIELD_NAME}>::view_t;
-using propagator_t = traccc::details::kf_propagator_t<${DETECTOR_NAME}::device, bfield_t>;
+using propagator_t = traccc::details::pkf_propagator_t<${DETECTOR_NAME}::device, bfield_t>;
 
 template void progressive_kalman_filter<propagator_t>(
     const dim3& grid_size, const dim3& block_size, std::size_t shared_mem_size,

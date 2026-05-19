@@ -11,6 +11,7 @@
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/finding/measurement_selector.hpp"
+#include "traccc/fitting/fitting_config.hpp"
 #include "traccc/utils/particle.hpp"
 
 // detray include(s).
@@ -92,7 +93,7 @@ struct finding_config {
     float min_measurement_voting_fraction = 0.5f;
 
     /// The type of smoother to be run in track finding
-    smoother_type run_smoother = smoother_type::e_none;
+    smoother_type run_smoother = smoother_type::e_kalman;
 
     /// Minimum step length that track should make to reach the next surface. It
     /// should be set higher than the overstep tolerance not to make it stay on
@@ -108,6 +109,8 @@ struct finding_config {
     detray::propagation::config propagation{};
     /// Measurement calibration configuration
     measurement_selector::config meas_calibration{};
+    // Fitting config for the Kalman smoother
+    traccc::fitting_config kalman_smoother;
 
     /// Minimum momentum for reconstructed tracks
     float min_p = 100.f * traccc::unit<float>::MeV;

@@ -266,11 +266,7 @@ TRACCC_HOST_DEVICE inline void track_state_from_candidate(
             track_state.set_hole(false);
             track_state.filtered_params() = data_ptr->filtered_params;
             track_state.filtered_chi2() = data_ptr->filtered_chi2;
-            // TODO: Fake it till you make it: Remove again!
-            track_state.smoothed_params() = data_ptr->filtered_params;
-            track_state.smoothed_chi2() = data_ptr->filtered_chi2;
-            track_state.backward_chi2() = data_ptr->filtered_chi2;
-            track_state.set_smoothed(true);
+
             break;
         }
         case smoother_type::e_none: {

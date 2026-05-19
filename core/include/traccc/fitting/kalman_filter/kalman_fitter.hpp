@@ -306,10 +306,11 @@ class kalman_fitter {
         TRACCC_VERBOSE_HOST_DEVICE("Run smoothing...");
 
         if (fitter_state.m_fit_actor_state.sequencer().overflow()) {
-            TRACCC_ERROR_HOST_DEVICE("Geometry identifer sequence overlow");
+            TRACCC_ERROR_HOST_DEVICE("Surface sequence overlow");
             return kalman_fitter_status::ERROR_GEOID_SEQUENCE_OVERFLOW;
         }
         if (fitter_state.m_fit_actor_state.sequencer().sequence().empty()) {
+            TRACCC_ERROR_HOST_DEVICE("Surface sequence empty");
             return kalman_fitter_status::ERROR_UPDATER_SKIPPED_STATE;
         }
 
@@ -322,6 +323,14 @@ class kalman_fitter {
         while (!fitter_state.m_fit_actor_state.finished() &&
                (!fitter_state.m_fit_actor_state.is_state() ||
                 fitter_state.m_fit_actor_state().is_hole())) {
+
+            if (!fitter_state.m_fit_actor_state.is_state()) {
+                TRACCC_ERROR_HOST_DEVICE("Not a track state");
+            }
+            if (fitter_state.m_fit_actor_state().is_hole()) {
+                TRACCC_ERROR_HOST_DEVICE("HOLE");
+            }
+
             fitter_state.m_fit_actor_state.next();
         }
 
@@ -385,6 +394,7 @@ class kalman_fitter {
 
         // No valid states produced by forward pass
         if (propagation.navigation().finished()) {
+            TRACCC_ERROR_HOST_DEVICE("No matching surfaces!");
             return kalman_fitter_status::ERROR_UPDATER_SKIPPED_STATE;
         }
 
@@ -408,10 +418,12 @@ class kalman_fitter {
         // Encountered error in the smoother?
         if (fitter_state.m_fit_actor_state.fit_result !=
             kalman_fitter_status::SUCCESS) {
+            TRACCC_ERROR_HOST_DEVICE("Fit failed!");
             return fitter_state.m_fit_actor_state.fit_result;
         }
         // Encountered error during propagation?
         if (!propagator.finished(propagation)) {
+            TRACCC_ERROR_HOST_DEVICE("-> Propagation failed!");
             return kalman_fitter_status::ERROR_PROPAGATION_FAILURE;
         }
 
@@ -532,6 +544,7 @@ class kalman_fitter {
                  fit_res.constituent_links()) {
                 assert(link.type == edm::track_constituent_link::track_state);
                 edm::track_state trk_state = track_states.at(link.index);
+
                 // Fitting fails if any of non-hole track states is not smoothed
                 if (!trk_state.is_hole() && !trk_state.is_smoothed()) {
                     TRACCC_ERROR_HOST_DEVICE("Not all smoothed");

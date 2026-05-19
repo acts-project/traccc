@@ -105,6 +105,7 @@ traccc_add_library( traccc_core core TYPE SHARED
   "include/traccc/fitting/kalman_filter/two_filters_smoother.hpp"
   "include/traccc/fitting/details/kalman_fitting_types.hpp"
   "include/traccc/fitting/details/kalman_fitting.hpp"
+  "include/traccc/fitting/kalman_smoother.hpp"
   "include/traccc/fitting/kalman_fitting_algorithm.hpp"
   "include/traccc/fitting/triplet_fit/triplet_fitter.hpp"
   "include/traccc/fitting/triplet_fitting_algorithm.hpp"

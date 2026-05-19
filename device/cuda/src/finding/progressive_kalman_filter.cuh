@@ -8,6 +8,7 @@
 #pragma once
 
 // Local include(s).
+#include "../fitting/kernels/fit_backward.hpp"
 #include "../sanity/contiguous_on.cuh"
 #include "../utils/barrier.hpp"
 #include "../utils/cuda_error_handling.hpp"
@@ -24,6 +25,7 @@
 #include "traccc/finding/device/geo_id_surface_comparator.hpp"
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/finding/track_state_candidate.hpp"
+#include "traccc/fitting/details/kalman_fitting_types.hpp"
 #include "traccc/utils/logging.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/projections.hpp"
@@ -40,11 +42,7 @@
 
 namespace traccc::cuda::details {
 
-/// Templated implementation of a Kalman Filter based track following algorithm.
-///
-/// Concrete track finding algorithms can use this function with the appropriate
-/// specializations, to find tracks on top of a specific detector type, magnetic
-/// field type, and track finding configuration.
+/// Templated implementation of a progressive Kalman Filter.
 ///
 /// @tparam detector_t The (device) detector type to use
 /// @tparam bfield_t   The magnetic field type to use
@@ -52,16 +50,16 @@ namespace traccc::cuda::details {
 /// @param det               A view of the detector object
 /// @param field             The magnetic field object
 /// @param measurements_view All measurements in an event
-/// @param seeds_view        All seeds in an event to start the track finding
+/// @param seeds             All seeds in an event to start the track finding
 ///                          with
 /// @param config            The track finding configuration
 /// @param mr                The memory resource(s) to use
 /// @param copy              The copy object to use
 /// @param log               The logger to use for message logging
-/// @param stream            The CUDA stream to use for the operations
+/// @param str               The CUDA stream to use for the operations
 /// @param warp_size         The warp size of the used CUDA device
 ///
-/// @return A buffer of the found track candidates
+/// @return A buffer of the found/fitted track candidates
 ///
 template <typename detector_t, typename bfield_t>
 edm::track_container<typename detector_t::algebra_type>::buffer
@@ -75,7 +73,8 @@ progressive_kalman_filter(
     using algebra_t = typename detector_t::algebra_type;
     using scalar_t = detray::dscalar<algebra_t>;
 
-    using propagator_t = traccc::details::kf_propagator_t<detector_t, bfield_t>;
+    using propagator_t =
+        traccc::details::pkf_propagator_t<detector_t, bfield_t>;
 
     // Create a logger.
     // auto logger = [&log]() -> const Logger& { return log; };
@@ -83,28 +82,13 @@ progressive_kalman_filter(
     /// Access the underlying CUDA stream.
     cudaStream_t stream = get_stream(str);
 
-    /// Thrust policy to use.
-    auto thrust_policy =
-        thrust::cuda::par_nosync(std::pmr::polymorphic_allocator(&(mr.main)))
-            .on(stream);
+    // Access the detector view as a detector object
+    detector_t device_det(det);
+    const unsigned int n_surfaces{device_det.surfaces().size()};
 
     /*****************************************************************
      * Measurement Operations
      *****************************************************************/
-
-    const typename edm::measurement_collection::const_device measurements{
-        measurements_view};
-
-    assert(is_contiguous_on<
-           vecmem::device_vector<const detray::geometry::identifier>>(
-        device::identity_projector{}, mr.main, copy, str,
-        measurements_view.template get<6>()));
-
-    const auto n_measurements = copy.get_size(measurements_view);
-
-    // Access the detector view as a detector object
-    detector_t device_det(det);
-    const unsigned int n_surfaces{device_det.surfaces().size()};
 
     // Get upper bounds of measurement ranges per surface
     vecmem::data::vector_buffer<unsigned int> meas_ranges_buffer{n_surfaces,
@@ -112,53 +96,57 @@ progressive_kalman_filter(
     copy.setup(meas_ranges_buffer)->ignore();
     vecmem::device_vector<unsigned int> measurement_ranges(meas_ranges_buffer);
 
-    thrust::upper_bound(thrust_policy, measurements.surface_link().begin(),
-                        // We have to use this ugly form here, because if the
-                        // measurement collection is resizable (which it often
-                        // is), the end() function cannot be used in host code.
-                        measurements.surface_link().begin() + n_measurements,
-                        device_det.surfaces().begin(),
-                        device_det.surfaces().end(), measurement_ranges.begin(),
-                        device::geo_id_surface_comparator{});
+    {
+        const typename edm::measurement_collection::const_device measurements{
+            measurements_view};
+
+        assert(is_contiguous_on<
+               vecmem::device_vector<const detray::geometry::identifier>>(
+            device::identity_projector{}, mr.main, copy, str,
+            measurements_view.template get<6>()));
+
+        const auto n_measurements = copy.get_size(measurements_view);
+
+        /// Thrust policy to use.
+        auto thrust_policy = thrust::cuda::par_nosync(
+                                 std::pmr::polymorphic_allocator(&(mr.main)))
+                                 .on(stream);
+
+        thrust::upper_bound(
+            thrust_policy, measurements.surface_link().begin(),
+            // We have to use this ugly form here, because if the
+            // measurement collection is resizable (which it often
+            // is), the end() function cannot be used in host code.
+            measurements.surface_link().begin() + n_measurements,
+            device_det.surfaces().begin(), device_det.surfaces().end(),
+            measurement_ranges.begin(), device::geo_id_surface_comparator{});
+    }
 
     /*****************************************************************
-     * Run propagation
+     * Run Progressice Filter
      *****************************************************************/
 
     // Prepare input parameters with seeds
     const unsigned int n_seeds = copy.get_size(seeds);
+    const unsigned int nThreads = warp_size * 4;
+    const unsigned int nBlocks = (n_seeds - 1) / nThreads;
 
-    bound_track_parameters_collection_types::buffer seeds_buffer(n_seeds,
-                                                                 mr.main);
-    copy.setup(seeds_buffer)->ignore();
-    copy(seeds, seeds_buffer, vecmem::copy::type::device_to_device)->ignore();
+    // Setup the surface sequence buffer
+    vecmem::data::jagged_vector_buffer<typename detector_t::surface_type>
+        seqs_buffer{std::vector<unsigned int>{0u}, mr.main, mr.host,
+                    vecmem::data::buffer_type::resizable};
 
-    // Get output track statistics
-    vecmem::data::vector_buffer<track_stats<scalar_t>> track_stats_buffer{
-        n_seeds, mr.main};
-    copy.setup(track_stats_buffer)->ignore();
+    if (config.run_smoother == smoother_type::e_kalman) {
+        const unsigned int n_surfaces_per_track{
+            std::max(config.max_track_candidates_per_track *
+                         config.kalman_smoother.surface_sequence_size_factor,
+                     config.kalman_smoother.min_surface_sequence_capacity)};
+        std::vector<unsigned int> seqs_sizes(n_seeds, n_surfaces_per_track);
 
-    // Get the output track state data, depending on which data is required
-    vecmem::data::vector_buffer<track_state_candidate> track_cand_buffer{
-        0, mr.main};
-    vecmem::data::vector_buffer<filtered_track_state_candidate<algebra_t>>
-        filtered_track_cand_buffer{0, mr.main};
-    vecmem::data::vector_buffer<full_track_state_candidate<algebra_t>>
-        full_track_cand_buffer{0, mr.main};
-
-    // Allocate memory for the required data collection mode
-    const unsigned int max_cands{seeds.size() *
-                                 config.max_track_candidates_per_track};
-    if (config.run_smoother == smoother_type::e_none) {
-        track_cand_buffer = vecmem::data::vector_buffer<track_state_candidate>{
-            max_cands, mr.main};
-    } else if (config.run_smoother == smoother_type::e_kalman) {
-        filtered_track_cand_buffer = vecmem::data::vector_buffer<
-            filtered_track_state_candidate<algebra_t>>{max_cands, mr.main};
-    } else if (config.run_smoother == smoother_type::e_mbf) {
-        full_track_cand_buffer =
-            vecmem::data::vector_buffer<full_track_state_candidate<algebra_t>>{
-                max_cands, mr.main};
+        seqs_buffer = vecmem::data::jagged_vector_buffer<
+            typename detector_t::surface_type>{
+            seqs_sizes, mr.main, mr.host, vecmem::data::buffer_type::resizable};
+        copy.setup(seqs_buffer)->ignore();
     }
 
     // Create track candidate buffer
@@ -176,28 +164,95 @@ progressive_kalman_filter(
     copy.setup(track_candidates_buffer.tracks)->ignore();
     copy.setup(track_candidates_buffer.states)->ignore();
 
-    // Allocate the kernel's payload in host memory.
-    using payload_t = device::progressive_kalman_filter_payload<propagator_t>;
-    const payload_t host_payload{
-        .det_data = det,
-        .field_data = field,
-        .seeds_view = seeds_buffer,
-        .measurements_view = measurements_view,
-        .measurement_ranges_view = meas_ranges_buffer,
-        .track_stats_view = track_stats_buffer,
-        .track_cand_view = track_cand_buffer,
-        .filtered_track_cand_view = filtered_track_cand_buffer,
-        .full_track_cand_view = full_track_cand_buffer,
-        .tracks_view = {track_candidates_buffer},
-    };
+    {
+        bound_track_parameters_collection_types::buffer seeds_buffer(n_seeds,
+                                                                     mr.main);
+        copy.setup(seeds_buffer)->ignore();
+        copy(seeds, seeds_buffer, vecmem::copy::type::device_to_device)
+            ->ignore();
 
-    const unsigned int nThreads = warp_size * 4;
-    const unsigned int nBlocks = (n_seeds - 1) / nThreads;
-    traccc::cuda::progressive_kalman_filter<propagator_t>(
-        nBlocks, nThreads, 0u, stream, config, host_payload);
-    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+        // Get output track statistics
+        vecmem::data::vector_buffer<track_stats<scalar_t>> track_stats_buffer{
+            n_seeds, mr.main};
+        copy.setup(track_stats_buffer)->ignore();
 
-    str.synchronize();
+        // Get the output track state data, depending on which data is required
+        vecmem::data::vector_buffer<track_state_candidate> track_cand_buffer{
+            0, mr.main};
+        vecmem::data::vector_buffer<filtered_track_state_candidate<algebra_t>>
+            filtered_track_cand_buffer{0, mr.main};
+        vecmem::data::vector_buffer<full_track_state_candidate<algebra_t>>
+            full_track_cand_buffer{0, mr.main};
+
+        // Allocate memory for the required data collection mode
+        const unsigned int max_cands{seeds.size() *
+                                     config.max_track_candidates_per_track};
+        if (config.run_smoother == smoother_type::e_none) {
+            track_cand_buffer =
+                vecmem::data::vector_buffer<track_state_candidate>{max_cands,
+                                                                   mr.main};
+        } else if (config.run_smoother == smoother_type::e_kalman) {
+            filtered_track_cand_buffer = vecmem::data::vector_buffer<
+                filtered_track_state_candidate<algebra_t>>{max_cands, mr.main};
+        } else if (config.run_smoother == smoother_type::e_mbf) {
+            full_track_cand_buffer = vecmem::data::vector_buffer<
+                full_track_state_candidate<algebra_t>>{max_cands, mr.main};
+        }
+
+        // Allocate the kernel's payload in host memory.
+        using payload_t =
+            device::progressive_kalman_filter_payload<propagator_t>;
+        const payload_t host_payload{
+            .det_data = det,
+            .field_data = field,
+            .seeds_view = seeds_buffer,
+            .measurements_view = measurements_view,
+            .measurement_ranges_view = meas_ranges_buffer,
+            .track_stats_view = track_stats_buffer,
+            .track_cand_view = track_cand_buffer,
+            .filtered_track_cand_view = filtered_track_cand_buffer,
+            .full_track_cand_view = full_track_cand_buffer,
+            .surfaces_view = {seqs_buffer},
+            .tracks_view = {track_candidates_buffer},
+        };
+
+        traccc::cuda::progressive_kalman_filter<propagator_t>(
+            nBlocks, nThreads, 0u, stream, config, host_payload);
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+
+        str.synchronize();
+    }
+
+    /*****************************************************************
+     * Run Fitting
+     *****************************************************************/
+
+    /// Run a Kalman filter in back propagation mode to smoothe the tracks
+    if (config.run_smoother == smoother_type::e_kalman) {
+        // Not needed
+        vecmem::data::vector_buffer<unsigned int> param_ids_buffer(0u, mr.main);
+        vecmem::data::vector_buffer<unsigned int> param_liveness_buffer(
+            0u, mr.main);
+
+        // Allocate the fitting kernels's payload in host memory.
+        using fitter_t = traccc::details::kalman_fitter_t<detector_t, bfield_t>;
+        device::fit_payload<fitter_t> host_payload{
+            .det_data = det,
+            .field_data = field,
+            .param_ids_view = param_ids_buffer,
+            .param_liveness_view = param_liveness_buffer,
+            .tracks_view = track_candidates_buffer,
+            .surfaces_view = seqs_buffer};
+
+        // Run the track fitting
+        fit_backward<fitter_t>(nBlocks, nThreads, 0, stream,
+                               config.kalman_smoother, host_payload);
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+    } else if (config.run_smoother == smoother_type::e_mbf) {
+        std::cout
+            << "FATAL: MBF smoother not implemented for progressive filter!"
+            << std::endl;
+    }
 
     return track_candidates_buffer;
 }

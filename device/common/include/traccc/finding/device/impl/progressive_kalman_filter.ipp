@@ -73,7 +73,7 @@ TRACCC_HOST_DEVICE inline void progressive_kalman_filter(
         traccc::details::progressive_kalman_filter(
             det, payload.field_data, payload.measurements_view,
             payload.measurement_ranges_view, seed, globalIndex,
-            candidate_data.ptr(), cfg);
+            candidate_data.ptr(), payload.surfaces_view, cfg);
 
     // Check track stats and build the new track object
     const unsigned int n_track_states{trk_stats.n_track_states};
