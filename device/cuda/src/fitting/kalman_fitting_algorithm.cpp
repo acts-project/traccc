@@ -8,7 +8,16 @@
 // Local include(s).
 #include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
 
+#include "../utils/magnetic_field_types.hpp"
 #include "../utils/utils.hpp"
+#include "./kernels/fit_backward.hpp"
+#include "./kernels/fit_forward.hpp"
+#include "./kernels/fit_prelude.hpp"
+
+// Project include(s).
+#include "traccc/fitting/details/kalman_fitting_types.hpp"
+#include "traccc/geometry/detector.hpp"
+#include "traccc/utils/detector_buffer_bfield_visitor.hpp"
 
 namespace traccc::cuda {
 
@@ -16,11 +25,112 @@ kalman_fitting_algorithm::kalman_fitting_algorithm(
     const config_type& config, const traccc::memory_resource& mr,
     const vecmem::copy& copy, const stream_wrapper& str,
     std::unique_ptr<const Logger> logger)
-    : messaging(std::move(logger)),
-      m_config{config},
-      m_mr{mr},
-      m_copy{copy},
-      m_stream{str},
-      m_warp_size(details::get_warp_size(str.device())) {}
+    : device::kalman_fitting_algorithm{config, mr, copy, std::move(logger)},
+      cuda::algorithm_base{str} {}
+
+void kalman_fitting_algorithm::fit_prelude_kernel(
+    const vecmem::data::vector_view<const unsigned int>& track_indices,
+    const edm::track_container<default_algebra>::const_view& input_tracks,
+    edm::track_container<default_algebra>::view output_tracks,
+    vecmem::data::vector_view<unsigned int>& track_liveness) const {
+
+    // Get the number of tracks.
+    const unsigned int n_tracks = input_tracks.tracks.capacity();
+    assert(n_tracks == copy().get_size(input_tracks.tracks));
+    assert(n_tracks == track_indices.capacity());
+    assert(track_indices.size_ptr() == nullptr);
+    assert(n_tracks == copy().get_size(output_tracks.tracks));
+
+    // Launch parameters for the kernel.
+    const unsigned int nThreads = warp_size() * 4;
+    const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
+
+    // Run the fitting, using the sorted parameter IDs.
+    fit_prelude(nBlocks, nThreads, 0, details::get_stream(stream()),
+                track_indices, input_tracks, output_tracks, track_liveness);
+}
+
+auto kalman_fitting_algorithm::prepare_fit_payload(
+    const detector_buffer& det, const magnetic_field& field,
+    const std::vector<unsigned int>& n_surfaces,
+    const vecmem::data::vector_view<const unsigned int>& track_indices,
+    vecmem::data::vector_view<unsigned int>& track_liveness,
+    edm::track_container<default_algebra>::view tracks) const
+    -> std::unique_ptr<fit_payload_base> {
+
+    return prepare_fit_payload_helper<detector_type_list,
+                                      cuda::bfield_type_list<scalar>>(
+        det, field, n_surfaces, track_indices, track_liveness, tracks);
+}
+
+void kalman_fitting_algorithm::fit_forward_kernel(
+    const fitting_config& config, const fit_payload_base& payload) const {
+
+    return detector_buffer_magnetic_field_visitor<
+        detector_type_list, cuda::bfield_type_list<scalar>>(
+        payload.detector, payload.field,
+        [&]<typename detector_traits_t, typename bfield_view_t>(
+            const typename detector_traits_t::view&, const bfield_view_t&) {
+            // Cast the payload to the correct type.
+            const fit_payload<typename detector_traits_t::device,
+                              bfield_view_t>& fpayload =
+                cast_fit_payload<typename detector_traits_t::device,
+                                 bfield_view_t>(payload);
+
+            // Get the number of tracks.
+            const unsigned int n_tracks =
+                fpayload.host_payload.tracks_view.tracks.capacity();
+            assert(n_tracks ==
+                   copy().get_size(fpayload.host_payload.tracks_view.tracks));
+
+            // Launch parameters for the kernel.
+            const unsigned int nThreads = warp_size() * 4;
+            const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
+
+            // Fitter type to use.
+            using fitter_t = traccc::details::kalman_fitter_t<
+                typename detector_traits_t::device, bfield_view_t>;
+
+            // Run the track fitting
+            fit_forward<fitter_t>(nBlocks, nThreads, 0,
+                                  details::get_stream(stream()), config,
+                                  fpayload.host_payload);
+        });
+}
+
+void kalman_fitting_algorithm::fit_backward_kernel(
+    const fitting_config& config, const fit_payload_base& payload) const {
+
+    return detector_buffer_magnetic_field_visitor<
+        detector_type_list, cuda::bfield_type_list<scalar>>(
+        payload.detector, payload.field,
+        [&]<typename detector_traits_t, typename bfield_view_t>(
+            const typename detector_traits_t::view&, const bfield_view_t&) {
+            // Cast the payload to the correct type.
+            const fit_payload<typename detector_traits_t::device,
+                              bfield_view_t>& fpayload =
+                cast_fit_payload<typename detector_traits_t::device,
+                                 bfield_view_t>(payload);
+
+            // Get the number of tracks.
+            const unsigned int n_tracks =
+                fpayload.host_payload.tracks_view.tracks.capacity();
+            assert(n_tracks ==
+                   copy().get_size(fpayload.host_payload.tracks_view.tracks));
+
+            // Launch parameters for the kernel.
+            const unsigned int nThreads = warp_size() * 4;
+            const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
+
+            // Fitter type to use.
+            using fitter_t = traccc::details::kalman_fitter_t<
+                typename detector_traits_t::device, bfield_view_t>;
+
+            // Run the track fitting
+            fit_backward<fitter_t>(nBlocks, nThreads, 0,
+                                   details::get_stream(stream()), config,
+                                   fpayload.host_payload);
+        });
+}
 
 }  // namespace traccc::cuda
