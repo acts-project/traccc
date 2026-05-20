@@ -34,8 +34,9 @@ combinatorial_kalman_filter_algorithm::operator()(
             const typename detector_t::view& detector,
             const bfield_view_t& bfield) {
             // In case there is no branching: run simpler Kalman track following
-            if (m_config.max_num_branches_per_seed == 1 ||
-                m_config.max_num_branches_per_surface == 1) {
+            if (m_config.run_pkf &&
+                (m_config.max_num_branches_per_seed == 1 ||
+                 m_config.max_num_branches_per_surface == 1)) {
                 return details::progressive_kalman_filter<
                     typename detector_t::device>(
                     detector, bfield, measurements, seeds, m_config, m_mr,

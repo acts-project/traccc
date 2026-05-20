@@ -91,6 +91,11 @@ track_finding::track_finding() : interface("Track Finding Options") {
             ->default_value(m_config.duplicate_removal_minimum_length),
         "Minimum track length for deduplication (0 to disable) [cardinal]");
     m_desc.add_options()(
+        "finding-run-pkf",
+        po::value(&m_config.run_pkf)->default_value(m_config.run_pkf),
+        "Whether to run the progressive Kalman filter when branching is turned "
+        "off");
+    m_desc.add_options()(
         "finding-run-smoother",
         po::value(&m_config.run_smoother)->default_value(m_config.run_smoother),
         "Configure the smoother [none, MBF, Kalman]");
@@ -158,6 +163,8 @@ std::unique_ptr<configuration_printable> track_finding::as_printable() const {
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "Minimum p",
         std::format("{} GeV", m_config.min_p / traccc::unit<float>::GeV)));
+    cat->add_child(std::make_unique<configuration_kv_pair>(
+        "Run PKF", m_config.run_pkf ? "true" : "false"));
     std::stringstream os{};
     os << m_config.run_smoother;
     cat->add_child(

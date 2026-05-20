@@ -44,8 +44,9 @@ combinatorial_kalman_filter_algorithm::operator()(
         [&]<typename detector_t, typename bfield_view_t>(
             const typename detector_t::host& detector,
             const bfield_view_t field) {
-            if (m_config.max_num_branches_per_seed == 1 ||
-                m_config.max_num_branches_per_surface == 1) {
+            if (m_config.run_pkf &&
+                (m_config.max_num_branches_per_seed == 1 ||
+                 m_config.max_num_branches_per_surface == 1)) {
                 return details::run_progressive_kalman_filter(
                     detector, field, measurements, seeds, m_config, m_mr.get(),
                     logger());
