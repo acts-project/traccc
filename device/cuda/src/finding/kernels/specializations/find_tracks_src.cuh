@@ -25,7 +25,6 @@ __global__ void find_tracks(
     const __grid_constant__ finding_config cfg,
     const __grid_constant__ device::find_tracks_payload<detector_t> payload) {
     __shared__ unsigned int shared_num_out_params;
-    __shared__ unsigned int shared_out_offset;
     __shared__ unsigned int shared_candidates_size;
     extern __shared__ unsigned long long int s[];
     unsigned long long int* shared_insertion_mutex = s;
@@ -38,8 +37,11 @@ __global__ void find_tracks(
 
     device::find_tracks<detector_t>(
         thread_id, barrier, cfg, payload,
-        {shared_num_out_params, shared_out_offset, shared_insertion_mutex,
-         shared_candidates, shared_candidates_size});
+        device::find_tracks_shared_payload{
+            .shared_num_out_params = shared_num_out_params,
+            .shared_insertion_mutex = shared_insertion_mutex,
+            .shared_candidates = shared_candidates,
+            .shared_candidates_size = shared_candidates_size});
 }
 
 }  // namespace kernels

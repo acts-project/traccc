@@ -14,6 +14,7 @@
 #include "../utils/thread_id.hpp"
 #include "../utils/utils.hpp"
 #include "./kernels/build_tracks.cuh"
+#include "./kernels/condense_tracks.cuh"
 #include "./kernels/fill_finding_duplicate_removal_sort_keys.cuh"
 #include "./kernels/fill_finding_propagation_sort_keys.cuh"
 #include "./kernels/find_tracks.cuh"
@@ -312,6 +313,12 @@ combinatorial_kalman_filter(
         }
 
         {
+            vecmem::data::vector_buffer<unsigned int>
+                out_params_per_in_param_buffer(n_in_params, mr.main);
+            copy.setup(out_params_per_in_param_buffer)->ignore();
+            vecmem::data::vector_buffer<unsigned int> out_params_index_buffer(
+                n_in_params, mr.main);
+            copy.setup(out_params_index_buffer)->ignore();
             vecmem::data::vector_buffer<candidate_link> tmp_links_buffer(
                 n_max_candidates, mr.main);
             copy.setup(tmp_links_buffer)->ignore();
@@ -331,33 +338,77 @@ combinatorial_kalman_filter(
                 .links_view = links_buffer,
                 .prev_links_idx =
                     (step == 0 ? 0 : step_to_link_idx_map[step - 1]),
-                .curr_links_idx = step_to_link_idx_map[step],
                 .step = step,
-                .out_params_view = updated_params_buffer,
-                .out_params_liveness_view = updated_liveness_buffer,
+                .out_params_per_in_param_view = out_params_per_in_param_buffer,
                 .tips_view = tips_buffer,
                 .tip_lengths_view = tip_length_buffer,
                 .n_tracks_per_seed_view = n_tracks_per_seed_buffer,
                 .tmp_params_view = tmp_params_buffer,
-                .tmp_links_view = tmp_links_buffer,
-                .jacobian_ptr = jacobian_ptr.get(),
-                .tmp_jacobian_ptr = tmp_jacobian_ptr.get(),
-                .link_predicted_parameter_view =
-                    link_predicted_parameter_buffer,
-                .link_filtered_parameter_view = link_filtered_parameter_buffer};
+                .tmp_links_view = tmp_links_buffer};
 
-            // The number of threads, blocks and shared memory to use.
-            const unsigned int nThreads = warp_size * 2;
-            const unsigned int nBlocks =
-                (n_in_params + nThreads - 1) / nThreads;
-            const std::size_t shared_size =
-                nThreads * sizeof(unsigned long long int) +
-                2 * nThreads * sizeof(std::pair<unsigned int, unsigned int>);
+            {
+                // The number of threads, blocks and shared memory to use.
+                const unsigned int nThreads = warp_size * 2;
+                const unsigned int nBlocks =
+                    (n_in_params + nThreads - 1) / nThreads;
+                const std::size_t shared_size =
+                    nThreads * sizeof(unsigned long long int) +
+                    2 * nThreads *
+                        sizeof(std::pair<unsigned int, unsigned int>);
 
-            // Run the kernel.
-            find_tracks<detector_t>(nBlocks, nThreads, shared_size, stream,
-                                    config, host_payload);
-            TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+                // Run the kernel.
+                find_tracks<detector_t>(nBlocks, nThreads, shared_size, stream,
+                                        config, host_payload);
+                TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+            }
+
+            {
+                vecmem::device_vector<unsigned int>
+                    out_params_per_in_param_vector(
+                        out_params_per_in_param_buffer);
+                vecmem::device_vector<unsigned int> out_params_index_vector(
+                    out_params_index_buffer);
+                thrust::inclusive_scan(thrust_policy,
+                                       out_params_per_in_param_vector.begin(),
+                                       out_params_per_in_param_vector.end(),
+                                       out_params_index_vector.begin());
+            }
+
+            {
+                // The number of threads, blocks and shared memory to use.
+                const unsigned int nThreads = 256;
+                const unsigned int nBlocks =
+                    (n_in_params + nThreads - 1) / nThreads;
+                condense_tracks<detector_t>(
+                    nBlocks, nThreads, 0, stream,
+                    device::condense_tracks_payload<detector_t>{
+                        .n_in_params = n_in_params,
+                        .step = step,
+                        .curr_links_idx = step_to_link_idx_map[step],
+                        .max_num_branches_per_surface =
+                            config.max_num_branches_per_surface,
+                        .min_track_candidates_per_track =
+                            config.min_track_candidates_per_track,
+                        .max_track_candidates_per_track =
+                            config.max_track_candidates_per_track,
+                        .links_view = links_buffer,
+                        .in_params_view = in_params_buffer,
+                        .in_tmp_params_view = tmp_params_buffer,
+                        .in_tmp_links_view = tmp_links_buffer,
+                        .in_params_index_view = out_params_index_buffer,
+                        .out_params_view = updated_params_buffer,
+                        .out_params_liveness_view = updated_liveness_buffer,
+                        .tips_view = tips_buffer,
+                        .tip_lengths_view = tip_length_buffer,
+                        .jacobian_ptr = jacobian_ptr.get(),
+                        .tmp_jacobian_ptr = tmp_jacobian_ptr.get(),
+                        .link_predicted_parameter_view =
+                            link_predicted_parameter_buffer,
+                        .link_filtered_parameter_view =
+                            link_filtered_parameter_buffer});
+
+                TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+            }
 
             std::swap(in_params_buffer, updated_params_buffer);
             std::swap(param_liveness_buffer, updated_liveness_buffer);
