@@ -38,7 +38,6 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "include/traccc/sycl/fitting/kalman_fitting_algorithm.hpp"
   "src/fitting/kalman_fitting_algorithm.cpp"
   "src/fitting/kalman_fitting_algorithm.sycl"
-  "src/fitting/kalman_fitting.hpp"
   # Utilities.
   "include/traccc/sycl/utils/algorithm_base.hpp"
   "src/utils/algorithm_base.sycl"
