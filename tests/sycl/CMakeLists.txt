@@ -6,6 +6,8 @@
 
 include(traccc-compiler-options-sycl)
 
+include(vecmem-check-language)
+vecmem_check_language(SYCL)
 enable_language(SYCL)
 
 traccc_add_test(
