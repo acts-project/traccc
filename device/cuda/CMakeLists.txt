@@ -152,7 +152,8 @@ foreach(DETECTOR_NAME ${TRACCC_SUPPORTED_DETECTORS})
         COMMENT "Generating kernel specialization of `condense_tracks` for ${DETECTOR_NAME}"
     )
     target_sources(traccc_cuda PRIVATE ${GENERATED_SOURCE})
-    
+endforeach()
+
 # Generate specializations for PKF
 foreach(DETECTOR_NAME ${TRACCC_SUPPORTED_DETECTORS})
     foreach(BFIELD_NAME ${TRACCC_CUDA_SUPPORTED_BFIELDS})

@@ -132,22 +132,19 @@ progressive_kalman_filter(
     const unsigned int nBlocks = (n_seeds - 1) / nThreads;
 
     // Setup the surface sequence buffer
-    vecmem::data::jagged_vector_buffer<typename detector_t::surface_type>
-        seqs_buffer{std::vector<unsigned int>{0u}, mr.main, mr.host,
-                    vecmem::data::buffer_type::resizable};
+    const unsigned int n_surfaces_per_track{
+        std::max(config.max_track_candidates_per_track *
+                     config.kalman_smoother.surface_sequence_size_factor,
+                 config.kalman_smoother.min_surface_sequence_capacity)};
+    std::vector<unsigned int> seqs_sizes(
+        n_seeds, config.run_smoother == smoother_type::e_kalman
+                     ? n_surfaces_per_track
+                     : 0u);
 
-    if (config.run_smoother == smoother_type::e_kalman) {
-        const unsigned int n_surfaces_per_track{
-            std::max(config.max_track_candidates_per_track *
-                         config.kalman_smoother.surface_sequence_size_factor,
-                     config.kalman_smoother.min_surface_sequence_capacity)};
-        std::vector<unsigned int> seqs_sizes(n_seeds, n_surfaces_per_track);
-
-        seqs_buffer = vecmem::data::jagged_vector_buffer<
-            typename detector_t::surface_type>{
+    auto seqs_buffer =
+        vecmem::data::jagged_vector_buffer<typename detector_t::surface_type>{
             seqs_sizes, mr.main, mr.host, vecmem::data::buffer_type::resizable};
-        copy.setup(seqs_buffer)->ignore();
-    }
+    copy.setup(seqs_buffer)->ignore();
 
     // Create track candidate buffer
     vecmem::vector<unsigned int> n_constituent_links(mr.host);

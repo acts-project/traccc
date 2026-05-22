@@ -105,6 +105,8 @@ struct measurement_updater : detray::base_actor {
         auto& navigation = propagation.navigation();
         auto& stepping = propagation.stepping();
 
+        TRACCC_INFO_HOST("In meas updater");
+
         // Measurements are only available on sensitive surfaces
         if (!navigation.is_on_sensitive()) {
             return;
@@ -223,6 +225,8 @@ struct measurement_updater : detray::base_actor {
                 static_cast<std::uint_least16_t>(meas.dimensions());
             updater_state.m_stats.chi2_sum += cand.chi2;
             updater_state.m_stats.n_track_states++;
+            TRACCC_INFO_HOST(
+                "trk states: " << updater_state.m_stats.n_track_states);
 
             if (updater_state.m_stats.n_track_states >=
                 updater_state.max_n_track_states) {
