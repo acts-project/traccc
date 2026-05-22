@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2025 CERN for the benefit of the ACTS project
+ * (c) 2021-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -102,8 +102,7 @@ TEST_F(io, csv_read_odd_single_muon) {
 
     // Read the truth particles for the first event.
     traccc::particle_container_types::host particles{&mr};
-    traccc::edm::measurement_collection<traccc::default_algebra>::host
-        measurements{mr};
+    traccc::edm::measurement_collection::host measurements{mr};
     traccc::io::read_particles(particles, measurements, 0u,
                                "odd/geant4_1muon_1GeV/", &detector,
                                traccc::data_format::csv);

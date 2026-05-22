@@ -17,12 +17,11 @@
 
 namespace traccc::device {
 
-template <typename algebra_t, typename bfield_t>
+template <typename bfield_t>
 TRACCC_HOST_DEVICE inline void estimate_track_params(
     const global_index_t globalIndex,
     const track_params_estimation_config& config,
-    const typename edm::measurement_collection<algebra_t>::const_view&
-        measurements_view,
+    const edm::measurement_collection::const_view& measurements_view,
     const edm::spacepoint_collection::const_view& spacepoints_view,
     const edm::seed_collection::const_view& seeds_view, const bfield_t& bfield,
     bound_track_parameters_collection_types::view params_view) {
@@ -34,8 +33,8 @@ TRACCC_HOST_DEVICE inline void estimate_track_params(
     }
 
     // Create the rest of the device objects.
-    const typename edm::measurement_collection<algebra_t>::const_device
-        measurements(measurements_view);
+    const edm::measurement_collection::const_device measurements(
+        measurements_view);
     const edm::spacepoint_collection::const_device spacepoints(
         spacepoints_view);
     bound_track_parameters_collection_types::device params(params_view);

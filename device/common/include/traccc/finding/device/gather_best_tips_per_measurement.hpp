@@ -26,7 +26,7 @@ template <typename algebra_t>
 struct gather_best_tips_per_measurement_payload {
     vecmem::data::vector_view<const unsigned int> tips;
     vecmem::data::vector_view<const candidate_link> links;
-    typename edm::measurement_collection<algebra_t>::const_view measurements;
+    edm::measurement_collection::const_view measurements;
     vecmem::data::vector_view<unsigned long long int> insertion_mutex;
     vecmem::data::vector_view<unsigned int> tip_index;
     vecmem::data::vector_view<typename algebra_t::scalar> tip_pval;

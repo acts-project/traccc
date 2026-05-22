@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -157,8 +157,7 @@ TEST_P(CkfToyDetectorTests, Run) {
         // Truth Track Candidates
         traccc::event_data evt_data(path.native(), i_evt, host_mr);
 
-        traccc::edm::measurement_collection<traccc::default_algebra>::host
-            truth_measurements{host_mr};
+        traccc::edm::measurement_collection::host truth_measurements{host_mr};
         traccc::edm::track_container<traccc::default_algebra>::host
             truth_track_candidates{host_mr};
         evt_data.generate_truth_candidates(truth_track_candidates,
@@ -183,15 +182,13 @@ TEST_P(CkfToyDetectorTests, Run) {
             ->wait();
 
         // Read measurements
-        traccc::edm::measurement_collection<traccc::default_algebra>::host
-            measurements_per_event{host_mr};
+        traccc::edm::measurement_collection::host measurements_per_event{
+            host_mr};
         traccc::io::read_measurements(measurements_per_event, i_evt,
                                       path.native());
 
-        traccc::edm::measurement_collection<traccc::default_algebra>::buffer
-            measurements_buffer(
-                static_cast<unsigned int>(measurements_per_event.size()),
-                mr.main);
+        traccc::edm::measurement_collection::buffer measurements_buffer(
+            static_cast<unsigned int>(measurements_per_event.size()), mr.main);
         copy.setup(measurements_buffer)->wait();
         copy(vecmem::get_data(measurements_per_event), measurements_buffer)
             ->wait();

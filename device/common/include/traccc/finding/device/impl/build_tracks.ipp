@@ -13,6 +13,8 @@
 #include "traccc/edm/measurement_helpers.hpp"
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/edm/track_state_helpers.hpp"
+#include "traccc/fitting/kalman_filter/measurement_selector.hpp"
+#include "traccc/utils/matrix_helpers.hpp"
 #include "traccc/utils/prob.hpp"
 #include "traccc/utils/subspace.hpp"
 
@@ -20,10 +22,11 @@ namespace traccc::device {
 
 TRACCC_HOST_DEVICE inline void build_tracks(
     const global_index_t globalIndex, bool run_mbf,
+    const measurement_selector::config calib_cfg,
     const build_tracks_payload& payload) {
 
-    const edm::measurement_collection<default_algebra>::const_device
-        measurements(payload.tracks_view.measurements);
+    const edm::measurement_collection::const_device measurements(
+        payload.tracks_view.measurements);
 
     const bound_track_parameters_collection_types::const_device seeds(
         payload.seeds_view);
@@ -132,34 +135,27 @@ TRACCC_HOST_DEVICE inline void build_tracks(
                                  big_lambda_tilde * accumulated_jacobian;
             }
 
+            const edm::measurement meas = measurements.at(L.meas_idx);
+
             // Measurement data on surface
-            detray::dmatrix<default_algebra, 2, 1> meas_local;
-            edm::get_measurement_local<default_algebra>(
-                measurements.at(L.meas_idx), meas_local);
-
-            // WARNING: This code doesn't currently work with line surfaces
-            const subspace<default_algebra, e_bound_size> subs(
-                measurements.at(L.meas_idx).subspace());
-            detray::dmatrix<default_algebra, 2, e_bound_size> H =
-                subs.template projector<2>();
-
-            // TODO: Fix properly
-            if (/*dim == 1*/ getter::element(meas_local, 1u, 0u) == 0.f) {
-                getter::element(H, 1u, 0u) = 0.f;
-                getter::element(H, 1u, 1u) = 0.f;
-            }
+            const detray::dmatrix<default_algebra, 2, 1> meas_local =
+                measurement_selector::calibrated_measurement_position<
+                    default_algebra, 2>(meas, calib_cfg);
 
             // Spatial resolution (Measurement covariance)
-            detray::dmatrix<default_algebra, 2, 2> V;
-            edm::get_measurement_covariance<default_algebra>(
-                measurements.at(L.meas_idx), V);
-            // TODO: Fix properly
-            if (/*dim == 1*/ getter::element(meas_local, 1u, 0u) == 0.f) {
-                getter::element(V, 1u, 1u) = 1000.f;
-            }
+            const detray::dmatrix<default_algebra, 2, 2> V =
+                measurement_selector::calibrated_measurement_covariance<
+                    default_algebra, 2>(meas, calib_cfg);
 
-            const auto S = H * predicted_covariance * matrix::transpose(H) + V;
-            const auto S_inv = matrix::inverse(S);
+            // TODO: Does not work for line surfaces!
+            const detray::dmatrix<default_algebra, 2, e_bound_size> H =
+                measurement_selector::observation_model<default_algebra, 2>(
+                    meas, predicted_params, false);
+
+            const auto S_inv = masked_inverse<default_algebra>(
+                H * predicted_covariance * matrix::transpose(H) + V,
+                meas.dimensions());
+
             const auto K = predicted_covariance * matrix::transpose(H) * S_inv;
             const auto C_hat =
                 matrix::identity<detray::dmatrix<default_algebra, e_bound_size,
@@ -220,9 +216,7 @@ TRACCC_HOST_DEVICE inline void build_tracks(
 #ifndef NDEBUG
     // Assert that we did not make any duplicate track states.
     for (const auto& i : track.constituent_links()) {
-        assert(i.type == edm::track_constituent_link::measurement);
         for (const auto& j : track.constituent_links()) {
-            assert(j.type == edm::track_constituent_link::measurement);
             if (i.index != j.index) {
                 // TODO: Re-enable me!
                 // assert(measurements.at(i->index).identifier() !=

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024-2025 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -26,7 +26,7 @@ namespace traccc::io::csv {
 ///
 void make_measurement_edm(
     const traccc::io::csv::measurement& csv_meas,
-    edm::measurement_collection<default_algebra>::host::proxy_type& meas,
+    edm::measurement_collection::host::proxy_type& meas,
     const std::map<geometry_id, geometry_id>* acts_to_detray_id,
     const traccc::detector_design_description::host* det_desc = nullptr,
     const std::map<geometry_id, std::size_t>*

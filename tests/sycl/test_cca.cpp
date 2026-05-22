@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -34,11 +34,10 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
               const traccc::detector_conditions_description::host& det_cond)
             -> std::pair<
                 std::map<traccc::geometry_id,
-                         traccc::edm::measurement_collection<
-                             traccc::default_algebra>::host>,
+                         traccc::edm::measurement_collection::host>,
                 std::optional<traccc::edm::silicon_cluster_collection::host>> {
-            std::map<traccc::geometry_id, traccc::edm::measurement_collection<
-                                              traccc::default_algebra>::host>
+            std::map<traccc::geometry_id,
+                     traccc::edm::measurement_collection::host>
                 result;
 
             vecmem::sycl::queue_wrapper vecmem_queue;
@@ -87,8 +86,7 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
             auto [measurements_buffer, cluster_buffer] =
                 cc(cells_buffer, det_descr_buffer, det_cond_buffer,
                    traccc::device::clustering_keep_disjoint_set{});
-            traccc::edm::measurement_collection<traccc::default_algebra>::host
-                measurements{host_mr};
+            traccc::edm::measurement_collection::host measurements{host_mr};
             copy(measurements_buffer, measurements)->wait();
 
             traccc::edm::silicon_cluster_collection::host clusters{host_mr};
@@ -99,8 +97,7 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
                         measurements.at(i).surface_link().value()) == false) {
                     result.insert(
                         {measurements.at(i).surface_link().value(),
-                         traccc::edm::measurement_collection<
-                             traccc::default_algebra>::host{host_mr}});
+                         traccc::edm::measurement_collection::host{host_mr}});
                 }
                 result.at(measurements.at(i).surface_link().value())
                     .push_back(measurements.at(i));

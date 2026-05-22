@@ -28,7 +28,7 @@ namespace traccc::device {
 class silicon_pixel_spacepoint_formation_algorithm
     : public algorithm<edm::spacepoint_collection::buffer(
           const detector_buffer&,
-          const edm::measurement_collection<default_algebra>::const_view&)>,
+          const edm::measurement_collection::const_view&)>,
       public messaging,
       public algorithm_base {
 
@@ -51,10 +51,9 @@ class silicon_pixel_spacepoint_formation_algorithm
     /// @return A spacepoint buffer, with one spacepoint for every
     ///         silicon pixel measurement
     ///
-    output_type operator()(
-        const detector_buffer& det,
-        const edm::measurement_collection<default_algebra>::const_view&
-            measurements) const override;
+    output_type operator()(const detector_buffer& det,
+                           const edm::measurement_collection::const_view&
+                               measurements) const override;
 
     protected:
     /// @name Function(s) to be implemented by derived classes
@@ -63,13 +62,11 @@ class silicon_pixel_spacepoint_formation_algorithm
     /// Payload for the @c form_spacepoints_kernel function
     struct form_spacepoints_kernel_payload {
         /// The number of measurements in the event
-        edm::measurement_collection<default_algebra>::const_view::size_type
-            n_measurements;
+        edm::measurement_collection::const_view::size_type n_measurements;
         /// The detector object
         const detector_buffer& detector;
         /// The input measurements
-        const edm::measurement_collection<default_algebra>::const_view&
-            measurements;
+        const edm::measurement_collection::const_view& measurements;
         /// The output spacepoints
         edm::spacepoint_collection::view& spacepoints;
     };

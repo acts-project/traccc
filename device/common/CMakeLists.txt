@@ -31,7 +31,7 @@ traccc_add_library( traccc_device_common device_common
    "include/traccc/clusterization/device/impl/reduce_problem_cell.ipp"
    "include/traccc/clusterization/device/aggregate_cluster.hpp"
    "include/traccc/clusterization/device/impl/aggregate_cluster.ipp"
-   "include/traccc/clusterization/device/barcode_based_sorter.hpp"
+   "include/traccc/clusterization/device/geo_id_based_sorter.hpp"
    "include/traccc/clusterization/device/ccl_kernel_definitions.hpp"
    "include/traccc/clusterization/device/ccl_kernel.hpp"
    "include/traccc/clusterization/device/sorting_index_filler.hpp"
@@ -69,7 +69,7 @@ traccc_add_library( traccc_device_common device_common
    "include/traccc/seeding/device/estimate_track_params.hpp"
    "include/traccc/seeding/device/impl/estimate_track_params.ipp"
    # Track finding funtions(s).
-   "include/traccc/finding/device/barcode_surface_comparator.hpp"
+   "include/traccc/finding/device/geo_id_surface_comparator.hpp"
    "include/traccc/finding/device/build_tracks.hpp"
    "include/traccc/finding/device/find_tracks.hpp"
    "include/traccc/finding/device/gather_best_tips_per_measurement.hpp"

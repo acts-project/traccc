@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -36,9 +36,8 @@ namespace traccc::io {
 /// @param[in]  format    The format of the measurement data files (to read)
 ///
 std::vector<measurement_id_type> read_measurements(
-    edm::measurement_collection<default_algebra>::host& measurements,
-    std::size_t event, std::string_view directory,
-    const traccc::host_detector* detector = nullptr,
+    edm::measurement_collection::host& measurements, std::size_t event,
+    std::string_view directory, const traccc::host_detector* detector = nullptr,
     const traccc::detector_design_description::host* det_desc = nullptr,
     const traccc::detector_conditions_description::host* det_cond = nullptr,
     const bool sort_measurements = true, data_format format = data_format::csv);
@@ -53,8 +52,8 @@ std::vector<measurement_id_type> read_measurements(
 /// @param[in]  format   The format of the measurement data files (to read)
 ///
 std::vector<measurement_id_type> read_measurements(
-    edm::measurement_collection<default_algebra>::host& measurements,
-    std::string_view filename, const traccc::host_detector* detector = nullptr,
+    edm::measurement_collection::host& measurements, std::string_view filename,
+    const traccc::host_detector* detector = nullptr,
     const traccc::detector_design_description::host* det_desc = nullptr,
     const traccc::detector_conditions_description::host* det_cond = nullptr,
     const bool sort_measurements = true, data_format format = data_format::csv);

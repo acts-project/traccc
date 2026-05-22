@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -17,6 +17,7 @@
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/fitting/kalman_filter/kalman_actor.hpp"
 #include "traccc/fitting/kalman_filter/kalman_step_aborter.hpp"
+#include "traccc/fitting/kalman_filter/measurement_selector.hpp"
 #include "traccc/fitting/kalman_filter/statistics_updater.hpp"
 #include "traccc/fitting/kalman_filter/two_filters_smoother.hpp"
 #include "traccc/fitting/status_codes.hpp"
@@ -116,14 +117,15 @@ class kalman_fitter {
                 algebra_type>::device::proxy_type& track,
             const typename edm::track_state_collection<algebra_type>::device&
                 track_states,
-            const typename edm::measurement_collection<
-                algebra_type>::const_device& measurements,
+            const edm::measurement_collection::const_device& measurements,
             vecmem::data::vector_view<surface_type> sequence_buffer,
-            const detray::propagation::config& prop_cfg)
+            const detray::propagation::config& prop_cfg,
+            const measurement_selector::config& calib_cfg)
             : m_updater_state{prop_cfg},
               m_fit_actor_state{
                   track, track_states, measurements,
-                  vecmem::device_vector<surface_type>(sequence_buffer)},
+                  vecmem::device_vector<surface_type>(sequence_buffer),
+                  calib_cfg},
               m_fit_res{track},
               m_sequence_buffer{sequence_buffer} {}
 
@@ -157,7 +159,7 @@ class kalman_fitter {
         typename edm::track_collection<algebra_type>::device::proxy_type
             m_fit_res;
 
-        /// View object for barcode sequence
+        /// View object for identifier sequence
         vecmem::data::vector_view<surface_type> m_sequence_buffer;
     };
 
@@ -304,8 +306,8 @@ class kalman_fitter {
         TRACCC_VERBOSE_HOST_DEVICE("Run smoothing...");
 
         if (fitter_state.m_fit_actor_state.sequencer().overflow()) {
-            TRACCC_ERROR_HOST_DEVICE("Barcode sequence overlow");
-            return kalman_fitter_status::ERROR_BARCODE_SEQUENCE_OVERFLOW;
+            TRACCC_ERROR_HOST_DEVICE("Geometry identifer sequence overlow");
+            return kalman_fitter_status::ERROR_GEOID_SEQUENCE_OVERFLOW;
         }
         if (fitter_state.m_fit_actor_state.sequencer().sequence().empty()) {
             return kalman_fitter_status::ERROR_UPDATER_SKIPPED_STATE;
@@ -369,15 +371,15 @@ class kalman_fitter {
             detray::navigation::direction::e_backward);
         propagation.navigation().reset();
 
-        // Synchronize the current barcode with the input track parameter
+        // Synchronize the current geo ID with the input track parameter
         TRACCC_DEBUG_HOST(
             "Expecting: " << last.smoothed_params().surface_link());
         while (propagation.navigation().has_next_external() &&
-               propagation.navigation().next_external().barcode() !=
+               propagation.navigation().next_external().identifier() !=
                    last.smoothed_params().surface_link()) {
             TRACCC_DEBUG_HOST(
                 "Advancing to next external surface from: "
-                << propagation.navigation().next_external().barcode());
+                << propagation.navigation().next_external().identifier());
             propagation.navigation().advance();
         }
 

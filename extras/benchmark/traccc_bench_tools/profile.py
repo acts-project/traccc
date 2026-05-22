@@ -13,6 +13,7 @@ log = logging.getLogger("traccc_benchmark")
 
 
 DETERMINISTIC_ORDER_COMMIT = "7e7f17ccd2e2b0db8971655773b351a365ee1cfc"
+DETERMINISTIC_DEFAULT_COMMIT = "80e34dc2195fc3897f1d7d97a71c0701edaa6aa1"
 BOOLEAN_FLAG_COMMIT = "380fc78ba63a79ed5c8f19d01d57636aa31cf4fd"
 INHOMOGENEOUS_BFIELD_COMMIT = "3654a64d5fe06509e6bf8be332f5aae7b8ff2da9"
 
@@ -44,7 +45,12 @@ def run_profile(
     if ncu_wrapper is not None:
         profile_args = ncu_wrapper.split() + profile_args
 
-    if git.is_parent_of(commit, DETERMINISTIC_ORDER_COMMIT):
+    if git.is_parent_of(commit, DETERMINISTIC_DEFAULT_COMMIT):
+        log.info(
+            "Commit is a child of (or is) %s; deterministic processing is default",
+            DETERMINISTIC_DEFAULT_COMMIT[:8],
+        )
+    elif git.is_parent_of(commit, DETERMINISTIC_ORDER_COMMIT):
         log.info(
             "Commit is a child of (or is) %s; enabling deterministic processing",
             DETERMINISTIC_ORDER_COMMIT[:8],

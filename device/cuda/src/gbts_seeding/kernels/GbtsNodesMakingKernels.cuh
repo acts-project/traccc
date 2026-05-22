@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2025 CERN for the benefit of the ACTS project
+ * (c) 2025-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -19,22 +19,21 @@
 #include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 
 // Detray include(s).
-#include <detray/geometry/barcode.hpp>
+#include <detray/geometry/identifier.hpp>
 
 namespace traccc::cuda::kernels {
 
 __global__ void count_sp_by_layer(
     const traccc::edm::spacepoint_collection::const_view spacepoints_view,
-    const edm::measurement_collection<default_algebra>::const_view
-        measurements_view,
+    const edm::measurement_collection::const_view measurements_view,
     const short* volumeToLayerMap, const uint2* surfaceToLayerMap,
     const char* d_layerType, float4* reducedSP, int* d_layerCounts,
     short* spacepointsLayer, const float type1_max_width,
     const unsigned int nSp, const long unsigned int volumeMapSize,
     const long unsigned int surfaceMapSize, bool doTauCut = true) {
 
-    const edm::measurement_collection<default_algebra>::const_device
-        measurements(measurements_view);
+    const edm::measurement_collection::const_device measurements(
+        measurements_view);
     const traccc::edm::spacepoint_collection::const_device spacepoints(
         spacepoints_view);
 
@@ -46,20 +45,22 @@ __global__ void count_sp_by_layer(
         const auto measurement =
             measurements.at(spacepoint.measurement_index_1());
 
-        detray::geometry::barcode barcode = measurement.surface_link();
+        detray::geometry::identifier geo_id = measurement.surface_link();
 
         // some volume_ids map one to one with layer others need searching
-        if (barcode.volume() > volumeMapSize) {
+        if (geo_id.volume() > volumeMapSize) {
+            reducedSP[spIdx].w = -CHAR_MAX - 1;
             continue;  // unconfigured volume
         }
-        short begin_or_bin = volumeToLayerMap[barcode.volume()];
+        short begin_or_bin = volumeToLayerMap[geo_id.volume()];
         if (begin_or_bin == SHRT_MAX) {
+            reducedSP[spIdx].w = -CHAR_MAX - 1;
             continue;  // unconfigured volume
         }
         unsigned int layerIdx;
         if (begin_or_bin < 0) {
             unsigned int surface_index =
-                static_cast<unsigned int>(barcode.index());
+                static_cast<unsigned int>(geo_id.index());
 
             for (unsigned int surface = -1 * (begin_or_bin + 1);
                  surface < surfaceMapSize; surface++) {
@@ -87,7 +88,7 @@ __global__ void count_sp_by_layer(
         // count and store x,y,z,cw info
         atomicAdd(&d_layerCounts[layerIdx], 1);
         spacepointsLayer[spIdx] = layerIdx;
-        const traccc::point3 pos = spacepoint.global();
+        const std::array<float, 3u> pos = spacepoint.global();
         reducedSP[spIdx] =
             make_float4(pos[0], pos[1], pos[2], cluster_diameter);
     }

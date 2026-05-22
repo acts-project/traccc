@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -19,9 +19,8 @@ namespace traccc::io {
 
 void read_spacepoints(
     edm::spacepoint_collection::host& spacepoints,
-    edm::measurement_collection<default_algebra>::host& measurements,
-    std::size_t event, std::string_view directory,
-    const traccc::host_detector* detector,
+    edm::measurement_collection::host& measurements, std::size_t event,
+    std::string_view directory, const traccc::host_detector* detector,
     const traccc::detector_design_description::host* det_desc,
     const traccc::detector_conditions_description::host* det_cond,
     data_format format) {
@@ -66,7 +65,7 @@ void read_spacepoints(
 
 void read_spacepoints(
     edm::spacepoint_collection::host& spacepoints,
-    edm::measurement_collection<default_algebra>::host& measurements,
+    edm::measurement_collection::host& measurements,
     std::string_view hit_filename, std::string_view meas_filename,
     std::string_view meas_hit_map_filename,
     const traccc::host_detector* detector,

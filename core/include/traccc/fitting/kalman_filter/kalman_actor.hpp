@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -14,6 +14,7 @@
 #include "traccc/edm/track_state_collection.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 #include "traccc/fitting/kalman_filter/is_line_visitor.hpp"
+#include "traccc/fitting/kalman_filter/measurement_selector.hpp"
 #include "traccc/fitting/kalman_filter/two_filters_smoother.hpp"
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/utils/logging.hpp"
@@ -49,13 +50,14 @@ struct kalman_actor_state {
             track,
         const typename edm::track_state_collection<algebra_t>::device&
             track_states,
-        const typename edm::measurement_collection<algebra_t>::const_device&
-            measurements,
-        vecmem::device_vector<surface_t> sequence)
+        const edm::measurement_collection::const_device& measurements,
+        vecmem::device_vector<surface_t> sequence,
+        const measurement_selector::config& calib_cfg)
         : m_track{track},
           m_track_states{track_states},
           m_measurements{measurements},
-          m_sequencer{sequence} {
+          m_sequencer{sequence},
+          m_calib_cfg{calib_cfg} {
 
         reset();
     }
@@ -123,7 +125,7 @@ struct kalman_actor_state {
     /// Add the next surface to the sequence
     TRACCC_HOST_DEVICE void add_to_sequence(
         typename sequencer_t::surface_type sf_desc) {
-        assert(!sf_desc.barcode().is_invalid());
+        assert(!sf_desc.identifier().is_invalid());
 
         m_sequencer.sequence().push_back(sf_desc);
         DETRAY_VERBOSE_HOST("Added: " << sf_desc);
@@ -204,10 +206,10 @@ struct kalman_actor_state {
         const auto& navigation = propagation.navigation();
         edm::track_state trk_state = (*this)();
 
-        TRACCC_VERBOSE_HOST("Found: " << navigation.barcode());
+        TRACCC_VERBOSE_HOST("Found: " << navigation.geometry_identifier());
 
         // Surface was found, continue with KF algorithm
-        if (navigation.barcode() ==
+        if (navigation.geometry_identifier() ==
             trk_state.filtered_params().surface_link()) {
             // Count a hole, if track finding did not find a measurement
             if (!backward_mode && trk_state.is_hole()) {
@@ -245,7 +247,7 @@ struct kalman_actor_state {
             for (int i = m_idx - 1; i >= 0; --i) {
                 if (at(static_cast<unsigned int>(i))
                         .filtered_params()
-                        .surface_link() == navigation.barcode()) {
+                        .surface_link() == navigation.geometry_identifier()) {
                     TRACCC_VERBOSE_HOST_DEVICE(
                         "--> bw: Matched to earlier state: navigator skipped "
                         "surfaces in between");
@@ -271,7 +273,7 @@ struct kalman_actor_state {
             for (unsigned int i = static_cast<unsigned int>(m_idx) + 1u;
                  i < size(); ++i) {
                 if (at(i).filtered_params().surface_link() ==
-                    navigation.barcode()) {
+                    navigation.geometry_identifier()) {
                     TRACCC_DEBUG_HOST_DEVICE(
                         "--> fw: Matched to later state: navigator skipped "
                         "surfaces in between");
@@ -307,11 +309,13 @@ struct kalman_actor_state {
     /// All track states in the event
     typename edm::track_state_collection<algebra_t>::device m_track_states;
     /// All measurements in the event
-    typename edm::measurement_collection<algebra_t>::const_device
-        m_measurements;
+    edm::measurement_collection::const_device m_measurements;
 
     /// The surface sequencer
     sequencer_t m_sequencer;
+
+    /// Measurement calibration configuration
+    measurement_selector::config m_calib_cfg{};
 
     /// Index of the current track state
     int m_idx;
@@ -410,22 +414,31 @@ struct kalman_actor : detray::base_actor {
             const auto sf = navigation.current_surface();
             const bool is_line = detail::is_line(sf);
 
+            const auto measurement =
+                actor_state.m_measurements.at(trk_state.measurement_index());
+
             if (!actor_state.backward_mode) {
                 if constexpr (direction_e ==
                                   kalman_actor_direction::FORWARD_ONLY ||
                               direction_e ==
                                   kalman_actor_direction::BIDIRECTIONAL) {
                     // Wrap the phi and theta angles in their valid ranges
-                    normalize_angles(bound_param);
+                    normalize_angles<algebra_t>(bound_param);
 
                     // Forward filter
                     TRACCC_DEBUG_HOST_DEVICE("Run filtering...");
                     actor_state.fit_result = gain_matrix_updater<algebra_t>{}(
-                        trk_state, actor_state.m_measurements, bound_param,
-                        is_line);
+                        trk_state, measurement, bound_param,
+                        actor_state.m_calib_cfg, is_line);
 
                     // Update the propagation flow
                     bound_param = trk_state.filtered_params();
+
+                    // Calculate the chi2 on the filtered parameters
+                    trk_state.filtered_chi2() =
+                        measurement_selector::predicted_chi2(
+                            measurement, bound_param, actor_state.m_calib_cfg,
+                            is_line);
 
                     // Add this to the surface sequence for the backward fit
                     actor_state.add_to_sequence(
@@ -451,8 +464,8 @@ struct kalman_actor : detray::base_actor {
                     } else {
                         actor_state.fit_result =
                             two_filters_smoother<algebra_t>{}(
-                                trk_state, actor_state.m_measurements,
-                                bound_param, is_line);
+                                trk_state, measurement, bound_param,
+                                actor_state.m_calib_cfg, is_line);
                     }
                 } else {
                     assert(false);

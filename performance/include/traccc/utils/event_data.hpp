@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024-2025 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -66,8 +66,7 @@ struct event_data {
     void fill_cca_result(
         const edm::silicon_cell_collection::host& cells,
         const edm::silicon_cluster_collection::host& cca_clusters,
-        const edm::measurement_collection<default_algebra>::host&
-            cca_measurements,
+        const edm::measurement_collection::host& cca_measurements,
         const detector_conditions_description::host& det_cond);
 
     /// Generate truth candidate used for truth fitting
@@ -79,7 +78,7 @@ struct event_data {
     template <typename detector_type>
     void generate_truth_candidates(
         edm::track_container<default_algebra>::host& truth_candidates,
-        edm::measurement_collection<default_algebra>::host& truth_measurements,
+        edm::measurement_collection::host& truth_measurements,
         seed_generator<detector_type>& sg, vecmem::memory_resource& resource,
         float pt_cut = 0.f) {
         for (auto const& [ptc, measurements] : m_ptc_to_meas_map) {
@@ -123,10 +122,9 @@ struct event_data {
     }
 
     /// All internally defined measurements
-    edm::measurement_collection<default_algebra>::host m_measurements;
+    edm::measurement_collection::host m_measurements;
     /// Proxy type for the following maps
-    using measurement_proxy =
-        edm::measurement_collection<default_algebra>::host::object_type;
+    using measurement_proxy = edm::measurement_collection::host::object_type;
 
     // Measurement map
     std::map<measurement_id_type, measurement_proxy> m_measurement_map;

@@ -6,7 +6,7 @@
 
 # Set up the project.
 cmake_minimum_required( VERSION 3.25 )
-project( traccc VERSION 1.1.0 LANGUAGES CXX )
+project( traccc VERSION 1.3.1 LANGUAGES CXX )
 
 # Set up the used C++ standard(s).
 set( CMAKE_CXX_STANDARD 20 CACHE STRING "The (host) C++ standard to use" )
@@ -23,6 +23,10 @@ endif()
 # Set the CUDA architecture to build code for.
 set( CMAKE_CUDA_ARCHITECTURES "75" CACHE STRING
    "CUDA architectures to build device code for" )
+
+# Set the HIP architecture to build code for.
+set( CMAKE_HIP_ARCHITECTURES "gfx1101;gfx90a" CACHE STRING
+   "HIP architectures to build device code for" )
 
 # Flag controlling whether warnings should make the build fail.
 option( TRACCC_FAIL_ON_WARNINGS
@@ -69,6 +73,8 @@ option( TRACCC_BUILD_SYCL_UTILS
 option( TRACCC_BUILD_ALPAKA "Build the Alpaka sources included in traccc"
    FALSE )
 option( TRACCC_BUILD_IO "Build the IO module (needed by examples, performance, testing)" TRUE )
+option( TRACCC_BUILD_PERFORMANCE "Build the performance module" TRUE )
+option( TRACCC_BUILD_SIMULATION "Build the simulation module" TRUE )
 option( TRACCC_BUILD_TESTING "Build the (unit) tests of traccc" TRUE )
 option( TRACCC_BUILD_EXAMPLES "Build the examples of traccc" TRUE )
 
@@ -242,15 +248,17 @@ if( TRACCC_SETUP_DPL )
       set(_sycl_support ON)
       set(SYCL_SUPPORT ON)
       find_package( oneDPL REQUIRED )
-      # OneDPL attaches the `-fsycl` flag to the C++ compiler, which causes
-      # it to incorrectly trigger some preprocessor definitions, thereby
-      # loading SYCL-specific header files which do not exist for e.g. a
-      # generic clang installation. Therefore, we have to manually wipe the
-      # compile flags that OneDPL sets.
-      set_target_properties(oneDPL PROPERTIES INTERFACE_COMPILE_OPTIONS "")
    else()
       add_subdirectory( extern/dpl )
    endif()
+   # OneDPL attaches the `-fsycl` flag to the C++ compiler, which causes
+   # it to incorrectly trigger some preprocessor definitions, thereby
+   # loading SYCL-specific header files which do not exist for e.g. a
+   # generic clang installation. Therefore, we have to manually wipe the
+   # compile flags that OneDPL sets.
+   set_target_properties(oneDPL PROPERTIES
+      INTERFACE_COMPILE_OPTIONS ""
+      INTERFACE_LINK_LIBRARIES "" )
 endif()
 
 # Set up Alpaka.
@@ -287,20 +295,6 @@ if( TRACCC_SETUP_COVFIE )
       find_package( covfie REQUIRED )
    else()
       add_subdirectory( extern/covfie )
-   endif()
-endif()
-
-# Set up dfelibs.
-option( TRACCC_SETUP_DFELIBS
-   "Set up the dfelibs target(s) explicitly" TRUE )
-option( TRACCC_USE_SYSTEM_DFELIBS
-   "Pick up an existing installation of dfelibs from the build environment"
-   ${TRACCC_USE_SYSTEM_LIBS} )
-if( TRACCC_SETUP_DFELIBS )
-   if( TRACCC_USE_SYSTEM_DFELIBS )
-      find_package( dfelibs REQUIRED )
-   else()
-      add_subdirectory( extern/dfelibs )
    endif()
 endif()
 
@@ -362,31 +356,6 @@ if( TRACCC_SETUP_GOOGLETEST )
    endif()
 endif()
 
-# Set up indicators.
-set( _indicatorsDefault FALSE )
-if( TRACCC_BUILD_EXAMPLES OR TRACCC_BUILD_IO )
-   set( _indicatorsDefault TRUE )
-endif()
-option( TRACCC_SETUP_INDICATORS
-   "Set up the indicators target(s) explicitly" ${_indicatorsDefault} )
-unset( _indicatorsDefault )
-if (TRACCC_USE_SYSTEM_LIBS OR TRACCC_USE_SPACK_LIBS)
-   set(TRACCC_USE_SYSTEM_INDICATORS_DEFAULT ON)
-else()
-   set(TRACCC_USE_SYSTEM_INDICATORS_DEFAULT OFF)
-endif()
-option( TRACCC_USE_SYSTEM_INDICATORS
-   "Pick up an existing installation of indicators from the build environment"
-   ${TRACCC_USE_SYSTEM_INDICATORS_DEFAULT} )
-unset(TRACCC_USE_SYSTEM_INDICATORS_DEFAULT)
-if( TRACCC_SETUP_INDICATORS )
-   if( TRACCC_USE_SYSTEM_INDICATORS )
-      find_package( indicators REQUIRED )
-   else()
-      add_subdirectory( extern/indicators )
-   endif()
-endif()
-
 
 option( TRACCC_ENABLE_NVTX_PROFILING
         "Use instrument functions to enable fine grained profiling" FALSE )
@@ -411,10 +380,21 @@ if( TRACCC_BUILD_ALPAKA )
 endif()
 if ( TRACCC_BUILD_IO )
    add_subdirectory( io )
-   add_subdirectory( performance )
-   add_subdirectory( simulation )
 else()
    message(STATUS "traccc::io not built, traccc::performance and traccc::simulation are forcefully switched off.")
+endif()
+
+if ( TRACCC_BUILD_PERFORMANCE )
+   if ( NOT TRACCC_BUILD_IO )
+      message(FATAL_ERROR "traccc::io is disabled, but it is required to build the performance tests.")
+   endif()
+   add_subdirectory( performance )
+endif()
+if ( TRACCC_BUILD_SIMULATION )
+   if ( NOT TRACCC_BUILD_IO )
+      message(FATAL_ERROR "traccc::io is disabled, but it is required to build the simulation.")
+   endif()
+   add_subdirectory( simulation )
 endif()
 
 if ( TRACCC_BUILD_EXAMPLES )
@@ -423,6 +403,9 @@ if ( TRACCC_BUILD_EXAMPLES )
    if ( NOT TRACCC_BUILD_IO )
       message(FATAL_ERROR "traccc::io is disabled, but it is required to build the examples.")
    endif()
+   if ( NOT TRACCC_BUILD_PERFORMANCE )
+      message(FATAL_ERROR "traccc::performance is disabled, but it is required to build the examples.")
+   endif()
    add_subdirectory( examples )
 endif()
 
@@ -430,6 +413,12 @@ endif()
 if( BUILD_TESTING AND TRACCC_BUILD_TESTING )
    if ( NOT TRACCC_BUILD_IO )
       message(FATAL_ERROR "traccc::io is disabled, but it is required to build the tests.")
+   endif()
+   if ( NOT TRACCC_BUILD_SIMULATION )
+      message(FATAL_ERROR "traccc::simulation is disabled, but it is required to build the tests.")
+   endif()
+   if ( NOT TRACCC_BUILD_PERFORMANCE )
+      message(FATAL_ERROR "traccc::performance is disabled, but it is required to build the tests.")
    endif()
    add_subdirectory( tests )
 endif()

@@ -27,6 +27,31 @@ struct subspace {
     public:
     // Type declarations
     using size_type = detray::dindex_type<algebra_t>;
+
+    // Define the number of bits we use to represent a single index;
+    // currently, we hardcode to be three plus one sign bit so that the full
+    // size of the subspace is limited to 8. Note that we also reserve one
+    // element (all ones) as invalid.
+    //
+    // TODO: Find a nicer, automated solution to this.
+    static constexpr size_type BITS_PER_INDEX = 4;
+    static_assert(BITS_PER_INDEX >= 2);
+
+    // Compute the total number of bits necessary to represent a subspace.
+    static constexpr size_type TOTAL_BITS = BITS_PER_INDEX * kSize;
+    static_assert(
+        TOTAL_BITS <= 64,
+        "Subspaces with more than 64 necessary bits are not supported");
+    using axes_type = std::conditional_t<TOTAL_BITS <= 32, std::uint_least32_t,
+                                         std::uint_least64_t>;
+
+    static constexpr axes_type SIGN_BIT_MASK = 1 << (BITS_PER_INDEX - 1);
+    static constexpr axes_type VALUE_BITS_MASK =
+        (1 << (BITS_PER_INDEX - 1)) - 1;
+    static constexpr axes_type ELEMENT_BITS_MASK = (1 << BITS_PER_INDEX) - 1;
+    static_assert(((1 << (BITS_PER_INDEX - 1)) - 1) >= kFullSize);
+    static_assert(ELEMENT_BITS_MASK == (SIGN_BIT_MASK | VALUE_BITS_MASK));
+
     template <size_type ROWS, size_type COLS>
     using matrix_type = detray::dmatrix<algebra_t, ROWS, COLS>;
 
@@ -41,31 +66,66 @@ struct subspace {
     /// Construct from a container of axis indices.
     ///
     /// @param indices Unique, ordered indices
-    TRACCC_HOST_DEVICE
-    constexpr subspace(const std::array<size_type, kSize>& indices) {
+    template <typename SIZE_TYPE>
+    TRACCC_HOST_DEVICE constexpr subspace(
+        const std::array<SIZE_TYPE, kSize>& indices)
+        : m_axes(0) {
         for (size_type i = 0u; i < kSize; ++i) {
             assert((indices[i] < kFullSize) and
                    "Axis indices must be within the full space");
-        }
-        for (size_type i = 0; i < kSize; ++i) {
-            m_axes[i] = static_cast<size_type>(indices[i]);
+            set_index(i, static_cast<axes_type>(indices[i]));
         }
     }
 
-    /// Axis indices that comprise the subspace.
+    /// Get the projection index for a given element of the subspace.
+    TRACCC_HOST_DEVICE
+    constexpr size_type get_index(const size_type& i) const {
+        const size_type sr = i * BITS_PER_INDEX;
+        return (m_axes >> sr) & VALUE_BITS_MASK;
+    }
+
+    /// Check whether a given element of the subspace is valid or not.
     ///
-    /// The specific container and index type should be considered an
-    /// implementation detail. Users should treat the return type as a generic
-    /// container whose elements are convertible to `size_t`.
+    /// Invalid elements are not projected at all and result in an empty
+    /// row or column in the projection and expansion matrix.
     TRACCC_HOST_DEVICE
-    constexpr const std::array<size_type, kSize>& get_indices() const {
-        return m_axes;
+    constexpr bool get_valid(const size_type& i) const {
+        const size_type sr = i * BITS_PER_INDEX;
+        return ((m_axes >> sr) & VALUE_BITS_MASK) != VALUE_BITS_MASK;
     }
 
-    /// Function that sets the m_axes
+    /// Retrieve the sign of an element of the subspace; if a true value is
+    /// returned, the element will be projected in the negative.
     TRACCC_HOST_DEVICE
-    void set_indices(const std::array<size_type, kSize>& indices) {
-        m_axes = indices;
+    constexpr bool get_sign(const size_type& i) const {
+        const size_type sr = i * BITS_PER_INDEX;
+        return (m_axes >> sr) & SIGN_BIT_MASK;
+    }
+
+    /// Set the projection index for a given element.
+    TRACCC_HOST_DEVICE
+    constexpr void set_index(const size_type& i, const axes_type& j) {
+        assert(j == (j & ELEMENT_BITS_MASK));
+        const size_type sl = i * BITS_PER_INDEX;
+        m_axes = (m_axes & static_cast<axes_type>(~(VALUE_BITS_MASK << sl))) |
+                 static_cast<axes_type>(j << sl);
+    }
+
+    /// Set an element to be invalid so that it is not projected.
+    TRACCC_HOST_DEVICE
+    constexpr void set_invalid(const size_type& i) {
+        // HACK: For reasons not understood by the author, the
+        // `VALUE_BITS_MASK` variable cannot be used here.
+        set_index(i, ((1 << (BITS_PER_INDEX - 1)) - 1));
+    }
+
+    /// Set the sign of an element, where trueish values indicate negative
+    /// projection and falseish values indicate positive values.
+    TRACCC_HOST_DEVICE
+    constexpr void set_sign(const size_type& i, const bool s) {
+        const size_type sl = i * BITS_PER_INDEX;
+        m_axes = (m_axes & static_cast<axes_type>(~(SIGN_BIT_MASK << sl))) |
+                 static_cast<axes_type>((s ? SIGN_BIT_MASK : 0) << sl);
     }
 
     /// Projection matrix that maps from the full space into the subspace.
@@ -78,7 +138,10 @@ struct subspace {
         auto proj = matrix::zero<matrix_type<D, kFullSize>>();
 
         for (size_type i = 0u; i < D; ++i) {
-            getter::element(proj, i, m_axes[i]) = 1;
+            if (get_index(i) < kFullSize) {
+                getter::element(proj, i, get_index(i)) =
+                    (get_sign(i) ? -1.f : 1.f);
+            }
         }
         return proj;
     }
@@ -93,13 +156,16 @@ struct subspace {
         auto expn = matrix::zero<matrix_type<kFullSize, D>>();
 
         for (size_type i = 0u; i < kSize; ++i) {
-            getter::element(expn, m_axes[i], i) = 1;
+            if (get_index(i) < kFullSize) {
+                getter::element(expn, get_index(i), i) =
+                    (get_sign(i) ? -1.f : 1.f);
+            }
         }
         return expn;
     }
 
     private:
-    std::array<size_type, kSize> m_axes;
+    axes_type m_axes;
 };
 
 }  // namespace traccc

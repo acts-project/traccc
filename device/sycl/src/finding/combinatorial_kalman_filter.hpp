@@ -7,6 +7,9 @@
 
 #pragma once
 
+// SYCL include(s).
+#include <sycl/sycl.hpp>
+
 // Local include(s).
 #include "../sanity/contiguous_on.hpp"
 #include "../utils/barrier.hpp"
@@ -22,13 +25,14 @@
 #include "traccc/finding/actors/ckf_aborter.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
-#include "traccc/finding/device/barcode_surface_comparator.hpp"
 #include "traccc/finding/device/build_tracks.hpp"
+#include "traccc/finding/device/condense_tracks.hpp"
 #include "traccc/finding/device/fill_finding_duplicate_removal_sort_keys.hpp"
 #include "traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
 #include "traccc/finding/device/find_tracks.hpp"
 #include "traccc/finding/device/gather_best_tips_per_measurement.hpp"
 #include "traccc/finding/device/gather_measurement_votes.hpp"
+#include "traccc/finding/device/geo_id_surface_comparator.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
 #include "traccc/finding/device/remove_duplicates.hpp"
 #include "traccc/finding/device/update_tip_length_buffer.hpp"
@@ -40,9 +44,6 @@
 // VecMem include(s).
 #include <vecmem/utils/copy.hpp>
 #include <vecmem/utils/sycl/local_accessor.hpp>
-
-// SYCL include(s).
-#include <sycl/sycl.hpp>
 
 namespace traccc::sycl::details {
 namespace kernels {
@@ -66,6 +67,16 @@ template <typename T>
 struct update_tip_length_buffer {};
 template <typename T>
 struct build_tracks {};
+template <typename T>
+struct upper_bound {};
+template <typename T>
+struct sort_by_key_1 {};
+template <typename T>
+struct sort_by_key_2 {};
+template <typename T>
+struct inclusive_scan {};
+template <typename T>
+struct condense_tracks {};
 }  // namespace kernels
 
 /// Templated implementation of the track finding algorithm.
@@ -94,14 +105,12 @@ template <typename kernel_t, typename detector_t, typename bfield_t>
 edm::track_container<typename detector_t::algebra_type>::buffer
 combinatorial_kalman_filter(
     const typename detector_t::const_view_type& det, const bfield_t& field,
-    const typename edm::measurement_collection<
-        typename detector_t::algebra_type>::const_view& measurements_view,
+    const edm::measurement_collection::const_view& measurements_view,
     const bound_track_parameters_collection_types::const_view& seeds,
     const finding_config& config, const memory_resource& mr, vecmem::copy& copy,
     ::sycl::queue& queue) {
 
-    const typename edm::measurement_collection<
-        typename detector_t::algebra_type>::const_device measurements{
+    const edm::measurement_collection::const_device measurements{
         measurements_view};
 
     assert(config.min_step_length_for_next_surface >
@@ -110,13 +119,9 @@ combinatorial_kalman_filter(
            "Min step length for the next surface should be higher than the "
            "overstep tolerance");
     assert(is_contiguous_on<
-           vecmem::device_vector<const detray::geometry::barcode>>(
+           vecmem::device_vector<const detray::geometry::identifier>>(
         device::identity_projector{}, mr.main, copy, queue,
         measurements_view.template get<6>()));
-
-    // oneDPL policy to use, forcing execution onto the same device that the
-    // hand-written kernels would run on.
-    auto policy = oneapi::dpl::execution::device_policy{queue};
 
     /*****************************************************************
      * Measurement Operations
@@ -135,13 +140,15 @@ combinatorial_kalman_filter(
     vecmem::device_vector<unsigned int> measurement_ranges(meas_ranges_buffer);
 
     oneapi::dpl::upper_bound(
-        policy, measurements.surface_link().begin(),
+        oneapi::dpl::execution::device_policy<kernels::upper_bound<kernel_t>>{
+            queue},
+        measurements.surface_link().begin(),
         // We have to use this ugly form here, because if the
         // measurement collection is resizable (which it often
         // is), the end() function cannot be used in host code.
         measurements.surface_link().begin() + n_measurements,
         device_det.surfaces().begin(), device_det.surfaces().end(),
-        measurement_ranges.begin(), device::barcode_surface_comparator{});
+        measurement_ranges.begin(), device::geo_id_surface_comparator{});
     queue.wait_and_throw();
 
     const unsigned int n_seeds = copy.get_size(seeds);
@@ -299,6 +306,12 @@ combinatorial_kalman_filter(
         }
 
         {
+            vecmem::data::vector_buffer<unsigned int>
+                out_params_per_in_param_buffer(n_in_params, mr.main);
+            copy.setup(out_params_per_in_param_buffer)->wait();
+            vecmem::data::vector_buffer<unsigned int> out_params_index_buffer(
+                n_in_params, mr.main);
+            copy.setup(out_params_index_buffer)->wait();
             vecmem::data::vector_buffer<candidate_link> tmp_links_buffer(
                 n_max_candidates, mr.main);
             copy.setup(tmp_links_buffer)->wait();
@@ -321,20 +334,13 @@ combinatorial_kalman_filter(
                 .links_view = links_buffer,
                 .prev_links_idx =
                     (step == 0 ? 0 : step_to_link_idx_map[step - 1]),
-                .curr_links_idx = step_to_link_idx_map[step],
                 .step = step,
-                .out_params_view = updated_params_buffer,
-                .out_params_liveness_view = updated_liveness_buffer,
+                .out_params_per_in_param_view = out_params_per_in_param_buffer,
                 .tips_view = tips_buffer,
                 .tip_lengths_view = tip_length_buffer,
                 .n_tracks_per_seed_view = n_tracks_per_seed_buffer,
                 .tmp_params_view = tmp_params_buffer,
-                .tmp_links_view = tmp_links_buffer,
-                .jacobian_ptr = jacobian_ptr.get(),
-                .tmp_jacobian_ptr = tmp_jacobian_ptr.get(),
-                .link_predicted_parameter_view =
-                    link_predicted_parameter_buffer,
-                .link_filtered_parameter_view = link_filtered_parameter_buffer};
+                .tmp_links_view = tmp_links_buffer};
             // Now copy it to device memory.
             vecmem::data::vector_buffer<payload_t> device_payload(1u, mr.main);
             copy.setup(device_payload)->wait();
@@ -355,15 +361,13 @@ combinatorial_kalman_filter(
                         shared_candidates_size(1, h);
                     vecmem::sycl::local_accessor<unsigned int>
                         shared_num_out_params(1, h);
-                    vecmem::sycl::local_accessor<unsigned int>
-                        shared_out_offset(1, h);
                     // Launch the kernel.
                     h.parallel_for<kernels::find_tracks<kernel_t>>(
                         calculate1DimNdRange(n_in_params, nFindTracksThreads),
                         [config, payload = device_payload.ptr(),
                          shared_insertion_mutex, shared_candidates,
-                         shared_candidates_size, shared_num_out_params,
-                         shared_out_offset](::sycl::nd_item<1> item) {
+                         shared_candidates_size,
+                         shared_num_out_params](::sycl::nd_item<1> item) {
                             // SYCL wrappers used in the algorithm.
                             const details::barrier barrier{item};
                             const details::thread_id thread_id{item};
@@ -371,13 +375,80 @@ combinatorial_kalman_filter(
                             // Call the device function to find tracks.
                             device::find_tracks<detector_t>(
                                 thread_id, barrier, config, *payload,
-                                {shared_num_out_params[0], shared_out_offset[0],
-                                 &(shared_insertion_mutex[0]),
-                                 &(shared_candidates[0]),
-                                 shared_candidates_size[0]});
+                                {.shared_num_out_params =
+                                     shared_num_out_params[0],
+                                 .shared_insertion_mutex =
+                                     &(shared_insertion_mutex[0]),
+                                 .shared_candidates = &(shared_candidates[0]),
+                                 .shared_candidates_size =
+                                     shared_candidates_size[0]});
                         });
                 })
                 .wait_and_throw();
+
+            {
+                vecmem::device_vector<unsigned int>
+                    out_params_per_in_param_vector(
+                        out_params_per_in_param_buffer);
+                vecmem::device_vector<unsigned int> out_params_index_vector(
+                    out_params_index_buffer);
+                oneapi::dpl::inclusive_scan(
+                    oneapi::dpl::execution::device_policy<
+                        kernels::inclusive_scan<kernel_t>>{queue},
+                    out_params_per_in_param_vector.begin(),
+                    out_params_per_in_param_vector.end(),
+                    out_params_index_vector.begin());
+                queue.wait_and_throw();
+            }
+
+            {
+                using condense_payload_t =
+                    device::condense_tracks_payload<detector_t>;
+                const condense_payload_t condense_host_payload{
+                    .n_in_params = n_in_params,
+                    .step = step,
+                    .curr_links_idx = step_to_link_idx_map[step],
+                    .max_num_branches_per_surface =
+                        config.max_num_branches_per_surface,
+                    .min_track_candidates_per_track =
+                        config.min_track_candidates_per_track,
+                    .max_track_candidates_per_track =
+                        config.max_track_candidates_per_track,
+                    .links_view = links_buffer,
+                    .in_params_view = in_params_buffer,
+                    .in_tmp_params_view = tmp_params_buffer,
+                    .in_tmp_links_view = tmp_links_buffer,
+                    .in_params_index_view = out_params_index_buffer,
+                    .out_params_view = updated_params_buffer,
+                    .out_params_liveness_view = updated_liveness_buffer,
+                    .tips_view = tips_buffer,
+                    .tip_lengths_view = tip_length_buffer,
+                    .jacobian_ptr = jacobian_ptr.get(),
+                    .tmp_jacobian_ptr = tmp_jacobian_ptr.get(),
+                    .link_predicted_parameter_view =
+                        link_predicted_parameter_buffer,
+                    .link_filtered_parameter_view =
+                        link_filtered_parameter_buffer};
+                vecmem::data::vector_buffer<condense_payload_t>
+                    condense_device_payload(1u, mr.main);
+                copy.setup(condense_device_payload)->wait();
+                copy(vecmem::data::vector_view<const condense_payload_t>(
+                         1u, &condense_host_payload),
+                     condense_device_payload)
+                    ->wait();
+
+                queue
+                    .submit([&](::sycl::handler& h) {
+                        h.parallel_for<kernels::condense_tracks<kernel_t>>(
+                            calculate1DimNdRange(n_in_params, 256),
+                            [payload = condense_device_payload.ptr()](
+                                ::sycl::nd_item<1> item) {
+                                device::condense_tracks<detector_t>(
+                                    details::global_index(item), *payload);
+                            });
+                    })
+                    .wait_and_throw();
+            }
 
             std::swap(in_params_buffer, updated_params_buffer);
             std::swap(param_liveness_buffer, updated_liveness_buffer);
@@ -435,9 +506,11 @@ combinatorial_kalman_filter(
                 link_last_measurement_buffer);
             vecmem::device_vector<unsigned int> param_ids_device(
                 param_ids_buffer);
-            oneapi::dpl::sort_by_key(policy, keys_device.begin(),
-                                     keys_device.end(),
-                                     param_ids_device.begin());
+            oneapi::dpl::sort_by_key(
+                oneapi::dpl::execution::device_policy<
+                    kernels::sort_by_key_1<kernel_t>>{queue},
+                keys_device.begin(), keys_device.end(),
+                param_ids_device.begin());
             queue.wait_and_throw();
 
             /*
@@ -515,9 +588,11 @@ combinatorial_kalman_filter(
                     keys_buffer);
                 vecmem::device_vector<unsigned int> param_ids_device(
                     param_ids_buffer);
-                oneapi::dpl::sort_by_key(policy, keys_device.begin(),
-                                         keys_device.end(),
-                                         param_ids_device.begin());
+                oneapi::dpl::sort_by_key(
+                    oneapi::dpl::execution::device_policy<
+                        kernels::sort_by_key_2<kernel_t>>{queue},
+                    keys_device.begin(), keys_device.end(),
+                    param_ids_device.begin());
                 queue.wait_and_throw();
             }
 
@@ -752,7 +827,7 @@ combinatorial_kalman_filter(
                         ::sycl::nd_item<1> item) {
                         device::build_tracks(
                             details::global_index(item),
-                            config.run_mbf_smoother,
+                            config.run_mbf_smoother, config.meas_calibration,
                             {.seeds_view = seeds,
                              .links_view = links,
                              .tips_view = tips,

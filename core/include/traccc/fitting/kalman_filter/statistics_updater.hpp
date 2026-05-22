@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -32,8 +32,7 @@ struct statistics_updater {
         typename edm::track_collection<algebra_t>::device::proxy_type& fit_res,
         const typename edm::track_state_collection<
             algebra_t>::const_device::const_proxy_type& trk_state,
-        const typename edm::measurement_collection<algebra_t>::const_device&
-            measurements) {
+        const edm::measurement_collection::const_device& measurements) {
 
         if (!trk_state.is_hole()) {
 

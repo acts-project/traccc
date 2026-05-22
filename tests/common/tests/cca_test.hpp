@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2024 CERN for the benefit of the ACTS project
+ * (c) 2021-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -14,6 +14,7 @@
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/silicon_cluster_collection.hpp"
 #include "traccc/geometry/detector_design_description.hpp"
+#include "traccc/io/csv/dfe.hpp"
 #include "traccc/io/csv/make_cell_reader.hpp"
 #include "traccc/io/read_cells.hpp"
 
@@ -27,10 +28,6 @@
 // GTest include(s).
 #include <gtest/gtest.h>
 
-// DFE include(s).
-#include <dfe/dfe_io_dsv.hpp>
-#include <dfe/dfe_namedtuple.hpp>
-
 // System include(s).
 #include <functional>
 #include <iomanip>
@@ -38,13 +35,12 @@
 #include <sstream>
 #include <string>
 
-using cca_function_t = std::function<
-    std::pair<std::map<traccc::geometry_id, traccc::edm::measurement_collection<
-                                                traccc::default_algebra>::host>,
-              std::optional<traccc::edm::silicon_cluster_collection::host>>(
-        const traccc::edm::silicon_cell_collection::host &,
-        const traccc::detector_design_description::host &,
-        const traccc::detector_conditions_description::host &)>;
+using cca_function_t = std::function<std::pair<
+    std::map<traccc::geometry_id, traccc::edm::measurement_collection::host>,
+    std::optional<traccc::edm::silicon_cluster_collection::host>>(
+    const traccc::edm::silicon_cell_collection::host &,
+    const traccc::detector_design_description::host &,
+    const traccc::detector_conditions_description::host &)>;
 
 inline traccc::clustering_config default_ccl_test_config() {
     traccc::clustering_config rv;
@@ -86,7 +82,8 @@ class ConnectedComponentAnalysisTests
                        channel0, channel1, variance0, variance1);
     };
 
-    using cca_truth_hit_reader = dfe::NamedTupleCsvReader<cca_truth_hit>;
+    using cca_truth_hit_reader =
+        ::traccc::io::dfe::NamedTupleCsvReader<cca_truth_hit>;
 
     inline static std::string get_test_name(
         const testing::TestParamInfo<ParamType> &info) {
@@ -155,7 +152,7 @@ class ConnectedComponentAnalysisTests
         det_cond.resize(NMODULES);
         for (std::size_t i = 0; i < NMODULES; ++i) {
             det_cond.module_to_design_id()[i] = static_cast<unsigned int>(i);
-            det_cond.geometry_id()[i] = detray::geometry::barcode{i};
+            det_cond.geometry_id()[i] = detray::geometry::identifier{i};
             det_cond.acts_geometry_id()[i] = i;
             det_cond.measurement_translation()[i] = {0.f, 0.f};
 
@@ -195,8 +192,7 @@ class ConnectedComponentAnalysisTests
         while (truth_reader.read(io_truth)) {
             ASSERT_TRUE(result.find(io_truth.geometry_id) != result.end());
 
-            const traccc::edm::measurement_collection<
-                traccc::default_algebra>::host &meas =
+            const traccc::edm::measurement_collection::host &meas =
                 result.at(io_truth.geometry_id);
 
             const traccc::scalar tol = 0.0001f;

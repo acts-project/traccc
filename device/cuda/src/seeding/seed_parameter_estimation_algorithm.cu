@@ -19,17 +19,17 @@ namespace traccc::cuda {
 namespace kernels {
 
 /// CUDA kernel for running @c traccc::device::estimate_track_params
-template <typename algebra_t, typename bfield_t>
+template <typename bfield_t>
 __global__ void estimate_track_params(
     const track_params_estimation_config config,
-    typename edm::measurement_collection<algebra_t>::const_view measurements,
+    edm::measurement_collection::const_view measurements,
     edm::spacepoint_collection::const_view spacepoints,
     edm::seed_collection::const_view seeds, const bfield_t bfield,
     bound_track_parameters_collection_types::view params_view) {
 
-    device::estimate_track_params<algebra_t>(details::global_index1(), config,
-                                             measurements, spacepoints, seeds,
-                                             bfield, params_view);
+    device::estimate_track_params(details::global_index1(), config,
+                                  measurements, spacepoints, seeds, bfield,
+                                  params_view);
 }
 
 }  // namespace kernels
@@ -50,10 +50,10 @@ void seed_parameter_estimation_algorithm::estimate_seed_params_kernel(
     magnetic_field_visitor<bfield_type_list<scalar>>(
         payload.bfield,
         [&]<typename bfield_view_t>(const bfield_view_t& bfield) {
-            kernels::estimate_track_params<default_algebra>
-                <<<n_blocks, n_threads, 0, details::get_stream(stream())>>>(
-                    payload.config, payload.measurements, payload.spacepoints,
-                    payload.seeds, bfield, payload.params);
+            kernels::estimate_track_params<<<n_blocks, n_threads, 0,
+                                             details::get_stream(stream())>>>(
+                payload.config, payload.measurements, payload.spacepoints,
+                payload.seeds, bfield, payload.params);
         });
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 }

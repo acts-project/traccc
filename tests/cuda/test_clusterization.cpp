@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2024 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -54,7 +54,7 @@ TEST(CUDAClustering, SingleModule) {
     det_desc.bin_edges_x()[0] = {0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f};
     det_desc.bin_edges_y()[0] = {0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f};
     det_desc.dimensions()[0] = 2;
-    det_cond.geometry_id()[0] = detray::geometry::barcode{0u};
+    det_cond.geometry_id()[0] = detray::geometry::identifier{0u};
     det_cond.measurement_translation()[0] = {0.f, 0.f};
 
     // Run Clusterization
@@ -64,20 +64,19 @@ TEST(CUDAClustering, SingleModule) {
     auto measurements_buffer =
         ca_cuda(vecmem::get_data(cells), vecmem::get_data(det_desc),
                 vecmem::get_data(det_cond));
-    edm::measurement_collection<default_algebra>::const_device measurements(
-        measurements_buffer);
+    edm::measurement_collection::const_device measurements(measurements_buffer);
 
     // Check the results
     ASSERT_EQ(copy.get_size(measurements_buffer), 2u);
 
-    edm::measurement_collection<default_algebra>::host references{mng_mr};
+    edm::measurement_collection::host references{mng_mr};
     references.push_back({{2.5f, 2.5f},
                           {0.75f, 0.0833333f},
                           2u,
                           0.f,
                           0.f,
                           0u,
-                          detray::geometry::barcode{0u},
+                          detray::geometry::identifier{0u},
                           {1u, 1u},
                           0u});
     references.push_back({{6.5f, 5.5f},
@@ -86,15 +85,16 @@ TEST(CUDAClustering, SingleModule) {
                           0.f,
                           0.f,
                           0u,
-                          detray::geometry::barcode{0u},
+                          detray::geometry::identifier{0u},
                           {1u, 1u},
                           1u});
 
     for (unsigned int i = 0; i < measurements.size(); ++i) {
         const auto test = measurements.at(i);
         // 0.01 % uncertainty
-        auto iso = traccc::details::is_same_object<edm::measurement_collection<
-            default_algebra>::const_device::object_type>(test, 0.0001f);
+        auto iso = traccc::details::is_same_object<
+            edm::measurement_collection::const_device::object_type>(test,
+                                                                    0.0001f);
         bool matched = false;
 
         for (std::size_t j = 0; j < references.size(); ++j) {

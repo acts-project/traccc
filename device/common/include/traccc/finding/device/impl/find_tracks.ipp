@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -25,6 +25,7 @@
 #include "traccc/edm/track_state_helpers.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 #include "traccc/fitting/kalman_filter/is_line_visitor.hpp"
+#include "traccc/fitting/kalman_filter/measurement_selector.hpp"
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/utils/logging.hpp"
 
@@ -44,6 +45,8 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     const finding_config& cfg, const find_tracks_payload<detector_t>& payload,
     const find_tracks_shared_payload& shared_payload) {
 
+    using algebra_t = typename detector_t::algebra_type;
+
     const unsigned int in_param_id = thread_id.getGlobalThreadIdX();
     const bool last_step =
         payload.step == cfg.max_track_candidates_per_track - 1;
@@ -52,7 +55,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
      * Initialize all of the device vectors from their vecmem views.
      */
     detector_t det(payload.det_data);
-    edm::measurement_collection<default_algebra>::const_device measurements(
+    edm::measurement_collection::const_device measurements(
         payload.measurements_view);
     bound_track_parameters_collection_types::const_device in_params(
         payload.in_params_view);
@@ -62,16 +65,14 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     vecmem::device_vector<candidate_link> tmp_links(payload.tmp_links_view);
     bound_track_parameters_collection_types::device tmp_params(
         payload.tmp_params_view);
+    vecmem::device_vector<unsigned int> out_params_per_in_param(
+        payload.out_params_per_in_param_view);
     vecmem::device_vector<const unsigned int> meas_ranges(
         payload.measurement_ranges_view);
     vecmem::device_vector<unsigned int> tips(payload.tips_view);
     vecmem::device_vector<unsigned int> tip_lengths(payload.tip_lengths_view);
     vecmem::device_vector<unsigned int> n_tracks_per_seed(
         payload.n_tracks_per_seed_view);
-    bound_track_parameters_collection_types::device link_predicted_parameters(
-        payload.link_predicted_parameter_view);
-    bound_track_parameters_collection_types::device link_filtered_parameters(
-        payload.link_filtered_parameter_view);
 
     /*
      * Initialize the block-shared data; in particular, set the total size of
@@ -102,7 +103,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     if (in_param_id < payload.n_in_params &&
         in_params_liveness.at(in_param_id) > 0u) {
         /*
-         * Get the barcode of this thread's parameters, then find the first
+         * Get the geo ID of this thread's parameters, then find the first
          * measurement that matches it.
          */
         const unsigned int sf_idx{
@@ -169,10 +170,9 @@ TRACCC_HOST_DEVICE inline void find_tracks(
 
         barrier.blockBarrier();
 
-        std::optional<std::tuple<
-            typename edm::track_state_collection<
-                typename detector_t::algebra_type>::device::object_type,
-            unsigned int, unsigned int>>
+        std::optional<std::tuple<typename edm::track_state_collection<
+                                     algebra_t>::device::object_type,
+                                 unsigned int, unsigned int>>
             result = std::nullopt;
 
         /*
@@ -199,52 +199,75 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                                               ? links.at(prev_link_idx).seed_idx
                                               : owner_global_thread_id;
 
-            bool use_measurement = true;
-
-            if (use_measurement) {
-                if (n_tracks_per_seed.at(seed_idx) >=
-                    cfg.max_num_branches_per_seed) {
-                    use_measurement = false;
-                }
-            }
-
-            if (use_measurement) {
-
-                edm::track_state trk_state =
-                    edm::make_track_state<typename detector_t::algebra_type>(
-                        measurements, meas_idx);
+            if (n_tracks_per_seed.at(seed_idx) <
+                cfg.max_num_branches_per_seed) {
 
                 const detray::tracking_surface sf{det, in_par.surface_link()};
-
                 const bool is_line = detail::is_line(sf);
 
-                // Run the Kalman update
-                const kalman_fitter_status res =
-                    gain_matrix_updater<typename detector_t::algebra_type>{}(
-                        trk_state, measurements, in_par, is_line);
+                const edm::measurement meas = measurements.at(meas_idx);
 
-                TRACCC_DEBUG_DEVICE("KF status: %d", res);
+                const traccc::scalar chi2 =
+                    measurement_selector::predicted_chi2(
+                        meas, in_par, cfg.meas_calibration, is_line);
 
-                /*
-                 * The $\chi^2$ value from the Kalman update should be less than
-                 * `chi2_max`, and the fit should have succeeded. If both
-                 * conditions are true, we emplace the state, the measurement
-                 * index, and the thread ID into an optional value.
-                 *
-                 * NOTE: Using the optional value here allows us to remove the
-                 * depth of if-statements which is important for code quality
-                 * but, more importantly, allows us to more easily use
-                 * block-wide synchronization primitives.
-                 */
-                if (const traccc::scalar chi2 = trk_state.filtered_chi2();
-                    res != kalman_fitter_status::SUCCESS ||
-                    chi2 >= cfg.chi2_max) {
-                    use_measurement = false;
-                }
+                if (chi2 <= cfg.chi2_max && chi2 >= 0.f) {
 
-                if (use_measurement) {
-                    TRACCC_VERBOSE_DEVICE("Found measurement: %d", meas_idx);
-                    result.emplace(trk_state, meas_idx, owner_local_thread_id);
+                    edm::track_state trk_state =
+                        edm::make_track_state<algebra_t>(measurements,
+                                                         meas_idx);
+                    trk_state.filtered_chi2() = chi2;
+
+                    // Kalman filter status code
+                    kalman_fitter_status res{kalman_fitter_status::ERROR_OTHER};
+
+                    if (payload.step == 0 && !sf.has_material()) {
+                        // Only do this for the actual seed measurement
+                        res = kalman_fitter_status::SUCCESS;
+
+                        trk_state.filtered_params() = in_par;
+
+                        // Update measurement covariance
+                        const auto V = measurement_selector::
+                            calibrated_measurement_covariance<algebra_t, 2>(
+                                meas, cfg.meas_calibration);
+
+                        auto& filtered_cov =
+                            trk_state.filtered_params().covariance();
+                        getter::element(filtered_cov, e_bound_loc0,
+                                        e_bound_loc0) =
+                            getter::element(V, 0, 0);
+                        getter::element(filtered_cov, e_bound_loc1,
+                                        e_bound_loc1) =
+                            getter::element(V, 1, 1);
+                    } else {
+                        // Run the Kalman update on a copy of the track
+                        // parameters
+                        res = gain_matrix_updater<algebra_t>{}(
+                            trk_state, meas, in_par, cfg.meas_calibration,
+                            is_line);
+                    }
+
+                    TRACCC_DEBUG_DEVICE("KF status: %d", res);
+
+                    /*
+                     * The $\chi^2$ value from the Kalman update should be less
+                     * than `chi2_max`, and the fit should have succeeded. If
+                     * both conditions are true, we emplace the state, the
+                     * measurement index, and the thread ID into an optional
+                     * value.
+                     *
+                     * NOTE: Using the optional value here allows us to remove
+                     * the depth of if-statements which is important for code
+                     * quality but, more importantly, allows us to more easily
+                     * use block-wide synchronization primitives.
+                     */
+                    if (res == kalman_fitter_status::SUCCESS) {
+                        TRACCC_VERBOSE_DEVICE("Found measurement: %d",
+                                              meas_idx);
+                        result.emplace(trk_state, meas_idx,
+                                       owner_local_thread_id);
+                    }
                 }
             }
         }
@@ -379,7 +402,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                          * $\chi^2$ value will be.
                          */
                         traccc::scalar highest =
-                            static_cast<traccc::scalar>(0.f);
+                            static_cast<traccc::scalar>(-1.f);
 
                         for (unsigned int i = 0;
                              i < cfg.max_num_branches_per_surface; ++i) {
@@ -534,9 +557,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     unsigned int prev_ndf_sum = 0u;
     scalar prev_chi2_sum = 0.f;
 
-    unsigned int local_out_offset = 0;
     unsigned int local_num_params = 0;
-    unsigned int params_to_add = 0;
 
     bool in_param_can_create_hole = false;
 
@@ -565,154 +586,80 @@ TRACCC_HOST_DEVICE inline void find_tracks(
      * index at which this block will write.
      */
     if (in_param_is_live) {
+        assert(prev_link_idx != std::numeric_limits<unsigned int>::max());
+        assert(n_skipped != std::numeric_limits<unsigned int>::max());
+
         local_num_params = std::get<1>(decode_insertion_mutex(
             shared_payload
                 .shared_insertion_mutex[thread_id.getLocalThreadIdX()]));
+
+        /*
+         * If we found zero parameters and we can create a hole, add that hole
+         * to the temporary link and parameter lists.
+         */
+        if (local_num_params == 0 && in_param_can_create_hole) {
+            const unsigned int in_offset = thread_id.getGlobalThreadIdX() *
+                                           cfg.max_num_branches_per_surface;
+
+            tmp_links.at(in_offset) = {
+                .step = payload.step,
+                .previous_candidate_idx = prev_link_idx,
+                .meas_idx = std::numeric_limits<unsigned int>::max(),
+                .seed_idx = seed_idx,
+                .n_skipped = n_skipped + 1,
+                .n_consecutive_skipped = n_consecutive_skipped + 1,
+                .chi2 = std::numeric_limits<traccc::scalar>::max(),
+                .chi2_sum = prev_chi2_sum,
+                .ndf_sum = prev_ndf_sum};
+
+            tmp_params.at(in_offset) = in_params.at(in_param_id);
+
+            /*
+             * If we created a hole, we now have a single output parameter!
+             */
+            local_num_params = 1;
+        }
+
         /*
          * NOTE: We always create at least one state, because we also create
          * hole states for nodes which don't find any good compatible
          * measurements.
          */
-        if (local_num_params > 0 || in_param_can_create_hole) {
-            unsigned int desired_params_to_add = std::max(1u, local_num_params);
-
+        if (local_num_params > 0) {
             vecmem::device_atomic_ref<unsigned int> num_tracks_per_seed(
                 n_tracks_per_seed.at(seed_idx));
-            params_to_add = std::min(desired_params_to_add,
-                                     cfg.max_num_branches_per_seed -
-                                         std::min(cfg.max_num_branches_per_seed,
-                                                  num_tracks_per_seed.fetch_add(
-                                                      desired_params_to_add)));
+            const unsigned int params_to_add = std::min(
+                local_num_params,
+                cfg.max_num_branches_per_seed -
+                    std::min(cfg.max_num_branches_per_seed,
+                             num_tracks_per_seed.fetch_add(local_num_params)));
 
-            local_out_offset =
-                vecmem::device_atomic_ref<unsigned int,
-                                          vecmem::device_address_space::local>(
-                    shared_payload.shared_num_out_params)
-                    .fetch_add(params_to_add);
+            out_params_per_in_param.at(in_param_id) = params_to_add;
+
+            vecmem::device_atomic_ref<unsigned int,
+                                      vecmem::device_address_space::local>(
+                shared_payload.shared_num_out_params)
+                .fetch_add(params_to_add);
+        } else {
+            out_params_per_in_param.at(in_param_id) = 0;
+
+            assert(!in_param_can_create_hole);
+            const unsigned int n_cands = payload.step - n_skipped;
+
+            if (n_cands >= cfg.min_track_candidates_per_track) {
+                TRACCC_WARNING_DEVICE("Create tip: Max no. holes");
+                auto tip_pos = tips.push_back(prev_link_idx);
+                tip_lengths.at(tip_pos) = n_cands;
+            }
         }
+    } else {
+        out_params_per_in_param.at(in_param_id) = 0;
     }
 
     barrier.blockBarrier();
 
     if (thread_id.getLocalThreadIdX() == 0) {
-        shared_payload.shared_out_offset =
-            links.bulk_append_implicit(shared_payload.shared_num_out_params);
-    }
-
-    barrier.blockBarrier();
-
-    /*
-     * Finally, transfer the links and parameters from temporary storage
-     * to the permanent storage in global memory, remembering to create hole
-     * states even for threads which have zero states.
-     */
-    bound_track_parameters_collection_types::device out_params(
-        payload.out_params_view);
-    vecmem::device_vector<unsigned int> out_params_liveness(
-        payload.out_params_liveness_view);
-
-    if (in_param_is_live) {
-        assert(prev_link_idx != std::numeric_limits<unsigned int>::max());
-        assert(seed_idx != std::numeric_limits<unsigned int>::max());
-        assert(n_skipped != std::numeric_limits<unsigned int>::max());
-
-        if (local_num_params == 0) {
-            assert(params_to_add <= 1);
-
-            if (in_param_can_create_hole && params_to_add == 1) {
-                const unsigned int out_offset =
-                    shared_payload.shared_out_offset + local_out_offset;
-
-                links.at(out_offset) = {
-                    .step = payload.step,
-                    .previous_candidate_idx = prev_link_idx,
-                    .meas_idx = std::numeric_limits<unsigned int>::max(),
-                    .seed_idx = seed_idx,
-                    .n_skipped = n_skipped + 1,
-                    .n_consecutive_skipped = n_consecutive_skipped + 1,
-                    .chi2 = std::numeric_limits<traccc::scalar>::max(),
-                    .chi2_sum = prev_chi2_sum,
-                    .ndf_sum = prev_ndf_sum};
-
-                if (payload.tmp_jacobian_ptr != nullptr) {
-                    assert(payload.jacobian_ptr != nullptr);
-                    payload.jacobian_ptr[out_offset] =
-                        payload.tmp_jacobian_ptr[in_param_id];
-                }
-
-                if (link_filtered_parameters.capacity() > 0) {
-                    link_filtered_parameters.at(out_offset) =
-                        in_params.at(in_param_id);
-                }
-
-                if (link_predicted_parameters.capacity() > 0) {
-                    link_predicted_parameters.at(out_offset) =
-                        in_params.at(in_param_id);
-                }
-
-                TRACCC_VERBOSE_DEVICE("Hole state created");
-
-                unsigned int param_pos = out_offset - payload.curr_links_idx;
-
-                out_params.at(param_pos) = in_params.at(in_param_id);
-                out_params_liveness.at(param_pos) =
-                    static_cast<unsigned int>(!last_step);
-            } else {
-                const unsigned int n_cands = payload.step - n_skipped;
-
-                if (n_cands >= cfg.min_track_candidates_per_track) {
-                    if (!in_param_can_create_hole) {
-                        TRACCC_WARNING_DEVICE("Create tip: Max no. holes");
-                    } else {
-                        TRACCC_WARNING_DEVICE(
-                            "Create tip: No next sensitive found");
-                    }
-                    auto tip_pos = tips.push_back(prev_link_idx);
-                    tip_lengths.at(tip_pos) = n_cands;
-                }
-            }
-        } else {
-            for (unsigned int i = 0; i < params_to_add; ++i) {
-                const unsigned int in_offset =
-                    thread_id.getGlobalThreadIdX() *
-                        cfg.max_num_branches_per_surface +
-                    i;
-                const unsigned int out_offset =
-                    shared_payload.shared_out_offset + local_out_offset + i;
-
-                unsigned int param_pos = out_offset - payload.curr_links_idx;
-
-                out_params.at(param_pos) = tmp_params.at(in_offset);
-                out_params_liveness.at(param_pos) =
-                    static_cast<unsigned int>(!last_step);
-                links.at(out_offset) = tmp_links.at(in_offset);
-
-                if (payload.tmp_jacobian_ptr != nullptr) {
-                    assert(payload.jacobian_ptr != nullptr);
-                    payload.jacobian_ptr[out_offset] =
-                        payload.tmp_jacobian_ptr[in_param_id];
-                }
-
-                if (link_filtered_parameters.capacity() > 0) {
-                    link_filtered_parameters.at(out_offset) =
-                        tmp_params.at(in_offset);
-                }
-
-                if (link_predicted_parameters.capacity() > 0) {
-                    link_predicted_parameters.at(out_offset) =
-                        in_params.at(in_param_id);
-                }
-
-                const unsigned int n_cands = payload.step + 1 - n_skipped;
-
-                if (last_step &&
-                    n_cands >= cfg.min_track_candidates_per_track) {
-                    TRACCC_ERROR_DEVICE("Create tip: Max no. candidates");
-                    auto tip_pos = tips.push_back(out_offset);
-                    tip_lengths.at(tip_pos) = n_cands;
-                }
-            }
-        }
+        links.bulk_append_implicit(shared_payload.shared_num_out_params);
     }
 }
 

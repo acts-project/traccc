@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -54,8 +54,7 @@ int create_binaries(const traccc::opts::detector& detector_opts,
                           vecmem::get_data(det_cond));
 
         // Read the measurements and hits from the relevant event file
-        traccc::edm::measurement_collection<traccc::default_algebra>::host
-            measurements{host_mr};
+        traccc::edm::measurement_collection::host measurements{host_mr};
         traccc::edm::spacepoint_collection::host spacepoints{host_mr};
         traccc::io::read_spacepoints(spacepoints, measurements, event,
                                      input_opts.directory, nullptr, nullptr,

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2025 CERN for the benefit of the ACTS project
+ * (c) 2021-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -31,7 +31,7 @@ namespace traccc::host {
 class silicon_pixel_spacepoint_formation_algorithm
     : public algorithm<edm::spacepoint_collection::host(
           const host_detector&,
-          const edm::measurement_collection<default_algebra>::const_view&)>,
+          const edm::measurement_collection::const_view&)>,
       public messaging {
 
     public:
@@ -53,10 +53,9 @@ class silicon_pixel_spacepoint_formation_algorithm
     /// @return A spacepoint container, with one spacepoint for every
     ///         silicon pixel measurement
     ///
-    output_type operator()(
-        const host_detector& det,
-        const edm::measurement_collection<default_algebra>::const_view&
-            measurements) const override;
+    output_type operator()(const host_detector& det,
+                           const edm::measurement_collection::const_view&
+                               measurements) const override;
 
     private:
     /// Memory resource to use for the output container

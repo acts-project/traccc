@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -38,16 +38,15 @@ namespace traccc::io {
 /// @param[in]  conditions_description The detector conditions description
 /// @param[in]  format    The format of the data files (to read)
 ///
-void read_spacepoints(
-    edm::spacepoint_collection::host& spacepoints,
-    edm::measurement_collection<default_algebra>::host& measurements,
-    std::size_t event, std::string_view directory,
-    const traccc::host_detector* detector = nullptr,
-    const traccc::detector_design_description::host*
-        detector_design_description = nullptr,
-    const traccc::detector_conditions_description::host*
-        detector_conditions_description = nullptr,
-    data_format format = data_format::csv);
+void read_spacepoints(edm::spacepoint_collection::host& spacepoints,
+                      edm::measurement_collection::host& measurements,
+                      std::size_t event, std::string_view directory,
+                      const traccc::host_detector* detector = nullptr,
+                      const traccc::detector_design_description::host*
+                          detector_design_description = nullptr,
+                      const traccc::detector_conditions_description::host*
+                          detector_conditions_description = nullptr,
+                      data_format format = data_format::csv);
 
 /// Read spacepoint data into memory
 ///
@@ -62,16 +61,16 @@ void read_spacepoints(
 /// @param[in]  detector  detray detector
 /// @param[in]  format The format of the data files (to read)
 ///
-void read_spacepoints(
-    edm::spacepoint_collection::host& spacepoints,
-    edm::measurement_collection<default_algebra>::host& measurements,
-    std::string_view hit_filename, std::string_view meas_filename,
-    std::string_view meas_hit_map_filename,
-    const traccc::host_detector* detector = nullptr,
-    const traccc::detector_design_description::host*
-        detector_design_description = nullptr,
-    const traccc::detector_conditions_description::host*
-        detector_conditions_description = nullptr,
-    data_format format = data_format::csv);
+void read_spacepoints(edm::spacepoint_collection::host& spacepoints,
+                      edm::measurement_collection::host& measurements,
+                      std::string_view hit_filename,
+                      std::string_view meas_filename,
+                      std::string_view meas_hit_map_filename,
+                      const traccc::host_detector* detector = nullptr,
+                      const traccc::detector_design_description::host*
+                          detector_design_description = nullptr,
+                      const traccc::detector_conditions_description::host*
+                          detector_conditions_description = nullptr,
+                      data_format format = data_format::csv);
 
 }  // namespace traccc::io

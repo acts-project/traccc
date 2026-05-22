@@ -81,8 +81,7 @@ TEST_P(CompareWithActsSeedingTests, Run) {
 
     // Read the hits from the relevant event file
     traccc::edm::spacepoint_collection::host spacepoints_per_event{host_mr};
-    traccc::edm::measurement_collection<traccc::default_algebra>::host
-        measurements_per_event{host_mr};
+    traccc::edm::measurement_collection::host measurements_per_event{host_mr};
     traccc::io::read_spacepoints(spacepoints_per_event, measurements_per_event,
                                  event, hits_dir);
 

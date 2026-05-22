@@ -14,7 +14,7 @@
 
 // detray include(s).
 #include <detray/definitions/navigation.hpp>  // < navigation::direction
-#include <detray/geometry/barcode.hpp>
+#include <detray/geometry/identifier.hpp>
 #include <detray/geometry/tracking_surface.hpp>
 #include <detray/propagator/actors/pointwise_material_interactor.hpp>
 
@@ -45,7 +45,7 @@ struct seed_generator {
     /// @param vertex vertex of particle
     /// @param stddevs standard deviations for track parameter smearing
     bound_track_parameters<algebra_type> operator()(
-        const detray::geometry::barcode surface_link,
+        const detray::geometry::identifier surface_link,
         const free_track_parameters<algebra_type>& free_param,
         const traccc::pdg_particle<scalar>& ptc_type) {
 

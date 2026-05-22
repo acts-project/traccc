@@ -5,6 +5,9 @@
  * Mozilla Public License Version 2.0
  */
 
+// SYCL include(s).
+#include <sycl/sycl.hpp>
+
 // Local include(s).
 #include "../sanity/contiguous_on.hpp"
 #include "../sanity/ordered_on.hpp"
@@ -80,8 +83,7 @@ void clusterization_algorithm::ccl_kernel(
                 [shared_uint, shared_idx, cells = payload.cells,
                  det_descr = payload.det_descr, det_cond = payload.det_cond,
                  measurements = payload.measurements,
-                 cell_links = payload.cell_links, f_backup = payload.f_backup,
-                 gf_backup = payload.gf_backup,
+                 f_backup = payload.f_backup, gf_backup = payload.gf_backup,
                  adjc_backup = payload.adjc_backup,
                  adjv_backup = payload.adjv_backup,
                  backup_mutex = payload.backup_mutex, config = payload.config,
@@ -110,12 +112,11 @@ void clusterization_algorithm::ccl_kernel(
                     const details::thread_id thread_id{item};
 
                     // Run the algorithm for this thread.
-                    device::ccl_kernel(config, thread_id, cells, det_descr,
-                                       det_cond, partition_start, partition_end,
-                                       outi, f_view, gf_view, f_backup,
-                                       gf_backup, adjc_backup, adjv_backup,
-                                       mutex, disjoint_set, cluster_sizes,
-                                       barrier, measurements, cell_links);
+                    device::ccl_kernel(
+                        config, thread_id, cells, det_descr, det_cond,
+                        partition_start, partition_end, outi, f_view, gf_view,
+                        f_backup, gf_backup, adjc_backup, adjv_backup, mutex,
+                        disjoint_set, cluster_sizes, barrier, measurements);
                 });
         })
         .wait_and_throw();

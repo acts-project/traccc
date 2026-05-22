@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -45,7 +45,7 @@ TEST(seeding, case1) {
     traccc::host::seeding_algorithm sa(finder_config, grid_config,
                                        filter_config, host_mr);
 
-    edm::measurement_collection<default_algebra>::host measurements(host_mr);
+    edm::measurement_collection::host measurements(host_mr);
     edm::spacepoint_collection::host spacepoints{host_mr};
 
     // Spacepoints from 16.62 GeV muon
@@ -119,7 +119,7 @@ TEST(seeding, case2) {
     traccc::host::seeding_algorithm sa(finder_config, grid_config,
                                        filter_config, host_mr);
 
-    edm::measurement_collection<default_algebra>::host measurements(host_mr);
+    edm::measurement_collection::host measurements(host_mr);
     edm::spacepoint_collection::host spacepoints{host_mr};
 
     // Spacepoints from 1.85 GeV muon

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -52,10 +52,10 @@ void write(std::size_t event, std::string_view directory,
     }
 }
 
-void write(
-    std::size_t event, std::string_view directory, traccc::data_format format,
-    edm::spacepoint_collection::const_view spacepoints,
-    edm::measurement_collection<default_algebra>::const_view measurements) {
+void write(std::size_t event, std::string_view directory,
+           traccc::data_format format,
+           edm::spacepoint_collection::const_view spacepoints,
+           edm::measurement_collection::const_view measurements) {
 
     switch (format) {
         case data_format::binary:
@@ -70,8 +70,7 @@ void write(
                                    std::filesystem::path(get_event_filename(
                                        event, "-measurements.dat")))
                                       .native()),
-                edm::measurement_collection<default_algebra>::const_device{
-                    measurements});
+                edm::measurement_collection::const_device{measurements});
             break;
         case data_format::obj:
             obj::write_spacepoints(
@@ -86,9 +85,9 @@ void write(
     }
 }
 
-void write(
-    std::size_t event, std::string_view directory, traccc::data_format format,
-    edm::measurement_collection<default_algebra>::const_view measurements) {
+void write(std::size_t event, std::string_view directory,
+           traccc::data_format format,
+           edm::measurement_collection::const_view measurements) {
 
     switch (format) {
         case data_format::binary:
@@ -97,8 +96,7 @@ void write(
                                    std::filesystem::path(get_event_filename(
                                        event, "-measurements.dat")))
                                       .native()),
-                edm::measurement_collection<default_algebra>::const_device{
-                    measurements});
+                edm::measurement_collection::const_device{measurements});
             break;
         default:
             throw std::invalid_argument("Unsupported data format");

@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -16,6 +16,7 @@
 #include "traccc/finding/finding_config.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 #include "traccc/fitting/kalman_filter/is_line_visitor.hpp"
+#include "traccc/fitting/kalman_filter/measurement_selector.hpp"
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/sanity/contiguous_on.hpp"
 #include "traccc/utils/logging.hpp"
@@ -59,8 +60,7 @@ template <typename detector_t, typename bfield_t>
 edm::track_container<typename detector_t::algebra_type>::host
 combinatorial_kalman_filter(
     const detector_t& det, const bfield_t& field,
-    const typename edm::measurement_collection<
-        typename detector_t::algebra_type>::const_view& measurements_view,
+    const edm::measurement_collection::const_view& measurements_view,
     const bound_track_parameters_collection_types::const_view& seeds_view,
     const finding_config& config, vecmem::memory_resource& mr,
     const Logger& /*log*/) {
@@ -88,8 +88,7 @@ combinatorial_kalman_filter(
      *****************************************************************/
 
     // Create the measurement container.
-    typename edm::measurement_collection<algebra_type>::const_device
-        measurements{measurements_view};
+    edm::measurement_collection::const_device measurements{measurements_view};
 
     // Check contiguity of the measurements
     assert(is_contiguous_on([](const auto& value) { return value; },
@@ -115,13 +114,13 @@ combinatorial_kalman_filter(
 
         auto up = std::upper_bound(measurements.surface_link().begin(),
                                    measurements.surface_link().end(),
-                                   sf_desc.barcode());
+                                   sf_desc.identifier());
         meas_ranges.push_back(static_cast<unsigned int>(
             std::distance(measurements.surface_link().begin(), up)));
     }
 
-    const typename edm::measurement_collection<
-        algebra_type>::const_device::size_type n_meas = measurements.size();
+    const edm::measurement_collection::const_device::size_type n_meas =
+        measurements.size();
 
     std::vector<std::vector<candidate_link>> links;
     links.resize(config.max_track_candidates_per_track);
@@ -233,6 +232,8 @@ combinatorial_kalman_filter(
                                    bound_track_parameters<algebra_type>>>
                 best_links;
 
+            const bool is_line = detail::is_line(sf);
+
             // Iterate over the measurements
             TRACCC_VERBOSE_HOST("No. measurements: " << (up - lo));
             for (unsigned int meas_id = lo; meas_id < up; meas_id++) {
@@ -241,24 +242,58 @@ combinatorial_kalman_filter(
                 // The measurement on surface to handle.
                 const edm::measurement meas = measurements.at(meas_id);
 
+                const scalar_type chi2 = measurement_selector::predicted_chi2(
+                    meas, in_param, config.meas_calibration, is_line);
+
+                // If the measurement is outside the chi2 cut, skip it
+                if (chi2 > config.chi2_max || chi2 < 0.f) {
+                    continue;
+                }
+
                 // Create a standalone track state object.
                 edm::track_state trk_state =
                     edm::make_track_state<algebra_type>(measurements, meas_id);
+                trk_state.filtered_chi2() = chi2;
 
-                const bool is_line = detail::is_line(sf);
+                // Kalman filter status code
+                kalman_fitter_status res{kalman_fitter_status::ERROR_OTHER};
 
-                // Run the Kalman update on a copy of the track parameters
-                const kalman_fitter_status res =
-                    gain_matrix_updater<algebra_type>{}(trk_state, measurements,
-                                                        in_param, is_line);
+                // Don't run the filter on the first measurement
+                if (step == 0 && !sf.has_material()) {
+                    // Only do this for the actual seed measurement
+                    if (chi2 == 0.f) {
+                        res = kalman_fitter_status::SUCCESS;
 
-                const traccc::scalar chi2 = trk_state.filtered_chi2();
+                        // Copy the full track parameters
+                        // TODO: Apply calibration ?
+                        trk_state.filtered_params() = in_param;
+
+                        // Update measurement covariance
+                        const auto V = measurement_selector::
+                            calibrated_measurement_covariance<algebra_type, 2>(
+                                meas, config.meas_calibration);
+
+                        auto& filtered_cov =
+                            trk_state.filtered_params().covariance();
+                        getter::element(filtered_cov, e_bound_loc0,
+                                        e_bound_loc0) =
+                            getter::element(V, 0, 0);
+                        getter::element(filtered_cov, e_bound_loc1,
+                                        e_bound_loc1) =
+                            getter::element(V, 1, 1);
+                    }
+                } else {
+                    // Run the Kalman update on the track state
+                    constexpr gain_matrix_updater<algebra_type>
+                        kalman_updater{};
+                    res = kalman_updater(trk_state, meas, in_param,
+                                         config.meas_calibration, is_line);
+                }
 
                 TRACCC_DEBUG_HOST("KF status: " << fitter_debug_msg{res}());
 
                 // The chi2 from Kalman update should be less than chi2_max
-                if (res == kalman_fitter_status::SUCCESS &&
-                    (chi2 < config.chi2_max)) {
+                if (res == kalman_fitter_status::SUCCESS) {
 
                     TRACCC_VERBOSE_HOST("Found measurement: " << meas_id);
 
@@ -542,7 +577,8 @@ combinatorial_kalman_filter(
                 assert(propagation.navigation().is_on_sensitive());
                 assert(!updater_state.bound_params().is_invalid());
                 TRACCC_DEBUG_HOST(
-                    "On surface: " << propagation.navigation().barcode());
+                    "On surface: "
+                    << propagation.navigation().geometry_identifier());
 
                 const bound_track_parameters<algebra_type>& out_param =
                     updater_state.bound_params();

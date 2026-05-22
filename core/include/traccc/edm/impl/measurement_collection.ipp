@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2025 CERN for the benefit of the ACTS project
+ * (c) 2025-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -12,6 +12,15 @@
 #include "traccc/definitions/math.hpp"
 
 namespace traccc::edm {
+
+template <typename BASE>
+template <std::integral TYPE>
+TRACCC_HOST_DEVICE void measurement<BASE>::set_subspace(
+    const std::array<TYPE, 2u>& subs) {
+
+    subspace()[0] = static_cast<std::uint8_t>(subs[0]);
+    subspace()[1] = static_cast<std::uint8_t>(subs[1]);
+}
 
 template <typename BASE>
 template <typename T>

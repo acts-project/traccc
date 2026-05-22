@@ -20,14 +20,12 @@ enum class kalman_fitter_status : uint32_t {
     ERROR_SMOOTHER_CHI2_NOT_FINITE = 5u,
     ERROR_SMOOTHER_INVALID_COVARIANCE = 6u,
     ERROR_SMOOTHER_SKIPPED_STATE = 7u,
-    ERROR_UPDATER_CHI2_NEGATIVE = 8u,
-    ERROR_UPDATER_CHI2_NOT_FINITE = 9u,
-    ERROR_UPDATER_INVALID_COVARIANCE = 10u,
-    ERROR_UPDATER_SKIPPED_STATE = 11u,
-    ERROR_BARCODE_SEQUENCE_OVERFLOW = 12u,
-    ERROR_PROPAGATION_FAILURE = 13u,
-    ERROR_OTHER = 14u,
-    MAX_STATUS = 15u
+    ERROR_UPDATER_INVALID_COVARIANCE = 8u,
+    ERROR_UPDATER_SKIPPED_STATE = 9u,
+    ERROR_GEOID_SEQUENCE_OVERFLOW = 10u,
+    ERROR_PROPAGATION_FAILURE = 11u,
+    ERROR_OTHER = 12u,
+    MAX_STATUS = 13u
 };
 
 /// Convert a status code into a human readable string
@@ -61,20 +59,16 @@ struct fitter_debug_msg {
             case ERROR_SMOOTHER_SKIPPED_STATE: {
                 return msg + "Skipped track state during smoothing";
             }
-            case ERROR_UPDATER_CHI2_NEGATIVE: {
-                return msg + "Negative chi2 in gain matrix updater";
-            }
-            case ERROR_UPDATER_CHI2_NOT_FINITE: {
-                return msg + "Invalid chi2 in gain matrix updater";
-            }
             case ERROR_UPDATER_INVALID_COVARIANCE: {
                 return msg + "Invalid track covariance in forward fit";
             }
             case ERROR_UPDATER_SKIPPED_STATE: {
                 return msg + "Skipped track state during forward fit";
             }
-            case ERROR_BARCODE_SEQUENCE_OVERFLOW: {
-                return msg + "Barcode sequence overflow in direct navigator";
+            case ERROR_GEOID_SEQUENCE_OVERFLOW: {
+                return msg +
+                       "Geometry identifier sequence overflow in direct "
+                       "navigator";
             }
             case ERROR_PROPAGATION_FAILURE: {
                 return msg + "Propagation failure";

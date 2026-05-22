@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -39,8 +39,8 @@ typename edm::track_container<algebra_t>::host triplet_fitting(
     vecmem::memory_resource& mr, vecmem::copy& copy) {
 
     // Get the input collections(s).
-    const typename edm::measurement_collection<algebra_t>::const_device
-        measurements{track_container.measurements};
+    const edm::measurement_collection::const_device measurements{
+        track_container.measurements};
     const typename edm::track_collection<algebra_t>::const_device
         track_candidates{track_container.tracks};
 
@@ -69,7 +69,7 @@ typename edm::track_container<algebra_t>::host triplet_fitting(
             measurement_idx.push_back(link.index);
         }
 
-        vecmem::data::vector_buffer<detray::geometry::barcode> seqs_buffer{};
+        vecmem::data::vector_buffer<detray::geometry::identifier> seqs_buffer{};
         copy.setup(seqs_buffer)->wait();
 
         // Make triplets

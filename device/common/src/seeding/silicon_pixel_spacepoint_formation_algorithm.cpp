@@ -18,12 +18,11 @@ silicon_pixel_spacepoint_formation_algorithm::
 
 auto silicon_pixel_spacepoint_formation_algorithm::operator()(
     const detector_buffer& det,
-    const edm::measurement_collection<default_algebra>::const_view&
-        measurements) const -> output_type {
+    const edm::measurement_collection::const_view& measurements) const
+    -> output_type {
 
     // Get the number of measurements. In an asynchronous way if possible.
-    edm::measurement_collection<default_algebra>::const_view::size_type
-        n_measurements = 0u;
+    edm::measurement_collection::const_view::size_type n_measurements = 0u;
     if (mr().host) {
         vecmem::async_size size = copy().get_size(measurements, *(mr().host));
         // Here we could give control back to the caller, once our code allows

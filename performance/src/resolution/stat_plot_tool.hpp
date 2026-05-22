@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2023-2025 CERN for the benefit of the ACTS project
+ * (c) 2023-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -76,8 +76,7 @@ class stat_plot_tool {
     template <typename track_state_backend_t>
     void fill(stat_plot_cache& cache,
               const edm::track_state<track_state_backend_t>& trk_state,
-              const edm::measurement_collection<default_algebra>::host&
-                  measurements) const;
+              const edm::measurement_collection::host& measurements) const;
 
     /// @brief fill the cache
     /// @param cache the cache for statistics plots

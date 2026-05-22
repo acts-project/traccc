@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -50,8 +50,8 @@ TRACCC_HOST_DEVICE inline void fit_prelude(
     const edm::track track_candidate = track_candidates.at(param_id);
     const auto track_candidate_constituent_links =
         track_candidate.constituent_links();
-    const typename edm::measurement_collection<algebra_t>::const_device
-        measurements{track_candidates_view.measurements};
+    const edm::measurement_collection::const_device measurements{
+        track_candidates_view.measurements};
     for (const edm::track_constituent_link& link :
          track_candidate_constituent_links) {
         assert(link.type == edm::track_constituent_link::measurement);

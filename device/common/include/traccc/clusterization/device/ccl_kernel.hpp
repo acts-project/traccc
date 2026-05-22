@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -60,11 +60,9 @@ namespace traccc::device {
 ///     corresponding measurement.
 /// @param barrier  A generic object for block-wide synchronisation
 /// @param[out] measurements_view collection of measurements
-/// @param[out] cell_links    collection of links to measurements each cell is
-/// put into
 template <device::concepts::barrier barrier_t,
           device::concepts::thread_id1 thread_id_t>
-TRACCC_DEVICE inline void ccl_kernel(
+TRACCC_HOST_DEVICE inline void ccl_kernel(
     const clustering_config cfg, const thread_id_t& thread_id,
     const edm::silicon_cell_collection::const_view& cells_view,
     const detector_design_description::const_view& det_descr_view,
@@ -72,16 +70,15 @@ TRACCC_DEVICE inline void ccl_kernel(
     std::size_t& partition_start, std::size_t& partition_end, std::size_t& outi,
     vecmem::data::vector_view<details::index_t> f_view,
     vecmem::data::vector_view<details::index_t> gf_view,
-    vecmem::data::vector_view<details::index_t> f_backup_view,
-    vecmem::data::vector_view<details::index_t> gf_backup_view,
+    vecmem::data::vector_view<details::fallback_index_t> f_backup_view,
+    vecmem::data::vector_view<details::fallback_index_t> gf_backup_view,
     vecmem::data::vector_view<unsigned char> adjc_backup_view,
-    vecmem::data::vector_view<details::index_t> adjv_backup_view,
+    vecmem::data::vector_view<details::fallback_index_t> adjv_backup_view,
     vecmem::device_atomic_ref<uint32_t> backup_mutex,
     vecmem::data::vector_view<unsigned int> disjoint_set_view,
     vecmem::data::vector_view<unsigned int> cluster_size_view,
     const barrier_t& barrier,
-    edm::measurement_collection<default_algebra>::view measurements_view,
-    vecmem::data::vector_view<unsigned int> cell_links);
+    edm::measurement_collection::view measurements_view);
 
 }  // namespace traccc::device
 

@@ -42,22 +42,21 @@ namespace traccc::device {
 /// synchronisation statement is required before destroying the buffer.
 ///
 class clusterization_algorithm
-    : public algorithm<edm::measurement_collection<default_algebra>::buffer(
+    : public algorithm<edm::measurement_collection::buffer(
           const edm::silicon_cell_collection::const_view&,
           const detector_design_description::const_view&,
           const detector_conditions_description::const_view&)>,
-      public algorithm<edm::measurement_collection<default_algebra>::buffer(
+      public algorithm<edm::measurement_collection::buffer(
           const edm::silicon_cell_collection::const_view&,
           const detector_design_description::const_view&,
           const detector_conditions_description::const_view&,
           clustering_discard_disjoint_set&&)>,
-      public algorithm<
-          std::pair<edm::measurement_collection<default_algebra>::buffer,
-                    edm::silicon_cluster_collection::buffer>(
-              const edm::silicon_cell_collection::const_view&,
-              const detector_design_description::const_view&,
-              const detector_conditions_description::const_view&,
-              clustering_keep_disjoint_set&&)>,
+      public algorithm<std::pair<edm::measurement_collection::buffer,
+                                 edm::silicon_cluster_collection::buffer>(
+          const edm::silicon_cell_collection::const_view&,
+          const detector_design_description::const_view&,
+          const detector_conditions_description::const_view&,
+          clustering_keep_disjoint_set&&)>,
       public messaging,
       public algorithm_base {
 
@@ -86,19 +85,19 @@ class clusterization_algorithm
     /// @return a measurement collection (buffer)
     ///
     /// @{
-    edm::measurement_collection<default_algebra>::buffer operator()(
+    edm::measurement_collection::buffer operator()(
         const edm::silicon_cell_collection::const_view& cells,
         const detector_design_description::const_view& det_descr,
         const detector_conditions_description::const_view& det_cond)
         const override;
 
-    edm::measurement_collection<default_algebra>::buffer operator()(
+    edm::measurement_collection::buffer operator()(
         const edm::silicon_cell_collection::const_view& cells,
         const detector_design_description::const_view& det_descr,
         const detector_conditions_description::const_view& det_cond,
         clustering_discard_disjoint_set&&) const override;
 
-    std::pair<edm::measurement_collection<default_algebra>::buffer,
+    std::pair<edm::measurement_collection::buffer,
               edm::silicon_cluster_collection::buffer>
     operator()(const edm::silicon_cell_collection::const_view& cells,
                const detector_design_description::const_view& det_descr,
@@ -131,17 +130,15 @@ class clusterization_algorithm
         /// The detector conditions description
         const detector_conditions_description::const_view& det_cond;
         /// The measurement collection to fill
-        edm::measurement_collection<default_algebra>::view& measurements;
-        /// Buffer for linking cells to measurements
-        vecmem::data::vector_view<unsigned int>& cell_links;
+        edm::measurement_collection::view& measurements;
         /// Buffer for backup of the first element links
-        vecmem::data::vector_view<details::index_t>& f_backup;
+        vecmem::data::vector_view<details::fallback_index_t>& f_backup;
         /// Buffer for backup of the group first element links
-        vecmem::data::vector_view<details::index_t>& gf_backup;
+        vecmem::data::vector_view<details::fallback_index_t>& gf_backup;
         /// Buffer for backup of the adjacency matrix (counts)
         vecmem::data::vector_view<unsigned char>& adjc_backup;
         /// Buffer for backup of the adjacency matrix (values)
-        vecmem::data::vector_view<details::index_t>& adjv_backup;
+        vecmem::data::vector_view<details::fallback_index_t>& adjv_backup;
         /// Mutex for the backup structures
         unsigned int* backup_mutex;
         /// Buffer for the disjoint set data structure
@@ -171,7 +168,7 @@ class clusterization_algorithm
 
     private:
     /// Main algorithmic implementation of the clusterization algorithm
-    std::pair<edm::measurement_collection<default_algebra>::buffer,
+    std::pair<edm::measurement_collection::buffer,
               std::optional<edm::silicon_cluster_collection::buffer>>
     execute_impl(const edm::silicon_cell_collection::const_view& cells,
                  const detector_design_description::const_view& det_descr,
@@ -181,11 +178,12 @@ class clusterization_algorithm
     /// Clusterization configuration
     config_type m_config;
     /// Memory reserved for edge cases
-    mutable vecmem::data::vector_buffer<details::index_t> m_f_backup;
-    mutable vecmem::data::vector_buffer<details::index_t> m_gf_backup;
+    mutable vecmem::data::vector_buffer<details::fallback_index_t> m_f_backup;
+    mutable vecmem::data::vector_buffer<details::fallback_index_t> m_gf_backup;
     mutable vecmem::unique_alloc_ptr<unsigned int> m_backup_mutex;
     mutable vecmem::data::vector_buffer<unsigned char> m_adjc_backup;
-    mutable vecmem::data::vector_buffer<details::index_t> m_adjv_backup;
+    mutable vecmem::data::vector_buffer<details::fallback_index_t>
+        m_adjv_backup;
 
 };  // class clusterization_algorithm
 

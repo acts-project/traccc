@@ -14,7 +14,7 @@
 #include "traccc/utils/subspace.hpp"
 
 // Detray include(s).
-#include <detray/geometry/barcode.hpp>
+#include <detray/geometry/identifier.hpp>
 
 // VecMem include(s).
 #include <vecmem/edm/container.hpp>
@@ -47,7 +47,7 @@ class detector_design_description_interface : public BASE {
     ///
     /// Can be used to look up the module in a @c detray::detector object.
     ///
-    /// @return A (const) vector of @c detray::geometry::barcode objects
+    /// @return A (const) vector of @c detray::geometry::identifier objects
     ///
     TRACCC_HOST_DEVICE
     const auto& design_id() const { return BASE::template get<0>(); }

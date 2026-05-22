@@ -65,7 +65,7 @@ TEST(SYCLSpacepointFormation, sycl) {
                                           copy);
 
     // Prepare measurement collection
-    edm::measurement_collection<default_algebra>::host measurements{shared_mr};
+    edm::measurement_collection::host measurements{shared_mr};
 
     // Add a measurement at the first plane
     measurements.push_back({{7.f, 2.f},
@@ -74,7 +74,7 @@ TEST(SYCLSpacepointFormation, sycl) {
                             0.f,
                             0.f,
                             0u,
-                            surfaces[0].barcode(),
+                            surfaces[0].identifier(),
                             {1u, 1u},
                             0u});
 
@@ -85,7 +85,7 @@ TEST(SYCLSpacepointFormation, sycl) {
                             0.f,
                             0.f,
                             0u,
-                            surfaces[8u].barcode(),
+                            surfaces[8u].identifier(),
                             {1u, 1u},
                             1u});
 

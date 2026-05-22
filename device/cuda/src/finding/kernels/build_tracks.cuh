@@ -15,5 +15,6 @@ namespace traccc::cuda::kernels {
 
 __global__ void build_tracks(
     const __grid_constant__ bool run_mbf,
+    const __grid_constant__ measurement_selector::config calib_cfg,
     const __grid_constant__ device::build_tracks_payload payload);
 }

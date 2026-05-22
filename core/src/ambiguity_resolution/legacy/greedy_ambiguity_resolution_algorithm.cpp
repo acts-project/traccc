@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2024-2025 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -63,8 +63,8 @@ void greedy_ambiguity_resolution_algorithm::compute_initial_state(
     state_t& state) const {
 
     // Create a measurement collection to interact with.
-    const edm::measurement_collection<default_algebra>::const_device
-        measurements(track_states.measurements);
+    const edm::measurement_collection::const_device measurements(
+        track_states.measurements);
 
     // For each track of the input container
     std::size_t n_track_states = track_states.tracks.size();

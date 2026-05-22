@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2022-2024 CERN for the benefit of the ACTS project
+# (c) 2022-2026 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -27,13 +27,10 @@ list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}" )
 
 # Find all packages that traccc needs to function.
 include( CMakeFindDependencyMacro )
+find_dependency( Acts COMPONENTS Core )
 find_dependency( Thrust )
-find_dependency( dfelibs )
 if( TRACCC_BUILD_ALPAKA )
    find_dependency( alpaka )
-endif()
-if ( TRACCC_BUILD_IO )
-   find_dependency( Acts )
 endif()
 find_dependency( vecmem )
 find_dependency( detray )

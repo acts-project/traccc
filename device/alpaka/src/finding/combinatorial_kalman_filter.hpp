@@ -19,11 +19,12 @@
 #include "traccc/finding/actors/ckf_aborter.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
-#include "traccc/finding/device/barcode_surface_comparator.hpp"
 #include "traccc/finding/device/build_tracks.hpp"
+#include "traccc/finding/device/condense_tracks.hpp"
 #include "traccc/finding/device/fill_finding_duplicate_removal_sort_keys.hpp"
 #include "traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
 #include "traccc/finding/device/find_tracks.hpp"
+#include "traccc/finding/device/geo_id_surface_comparator.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
 #include "traccc/finding/device/remove_duplicates.hpp"
 #include "traccc/finding/finding_config.hpp"
@@ -47,8 +48,6 @@ struct find_tracks {
 
         auto& shared_num_out_params =
             ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
-        auto& shared_out_offset =
-            ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
         auto& shared_candidates_size =
             ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
         unsigned long long int* const s =
@@ -65,8 +64,24 @@ struct find_tracks {
 
         device::find_tracks<detector_t>(
             thread_id, barrier, cfg, *payload,
-            {shared_num_out_params, shared_out_offset, shared_insertion_mutex,
-             shared_candidates, shared_candidates_size});
+            {.shared_num_out_params = shared_num_out_params,
+             .shared_insertion_mutex = shared_insertion_mutex,
+             .shared_candidates = shared_candidates,
+             .shared_candidates_size = shared_candidates_size});
+    }
+};
+
+/// Alpaka kernel functor for @c traccc::device::condense_tracks
+template <typename detector_t>
+struct condense_tracks {
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(
+        TAcc const& acc,
+        const device::condense_tracks_payload<detector_t>* payload) const {
+
+        const device::global_index_t globalThreadIdx =
+            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
+        device::condense_tracks<detector_t>(globalThreadIdx, *payload);
     }
 };
 
@@ -135,11 +150,12 @@ struct build_tracks {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, bool run_mbf,
+        const measurement_selector::config& calib_cfg,
         const device::build_tracks_payload payload) const {
 
         device::global_index_t globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
-        device::build_tracks(globalThreadIdx, run_mbf, payload);
+        device::build_tracks(globalThreadIdx, run_mbf, calib_cfg, payload);
     }
 };
 
@@ -170,14 +186,12 @@ template <typename detector_t, typename bfield_t>
 edm::track_container<typename detector_t::algebra_type>::buffer
 combinatorial_kalman_filter(
     const typename detector_t::const_view_type& det, const bfield_t& field,
-    const typename edm::measurement_collection<
-        typename detector_t::algebra_type>::const_view& measurements_view,
+    const edm::measurement_collection::const_view& measurements_view,
     const bound_track_parameters_collection_types::const_view& seeds,
     const finding_config& config, const memory_resource& mr, vecmem::copy& copy,
     const Logger& log, Queue& queue) {
 
-    const typename edm::measurement_collection<
-        typename detector_t::algebra_type>::const_device measurements{
+    const edm::measurement_collection::const_device measurements{
         measurements_view};
 
     assert(config.min_step_length_for_next_surface >
@@ -216,7 +230,7 @@ combinatorial_kalman_filter(
         // is), the end() function cannot be used in host code.
         measurements.surface_link().begin() + n_measurements,
         device_det.surfaces().begin(), device_det.surfaces().end(),
-        measurement_ranges.begin(), device::barcode_surface_comparator{});
+        measurement_ranges.begin(), device::geo_id_surface_comparator{});
 
     const unsigned int n_seeds = copy.get_size(seeds);
 
@@ -344,6 +358,12 @@ combinatorial_kalman_filter(
         }
 
         {
+            vecmem::data::vector_buffer<unsigned int>
+                out_params_per_in_param_buffer(n_in_params, mr.main);
+            copy.setup(out_params_per_in_param_buffer)->ignore();
+            vecmem::data::vector_buffer<unsigned int> out_params_index_buffer(
+                n_in_params, mr.main);
+            copy.setup(out_params_index_buffer)->ignore();
             vecmem::data::vector_buffer<candidate_link> tmp_links_buffer(
                 n_max_candidates, mr.main);
             copy.setup(tmp_links_buffer)->ignore();
@@ -363,20 +383,13 @@ combinatorial_kalman_filter(
                 .links_view = links_buffer,
                 .prev_links_idx =
                     (step == 0 ? 0 : step_to_link_idx_map[step - 1]),
-                .curr_links_idx = step_to_link_idx_map[step],
                 .step = step,
-                .out_params_view = updated_params_buffer,
-                .out_params_liveness_view = updated_liveness_buffer,
+                .out_params_per_in_param_view = out_params_per_in_param_buffer,
                 .tips_view = tips_buffer,
                 .tip_lengths_view = tip_length_buffer,
                 .n_tracks_per_seed_view = n_tracks_per_seed_buffer,
                 .tmp_params_view = tmp_params_buffer,
-                .tmp_links_view = tmp_links_buffer,
-                .jacobian_ptr = jacobian_ptr.get(),
-                .tmp_jacobian_ptr = tmp_jacobian_ptr.get(),
-                .link_predicted_parameter_view =
-                    link_predicted_parameter_buffer,
-                .link_filtered_parameter_view = link_filtered_parameter_buffer};
+                .tmp_links_view = tmp_links_buffer};
             // Now copy it to device memory.
             vecmem::data::vector_buffer<payload_t> device_payload(1u, mr.main);
             copy.setup(device_payload)->wait();
@@ -395,6 +408,67 @@ combinatorial_kalman_filter(
                                 kernels::find_tracks<detector_t>{}, config,
                                 device_payload.ptr());
             ::alpaka::wait(queue);
+
+            {
+                vecmem::device_vector<unsigned int>
+                    out_params_per_in_param_vector(
+                        out_params_per_in_param_buffer);
+                vecmem::device_vector<unsigned int> out_params_index_vector(
+                    out_params_index_buffer);
+                details::inclusive_scan(queue, mr,
+                                        out_params_per_in_param_vector.begin(),
+                                        out_params_per_in_param_vector.end(),
+                                        out_params_index_vector.begin());
+            }
+
+            {
+                using condense_payload_t =
+                    device::condense_tracks_payload<detector_t>;
+                const condense_payload_t condense_host_payload{
+                    .n_in_params = n_in_params,
+                    .step = step,
+                    .curr_links_idx = step_to_link_idx_map[step],
+                    .max_num_branches_per_surface =
+                        config.max_num_branches_per_surface,
+                    .min_track_candidates_per_track =
+                        config.min_track_candidates_per_track,
+                    .max_track_candidates_per_track =
+                        config.max_track_candidates_per_track,
+                    .links_view = links_buffer,
+                    .in_params_view = in_params_buffer,
+                    .in_tmp_params_view = tmp_params_buffer,
+                    .in_tmp_links_view = tmp_links_buffer,
+                    .in_params_index_view = out_params_index_buffer,
+                    .out_params_view = updated_params_buffer,
+                    .out_params_liveness_view = updated_liveness_buffer,
+                    .tips_view = tips_buffer,
+                    .tip_lengths_view = tip_length_buffer,
+                    .jacobian_ptr = jacobian_ptr.get(),
+                    .tmp_jacobian_ptr = tmp_jacobian_ptr.get(),
+                    .link_predicted_parameter_view =
+                        link_predicted_parameter_buffer,
+                    .link_filtered_parameter_view =
+                        link_filtered_parameter_buffer};
+                vecmem::data::vector_buffer<condense_payload_t>
+                    condense_device_payload(1u, mr.main);
+                copy.setup(condense_device_payload)->wait();
+                copy(vecmem::data::vector_view<const condense_payload_t>(
+                         1u, &condense_host_payload),
+                     condense_device_payload)
+                    ->wait();
+
+                const Idx condense_threadsPerBlock = 256;
+                const Idx condense_blocksPerGrid =
+                    (n_in_params + condense_threadsPerBlock - 1) /
+                    condense_threadsPerBlock;
+                const auto condense_workDiv = makeWorkDiv<Acc>(
+                    condense_blocksPerGrid, condense_threadsPerBlock);
+
+                ::alpaka::exec<Acc>(queue, condense_workDiv,
+                                    kernels::condense_tracks<detector_t>{},
+                                    condense_device_payload.ptr());
+                ::alpaka::wait(queue);
+            }
 
             std::swap(in_params_buffer, updated_params_buffer);
             std::swap(param_liveness_buffer, updated_liveness_buffer);
@@ -604,7 +678,7 @@ combinatorial_kalman_filter(
 
         ::alpaka::exec<Acc>(
             queue, workDiv, kernels::build_tracks{},
-            false && config.run_mbf_smoother,
+            false && config.run_mbf_smoother, config.meas_calibration,
             device::build_tracks_payload{
                 .seeds_view = seeds,
                 .links_view = links_buffer,

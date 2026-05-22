@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2025 CERN for the benefit of the ACTS project
+ * (c) 2021-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -30,7 +30,7 @@ namespace traccc::host {
 ///
 class track_params_estimation
     : public algorithm<bound_track_parameters_collection_types::host(
-          const edm::measurement_collection<default_algebra>::const_view&,
+          const edm::measurement_collection::const_view&,
           const edm::spacepoint_collection::const_view&,
           const edm::seed_collection::const_view&, const vector3&)>,
       public messaging {
@@ -55,8 +55,7 @@ class track_params_estimation
     /// @return A vector of bound track parameters
     ///
     output_type operator()(
-        const edm::measurement_collection<default_algebra>::const_view&
-            measurements,
+        const edm::measurement_collection::const_view& measurements,
         const edm::spacepoint_collection::const_view& spacepoints,
         const edm::seed_collection::const_view& seeds,
         const vector3& bfield) const override;

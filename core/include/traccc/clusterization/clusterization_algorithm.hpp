@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2025 CERN for the benefit of the ACTS project
+ * (c) 2021-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -32,7 +32,7 @@ namespace traccc::host {
 /// module from the cells of the modules.
 ///
 class clusterization_algorithm
-    : public algorithm<edm::measurement_collection<default_algebra>::host(
+    : public algorithm<edm::measurement_collection::host(
           const edm::silicon_cell_collection::const_view&,
           const detector_design_description::const_view&,
           const detector_conditions_description::const_view&)>,

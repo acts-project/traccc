@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2025 CERN for the benefit of the ACTS project
+ * (c) 2025-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -25,10 +25,8 @@ class comparator_factory<edm::track<T>> {
     public:
     /// Constructor with all necessary arguments
     comparator_factory(
-        const edm::measurement_collection<default_algebra>::const_view&
-            ref_meas,
-        const edm::measurement_collection<default_algebra>::const_view&
-            test_meas,
+        const edm::measurement_collection::const_view& ref_meas,
+        const edm::measurement_collection::const_view& test_meas,
         const edm::track_state_collection<default_algebra>::const_view&
             ref_states,
         const edm::track_state_collection<default_algebra>::const_view&
@@ -48,9 +46,9 @@ class comparator_factory<edm::track<T>> {
 
     private:
     /// Measurement container for the reference track candidates
-    const edm::measurement_collection<default_algebra>::const_view m_ref_meas;
+    const edm::measurement_collection::const_view m_ref_meas;
     /// Measurement container for the test track candidates
-    const edm::measurement_collection<default_algebra>::const_view m_test_meas;
+    const edm::measurement_collection::const_view m_test_meas;
     /// States for the reference object
     const edm::track_state_collection<default_algebra>::const_view m_ref_states;
     /// States for the test object

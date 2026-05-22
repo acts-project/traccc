@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -36,8 +36,7 @@ measurement_creation_algorithm::operator()(
     // Create the result object.
     output_type result(m_mr.get());
     result.resize(clusters.size());
-    edm::measurement_collection<default_algebra>::device measurements{
-        vecmem::get_data(result)};
+    edm::measurement_collection::device measurements{vecmem::get_data(result)};
 
     // Process the clusters one-by-one.
     for (decltype(clusters)::size_type i = 0; i < clusters.size(); ++i) {
