@@ -64,24 +64,14 @@ struct find_tracks_payload {
     const unsigned int prev_links_idx;
 
     /**
-     * @brief Index in the link vector at which the current step starts
-     */
-    const unsigned int curr_links_idx;
-
-    /**
      * @brief The current step identifier
      */
     unsigned int step;
 
     /**
-     * @brief View object to the output track parameter vector
+     * @brief View object to the output parameter counting vector
      */
-    bound_track_parameters_collection_types::view out_params_view;
-
-    /**
-     * @brief View object to the output track parameter liveness vector
-     */
-    vecmem::data::vector_view<unsigned int> out_params_liveness_view;
+    vecmem::data::vector_view<unsigned int> out_params_per_in_param_view;
 
     /**
      * @brief View object to the vector of tips
@@ -108,11 +98,6 @@ struct find_tracks_payload {
      * @brief View object to the temporary link vector
      */
     vecmem::data::vector_view<candidate_link> tmp_links_view;
-
-    vecmem::data::vector_view<bound_matrix<default_algebra> > jacobian_view;
-    vecmem::data::vector_view<bound_matrix<default_algebra> > tmp_jacobian_view;
-    bound_track_parameters_collection_types::view link_predicted_parameter_view;
-    bound_track_parameters_collection_types::view link_filtered_parameter_view;
 };
 
 }  // namespace traccc::device

@@ -38,7 +38,7 @@ __global__ void find_tracks(
     details::thread_id1 thread_id;
 
     device::find_tracks<detector_t>(
-        thread_id, barrier, cfg, payload,
+        thread_id, barrier, cfg, det, payload,
         device::find_tracks_shared_payload{
             .shared_num_out_params = shared_num_out_params,
             .shared_insertion_mutex = shared_insertion_mutex,

@@ -9,6 +9,7 @@
 #include "../sanity/contiguous_on.cuh"
 #include "../utils/magnetic_field_types.hpp"
 #include "./kernels/build_tracks.cuh"
+#include "./kernels/condense_tracks.cuh"
 #include "./kernels/fill_finding_duplicate_removal_sort_keys.cuh"
 #include "./kernels/fill_finding_propagation_sort_keys.cuh"
 #include "./kernels/find_tracks.cuh"
@@ -29,6 +30,7 @@
 
 // Thrust include(s).
 #include <thrust/execution_policy.h>
+#include <thrust/scan.h>
 #include <thrust/sort.h>
 
 namespace traccc::cuda {
@@ -104,6 +106,36 @@ void combinatorial_kalman_filter_algorithm::find_tracks_kernel(
                 deviceBlocks, deviceThreads, deviceSharedMem,
                 details::get_stream(stream()), config, det, payload);
         });
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+}
+
+void combinatorial_kalman_filter_algorithm::condense_tracks_kernel(
+    unsigned int n_threads,
+    const vecmem::data::vector_view<const unsigned int>&
+        out_params_per_in_param,
+    vecmem::data::vector_view<unsigned int>& params_index,
+    const device::condense_tracks_payload& payload) const {
+
+    // Prepare the "in_params_index_view" input parameter of the track
+    // condensing kernel, with Thrust's help.
+    const vecmem::device_vector<const unsigned int>
+        out_params_per_in_param_vector(out_params_per_in_param);
+    vecmem::device_vector<unsigned int> params_index_vector(params_index);
+    thrust::inclusive_scan(
+        thrust::cuda::par_nosync(std::pmr::polymorphic_allocator(&(mr().main)))
+            .on(details::get_stream(stream())),
+        out_params_per_in_param_vector.begin(),
+        out_params_per_in_param_vector.end(), params_index_vector.begin());
+
+    // Establish the kernel launch parameters.
+    const unsigned int deviceThreads = warp_size() * 8;
+    const unsigned int deviceBlocks =
+        (n_threads + deviceThreads - 1) / deviceThreads;
+
+    // Launch the kernel.
+    assert(params_index.ptr() == payload.in_params_index_view.ptr());
+    condense_tracks(deviceBlocks, deviceThreads, 0,
+                    details::get_stream(stream()), payload);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 }
 

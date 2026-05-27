@@ -26,7 +26,6 @@
 namespace traccc::device {
 
 /// (Event Data) Payload for the @c traccc::device::condense_tracks function
-template <typename detector_t>
 struct condense_tracks_payload {
     /**
      * @brief The total number of input parameters
@@ -80,8 +79,8 @@ struct condense_tracks_payload {
      */
     vecmem::data::vector_view<unsigned int> tip_lengths_view;
 
-    bound_matrix<typename detector_t::algebra_type>* jacobian_ptr = nullptr;
-    bound_matrix<typename detector_t::algebra_type>* tmp_jacobian_ptr = nullptr;
+    vecmem::data::vector_view<bound_matrix<default_algebra>> jacobian_view;
+    vecmem::data::vector_view<bound_matrix<default_algebra>> tmp_jacobian_view;
     bound_track_parameters_collection_types::view link_predicted_parameter_view;
     bound_track_parameters_collection_types::view link_filtered_parameter_view;
 };
@@ -94,10 +93,8 @@ struct condense_tracks_payload {
 /// @param[in] thread_id The index of the current thread
 /// @param[inout] payload The function call payload
 ///
-template <typename detector_t>
 TRACCC_HOST_DEVICE inline void condense_tracks(
-    global_index_t thread_id,
-    const condense_tracks_payload<detector_t>& payload) {
+    global_index_t thread_id, const condense_tracks_payload& payload) {
 
     const unsigned int in_param_id = thread_id;
 
@@ -123,6 +120,10 @@ TRACCC_HOST_DEVICE inline void condense_tracks(
         payload.out_params_liveness_view);
     vecmem::device_vector<unsigned int> tips(payload.tips_view);
     vecmem::device_vector<unsigned int> tip_lengths(payload.tip_lengths_view);
+    vecmem::device_vector<bound_matrix<default_algebra>> jacobian(
+        payload.jacobian_view);
+    vecmem::device_vector<bound_matrix<default_algebra>> tmp_jacobian(
+        payload.tmp_jacobian_view);
     bound_track_parameters_collection_types::device link_predicted_parameters(
         payload.link_predicted_parameter_view);
     bound_track_parameters_collection_types::device link_filtered_parameters(
@@ -151,10 +152,9 @@ TRACCC_HOST_DEVICE inline void condense_tracks(
             static_cast<unsigned int>(!last_step);
         links.at(link_out_index) = in_tmp_links.at(in_offset);
 
-        if (payload.tmp_jacobian_ptr != nullptr) {
-            assert(payload.jacobian_ptr != nullptr);
-            payload.jacobian_ptr[link_out_index] =
-                payload.tmp_jacobian_ptr[in_param_id];
+        if (payload.tmp_jacobian_view.ptr() != nullptr) {
+            assert(payload.jacobian_view.ptr() != nullptr);
+            jacobian.at(link_out_index) = tmp_jacobian.at(in_param_id);
         }
 
         if (link_filtered_parameters.capacity() > 0) {

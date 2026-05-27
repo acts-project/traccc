@@ -41,8 +41,6 @@ struct find_tracks {
 
         auto& shared_num_out_params =
             ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
-        auto& shared_out_offset =
-            ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
         auto& shared_candidates_size =
             ::alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
         unsigned long long int* const s =
@@ -59,8 +57,22 @@ struct find_tracks {
 
         device::find_tracks<detector_t>(
             thread_id, barrier, cfg, *det_data, payload,
-            {shared_num_out_params, shared_out_offset, shared_insertion_mutex,
-             shared_candidates, shared_candidates_size});
+            {.shared_num_out_params = shared_num_out_params,
+             .shared_insertion_mutex = shared_insertion_mutex,
+             .shared_candidates = shared_candidates,
+             .shared_candidates_size = shared_candidates_size});
+    }
+};
+
+/// Alpaka kernel functor for @c traccc::device::condense_tracks
+struct condense_tracks {
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(
+        TAcc const& acc, const device::condense_tracks_payload& payload) const {
+
+        const device::global_index_t globalThreadIdx =
+            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
+        device::condense_tracks(globalThreadIdx, payload);
     }
 };
 
@@ -262,6 +274,35 @@ void combinatorial_kalman_filter_algorithm::find_tracks_kernel(
                 kernels::find_tracks<typename detector_traits_t::device>{},
                 config, device_det.ptr(), payload);
         });
+}
+
+void combinatorial_kalman_filter_algorithm::condense_tracks_kernel(
+    unsigned int n_threads,
+    const vecmem::data::vector_view<const unsigned int>&
+        out_params_per_in_param,
+    vecmem::data::vector_view<unsigned int>& params_index,
+    const device::condense_tracks_payload& payload) const {
+
+    // Prepare the "in_params_index_view" input parameter of the track
+    // condensing kernel, with Thrust's help.
+    const vecmem::device_vector<const unsigned int>
+        out_params_per_in_param_vector(out_params_per_in_param);
+    vecmem::device_vector<unsigned int> params_index_vector(params_index);
+    details::inclusive_scan(details::get_queue(queue()), mr(),
+                            out_params_per_in_param_vector.begin(),
+                            out_params_per_in_param_vector.end(),
+                            params_index_vector.begin());
+
+    // Establish the kernel launch parameters.
+    const unsigned int deviceThreads = warp_size() * 8;
+    const unsigned int deviceBlocks =
+        (n_threads + deviceThreads - 1) / deviceThreads;
+
+    // Launch the kernel.
+    assert(params_index.ptr() == payload.in_params_index_view.ptr());
+    ::alpaka::exec<Acc>(details::get_queue(queue()),
+                        makeWorkDiv<Acc>(deviceBlocks, deviceThreads),
+                        kernels::condense_tracks{}, payload);
 }
 
 void combinatorial_kalman_filter_algorithm::

@@ -67,6 +67,23 @@ class combinatorial_kalman_filter_algorithm
         const detector_buffer& det,
         const device::find_tracks_payload& payload) const override;
 
+    /// @brief Track condensing kernel launcher
+    ///
+    /// @param n_threads The number of threads to launch the kernel with
+    /// @param out_params_per_in_param Vector of output parameters per input
+    ///                                parameter, coming from @c find_tracks
+    /// @param params_index Vector to hold the starting index of the output
+    ///                     parameters per input parameter. To be used by
+    ///                     @c condense_tracks.
+    /// @param payload  The payload for the kernel
+    ///
+    void condense_tracks_kernel(
+        unsigned int n_threads,
+        const vecmem::data::vector_view<const unsigned int>&
+            out_params_per_in_param,
+        vecmem::data::vector_view<unsigned int>& params_index,
+        const device::condense_tracks_payload& payload) const override;
+
     /// Launch the kernel sorting the parameters before duplicate removal
     ///
     /// @param n_threads The number of threads to launch the kernel with

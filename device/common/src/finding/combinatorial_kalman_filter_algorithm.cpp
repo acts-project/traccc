@@ -225,6 +225,12 @@ auto combinatorial_kalman_filter_algorithm::operator()(
         }
 
         {
+            vecmem::data::vector_buffer<unsigned int>
+                out_params_per_in_param_buffer(n_in_params, mr().main);
+            copy().setup(out_params_per_in_param_buffer)->ignore();
+            vecmem::data::vector_buffer<unsigned int> out_params_index_buffer(
+                n_in_params, mr().main);
+            copy().setup(out_params_index_buffer)->ignore();
             vecmem::data::vector_buffer<candidate_link> tmp_links_buffer(
                 n_max_candidates, mr().main);
             copy().setup(tmp_links_buffer)->ignore();
@@ -232,7 +238,7 @@ auto combinatorial_kalman_filter_algorithm::operator()(
                 n_max_candidates, mr().main);
             copy().setup(tmp_params_buffer)->ignore();
 
-            // Launch the kernel.
+            // Launch the track finding kernel.
             find_tracks_kernel(
                 n_in_params, m_data->m_config, det,
                 {.measurements_view = measurements_view,
@@ -243,15 +249,36 @@ auto combinatorial_kalman_filter_algorithm::operator()(
                  .links_view = links_buffer,
                  .prev_links_idx =
                      (step == 0 ? 0 : step_to_link_idx_map[step - 1]),
-                 .curr_links_idx = step_to_link_idx_map[step],
                  .step = step,
-                 .out_params_view = updated_params_buffer,
-                 .out_params_liveness_view = updated_liveness_buffer,
+                 .out_params_per_in_param_view = out_params_per_in_param_buffer,
                  .tips_view = tips_buffer,
                  .tip_lengths_view = tip_length_buffer,
                  .n_tracks_per_seed_view = n_tracks_per_seed_buffer,
                  .tmp_params_view = tmp_params_buffer,
-                 .tmp_links_view = tmp_links_buffer,
+                 .tmp_links_view = tmp_links_buffer});
+
+            // Launch the track condensing kernel.
+            condense_tracks_kernel(
+                n_in_params, out_params_per_in_param_buffer,
+                out_params_index_buffer,
+                {.n_in_params = n_in_params,
+                 .step = step,
+                 .curr_links_idx = step_to_link_idx_map[step],
+                 .max_num_branches_per_surface =
+                     m_data->m_config.max_num_branches_per_surface,
+                 .min_track_candidates_per_track =
+                     m_data->m_config.min_track_candidates_per_track,
+                 .max_track_candidates_per_track =
+                     m_data->m_config.max_track_candidates_per_track,
+                 .links_view = links_buffer,
+                 .in_params_view = in_params_buffer,
+                 .in_tmp_params_view = tmp_params_buffer,
+                 .in_tmp_links_view = tmp_links_buffer,
+                 .in_params_index_view = out_params_index_buffer,
+                 .out_params_view = updated_params_buffer,
+                 .out_params_liveness_view = updated_liveness_buffer,
+                 .tips_view = tips_buffer,
+                 .tip_lengths_view = tip_length_buffer,
                  .jacobian_view = jacobian_buffer,
                  .tmp_jacobian_view = tmp_jacobian_buffer,
                  .link_predicted_parameter_view =
