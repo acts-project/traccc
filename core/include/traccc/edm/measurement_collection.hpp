@@ -8,6 +8,7 @@
 #pragma once
 
 // Local include(s).
+#include "traccc/definitions/common.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 
 // Detray include(s).
@@ -20,6 +21,7 @@
 #include <array>
 #include <compare>
 #include <cstdint>
+#include <ostream>
 
 namespace traccc::edm {
 
@@ -205,6 +207,33 @@ class measurement : public BASE {
         const measurement<T>& other) const;
 
     /// @}
+
+    private:
+    /// @returns a string stream that prints the measurement details
+    TRACCC_HOST
+    friend std::ostream& operator<<(std::ostream& os, const measurement& m) {
+        os << "ID = " << m.identifier() << ", dim = " << m.dimension()
+           << ", surface: " << m.surface_link() << std::endl;
+
+        os << " -> cluster idx = " << m.cluster_index() << std::endl;
+
+        os << " -> loc pos     = [" << m.local_position()[0];
+        for (unsigned int i = 1u; i < m.dimension(); ++i) {
+            os << ", " << m.local_position()[i];
+        }
+        os << "]\n -> loc var     = [" << m.local_variance()[0];
+        for (unsigned int i = 1u; i < m.dimension(); ++i) {
+            os << ", " << m.local_variance()[i];
+        }
+        os << "]" << std::endl;
+
+        os << " -> t           = " << m.time() * traccc::unit<float>::s << "s"
+           << std::endl;
+        os << " -> diameter    = " << m.diameter() * traccc::unit<float>::mm
+           << "mm" << std::endl;
+
+        return os;
+    }
 
 };  // class measurement
 
