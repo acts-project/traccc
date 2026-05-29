@@ -28,18 +28,30 @@ jobs:
             container: ghcr.io/acts-project/ubuntu2404:69
             options: --preset host-fp32
             run_tests: true
+            enable_cuda: false
+            enable_hip: false
+            enable_sycl: false
           - name: CPU
             container: ghcr.io/acts-project/ubuntu2404:69
             options: --preset host-fp64
             run_tests: false
+            enable_cuda: false
+            enable_hip: false
+            enable_sycl: false
           - name: CUDA
             container: ghcr.io/acts-project/ubuntu2404_cuda:69
             options: --preset cuda-fp32 -DTRACCC_BUILD_TESTING=FALSE
             run_tests: false
+            enable_cuda: true
+            enable_hip: false
+            enable_sycl: false
           - name: "SYCL Intel"
             container: ghcr.io/acts-project/ubuntu2404_oneapi:69
             options: --preset sycl-fp32
             run_tests: true
+            enable_cuda: false
+            enable_hip: false
+            enable_sycl: true
         build:
           - Release
           - Debug
@@ -49,42 +61,63 @@ jobs:
               container: ghcr.io/acts-project/ubuntu2404_cuda:69
               options: --preset cuda-fp64
               run_tests: false
+              enable_cuda: true
+              enable_hip: false
+              enable_sycl: false
             build: Release
           - platform:
               name: "SYCL NVIDIA"
               container: ghcr.io/acts-project/ubuntu2404_cuda_oneapi:69
               options: --preset sycl-fp32
               run_tests: false
+              enable_cuda: false
+              enable_hip: false
+              enable_sycl: true
             build: Release
           - platform:
               name: "SYCL AMD"
               container: ghcr.io/acts-project/ubuntu2404_rocm_oneapi:69
               options: --preset sycl-fp32
               run_tests: false
+              enable_cuda: false
+              enable_hip: true
+              enable_sycl: true
             build: Release
           - platform:
               name: "ALPAKA_CPU"
               container: ghcr.io/acts-project/ubuntu2404:69
               options: --preset alpaka-fp32
               run_tests: true
+              enable_cuda: false
+              enable_hip: false
+              enable_sycl: false
             build: Release
           - platform:
               name: "ALPAKA_CUDA"
               container: ghcr.io/acts-project/ubuntu2404_cuda:69
               options: --preset alpaka-fp32 -Dalpaka_ACC_GPU_CUDA_ENABLE=ON -DTRACCC_FAIL_ON_WARNINGS=OFF -DTRACCC_BUILD_CUDA_UTILS=ON
               run_tests: false
+              enable_cuda: true
+              enable_hip: false
+              enable_sycl: false
             build: Release
           - platform:
               name: "ALPAKA_HIP_SYCL"
               container: ghcr.io/acts-project/ubuntu2404_rocm_oneapi:69
               options: --preset alpaka-fp32 -Dalpaka_ACC_GPU_HIP_ENABLE=ON -DCMAKE_PREFIX_PATH=/opt/rocm/lib/cmake/ -Dalpaka_DISABLE_VENDOR_RNG=ON -DTRACCC_USE_ROOT=OFF -DTRACCC_SETUP_ROCTHRUST=ON -DTRACCC_BUILD_HIP=ON -DCMAKE_HIP_COMPILE_FEATURES=hip_std_20
               run_tests: false
+              enable_cuda: false
+              enable_hip: true
+              enable_sycl: true
             build: Release
           - platform:
               name: "ALPAKA_SYCL"
               container: ghcr.io/acts-project/ubuntu2404_oneapi:69
               options: --preset alpaka-fp32 -Dalpaka_ACC_CPU_B_SEQ_T_THREADS_ENABLE=OFF -Dalpaka_ACC_SYCL_ENABLE=ON -Dalpaka_SYCL_ONEAPI_GPU=ON -Dalpaka_SYCL_ONEAPI_GPU_DEVICES=spir64 -DTRACCC_BUILD_SYCL_UTILS=ON
               run_tests: false
+              enable_cuda: false
+              enable_hip: false
+              enable_sycl: true
             build: Release
     # Use BASH as the shell from the images.
     defaults:
@@ -111,17 +144,58 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release
           cmake --build /json_build/ -- -j $(nproc)
           cmake --install /json_build/
-      - name: Build ACTS
+      - name: Build covfie
         run: |
-          export CMAKE_PREFIX_PATH=/json_install/:${CMAKE_PREFIX_PATH}
-          wget https://github.com/acts-project/acts/archive/refs/tags/v46.0.0.tar.gz
-          tar -xvf v46.0.0.tar.gz
+          wget https://github.com/acts-project/covfie/archive/refs/tags/v0.15.4.tar.gz
+          tar -xzvf v0.15.4.tar.gz
+          sed -i "s/VERSION 0.15.3/VERSION 0.15.4/g" covfie-0.15.4/CMakeLists.txt
           export CXX=g++
           cmake \
-            -S acts-46.0.0 \
+            -S covfie-0.15.4 \
+            -B /covfie_build/ \
+            -DCMAKE_INSTALL_PREFIX=/covfie_install/
+          cmake --build /covfie_build/ -- -j $(nproc)
+          cmake --install /covfie_build/
+      - name: Build vecmem
+        run: |
+          source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
+          wget https://github.com/acts-project/vecmem/archive/refs/tags/v1.25.0.tar.gz
+          tar -xzvf v1.25.0.tar.gz
+          export CXX=${SYCLCXX:-g++}
+          cmake \
+            -S vecmem-1.25.0/ \
+            -B /vecmem_build/ \
+            -DVECMEM_BUILD_CUDA_LIBRARY=${{ matrix.platform.enable_cuda && 'ON' || 'OFF' }} \
+            -DVECMEM_BUILD_SYCL_LIBRARY=${{ matrix.platform.enable_sycl && 'ON' || 'OFF' }} \
+            -DVECMEM_BUILD_HIP_LIBRARY=${{ matrix.platform.enable_hip && 'ON' || 'OFF' }} \
+            -DCMAKE_INSTALL_PREFIX=/vecmem_install/
+          cmake --build /vecmem_build/ -- -j $(nproc)
+          cmake --install /vecmem_build/
+          # vecmem ships FindHIPToolkit.cmake but does not install it, so
+          # downstream find_package(HIPToolkit) (e.g. traccc's alpaka HIP
+          # backend) cannot locate it. Copy it into the installed cmake dir,
+          # which vecmem-config.cmake adds to CMAKE_MODULE_PATH.
+          cp vecmem-1.25.0/cmake/FindHIPToolkit.cmake /vecmem_install/lib/cmake/vecmem-*/
+      - name: Build ACTS
+        run: |
+          export CMAKE_PREFIX_PATH=/json_install/:/vecmem_install/:/covfie_install/:${CMAKE_PREFIX_PATH}
+          wget https://github.com/acts-project/acts/archive/refs/tags/v46.7.0.tar.gz
+          tar -xvf v46.7.0.tar.gz
+          export CXX=g++
+          cmake \
+            -S acts-46.7.0 \
             -B /acts_build/ \
             -DACTS_BUILD_PLUGIN_JSON=ON \
+            -DACTS_SETUP_COVFIE=OFF \
+            -DACTS_SETUP_VECMEM=ON \
+            -DACTS_SETUP_SYSTEM_VECMEM=ON \
+            -DDETRAY_SETUP_COVFIE=ON \
+            -DACTS_SETUP_DETRAY=ON \
+            -DDETRAY_USE_SYSTEM_COVFIE=ON \
             -DACTS_USE_SYSTEM_NLOHMANN_JSON=ON \
+            -DDETRAY_USE_SYSTEM_NLOHMANN=ON \
+            -DDETRAY_GENERATE_METADATA="itk_metadata" \
+            -DDETRAY_BUILD_TEST_UTILS=ON \
             -DCMAKE_INSTALL_PREFIX=/acts_install/ \
             -DCMAKE_BUILD_TYPE=Release
           cmake --build /acts_build/ -- -j $(nproc)
@@ -129,14 +203,13 @@ jobs:
       - name: Configure
         run: |
           source ${GITHUB_WORKSPACE}/.github/ci_setup.sh ${{ matrix.platform.name }}
-          export CMAKE_PREFIX_PATH=/json_install/:/acts_install/:${CMAKE_PREFIX_PATH}
+          export CMAKE_PREFIX_PATH=/json_install/:/vecmem_install/:/covfie_install/:/acts_install/:${CMAKE_PREFIX_PATH}
           cmake \
             -DCMAKE_BUILD_TYPE=${{ matrix.build }} \
             ${{ matrix.platform.options }} \
             -DTRACCC_USE_SYSTEM_ACTS=ON \
-            -DDETRAY_USE_SYSTEM_NLOHMANN=ON \
+            -DTRACCC_USE_SYSTEM_VECMEM=ON \
             -DTRACCC_SUPPORTED_DETECTORS="default_detector;odd_detector;telescope_detector;toy_detector;itk_detector" \
-            -DDETRAY_GENERATE_METADATA="itk_metadata" \
             -S ${GITHUB_WORKSPACE} \
             -B build
       - name: Build

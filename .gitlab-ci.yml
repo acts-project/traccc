@@ -31,7 +31,7 @@ stages:
       - build
   script:
     - SYCLFLAGS="${TRACCC_SYCL_FLAGS}" CXXFLAGS="${TRACCC_CXX_FLAGS}"
-      cmake -G Ninja --preset ${TRACCC_BUILD_PRESET} -DCMAKE_BUILD_TYPE=Release
+      cmake -G Ninja --preset ${TRACCC_BUILD_PRESET} -DCMAKE_BUILD_TYPE=Release -DDETRAY_SET_LOGGING=NONE
       -DTRACCC_BUILD_EXAMPLES=FALSE ${TRACCC_CMAKE_ARGS}
       -S src -B build
     - cmake --build build --parallel 2
