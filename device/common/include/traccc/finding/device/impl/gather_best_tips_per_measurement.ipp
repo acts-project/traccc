@@ -44,11 +44,20 @@ TRACCC_HOST_DEVICE inline void gather_best_tips_per_measurement(
     unsigned int num_states = 0;
 
     bool need_to_write = true;
-    candidate_link L;
+    candidate_link L{
+        .step = std::numeric_limits<unsigned int>::max(),
+        .previous_candidate_idx = std::numeric_limits<unsigned int>::max(),
+        .meas_idx = std::numeric_limits<unsigned int>::max(),
+        .seed_idx = std::numeric_limits<unsigned int>::max(),
+        .n_skipped = std::numeric_limits<unsigned int>::max(),
+        .n_consecutive_skipped = std::numeric_limits<unsigned int>::max(),
+        .chi2 = std::numeric_limits<traccc::scalar>::max(),
+        .chi2_sum = std::numeric_limits<traccc::scalar>::max(),
+        .ndf_sum = std::numeric_limits<unsigned int>::max()};
 
     if (thread_id < tips.size()) {
         link_idx = tips.at(thread_id);
-        const auto link = links.at(link_idx);
+        const candidate_link link = links.at(link_idx);
         pval =
             prob(link.chi2_sum,
                  static_cast<typename algebra_t::scalar>(link.ndf_sum) - 5.f);
@@ -107,12 +116,15 @@ TRACCC_HOST_DEVICE inline void gather_best_tips_per_measurement(
                             std::numeric_limits<
                                 typename algebra_t::scalar>::max();
 
+                        out_idx = std::numeric_limits<unsigned int>::max();
                         for (unsigned int i = 0; i < size; ++i) {
                             if (tip_pval.at(offset + i) < worst_pval) {
                                 worst_pval = tip_pval.at(offset + i);
                                 out_idx = i;
                             }
                         }
+                        assert(out_idx !=
+                               std::numeric_limits<unsigned int>::max());
                     } else {
                         new_size = size + 1;
                         out_idx = size;
