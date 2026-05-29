@@ -14,6 +14,9 @@
 // VecMem include(s).
 #include <vecmem/edm/container.hpp>
 
+// System include(s)
+#include <ostream>
+
 namespace traccc::edm {
 
 /// Interface for the @c traccc::edm::seed_collection class.
@@ -120,6 +123,18 @@ class seed : public BASE {
         const seed<T>& other) const;
 
     /// @}
+
+    private:
+    /// @returns a string stream that prints the seed details
+    TRACCC_HOST
+    friend std::ostream& operator<<(std::ostream& os, const seed& s) {
+        os << "quality: " << s.quality() << std::endl;
+        os << "measurements: [bottom = " << s.bottom_index()
+           << ", middle = " << s.middle_index() << ", top = " << s.top_index()
+           << "]" << std::endl;
+
+        return os;
+    }
 
 };  // class seed
 

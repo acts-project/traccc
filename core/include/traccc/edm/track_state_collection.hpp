@@ -20,6 +20,7 @@
 // System include(s).
 #include <concepts>
 #include <cstdint>
+#include <ostream>
 
 namespace traccc::edm {
 
@@ -191,6 +192,28 @@ class track_state : public BASE {
     void set_smoothed(bool value = true);
 
     /// @}
+
+    private:
+    /// @returns a string stream that prints the track state details
+    TRACCC_HOST
+    friend std::ostream& operator<<(std::ostream& os, const track_state& s) {
+        os << "hole: " << std::boolalpha << s.is_hole() << std::noboolalpha
+           << std::endl;
+        if (!s.is_hole()) {
+            os << "measurement index: " << s.measurement_index() << std::endl;
+        }
+
+        os << "filtered: chi2 (fw) = " << s.filtered_chi2()
+           << ", chi2 (bw) = " << s.backward_chi2() << "\n"
+           << s.filtered_params() << std::endl;
+
+        if (s.is_smoothed()) {
+            os << "smoothed: chi2 = " << s.smoothed_chi2() << "\n"
+               << s.smoothed_params() << std::endl;
+        }
+
+        return os;
+    }
 
 };  // class track_state
 
