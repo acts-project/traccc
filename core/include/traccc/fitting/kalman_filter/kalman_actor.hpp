@@ -127,6 +127,11 @@ struct kalman_actor_state {
         typename sequencer_t::surface_type sf_desc) {
         assert(!sf_desc.identifier().is_invalid());
 
+        // Don't collect data
+        if (m_sequencer.sequence().capacity() == 0u) {
+            return;
+        }
+
         m_sequencer.sequence().push_back(sf_desc);
         DETRAY_VERBOSE_HOST("Added: " << sf_desc);
     }
@@ -352,8 +357,8 @@ struct kalman_actor : detray::base_actor {
         state& actor_state, propagator_state_t& propagation,
         detray::actor::parameter_transporter_result<algebra_t>& res) const {
 
-        auto& stepping = propagation.stepping();
-        auto& navigation = propagation.navigation();
+        auto& stepping = std::as_const(propagation).stepping();
+        auto& navigation = std::as_const(propagation).navigation();
 
         TRACCC_VERBOSE_HOST_DEVICE("Actor: Kalman Fitter (status %d)...",
                                    actor_state.fit_result);
@@ -381,27 +386,30 @@ struct kalman_actor : detray::base_actor {
             // Increase the hole count if the propagator stops at an additional
             // surface and wait for the next sensitive surface to match
             if (!actor_state.match_surface_to_track_state(propagation)) {
+                // Add this to the surface sequence for the backward fit
                 if (!actor_state.backward_mode &&
                     navigation.current_surface().has_material()) {
-                    // Add this to the surface sequence for the backward fit
-                    actor_state.add_to_sequence(
-                        std::as_const(navigation).current().surface());
+                    actor_state.add_to_sequence(navigation.current().surface());
                 }
                 return;
             } else if (actor_state.fit_result !=
-                       kalman_fitter_status::SUCCESS) {
+                           kalman_fitter_status::SUCCESS &&
+                       !actor_state.do_precise_hole_count) {
                 // Surface matched but encountered error: Abort fit
-                navigation.abort(fitter_debug_msg{actor_state.fit_result});
+                propagation.navigation().abort(
+                    fitter_debug_msg{actor_state.fit_result});
                 propagation.heartbeat(false);
                 return;
             }
 
             auto& sequencer = actor_state.sequencer();
-            if (sequencer.sequence().size() ==
-                sequencer.sequence().capacity()) {
+            if (sequencer.sequence().capacity() > 0u &&
+                sequencer.sequence().size() ==
+                    sequencer.sequence().capacity()) {
                 DETRAY_ERROR_HOST_DEVICE("Sequence overflow!");
                 sequencer.set_overflow();
-                navigation.exit();
+                propagation.navigation().exit();
+                propagation.heartbeat(false);
                 return;
             }
 
@@ -441,8 +449,7 @@ struct kalman_actor : detray::base_actor {
                             is_line);
 
                     // Add this to the surface sequence for the backward fit
-                    actor_state.add_to_sequence(
-                        std::as_const(navigation).current().surface());
+                    actor_state.add_to_sequence(navigation.current().surface());
                 } else {
                     assert(false);
                 }
@@ -473,7 +480,8 @@ struct kalman_actor : detray::base_actor {
             }
 
             // Abort if the Kalman update fails
-            if (actor_state.fit_result != kalman_fitter_status::SUCCESS) {
+            if (actor_state.fit_result != kalman_fitter_status::SUCCESS &&
+                !actor_state.do_precise_hole_count) {
                 if (actor_state.backward_mode) {
                     TRACCC_ERROR_DEVICE("Abort backward fit: KF status %d",
                                         actor_state.fit_result);
@@ -486,7 +494,8 @@ struct kalman_actor : detray::base_actor {
                     TRACCC_ERROR_HOST("Abort forward fit: " << fitter_debug_msg{
                                           actor_state.fit_result}());
                 }
-                navigation.abort(fitter_debug_msg{actor_state.fit_result});
+                propagation.navigation().abort(
+                    fitter_debug_msg{actor_state.fit_result});
                 propagation.heartbeat(false);
                 return;
             }
@@ -503,14 +512,14 @@ struct kalman_actor : detray::base_actor {
             // No need to continue
             if (actor_state.finished() && !actor_state.do_precise_hole_count) {
                 TRACCC_VERBOSE_HOST_DEVICE("Kalman Actor: finished");
-                navigation.exit();
+                propagation.navigation().exit();
                 propagation.heartbeat(false);
                 return;
             }
 
             // Flag renavigation of the current candidate (unless for overlap)
             if (math::fabs(navigation()) > 1.f * unit<float>::um) {
-                navigation.set_high_trust();
+                propagation.navigation().set_high_trust();
             } else {
                 TRACCC_DEBUG_HOST_DEVICE(
                     "Encountered overlap, jump to next surface");
@@ -520,12 +529,10 @@ struct kalman_actor : detray::base_actor {
             res.status = detray::actor::status::e_success;
         } else if (!actor_state.backward_mode &&
                    navigation.encountered_sf_material()) {
-            assert(std::as_const(navigation).is_on_passive() ||
-                   std::as_const(navigation).is_on_portal());
+            assert(navigation.is_on_passive() || navigation.is_on_portal());
 
             // Add this to the surface sequence for the backward fit
-            actor_state.add_to_sequence(
-                std::as_const(navigation).current().surface());
+            actor_state.add_to_sequence(navigation.current().surface());
         }
     }
 };

@@ -89,6 +89,7 @@ class fitting_performance_writer : public messaging {
         const edm::track_state trk_state = track_states.at(trk_state_idx);
         assert(!trk_state.is_hole());
         assert(trk_state.is_smoothed());
+        assert(!trk_state.filtered_params().is_invalid());
 
         bool use_found = !evt_data.m_found_meas_to_ptc_map.empty();
 

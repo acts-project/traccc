@@ -174,6 +174,8 @@ class kalman_fitter {
     fit(const seed_parameters_t& seed_params, state& fitter_state) const {
         seed_parameters_t params = seed_params;
         fitter_state.m_fit_actor_state.reset();
+        fitter_state.m_fit_actor_state.do_precise_hole_count =
+            m_cfg.do_precise_hole_count;
 
         // Run the kalman filtering for a given number of iterations
         for (std::size_t i = 0; i < m_cfg.n_iterations; i++) {
@@ -208,7 +210,9 @@ class kalman_fitter {
 
         const kalman_fitter_status res_fw = filter(params, fitter_state);
 
+        // Reset hole count
         const unsigned int n_holes_fw{fitter_state.m_fit_actor_state.n_holes};
+        fitter_state.m_fit_actor_state.n_holes = 0u;
 
         // Run smoothing
         kalman_fitter_status res_bw{kalman_fitter_status::ERROR_OTHER};
