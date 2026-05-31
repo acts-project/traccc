@@ -22,6 +22,7 @@
 #include "traccc/options/logging.hpp"
 #include "traccc/options/magnetic_field.hpp"
 #include "traccc/options/program_options.hpp"
+#include "traccc/options/threading.hpp"
 #include "traccc/options/throughput.hpp"
 #include "traccc/options/track_finding.hpp"
 #include "traccc/options/track_fitting.hpp"
@@ -39,24 +40,34 @@
 #include "traccc/performance/throughput.hpp"
 #include "traccc/performance/timer.hpp"
 #include "traccc/performance/timing_info.hpp"
+#include "traccc/seeding/detail/track_params_estimation_config.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>
+
+// TBB include(s).
+#include <tbb/global_control.h>
+#include <tbb/parallel_for.h>
+#include <tbb/task_arena.h>
+#include <tbb/task_group.h>
 
 // Indicators include(s).
 #include "traccc/examples/indicators.hpp"
 
 // System include(s).
+#include <atomic>
 #include <cstdlib>
 #include <ctime>
+#include <fstream>
 #include <functional>
 #include <iostream>
 #include <memory>
+#include <vector>
 
 namespace traccc {
 
 template <typename FULL_CHAIN_ALG>
-int throughput_st(std::string_view description, int argc, char* argv[]) {
+int throughput_mt(std::string_view description, int argc, char* argv[]) {
 
     std::unique_ptr<const traccc::Logger> prelogger = traccc::getDefaultLogger(
         "ThroughputExample", traccc::Logging::Level::INFO);
@@ -72,12 +83,13 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
     opts::track_propagation propagation_opts;
     opts::track_fitting fitting_opts;
     opts::throughput throughput_opts;
+    opts::threading threading_opts;
     opts::logging logging_opts;
     opts::program_options program_opts{
         description,
         {detector_opts, bfield_opts, input_opts, clusterization_opts,
          seeding_opts, seeding_gbts_opts, finding_opts, propagation_opts,
-         fitting_opts, throughput_opts, logging_opts},
+         fitting_opts, throughput_opts, threading_opts, logging_opts},
         argc,
         argv,
         prelogger->cloneWithSuffix("Options")};
@@ -112,30 +124,41 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
     vecmem::vector<edm::silicon_cell_collection::host> input{&host_mr};
     {
         performance::timer t{"File reading", times};
-        // Read the input cells into memory event-by-event.
+        // Set up the container for the input events.
         input.reserve(input_opts.events);
-        for (std::size_t i = input_opts.skip;
-             i < input_opts.skip + input_opts.events; ++i) {
+        const std::size_t first_event = input_opts.skip;
+        const std::size_t last_event = input_opts.skip + input_opts.events;
+        for (std::size_t i = first_event; i < last_event; ++i) {
             input.emplace_back(host_mr);
-            static constexpr bool DEDUPLICATE = true;
-            io::read_cells(input.back(), i, input_opts.directory,
-                           logger().clone(), &det_cond, input_opts.format,
-                           DEDUPLICATE, input_opts.use_acts_geom_source);
         }
+        // Read the input cells into memory in parallel.
+        tbb::parallel_for(
+            tbb::blocked_range<std::size_t>{first_event, last_event},
+            [&](const tbb::blocked_range<std::size_t>& event_range) {
+                for (std::size_t event = event_range.begin();
+                     event != event_range.end(); ++event) {
+                    static constexpr bool DEDUPLICATE = true;
+                    io::read_cells(input.at(event - input_opts.skip), event,
+                                   input_opts.directory, logger().clone(),
+                                   &det_cond, input_opts.format, DEDUPLICATE,
+                                   input_opts.use_acts_geom_source);
+                }
+            });
     }
 
     // Algorithm configuration(s).
-    detray::propagation::config propagation_config(propagation_opts);
-
     typename FULL_CHAIN_ALG::clustering_algorithm::config_type clustering_cfg(
         clusterization_opts);
 
     const traccc::seedfinder_config seedfinder_config(seeding_opts);
     const traccc::seedfilter_config seedfilter_config(seeding_opts);
     const traccc::spacepoint_grid_config spacepoint_grid_config(seeding_opts);
-    traccc::gbts_seedfinder_config gbts_config;
+
+    const traccc::gbts_seedfinder_config gbts_config(seeding_gbts_opts);
+
     const traccc::track_params_estimation_config track_params_estimation_config;
 
+    detray::propagation::config propagation_config(propagation_opts);
     typename FULL_CHAIN_ALG::finding_algorithm::config_type finding_cfg(
         finding_opts);
     finding_cfg.propagation = propagation_config;
@@ -144,39 +167,56 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
         fitting_opts);
     fitting_cfg.propagation = propagation_config;
 
-    // Set up the full-chain algorithm.
-    std::unique_ptr<FULL_CHAIN_ALG> alg = std::make_unique<FULL_CHAIN_ALG>(
-        host_mr, clustering_cfg, seedfinder_config, spacepoint_grid_config,
-        seedfilter_config, gbts_config, track_params_estimation_config,
-        finding_cfg, fitting_cfg, det_descr, det_cond, field, &detector,
-        logger().clone("FullChainAlg"));
+    // Set up the full-chain algorithm(s). One for each thread.
+    std::vector<FULL_CHAIN_ALG> algs;
+    algs.reserve(threading_opts.threads + 1);
+    for (std::size_t i = 0; i < threading_opts.threads + 1; ++i) {
+        algs.push_back({host_mr, clustering_cfg, seedfinder_config,
+                        spacepoint_grid_config, seedfilter_config, gbts_config,
+                        track_params_estimation_config, finding_cfg,
+                        fitting_cfg, det_descr, det_cond, field, &detector,
+                        logger().clone(), seeding_gbts_opts.useGBTS});
+    }
+
+    // Set up a lambda that calls the correct function on the algorithms.
+    std::function<std::size_t(int, const edm::silicon_cell_collection::host&)>
+        process_event;
+    if (throughput_opts.reco_stage == opts::throughput::stage::seeding) {
+        process_event = [&](int thread,
+                            const edm::silicon_cell_collection::host& cells)
+            -> std::size_t {
+            return algs.at(static_cast<std::size_t>(thread))
+                .seeding(cells)
+                .size();
+        };
+    } else if (throughput_opts.reco_stage == opts::throughput::stage::full) {
+        process_event = [&](int thread,
+                            const edm::silicon_cell_collection::host& cells)
+            -> std::size_t {
+            return algs.at(static_cast<std::size_t>(thread))(cells).size();
+        };
+    } else {
+        throw std::invalid_argument("Unknown reconstruction stage");
+    }
+
+    // Set up the TBB arena and thread group. From here on out TBB is only
+    // allowed to use the specified number of threads.
+    tbb::global_control global_thread_limit(
+        tbb::global_control::max_allowed_parallelism,
+        threading_opts.threads + 1);
+    tbb::task_arena arena{static_cast<int>(threading_opts.threads), 0};
+    tbb::task_group group;
 
     // Seed the random number generator.
-    if (throughput_opts.random_seed == 0) {
+    if (throughput_opts.random_seed == 0u) {
         std::srand(static_cast<unsigned int>(std::time(nullptr)));
     } else {
         std::srand(throughput_opts.random_seed);
     }
 
-    // Set up a lambda that calls the correct function on the algorithm.
-    std::function<std::size_t(const edm::silicon_cell_collection::host&)>
-        process_event;
-    if (throughput_opts.reco_stage == opts::throughput::stage::clustering) {
-        process_event = [&](const edm::silicon_cell_collection::host& cells)
-            -> std::size_t { return alg->clustering(cells).size(); };
-    } else if (throughput_opts.reco_stage == opts::throughput::stage::seeding) {
-        process_event = [&](const edm::silicon_cell_collection::host& cells)
-            -> std::size_t { return alg->seeding(cells).size(); };
-    } else if (throughput_opts.reco_stage == opts::throughput::stage::full) {
-        process_event = [&](const edm::silicon_cell_collection::host& cells)
-            -> std::size_t { return (*alg)(cells).size(); };
-    } else {
-        throw std::invalid_argument("Unknown reconstruction stage");
-    }
-
     // Dummy count uses output of tp algorithm to ensure the compiler
     // optimisations don't skip any step
-    std::size_t rec_track_params = 0;
+    std::atomic_size_t rec_track_params = 0;
 
     // Cold Run events. To discard any "initialisation issues" in the
     // measurements.
@@ -202,10 +242,19 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
                      : static_cast<std::size_t>(std::rand())) %
                 input_opts.events;
 
-            // Process one event.
-            rec_track_params += process_event(input[event]);
-            progress_bar.tick();
+            // Launch the processing of the event.
+            arena.execute([&, event]() {
+                group.run([&, event]() {
+                    rec_track_params.fetch_add(process_event(
+                        tbb::this_task_arena::current_thread_index(),
+                        input[event]));
+                    progress_bar.tick();
+                });
+            });
         }
+
+        // Wait for all tasks to finish.
+        group.wait();
     }
 
     // Reset the dummy counter.
@@ -233,27 +282,48 @@ int throughput_st(std::string_view description, int argc, char* argv[]) {
                      : static_cast<std::size_t>(std::rand())) %
                 input_opts.events;
 
-            // Process one event.
-            rec_track_params += process_event(input[event]);
-            progress_bar.tick();
+            // Launch the processing of the event.
+            arena.execute([&, event]() {
+                group.run([&, event]() {
+                    rec_track_params.fetch_add(process_event(
+                        tbb::this_task_arena::current_thread_index(),
+                        input[event]));
+                    progress_bar.tick();
+                });
+            });
         }
+
+        // Wait for all tasks to finish.
+        group.wait();
     }
 
-    // Explicitly delete the objects in the correct order.
-    alg.reset();
+    // Delete the algorithms explicitly before their parent object would go out
+    // of scope.
+    algs.clear();
 
     // Print some results.
-    std::cout << "Reconstructed track parameters: " << rec_track_params
-              << std::endl;
-    std::cout << "Time totals:" << std::endl;
-    std::cout << times << std::endl;
-    std::cout << "Throughput:" << std::endl;
-    std::cout << performance::throughput{throughput_opts.cold_run_events, times,
-                                         "Warm-up processing"}
-              << "\n"
-              << performance::throughput{throughput_opts.processed_events,
-                                         times, "Event processing"}
-              << std::endl;
+    TRACCC_INFO("Reconstructed track parameters: " << rec_track_params.load());
+    TRACCC_INFO("Time totals: " << times);
+
+    performance::throughput throughput_wu{throughput_opts.cold_run_events,
+                                          times, "Warm-up processing"};
+    performance::throughput throughput_pr{throughput_opts.processed_events,
+                                          times, "Event processing"};
+
+    TRACCC_INFO("Throughput:" << throughput_wu << "\n" << throughput_pr);
+
+    // Print results to log file
+    if (throughput_opts.log_file != "\0") {
+        std::ofstream logFile;
+        logFile.open(throughput_opts.log_file, std::fstream::app);
+        logFile << "\"" << input_opts.directory << "\""
+                << "," << threading_opts.threads << "," << input_opts.events
+                << "," << throughput_opts.cold_run_events << ","
+                << throughput_opts.processed_events << ","
+                << times.get_time("Warm-up processing").count() << ","
+                << times.get_time("Event processing").count() << std::endl;
+        logFile.close();
+    }
 
     // Return gracefully.
     return 0;
