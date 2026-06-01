@@ -156,13 +156,14 @@ if( TRACCC_SETUP_VECMEM )
       find_package( vecmem 1.9.0 REQUIRED )
    else()
       add_subdirectory( extern/vecmem )
-      # Make the "VecMem language code" available for the whole project.
-      list( PREPEND CMAKE_MODULE_PATH "${VECMEM_LANGUAGE_DIR}" )
    endif()
+   # Make the "VecMem language code" available for the whole project.
+   list( PREPEND CMAKE_MODULE_PATH "${VECMEM_LANGUAGE_DIR}" )
+   list( PREPEND CMAKE_MODULE_PATH "${VECMEM_LANGUAGE_DIR}/sycl" )
+   # Including vecmem-check-language makes sure that the HIP and SYCL languages
+   # would be picked up from VecMem.
+   include( vecmem-check-language )
 endif()
-# Including vecmem-check-language makes sure that the HIP and SYCL languages
-# would be picked up from VecMem.
-include( vecmem-check-language )
 
 # Set up TBB.
 option( TRACCC_SETUP_TBB
