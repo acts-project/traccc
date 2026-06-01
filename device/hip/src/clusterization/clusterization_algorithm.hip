@@ -41,11 +41,11 @@ void clusterization_algorithm::ccl_kernel(
                        2 * payload.config.max_partition_size() *
                            sizeof(device::details::index_t),
                        details::get_stream(stream()), payload.config,
-                       payload.cells, payload.det_descr, payload.measurements,
-                       payload.cell_links, payload.f_backup, payload.gf_backup,
-                       payload.adjc_backup, payload.adjv_backup,
-                       payload.backup_mutex, payload.disjoint_set,
-                       payload.cluster_sizes);
+                       payload.cells, payload.det_descr, payload.det_cond,
+                       payload.measurements, payload.f_backup,
+                       payload.gf_backup, payload.adjc_backup,
+                       payload.adjv_backup, payload.backup_mutex,
+                       payload.disjoint_set, payload.cluster_sizes);
     TRACCC_HIP_ERROR_CHECK(hipGetLastError());
 }
 
