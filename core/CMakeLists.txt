@@ -161,3 +161,10 @@ target_include_directories(traccc_core
 install(
   DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/include/"
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}" )
+
+# Any client that wants to use traccc::core with nvcc, needs to use the
+# "--expt-relaxed-constexpr" flag. Otherwise nvcc has a tendency to generate
+# invalid code.
+target_compile_options(traccc_core
+  INTERFACE
+  $<$<AND:$<CUDA_COMPILER_ID:NVIDIA>,$<COMPILE_LANGUAGE:CUDA>>:--expt-relaxed-constexpr>)
