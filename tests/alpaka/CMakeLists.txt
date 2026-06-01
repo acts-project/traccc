@@ -7,23 +7,26 @@
 include(traccc-alpaka-functions)
 traccc_enable_language_alpaka()
 
-if(alpaka_ACC_GPU_CUDA_ENABLE)
-  list(APPEND DEVICE_LIBRARIES vecmem::cuda)
-elseif(alpaka_ACC_GPU_HIP_ENABLE)
-  list(APPEND DEVICE_LIBRARIES vecmem::hip)
-elseif(alpaka_ACC_SYCL_ENABLE)
-  include( traccc-compiler-options-sycl )
-  list(APPEND DEVICE_LIBRARIES vecmem::sycl)
-endif()
-
 traccc_add_alpaka_test( alpaka
    alpaka_basic.cpp
-   test_cca.cpp
    LINK_LIBRARIES
    GTest::gtest_main
    traccc_tests_common
    alpaka::alpaka
    vecmem::core
    traccc::alpaka
-   ${DEVICE_LIBRARIES}
+)
+
+traccc_add_test(alpaka_cxx
+   test_cca.cpp
+   test_ckf_combinatorics_telescope.cpp
+   test_ckf_toy_detector.cpp
+   LINK_LIBRARIES
+   GTest::gtest_main
+   traccc_tests_common
+   vecmem::core
+   traccc::alpaka
+   traccc::io
+   traccc::performance
+   traccc::simulation
 )

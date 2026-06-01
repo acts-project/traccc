@@ -1,6 +1,6 @@
 # TRACCC library, part of the ACTS project (R&D line)
 #
-# (c) 2021-2025 CERN for the benefit of the ACTS project
+# (c) 2021-2026 CERN for the benefit of the ACTS project
 #
 # Mozilla Public License Version 2.0
 
@@ -27,7 +27,7 @@ endif()
 
 # Allow to use functions in device code that are constexpr, even if they are
 # not marked with __device__.
-traccc_add_flag( CMAKE_CUDA_FLAGS "--expt-relaxed-constexpr --use_fast_math" )
+traccc_add_flag( CMAKE_CUDA_FLAGS "--use_fast_math" )
 
 # Make CUDA generate debug symbols for the device code as well in a debug
 # build.

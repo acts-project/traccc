@@ -71,6 +71,7 @@ traccc_add_library( traccc_device_common device_common
    # Track finding funtions(s).
    "include/traccc/finding/device/geo_id_surface_comparator.hpp"
    "include/traccc/finding/device/build_tracks.hpp"
+   "include/traccc/finding/device/find_tracks_payload.hpp"
    "include/traccc/finding/device/find_tracks.hpp"
    "include/traccc/finding/device/gather_best_tips_per_measurement.hpp"
    "include/traccc/finding/device/gather_measurement_votes.hpp"
@@ -84,6 +85,8 @@ traccc_add_library( traccc_device_common device_common
    "include/traccc/finding/device/impl/fill_finding_propagation_sort_keys.ipp"
    "include/traccc/finding/device/impl/propagate_to_next_surface.ipp"
    "include/traccc/finding/device/impl/update_tip_length_buffer.ipp"
+   "include/traccc/finding/device/combinatorial_kalman_filter_algorithm.hpp"
+   "src/finding/combinatorial_kalman_filter_algorithm.cpp"
    # Track fitting funtions(s).
    "include/traccc/fitting/device/fit.hpp"
    "include/traccc/fitting/device/fill_fitting_sort_keys.hpp"

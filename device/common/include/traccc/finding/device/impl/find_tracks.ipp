@@ -42,7 +42,8 @@ template <typename detector_t, concepts::thread_id1 thread_id_t,
           concepts::barrier barrier_t>
 TRACCC_HOST_DEVICE inline void find_tracks(
     const thread_id_t& thread_id, const barrier_t& barrier,
-    const finding_config& cfg, const find_tracks_payload<detector_t>& payload,
+    const finding_config& cfg, typename detector_t::const_view_type det_data,
+    const find_tracks_payload& payload,
     const find_tracks_shared_payload& shared_payload) {
 
     using algebra_t = typename detector_t::algebra_type;
@@ -54,7 +55,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
     /*
      * Initialize all of the device vectors from their vecmem views.
      */
-    detector_t det(payload.det_data);
+    detector_t det(det_data);
     edm::measurement_collection::const_device measurements(
         payload.measurements_view);
     bound_track_parameters_collection_types::const_device in_params(

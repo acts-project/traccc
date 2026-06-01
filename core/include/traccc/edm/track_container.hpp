@@ -147,4 +147,59 @@ struct track_container {
 
 };  // struct track_container
 
+/// Convenience function to print the entire track information (const device)
+///
+/// @param track_cont the track container, holding track and states/measurements
+/// @param trk_idx the index into the track collection to fetch the track that
+/// should be printed
+template <typename algebra_t>
+TRACCC_HOST inline void print_track(
+    typename edm::track_container<algebra_t>::const_device& track_cont,
+    unsigned int trk_idx) {
+    // Print the general track information
+    const auto trk = track_cont.tracks.at(trk_idx);
+    std::cout << "TRACK IDX " << trk_idx << ":\n" << trk << std::endl;
+
+    if (trk.constituent_links().empty()) {
+        std::cout << "Track does not contain data" << std::endl;
+        return;
+    }
+
+    // Print the track states or measurements that belong to the trac
+    if (trk.constituent_links().at(0).type ==
+        edm::track_constituent_link::constituent_type::track_state) {
+        for (const auto& link : trk.constituent_links()) {
+            std::cout << "-> State " << link.index << ":\n"
+                      << track_cont.states.at(link.index) << std::endl;
+        }
+    } else {
+        edm::measurement_collection::const_device measurements{
+            track_cont.measurements};
+        for (const auto& link : trk.constituent_links()) {
+            std::cout << "-> Measurement " << link.index << ":\n"
+                      << measurements.at(link.index) << std::endl;
+        }
+    }
+}
+
+/// Convenience function to print the entire track information (host)
+///
+/// @param track_cont the track container, holding track and states/measurements
+/// @param trk_idx the index into the track collection to fetch the track that
+/// should be printed
+template <typename algebra_t>
+TRACCC_HOST inline void print_track(
+    typename edm::track_container<algebra_t>::host& track_cont,
+    unsigned int trk_idx) {
+
+    typename edm::track_container<algebra_t>::const_data const_tracks_data{
+        track_cont};
+    typename edm::track_container<algebra_t>::const_view const_tracks_view{
+        const_tracks_data};
+    typename edm::track_container<algebra_t>::const_device const_device_tracks{
+        const_tracks_view};
+
+    edm::print_track<algebra_t>(const_device_tracks, trk_idx);
+}
+
 }  // namespace traccc::edm
