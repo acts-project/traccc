@@ -13,7 +13,7 @@ message( STATUS "Building CCCL as part of the TRACCC project" )
 
 # Declare where to get Thrust from.
 set( TRACCC_CCCL_SOURCE
-   "URL;https://github.com/NVIDIA/cccl/archive/refs/tags/v2.7.0.tar.gz;URL_MD5;83e431ebcb0a5c055fbd927754bec951"
+   "URL;https://github.com/NVIDIA/cccl/archive/refs/tags/v2.8.5.tar.gz;URL_MD5;c0800bc2e139c5ad291f89aac09042b6"
    CACHE STRING "Source for CCCL, when built as part of this project" )
 mark_as_advanced( TRACCC_CCCL_SOURCE )
 # Note that we must not use SYSTEM here. Otherwise nvcc would pick up Thrust
