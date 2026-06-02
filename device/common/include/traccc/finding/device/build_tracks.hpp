@@ -16,6 +16,7 @@
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/finding_config.hpp"
+#include "traccc/finding/actors/expected_layer_pattern_collector.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/jagged_vector_view.hpp>
@@ -44,6 +45,18 @@ struct build_tracks_payload {
      * @brief View object to the vector of track candidates
      */
     edm::track_container<default_algebra>::view tracks_view;
+
+    /**
+     * @brief View object to the per-link expected-layer patterns
+     */
+    vecmem::data::vector_view<const expected_layer_pattern_type>
+        expected_layer_patterns_view;
+
+    /**
+     * @brief View object to the per-track expected-layer patterns
+     */
+    vecmem::data::vector_view<expected_layer_pattern_type>
+        output_expected_layer_patterns_view;
 
     /**
      * @brief Optional mapping from tip index to output index

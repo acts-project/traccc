@@ -377,7 +377,7 @@ struct kalman_actor : detray::actor {
                     navigation.current_surface().has_material()) {
                     // Add this to the surface sequence for the backward fit
                     actor_state.add_to_sequence(
-                        std::as_const(navigation).current().sf_desc);
+                        std::as_const(navigation).current().surface());
                 }
                 return;
             } else if (actor_state.fit_result !=
@@ -425,7 +425,7 @@ struct kalman_actor : detray::actor {
 
                     // Add this to the surface sequence for the backward fit
                     actor_state.add_to_sequence(
-                        std::as_const(navigation).current().sf_desc);
+                        std::as_const(navigation).current().surface());
                 } else {
                     assert(false);
                 }
@@ -504,7 +504,7 @@ struct kalman_actor : detray::actor {
 
             // Add this to the surface sequence for the backward fit
             actor_state.add_to_sequence(
-                std::as_const(navigation).current().sf_desc);
+                std::as_const(navigation).current().surface());
         }
     }
 };

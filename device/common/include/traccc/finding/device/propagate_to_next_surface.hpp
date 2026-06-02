@@ -15,6 +15,7 @@
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/finding_config.hpp"
+#include "traccc/finding/actors/expected_layer_pattern_collector.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
@@ -79,6 +80,22 @@ struct propagate_to_next_surface_payload {
      * @brief Vector to hold the number of track states per tip
      */
     vecmem::data::vector_view<unsigned int> tip_lengths_view;
+
+    /**
+     * @brief View object to the per-link expected-layer patterns
+     */
+    vecmem::data::vector_view<expected_layer_pattern_type>
+        expected_layer_patterns_view;
+
+    /**
+     * @brief Device pointer to the expected-layer mapping table
+     */
+    const expected_layer_mapping_entry* expected_layer_map;
+
+    /**
+     * @brief Size of the expected-layer mapping table
+     */
+    unsigned int expected_layer_map_size;
 
     bound_matrix<typename propagator_t::detector_type::algebra_type>*
         tmp_jacobian_ptr;

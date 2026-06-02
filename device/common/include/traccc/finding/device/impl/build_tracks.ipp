@@ -31,6 +31,12 @@ TRACCC_HOST_DEVICE inline void build_tracks(
     const vecmem::device_vector<const candidate_link> links(payload.links_view);
 
     const vecmem::device_vector<const unsigned int> tips(payload.tips_view);
+    // Expected layer patterns
+    const vecmem::device_vector<const expected_layer_pattern_type>
+        expected_layer_patterns(payload.expected_layer_patterns_view);
+    vecmem::device_vector<expected_layer_pattern_type>
+        output_expected_layer_patterns(
+            payload.output_expected_layer_patterns_view);
 
     edm::track_collection<default_algebra>::device track_candidates(
         payload.tracks_view.tracks);
@@ -65,6 +71,9 @@ TRACCC_HOST_DEVICE inline void build_tracks(
     // Track summary variables
     scalar ndf_sum = 0.f;
     scalar chi2_sum = 0.f;
+    
+    // Initialize track-level expected layer pattern bitmask
+    expected_layer_pattern_type track_expected_pattern{};
 
     bound_matrix<default_algebra> big_lambda_tilde =
         matrix::zero<bound_matrix<default_algebra>>();
@@ -182,6 +191,15 @@ TRACCC_HOST_DEVICE inline void build_tracks(
         } else {
             *it = {edm::track_constituent_link::measurement, L.meas_idx};
         }
+        
+        // Merge per-link patterns into track-level expected layer bitmask 
+        // as done in CPU
+        if (expected_layer_patterns.size() > link_idx) {
+            const auto& link_pattern = expected_layer_patterns.at(link_idx);
+            for (std::size_t i = 0; i < track_expected_pattern.size(); ++i) {
+                track_expected_pattern[i] |= link_pattern[i];
+            }
+        }
 
         // Sanity check on chi2
         assert(L.chi2 < std::numeric_limits<traccc::scalar>::max());
@@ -205,6 +223,11 @@ TRACCC_HOST_DEVICE inline void build_tracks(
             track.chi2() = chi2_sum;
             track.pval() = prob(track.chi2(), track.ndf());
             track.nholes() = L.n_skipped;
+            // Write final expected layer pattern to output
+            if (output_expected_layer_patterns.size() > output_idx) {
+                output_expected_layer_patterns.at(output_idx) =
+                    track_expected_pattern;
+            }
         } else {
             link_idx = L.previous_candidate_idx;
             L = links.at(link_idx);

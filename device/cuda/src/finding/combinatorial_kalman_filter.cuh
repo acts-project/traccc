@@ -34,6 +34,7 @@
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
 #include "traccc/finding/device/barcode_surface_comparator.hpp"
 #include "traccc/finding/finding_config.hpp"
+#include "traccc/finding/actors/expected_layer_pattern_collector.hpp"
 #include "traccc/utils/logging.hpp"
 #include "traccc/utils/memory_resource.hpp"
 #include "traccc/utils/projections.hpp"
@@ -162,6 +163,31 @@ combinatorial_kalman_filter(
     vecmem::data::vector_buffer<candidate_link> links_buffer(
         link_buffer_capacity, mr.main, vecmem::data::buffer_type::resizable);
     copy.setup(links_buffer)->ignore();
+    
+    // Create a buffer for expected layer patterns
+    vecmem::data::vector_buffer<expected_layer_pattern_type>
+        expected_layer_patterns_buffer(
+            link_buffer_capacity, mr.main,
+            vecmem::data::buffer_type::fixed_size);
+    copy.setup(expected_layer_patterns_buffer)->ignore();
+
+    // Copy mapping table for expected layer patterns to device
+    const auto expected_layer_map_size =
+        static_cast<vecmem::data::vector_buffer<
+            expected_layer_mapping_entry>::size_type>(
+            config.expected_layer_map_size);
+    vecmem::data::vector_buffer<expected_layer_mapping_entry>
+        expected_layer_map_buffer(expected_layer_map_size, mr.main);
+    const expected_layer_mapping_entry* expected_layer_map_ptr = nullptr;
+    if (config.expected_layer_map != nullptr &&
+        config.expected_layer_map_size > 0u) {
+        copy.setup(expected_layer_map_buffer)->wait();
+        copy(vecmem::data::vector_view<const expected_layer_mapping_entry>(
+             expected_layer_map_size, config.expected_layer_map),
+             expected_layer_map_buffer)
+            ->wait();
+        expected_layer_map_ptr = expected_layer_map_buffer.ptr();
+    }
 
     vecmem::unique_alloc_ptr<bound_matrix<typename detector_t::algebra_type>[]>
         jacobian_ptr = nullptr;
@@ -270,6 +296,19 @@ combinatorial_kalman_filter(
             copy(links_buffer, new_links_buffer)->wait();
 
             links_buffer = std::move(new_links_buffer);
+            
+            // Resize the expected layer patterns buffer as well, 
+            // to keep it in sync with the links buffer
+            vecmem::data::vector_buffer<expected_layer_pattern_type>
+                new_expected_layer_patterns_buffer(
+                    link_buffer_capacity, mr.main,
+                    vecmem::data::buffer_type::fixed_size);
+            copy.setup(new_expected_layer_patterns_buffer)->ignore();
+            copy(expected_layer_patterns_buffer,
+                 new_expected_layer_patterns_buffer)
+                ->wait();
+            expected_layer_patterns_buffer =
+                std::move(new_expected_layer_patterns_buffer);
 
             if (config.run_mbf_smoother) {
                 vecmem::unique_alloc_ptr<
@@ -435,6 +474,17 @@ combinatorial_kalman_filter(
         // If no more CKF step is expected, the tips and links are populated,
         // and any further time-consuming action is avoided
         if (step == config.max_track_candidates_per_track - 1) {
+        //NOTE: ADDED TO FIX GARBAGE VALUE ISSUE IN THE EXPECTED LAYER PATTERN
+            if (n_candidates > 0) {
+                vecmem::device_vector<expected_layer_pattern_type>
+                    patterns_device(expected_layer_patterns_buffer);
+                const unsigned int offset = step_to_link_idx_map[step];
+                thrust::fill(thrust_policy,
+                             patterns_device.begin() + offset,
+                             patterns_device.begin() + offset + n_candidates,
+                             expected_layer_pattern_type{});
+                str.synchronize();
+            }
             break;
         }
 
@@ -489,6 +539,8 @@ combinatorial_kalman_filter(
                 using payload_t = device::propagate_to_next_surface_payload<
                     traccc::details::ckf_propagator_t<detector_t, bfield_t>,
                     bfield_t>;
+                // Add expected layer pattern buffer and map to the payload 
+                // for collection during propagation
                 const payload_t host_payload{
                     .det_data = det,
                     .field_data = field,
@@ -501,6 +553,12 @@ combinatorial_kalman_filter(
                     .n_in_params = n_candidates,
                     .tips_view = tips_buffer,
                     .tip_lengths_view = tip_length_buffer,
+                    .expected_layer_patterns_view =
+                        expected_layer_patterns_buffer,
+                    .expected_layer_map = expected_layer_map_ptr,
+                    .expected_layer_map_size =
+                        static_cast<unsigned int>(
+                            config.expected_layer_map_size),
                     .tmp_jacobian_ptr = tmp_jacobian_ptr.get()};
 
                 const unsigned int nThreads = warp_size * 4;
@@ -513,6 +571,39 @@ combinatorial_kalman_filter(
                 TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
                 str.synchronize();
+                
+                //NOTE: For debugging purposes only
+                TRACCC_DEBUG("Step " << step << " n_candidates="
+                                     << n_candidates << " link_offset="
+                                     << step_to_link_idx_map[step]
+                                     << " map_ptr="
+                                     << (expected_layer_map_ptr != nullptr)
+                                     << " map_size="
+                                     << static_cast<unsigned int>(
+                                            config.expected_layer_map_size));
+
+                if (n_candidates > 0 && expected_layer_map_ptr != nullptr) {
+                    const unsigned int sample =
+                        std::min(3u, n_candidates);
+                    vecmem::device_vector<expected_layer_pattern_type>
+                        patterns_device(expected_layer_patterns_buffer);
+                    std::vector<expected_layer_pattern_type> host_sample(
+                        sample);
+                    const unsigned int offset = step_to_link_idx_map[step];
+                    TRACCC_CUDA_ERROR_CHECK(cudaMemcpyAsync(
+                        host_sample.data(),
+                        patterns_device.data() + offset,
+                        sizeof(expected_layer_pattern_type) * sample,
+                        cudaMemcpyDeviceToHost, stream));
+                    str.synchronize();
+                    for (unsigned int i = 0; i < sample; ++i) {
+                        const auto& p = host_sample[i];
+                        TRACCC_DEBUG("Step " << step << " pattern[" << i
+                                            << "] = {" << p[0] << ", "
+                                            << p[1] << ", " << p[2] << ", "
+                                            << p[3] << "}");
+                    }
+                }
             }
         }
 
@@ -665,17 +756,27 @@ combinatorial_kalman_filter(
     copy.setup(track_candidates_buffer.tracks)->ignore();
     copy.setup(track_candidates_buffer.states)->ignore();
 
+    // Create output buffer for expected layer patterns
+    vecmem::data::vector_buffer<expected_layer_pattern_type>
+        output_expected_layer_patterns_buffer(n_tips_total_filtered, mr.main);
+    copy.setup(output_expected_layer_patterns_buffer)->ignore();
+
     // @Note: nBlocks can be zero in case there is no tip. This happens when
     // chi2_max config is set tightly and no tips are found
     if (n_tips_total > 0) {
         const unsigned int nThreads = warp_size * 2;
         const unsigned int nBlocks = (n_tips_total + nThreads - 1) / nThreads;
 
+        // Add expected layer pattern buffer and map to the payload 
+        // for final collection during track building
         const device::build_tracks_payload payload{
             .seeds_view = seeds,
             .links_view = links_buffer,
             .tips_view = tips_buffer,
             .tracks_view = {track_candidates_buffer},
+            .expected_layer_patterns_view = expected_layer_patterns_buffer,
+            .output_expected_layer_patterns_view =
+                output_expected_layer_patterns_buffer,
             .tip_to_output_map = tip_to_output_map.get(),
             .jacobian_ptr = jacobian_ptr.get(),
             .link_predicted_parameter_view = link_predicted_parameter_buffer,
@@ -686,6 +787,20 @@ combinatorial_kalman_filter(
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
         str.synchronize();
+    }
+
+    // Publish expected layer patterns for the found tracks
+    if (n_tips_total_filtered > 0) {
+        vecmem::vector<expected_layer_pattern_type> host_patterns(mr.host);
+        host_patterns.resize(n_tips_total_filtered);
+        copy(output_expected_layer_patterns_buffer, host_patterns)->wait();
+        traccc::details::set_last_expected_layer_patterns(
+            std::vector<expected_layer_pattern_type>(
+                host_patterns.begin(), host_patterns.end()));
+        TRACCC_INFO("Published expected-layer patterns for "
+                     << host_patterns.size() << " tracks (CUDA)");
+    } else {
+        traccc::details::clear_last_expected_layer_patterns();
     }
 
     return track_candidates_buffer;

@@ -73,6 +73,10 @@ combinatorial_kalman_filter(
            "overstep tolerance");
     assert(config.min_track_candidates_per_track >= 1);
 
+    // Clear buffer before starting the CKF, to avoid previous event's pattern 
+    // leaking into the current event's track finding
+    traccc::details::clear_last_expected_layer_patterns();
+
     /// The algebra type
     using algebra_type = typename detector_t::algebra_type;
     /// The scalar type
@@ -127,6 +131,10 @@ combinatorial_kalman_filter(
 
     std::vector<std::vector<std::size_t>> param_to_link;
     param_to_link.resize(config.max_track_candidates_per_track);
+
+    // Create expected layer patterns buffer for each link at each step
+    std::vector<std::vector<expected_layer_pattern_type>> expected_layer_patterns;
+    expected_layer_patterns.resize(config.max_track_candidates_per_track);
 
     std::vector<std::pair<unsigned int, unsigned int>> tips;
 
@@ -350,6 +358,9 @@ combinatorial_kalman_filter(
          * For documentation, see the device version.
          */
         const std::size_t n_links = links[step].size();
+        // Resize expected layer patterns buffer to match the number of links 
+        // for this step
+        expected_layer_patterns[step].resize(n_links);
         std::vector<unsigned int> param_liveness;
         param_liveness.resize(n_links);
 
@@ -507,8 +518,6 @@ combinatorial_kalman_filter(
 
             typename detray::pathlimit_aborter<scalar_type>::state
                 aborter_state;
-            typename detray::parameter_transporter<
-                typename detector_t::algebra_type>::state transporter_state;
             traccc::details::ckf_interactor_t::state interactor_state;
             typename interaction_register<traccc::details::ckf_interactor_t>::
                 state interaction_register_state{interactor_state};
@@ -517,6 +526,17 @@ combinatorial_kalman_filter(
                 prop_cfg};
             typename detray::momentum_aborter<scalar_type>::state
                 momentum_aborter_state{};
+            // Configure expected layer pattern collector state
+            typename expected_layer_pattern_collector<
+                expected_layer_table_mapper>::state
+                expected_layer_pattern_collector_state{};
+            expected_layer_pattern_type propagated_expected_layer_pattern{};
+            expected_layer_pattern_collector_state.pattern =
+                &propagated_expected_layer_pattern;
+            expected_layer_pattern_collector_state.mapper.entries =
+                config.expected_layer_map;
+            expected_layer_pattern_collector_state.mapper.size =
+                config.expected_layer_map_size;
             typename ckf_aborter::state ckf_aborter_state;
 
             // Update the actor config
@@ -531,11 +551,13 @@ combinatorial_kalman_filter(
 
             // Propagate to the next surface
             TRACCC_DEBUG_HOST("Propagating... ");
+            // Add expected layer pattern collector to the actor chain
             propagator.propagate(
                 propagation,
-                detray::tie(aborter_state, transporter_state,
-                            interaction_register_state, interactor_state,
+                detray::tie(aborter_state, interaction_register_state,
+                            interactor_state,
                             resetter_state, momentum_aborter_state,
+                            expected_layer_pattern_collector_state,
                             ckf_aborter_state));
             TRACCC_DEBUG_HOST("Finished propagation");
 
@@ -571,6 +593,8 @@ combinatorial_kalman_filter(
                 if (valid_track) {
                     out_params.push_back(out_param);
                     param_to_link[step].push_back(link_id);
+                    expected_layer_patterns[step][link_id] =
+                        propagated_expected_layer_pattern;
                 }
             }
             // Unless the track found a surface, it is considered a
@@ -606,10 +630,15 @@ combinatorial_kalman_filter(
     typename edm::track_container<algebra_type>::host output_candidates{
         mr, measurements_view};
     output_candidates.tracks.reserve(tips.size());
+    // Buffer for expected layer patterns of the output tracks
+    std::vector<expected_layer_pattern_type> output_expected_layer_patterns;
+    output_expected_layer_patterns.reserve(tips.size());
 
     for (const auto& tip : tips) {
         // Get the link corresponding to tip
         auto L = links.at(tip.first).at(tip.second);
+        auto current_step = tip.first;
+        auto current_link_idx = tip.second;
 
         const unsigned int n_cands = tip.first + 1 - L.n_skipped;
 
@@ -628,6 +657,7 @@ combinatorial_kalman_filter(
         // Track summary variables
         scalar ndf_sum = 0.f;
         scalar chi2_sum = 0.f;
+        expected_layer_pattern_type track_expected_pattern{};
 
         // Reversely iterate to fill the track candidates
         for (auto it = cands_per_track.rbegin(); it != cands_per_track.rend();
@@ -637,12 +667,19 @@ combinatorial_kalman_filter(
                 const auto link_pos =
                     param_to_link.at(L.step - 1u).at(L.previous_candidate_idx);
 
+                current_step = L.step - 1u;
+                current_link_idx = link_pos;
                 L = links.at(L.step - 1u).at(link_pos);
             }
 
             // Break if the measurement is still invalid
             if (L.meas_idx >= measurements.size()) {
                 break;
+            }
+            // Merge per-link patterns into track-level expected layer pattern
+            for (std::size_t i = 0; i < track_expected_pattern.size(); ++i) {
+                track_expected_pattern[i] |=
+                    expected_layer_patterns.at(current_step).at(current_link_idx)[i];
             }
 
             *it = {edm::track_constituent_link::measurement, L.meas_idx};
@@ -674,14 +711,33 @@ combinatorial_kalman_filter(
                 track.pval() = pval;
                 track.nholes() = L.n_skipped;
                 track.constituent_links() = cands_per_track;
+                output_expected_layer_patterns.push_back(track_expected_pattern);
 
             } else {
                 const auto l_pos =
                     param_to_link.at(L.step - 1u).at(L.previous_candidate_idx);
 
+                current_step = L.step - 1u;
+                current_link_idx = l_pos;
                 L = links.at(L.step - 1u).at(l_pos);
             }
         }
+    }
+    // Publish expected layer patterns for the found tracks
+    traccc::details::set_last_expected_layer_patterns(
+        std::move(output_expected_layer_patterns));
+
+    // NOTE: For debugging purposes only
+    TRACCC_DEBUG_HOST("Published expected-layer patterns for "
+                      << traccc::details::last_expected_layer_patterns().size()
+                      << " tracks");
+    for (std::size_t i = 0;
+         i < traccc::details::last_expected_layer_patterns().size(); ++i) {
+        const auto& pattern = traccc::details::last_expected_layer_patterns().at(i);
+        (void)pattern;
+        TRACCC_DEBUG_HOST("  pattern[" << i << "] = {"
+                          << pattern[0] << ", " << pattern[1] << ", "
+                          << pattern[2] << ", " << pattern[3] << "}");
     }
 
     return output_candidates;

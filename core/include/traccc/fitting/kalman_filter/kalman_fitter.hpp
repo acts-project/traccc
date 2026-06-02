@@ -127,8 +127,8 @@ class kalman_fitter {
         TRACCC_HOST_DEVICE
         typename forward_actor_chain_type::state_ref_tuple operator()() {
             return detray::tie(m_momentum_aborter_state,
-                               m_pathlimit_aborter_state, m_transporter_state,
-                               m_interactor_state, m_fit_actor_state,
+                               m_pathlimit_aborter_state, m_interactor_state,
+                               m_fit_actor_state,
                                m_parameter_resetter, m_step_aborter_state);
         }
 
@@ -137,8 +137,8 @@ class kalman_fitter {
         typename backward_actor_chain_type::state_ref_tuple
         backward_actor_state() {
             return detray::tie(m_momentum_aborter_state,
-                               m_pathlimit_aborter_state, m_transporter_state,
-                               m_fit_actor_state, m_interactor_state,
+                               m_pathlimit_aborter_state, m_fit_actor_state,
+                               m_interactor_state,
                                m_parameter_resetter, m_step_aborter_state);
         }
 

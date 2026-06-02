@@ -11,6 +11,7 @@
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/finding/actors/ckf_aborter.hpp"
+#include "traccc/finding/actors/expected_layer_pattern_collector.hpp"
 #include "traccc/finding/actors/interaction_register.hpp"
 
 // Detray include(s).
@@ -37,13 +38,17 @@ using ckf_interactor_t =
     detray::pointwise_material_interactor<traccc::default_algebra>;
 
 /// Actor chain used in the Combinatorial Kalman Filter (CKF)
+/// Expected layer pattern collector added to the chain
 using ckf_actor_chain_t =
     detray::actor_chain<detray::pathlimit_aborter<traccc::scalar>,
                         detray::parameter_transporter<traccc::default_algebra>,
                         interaction_register<ckf_interactor_t>,
                         ckf_interactor_t,
                         detray::parameter_resetter<traccc::default_algebra>,
-                        detray::momentum_aborter<traccc::scalar>, ckf_aborter>;
+                        detray::momentum_aborter<traccc::scalar>,
+                        expected_layer_pattern_collector<
+                            expected_layer_table_mapper>,
+                        ckf_aborter>;
 
 /// Propagator type used in the Combinatorial Kalman Filter (CKF)
 ///
