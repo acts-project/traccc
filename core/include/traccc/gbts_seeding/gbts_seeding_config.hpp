@@ -50,6 +50,8 @@ struct gbts_consts {
     static constexpr unsigned short node_buffer_length = 128;
     static constexpr unsigned short live_path_buffer = 1024;
 
+    static constexpr unsigned short edge_agg_buffer = 256;
+
     // access into output graph
     static constexpr char node1 = 0;
     static constexpr char node2 = 1;
@@ -81,15 +83,6 @@ struct gbts_graph_building_params {
     float max_Kappa = 3.75e-4f;
     float low_Kappa_d0 = 0.00f;
     float high_Kappa_d0 = 0.0f;
-
-    // tau prediction cut
-    float tMin_slope = 6.7f;
-    float offset = 0.2f;
-    float tMax_min = 1.6f;
-    float tMax_correction = 0.15f;
-    float tMax_slope = 6.1f;
-
-    float type1_max_width = 0.2f;
 
     // edge matching cuts
     float cut_dphi_max = 0.012f;
@@ -135,6 +128,54 @@ struct gbts_seed_ambi_params {
     float tight_bid_cot_threshold = 1.0f;
 };
 
+struct gbts_sp_counting_params {
+    float type1_max_width = 0.2f;
+    bool doTauCut = true;
+};
+
+struct gbts_node_sorting_params {
+    const bool useTauLUT = false;
+    float tau_lut_inv_bin = 0.0f;
+    float tMinSlope = 6.7f;  // These are fallback values if LUT is not used
+    float tMaxMin = 1.6f;
+    float tMaxCorrection = 0.15f;
+    float tMaxSlope = 6.1f;
+    float offset = 0.2f;
+    float maxTau = 36.0f;  // detector acceptance equivalent ~4.3 eta
+    unsigned int tauLutSize = 0;
+};
+
+struct gbts_edge_making_params {
+    float min_delta_phi = 0.015f;
+    float dphi_coeff = 2.2e-4f;
+    float min_delta_phi_low_dr = 0.002f;
+    float dphi_coeff_low_dr = 4.33e-4f;
+
+    float minDeltaRadius = 2.0f;
+
+    float min_z0 = -160.0f;
+    float max_z0 = 160.0f;
+    float maxOuterRadius = 350.0f;
+    // how to get ROI dzdr
+    float cut_zMinU = min_z0 - maxOuterRadius * 45.0f;
+    float cut_zMaxU = max_z0 + maxOuterRadius * 45.0f;
+
+    float max_Kappa = 3.75e-4f;
+    float low_Kappa_d0 = 0.00f;
+    float high_Kappa_d0 = 0.0f;
+
+    // edge matching cuts
+    float cut_dphi_max = 0.012f;
+    float cut_dcurv_max = 0.001f;
+    float cut_tau_ratio_max = 0.01f;
+};
+
+struct gbts_graph_matching_params {
+    float cut_dphi_max = 0.012f;
+    float cut_dcurv_max = 0.001f;
+    float cut_tau_ratio_max = 0.01f;
+};
+
 struct gbts_seedfinder_config {
     bool setLinkingScheme(
         const std::vector<std::pair<int, std::vector<int>>>& binTables,
@@ -154,10 +195,18 @@ struct gbts_seedfinder_config {
     gbts_graph_building_params graph_building_params{};
     gbts_seed_extraction_params seed_extraction_params{};
     gbts_seed_ambi_params seed_ambi_params{};
+    gbts_node_sorting_params node_sorting_params{};
+    gbts_sp_counting_params sp_counting_params{};
+    gbts_edge_making_params edge_making_params{};
+    gbts_graph_matching_params graph_matching_params{};
+
+    std::vector<float> tau_lut{};  // This should be structured as [w_bin_edge,
+                                   // min_tau, max_tau, ...] for each bin
 
     // node making bin counts
     unsigned int n_eta_bins = 0;  // calculated from input layerInfo
-    unsigned int n_phi_bins = 128;
+    unsigned int nPhiBins = 128;  // Mabye make this a const expr if we want
+                                  // to hardcode it in kernels
     // graph making maxiums
     unsigned int max_num_neighbours = 10;
     // graph extraction cuts
