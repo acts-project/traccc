@@ -23,12 +23,6 @@ if( "${CMAKE_CUDA_COMPILER_ID}" MATCHES "NVIDIA" )
    traccc_add_flag( CMAKE_CUDA_FLAGS "-Wall" )
    traccc_add_flag( CMAKE_CUDA_FLAGS "-Wextra" )
    traccc_add_flag( CMAKE_CUDA_FLAGS "-Wconversion" )
-   # Suppress a GCC false-positive triggered in CCCL (CUB) headers
-   # (dispatch_scan.cuh, triple_chevron_launch.h).
-   if( "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" )
-      traccc_add_flag( CMAKE_CUDA_FLAGS
-         "-Xcompiler -Wno-maybe-uninitialized" )
-   endif()
 endif()
 
 # Allow to use functions in device code that are constexpr, even if they are

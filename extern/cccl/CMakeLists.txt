@@ -26,7 +26,7 @@ set ( CCCL_ENABLE_INSTALL_RULES ON CACHE BOOL "Install CCCL as part of traccc." 
 set ( THRUST_ENABLE_INSTALL_RULES ON CACHE BOOL "Install Thrust as part of traccc." )
 set ( CUB_ENABLE_INSTALL_RULES ON CACHE BOOL "Install CUB as part of traccc." )
 set ( libcudacxx_ENABLE_INSTALL_RULES ON CACHE BOOL "Install libcudacxx as part of traccc." )
-set ( CCCL_TOPLEVEL_PROJECT ON CACHE BOOL "Indicate that CCCL is being built as part of a larger project" )
+set ( CCCL_TOPLEVEL_PROJECT ON CACHE BOOL "Enable CCCL development features to allow usage of cccl_get_cub() cmake function" )
 set ( CCCL_ENABLE_LIBCUDACXX OFF CACHE BOOL "Disable libcudacxx" )
 set ( CCCL_ENABLE_CUB ON CACHE BOOL "Enable CUB" )
 set ( CCCL_ENABLE_THRUST ON CACHE BOOL "Enable Thrust" )

@@ -24,11 +24,12 @@ endif()
 set( CMAKE_CUDA_ARCHITECTURES "75" CACHE STRING
    "CUDA architectures to build device code for" )
 
-# Set the CUDA host compiler to use. This is needed for CCCL
-set ( CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER} CACHE STRING
-   "Host compiler to use for CUDA code" )
-# Print the value of the CUDA host compiler, to make sure that it's set correctly.
-message( STATUS "CMAKE_CUDA_HOST_COMPILER=${CMAKE_CUDA_HOST_COMPILER}" )
+# Set the CUDA host compiler to use if not previousy set. This is needed for CCCL
+# CCCL will complain if the host compiler is not the same as CMAKE_CXX_COMPILER
+if ( NOT CMAKE_CUDA_HOST_COMPILER )
+   set ( CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER} CACHE STRING
+      "Host compiler to use for CUDA code" )
+endif()
 
 # Set the HIP architecture to build code for.
 set( CMAKE_HIP_ARCHITECTURES "gfx1101;gfx90a" CACHE STRING
