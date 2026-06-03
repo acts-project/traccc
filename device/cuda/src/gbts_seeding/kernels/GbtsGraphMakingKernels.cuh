@@ -265,6 +265,7 @@ __global__ static void graphEdgeMatchingKernel(
     const int* d_num_outgoing_edges, const int* d_edge_links,
     unsigned char* d_num_neighbours, int* d_neighbours, int* d_reIndexer,
     unsigned int* d_counters, const unsigned int nEdges, const unsigned int nMaxNei) {
+        
     const __half cut_dphi_max =
         __float2half(graph_matching_params.cut_dphi_max);
     const __half cut_dcurv_max =
@@ -371,7 +372,7 @@ __global__ static void graphCompressionKernel(
         if (idx >= nEdges) {
             continue;
         }
-        int newIdx = d_reIndexer[idx];
+        const int newIdx = d_reIndexer[idx];
         if (newIdx == -1) {
             continue;
         }
