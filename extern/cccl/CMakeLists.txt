@@ -13,7 +13,7 @@ message( STATUS "Building CCCL as part of the TRACCC project" )
 
 # Declare where to get Thrust from.
 set( TRACCC_CCCL_SOURCE
-   "URL;https://github.com/NVIDIA/cccl/archive/refs/tags/v2.8.5.tar.gz;URL_MD5;c0800bc2e139c5ad291f89aac09042b6"
+   "URL;https://github.com/NVIDIA/cccl/releases/download/v3.3.3/cccl-src-v3.3.3.tar.gz;URL_HASH;SHA256=7aed8bd89049bb75261cc9633e4471e1fcf5fbb5eb5b1aeb3f82ee07e9f60395"
    CACHE STRING "Source for CCCL, when built as part of this project" )
 mark_as_advanced( TRACCC_CCCL_SOURCE )
 # Note that we must not use SYSTEM here. Otherwise nvcc would pick up Thrust
@@ -26,6 +26,7 @@ set ( CCCL_ENABLE_INSTALL_RULES ON CACHE BOOL "Install CCCL as part of traccc." 
 set ( THRUST_ENABLE_INSTALL_RULES ON CACHE BOOL "Install Thrust as part of traccc." )
 set ( CUB_ENABLE_INSTALL_RULES ON CACHE BOOL "Install CUB as part of traccc." )
 set ( libcudacxx_ENABLE_INSTALL_RULES ON CACHE BOOL "Install libcudacxx as part of traccc." )
+set ( CCCL_TOPLEVEL_PROJECT ON CACHE BOOL "Indicate that CCCL is being built as part of a larger project" )
 set ( CCCL_ENABLE_LIBCUDACXX OFF CACHE BOOL "Disable libcudacxx" )
 set ( CCCL_ENABLE_CUB ON CACHE BOOL "Enable CUB" )
 set ( CCCL_ENABLE_THRUST ON CACHE BOOL "Enable Thrust" )
