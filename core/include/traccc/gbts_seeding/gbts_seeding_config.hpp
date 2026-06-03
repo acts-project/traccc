@@ -75,33 +75,6 @@ struct gbts_consts {
 
 namespace traccc {
 
-struct gbts_graph_building_params {
-
-    // edge making cuts
-    float min_delta_phi = 0.015f;
-    float dphi_coeff = 2.2e-4f;
-    float min_delta_phi_low_dr = 0.002f;
-    float dphi_coeff_low_dr = 4.33e-4f;
-
-    float minDeltaRadius = 2.0f;
-
-    float min_z0 = -160.0f;
-    float max_z0 = 160.0f;
-    float maxOuterRadius = 350.0f;
-    // how to get ROI dzdr
-    float cut_zMinU = min_z0 - maxOuterRadius * 45.0f;
-    float cut_zMaxU = max_z0 + maxOuterRadius * 45.0f;
-
-    float max_Kappa = 3.75e-4f;
-    float low_Kappa_d0 = 0.00f;
-    float high_Kappa_d0 = 0.0f;
-
-    // edge matching cuts
-    float cut_dphi_max = 0.012f;
-    float cut_dcurv_max = 0.001f;
-    float cut_tau_ratio_max = 0.01f;
-};
-
 struct gbts_seed_extraction_params {
     // for 900 MeV track at eta=0
     float sigmaMS = 0.016f;
@@ -175,11 +148,6 @@ struct gbts_edge_making_params {
     float max_Kappa = 3.75e-4f;
     float low_Kappa_d0 = 0.00f;
     float high_Kappa_d0 = 0.0f;
-
-    // edge matching cuts
-    float cut_dphi_max = 0.012f;
-    float cut_dcurv_max = 0.001f;
-    float cut_tau_ratio_max = 0.01f;
 };
 
 struct gbts_graph_matching_params {
@@ -204,7 +172,6 @@ struct gbts_seedfinder_config {
     std::vector<std::array<unsigned int, 2>> surfaceToLayerMap{};
 
     // tuned for 900 MeV pT cut and scaled by input minPt
-    gbts_graph_building_params graph_building_params{};
     gbts_seed_extraction_params seed_extraction_params{};
     gbts_seed_ambi_params seed_ambi_params{};
     gbts_node_sorting_params node_sorting_params{};

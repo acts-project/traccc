@@ -365,7 +365,8 @@ __device__ inline void edgeState::initialize(
 inline __device__ bool update(edgeState* new_ts, const edgeState* ts,
                               const float4& node1_params,
                               // node params are x, y, z, type
-                              const gbts_seed_extraction_params KF_params) {
+                              const gbts_seed_extraction_params KF_params,
+                              const float max_z0) {
 
     float tau2 = ts->m_Y[1] * ts->m_Y[1];
     float invSin2 = 1 + tau2;
@@ -470,7 +471,7 @@ inline __device__ bool update(edgeState* new_ts, const edgeState* ts,
     }
 
     float z0 = new_ts->m_Y[0] - new_ts->m_refY * ts->m_Y[1];
-    if (fabsf(z0) > KF_params.max_z0) {
+    if (fabsf(z0) > max_z0) {
         return false;
     }
 
@@ -553,7 +554,7 @@ void __global__ fit_segments(
     int2* d_seed_proposals, unsigned long long int* d_edge_bids,
     char* d_seed_ambiguity, char* d_levels, unsigned int* d_counters,
     unsigned int nTerminusEdges, int minLevel, unsigned int max_num_neighbours,
-    gbts_seed_extraction_params seed_extraction_params) {
+    gbts_seed_extraction_params seed_extraction_params, const float max_z0) {
 
     // take an extracted path and fit it to produce a quality score
     const unsigned int path_idx =
@@ -585,11 +586,13 @@ void __global__ fit_segments(
         node2 = d_sp_params[d_output_graph[traccc::device::gbts_consts::node2 +
                                            edge_size * path.x]];
         if (toggle) {
-            if (!update(&state1, &state2, node2, seed_extraction_params)) {
+            if (!update(&state1, &state2, node2, seed_extraction_params,
+                        max_z0)) {
                 state1 = state2;
                 break;
             }
-        } else if (!update(&state2, &state1, node2, seed_extraction_params)) {
+        } else if (!update(&state2, &state1, node2, seed_extraction_params,
+                           max_z0)) {
             break;
         }
         toggle = !toggle;

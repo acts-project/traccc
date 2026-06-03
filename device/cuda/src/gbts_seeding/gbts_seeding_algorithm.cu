@@ -37,10 +37,6 @@ struct gbts_ctx {
     // nEdges, nConnections, nConnectedEdges, .., nSeeds
     unsigned int* d_counters{};
 
-    // device side graph building cuts
-    gbts_graph_building_params* d_graph_building_params;
-    gbts_node_sorting_params* d_node_sorting_params;
-
     float* d_tau_lut{};
 
     // node making and binning
@@ -137,12 +133,6 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     gbts_ctx ctx;
 
     cudaStream_t stream = details::get_stream(m_stream);
-
-    cudaMalloc(&ctx.d_graph_building_params,
-               sizeof(m_config.graph_building_params));
-    cudaMemcpyAsync(
-        ctx.d_graph_building_params, &m_config.graph_building_params,
-        sizeof(m_config.graph_building_params), cudaMemcpyHostToDevice);
 
     // 0. bin spacepoints by the maping supplied to config.m_surfaceToLayerMap
     ctx.nSp = m_copy.get().get_size(spacepoints);
@@ -428,13 +418,13 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
         // max radius of bin2 - min radius of bin1
         float maxDeltaR = std::fabs(rb2 - rb1);
 
-        float deltaPhi = m_config.graph_building_params.min_delta_phi +
-                         m_config.graph_building_params.dphi_coeff * maxDeltaR;
+        float deltaPhi = m_config.edge_making_params.min_delta_phi +
+                         m_config.edge_making_params.dphi_coeff * maxDeltaR;
 
         if (maxDeltaR < 60) {
             deltaPhi =
-                m_config.graph_building_params.min_delta_phi_low_dr +
-                m_config.graph_building_params.dphi_coeff_low_dr * maxDeltaR;
+                m_config.edge_making_params.min_delta_phi_low_dr +
+                m_config.edge_making_params.dphi_coeff_low_dr * maxDeltaR;
         }
         // splitting large bins into more consistent sizes
 
@@ -757,7 +747,8 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
         ctx.d_reducedSP, ctx.d_output_graph, ctx.d_path_store,
         ctx.d_seed_proposals, ctx.d_edge_bids, ctx.d_seed_ambiguity,
         ctx.d_levels, ctx.d_counters, path_sizes[1], m_config.minLevel,
-        m_config.max_num_neighbours, m_config.seed_extraction_params);
+        m_config.max_num_neighbours, m_config.seed_extraction_params,
+        m_config.edge_making_params.max_z0);
 
     unsigned int nProps = 0;
     cudaMemcpyAsync(&nProps,
@@ -808,7 +799,6 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
 
     cudaFree(ctx.d_edge_bids);
     cudaFree(ctx.d_counters);
-    cudaFree(ctx.d_graph_building_params);
 
     // 8. convert to 3sp seeds and make output buffer
     // allocate extra seed space for hit permutation
