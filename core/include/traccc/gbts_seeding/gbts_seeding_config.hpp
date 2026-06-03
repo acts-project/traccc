@@ -54,7 +54,6 @@ enum gbts_counter : unsigned int {
     nCounters         // the number of counters
 };
 
-
 struct gbts_consts {
 
     // CCA max iterations -> maxium seed length

@@ -357,8 +357,8 @@ __global__ void edgeReIndexingKernel(int* d_reIndexer, unsigned int* d_counters,
     if (d_reIndexer[edge_idx] == -1) {
         return;
     }
-    d_reIndexer[edge_idx] =
-        atomicAdd(&d_counters[traccc::device::gbts_counter::nConnectedEdges], 1);
+    d_reIndexer[edge_idx] = atomicAdd(
+        &d_counters[traccc::device::gbts_counter::nConnectedEdges], 1);
 }
 
 __global__ static void graphCompressionKernel(

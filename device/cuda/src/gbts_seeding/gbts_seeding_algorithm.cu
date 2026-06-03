@@ -493,9 +493,9 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
 
     cudaMalloc(&ctx.d_counters,
                sizeof(unsigned int) * traccc::device::gbts_counter::nCounters);
-    cudaMemsetAsync(ctx.d_counters, 0,
-                    sizeof(unsigned int) * traccc::device::gbts_counter::nCounters,
-                    stream);
+    cudaMemsetAsync(
+        ctx.d_counters, 0,
+        sizeof(unsigned int) * traccc::device::gbts_counter::nCounters, stream);
 
     cudaStreamSynchronize(stream);
 

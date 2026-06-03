@@ -558,8 +558,7 @@ void __global__ fit_segments(
     // take an extracted path and fit it to produce a quality score
     const unsigned int path_idx =
         threadIdx.x + blockIdx.x * blockDim.x + nTerminusEdges;
-    if (path_idx >=
-        d_counters[traccc::device::gbts_counter::nTerminusEdges]) {
+    if (path_idx >= d_counters[traccc::device::gbts_counter::nTerminusEdges]) {
         return;
     }
     const int edge_size = 2 + 1 + max_num_neighbours;
