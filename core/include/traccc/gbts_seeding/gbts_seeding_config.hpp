@@ -214,6 +214,9 @@ struct gbts_seedfinder_config {
 
     // maxium number of edges to be created per node(spacepoint)
     unsigned int max_edges_factor = 10;
+
+    unsigned int edge_bidding_rounds = 5;
+
 };
 
 }  // namespace traccc

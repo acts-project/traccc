@@ -762,29 +762,26 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     cudaFree(ctx.d_outgoing_paths);
 
     if (nProps == 0) {
+        TRACCC_WARNING("No seed proposals found, returning empty result");
         return {0, m_mr.main};
     }
 
     nThreads = 128;
     nBlocks = 1 + (nProps - 1) / nThreads;
 
-    kernels::reset_edge_bids<<<nBlocks, nThreads, 0, stream>>>(
-        ctx.d_path_store, ctx.d_seed_proposals, ctx.d_edge_bids,
-        ctx.d_seed_ambiguity, ctx.d_counters, -1);
-
-    for (int round = 0; round < 5; ++round) {
+    for (unsigned int round = 0; round < m_config.edge_bidding_rounds; ++round) {
 
         cudaMemsetAsync(ctx.d_edge_bids, 0,
                         ctx.nConnectedEdges * sizeof(unsigned long long int),
                         stream);
-
+        
         kernels::seeds_rebid_for_edges<<<nBlocks, nThreads, 0, stream>>>(
             ctx.d_path_store, ctx.d_seed_proposals, ctx.d_edge_bids,
-            ctx.d_seed_ambiguity, nProps);
+            ctx.d_seed_ambiguity, ctx.d_counters, nProps, (round == 0));
 
         kernels::reset_edge_bids<<<nBlocks, nThreads, 0, stream>>>(
             ctx.d_path_store, ctx.d_seed_proposals, ctx.d_edge_bids,
-            ctx.d_seed_ambiguity, ctx.d_counters, round);
+            ctx.d_seed_ambiguity, ctx.d_counters);
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
     }
     unsigned int nRejectedProps = 0;
@@ -808,15 +805,18 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     cudaMalloc(&ctx.d_hit_bids, ctx.nSp * sizeof(unsigned long long int));
     cudaMemsetAsync(ctx.d_hit_bids, 0, ctx.nSp * sizeof(unsigned long long int),
                     stream);
-
+    
     nThreads = 128;
-    nBlocks = 1 + (ctx.nSeeds - 1) / nThreads;
+    nBlocks = 1 + (nProps - 1) / nThreads;
 
     kernels::seeds_bid_for_hits<<<nBlocks, nThreads, 0, stream>>>(
         ctx.d_output_graph, ctx.d_seed_proposals, ctx.d_path_store,
         ctx.d_seed_ambiguity, ctx.d_hit_bids, nProps,
         static_cast<int>(1 + 2 + m_config.max_num_neighbours));
-
+    
+    nThreads = 128;
+    nBlocks = 1 + (ctx.nSeeds - 1) / nThreads;
+    
     kernels::gbts_seed_conversion_kernel<<<nBlocks, nThreads, 0, stream>>>(
         ctx.d_seed_proposals, ctx.d_seed_ambiguity, ctx.d_path_store,
         ctx.d_output_graph, ctx.d_reducedSP, output_seeds, ctx.d_hit_bids,

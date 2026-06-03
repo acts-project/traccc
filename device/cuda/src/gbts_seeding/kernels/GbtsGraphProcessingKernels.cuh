@@ -610,7 +610,7 @@ void __global__ fit_segments(
 void __global__ reset_edge_bids(int2* d_path_store, int2* d_seed_proposals,
                                 unsigned long long int* d_edge_bids,
                                 char* d_seed_ambiguity,
-                                unsigned int* d_counters, int round) {
+                                unsigned int* d_counters) {
 
     unsigned int nProps = d_counters[8];
     // first round find best seed starting at each edge
@@ -618,18 +618,7 @@ void __global__ reset_edge_bids(int2* d_path_store, int2* d_seed_proposals,
          prop_idx < nProps; prop_idx += blockDim.x * gridDim.x) {
 
         const char ambi = d_seed_ambiguity[prop_idx];
-        if (round == -1) {
-            if (ambi == 0) {
-                // rebid 'best seed from edge' in later rounds
-                d_seed_ambiguity[prop_idx] = 1;
-                continue;
-            } else {
-                d_seed_ambiguity[prop_idx] = -2;
-                // count rejected props to calculate nSeeds
-                atomicAdd(&d_counters[9], 1);
-                continue;
-            }
-        } else if (ambi == -2 | ambi == 0) {
+        if (ambi == -2 | ambi == 0) {
             // only reset maybes
             continue;
         }
@@ -664,13 +653,27 @@ void __global__ seeds_rebid_for_edges(int2* d_path_store,
                                       int2* d_seed_proposals,
                                       unsigned long long int* d_edge_bids,
                                       char* d_seed_ambiguity,
-                                      unsigned int nProps) {
+                                      unsigned int* d_counters,
+                                      unsigned int nProps,
+                                      const bool first_round) {
 
     for (unsigned int prop_idx = threadIdx.x + blockIdx.x * blockDim.x;
          prop_idx < nProps; prop_idx += blockDim.x * gridDim.x) {
-
-        const char ambi = d_seed_ambiguity[prop_idx];
-        if (ambi == -2 | ambi == 0) {
+        
+        char ambi = d_seed_ambiguity[prop_idx];
+        
+        if (first_round) {
+            if (ambi == 0) {
+                // rebid 'best seed from edge' in later rounds
+                d_seed_ambiguity[prop_idx] = 1;
+                // Here there is no continue by design
+            } else {
+                d_seed_ambiguity[prop_idx] = -2;
+                // count rejected props to calculate nSeeds
+                atomicAdd(&d_counters[9], 1);
+                continue;
+            }
+        } else if (ambi == -2 | ambi == 0) {
             // only rebid for maybes
             continue;
         }
