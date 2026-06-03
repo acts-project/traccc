@@ -98,7 +98,8 @@ inline __device__ void gbts_checks(
     if (d0_for_max_curv > d0_max) {
         return;
     }
-    const unsigned int nEdges = atomicAdd(&d_counters[0], 1);
+    const unsigned int nEdges =
+        atomicAdd(&d_counters[traccc::device::gbts_counter::nEdges], 1);
     if (nEdges < nMaxEdges) {
         const __half exp_eta = __float2half(sqrtf(1 + tau * tau) - tau);
         // edge linking order is inside->out
@@ -338,7 +339,8 @@ __global__ static void graphEdgeMatchingKernel(
 
     if (num_nei != 0) {
         d_reIndexer[edge1_idx] = 1;
-        atomicAdd(&d_counters[1], num_nei);
+        atomicAdd(&d_counters[traccc::device::gbts_counter::nConnections],
+                  num_nei);
     }
 }
 
@@ -355,7 +357,8 @@ __global__ void edgeReIndexingKernel(int* d_reIndexer, unsigned int* d_counters,
     if (d_reIndexer[edge_idx] == -1) {
         return;
     }
-    d_reIndexer[edge_idx] = atomicAdd(&d_counters[2], 1);
+    d_reIndexer[edge_idx] =
+        atomicAdd(&d_counters[traccc::device::gbts_counter::nConnectedEdges], 1);
 }
 
 __global__ static void graphCompressionKernel(

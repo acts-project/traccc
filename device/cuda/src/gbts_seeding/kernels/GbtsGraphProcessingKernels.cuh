@@ -164,13 +164,15 @@ void __global__ count_terminus_edges(int2* d_path_store,
         // fill the first part of path_store so fitting can skip go-nowhere
         // paths
         if (out_paths.y != -1) {
-            d_outgoing_paths[edge_idx].y = atomicAdd(&d_counters[7], 1);
+            d_outgoing_paths[edge_idx].y = atomicAdd(
+                &d_counters[traccc::device::gbts_counter::nTerminusEdges], 1);
             atomicAdd(&outgoingCount, out_paths.x);
         }
     }
     __syncthreads();
     if (threadIdx.x == 0) {
-        atomicAdd(&d_counters[6], outgoingCount);
+        atomicAdd(&d_counters[traccc::device::gbts_counter::nPaths],
+                  outgoingCount);
     }
 }
 
@@ -231,7 +233,8 @@ void __global__ fill_path_store(int2* d_path_store, int* d_output_graph,
             if (live_idx >= traccc::device::gbts_consts::live_path_buffer) {
                 break;
             }
-            int new_path_idx = atomicAdd(&d_counters[7], 1);
+            int new_path_idx = atomicAdd(
+                &d_counters[traccc::device::gbts_counter::nTerminusEdges], 1);
             // head edge idx, link back
             d_path_store[new_path_idx] = make_int2(edge_idx, path_idx);
             live_paths[live_idx] = make_int2(edge_idx, new_path_idx);
@@ -272,7 +275,9 @@ void __global__ fill_path_store(int2* d_path_store, int* d_output_graph,
                 if (level != d_levels[edge_idx] + 1) {
                     continue;
                 }
-                path_idx = atomicAdd(&d_counters[7], 1);
+                path_idx = atomicAdd(
+                    &d_counters[traccc::device::gbts_counter::nTerminusEdges],
+                    1);
                 if (path_idx >= nPaths) {
                     break;
                 }
@@ -553,7 +558,8 @@ void __global__ fit_segments(
     // take an extracted path and fit it to produce a quality score
     const unsigned int path_idx =
         threadIdx.x + blockIdx.x * blockDim.x + nTerminusEdges;
-    if (path_idx >= d_counters[7]) {
+    if (path_idx >=
+        d_counters[traccc::device::gbts_counter::nTerminusEdges]) {
         return;
     }
     const int edge_size = 2 + 1 + max_num_neighbours;
@@ -600,7 +606,8 @@ void __global__ fit_segments(
     } else {
         qual = rint(seed_extraction_params.qual_scale * state1.m_J);
     }
-    const unsigned int prop_idx = atomicAdd(&d_counters[8], 1);
+    const unsigned int prop_idx =
+        atomicAdd(&d_counters[traccc::device::gbts_counter::nProps], 1);
     // perform first round of bidding for disambiguation
     // only on the outermost edge
     add_seed_proposal(qual, path_idx, prop_idx, d_seed_ambiguity,
@@ -612,7 +619,7 @@ void __global__ reset_edge_bids(int2* d_path_store, int2* d_seed_proposals,
                                 char* d_seed_ambiguity,
                                 unsigned int* d_counters) {
 
-    unsigned int nProps = d_counters[8];
+    unsigned int nProps = d_counters[traccc::device::gbts_counter::nProps];
     // first round find best seed starting at each edge
     for (unsigned int prop_idx = threadIdx.x + blockIdx.x * blockDim.x;
          prop_idx < nProps; prop_idx += blockDim.x * gridDim.x) {
@@ -642,7 +649,7 @@ void __global__ reset_edge_bids(int2* d_path_store, int2* d_seed_proposals,
         }  // flag as maybe seed, shares with a loser
         else {
             d_seed_ambiguity[prop_idx] = -2;
-            atomicAdd(&d_counters[9], 1);
+            atomicAdd(&d_counters[traccc::device::gbts_counter::nRejected], 1);
             // definate fake, shares with a winner
         }
     }
@@ -667,7 +674,8 @@ void __global__ seeds_rebid_for_edges(
             } else {
                 d_seed_ambiguity[prop_idx] = -2;
                 // count rejected props to calculate nSeeds
-                atomicAdd(&d_counters[9], 1);
+                atomicAdd(&d_counters[traccc::device::gbts_counter::nRejected],
+                          1);
                 continue;
             }
         } else if (ambi == -2 | ambi == 0) {

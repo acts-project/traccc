@@ -491,8 +491,11 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     cudaMemcpyAsync(&ctx.d_bin_pair_dphi[0], &ctx.h_bin_pair_dphi[0], data_size,
                     cudaMemcpyHostToDevice, stream);
 
-    cudaMalloc(&ctx.d_counters, sizeof(unsigned int) * 12);
-    cudaMemsetAsync(ctx.d_counters, 0, sizeof(unsigned int) * 12, stream);
+    cudaMalloc(&ctx.d_counters,
+               sizeof(unsigned int) * traccc::device::gbts_counter::nCounters);
+    cudaMemsetAsync(ctx.d_counters, 0,
+                    sizeof(unsigned int) * traccc::device::gbts_counter::nCounters,
+                    stream);
 
     cudaStreamSynchronize(stream);
 
@@ -522,8 +525,9 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
 
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-    cudaMemcpyAsync(&ctx.nEdges, ctx.d_counters, sizeof(unsigned int),
-                    cudaMemcpyDeviceToHost, stream);
+    cudaMemcpyAsync(&ctx.nEdges,
+                    &ctx.d_counters[traccc::device::gbts_counter::nEdges],
+                    sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
 
     TRACCC_DEBUG("Created " << ctx.nEdges << " edges with a cap of "
                             << ctx.nMaxEdges);
@@ -609,13 +613,13 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
 
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-    unsigned int nStats[3];
-
-    cudaMemcpyAsync(&nStats[0], ctx.d_counters, 3 * sizeof(unsigned int),
-                    cudaMemcpyDeviceToHost, stream);
-
-    ctx.nConnections = nStats[1];
-    ctx.nConnectedEdges = nStats[2];
+    cudaMemcpyAsync(&ctx.nConnections,
+                    &ctx.d_counters[traccc::device::gbts_counter::nConnections],
+                    sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
+    cudaMemcpyAsync(
+        &ctx.nConnectedEdges,
+        &ctx.d_counters[traccc::device::gbts_counter::nConnectedEdges],
+        sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
 
     TRACCC_DEBUG("created " << ctx.nConnections << " edge links, found "
                             << ctx.nConnectedEdges
@@ -668,8 +672,9 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
 
     unsigned int nEdgesLeft = ctx.nConnectedEdges;
 
-    cudaMemcpyAsync(&ctx.d_counters[3], &nEdgesLeft, sizeof(unsigned int),
-                    cudaMemcpyHostToDevice, stream);
+    cudaMemcpyAsync(&ctx.d_counters[traccc::device::gbts_counter::nEdgesLeft],
+                    &nEdgesLeft, sizeof(unsigned int), cudaMemcpyHostToDevice,
+                    stream);
 
     if (nEdgesLeft == 0)
         return {0, m_mr.main};
@@ -707,8 +712,13 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
 
     // nPaths to terminus, nTerminusEdges
     unsigned int path_sizes[2];
-    cudaMemcpyAsync(&path_sizes[0], &ctx.d_counters[6],
-                    2 * sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
+    cudaMemcpyAsync(&path_sizes[0],
+                    &ctx.d_counters[traccc::device::gbts_counter::nPaths],
+                    sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
+    cudaMemcpyAsync(
+        &path_sizes[1],
+        &ctx.d_counters[traccc::device::gbts_counter::nTerminusEdges],
+        sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
     unsigned int pathsPerTerminus = 1 + (path_sizes[0] - 1) / path_sizes[1];
 
     TRACCC_DEBUG(path_sizes[0] << "size of path store | nTerminusEdges "
@@ -750,8 +760,9 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
         m_config.max_num_neighbours, m_config.seed_extraction_params);
 
     unsigned int nProps = 0;
-    cudaMemcpyAsync(&nProps, &ctx.d_counters[8], sizeof(unsigned int),
-                    cudaMemcpyDeviceToHost, stream);
+    cudaMemcpyAsync(&nProps,
+                    &ctx.d_counters[traccc::device::gbts_counter::nProps],
+                    sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
 
     TRACCC_DEBUG("nProps " << nProps);
 
@@ -787,8 +798,9 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
     }
     unsigned int nRejectedProps = 0;
-    cudaMemcpyAsync(&nRejectedProps, &ctx.d_counters[9], sizeof(unsigned int),
-                    cudaMemcpyDeviceToHost, stream);
+    cudaMemcpyAsync(&nRejectedProps,
+                    &ctx.d_counters[traccc::device::gbts_counter::nRejected],
+                    sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
     ctx.nSeeds = nProps - nRejectedProps;
 
     TRACCC_DEBUG("Rejecetd " << nRejectedProps << " out of " << nProps

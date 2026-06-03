@@ -42,6 +42,19 @@ struct gbts_layerInfo {
     }
 };
 
+enum gbts_counter : unsigned int {
+    nEdges,           // edges created
+    nConnections,     // edge-to-edge connections
+    nConnectedEdges,  // edges kept after re-indexing
+    nEdgesLeft,       // edges remaining for CCA (set host-side)
+    nPaths,           // size of the path store
+    nTerminusEdges,   // #terminus edges; then reused as path-store write cursor
+    nProps,           // seed proposals
+    nRejected,        // rejected seed proposals
+    nCounters         // the number of counters
+};
+
+
 struct gbts_consts {
 
     // CCA max iterations -> maxium seed length
