@@ -649,19 +649,16 @@ void __global__ reset_edge_bids(int2* d_path_store, int2* d_seed_proposals,
 }
 
 // TO-DO?: reset prop count each iter and make new props like CCA active_edges
-void __global__ seeds_rebid_for_edges(int2* d_path_store,
-                                      int2* d_seed_proposals,
-                                      unsigned long long int* d_edge_bids,
-                                      char* d_seed_ambiguity,
-                                      unsigned int* d_counters,
-                                      unsigned int nProps,
-                                      const bool first_round) {
+void __global__ seeds_rebid_for_edges(
+    int2* d_path_store, int2* d_seed_proposals,
+    unsigned long long int* d_edge_bids, char* d_seed_ambiguity,
+    unsigned int* d_counters, unsigned int nProps, const bool first_round) {
 
     for (unsigned int prop_idx = threadIdx.x + blockIdx.x * blockDim.x;
          prop_idx < nProps; prop_idx += blockDim.x * gridDim.x) {
-        
+
         char ambi = d_seed_ambiguity[prop_idx];
-        
+
         if (first_round) {
             if (ambi == 0) {
                 // rebid 'best seed from edge' in later rounds
@@ -702,12 +699,13 @@ void __global__ seeds_bid_for_hits(int* d_output_graph, int2* d_seed_proposals,
         int2 path = make_int2(0, prop.y);
         while (path.y >= 0) {
             path = d_path_store[path.y];
-            const int sp_idx = d_output_graph[traccc::device::gbts_consts::node1 +
-                                        edge_size * path.x];
+            const int sp_idx =
+                d_output_graph[traccc::device::gbts_consts::node1 +
+                               edge_size * path.x];
             atomicMax(&d_hit_bids[sp_idx], seed_bid);
         }
         const int sp_idx = d_output_graph[traccc::device::gbts_consts::node2 +
-                                    edge_size * path.x];
+                                          edge_size * path.x];
         atomicMax(&d_hit_bids[sp_idx], seed_bid);
     }
 }
@@ -767,7 +765,7 @@ void __global__ gbts_seed_conversion_kernel(
     edm::seed_collection::view output_seeds, unsigned long long int* d_hit_bids,
     const unsigned int nProps, const unsigned int max_num_neighbours,
     const gbts_seed_ambi_params ambi_params) {
-    
+
     const float dcurv_cut_m = ambi_params.dropout_dcurv_m;
     const float force_dropout_max_curv_m = ambi_params.force_dropout_max_curv_m;
     const float best_hit_frac = ambi_params.best_hit_frac;
@@ -831,8 +829,8 @@ void __global__ gbts_seed_conversion_kernel(
                 continue;
             }
             const float diff[3] = {abs(curv_cot_1.x - curv_cot_2.x),
-                             abs(curv_cot_2.x - curv_cot_3.x),
-                             abs(curv_cot_1.x - curv_cot_3.x)};
+                                   abs(curv_cot_2.x - curv_cot_3.x),
+                                   abs(curv_cot_1.x - curv_cot_3.x)};
             diff_code = 4 * (diff[0] < dcurv_cut_m) +
                         2 * (diff[1] < dcurv_cut_m) + (diff[2] < dcurv_cut_m);
             // for high pt the diff may pass dispite bad estimates

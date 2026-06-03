@@ -590,7 +590,8 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     kernels::graphEdgeMatchingKernel<<<nBlocks, nThreads, 0, stream>>>(
         m_config.graph_matching_params, ctx.d_edge_params, ctx.d_edge_nodes,
         ctx.d_num_incoming_edges, ctx.d_edge_links, ctx.d_num_neighbours,
-        ctx.d_neighbours, ctx.d_reIndexer, ctx.d_counters, ctx.nEdges, m_config.max_num_neighbours);
+        ctx.d_neighbours, ctx.d_reIndexer, ctx.d_counters, ctx.nEdges,
+        m_config.max_num_neighbours);
 
     cudaStreamSynchronize(stream);
     cudaFree(ctx.d_num_incoming_edges);
@@ -619,7 +620,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     TRACCC_DEBUG("created " << ctx.nConnections << " edge links, found "
                             << ctx.nConnectedEdges
                             << " connected edges for seed extraction");
-    if (ctx.nConnectedEdges == 0){
+    if (ctx.nConnectedEdges == 0) {
         TRACCC_WARNING("No connected edges found, returning empty result");
         return {0, m_mr.main};
     }
@@ -630,14 +631,14 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     cudaMalloc(&ctx.d_output_graph, data_size);
 
     nThreads = 256;
-    //unsigned int nEdgesPerBlock = nThreads * 64;
+    // unsigned int nEdgesPerBlock = nThreads * 64;
 
     nBlocks = 1 + (ctx.nEdges - 1) / nThreads;
 
     kernels::graphCompressionKernel<<<nBlocks, nThreads, 0, stream>>>(
         ctx.d_node_index, ctx.d_edge_nodes, ctx.d_num_neighbours,
-        ctx.d_neighbours, ctx.d_reIndexer, ctx.d_output_graph,
-        ctx.nEdges, m_config.max_num_neighbours);
+        ctx.d_neighbours, ctx.d_reIndexer, ctx.d_output_graph, ctx.nEdges,
+        m_config.max_num_neighbours);
 
     cudaStreamSynchronize(stream);
 
@@ -769,12 +770,13 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     nThreads = 128;
     nBlocks = 1 + (nProps - 1) / nThreads;
 
-    for (unsigned int round = 0; round < m_config.edge_bidding_rounds; ++round) {
+    for (unsigned int round = 0; round < m_config.edge_bidding_rounds;
+         ++round) {
 
         cudaMemsetAsync(ctx.d_edge_bids, 0,
                         ctx.nConnectedEdges * sizeof(unsigned long long int),
                         stream);
-        
+
         kernels::seeds_rebid_for_edges<<<nBlocks, nThreads, 0, stream>>>(
             ctx.d_path_store, ctx.d_seed_proposals, ctx.d_edge_bids,
             ctx.d_seed_ambiguity, ctx.d_counters, nProps, (round == 0));
@@ -805,7 +807,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     cudaMalloc(&ctx.d_hit_bids, ctx.nSp * sizeof(unsigned long long int));
     cudaMemsetAsync(ctx.d_hit_bids, 0, ctx.nSp * sizeof(unsigned long long int),
                     stream);
-    
+
     nThreads = 128;
     nBlocks = 1 + (nProps - 1) / nThreads;
 
@@ -813,15 +815,14 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
         ctx.d_output_graph, ctx.d_seed_proposals, ctx.d_path_store,
         ctx.d_seed_ambiguity, ctx.d_hit_bids, nProps,
         static_cast<int>(1 + 2 + m_config.max_num_neighbours));
-    
+
     nThreads = 128;
     nBlocks = 1 + (ctx.nSeeds - 1) / nThreads;
-    
+
     kernels::gbts_seed_conversion_kernel<<<nBlocks, nThreads, 0, stream>>>(
         ctx.d_seed_proposals, ctx.d_seed_ambiguity, ctx.d_path_store,
         ctx.d_output_graph, ctx.d_reducedSP, output_seeds, ctx.d_hit_bids,
-        nProps, m_config.max_num_neighbours,
-        m_config.seed_ambi_params);
+        nProps, m_config.max_num_neighbours, m_config.seed_ambi_params);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     cudaStreamSynchronize(stream);

@@ -33,14 +33,14 @@ inline __device__ __host__ half4 make_half4(const __half x, const __half y,
     return t;
 }
 
-
 inline __device__ __half phi_wrap(__half phi) {
     const __half PI_2_h = __float2half(2 * CUDART_PI_F);
     const __half ONE_h = __float2half(1.0f);
     return phi - PI_2_h * hrint(phi * (ONE_h / PI_2_h));
 }
 inline __device__ float phi_wrap(float phi) {
-    return phi - 2.0f * CUDART_PI_F * rintf(phi * (1.0f / (2.0f * CUDART_PI_F)));
+    return phi -
+           2.0f * CUDART_PI_F * rintf(phi * (1.0f / (2.0f * CUDART_PI_F)));
 }
 
 inline __device__ void gbts_checks(
@@ -52,8 +52,7 @@ inline __device__ void gbts_checks(
     const float max_z0, const float maxOuterRad, const float min_zU,
     const float max_zU, const float max_kappa, const float low_Kappa_d0,
     const float high_Kappa_d0, const unsigned int nMaxEdges) {
-    
-    
+
     const float tau_min1 = node_params_1.x;
     const float tau_max1 = node_params_1.y;
     const float r1 = node_params_1.z;
@@ -264,8 +263,9 @@ __global__ static void graphEdgeMatchingKernel(
     const half4* d_edge_params, const int2* d_edge_nodes,
     const int* d_num_outgoing_edges, const int* d_edge_links,
     unsigned char* d_num_neighbours, int* d_neighbours, int* d_reIndexer,
-    unsigned int* d_counters, const unsigned int nEdges, const unsigned int nMaxNei) {
-        
+    unsigned int* d_counters, const unsigned int nEdges,
+    const unsigned int nMaxNei) {
+
     const __half cut_dphi_max =
         __float2half(graph_matching_params.cut_dphi_max);
     const __half cut_dcurv_max =
@@ -290,7 +290,8 @@ __global__ static void graphEdgeMatchingKernel(
     if (nLinks == 0) {
         return;
     }
-    const half4 params1 = d_edge_params[edge1_idx];  // [exp_eta, curv, Phi1, Phi2]
+    const half4 params1 =
+        d_edge_params[edge1_idx];  // [exp_eta, curv, Phi1, Phi2]
 
     const __half uat_2 = ONE_h / params1.x;
     const __half Phi2 = params1.z;
@@ -360,8 +361,7 @@ __global__ void edgeReIndexingKernel(int* d_reIndexer, unsigned int* d_counters,
 __global__ static void graphCompressionKernel(
     const unsigned int* d_orig_node_index, const int2* d_edge_nodes,
     const unsigned char* d_num_neighbours, const int* d_neighbours,
-    const int* d_reIndexer, int* d_output_graph,
-    const unsigned int nEdges,
+    const int* d_reIndexer, int* d_output_graph, const unsigned int nEdges,
     const unsigned int nMaxNei) {
 
     const int edge_size = 2 + 1 + nMaxNei;

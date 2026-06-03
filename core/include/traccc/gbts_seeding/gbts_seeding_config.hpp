@@ -216,7 +216,6 @@ struct gbts_seedfinder_config {
     unsigned int max_edges_factor = 10;
 
     unsigned int edge_bidding_rounds = 5;
-
 };
 
 }  // namespace traccc
