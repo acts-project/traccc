@@ -781,7 +781,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
         kernels::seeds_rebid_for_edges<<<nBlocks, nThreads, 0, stream>>>(
             ctx.d_path_store, ctx.d_seed_proposals, ctx.d_edge_bids,
             ctx.d_seed_ambiguity, nProps);
-        
+
         kernels::reset_edge_bids<<<nBlocks, nThreads, 0, stream>>>(
             ctx.d_path_store, ctx.d_seed_proposals, ctx.d_edge_bids,
             ctx.d_seed_ambiguity, ctx.d_counters, round);
@@ -821,11 +821,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
         ctx.d_seed_proposals, ctx.d_seed_ambiguity, ctx.d_path_store,
         ctx.d_output_graph, ctx.d_reducedSP, output_seeds, ctx.d_hit_bids,
         nProps, m_config.max_num_neighbours,
-        m_config.seed_ambi_params.dropout_dcurv_m,
-        m_config.seed_ambi_params.force_dropout_max_curv_m,
-        m_config.seed_ambi_params.best_hit_frac,
-        m_config.seed_ambi_params.tight_bid_cot_threshold,
-        m_config.seed_ambi_params.use_dropout);
+        m_config.seed_ambi_params);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     cudaStreamSynchronize(stream);

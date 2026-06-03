@@ -360,7 +360,7 @@ __device__ inline void edgeState::initialize(
 inline __device__ bool update(edgeState* new_ts, const edgeState* ts,
                               const float4& node1_params,
                               // node params are x, y, z, type
-                              const gbts_seed_extraction_params& KF_params) {
+                              const gbts_seed_extraction_params KF_params) {
 
     float tau2 = ts->m_Y[1] * ts->m_Y[1];
     float invSin2 = 1 + tau2;
@@ -763,11 +763,15 @@ void __global__ gbts_seed_conversion_kernel(
     int* d_output_graph, float4* d_sp_params,
     edm::seed_collection::view output_seeds, unsigned long long int* d_hit_bids,
     const unsigned int nProps, const unsigned int max_num_neighbours,
-    const float dcurv_cut_m, const float force_dropout_max_curv_m,
-    const float best_hit_frac, const float tight_bid_cot_threshold,
-    const bool use_dropout) {
-
+    const gbts_seed_ambi_params ambi_params) {
+    
+    const float dcurv_cut_m = ambi_params.dropout_dcurv_m;
+    const float force_dropout_max_curv_m = ambi_params.force_dropout_max_curv_m;
+    const float best_hit_frac = ambi_params.best_hit_frac;
+    const float tight_bid_cot_threshold = ambi_params.tight_bid_cot_threshold;
+    const bool use_dropout = ambi_params.use_dropout;
     const int edge_size = 2 + 1 + max_num_neighbours;
+
     edm::seed_collection::device seeds_device(output_seeds);
     for (int prop_idx = threadIdx.x + blockIdx.x * blockDim.x;
          prop_idx < nProps; prop_idx += blockDim.x * gridDim.x) {
