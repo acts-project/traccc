@@ -5,6 +5,8 @@
 # Mozilla Public License Version 2.0
 
 # We need the SYCL language in this directory.
+include( vecmem-check-language )
+vecmem_check_language( SYCL )
 enable_language( SYCL )
 
 # Project include(s).

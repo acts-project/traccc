@@ -4,12 +4,14 @@
 #
 # Mozilla Public License Version 2.0
 
+# We need the SYCL language in this directory.
+include( vecmem-check-language )
+vecmem_check_language( SYCL )
+enable_language( SYCL )
+
 # Project include(s).
 include( traccc-compiler-options-cpp )
 include( traccc-compiler-options-sycl )
-
-# We need the SYCL language in this directory.
-enable_language( SYCL )
 
 # Set up the build of the traccc::sycl library.
 traccc_add_library( traccc_sycl sycl TYPE SHARED

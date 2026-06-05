@@ -159,7 +159,6 @@ if( TRACCC_SETUP_VECMEM )
    endif()
    # Make the "VecMem language code" available for the whole project.
    list( PREPEND CMAKE_MODULE_PATH "${VECMEM_LANGUAGE_DIR}" )
-   list( PREPEND CMAKE_MODULE_PATH "${VECMEM_LANGUAGE_DIR}/sycl" )
 endif()
 
 # Set up TBB.

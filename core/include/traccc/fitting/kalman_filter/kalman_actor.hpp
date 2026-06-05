@@ -475,14 +475,16 @@ struct kalman_actor : detray::base_actor {
             // Abort if the Kalman update fails
             if (actor_state.fit_result != kalman_fitter_status::SUCCESS) {
                 if (actor_state.backward_mode) {
-                    TRACCC_ERROR_DEVICE("Abort backward fit: KF status %d",
-                                        actor_state.fit_result);
+                    TRACCC_ERROR_DEVICE(
+                        "Abort backward fit: KF status %d",
+                        static_cast<int>(actor_state.fit_result));
                     TRACCC_ERROR_HOST(
                         "Abort backward fit: "
                         << fitter_debug_msg{actor_state.fit_result}());
                 } else {
-                    TRACCC_ERROR_DEVICE("Abort forward fit: KF status %d",
-                                        actor_state.fit_result);
+                    TRACCC_ERROR_DEVICE(
+                        "Abort forward fit: KF status %d",
+                        static_cast<int>(actor_state.fit_result));
                     TRACCC_ERROR_HOST("Abort forward fit: " << fitter_debug_msg{
                                           actor_state.fit_result}());
                 }
