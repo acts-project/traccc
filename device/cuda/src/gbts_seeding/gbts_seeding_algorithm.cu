@@ -16,6 +16,11 @@
 // C++ include(s)
 #include <ranges>
 
+// Thrust include(s)
+#include <thrust/execution_policy.h>
+#include <thrust/reduce.h>
+#include <thrust/scan.h>
+
 namespace traccc::cuda {
 
 struct gbts_ctx {
@@ -32,20 +37,19 @@ struct gbts_ctx {
     // nEdges, nConnections, nConnectedEdges, .., nSeeds
     unsigned int* d_counters{};
 
-    // device side graph building cuts
-    gbts_graph_building_params* d_graph_building_params;
+    float* d_tau_lut{};
 
     // node making and binning
-    int* d_layerCounts{};
+    unsigned int* d_layerCounts{};
     short* d_spacepointsLayer{};
     // begin_idx + 1 for the surfaceToLayerMap or -layerBin if one to one
     short* d_volumeToLayerMap{};
     uint2* d_surfaceToLayerMap{};  // surface_index, layerBin
     char* d_layerType{};
     // conversion to original sp from post layer binning index
-    int* d_original_sp_idx{};
+    unsigned int* d_original_sp_idx{};
     // conversion to orignal sp/node index from post binning index
-    int* d_node_index{};
+    unsigned int* d_node_index{};
 
     // x,y,z,cluster width in eta
     float4* d_reducedSP{};
@@ -55,18 +59,18 @@ struct gbts_ctx {
     int2* d_layer_info{};
     float2* d_layer_geo{};
 
-    int* d_node_eta_index{};
-    int* d_node_phi_index{};
+    unsigned int* d_node_eta_index{};
+    unsigned int* d_node_phi_index{};
 
-    int* d_eta_phi_histo{};     // for data binning
-    int* d_phi_cusums{};        // for data binning
-    int* d_eta_node_counter{};  // for data binning
+    unsigned int* d_eta_phi_histo{};     // for data binning
+    unsigned int* d_phi_cusums{};        // for data binning
+    unsigned int* d_eta_node_counter{};  // for data binning
 
-    int2* d_eta_bin_views{};  // views of the nodes
+    int* d_eta_bin_views{};  // views of the nodes
     // eta-bin views of the node_params array
     std::unique_ptr<int[]> h_eta_bin_views{};
 
-    float2* d_bin_rads{};  // minimum and maximum r of nodes inside an eta-bin
+    float* d_bins_rads{};  // minimum and maximum r of nodes inside an eta-bin
     std::unique_ptr<float[]> h_bin_rads{};
 
     uint4* d_bin_pair_views{};
@@ -75,7 +79,8 @@ struct gbts_ctx {
     std::unique_ptr<float[]> h_bin_pair_dphi{};
     float* d_bin_pair_dphi{};
     // node making output
-    float* d_node_params{};
+    float4* d_node_params{};  // per-node (tau_min, tau_max, r, z)
+    float* d_node_phi{};      // per-node phi, kept separate from d_node_params
 
     // GraphMaking
     int2* d_edge_nodes{};
@@ -86,6 +91,7 @@ struct gbts_ctx {
 
     unsigned char* d_num_neighbours{};
     int* d_reIndexer{};
+    int* d_edge_keep{};
     int* d_neighbours{};
     // offload this for CPU-side seed extraction
     int* d_output_graph{};
@@ -128,27 +134,19 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
 
     cudaStream_t stream = details::get_stream(m_stream);
 
-    cudaMalloc(&ctx.d_graph_building_params,
-               sizeof(m_config.graph_building_params));
-    cudaMemcpyAsync(
-        ctx.d_graph_building_params, &m_config.graph_building_params,
-        sizeof(m_config.graph_building_params), cudaMemcpyHostToDevice);
-
     // 0. bin spacepoints by the maping supplied to config.m_surfaceToLayerMap
     ctx.nSp = m_copy.get().get_size(spacepoints);
     if (ctx.nSp == 0) {
+        TRACCC_WARNING("No spacepoints found in input, returning empty result");
         return {0, m_mr.main};
     }
-
-    unsigned int nThreads = 128;
-    unsigned int nBlocks = 1 + (ctx.nSp - 1) / nThreads;
 
     cudaMalloc(&ctx.d_layerCounts, (m_config.nLayers + 1) * sizeof(int));
     cudaMemsetAsync(ctx.d_layerCounts, 0, (m_config.nLayers + 1) * sizeof(int),
                     stream);
 
-    cudaMalloc(&ctx.d_spacepointsLayer, ctx.nSp * sizeof(short));
     cudaMalloc(&ctx.d_reducedSP, ctx.nSp * sizeof(float4));
+    cudaMalloc(&ctx.d_spacepointsLayer, ctx.nSp * sizeof(short));
 
     cudaMalloc(&ctx.d_volumeToLayerMap,
                sizeof(short) * m_config.volumeToLayerMap.size());
@@ -172,59 +170,52 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
                     sizeof(char) * m_config.nLayers, cudaMemcpyHostToDevice,
                     stream);
 
-    kernels::count_sp_by_layer<<<nBlocks, nThreads, 0, stream>>>(
+    cudaStreamSynchronize(stream);
+
+    unsigned int nThreads = 128;
+    unsigned int nBlocks = 1 + (ctx.nSp - 1) / nThreads;
+
+    kernels::count_sp_by_layer_kernel<<<nBlocks, nThreads, 0, stream>>>(
         spacepoints, measurements, ctx.d_volumeToLayerMap,
         ctx.d_surfaceToLayerMap, ctx.d_layerType, ctx.d_reducedSP,
-        ctx.d_layerCounts, ctx.d_spacepointsLayer,
-        m_config.graph_building_params.type1_max_width, ctx.nSp,
-        m_config.volumeToLayerMap.size(), m_config.surfaceToLayerMap.size());
+        ctx.d_layerCounts, ctx.d_spacepointsLayer, ctx.nSp,
+        m_config.volumeToLayerMap.size(), m_config.surfaceToLayerMap.size(),
+        m_config.sp_counting_params);
 
     cudaStreamSynchronize(stream);
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     cudaFree(ctx.d_volumeToLayerMap);
     cudaFree(ctx.d_surfaceToLayerMap);
     cudaFree(ctx.d_layerType);
 
     // prefix sum layerCounts
-    std::unique_ptr<int[]> layerCounts =
-        std::make_unique<int[]>(m_config.nLayers + 1);
+    std::unique_ptr<unsigned int[]> layerCounts =
+        std::make_unique<unsigned int[]>(m_config.nLayers + 1);
 
     cudaMemcpyAsync(layerCounts.get(), ctx.d_layerCounts,
-                    (m_config.nLayers + 1) * sizeof(int),
+                    (m_config.nLayers + 1) * sizeof(unsigned int),
                     cudaMemcpyDeviceToHost, stream);
 
     for (size_t layer = 0; layer < m_config.nLayers; layer++) {
         layerCounts[layer + 1] += layerCounts[layer];
     }
     cudaMemcpyAsync(ctx.d_layerCounts, layerCounts.get(),
-                    m_config.nLayers * sizeof(int), cudaMemcpyHostToDevice,
-                    stream);
+                    m_config.nLayers * sizeof(unsigned int),
+                    cudaMemcpyHostToDevice, stream);
 
     ctx.nNodes = static_cast<unsigned int>(layerCounts[m_config.nLayers]);
-    if (ctx.nNodes == 0)
+    if (ctx.nNodes == 0) {
+        TRACCC_WARNING(
+            "No nodes found after spacepoint counting, returning empty result");
         return {0, m_mr.main};
+    }
     layerCounts.reset();
 
     cudaMalloc(&ctx.d_sp_params, ctx.nSp * sizeof(float4));
-    cudaMalloc(&ctx.d_original_sp_idx, ctx.nSp * sizeof(int));
-
-    kernels::bin_sp_by_layer<<<nBlocks, nThreads, 0, stream>>>(
-        ctx.d_sp_params, ctx.d_reducedSP, ctx.d_layerCounts,
-        ctx.d_spacepointsLayer, ctx.d_original_sp_idx, ctx.nSp);
-
-    cudaStreamSynchronize(stream);
-    cudaError_t error = cudaGetLastError();
-
-    if (error != cudaSuccess) {
-        TRACCC_ERROR("spacepoint layer binning: CUDA error: "
-                     << cudaGetErrorString(error));
-        return {0, m_mr.main};
-    }
-
-    cudaFree(ctx.d_spacepointsLayer);
-
-    // 1. histogram spacepoints by layer->eta->phi and convert to nodes
-    // do this in config setup?
+    cudaMalloc(&ctx.d_original_sp_idx, ctx.nSp * sizeof(unsigned int));
+    cudaMalloc(&ctx.d_node_phi_index, sizeof(unsigned int) * ctx.nNodes);
+    cudaMalloc(&ctx.d_node_eta_index, sizeof(unsigned int) * ctx.nNodes);
     cudaMalloc(&ctx.d_layer_info, sizeof(int2) * m_config.nLayers);
     cudaMemcpyAsync(ctx.d_layer_info, m_config.layerInfo.info.data(),
                     sizeof(int2) * m_config.nLayers, cudaMemcpyHostToDevice,
@@ -235,89 +226,60 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
                     sizeof(float2) * m_config.nLayers, cudaMemcpyHostToDevice,
                     stream);
 
-    cudaMalloc(&ctx.d_node_phi_index, sizeof(int) * ctx.nNodes);
+    size_t hist_size =
+        sizeof(unsigned int) * m_config.n_eta_bins * m_config.nPhiBins;
+    cudaMalloc(&ctx.d_eta_phi_histo, hist_size);
+    cudaMemsetAsync(ctx.d_eta_phi_histo, 0, hist_size, stream);
 
-    nThreads = 256;
-    unsigned int nNodesPerBlock = nThreads * 64;
+    nThreads = 128;
+    nBlocks = 1 + (ctx.nSp - 1) / nThreads;
 
-    nBlocks = 1 + (ctx.nNodes - 1) / nNodesPerBlock;
-
-    kernels::node_phi_binning_kernel<<<nBlocks, nThreads, 0, stream>>>(
-        ctx.d_sp_params, ctx.d_node_phi_index, nNodesPerBlock, ctx.nNodes,
-        m_config.n_phi_bins);
+    kernels::bin_sp_kernel<<<nBlocks, nThreads, 0, stream>>>(
+        ctx.d_sp_params, ctx.d_reducedSP, ctx.d_layerCounts,
+        ctx.d_spacepointsLayer, ctx.d_original_sp_idx, ctx.d_layer_info,
+        ctx.d_layer_geo, ctx.d_node_eta_index, ctx.d_node_phi_index,
+        ctx.d_eta_phi_histo, ctx.nSp, m_config.nPhiBins);
 
     cudaStreamSynchronize(stream);
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-    cudaMalloc(&ctx.d_node_eta_index, sizeof(int) * ctx.nNodes);
+    cudaFree(ctx.d_spacepointsLayer);
+
+    // 1. histogram spacepoints by layer->eta->phi and convert to nodes
+    // do this in config setup?
 
     nBlocks = m_config.nLayers;
-
-    kernels::node_eta_binning_kernel<<<nBlocks, nThreads, 0, stream>>>(
-        ctx.d_sp_params, ctx.d_layer_info, ctx.d_layer_geo,
-        ctx.d_node_eta_index, ctx.d_layerCounts, m_config.nLayers);
-
-    cudaStreamSynchronize(stream);
 
     cudaFree(ctx.d_layerCounts);
     cudaFree(ctx.d_layer_info);
     cudaFree(ctx.d_layer_geo);
 
-    error = cudaGetLastError();
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-    if (error != cudaSuccess) {
-        TRACCC_ERROR(
-            "eta-phi binning: CUDA error: " << cudaGetErrorString(error));
-        return {0, m_mr.main};
-    }
-    size_t hist_size = sizeof(int) * m_config.n_eta_bins * m_config.n_phi_bins;
-    cudaMalloc(&ctx.d_eta_phi_histo, hist_size);
-    cudaMemsetAsync(ctx.d_eta_phi_histo, 0, hist_size, stream);
     cudaMalloc(&ctx.d_phi_cusums, hist_size);
-
-    nBlocks = 1 + (ctx.nNodes - 1) / nNodesPerBlock;
-
-    kernels::eta_phi_histo_kernel<<<nBlocks, nThreads, 0, stream>>>(
-        ctx.d_node_phi_index, ctx.d_node_eta_index, ctx.d_eta_phi_histo,
-        nNodesPerBlock, ctx.nNodes, m_config.n_phi_bins);
+    cudaMalloc(&ctx.d_eta_node_counter,
+               sizeof(unsigned int) * m_config.n_eta_bins);
 
     cudaStreamSynchronize(stream);
-    error = cudaGetLastError();
 
-    if (error != cudaSuccess) {
-        TRACCC_ERROR(
-            "eta-phi histo: CUDA error: " << cudaGetErrorString(error));
-        return {0, m_mr.main};
-    }
-
-    cudaMalloc(&ctx.d_eta_node_counter, sizeof(int) * m_config.n_eta_bins);
-
-    unsigned int nBinsPerBlock = 128;
-
-    nThreads = nBinsPerBlock;
-
-    nBlocks = 1 + (m_config.n_eta_bins - 1) / nBinsPerBlock;
+    nThreads = 128;
+    nBlocks = 1 + (m_config.n_eta_bins - 1) / nThreads;
 
     kernels::eta_phi_counting_kernel<<<nBlocks, nThreads, 0, stream>>>(
         ctx.d_eta_phi_histo, ctx.d_eta_node_counter, ctx.d_phi_cusums,
-        nBinsPerBlock, m_config.n_eta_bins, m_config.n_phi_bins);
+        m_config.n_eta_bins, m_config.nPhiBins);
 
     cudaStreamSynchronize(stream);
+
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
     cudaFree(ctx.d_eta_phi_histo);
 
-    error = cudaGetLastError();
-
-    if (error != cudaSuccess) {
-        TRACCC_ERROR(
-            "eta-phi counting: CUDA error: " << cudaGetErrorString(error));
-        return {0, m_mr.main};
-    }
-
-    std::unique_ptr<int[]> eta_sums =
-        std::make_unique<int[]>(m_config.n_eta_bins);
+    std::unique_ptr<unsigned int[]> eta_sums =
+        std::make_unique<unsigned int[]>(m_config.n_eta_bins);
 
     cudaMemcpyAsync(&eta_sums[0], &ctx.d_eta_node_counter[0],
-                    sizeof(int) * m_config.n_eta_bins, cudaMemcpyDeviceToHost,
-                    stream);
+                    sizeof(unsigned int) * m_config.n_eta_bins,
+                    cudaMemcpyDeviceToHost, stream);
 
     cudaStreamSynchronize(stream);
 
@@ -326,8 +288,8 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     }
     // send back
     cudaMemcpyAsync(&ctx.d_eta_node_counter[0], &eta_sums[0],
-                    sizeof(int) * m_config.n_eta_bins, cudaMemcpyHostToDevice,
-                    stream);
+                    sizeof(unsigned int) * m_config.n_eta_bins,
+                    cudaMemcpyHostToDevice, stream);
 
     ctx.h_eta_bin_views = std::make_unique<int[]>(2 * m_config.n_eta_bins);
 
@@ -340,34 +302,37 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
 
     cudaStreamSynchronize(stream);
 
+    nThreads = 128;
+    nBlocks = 1 + (m_config.n_eta_bins - 1) / nThreads;
+
     kernels::eta_phi_prefix_sum_kernel<<<nBlocks, nThreads, 0, stream>>>(
-        ctx.d_eta_node_counter, ctx.d_phi_cusums, nBinsPerBlock,
-        m_config.n_eta_bins, m_config.n_phi_bins);
+        ctx.d_eta_node_counter, ctx.d_phi_cusums, m_config.n_eta_bins,
+        m_config.nPhiBins);
 
     cudaStreamSynchronize(stream);
     cudaFree(ctx.d_eta_node_counter);
 
-    error = cudaGetLastError();
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-    if (error != cudaSuccess) {
-        TRACCC_ERROR(
-            "eta-phi cusum: CUDA error: " << cudaGetErrorString(error));
-        return {0, m_mr.main};
+    cudaMalloc(&ctx.d_node_params, sizeof(float4) * ctx.nNodes);
+    cudaMalloc(&ctx.d_node_phi, sizeof(float) * ctx.nNodes);
+    cudaMalloc(&ctx.d_node_index, sizeof(int) * ctx.nNodes);
+    cudaMalloc(&ctx.d_tau_lut, sizeof(float) * m_config.tau_lut.size());
+    if (m_config.tau_lut.size() > 0) {
+        cudaMemcpyAsync(ctx.d_tau_lut, m_config.tau_lut.data(),
+                        sizeof(float) * m_config.tau_lut.size(),
+                        cudaMemcpyHostToDevice, stream);
+        cudaStreamSynchronize(stream);
     }
 
-    cudaMalloc(&ctx.d_node_params, 5 * sizeof(float) * ctx.nNodes);
-    cudaMalloc(&ctx.d_node_index, sizeof(int) * ctx.nNodes);
-
     nThreads = 256;
-    nNodesPerBlock = nThreads * 64;
-
-    nBlocks = 1 + (ctx.nNodes - 1) / nNodesPerBlock;
+    nBlocks = 1 + (ctx.nNodes - 1) / nThreads;
 
     kernels::node_sorting_kernel<<<nBlocks, nThreads, 0, stream>>>(
         ctx.d_sp_params, ctx.d_node_eta_index, ctx.d_node_phi_index,
-        ctx.d_phi_cusums, ctx.d_node_params, ctx.d_node_index,
-        ctx.d_original_sp_idx, ctx.d_graph_building_params, nNodesPerBlock,
-        ctx.nNodes, m_config.n_phi_bins);
+        ctx.d_phi_cusums, ctx.d_node_params, ctx.d_node_phi, ctx.d_node_index,
+        ctx.d_original_sp_idx, ctx.d_tau_lut, m_config.node_sorting_params,
+        ctx.nNodes, m_config.nPhiBins);
 
     cudaStreamSynchronize(stream);
     cudaFree(ctx.d_sp_params);
@@ -376,15 +341,10 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     cudaFree(ctx.d_node_eta_index);
     cudaFree(ctx.d_node_phi_index);
 
-    error = cudaGetLastError();
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-    if (error != cudaSuccess) {
-        TRACCC_ERROR("node sorting: CUDA error: " << cudaGetErrorString(error));
-        return {0, m_mr.main};
-    }
-
-    cudaMalloc(&ctx.d_eta_bin_views, sizeof(int2) * m_config.n_eta_bins);
-    cudaMalloc(&ctx.d_bin_rads, sizeof(float2) * m_config.n_eta_bins);
+    cudaMalloc(&ctx.d_eta_bin_views, sizeof(int) * 2 * m_config.n_eta_bins);
+    cudaMalloc(&ctx.d_bins_rads, sizeof(float) * 2 * m_config.n_eta_bins);
 
     cudaMemcpyAsync(&ctx.d_eta_bin_views[0], ctx.h_eta_bin_views.get(),
                     2 * m_config.n_eta_bins * sizeof(int),
@@ -392,34 +352,28 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
 
     cudaStreamSynchronize(stream);
 
-    nBinsPerBlock = 128;
+    nThreads = 128;
 
-    nThreads = nBinsPerBlock;
-
-    nBlocks = 1 + (m_config.n_eta_bins - 1) / nBinsPerBlock;
+    nBlocks = 1 + (m_config.n_eta_bins - 1) / nThreads;
 
     kernels::minmax_rad_kernel<<<nBlocks, nThreads, 0, stream>>>(
-        ctx.d_eta_bin_views, ctx.d_node_params, ctx.d_bin_rads, nBinsPerBlock,
+        ctx.d_eta_bin_views, ctx.d_node_params, ctx.d_bins_rads,
         m_config.n_eta_bins);
 
     cudaStreamSynchronize(stream);
     cudaFree(ctx.d_eta_bin_views);
 
-    error = cudaGetLastError();
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-    if (error != cudaSuccess) {
-        TRACCC_ERROR("node sorting: CUDA error: " << cudaGetErrorString(error));
-        return {0, m_mr.main};
-    }
     ctx.h_bin_rads = std::make_unique<float[]>(2 * m_config.n_eta_bins);
 
-    cudaMemcpyAsync(ctx.h_bin_rads.get(), &ctx.d_bin_rads[0],
+    cudaMemcpyAsync(ctx.h_bin_rads.get(), &ctx.d_bins_rads[0],
                     2 * sizeof(float) * m_config.n_eta_bins,
                     cudaMemcpyDeviceToHost, stream);
 
     cudaStreamSynchronize(stream);
 
-    cudaFree(ctx.d_bin_rads);
+    cudaFree(ctx.d_bins_rads);
 
     // 2. prepare input for the graph making part of the code:
 
@@ -464,13 +418,13 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
         // max radius of bin2 - min radius of bin1
         float maxDeltaR = std::fabs(rb2 - rb1);
 
-        float deltaPhi = m_config.graph_building_params.min_delta_phi +
-                         m_config.graph_building_params.dphi_coeff * maxDeltaR;
+        float deltaPhi = m_config.edge_making_params.min_delta_phi +
+                         m_config.edge_making_params.dphi_coeff * maxDeltaR;
 
         if (maxDeltaR < 60) {
             deltaPhi =
-                m_config.graph_building_params.min_delta_phi_low_dr +
-                m_config.graph_building_params.dphi_coeff_low_dr * maxDeltaR;
+                m_config.edge_making_params.min_delta_phi_low_dr +
+                m_config.edge_making_params.dphi_coeff_low_dr * maxDeltaR;
         }
         // splitting large bins into more consistent sizes
 
@@ -527,8 +481,11 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     cudaMemcpyAsync(&ctx.d_bin_pair_dphi[0], &ctx.h_bin_pair_dphi[0], data_size,
                     cudaMemcpyHostToDevice, stream);
 
-    cudaMalloc(&ctx.d_counters, sizeof(unsigned int) * 12);
-    cudaMemsetAsync(ctx.d_counters, 0, sizeof(unsigned int) * 12, stream);
+    cudaMalloc(&ctx.d_counters,
+               sizeof(unsigned int) * traccc::device::gbts_counter::nCounters);
+    cudaMemsetAsync(
+        ctx.d_counters, 0,
+        sizeof(unsigned int) * traccc::device::gbts_counter::nCounters, stream);
 
     cudaStreamSynchronize(stream);
 
@@ -546,24 +503,21 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
 
     kernels::graphEdgeMakingKernel<<<nBlocks, nThreads, 0, stream>>>(
         ctx.d_bin_pair_views, ctx.d_bin_pair_dphi, ctx.d_node_params,
-        ctx.d_graph_building_params, ctx.d_counters, ctx.d_edge_nodes,
-        ctx.d_edge_params, ctx.d_num_incoming_edges, ctx.nMaxEdges,
-        m_config.n_phi_bins);
+        ctx.d_node_phi, m_config.edge_making_params, ctx.d_counters,
+        ctx.d_edge_nodes, ctx.d_edge_params, ctx.d_num_incoming_edges,
+        ctx.nMaxEdges, m_config.nPhiBins);
 
     cudaStreamSynchronize(stream);
     cudaFree(ctx.d_node_params);
+    cudaFree(ctx.d_node_phi);
     cudaFree(ctx.d_bin_pair_views);
     cudaFree(ctx.d_bin_pair_dphi);
 
-    error = cudaGetLastError();
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-    if (error != cudaSuccess) {
-        TRACCC_ERROR("edge making: CUDA error: " << cudaGetErrorString(error));
-        return {0, m_mr.main};
-    }
-
-    cudaMemcpyAsync(&ctx.nEdges, ctx.d_counters, sizeof(unsigned int),
-                    cudaMemcpyDeviceToHost, stream);
+    cudaMemcpyAsync(&ctx.nEdges,
+                    &ctx.d_counters[traccc::device::gbts_counter::nEdges],
+                    sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
 
     TRACCC_DEBUG("Created " << ctx.nEdges << " edges with a cap of "
                             << ctx.nMaxEdges);
@@ -610,12 +564,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
 
     cudaStreamSynchronize(stream);
 
-    error = cudaGetLastError();
-
-    if (error != cudaSuccess) {
-        TRACCC_ERROR("edge linking: CUDA error: " << cudaGetErrorString(error));
-        return {0, m_mr.main};
-    }
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     // 4. edge matching to create edge-to-edge connections
 
@@ -633,7 +582,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     cudaMalloc(&ctx.d_neighbours, data_size);
 
     kernels::graphEdgeMatchingKernel<<<nBlocks, nThreads, 0, stream>>>(
-        ctx.d_graph_building_params, ctx.d_edge_params, ctx.d_edge_nodes,
+        m_config.graph_matching_params, ctx.d_edge_params, ctx.d_edge_nodes,
         ctx.d_num_incoming_edges, ctx.d_edge_links, ctx.d_num_neighbours,
         ctx.d_neighbours, ctx.d_reIndexer, ctx.d_counters, ctx.nEdges,
         m_config.max_num_neighbours);
@@ -643,13 +592,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     cudaFree(ctx.d_edge_links);
     cudaFree(ctx.d_edge_params);
 
-    error = cudaGetLastError();
-
-    if (error != cudaSuccess) {
-        TRACCC_ERROR(
-            "edge matching: CUDA error: " << cudaGetErrorString(error));
-        return {0, m_mr.main};
-    }
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     // 5. Edge re-indexing to keep only edges involved in any connection
 
@@ -658,28 +601,23 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
 
     cudaStreamSynchronize(stream);
 
-    error = cudaGetLastError();
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-    if (error != cudaSuccess) {
-        TRACCC_ERROR(
-            "edge re-indexing: CUDA error: " << cudaGetErrorString(error));
-        return {0, m_mr.main};
-    }
-
-    unsigned int nStats[3];
-
-    cudaMemcpyAsync(&nStats[0], ctx.d_counters, 3 * sizeof(unsigned int),
-                    cudaMemcpyDeviceToHost, stream);
-
-    ctx.nConnections = nStats[1];
-    ctx.nConnectedEdges = nStats[2];
+    cudaMemcpyAsync(&ctx.nConnections,
+                    &ctx.d_counters[traccc::device::gbts_counter::nConnections],
+                    sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
+    cudaMemcpyAsync(
+        &ctx.nConnectedEdges,
+        &ctx.d_counters[traccc::device::gbts_counter::nConnectedEdges],
+        sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
 
     TRACCC_DEBUG("created " << ctx.nConnections << " edge links, found "
                             << ctx.nConnectedEdges
                             << " connected edges for seed extraction");
-    if (ctx.nConnectedEdges == 0)
+    if (ctx.nConnectedEdges == 0) {
+        TRACCC_WARNING("No connected edges found, returning empty result");
         return {0, m_mr.main};
-
+    }
     unsigned int nIntsPerEdge = 2 + 1 + m_config.max_num_neighbours;
 
     data_size = ctx.nConnectedEdges * nIntsPerEdge * sizeof(int);
@@ -687,14 +625,14 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     cudaMalloc(&ctx.d_output_graph, data_size);
 
     nThreads = 256;
-    unsigned int nEdgesPerBlock = nThreads * 64;
+    // unsigned int nEdgesPerBlock = nThreads * 64;
 
-    nBlocks = 1 + (ctx.nEdges - 1) / nEdgesPerBlock;
+    nBlocks = 1 + (ctx.nEdges - 1) / nThreads;
 
     kernels::graphCompressionKernel<<<nBlocks, nThreads, 0, stream>>>(
         ctx.d_node_index, ctx.d_edge_nodes, ctx.d_num_neighbours,
-        ctx.d_neighbours, ctx.d_reIndexer, ctx.d_output_graph, nEdgesPerBlock,
-        ctx.nEdges, m_config.max_num_neighbours);
+        ctx.d_neighbours, ctx.d_reIndexer, ctx.d_output_graph, ctx.nEdges,
+        m_config.max_num_neighbours);
 
     cudaStreamSynchronize(stream);
 
@@ -704,12 +642,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     cudaFree(ctx.d_num_neighbours);
     cudaFree(ctx.d_neighbours);
 
-    error = cudaGetLastError();
-    if (error != cudaSuccess) {
-        TRACCC_ERROR(
-            "graph compression: CUDA error: " << cudaGetErrorString(error));
-        return {0, m_mr.main};
-    }
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     // 6. Find longest segments with CCA
 
@@ -729,8 +662,9 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
 
     unsigned int nEdgesLeft = ctx.nConnectedEdges;
 
-    cudaMemcpyAsync(&ctx.d_counters[3], &nEdgesLeft, sizeof(unsigned int),
-                    cudaMemcpyHostToDevice, stream);
+    cudaMemcpyAsync(&ctx.d_counters[traccc::device::gbts_counter::nEdgesLeft],
+                    &nEdgesLeft, sizeof(unsigned int), cudaMemcpyHostToDevice,
+                    stream);
 
     if (nEdgesLeft == 0)
         return {0, m_mr.main};
@@ -753,13 +687,7 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
 
     cudaFree(ctx.d_active_edges);
 
-    error = cudaGetLastError();
-
-    if (error != cudaSuccess) {
-        TRACCC_ERROR(
-            "message-passing CCA: CUDA error: " << cudaGetErrorString(error));
-        return {0, m_mr.main};
-    }
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     nThreads = 128;
     nBlocks = 1 + (ctx.nConnectedEdges - 1) / nThreads;
@@ -774,8 +702,13 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
 
     // nPaths to terminus, nTerminusEdges
     unsigned int path_sizes[2];
-    cudaMemcpyAsync(&path_sizes[0], &ctx.d_counters[6],
-                    2 * sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
+    cudaMemcpyAsync(&path_sizes[0],
+                    &ctx.d_counters[traccc::device::gbts_counter::nPaths],
+                    sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
+    cudaMemcpyAsync(
+        &path_sizes[1],
+        &ctx.d_counters[traccc::device::gbts_counter::nTerminusEdges],
+        sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
     unsigned int pathsPerTerminus = 1 + (path_sizes[0] - 1) / path_sizes[1];
 
     TRACCC_DEBUG(path_sizes[0] << "size of path store | nTerminusEdges "
@@ -814,38 +747,33 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
         ctx.d_reducedSP, ctx.d_output_graph, ctx.d_path_store,
         ctx.d_seed_proposals, ctx.d_edge_bids, ctx.d_seed_ambiguity,
         ctx.d_levels, ctx.d_counters, path_sizes[1], m_config.minLevel,
-        m_config.max_num_neighbours, m_config.seed_extraction_params);
+        m_config.max_num_neighbours, m_config.seed_extraction_params,
+        m_config.edge_making_params.max_z0);
 
     unsigned int nProps = 0;
-    cudaMemcpyAsync(&nProps, &ctx.d_counters[8], sizeof(unsigned int),
-                    cudaMemcpyDeviceToHost, stream);
+    cudaMemcpyAsync(&nProps,
+                    &ctx.d_counters[traccc::device::gbts_counter::nProps],
+                    sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
 
     TRACCC_DEBUG("nProps " << nProps);
 
     cudaStreamSynchronize(stream);
 
-    error = cudaGetLastError();
-    if (error != cudaSuccess) {
-        TRACCC_ERROR(
-            "seed extraction: CUDA error: " << cudaGetErrorString(error));
-        return {0, m_mr.main};
-    }
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     cudaFree(ctx.d_levels);
     cudaFree(ctx.d_outgoing_paths);
 
     if (nProps == 0) {
+        TRACCC_WARNING("No seed proposals found, returning empty result");
         return {0, m_mr.main};
     }
 
     nThreads = 128;
     nBlocks = 1 + (nProps - 1) / nThreads;
 
-    kernels::reset_edge_bids<<<nBlocks, nThreads, 0, stream>>>(
-        ctx.d_path_store, ctx.d_seed_proposals, ctx.d_edge_bids,
-        ctx.d_seed_ambiguity, ctx.d_counters, -1);
-
-    for (int round = 0; round < 5; ++round) {
+    for (unsigned int round = 0; round < m_config.edge_bidding_rounds;
+         ++round) {
 
         cudaMemsetAsync(ctx.d_edge_bids, 0,
                         ctx.nConnectedEdges * sizeof(unsigned long long int),
@@ -853,15 +781,17 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
 
         kernels::seeds_rebid_for_edges<<<nBlocks, nThreads, 0, stream>>>(
             ctx.d_path_store, ctx.d_seed_proposals, ctx.d_edge_bids,
-            ctx.d_seed_ambiguity, nProps);
+            ctx.d_seed_ambiguity, ctx.d_counters, nProps, (round == 0));
 
         kernels::reset_edge_bids<<<nBlocks, nThreads, 0, stream>>>(
             ctx.d_path_store, ctx.d_seed_proposals, ctx.d_edge_bids,
-            ctx.d_seed_ambiguity, ctx.d_counters, round);
+            ctx.d_seed_ambiguity, ctx.d_counters);
+        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
     }
     unsigned int nRejectedProps = 0;
-    cudaMemcpyAsync(&nRejectedProps, &ctx.d_counters[9], sizeof(unsigned int),
-                    cudaMemcpyDeviceToHost, stream);
+    cudaMemcpyAsync(&nRejectedProps,
+                    &ctx.d_counters[traccc::device::gbts_counter::nRejected],
+                    sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
     ctx.nSeeds = nProps - nRejectedProps;
 
     TRACCC_DEBUG("Rejecetd " << nRejectedProps << " out of " << nProps
@@ -869,7 +799,6 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
 
     cudaFree(ctx.d_edge_bids);
     cudaFree(ctx.d_counters);
-    cudaFree(ctx.d_graph_building_params);
 
     // 8. convert to 3sp seeds and make output buffer
     // allocate extra seed space for hit permutation
@@ -882,22 +811,21 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
                     stream);
 
     nThreads = 128;
-    nBlocks = 1 + (ctx.nSeeds - 1) / nThreads;
+    nBlocks = 1 + (nProps - 1) / nThreads;
 
     kernels::seeds_bid_for_hits<<<nBlocks, nThreads, 0, stream>>>(
         ctx.d_output_graph, ctx.d_seed_proposals, ctx.d_path_store,
         ctx.d_seed_ambiguity, ctx.d_hit_bids, nProps,
         static_cast<int>(1 + 2 + m_config.max_num_neighbours));
 
+    nThreads = 128;
+    nBlocks = 1 + (ctx.nSeeds - 1) / nThreads;
+
     kernels::gbts_seed_conversion_kernel<<<nBlocks, nThreads, 0, stream>>>(
         ctx.d_seed_proposals, ctx.d_seed_ambiguity, ctx.d_path_store,
         ctx.d_output_graph, ctx.d_reducedSP, output_seeds, ctx.d_hit_bids,
-        nProps, m_config.max_num_neighbours,
-        m_config.seed_ambi_params.dropout_dcurv_m,
-        m_config.seed_ambi_params.force_dropout_max_curv_m,
-        m_config.seed_ambi_params.best_hit_frac,
-        m_config.seed_ambi_params.tight_bid_cot_threshold,
-        m_config.seed_ambi_params.use_dropout);
+        nProps, m_config.max_num_neighbours, m_config.seed_ambi_params);
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
     cudaStreamSynchronize(stream);
 
@@ -909,13 +837,6 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
     cudaFree(ctx.d_seed_proposals);
     cudaFree(ctx.d_seed_ambiguity);
     cudaFree(ctx.d_hit_bids);
-
-    error = cudaGetLastError();
-    if (error != cudaSuccess) {
-        TRACCC_ERROR("Seed ambiguity solving: CUDA error: "
-                     << cudaGetErrorString(error));
-        return {0, m_mr.main};
-    }
 
     TRACCC_DEBUG("GBTS found " << ctx.nSeeds << " seeds");
     return output_seeds;

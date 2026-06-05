@@ -164,13 +164,15 @@ void __global__ count_terminus_edges(int2* d_path_store,
         // fill the first part of path_store so fitting can skip go-nowhere
         // paths
         if (out_paths.y != -1) {
-            d_outgoing_paths[edge_idx].y = atomicAdd(&d_counters[7], 1);
+            d_outgoing_paths[edge_idx].y = atomicAdd(
+                &d_counters[traccc::device::gbts_counter::nTerminusEdges], 1);
             atomicAdd(&outgoingCount, out_paths.x);
         }
     }
     __syncthreads();
     if (threadIdx.x == 0) {
-        atomicAdd(&d_counters[6], outgoingCount);
+        atomicAdd(&d_counters[traccc::device::gbts_counter::nPaths],
+                  outgoingCount);
     }
 }
 
@@ -231,7 +233,8 @@ void __global__ fill_path_store(int2* d_path_store, int* d_output_graph,
             if (live_idx >= traccc::device::gbts_consts::live_path_buffer) {
                 break;
             }
-            int new_path_idx = atomicAdd(&d_counters[7], 1);
+            int new_path_idx = atomicAdd(
+                &d_counters[traccc::device::gbts_counter::nTerminusEdges], 1);
             // head edge idx, link back
             d_path_store[new_path_idx] = make_int2(edge_idx, path_idx);
             live_paths[live_idx] = make_int2(edge_idx, new_path_idx);
@@ -272,7 +275,9 @@ void __global__ fill_path_store(int2* d_path_store, int* d_output_graph,
                 if (level != d_levels[edge_idx] + 1) {
                     continue;
                 }
-                path_idx = atomicAdd(&d_counters[7], 1);
+                path_idx = atomicAdd(
+                    &d_counters[traccc::device::gbts_counter::nTerminusEdges],
+                    1);
                 if (path_idx >= nPaths) {
                     break;
                 }
@@ -360,7 +365,8 @@ __device__ inline void edgeState::initialize(
 inline __device__ bool update(edgeState* new_ts, const edgeState* ts,
                               const float4& node1_params,
                               // node params are x, y, z, type
-                              const gbts_seed_extraction_params& KF_params) {
+                              const gbts_seed_extraction_params KF_params,
+                              const float max_z0) {
 
     float tau2 = ts->m_Y[1] * ts->m_Y[1];
     float invSin2 = 1 + tau2;
@@ -465,7 +471,7 @@ inline __device__ bool update(edgeState* new_ts, const edgeState* ts,
     }
 
     float z0 = new_ts->m_Y[0] - new_ts->m_refY * ts->m_Y[1];
-    if (fabsf(z0) > KF_params.max_z0) {
+    if (fabsf(z0) > max_z0) {
         return false;
     }
 
@@ -533,7 +539,7 @@ inline __device__ void add_seed_proposal(const int qual, const int path_idx,
         path = d_path_store[path.y];
         depth--;
 
-        unsigned long long int competing_offer =
+        const unsigned long long int competing_offer =
             atomicMax(&d_edge_bids[path.x], seed_bid);
         if (competing_offer > seed_bid) {
             d_seed_ambiguity[prop_idx] = -1;
@@ -548,15 +554,15 @@ void __global__ fit_segments(
     int2* d_seed_proposals, unsigned long long int* d_edge_bids,
     char* d_seed_ambiguity, char* d_levels, unsigned int* d_counters,
     unsigned int nTerminusEdges, int minLevel, unsigned int max_num_neighbours,
-    gbts_seed_extraction_params seed_extraction_params) {
+    gbts_seed_extraction_params seed_extraction_params, const float max_z0) {
 
     // take an extracted path and fit it to produce a quality score
-    unsigned int path_idx =
+    const unsigned int path_idx =
         threadIdx.x + blockIdx.x * blockDim.x + nTerminusEdges;
-    if (path_idx >= d_counters[7]) {
+    if (path_idx >= d_counters[traccc::device::gbts_counter::nTerminusEdges]) {
         return;
     }
-    int edge_size = 2 + 1 + max_num_neighbours;
+    const int edge_size = 2 + 1 + max_num_neighbours;
 
     char length = 1;
 
@@ -580,11 +586,13 @@ void __global__ fit_segments(
         node2 = d_sp_params[d_output_graph[traccc::device::gbts_consts::node2 +
                                            edge_size * path.x]];
         if (toggle) {
-            if (!update(&state1, &state2, node2, seed_extraction_params)) {
+            if (!update(&state1, &state2, node2, seed_extraction_params,
+                        max_z0)) {
                 state1 = state2;
                 break;
             }
-        } else if (!update(&state2, &state1, node2, seed_extraction_params)) {
+        } else if (!update(&state2, &state1, node2, seed_extraction_params,
+                           max_z0)) {
             break;
         }
         toggle = !toggle;
@@ -596,11 +604,12 @@ void __global__ fit_segments(
     }
     int qual = 0;
     if (toggle) {
-        qual = static_cast<int>(seed_extraction_params.qual_scale * state2.m_J);
+        qual = rint(seed_extraction_params.qual_scale * state2.m_J);
     } else {
-        qual = static_cast<int>(seed_extraction_params.qual_scale * state1.m_J);
+        qual = rint(seed_extraction_params.qual_scale * state1.m_J);
     }
-    int prop_idx = atomicAdd(&d_counters[8], 1);
+    const unsigned int prop_idx =
+        atomicAdd(&d_counters[traccc::device::gbts_counter::nProps], 1);
     // perform first round of bidding for disambiguation
     // only on the outermost edge
     add_seed_proposal(qual, path_idx, prop_idx, d_seed_ambiguity,
@@ -610,30 +619,19 @@ void __global__ fit_segments(
 void __global__ reset_edge_bids(int2* d_path_store, int2* d_seed_proposals,
                                 unsigned long long int* d_edge_bids,
                                 char* d_seed_ambiguity,
-                                unsigned int* d_counters, int round) {
+                                unsigned int* d_counters) {
 
-    int nProps = d_counters[8];
+    unsigned int nProps = d_counters[traccc::device::gbts_counter::nProps];
     // first round find best seed starting at each edge
-    for (int prop_idx = threadIdx.x + blockIdx.x * blockDim.x;
+    for (unsigned int prop_idx = threadIdx.x + blockIdx.x * blockDim.x;
          prop_idx < nProps; prop_idx += blockDim.x * gridDim.x) {
 
-        char ambi = d_seed_ambiguity[prop_idx];
-        if (round == -1) {
-            if (ambi == 0) {
-                // rebid 'best seed from edge' in later rounds
-                d_seed_ambiguity[prop_idx] = 1;
-                continue;
-            } else {
-                d_seed_ambiguity[prop_idx] = -2;
-                // count rejected props to calculate nSeeds
-                atomicAdd(&d_counters[9], 1);
-                continue;
-            }
-        } else if (ambi == -2 | ambi == 0) {
+        const char ambi = d_seed_ambiguity[prop_idx];
+        if (ambi == -2 | ambi == 0) {
             // only reset maybes
             continue;
         }
-        int2 prop = d_seed_proposals[prop_idx];
+        const int2 prop = d_seed_proposals[prop_idx];
 
         bool isgood = true;
 
@@ -653,28 +651,40 @@ void __global__ reset_edge_bids(int2* d_path_store, int2* d_seed_proposals,
         }  // flag as maybe seed, shares with a loser
         else {
             d_seed_ambiguity[prop_idx] = -2;
-            atomicAdd(&d_counters[9], 1);
+            atomicAdd(&d_counters[traccc::device::gbts_counter::nRejected], 1);
             // definate fake, shares with a winner
         }
     }
 }
 
 // TO-DO?: reset prop count each iter and make new props like CCA active_edges
-void __global__ seeds_rebid_for_edges(int2* d_path_store,
-                                      int2* d_seed_proposals,
-                                      unsigned long long int* d_edge_bids,
-                                      char* d_seed_ambiguity,
-                                      unsigned int nProps) {
+void __global__ seeds_rebid_for_edges(
+    int2* d_path_store, int2* d_seed_proposals,
+    unsigned long long int* d_edge_bids, char* d_seed_ambiguity,
+    unsigned int* d_counters, unsigned int nProps, const bool first_round) {
 
-    for (int prop_idx = threadIdx.x + blockIdx.x * blockDim.x;
+    for (unsigned int prop_idx = threadIdx.x + blockIdx.x * blockDim.x;
          prop_idx < nProps; prop_idx += blockDim.x * gridDim.x) {
 
         char ambi = d_seed_ambiguity[prop_idx];
-        if (ambi == -2 | ambi == 0) {
+
+        if (first_round) {
+            if (ambi == 0) {
+                // rebid 'best seed from edge' in later rounds
+                d_seed_ambiguity[prop_idx] = 1;
+                // Here there is no continue by design
+            } else {
+                d_seed_ambiguity[prop_idx] = -2;
+                // count rejected props to calculate nSeeds
+                atomicAdd(&d_counters[traccc::device::gbts_counter::nRejected],
+                          1);
+                continue;
+            }
+        } else if (ambi == -2 | ambi == 0) {
             // only rebid for maybes
             continue;
         }
-        int2 prop = d_seed_proposals[prop_idx];
+        const int2 prop = d_seed_proposals[prop_idx];
 
         add_seed_proposal(prop.x, prop.y, prop_idx, d_seed_ambiguity,
                           d_seed_proposals, d_edge_bids, d_path_store, -1);
@@ -691,7 +701,7 @@ void __global__ seeds_bid_for_hits(int* d_output_graph, int2* d_seed_proposals,
         if (d_seed_ambiguity[prop_idx] == -2) {
             continue;
         }
-        int2 prop = d_seed_proposals[prop_idx];
+        const int2 prop = d_seed_proposals[prop_idx];
         unsigned long long int seed_bid =
             (static_cast<unsigned long long int>(prop.x) << 32) |
             (static_cast<unsigned long long int>(prop_idx));
@@ -699,12 +709,13 @@ void __global__ seeds_bid_for_hits(int* d_output_graph, int2* d_seed_proposals,
         int2 path = make_int2(0, prop.y);
         while (path.y >= 0) {
             path = d_path_store[path.y];
-            int sp_idx = d_output_graph[traccc::device::gbts_consts::node1 +
-                                        edge_size * path.x];
+            const int sp_idx =
+                d_output_graph[traccc::device::gbts_consts::node1 +
+                               edge_size * path.x];
             atomicMax(&d_hit_bids[sp_idx], seed_bid);
         }
-        int sp_idx = d_output_graph[traccc::device::gbts_consts::node2 +
-                                    edge_size * path.x];
+        const int sp_idx = d_output_graph[traccc::device::gbts_consts::node2 +
+                                          edge_size * path.x];
         atomicMax(&d_hit_bids[sp_idx], seed_bid);
     }
 }
@@ -763,11 +774,15 @@ void __global__ gbts_seed_conversion_kernel(
     int* d_output_graph, float4* d_sp_params,
     edm::seed_collection::view output_seeds, unsigned long long int* d_hit_bids,
     const unsigned int nProps, const unsigned int max_num_neighbours,
-    const float dcurv_cut_m, const float force_dropout_max_curv_m,
-    const float best_hit_frac, const float tight_bid_cot_threshold,
-    const bool use_dropout) {
+    const gbts_seed_ambi_params ambi_params) {
 
-    int edge_size = 2 + 1 + max_num_neighbours;
+    const float dcurv_cut_m = ambi_params.dropout_dcurv_m;
+    const float force_dropout_max_curv_m = ambi_params.force_dropout_max_curv_m;
+    const float best_hit_frac = ambi_params.best_hit_frac;
+    const float tight_bid_cot_threshold = ambi_params.tight_bid_cot_threshold;
+    const bool use_dropout = ambi_params.use_dropout;
+    const int edge_size = 2 + 1 + max_num_neighbours;
+
     edm::seed_collection::device seeds_device(output_seeds);
     for (int prop_idx = threadIdx.x + blockIdx.x * blockDim.x;
          prop_idx < nProps; prop_idx += blockDim.x * gridDim.x) {
@@ -781,7 +796,7 @@ void __global__ gbts_seed_conversion_kernel(
         Tracklet seed;
         seed.size = 0;
         // dummy path to start the loop
-        int2 prop = d_seed_proposals[prop_idx];
+        const int2 prop = d_seed_proposals[prop_idx];
         int2 path = make_int2(0, prop.y);
         while (path.y >= 0) {
             path = d_path_store[path.y];
@@ -809,13 +824,13 @@ void __global__ gbts_seed_conversion_kernel(
             sps[0] = d_sp_params[seed.nodes[seed.size - 1]];
             sps[1] = d_sp_params[seed.nodes[(seed.size - 1) / 2 + 1]];
             sps[2] = d_sp_params[seed.nodes[0]];
-            float2 curv_cot_1 = estimate_params(sps);
+            const float2 curv_cot_1 = estimate_params(sps);
             // seed 2
             sps[1] = d_sp_params[seed.nodes[(seed.size - 1) / 2]];
-            float2 curv_cot_2 = estimate_params(sps);
+            const float2 curv_cot_2 = estimate_params(sps);
             sps[0] = d_sp_params[seed.nodes[seed.size - 2]];
             // seed 3
-            float2 curv_cot_3 = estimate_params(sps);
+            const float2 curv_cot_3 = estimate_params(sps);
             // for low eta (higher fake rate) seeds perform a stronger cut
             if ((best_for_hit < seed.size - 1) &
                 (abs(curv_cot_1.y + curv_cot_2.y + curv_cot_3.y) <
@@ -823,9 +838,9 @@ void __global__ gbts_seed_conversion_kernel(
                 (seed.size < 5)) {
                 continue;
             }
-            float diff[3] = {abs(curv_cot_1.x - curv_cot_2.x),
-                             abs(curv_cot_2.x - curv_cot_3.x),
-                             abs(curv_cot_1.x - curv_cot_3.x)};
+            const float diff[3] = {abs(curv_cot_1.x - curv_cot_2.x),
+                                   abs(curv_cot_2.x - curv_cot_3.x),
+                                   abs(curv_cot_1.x - curv_cot_3.x)};
             diff_code = 4 * (diff[0] < dcurv_cut_m) +
                         2 * (diff[1] < dcurv_cut_m) + (diff[2] < dcurv_cut_m);
             // for high pt the diff may pass dispite bad estimates
@@ -835,7 +850,7 @@ void __global__ gbts_seed_conversion_kernel(
                               3.0f * tight_bid_cot_threshold) &
                              diff_code == 0;
         }
-        float quality = static_cast<float>(prop.x);
+        const float quality = static_cast<float>(prop.x);
         // use one seed from a consistant pair/set + the inconsistant one
         // sample spacepoints from tracklet to create seeds
         // include 1st order unless either 2 or 3 are consitant with the other
