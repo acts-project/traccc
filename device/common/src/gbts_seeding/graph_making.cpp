@@ -38,18 +38,16 @@ auto gbts_seeding_algorithm::make_graph(
     // CPU: build the per-bin-pair work list (begin/end node ranges + phi search
     // window) on the host from the eta-bin views, splitting large bins into
     // node_buffer_length-sized chunks. Two passes: count then fill.
-    int int_nBinPairs = 0;
+    unsigned int nBinPairs = 0;
     for (const std::pair<unsigned int, unsigned int>& binPair : cfg.binTables) {
-        const int bin1_begin = eta_bin_views[2 * binPair.first];
-        const int bin1_end = eta_bin_views[2 * binPair.first + 1];
-        int nNodesInBin1 = bin1_end - bin1_begin;
+        const unsigned int bin1_begin = eta_bin_views[2 * binPair.first];
+        const unsigned int bin1_end = eta_bin_views[2 * binPair.first + 1];
+        unsigned int nNodesInBin1 = bin1_end - bin1_begin;
         if (bin1_begin > bin1_end) {
             nNodesInBin1 = bin1_begin - bin1_end;
         }
-        int_nBinPairs +=
-            1 + (nNodesInBin1 - 1) / gbts_consts::node_buffer_length;
+        nBinPairs += 1 + (nNodesInBin1 - 1) / gbts_consts::node_buffer_length;
     }
-    const unsigned int nBinPairs = static_cast<unsigned int>(int_nBinPairs);
 
     collection_types<unsigned int>::host bin_pair_views(4 * nBinPairs,
                                                         mr().host);
