@@ -27,9 +27,16 @@ set( ACTS_BUILD_PLUGIN_JSON TRUE CACHE BOOL
    "Build JSON plugin in Acts" )
 set( ACTS_SETUP_DETRAY TRUE CACHE BOOL
    "Set up Detray in the Acts code" )
+
+# Set the detray log level
+set( DETRAY_SET_LOGGING "${TRACCC_DEVICE_LOG_LVL}" CACHE STRING
+     "Log level to use in device code" FORCE)
+message( STATUS "Setting DETRAY and TRACCC device log level to ${DETRAY_SET_LOGGING}" )
+
 set(DETRAY_BUILD_TEST_UTILS TRUE CACHE BOOL "")
 # HACK: Make sure that ACTS builds ACTSVG, which is required by Detray.
 set( ACTS_BUILD_PLUGIN_ACTSVG TRUE CACHE BOOL "" )
+
 # The ITk metadata is required, so explicitly request that it be built.
 if (NOT("itk_metadata" IN_LIST DETRAY_GENERATE_METADATA))
    list(APPEND DETRAY_GENERATE_METADATA "itk_metadata")
