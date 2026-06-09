@@ -131,8 +131,7 @@ TEST_P(CkfToyDetectorTests, Run) {
      *****************************/
 
     // Seed generator
-    seed_generator<host_detector_type> sg(host_detector.as<detector_traits>(),
-                                          stddevs);
+    seed_generator<host_detector_type> sg(host_detector.as<detector_traits>());
 
     // Finding algorithm configuration
     traccc::sycl::combinatorial_kalman_filter_algorithm::config_type cfg;

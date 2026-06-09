@@ -20,14 +20,6 @@
 // Covfie include(s).
 #include <covfie/core/field.hpp>
 
-// detray include(s).
-// #include <detray/definitions/pdg_particle.hpp>
-// #include <detray/detectors/magnetic_field.hpp>
-// #include <detray/navigation/navigator.hpp>
-// #include <detray/propagator/propagator.hpp>
-// #include <detray/propagator/rk_stepper.hpp>
-// #include <detray/test/utils/simulation/event_generator/track_generators.hpp>
-
 // GTest include(s).
 #include <gtest/gtest.h>
 
@@ -48,15 +40,6 @@ class TripletFittingTests : public testing::Test {
     using scalar_type = device_detector_type::scalar_type;
     using b_field_t =
         covfie::field<traccc::const_bfield_backend_t<scalar_type>>;
-    /*using rk_stepper_type =
-        detray::rk_stepper<b_field_t::view_t, traccc::default_algebra,
-                           detray::constrained_step<scalar_type>>;
-    using host_navigator_type = detray::navigator<const host_detector_type>;
-    using host_fitter_type =
-        kalman_fitter<rk_stepper_type, host_navigator_type>;
-    using device_navigator_type = detray::navigator<const device_detector_type>;
-    using device_fitter_type =
-        kalman_fitter<rk_stepper_type, device_navigator_type>;*/
 
     // Use deterministic random number generator for testing
     using uniform_gen_t =

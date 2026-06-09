@@ -174,6 +174,8 @@ class kalman_fitter {
     fit(const seed_parameters_t& seed_params, state& fitter_state) const {
         seed_parameters_t params = seed_params;
         fitter_state.m_fit_actor_state.reset();
+        fitter_state.m_fit_actor_state.do_precise_hole_count =
+            m_cfg.do_precise_hole_count;
 
         // Run the kalman filtering for a given number of iterations
         for (std::size_t i = 0; i < m_cfg.n_iterations; i++) {
@@ -208,7 +210,9 @@ class kalman_fitter {
 
         const kalman_fitter_status res_fw = filter(params, fitter_state);
 
+        // Reset hole count
         const unsigned int n_holes_fw{fitter_state.m_fit_actor_state.n_holes};
+        fitter_state.m_fit_actor_state.n_holes = 0u;
 
         // Run smoothing
         kalman_fitter_status res_bw{kalman_fitter_status::ERROR_OTHER};
@@ -316,12 +320,11 @@ class kalman_fitter {
         // Since the smoothed track parameter of the last surface can be
         // considered to be the filtered one, we can reversly iterate the
         // algorithm to obtain the smoothed parameter of other surfaces
-        fitter_state.m_fit_actor_state.backward_mode = true;
         fitter_state.m_fit_actor_state.reset();
 
+        constexpr bool backward_mode{true};
         while (!fitter_state.m_fit_actor_state.finished() &&
-               (!fitter_state.m_fit_actor_state.is_state() ||
-                fitter_state.m_fit_actor_state().is_hole())) {
+               fitter_state.m_fit_actor_state(backward_mode).is_hole()) {
             fitter_state.m_fit_actor_state.next();
         }
 
@@ -329,7 +332,7 @@ class kalman_fitter {
             return kalman_fitter_status::ERROR_UPDATER_SKIPPED_STATE;
         }
 
-        auto last = fitter_state.m_fit_actor_state();
+        auto last = fitter_state.m_fit_actor_state(backward_mode);
 
         const scalar theta = last.filtered_params().theta();
         if (!std::isfinite(theta)) {
@@ -401,9 +404,6 @@ class kalman_fitter {
 
         // Run the smoothing
         propagator.propagate(propagation, fitter_state.backward_actor_state());
-
-        // Reset the backward mode to false
-        fitter_state.m_fit_actor_state.backward_mode = false;
 
         // Encountered error in the smoother?
         if (fitter_state.m_fit_actor_state.fit_result !=

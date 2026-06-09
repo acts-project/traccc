@@ -9,10 +9,8 @@
 
 // Project include(s).
 #include "test_detectors.hpp"
+#include "traccc/io/detector.hpp"
 #include "triplet_fitting_test.hpp"
-
-// Detray include(s).
-#include <detray/io/frontend/detector_writer.hpp>
 
 // VecMem include(s).
 #include <vecmem/memory/host_memory_resource.hpp>

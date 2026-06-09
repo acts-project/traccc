@@ -56,10 +56,10 @@ struct simulator {
     };
 
     using actor_chain_type = detray::actor_chain<
-        detray::actor::momentum_aborter<scalar_type>,
         detray::actor::parameter_updater<
             algebra_type, detray::actor::random_scatterer<algebra_type>,
-            writer_t>>;
+            writer_t>,
+        detray::actor::momentum_aborter<scalar_type>>;
 
     using navigator_type = detray::caching_navigator<detector_t>;
     using stepper_type = detray::rk_stepper<
@@ -68,7 +68,7 @@ struct simulator {
     using propagator_type =
         detray::propagator<stepper_type, navigator_type, actor_chain_type>;
 
-    simulator(const detray::pdg_particle<scalar>& ptc_type, std::size_t events,
+    simulator(const detray::pdg_particle<scalar>& ptc, std::size_t events,
               const detector_t& det, const bfield_type& field,
               track_generator_t&& track_gen,
               typename writer_t::config&& writer_cfg,
@@ -81,8 +81,8 @@ struct simulator {
               std::make_unique<track_generator_t>(std::move(track_gen))),
           m_writer_cfg(writer_cfg) {
 
-        m_cfg.ptc_type = ptc_type;
-        m_track_generator->config().charge(ptc_type.charge());
+        m_cfg.ptc_type = ptc;
+        m_track_generator->config().charge(ptc.charge());
 
         // Turn off tracking features
         m_cfg.propagation.stepping.do_covariance_transport = false;
@@ -120,8 +120,8 @@ struct simulator {
             m_scatterer.set_seed(event_id);
             writer_state.set_seed(event_id);
 
-            auto actor_states = detray::tie(m_aborter_state, m_updater_state,
-                                            m_scatterer, writer_state);
+            auto actor_states = detray::tie(m_updater_state, m_scatterer,
+                                            m_aborter_state, writer_state);
 
             for (auto track : *m_track_generator.get()) {
 
