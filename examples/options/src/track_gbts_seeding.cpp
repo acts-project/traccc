@@ -18,7 +18,7 @@
 
 namespace traccc::opts {
 
-/// Convenience namespace shorthand
+/// Convenience namespace int16_thand
 namespace po = boost::program_options;
 
 track_gbts_seeding::track_gbts_seeding() : interface("GBTS Options") {
@@ -41,62 +41,57 @@ track_gbts_seeding::track_gbts_seeding() : interface("GBTS Options") {
 
     m_desc.add_options()(
         "min_delta_phi",
-        po::value(&gbts_config.edge_making_params.min_delta_phi)
-            ->default_value(gbts_config.edge_making_params.min_delta_phi),
+        po::value(&gbts_config.dphi_window.min_delta_phi)
+            ->default_value(gbts_config.dphi_window.min_delta_phi),
         "min_delta_phi for the sliding window [rads]");
     m_desc.add_options()(
         "dphi_coeff for the sliding window",
-        po::value(&gbts_config.edge_making_params.dphi_coeff)
-            ->default_value(gbts_config.edge_making_params.dphi_coeff),
+        po::value(&gbts_config.dphi_window.dphi_coeff)
+            ->default_value(gbts_config.dphi_window.dphi_coeff),
         "dphi_coeff for the sliding window");
     m_desc.add_options()(
         "min_delta_phi_low_dr",
-        po::value(&gbts_config.edge_making_params.min_delta_phi_low_dr)
-            ->default_value(
-                gbts_config.edge_making_params.min_delta_phi_low_dr),
+        po::value(&gbts_config.dphi_window.min_delta_phi_low_dr)
+            ->default_value(gbts_config.dphi_window.min_delta_phi_low_dr),
         "min_delta_phi_low_dr for the sliding window [rads]");
     m_desc.add_options()(
         "dphi_coeff_low_dr",
-        po::value(&gbts_config.edge_making_params.dphi_coeff_low_dr)
-            ->default_value(gbts_config.edge_making_params.dphi_coeff_low_dr),
+        po::value(&gbts_config.dphi_window.dphi_coeff_low_dr)
+            ->default_value(gbts_config.dphi_window.dphi_coeff_low_dr),
         "dphi_coeff_low_dr for the sliding window");
-    m_desc.add_options()(
-        "max_Kappa",
-        po::value(&gbts_config.edge_making_params.max_Kappa)
-            ->default_value(gbts_config.edge_making_params.max_Kappa),
-        "max curvature for an edge + origin triplet [1/mm]");
+    m_desc.add_options()("max_Kappa",
+                         po::value(&gbts_config.edge_making.max_Kappa)
+                             ->default_value(gbts_config.edge_making.max_Kappa),
+                         "max curvature for an edge + origin triplet [1/mm]");
 
-    m_desc.add_options()(
-        "min_z0",
-        po::value(&gbts_config.edge_making_params.min_z0)
-            ->default_value(gbts_config.edge_making_params.min_z0),
-        "min projected z0 for an edge [mm]");
-    m_desc.add_options()(
-        "max_z0",
-        po::value(&gbts_config.edge_making_params.max_z0)
-            ->default_value(gbts_config.edge_making_params.max_z0),
-        "max projected z0 for an edge [mm]");
+    m_desc.add_options()("min_z0",
+                         po::value(&gbts_config.edge_making.min_z0)
+                             ->default_value(gbts_config.edge_making.min_z0),
+                         "min projected z0 for an edge [mm]");
+    m_desc.add_options()("max_z0",
+                         po::value(&gbts_config.edge_making.max_z0)
+                             ->default_value(gbts_config.edge_making.max_z0),
+                         "max projected z0 for an edge [mm]");
     m_desc.add_options()(
         "maxOuterRadius projected for an edge",
-        po::value(&gbts_config.edge_making_params.maxOuterRadius)
-            ->default_value(gbts_config.edge_making_params.maxOuterRadius),
+        po::value(&gbts_config.edge_making.maxOuterRadius)
+            ->default_value(gbts_config.edge_making.maxOuterRadius),
         "maxOuterRadius [mm]");
 
     m_desc.add_options()(
         "cut_dphi_max",
-        po::value(&gbts_config.graph_matching_params.cut_dphi_max)
-            ->default_value(gbts_config.graph_matching_params.cut_dphi_max),
+        po::value(&gbts_config.edge_matching.cut_dphi_max)
+            ->default_value(gbts_config.edge_matching.cut_dphi_max),
         "cut_dphi_max for edge matching [rads]");
     m_desc.add_options()(
         "cut_dcurv_max",
-        po::value(&gbts_config.graph_matching_params.cut_dcurv_max)
-            ->default_value(gbts_config.graph_matching_params.cut_dcurv_max),
+        po::value(&gbts_config.edge_matching.cut_dcurv_max)
+            ->default_value(gbts_config.edge_matching.cut_dcurv_max),
         "cut_dcurv_max for edge matching [1/mm]");
     m_desc.add_options()(
         "cut_tau_ratio_max",
-        po::value(&gbts_config.graph_matching_params.cut_tau_ratio_max)
-            ->default_value(
-                gbts_config.graph_matching_params.cut_tau_ratio_max),
+        po::value(&gbts_config.edge_matching.cut_tau_ratio_max)
+            ->default_value(gbts_config.edge_matching.cut_tau_ratio_max),
         "cut_tau_ratio_max for edge matching");
     m_desc.add_options()("max_num_neighbours",
                          po::value(&gbts_config.max_num_neighbours)
@@ -144,11 +139,6 @@ track_gbts_seeding::track_gbts_seeding() : interface("GBTS Options") {
             ->default_value(
                 gbts_config.seed_extraction_params.inv_max_curvature),
         "inv_max_curvature to stop following a seed [1/mm]");
-    m_desc.add_options()(
-        "max_z0",
-        po::value(&gbts_config.seed_extraction_params.max_z0)
-            ->default_value(gbts_config.seed_extraction_params.max_z0),
-        "max_z0 to stop following a seed [mm]");
 }
 
 track_gbts_seeding::operator gbts_seedfinder_config() const {
@@ -162,8 +152,8 @@ void track_gbts_seeding::read(const boost::program_options::variables_map &) {
         return;
     }
     // config info from file
-    std::vector<std::pair<uint64_t, short>> geoidBinning;
-    std::vector<std::pair<int, std::vector<int>>> binTables;
+    std::vector<std::pair<uint64_t, int16_t>> geoidBinning;
+    std::vector<std::pair<unsigned int, std::vector<unsigned int>>> binTables;
     traccc::device::gbts_layerInfo layerInfo;
 
     auto geoidBinningPath =
@@ -177,7 +167,7 @@ void track_gbts_seeding::read(const boost::program_options::variables_map &) {
     geoidBinningFile >> nGeoIDs;
     geoidBinning.reserve(nGeoIDs);
 
-    std::pair<uint64_t, short> geoidLayerPair;
+    std::pair<uint64_t, int16_t> geoidLayerPair;
     for (; nGeoIDs > 0u; --nGeoIDs) {
         geoidBinningFile >> geoidLayerPair.first;
         geoidBinningFile >> geoidLayerPair.second;
@@ -194,8 +184,8 @@ void track_gbts_seeding::read(const boost::program_options::variables_map &) {
     unsigned int nBinPairs = 0;
     binTablesFile >> nBinPairs;
     binTables.reserve(nBinPairs);
-    int bin1 = 0;
-    std::vector<int> bin2 = {0};
+    unsigned int bin1 = 0;
+    std::vector<unsigned int> bin2 = {0};
     for (; nBinPairs > 0; --nBinPairs) {
         binTablesFile >> bin1;
         binTablesFile >> bin2[0];
@@ -211,8 +201,8 @@ void track_gbts_seeding::read(const boost::program_options::variables_map &) {
     unsigned int nLayers = 0;
     layerInfoFile >> nLayers;
     layerInfo.reserve(nLayers);
-    int type = 0;
-    std::array<int, 2> info = {0, 0};
+    unsigned int type = 0;
+    std::array<unsigned int, 2> info = {0, 0};
     std::array<float, 2> geo = {0, 0};
     for (; nLayers > 0u; --nLayers) {
         layerInfoFile >> type;
@@ -239,43 +229,36 @@ std::unique_ptr<configuration_printable> track_gbts_seeding::as_printable()
         "max edges factor ", std::format("{}", gbts_config.max_edges_factor)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "min_delta_phi ",
-        std::format("{:.5f} ", gbts_config.edge_making_params.min_delta_phi)));
+        std::format("{:.5f} ", gbts_config.dphi_window.min_delta_phi)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "dphi_coeff ",
-        std::format("{:.5f} ", gbts_config.edge_making_params.dphi_coeff)));
+        std::format("{:.5f} ", gbts_config.dphi_window.dphi_coeff)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "min_delta_phi_low_dr ",
-        std::format("{:.5f} ",
-                    gbts_config.edge_making_params.min_delta_phi_low_dr)));
+        std::format("{:.5f} ", gbts_config.dphi_window.min_delta_phi_low_dr)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "dphi_coeff_low_dr ",
-        std::format("{:.5f} ",
-                    gbts_config.edge_making_params.dphi_coeff_low_dr)));
+        std::format("{:.5f} ", gbts_config.dphi_window.dphi_coeff_low_dr)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "max_Kappa ",
-        std::format("{:.5f} ", gbts_config.edge_making_params.max_Kappa)));
+        std::format("{:.5f} ", gbts_config.edge_making.max_Kappa)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
-        "min_z0 ",
-        std::format("{:.5f} ", gbts_config.edge_making_params.min_z0)));
+        "min_z0 ", std::format("{:.5f} ", gbts_config.edge_making.min_z0)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
-        "max_z0 ",
-        std::format("{:.5f} ", gbts_config.edge_making_params.max_z0)));
+        "max_z0 ", std::format("{:.5f} ", gbts_config.edge_making.max_z0)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "maxOuterRadius ",
-        std::format("{:.5f} ", gbts_config.edge_making_params.maxOuterRadius)));
+        std::format("{:.5f} ", gbts_config.edge_making.maxOuterRadius)));
 
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "edge matching dphi max ",
-        std::format("{:.5f} ",
-                    gbts_config.graph_matching_params.cut_dphi_max)));
+        std::format("{:.5f} ", gbts_config.edge_matching.cut_dphi_max)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "edge matching dcurv max ",
-        std::format("{:.5f} ",
-                    gbts_config.graph_matching_params.cut_dcurv_max)));
+        std::format("{:.5f} ", gbts_config.edge_matching.cut_dcurv_max)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "edge matching tau ratio max ",
-        std::format("{:.5f} ",
-                    gbts_config.graph_matching_params.cut_tau_ratio_max)));
+        std::format("{:.5f} ", gbts_config.edge_matching.cut_tau_ratio_max)));
     cat->add_child(std::make_unique<configuration_kv_pair>(
         "max neighbours ", std::format("{} ", gbts_config.max_num_neighbours)));
     // Seed extraction flags
@@ -304,9 +287,6 @@ std::unique_ptr<configuration_printable> track_gbts_seeding::as_printable()
         "inv_max_curvature ",
         std::format("{:.5f} ",
                     gbts_config.seed_extraction_params.inv_max_curvature)));
-    cat->add_child(std::make_unique<configuration_kv_pair>(
-        "seedstopper max_z0 ",
-        std::format("{:.5f} ", gbts_config.seed_extraction_params.max_z0)));
 
     return cat;
 }
