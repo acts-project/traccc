@@ -16,6 +16,7 @@
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
 #include "traccc/utils/logging.hpp"
 #include "traccc/utils/particle.hpp"
+#include "traccc/utils/propagation.hpp"
 
 // Detray include(s).
 #include <detray/utils/tuple_helpers.hpp>
@@ -103,7 +104,7 @@ TRACCC_HOST_DEVICE inline void propagate_to_next_surface(
      * parameter transporter to multiply the Jacobians into this matrix, which
      * is set to the multiplicative identity.
      */
-    if (cfg.run_mbf_smoother) {
+    if (cfg.run_smoother == smoother_type::e_mbf) {
         assert(payload.tmp_jacobian_view.ptr() != nullptr);
 
         vecmem::device_vector<bound_matrix<default_algebra>> tmp_jacobian(
