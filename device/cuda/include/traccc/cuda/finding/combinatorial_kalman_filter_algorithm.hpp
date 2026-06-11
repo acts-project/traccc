@@ -12,6 +12,7 @@
 
 // Project include(s).
 #include "traccc/finding/device/combinatorial_kalman_filter_algorithm.hpp"
+#include "traccc/fitting/device/kalman_fitting_algorithm.hpp"
 
 namespace traccc::cuda {
 
@@ -53,6 +54,23 @@ class combinatorial_kalman_filter_algorithm
         const detector_buffer& det,
         const edm::measurement_collection::const_view::size_type n_measurements,
         const edm::measurement_collection::const_view& measurements)
+        const override;
+
+    /// Launch the @c progressive_kalman_filter kernel
+    ///
+    /// @param n_threads The number of threads to launch the kernel with
+    /// @param config The track finding configuration
+    /// @param det The detector object
+    /// @param bfield The magnetic field object
+    /// @param payload The payload for the kernel
+    ///
+    /// @returns the type-erased surface sequence buffer
+    ///
+    void progressive_kalman_filter_kernel(
+        unsigned int n_threads, const finding_config& config,
+        const detector_buffer& det, const magnetic_field& bfield,
+        const device::progressive_kalman_filter_payload& payload,
+        const device::kalman_fitting_algorithm::fit_payload& smoothing_payload)
         const override;
 
     /// Track finding kernel launcher
@@ -185,6 +203,16 @@ class combinatorial_kalman_filter_algorithm
         unsigned int n_threads, bool run_mbf_smoother,
         const measurement_selector::config& calib_cfg,
         const device::build_tracks_payload& payload) const override;
+
+    /// Launch the @c kalman_smoother kernel
+    ///
+    /// @param n_threads The number of threads to launch the kernel with
+    /// @param seqs_buffer The surface descriptor sequence buffer
+    /// @param payload The payload for the kernel
+    ///
+    /*virtual void kalman_smoother_kernel(
+        unsigned int n_threads, std::any seqs_buffer,
+        const device::kalman_smoother_payload& payload) const override;*/
 
     /// @}
 

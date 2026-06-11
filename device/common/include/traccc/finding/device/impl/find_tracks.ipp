@@ -23,9 +23,9 @@
 // Project include(s).
 #include "traccc/device/array_insertion_mutex.hpp"
 #include "traccc/edm/track_state_helpers.hpp"
+#include "traccc/finding/measurement_selector.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 #include "traccc/fitting/kalman_filter/is_line_visitor.hpp"
-#include "traccc/fitting/kalman_filter/measurement_selector.hpp"
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/utils/logging.hpp"
 

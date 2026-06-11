@@ -17,6 +17,7 @@
 #include "traccc/finding/device/find_tracks_payload.hpp"
 #include "traccc/finding/device/gather_best_tips_per_measurement.hpp"
 #include "traccc/finding/device/gather_measurement_votes.hpp"
+#include "traccc/finding/device/progressive_kalman_filter.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
 #include "traccc/finding/device/remove_duplicates.hpp"
 #include "traccc/finding/device/update_tip_length_buffer.hpp"
@@ -28,7 +29,9 @@
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/finding_config.hpp"
-#include "traccc/fitting/kalman_filter/measurement_selector.hpp"
+#include "traccc/finding/measurement_selector.hpp"
+#include "traccc/fitting/device/fit_payload.hpp"
+#include "traccc/fitting/device/kalman_fitting_algorithm.hpp"
 #include "traccc/geometry/detector_buffer.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
@@ -38,6 +41,7 @@
 #include <vecmem/containers/data/vector_buffer.hpp>
 
 // System include(s).
+#include <any>
 #include <memory>
 
 namespace traccc::device {
@@ -66,7 +70,8 @@ class combinatorial_kalman_filter_algorithm
     combinatorial_kalman_filter_algorithm(
         const finding_config& config, const traccc::memory_resource& mr,
         const vecmem::copy& copy,
-        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone(),
+        std::unique_ptr<kalman_fitting_algorithm> kf_fitter = nullptr);
     /// Destructor
     virtual ~combinatorial_kalman_filter_algorithm();
 
@@ -111,9 +116,24 @@ class combinatorial_kalman_filter_algorithm
         const edm::measurement_collection::const_view::size_type n_measurements,
         const edm::measurement_collection::const_view& measurements) const = 0;
 
-    /// Track finding kernel launcher
+    /// Launch the @c progressive_kalman_filter kernel
     ///
     /// @param n_threads The number of threads to launch the kernel with
+    /// @param config The track finding configuration
+    /// @param det The detector object
+    /// @param bfield The magnetic field object
+    /// @param payload The payload for the kernel
+    ///
+    virtual void progressive_kalman_filter_kernel(
+        unsigned int n_seeds, const finding_config& config,
+        const detector_buffer& det, const magnetic_field& bfield,
+        const device::progressive_kalman_filter_payload& payload,
+        const kalman_fitting_algorithm::fit_payload& smoothing_payload)
+        const = 0;
+
+    /// Track finding kernel launcher
+    ///
+    /// @param n_seeds The number of input seeds (same as the number of threads)
     /// @param config The track finding configuration
     /// @param det The detector object
     /// @param payload The payload for the kernel
@@ -241,6 +261,39 @@ class combinatorial_kalman_filter_algorithm
         const measurement_selector::config& calib_cfg,
         const device::build_tracks_payload& payload) const = 0;
 
+    /// Prepare a detector+bfield specific payload for the fitting kernel(s)
+    ///
+    /// Function to be used by the specific @c prepare_fit_payload functions
+    /// for preparing the payload. Since apart from different template types,
+    /// they all work the same way.
+    ///
+    /// @tparam detector_list_t The list of supported detector types to use for
+    ///                        the visitor
+    /// @tparam bfield_list_t  The list of supported b-field types to use for
+    ///                        the visitor
+    ///
+    /// @param det             The detector buffer to prepare the payload for
+    /// @param field           The magnetic field to prepare the payload for
+    /// @param n_surfaces      The number of surfaces for each track to be
+    ///                        fitted
+    /// @param payload         The (non-templated) payload for the kernel(s)
+    ///
+    /// @return The prepared payload for the fitting kernel(s)
+    ///
+    /*template <typename detector_list_t, typename bfield_list_t>
+    fit_payload prepare_fit_payload_helper(
+        const detector_buffer& det, const magnetic_field& field,
+        const std::vector<unsigned int>& n_surfaces,
+        const device::fit_payload& payload) const;*/
+
+    /// Launch the @c kalman_smoother kernel
+    ///
+    /// @param config The fitting configuration
+    /// @param payload The payload for the fitting kernel(s)
+    ///
+    /*virtual void kalman_smoother_kernel(const fitting_config& config,
+                                        const fit_payload& payload) const = 0;*/
+
     /// @}
 
     private:
@@ -248,6 +301,8 @@ class combinatorial_kalman_filter_algorithm
     struct data;
     /// Pointer to internal data
     std::unique_ptr<data> m_data;
+    /// Kalman Fitting algorithm implementation
+    std::unique_ptr<kalman_fitting_algorithm> m_kf_fitter;
 
 };  // class combinatorial_kalman_filter_algorithm
 

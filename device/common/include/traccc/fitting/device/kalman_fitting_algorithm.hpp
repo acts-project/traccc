@@ -41,6 +41,39 @@ class kalman_fitting_algorithm
     /// Configuration type
     using config_type = fitting_config;
 
+    /// Payload of the fitting kernels
+    struct fit_payload {
+
+        /// Constructor
+        fit_payload(const detector_buffer& det, const magnetic_field& field);
+
+        /// Move constructor
+        fit_payload(fit_payload&& other) = default;
+
+        /// Helper function to get the device resident, templated payload
+        template <typename fitter_t>
+        const device::fit_tpayload<
+            typename fitter_t::detector_type::const_view_type,
+            typename fitter_t::bfield_type, typename fitter_t::surface_type>*
+        get_tpayload() const;
+
+        /// Polymorphic tracking geometry buffer
+        const detector_buffer& detector;
+        /// Polymorphic magnetic field object
+        const magnetic_field& field;
+
+        /// The host-resident, non-templated payload
+        device::fit_payload payload;
+
+        /// Surface buffer used during the fitting
+        move_only_any surfaces;
+
+        /// The host-resident, templated payload
+        std::any host_tpayload;
+        /// The device-resident, templated payload (buffer)
+        move_only_any device_tpayload;
+    };
+
     /// Constructor with the algorithm's configuration
     ///
     /// @param config The configuration object
@@ -68,39 +101,40 @@ class kalman_fitting_algorithm
         const edm::track_container<default_algebra>::const_view&
             track_candidates) const override;
 
+    /// Function preparing the fitting payload
+    ///
+    /// @param det             The detector buffer to prepare the payload for
+    /// @param field           The magnetic field to prepare the payload for
+    /// @param n_surfaces      The number of surfaces for each track to be
+    ///                        fitted
+    /// @param payload         The (non-templated) payload for the kernel(s)
+    ///
+    /// @return The prepared payload for the fitting kernel(s)
+    ///
+    virtual fit_payload prepare_fit_payload(
+        const detector_buffer& det, const magnetic_field& field,
+        const std::vector<unsigned int>& n_surfaces,
+        const device::fit_payload& payload) const = 0;
+
+    /// Function launching the "forward fitting" kernel(s)
+    ///
+    /// @param config The fitting configuration
+    /// @param payload The payload for the fitting kernel(s)
+    ///
+    virtual void fit_forward_kernel(const fitting_config& config,
+                                    const fit_payload& payload) const = 0;
+
+    /// Function launching the "backward fitting" kernel(s)
+    ///
+    /// @param config The fitting configuration
+    /// @param payload The payload for the fitting kernel(s)
+    ///
+    virtual void fit_backward_kernel(const fitting_config& config,
+                                     const fit_payload& payload) const = 0;
+
     protected:
     /// @name Type(s)/function(s) used internally by the algorithm
     /// @{
-
-    /// Payload of the fitting kernels
-    struct fit_payload {
-
-        /// Constructor
-        fit_payload(const detector_buffer& det, const magnetic_field& field);
-
-        /// Helper function to get the device resident, templated payload
-        template <typename fitter_t>
-        const device::fit_tpayload<
-            typename fitter_t::detector_type::const_view_type,
-            typename fitter_t::bfield_type, typename fitter_t::surface_type>*
-        get_tpayload() const;
-
-        /// Polymorphic tracking geometry buffer
-        const detector_buffer& detector;
-        /// Polymorphic magnetic field object
-        const magnetic_field& field;
-
-        /// The host-resident, non-templated payload
-        device::fit_payload payload;
-
-        /// Surface buffer used during the fitting
-        move_only_any surfaces;
-
-        /// The host-resident, templated payload
-        std::any host_tpayload;
-        /// The device-resident, templated payload (buffer)
-        move_only_any device_tpayload;
-    };
 
     /// Prepare a detector+bfield specific payload for the fitting kernel(s)
     ///
@@ -149,37 +183,6 @@ class kalman_fitting_algorithm
     ///
     virtual void fit_prelude_kernel(
         const fit_prelude_payload& payload) const = 0;
-
-    /// Function preparing the fitting payload
-    ///
-    /// @param det             The detector buffer to prepare the payload for
-    /// @param field           The magnetic field to prepare the payload for
-    /// @param n_surfaces      The number of surfaces for each track to be
-    ///                        fitted
-    /// @param payload         The (non-templated) payload for the kernel(s)
-    ///
-    /// @return The prepared payload for the fitting kernel(s)
-    ///
-    virtual fit_payload prepare_fit_payload(
-        const detector_buffer& det, const magnetic_field& field,
-        const std::vector<unsigned int>& n_surfaces,
-        const device::fit_payload& payload) const = 0;
-
-    /// Function launching the "forward fitting" kernel(s)
-    ///
-    /// @param config The fitting configuration
-    /// @param payload The payload for the fitting kernel(s)
-    ///
-    virtual void fit_forward_kernel(const fitting_config& config,
-                                    const fit_payload& payload) const = 0;
-
-    /// Function launching the "backward fitting" kernel(s)
-    ///
-    /// @param config The fitting configuration
-    /// @param payload The payload for the fitting kernel(s)
-    ///
-    virtual void fit_backward_kernel(const fitting_config& config,
-                                     const fit_payload& payload) const = 0;
 
     /// @}
 

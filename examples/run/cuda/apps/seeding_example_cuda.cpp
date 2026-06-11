@@ -103,7 +103,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         traccc::finding_performance_writer::config{
             .truth_config = truth_finding_opts,
             .track_truth_config = track_matching_opts,
-            .require_fit = true},
+            .require_fit = (traccc::finding_config(finding_opts).run_smoother !=
+                            smoother_type::e_none)},
         logger().clone("FindingPerformanceWriter"));
     traccc::fitting_performance_writer fit_performance_writer(
         traccc::fitting_performance_writer::config{},

@@ -15,6 +15,7 @@
 #include "./kernels/find_tracks.cuh"
 #include "./kernels/gather_best_tips_per_measurement.cuh"
 #include "./kernels/gather_measurement_votes.cuh"
+#include "./kernels/progressive_kalman_filter.hpp"
 #include "./kernels/propagate_to_next_surface.hpp"
 #include "./kernels/remove_duplicates.cuh"
 #include "./kernels/update_tip_length_buffer.cuh"
@@ -32,6 +33,9 @@
 #include <thrust/execution_policy.h>
 #include <thrust/scan.h>
 #include <thrust/sort.h>
+
+// System include(s)
+#include <any>
 
 namespace traccc::cuda {
 
@@ -83,6 +87,55 @@ combinatorial_kalman_filter_algorithm::build_measurement_ranges_buffer(
             // Return the filled buffer.
             return result;
         });
+}
+
+void combinatorial_kalman_filter_algorithm::progressive_kalman_filter_kernel(
+    unsigned int n_seeds, const finding_config& config,
+    const detector_buffer& detector, const magnetic_field& field,
+    const device::progressive_kalman_filter_payload& payload,
+    const device::kalman_fitting_algorithm::fit_payload& smoothing_payload)
+    const {
+
+    // Establish the kernel launch parameters.
+    const unsigned int deviceThreads = warp_size() * 4;
+    const unsigned int deviceBlocks =
+        (n_seeds + deviceThreads - 1) / deviceThreads;
+
+    detector_buffer_magnetic_field_visitor<detector_type_list,
+                                           cuda::bfield_type_list<scalar>>(
+        detector, field,
+        [&]<typename detector_traits_t, typename bfield_view_t>(
+            const typename detector_traits_t::view& det,
+            const bfield_view_t& bfield) {
+            using detector_t = typename detector_traits_t::device;
+            // Fitter type to use for kalman smoothing
+            using surface_t = typename detector_traits_t::device::surface_type;
+            using fitter_t =
+                traccc::details::kalman_fitter_t<detector_t, bfield_view_t>;
+
+            // Create dummy surface buffer in case MBF smoothing is run
+            std::vector<unsigned int> seqs_sizes(n_seeds, 0u);
+            vecmem::data::jagged_vector_buffer<surface_t> sf_sequences_data{
+                seqs_sizes, mr().main, mr().host,
+                vecmem::data::buffer_type::resizable};
+            copy().setup(sf_sequences_data)->ignore();
+
+            vecmem::data::jagged_vector_view<surface_t> sf_sequences{
+                sf_sequences_data};
+
+            // If the Kalman smoother should be run, obtain the real allocation
+            if (config.run_smoother == smoother_type::e_kalman) {
+                sf_sequences =
+                    smoothing_payload.get_tpayload<fitter_t>()->surfaces;
+            }
+
+            progressive_kalman_filter<
+                traccc::details::pkf_propagator_t<detector_t, bfield_view_t>>(
+                deviceBlocks, deviceThreads, 0u, details::get_stream(stream()),
+                config, det, bfield, sf_sequences, payload);
+        });
+
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 }
 
 void combinatorial_kalman_filter_algorithm::find_tracks_kernel(
@@ -312,5 +365,33 @@ void combinatorial_kalman_filter_algorithm::build_tracks_kernel(
         run_mbf_smoother, calib_cfg, payload);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 }
+
+/*void combinatorial_kalman_filter_algorithm::kalman_smoother_kernel(
+    const fitting_config& config, const fit_payload& payload) const {
+
+    return detector_buffer_magnetic_field_visitor<
+        detector_type_list, cuda::bfield_type_list<scalar>>(
+        payload.detector, payload.field,
+        [&]<typename detector_traits_t, typename bfield_view_t>(
+            const typename detector_traits_t::view&, const bfield_view_t&) {
+            // Get the number of tracks.
+            const unsigned int n_tracks =
+                payload.payload.tracks.tracks.capacity();
+            assert(n_tracks == copy().get_size(payload.payload.tracks.tracks));
+
+            // Launch parameters for the kernel.
+            const unsigned int nThreads = warp_size() * 4;
+            const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
+
+            // Fitter type to use.
+            using fitter_t = traccc::details::kalman_fitter_t<
+                typename detector_traits_t::device, bfield_view_t>;
+
+            // Run the track fitting
+            fit_backward<fitter_t>(
+                nBlocks, nThreads, 0, details::get_stream(stream()), config,
+                payload.payload, payload.get_tpayload<fitter_t>());
+        });
+}*/
 
 }  // namespace traccc::cuda

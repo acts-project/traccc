@@ -170,6 +170,12 @@ void finding_performance_writer::write_common(
                 found_measurements, evt_data.m_meas_to_ptc_map);
         }
 
+        if (particle_hit_counts.empty()) {
+            TRACCC_VERBOSE(
+                "No contributing particles found for track: " << n_tracks);
+            continue;
+        }
+
         const auto major_ptc = particle_hit_counts.at(0).ptc;
         const auto n_major_hits = particle_hit_counts.at(0).hit_counts;
 
@@ -260,6 +266,7 @@ void finding_performance_writer::write_common(
             total_duplicate_tracks += n_matched_seeds_for_particle - 1;
         } else {
             TRACCC_DEBUG("Not matched: " << pid);
+            std::cout << pid << std::endl;
         }
 
         // Finds how many (fake) tracks were made with at least one hit from the
@@ -308,6 +315,7 @@ void finding_performance_writer::write(
         track_view};
 
     const unsigned int n_tracks = tracks.tracks.size();
+
     for (unsigned int i = 0; i < n_tracks; i++) {
         if (m_cfg.require_fit &&
             tracks.tracks.at(i).fit_outcome() != track_fit_outcome::SUCCESS) {
