@@ -12,8 +12,8 @@
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/definitions/track_parametrization.hpp"
 #include "traccc/edm/measurement_helpers.hpp"
+#include "traccc/finding/measurement_selector.hpp"
 #include "traccc/fitting/details/regularize_covariance.hpp"
-#include "traccc/fitting/kalman_filter/measurement_selector.hpp"
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/utils/logging.hpp"
 #include "traccc/utils/matrix_helpers.hpp"
@@ -46,14 +46,36 @@ struct gain_matrix_updater {
     template <typename track_state_backend_t, typename measurement_backend_t>
     [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status operator()(
         typename edm::track_state<track_state_backend_t>& trk_state,
-        const edm::measurement<measurement_backend_t>& measurement,
+        const edm::measurement<measurement_backend_t>& meas,
+        const bound_track_parameters<algebra_t>& bound_params,
+        const measurement_selector::config& calib_cfg,
+        const bool is_line) const {
+        return this->operator()(trk_state.filtered_params(), meas, bound_params,
+                                calib_cfg, is_line);
+    }
+
+    /// Gain matrix updater operation
+    ///
+    /// @brief Based on "Application of Kalman filtering to track and vertex
+    /// fitting", R.Frühwirth, NIM A
+    ///
+    /// @param[out] filtered_params the filtered track vector and covariance
+    /// @param[in] measurement the new measurement for the update
+    /// @param[in] bound_params the predicted track parameters
+    /// @param[in] is_line whether the measurement is on a line shaped surface
+    ///
+    /// @return kalman fitter status
+    template <typename measurement_backend_t>
+    [[nodiscard]] TRACCC_HOST_DEVICE inline kalman_fitter_status operator()(
+        bound_track_parameters<algebra_t>& filtered_params,
+        const edm::measurement<measurement_backend_t>& meas,
         const bound_track_parameters<algebra_t>& bound_params,
         const measurement_selector::config& calib_cfg,
         const bool is_line) const {
 
         static constexpr unsigned int D = 2;
 
-        const unsigned int dim{measurement.dimensions()};
+        const unsigned int dim{meas.dimensions()};
 
         TRACCC_VERBOSE_HOST_DEVICE("Perform Kalman filtering...");
         TRACCC_VERBOSE_HOST_DEVICE("-> Measurement dim: %d", dim);
@@ -65,26 +87,24 @@ struct gain_matrix_updater {
 
         TRACCC_DEBUG_HOST("Predicted param.: " << bound_params);
 
-        // Predicted vector of bound track parameters
+        // Predicted vector and covariance of bound track parameters
         const bound_vector_type& predicted_vec = bound_params.vector();
-
-        // Predicted covaraince of bound track parameters
         const bound_matrix_type& predicted_cov = bound_params.covariance();
 
         // Measurement data on surface
         const matrix_type<D, 1> meas_local =
             measurement_selector::calibrated_measurement_position<algebra_t, D>(
-                measurement, calib_cfg);
+                meas, calib_cfg);
 
         // Spatial resolution (Measurement covariance)
         const matrix_type<D, D> V =
             measurement_selector::calibrated_measurement_covariance<algebra_t,
                                                                     D>(
-                measurement, calib_cfg);
+                meas, calib_cfg);
 
         const matrix_type<D, e_bound_size> H =
             measurement_selector::observation_model<algebra_t, D>(
-                measurement, bound_params, is_line);
+                meas, bound_params, is_line);
 
         TRACCC_DEBUG_HOST("-> Predicted residual:\n"
                           << meas_local - H * predicted_vec);
@@ -152,10 +172,10 @@ struct gain_matrix_updater {
         }
 
         // Set the chi2 for this track and measurement
-        trk_state.filtered_params().set_vector(filtered_vec);
-        trk_state.filtered_params().set_covariance(filtered_cov);
+        filtered_params.set_vector(filtered_vec);
+        filtered_params.set_covariance(filtered_cov);
 
-        assert(!trk_state.filtered_params().is_invalid());
+        assert(!filtered_params.is_invalid());
 
         return kalman_fitter_status::SUCCESS;
     }
