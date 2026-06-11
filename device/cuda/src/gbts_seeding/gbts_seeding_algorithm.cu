@@ -709,10 +709,16 @@ gbts_seeding_algorithm::output_type gbts_seeding_algorithm::operator()(
         &path_sizes[1],
         &ctx.d_counters[traccc::device::gbts_counter::nTerminusEdges],
         sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
-    unsigned int pathsPerTerminus = 1 + (path_sizes[0] - 1) / path_sizes[1];
 
     TRACCC_DEBUG(path_sizes[0] << "size of path store | nTerminusEdges "
                                << path_sizes[1]);
+
+    if (path_sizes[1] == 0) {
+        TRACCC_DEBUG("No paths found long enough to form seeds");
+        return {0, m_mr.main};
+    }
+
+    unsigned int pathsPerTerminus = 1 + (path_sizes[0] - 1) / path_sizes[1];
 
     cudaMalloc(&ctx.d_path_store,
                (path_sizes[0] + path_sizes[1]) * sizeof(int2));
