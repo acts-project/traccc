@@ -43,46 +43,51 @@ class gbts_seeding_algorithm : public device::gbts_seeding_algorithm,
     /// traccc::device::gbts_seeding_algorithm
     /// @{
 
-    void count_sp_by_layer_kernel(
-        const count_sp_by_layer_kernel_payload& payload) const override;
-    void bin_sp_kernel(const bin_sp_kernel_payload& payload) const override;
-    void eta_phi_counting_kernel(
-        const eta_phi_counting_kernel_payload& payload) const override;
-    void eta_phi_prefix_sum_kernel(
-        const eta_phi_prefix_sum_kernel_payload& payload) const override;
-    void node_sorting_kernel(
-        const node_sorting_kernel_payload& payload) const override;
-    void minmax_rad_kernel(
-        const minmax_rad_kernel_payload& payload) const override;
-    void graph_edge_making_kernel(
-        const graph_edge_making_kernel_payload& payload) const override;
-    void graph_edge_linking_kernel(
-        const graph_edge_linking_kernel_payload& payload) const override;
-    void graph_edge_matching_kernel(
-        const graph_edge_matching_kernel_payload& payload) const override;
-    void edge_re_indexing_kernel(
-        const edge_re_indexing_kernel_payload& payload) const override;
-    void graph_compression_kernel(
-        const graph_compression_kernel_payload& payload) const override;
-    void cca_iteration_kernel(
-        const cca_iteration_kernel_payload& payload) const override;
-    void count_terminus_edges_kernel(
-        const count_terminus_edges_kernel_payload& payload) const override;
-    void add_terminus_to_path_store_kernel(
-        const add_terminus_to_path_store_kernel_payload& payload)
+    void gbts_count_spacepoints_by_layer_kernel(
+        const device::gbts_count_spacepoints_by_layer_payload& payload)
         const override;
-    void fill_path_store_kernel(
-        const fill_path_store_kernel_payload& payload) const override;
-    void fit_segments_kernel(
-        const fit_segments_kernel_payload& payload) const override;
-    void reset_edge_bids_kernel(
-        const reset_edge_bids_kernel_payload& payload) const override;
-    void seeds_rebid_for_edges_kernel(
-        const seeds_rebid_for_edges_kernel_payload& payload) const override;
-    void seeds_bid_for_hits_kernel(
-        const seeds_bid_for_hits_kernel_payload& payload) const override;
-    void gbts_seed_conversion_kernel(
-        const gbts_seed_conversion_kernel_payload& payload) const override;
+    void gbts_bin_spacepoints_kernel(
+        const device::gbts_bin_spacepoints_payload& payload) const override;
+    void gbts_count_eta_phi_bins_kernel(
+        const device::gbts_count_eta_phi_bins_payload& payload) const override;
+    void gbts_prefix_sum_eta_phi_bins_kernel(
+        const device::gbts_prefix_sum_eta_phi_bins_payload& payload)
+        const override;
+    void gbts_sort_nodes_kernel(
+        const device::gbts_sort_nodes_payload& payload) const override;
+    void gbts_find_minmax_radius_kernel(
+        const device::gbts_find_minmax_radius_payload& payload) const override;
+    void gbts_make_graph_edges_kernel(
+        const device::gbts_make_graph_edges_payload& payload) const override;
+    void gbts_link_graph_edges_kernel(
+        const device::gbts_link_graph_edges_payload& payload) const override;
+    void gbts_match_graph_edges_kernel(
+        const device::gbts_match_graph_edges_payload& payload) const override;
+    void gbts_reindex_edges_kernel(
+        const device::gbts_reindex_edges_payload& payload) const override;
+    void gbts_compress_graph_kernel(
+        const device::gbts_compress_graph_payload& payload) const override;
+    void gbts_run_cca_iteration_kernel(
+        const device::gbts_run_cca_iteration_payload& payload) const override;
+    void gbts_count_terminus_edges_kernel(
+        const device::gbts_count_terminus_edges_payload& payload)
+        const override;
+    void gbts_add_terminus_to_path_store_kernel(
+        const device::gbts_add_terminus_to_path_store_payload& payload)
+        const override;
+    void gbts_fill_path_store_kernel(
+        const device::gbts_fill_path_store_payload& payload) const override;
+    void gbts_fit_segments_kernel(
+        const device::gbts_fit_segments_payload& payload) const override;
+    void gbts_reset_edge_bids_kernel(
+        const device::gbts_reset_edge_bids_payload& payload) const override;
+    void gbts_rebid_seeds_for_edges_kernel(
+        const device::gbts_rebid_seeds_for_edges_payload& payload)
+        const override;
+    void gbts_bid_seeds_for_hits_kernel(
+        const device::gbts_bid_seeds_for_hits_payload& payload) const override;
+    void gbts_convert_seeds_kernel(
+        const device::gbts_convert_seeds_payload& payload) const override;
 
     /// @}
 

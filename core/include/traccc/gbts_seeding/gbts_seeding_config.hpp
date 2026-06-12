@@ -45,13 +45,13 @@ struct gbts_layerInfo {
 // Named indices into the flat device counter buffer, mirroring the layout in
 // traccc/gbts_changes. One memset zeros all of them.
 enum gbts_counter : unsigned int {
-    nEdges,           // edges created by graph_edge_making
-    nConnections,     // edge-to-edge connections from graph_edge_matching
-    nConnectedEdges,  // edges kept after edge_re_indexing
+    nEdges,           // edges created by gbts_make_graph_edges
+    nConnections,     // edge-to-edge connections from gbts_match_graph_edges
+    nConnectedEdges,  // edges kept after gbts_reindex_edges
     nEdgesLeft,       // edges remaining for CCA (kept for reference parity)
     nPaths,           // total paths reachable from any terminus edge
     nTerminusEdges,   // #terminus edges; then reused as path-store write cursor
-    nProps,           // seed proposals from fit_segments
+    nProps,           // seed proposals from gbts_fit_segments
     nRejected,        // rejected seed proposals
     nCounters         // total number of counters
 };
@@ -77,8 +77,8 @@ struct gbts_consts {
 
 namespace traccc {
 
-// Tau-prediction cuts for device::node_sorting.
-struct gbts_node_sorting_params {
+// Tau-prediction cuts for device::gbts_sort_nodes.
+struct gbts_sort_nodes_params {
     // Slope of the lower-bound tau line: min_tau = tMin_slope * (w - offset).
     float tMin_slope = 6.7f;
     // Minimum cluster width: offset = w_min.
@@ -106,8 +106,8 @@ struct gbts_node_sorting_params {
     unsigned int tauLutSize = 0;
 };
 
-// Geometric / kinematic edge-making cuts for device::graph_edge_making.
-struct gbts_edge_making_params {
+// Geometric / kinematic edge-making cuts for device::gbts_make_graph_edges.
+struct gbts_make_graph_edges_params {
     // Two nodes must be radially separated to form an edge:
     // dr >= minDeltaRadius (mm)
     float minDeltaRadius = 2.0f;
@@ -136,8 +136,8 @@ struct gbts_edge_making_params {
     float high_Kappa_d0 = 0.0f;
 };
 
-// Pair-matching cuts for device::graph_edge_matching.
-struct gbts_edge_matching_params {
+// Pair-matching cuts for device::gbts_match_graph_edges.
+struct gbts_match_graph_edges_params {
     // |dphi_1 - dphi_2| <= cut_dphi_max rad.
     float cut_dphi_max = 0.012f;
     // |curv_1 - curv_2| <= cut_dcurv_max  (curv = dphi/dr).
@@ -147,7 +147,7 @@ struct gbts_edge_matching_params {
 };
 
 // Host-side dphi window used to compute bin_pair_dphi before launching
-// device::graph_edge_making.
+// device::gbts_make_graph_edges.
 struct gbts_dphi_window_params {
     // deltaPhi = min_delta_phi + dphi_coeff * maxDeltaR, where maxDeltaR is the
     // maximum radial separation of the pair of nodes.
@@ -160,8 +160,8 @@ struct gbts_dphi_window_params {
     float low_dr_threshold = 60.0f;
 };
 
-// Kalman-filter cuts for device::fit_segments.
-struct gbts_seed_extraction_params {
+// Kalman-filter cuts for device::gbts_fit_segments.
+struct gbts_fit_segments_params {
     // Per-layer multiple-scattering angle:
     // sigmaMS = E_s / pT = 14.1/900 = 0.0156  (900 MeV, eta=0).
     // 14.1 MeV is the Highland constant
@@ -201,8 +201,8 @@ struct gbts_seed_extraction_params {
     // max_z0 is used from the graph_making to insure concistency
 };
 
-// Seed ambiguity / dropout parameters for device::gbts_seed_conversion
-struct gbts_seed_ambi_params {
+// Seed ambiguity / dropout parameters for device::gbts_convert_seeds
+struct gbts_convert_seeds_params {
     // sample multiple triplets when forming seeds to hedge against outliers.
     bool use_dropout = true;
     // Curvature thresholds (1/m) for the dropout logic.
@@ -219,8 +219,8 @@ struct gbts_seed_ambi_params {
     float tight_bid_cot_threshold = 1.0f;
 };
 
-// SP counting cuts for device::count_sp_by_layer
-struct gbts_sp_counting_params {
+// SP counting cuts for device::gbts_count_spacepoints_by_layer
+struct gbts_count_spacepoints_by_layer_params {
     // Maximum cluster width allowed on "type 1" layers.
     float type1_max_width = 0.2f;
     // If true, apply the cluster-width / tau cut at SP-counting time.
@@ -245,16 +245,17 @@ struct gbts_seedfinder_config {
     std::vector<std::pair<unsigned int, unsigned int>> surfaceToLayerMap{};
 
     // Per kernel structs
-    gbts_node_sorting_params node_sorting{};
-    gbts_edge_making_params edge_making{};
-    gbts_edge_matching_params edge_matching{};
-    gbts_dphi_window_params dphi_window{};
-    gbts_sp_counting_params sp_counting_params{};
-    gbts_seed_extraction_params seed_extraction_params{};
-    gbts_seed_ambi_params seed_ambi_params{};
+    traccc::gbts_sort_nodes_params gbts_sort_nodes_params{};
+    traccc::gbts_make_graph_edges_params gbts_make_graph_edges_params{};
+    traccc::gbts_match_graph_edges_params gbts_match_graph_edges_params{};
+    traccc::gbts_dphi_window_params gbts_dphi_window_params{};
+    traccc::gbts_count_spacepoints_by_layer_params
+        gbts_count_spacepoints_by_layer_params{};
+    traccc::gbts_fit_segments_params gbts_fit_segments_params{};
+    traccc::gbts_convert_seeds_params gbts_convert_seeds_params{};
 
-    // Optional tau lookup table consumed by device::node_sorting when
-    // node_sorting.useTauLUT is set.
+    // Optional tau lookup table consumed by device::gbts_sort_nodes when
+    // gbts_sort_nodes_params.useTauLUT is set.
     // Layout: [w_bin_edge, min_tau_0, max_tau_0, min_tau_1, max_tau_1]
     std::vector<float> tau_lut{};
 
