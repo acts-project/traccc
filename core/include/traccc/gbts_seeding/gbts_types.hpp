@@ -35,7 +35,6 @@ struct TRACCC_ALIGN(4) short2 {
     short x, y;
 };
 
-
 namespace device {
 
 inline constexpr float PI_F = traccc::constant<float>::pi;
