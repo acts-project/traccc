@@ -118,6 +118,14 @@ class full_chain_algorithm
     bound_track_parameters_collection_types::host seeding(
         const edm::silicon_cell_collection::host& cells) const;
 
+    /// Reconstruct cluster measurements in the entire detector
+    ///
+    /// @param cells The cells for every detector module in the event
+    /// @return The reconstruted measurements
+    ///
+    edm::measurement_collection<default_algebra>::host clustering(
+        const edm::silicon_cell_collection::host& cells) const;
+
     private:
     /// Private data object
     std::unique_ptr<details::full_chain_algorithm_data> m_data;
@@ -186,7 +194,7 @@ class full_chain_algorithm
     /// Configuration for the seed filtering
     seedfilter_config m_filter_config;
     /// placeholder GBTS config
-    [[maybe_unused]] gbts_seedfinder_config m_gbts_config;
+    [[maybe_unused]] m_gbts_seedfinder_config m_gbts_config;
     /// Configuration for track parameter estimation
     track_params_estimation_config m_track_params_estimation_config;
 
