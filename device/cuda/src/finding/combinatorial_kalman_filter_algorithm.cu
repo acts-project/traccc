@@ -85,6 +85,47 @@ combinatorial_kalman_filter_algorithm::build_measurement_ranges_buffer(
         });
 }
 
+void combinatorial_kalman_filter_algorithm::progressive_kalman_filter_kernel(
+    unsigned int n_seeds, const finding_config& config,
+    const detector_buffer& detector, const magnetic_field& field,
+    const device::progressive_kalman_filter_payload& payload) const {
+
+    // Establish the kernel launch parameters.
+    const unsigned int deviceThreads = warp_size() * 4;
+    const unsigned int deviceBlocks =
+        (n_seeds + deviceThreads - 1) / deviceThreads;
+
+    detector_buffer_visitor<detector_type_list>(
+        det, [&]<typename detector_traits_t>(
+                 const typename detector_traits_t::view& det) {
+            using detector_t = typename detector_traits_t::device;
+
+            // Setup the surface sequence buffer
+            const unsigned int n_surfaces_per_track{std::max(
+                config.max_track_candidates_per_track *
+                    config.kalman_smoother.surface_sequence_size_factor,
+                config.kalman_smoother.min_surface_sequence_capacity)};
+            std::vector<unsigned int> seqs_sizes(
+                n_seeds, config.run_smoother == smoother_type::e_kalman
+                             ? n_surfaces_per_track
+                             : 0u);
+
+            auto seqs_buffer = vecmem::data::jagged_vector_buffer<
+                typename detector_t::surface_type>{
+                seqs_sizes, mr().main, mr().host,
+                vecmem::data::buffer_type::resizable};
+            copy().setup(seqs_buffer)->ignore();
+
+            progressive_kalman_filter<
+                traccc::details::pkf_propagator_t<detector_t, bfield_view_t>,
+                bfield_view_t>(deviceBlocks, deviceThreads, 0u,
+                               details::get_stream(stream()), config, det,
+                               bfield, seqs_buffer, payload);
+        });
+
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+}
+
 void combinatorial_kalman_filter_algorithm::find_tracks_kernel(
     unsigned int n_threads, const finding_config& config,
     const detector_buffer& detector,

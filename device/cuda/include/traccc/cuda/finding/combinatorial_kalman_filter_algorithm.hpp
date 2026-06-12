@@ -55,6 +55,20 @@ class combinatorial_kalman_filter_algorithm
         const edm::measurement_collection::const_view& measurements)
         const override;
 
+    /// Launch the @c progressive_kalman_filter kernel
+    ///
+    /// @param n_threads The number of threads to launch the kernel with
+    /// @param config The track finding configuration
+    /// @param det The detector object
+    /// @param bfield The magnetic field object
+    /// @param payload The payload for the kernel
+    ///
+    void progressive_kalman_filter_kernel(
+        unsigned int n_threads, const finding_config& config,
+        const detector_buffer& det, const magnetic_field& bfield,
+        const device::progressive_kalman_filter_payload& payload)
+        const override;
+
     /// Track finding kernel launcher
     ///
     /// @param n_threads The number of threads to launch the kernel with
