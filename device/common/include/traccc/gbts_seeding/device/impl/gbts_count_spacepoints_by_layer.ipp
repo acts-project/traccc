@@ -66,7 +66,8 @@ inline void gbts_count_spacepoints_by_layer(
         const unsigned int surface_index =
             static_cast<unsigned int>(geo_id.index());
 
-        for (unsigned int surface = -1 * (begin_or_bin + 1);
+        for (unsigned int surface =
+                 static_cast<unsigned int>(-1 * (begin_or_bin + 1));
              surface < payload.surfaceMapSize; surface++) {
 
             const std::pair<unsigned int, unsigned int> surfaceBinPair =
