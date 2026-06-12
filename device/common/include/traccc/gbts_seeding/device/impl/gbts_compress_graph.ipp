@@ -51,7 +51,7 @@ inline void gbts_compress_graph(const global_index_t globalIndex,
     const unsigned int nei_pos = payload.nMaxNei * globalIndex;
     for (unsigned int k = 0u; k < nNei; k++) {
         d_output_graph[pos + gbts_consts::nei_start + k] =
-            static_cast<unsigned int>(d_neighbours[nei_pos + k]);
+            static_cast<unsigned int>(d_reIndexer[d_neighbours[nei_pos + k]]);
     }
 }
 
