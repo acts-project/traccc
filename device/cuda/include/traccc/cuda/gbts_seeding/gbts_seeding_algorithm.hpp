@@ -1,73 +1,96 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2021-2026 CERN for the benefit of the ACTS project
+ * (c) 2025-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
 
 #pragma once
 
-// Library include(s).
-#include "traccc/cuda/utils/stream.hpp"
+// Local include(s).
+#include "traccc/cuda/utils/algorithm_base.hpp"
 
 // Project include(s).
-#include "traccc/edm/measurement_collection.hpp"
-#include "traccc/edm/seed_collection.hpp"
-#include "traccc/edm/spacepoint_collection.hpp"
-#include "traccc/utils/algorithm.hpp"
-#include "traccc/utils/memory_resource.hpp"
-#include "traccc/utils/messaging.hpp"
-
-// GBTS include(s)
-#include "traccc/gbts_seeding/gbts_seeding_config.hpp"
-
-// VecMem include(s).
-#include <vecmem/utils/copy.hpp>
-
-// System include(s).
-#include <memory>
+#include "traccc/gbts_seeding/device/gbts_seeding_algorithm.hpp"
 
 namespace traccc::cuda {
 
-/// Main algorithm for performing GBTS on an NVIDIA GPU
+/// @brief Main algorithm for performing GBTS seeding on an NVIDIA GPU.
 ///
 /// This algorithm returns a buffer which is not necessarily filled yet. A
 /// synchronisation statement is required before destroying this buffer.
 ///
-class gbts_seeding_algorithm
-    : public algorithm<edm::seed_collection::buffer(
-          const edm::spacepoint_collection::const_view&,
-          const edm::measurement_collection::const_view&)>,
-      public messaging {
+class gbts_seeding_algorithm : public device::gbts_seeding_algorithm,
+                               public cuda::algorithm_base {
 
     public:
-    /// Constructor for the seed finding algorithm
+    /// Constructor for the GBTS seed finding algorithm
     ///
+    /// @param cfg The GBTS seed finding configuration
+    /// @param mr The memory resource(s) to use in the algorithm
+    /// @param copy The copy object to use for copying data between device
+    ///             and host memory blocks
     /// @param str The CUDA stream to perform the operations in
+    /// @param logger The logger instance to use
     ///
     gbts_seeding_algorithm(
-        const gbts_seedfinder_config& cfg, const traccc::memory_resource& mr,
-        vecmem::copy& copy, stream& str,
+        const gbts_seedfinder_config& cfg, const memory_resource& mr,
+        vecmem::copy& copy, cuda::stream& str,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
-    /// Operator executing the algorithm.
-    ///
-    /// @param spacepoints is a view of all spacepoints in the event
-    /// @param measurements is a view of all measurements in the event
-    /// @return the buffer of track seeds reconstructed from the spacepoints
-    ///
-    output_type operator()(
-        const edm::spacepoint_collection::const_view& spacepoints,
-        const edm::measurement_collection::const_view& measurements) const;
-
     private:
-    gbts_seedfinder_config m_config;
-    /// The memory resource(s) to use
-    traccc::memory_resource m_mr;
-    /// The copy object to use
-    std::reference_wrapper<vecmem::copy> m_copy;
-    /// The CUDA stream to use
-    std::reference_wrapper<stream> m_stream;
-};
+    /// @name Function(s) inherited from @c
+    /// traccc::device::gbts_seeding_algorithm
+    /// @{
+
+    void gbts_count_spacepoints_by_layer_kernel(
+        const device::gbts_count_spacepoints_by_layer_payload& payload)
+        const override;
+    void gbts_bin_spacepoints_kernel(
+        const device::gbts_bin_spacepoints_payload& payload) const override;
+    void gbts_count_eta_phi_bins_kernel(
+        const device::gbts_count_eta_phi_bins_payload& payload) const override;
+    void gbts_prefix_sum_eta_phi_bins_kernel(
+        const device::gbts_prefix_sum_eta_phi_bins_payload& payload)
+        const override;
+    void gbts_sort_nodes_kernel(
+        const device::gbts_sort_nodes_payload& payload) const override;
+    void gbts_find_minmax_radius_kernel(
+        const device::gbts_find_minmax_radius_payload& payload) const override;
+    void gbts_make_graph_edges_kernel(
+        const device::gbts_make_graph_edges_payload& payload) const override;
+    void gbts_link_graph_edges_kernel(
+        const device::gbts_link_graph_edges_payload& payload) const override;
+    void gbts_match_graph_edges_kernel(
+        const device::gbts_match_graph_edges_payload& payload) const override;
+    void gbts_reindex_edges_kernel(
+        const device::gbts_reindex_edges_payload& payload) const override;
+    void gbts_compress_graph_kernel(
+        const device::gbts_compress_graph_payload& payload) const override;
+    void gbts_run_cca_iteration_kernel(
+        const device::gbts_run_cca_iteration_payload& payload) const override;
+    void gbts_count_terminus_edges_kernel(
+        const device::gbts_count_terminus_edges_payload& payload)
+        const override;
+    void gbts_add_terminus_to_path_store_kernel(
+        const device::gbts_add_terminus_to_path_store_payload& payload)
+        const override;
+    void gbts_fill_path_store_kernel(
+        const device::gbts_fill_path_store_payload& payload) const override;
+    void gbts_fit_segments_kernel(
+        const device::gbts_fit_segments_payload& payload) const override;
+    void gbts_reset_edge_bids_kernel(
+        const device::gbts_reset_edge_bids_payload& payload) const override;
+    void gbts_rebid_seeds_for_edges_kernel(
+        const device::gbts_rebid_seeds_for_edges_payload& payload)
+        const override;
+    void gbts_bid_seeds_for_hits_kernel(
+        const device::gbts_bid_seeds_for_hits_payload& payload) const override;
+    void gbts_convert_seeds_kernel(
+        const device::gbts_convert_seeds_payload& payload) const override;
+
+    /// @}
+
+};  // class gbts_seeding_algorithm
 
 }  // namespace traccc::cuda
