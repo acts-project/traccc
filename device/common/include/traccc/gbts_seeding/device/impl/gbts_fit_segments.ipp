@@ -251,7 +251,7 @@ TRACCC_HOST_DEVICE inline bool gbts_kalman_update(
     return true;
 }
 
-}  // namespace detail
+}  // namespace details
 
 template <concepts::thread_id1 thread_id_t>
 TRACCC_HOST_DEVICE inline void gbts_fit_segments(
@@ -306,12 +306,12 @@ TRACCC_HOST_DEVICE inline void gbts_fit_segments(
                                 gbts_consts::node2]];
             if (toggle) {
                 if (!details::gbts_kalman_update(&state1, &state2, node2,
-                                                fit_params, max_z0)) {
+                                                 fit_params, max_z0)) {
                     state1 = state2;
                     break;
                 }
             } else if (!details::gbts_kalman_update(&state2, &state1, node2,
-                                                   fit_params, max_z0)) {
+                                                    fit_params, max_z0)) {
                 break;
             }
             toggle = !toggle;

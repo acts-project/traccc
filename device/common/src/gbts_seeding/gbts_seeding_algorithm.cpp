@@ -558,8 +558,7 @@ auto gbts_seeding_algorithm::operator()(
 
     // Stage 1: bin spacepoints and create nodes with the parameters (eta, phi,
     // r, z).
-    node_making_output nodes =
-        make_nodes(spacepoints, measurements);
+    node_making_output nodes = make_nodes(spacepoints, measurements);
     if (nodes.nNodes == 0) {
         // No nodes survived spacepoint counting -> no seeds.
         return {0, mr().main};
@@ -587,8 +586,7 @@ auto gbts_seeding_algorithm::operator()(
 
     // Stage 3: Create seeds from the graph edges.
     return extract_seeds(graph.output_graph, nodes.reducedSP,
-                                       graph.nConnectedEdges, nSp, counters_buf,
-                                       h_counters);
+                         graph.nConnectedEdges, nSp, counters_buf, h_counters);
 }
 
 }  // namespace traccc::device
