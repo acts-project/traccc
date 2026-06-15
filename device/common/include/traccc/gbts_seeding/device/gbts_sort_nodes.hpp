@@ -7,11 +7,9 @@
 
 #pragma once
 
-// Local include(s).
-#include "traccc/device/global_index.hpp"
-
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
+#include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 #include "traccc/gbts_seeding/gbts_types.hpp"
 
@@ -56,12 +54,12 @@ struct gbts_sort_nodes_payload {
 /// cursor, packs the geometry / kinematic tuple into the node parameters at
 /// that slot, and stores the original SP index in the node index map.
 ///
-/// @param[in] globalIndex Current thread index
-/// @param[in] payload     The global memory payload
+/// @param[in] thread_id Thread identifier for the kernel launch
+/// @param[in] payload   The global memory payload
 ///
-TRACCC_HOST_DEVICE
-inline void gbts_sort_nodes(const global_index_t globalIndex,
-                            const gbts_sort_nodes_payload& payload);
+template <concepts::thread_id1 thread_id_t>
+TRACCC_HOST_DEVICE inline void gbts_sort_nodes(
+    const thread_id_t& thread_id, const gbts_sort_nodes_payload& payload);
 
 }  // namespace traccc::device
 

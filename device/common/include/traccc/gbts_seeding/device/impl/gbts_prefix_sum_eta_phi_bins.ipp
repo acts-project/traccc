@@ -9,30 +9,36 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/device/global_index.hpp"
+#include "traccc/device/concepts/thread_id.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>
 
 namespace traccc::device {
 
-TRACCC_HOST_DEVICE
-inline void gbts_prefix_sum_eta_phi_bins(
-    const global_index_t globalIndex,
+template <concepts::thread_id1 thread_id_t>
+TRACCC_HOST_DEVICE inline void gbts_prefix_sum_eta_phi_bins(
+    const thread_id_t& thread_id,
     const gbts_prefix_sum_eta_phi_bins_payload& payload) {
-    if (globalIndex == 0) {
-        return;
-    }
 
     const vecmem::device_vector<const unsigned int> d_eta_node_counter(
         payload.eta_node_counter);
     vecmem::device_vector<unsigned int> d_phi_cusums(payload.phi_cusums);
 
-    const unsigned int offset = payload.nPhiBins * globalIndex;
-    const unsigned int val0 = d_eta_node_counter[globalIndex - 1];
+    for (unsigned int globalIndex = thread_id.getGlobalThreadIdX();
+         globalIndex < payload.nEtaBins;
+         globalIndex += thread_id.getBlockDimX() * thread_id.getGridDimX()) {
 
-    for (unsigned int phiIdx = 0; phiIdx < payload.nPhiBins; phiIdx++) {
-        d_phi_cusums[offset + phiIdx] += val0;
+        if (globalIndex == 0) {
+            continue;
+        }
+
+        const unsigned int offset = payload.nPhiBins * globalIndex;
+        const unsigned int val0 = d_eta_node_counter[globalIndex - 1];
+
+        for (unsigned int phiIdx = 0; phiIdx < payload.nPhiBins; phiIdx++) {
+            d_phi_cusums[offset + phiIdx] += val0;
+        }
     }
 }
 

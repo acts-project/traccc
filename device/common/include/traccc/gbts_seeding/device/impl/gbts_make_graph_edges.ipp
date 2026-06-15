@@ -13,6 +13,7 @@
 #include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 #include "traccc/gbts_seeding/gbts_types.hpp"
+#include "traccc/utils/trigonometric_helpers.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>
@@ -23,7 +24,7 @@
 
 namespace traccc::device {
 
-namespace gbts_detail {
+namespace detail {
 
 // Apply the RZ-doublet + curvature/d0 cuts to a candidate edge (node1->node2)
 // and, if it passes, append it to the edge list. Single-use helper for
@@ -72,7 +73,7 @@ TRACCC_HOST_DEVICE inline void gbts_check_edge_candidate(
         return;
     }
 
-    const float dphi = phi_wrap(phi2 - phi1);
+    const float dphi = traccc::detail::wrap_phi(phi2 - phi1);
     if (fabsf(dphi) > deltaPhi) {
         return;
     }
@@ -99,7 +100,7 @@ TRACCC_HOST_DEVICE inline void gbts_check_edge_candidate(
     }
 }
 
-}  // namespace gbts_detail
+}  // namespace detail
 
 template <concepts::thread_id1 thread_id_t, concepts::barrier barrier_t>
 TRACCC_HOST_DEVICE inline void gbts_make_graph_edges(
@@ -214,7 +215,7 @@ TRACCC_HOST_DEVICE inline void gbts_make_graph_edges(
                 last_n1 = n1Idx;
 
                 const float4 np1 = shared_node_pack[n1Idx];
-                gbts_detail::gbts_check_edge_candidate(
+                detail::gbts_check_edge_candidate(
                     np1, np2, d_edge_nodes, d_edge_params, d_num_outgoing_edges,
                     nEdgesCounter, globalIdx2, begin_bin1, n1Idx, phi1, phi2,
                     deltaPhi, payload.gbts_make_graph_edges_params,
@@ -229,7 +230,7 @@ TRACCC_HOST_DEVICE inline void gbts_make_graph_edges(
                 last_n1 = n1Idx;
 
                 const float4 np1 = shared_node_pack[n1Idx];
-                gbts_detail::gbts_check_edge_candidate(
+                detail::gbts_check_edge_candidate(
                     np1, np2, d_edge_nodes, d_edge_params, d_num_outgoing_edges,
                     nEdgesCounter, globalIdx2, begin_bin1, n1Idx, phi1, phi2,
                     deltaPhi, payload.gbts_make_graph_edges_params,

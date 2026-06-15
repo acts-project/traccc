@@ -9,7 +9,7 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/device/global_index.hpp"
+#include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/gbts_seeding/gbts_types.hpp"
 
 // VecMem include(s).
@@ -17,21 +17,26 @@
 
 namespace traccc::device {
 
-TRACCC_HOST_DEVICE
-inline void gbts_add_terminus_to_path_store(
-    const global_index_t globalIndex,
+template <concepts::thread_id1 thread_id_t>
+TRACCC_HOST_DEVICE inline void gbts_add_terminus_to_path_store(
+    const thread_id_t& thread_id,
     const gbts_add_terminus_to_path_store_payload& payload) {
 
     vecmem::device_vector<int2> d_path_store(payload.path_store);
     const vecmem::device_vector<const short2> d_outgoing_paths(
         payload.outgoing_paths);
 
-    const short2 out_paths = d_outgoing_paths[globalIndex];
-    if (out_paths.y == -1) {
-        return;
+    for (unsigned int globalIndex = thread_id.getGlobalThreadIdX();
+         globalIndex < payload.nConnectedEdges;
+         globalIndex += thread_id.getBlockDimX() * thread_id.getGridDimX()) {
+
+        const short2 out_paths = d_outgoing_paths[globalIndex];
+        if (out_paths.y == -1) {
+            continue;
+        }
+        d_path_store[static_cast<unsigned int>(out_paths.y)] =
+            int2{static_cast<int>(globalIndex), -1};
     }
-    d_path_store[static_cast<unsigned int>(out_paths.y)] =
-        int2{static_cast<int>(globalIndex), -1};
 }
 
 }  // namespace traccc::device

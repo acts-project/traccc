@@ -14,7 +14,7 @@
 // VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
 
-namespace traccc::device {
+namespace traccc::device::detail {
 
 /// @brief Register a new seed proposal and let it bid for every edge on its
 /// path.
@@ -44,6 +44,6 @@ inline void gbts_create_seed_candidate(
     const vecmem::data::vector_view<const int2>& d_path_store_view,
     char depth = -1);
 
-}  // namespace traccc::device
+}  // namespace traccc::device::detail
 
 #include "traccc/gbts_seeding/device/impl/gbts_create_seed_candidate.ipp"

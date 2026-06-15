@@ -21,8 +21,11 @@
 
 namespace traccc::device {
 
-// Stage 1: node making
-auto gbts_seeding_algorithm::gbts_make_nodes(
+// Stage 1:
+// Bin the spacepoints by layer in eta and phi,
+// compute the node parameters (x, y, z, w)
+// and the bin-wise min/max radius for the graph-building cuts.
+auto gbts_seeding_algorithm::bin_and_create_gbts_nodes(
     const edm::spacepoint_collection::const_view& spacepoints,
     const edm::measurement_collection::const_view& measurements) const
     -> node_making_output {
@@ -205,8 +208,13 @@ auto gbts_seeding_algorithm::gbts_make_nodes(
                               nNodes};
 }
 
-// Stage 2: graph making
-auto gbts_seeding_algorithm::gbts_make_graphs(
+// Stage 2:
+// Find edges between compatible nodes
+// The main output is a graph in
+// the form of an edge list (array of node index pairs)
+// and an accompanying array of edge parameters
+// (exp(-eta), curvature, extrapolated phi at node1, extrapolated phi at node2).
+auto gbts_seeding_algorithm::create_gbts_edges_from_nodes(
     vecmem::data::vector_buffer<float4> node_params,
     vecmem::data::vector_buffer<float> node_phi,
     vecmem::data::vector_buffer<unsigned int> node_index,
@@ -404,8 +412,11 @@ auto gbts_seeding_algorithm::gbts_make_graphs(
     return graph_making_output{std::move(output_graph_buf), nConnectedEdges};
 }
 
-// Stage 3: seed extraction
-auto gbts_seeding_algorithm::gbts_extract_seeds(
+// Stage 3:
+// Find seed candidates as long chains of connected edges using a CCA
+// Then fit the potential seeds (eta, phi, curvature).
+// Finally, disambiguate them by repeated seed-vs-edge bidding rounds.
+auto gbts_seeding_algorithm::convert_gbts_edges_to_seeds(
     vecmem::data::vector_buffer<unsigned int>& output_graph,
     vecmem::data::vector_buffer<float4>& reducedSP,
     const unsigned int nConnectedEdges, const unsigned int nSp,
@@ -566,9 +577,10 @@ auto gbts_seeding_algorithm::operator()(
         return {0, mr().main};
     }
 
-    // Stage 1: nodes. Transient binning buffers die when gbts_make_nodes
-    // returns.
-    node_making_output nodes = gbts_make_nodes(spacepoints, measurements);
+    // Stage 1: bin spacepoints and create nodes with the parameters (eta, phi,
+    // r, z).
+    node_making_output nodes =
+        bin_and_create_gbts_nodes(spacepoints, measurements);
     if (nodes.nNodes == 0) {
         // No nodes survived spacepoint counting -> no seeds.
         return {0, mr().main};
@@ -583,8 +595,9 @@ auto gbts_seeding_algorithm::operator()(
         gbts_counter::nCounters, mr().host ? mr().host : &(mr().main));
 
     // Stage 2: graph. The per-node buffers are moved in so they are released
-    // when gbts_make_graphs returns, along with all the edge/link transients.
-    graph_making_output graph = gbts_make_graphs(
+    // when create_gbts_edges_from_nodes returns, along with all the edge/link
+    // transients.
+    graph_making_output graph = create_gbts_edges_from_nodes(
         std::move(nodes.node_params), std::move(nodes.node_phi),
         std::move(nodes.node_index), nodes.bin_rads, nodes.eta_bin_views,
         nodes.nNodes, counters_buf, h_counters);
@@ -593,10 +606,10 @@ auto gbts_seeding_algorithm::operator()(
         return {0, mr().main};
     }
 
-    // Stage 3: seed extraction.
-    return gbts_extract_seeds(graph.output_graph, nodes.reducedSP,
-                              graph.nConnectedEdges, nSp, counters_buf,
-                              h_counters);
+    // Stage 3: Create seeds from the graph edges.
+    return convert_gbts_edges_to_seeds(graph.output_graph, nodes.reducedSP,
+                                       graph.nConnectedEdges, nSp, counters_buf,
+                                       h_counters);
 }
 
 }  // namespace traccc::device

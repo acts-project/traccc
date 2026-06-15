@@ -7,11 +7,9 @@
 
 #pragma once
 
-// Local include(s).
-#include "traccc/device/global_index.hpp"
-
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
+#include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/gbts_seeding/gbts_types.hpp"
 
 // VecMem include(s).
@@ -49,12 +47,12 @@ struct gbts_compress_graph_payload {
 /// source/destination original-SP indices, the neighbour count, and up to
 /// nMaxNei remapped neighbour indices.
 ///
-/// @param[in] globalIndex Current thread index
-/// @param[in] payload     The global memory payload
+/// @param[in] thread_id Thread identifier for the kernel launch
+/// @param[in] payload   The global memory payload
 ///
-TRACCC_HOST_DEVICE
-inline void gbts_compress_graph(const global_index_t globalIndex,
-                                const gbts_compress_graph_payload& payload);
+template <concepts::thread_id1 thread_id_t>
+TRACCC_HOST_DEVICE inline void gbts_compress_graph(
+    const thread_id_t& thread_id, const gbts_compress_graph_payload& payload);
 
 }  // namespace traccc::device
 

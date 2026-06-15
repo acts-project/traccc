@@ -7,11 +7,9 @@
 
 #pragma once
 
-// Local include(s).
-#include "traccc/device/global_index.hpp"
-
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
+#include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/gbts_seeding/gbts_types.hpp"
 
 // VecMem include(s).
@@ -40,12 +38,12 @@ struct gbts_link_graph_edges_payload {
 /// the count buffer has been turned into a write cursor that
 /// gbts_match_graph_edges can read sequentially.
 ///
-/// @param[in] globalIndex Current thread index
-/// @param[in] payload     The global memory payload
+/// @param[in] thread_id Thread identifier for the kernel launch
+/// @param[in] payload   The global memory payload
 ///
-TRACCC_HOST_DEVICE
-inline void gbts_link_graph_edges(const global_index_t globalIndex,
-                                  const gbts_link_graph_edges_payload& payload);
+template <concepts::thread_id1 thread_id_t>
+TRACCC_HOST_DEVICE inline void gbts_link_graph_edges(
+    const thread_id_t& thread_id, const gbts_link_graph_edges_payload& payload);
 
 }  // namespace traccc::device
 

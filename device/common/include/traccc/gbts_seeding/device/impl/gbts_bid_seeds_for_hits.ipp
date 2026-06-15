@@ -9,7 +9,7 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/device/global_index.hpp"
+#include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 #include "traccc/gbts_seeding/gbts_types.hpp"
 
@@ -19,9 +19,9 @@
 
 namespace traccc::device {
 
-TRACCC_HOST_DEVICE
-inline void gbts_bid_seeds_for_hits(
-    const global_index_t globalIndex,
+template <concepts::thread_id1 thread_id_t>
+TRACCC_HOST_DEVICE inline void gbts_bid_seeds_for_hits(
+    const thread_id_t& thread_id,
     const gbts_bid_seeds_for_hits_payload& payload) {
 
     const vecmem::device_vector<const unsigned int> d_output_graph(
@@ -33,33 +33,40 @@ inline void gbts_bid_seeds_for_hits(
         payload.seed_proposals);
     vecmem::device_vector<unsigned long long int> d_hit_bids(payload.hit_bids);
 
-    // One proposal per call; the grid-stride loop lives in the kernel wrapper.
-    const unsigned int prop_idx = globalIndex;
-    if (d_seed_ambiguity[prop_idx] == -2) {
-        return;
-    }
-    const int2 prop = d_seed_proposals[prop_idx];
-    const unsigned long long int seed_bid =
-        (static_cast<unsigned long long int>(prop.x) << 32) |
-        (static_cast<unsigned long long int>(prop_idx));
+    for (unsigned int globalIndex = thread_id.getGlobalThreadIdX();
+         globalIndex < payload.nProps;
+         globalIndex += thread_id.getBlockDimX() * thread_id.getGridDimX()) {
 
-    int2 path = int2{0, prop.y};
-    while (path.y >= 0) {
-        path = d_path_store[static_cast<unsigned int>(path.y)];
+        // One proposal per call; the grid-stride loop lives in the kernel
+        // wrapper.
+        const unsigned int prop_idx = globalIndex;
+        if (d_seed_ambiguity[prop_idx] == -2) {
+            continue;
+        }
+        const int2 prop = d_seed_proposals[prop_idx];
+        const unsigned long long int seed_bid =
+            (static_cast<unsigned long long int>(prop.x) << 32) |
+            (static_cast<unsigned long long int>(prop_idx));
+
+        int2 path = int2{0, prop.y};
+        while (path.y >= 0) {
+            path = d_path_store[static_cast<unsigned int>(path.y)];
+            const unsigned int sp_idx =
+                d_output_graph[payload.edge_size *
+                                   static_cast<unsigned int>(path.x) +
+                               gbts_consts::node1];
+            vecmem::device_atomic_ref<unsigned long long int> atomic_bid(
+                d_hit_bids[sp_idx]);
+            atomic_bid.fetch_max(seed_bid);
+        }
         const unsigned int sp_idx =
             d_output_graph[payload.edge_size *
                                static_cast<unsigned int>(path.x) +
-                           gbts_consts::node1];
+                           gbts_consts::node2];
         vecmem::device_atomic_ref<unsigned long long int> atomic_bid(
             d_hit_bids[sp_idx]);
         atomic_bid.fetch_max(seed_bid);
     }
-    const unsigned int sp_idx =
-        d_output_graph[payload.edge_size * static_cast<unsigned int>(path.x) +
-                       gbts_consts::node2];
-    vecmem::device_atomic_ref<unsigned long long int> atomic_bid(
-        d_hit_bids[sp_idx]);
-    atomic_bid.fetch_max(seed_bid);
 }
 
 }  // namespace traccc::device

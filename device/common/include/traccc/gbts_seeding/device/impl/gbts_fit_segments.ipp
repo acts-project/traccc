@@ -9,8 +9,8 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/device/global_index.hpp"
-#include "traccc/gbts_seeding/device/gbts_create_seed_candidate.hpp"
+#include "traccc/device/concepts/thread_id.hpp"
+#include "traccc/gbts_seeding/device/details/gbts_create_seed_candidate.hpp"
 #include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 #include "traccc/gbts_seeding/gbts_types.hpp"
 
@@ -25,7 +25,7 @@
 
 namespace traccc::device {
 
-namespace gbts_detail {
+namespace detail {
 
 // ===========================================================================
 // edgeState -- Kalman-filter state for a track-segment fit.
@@ -251,11 +251,11 @@ TRACCC_HOST_DEVICE inline bool gbts_kalman_update(
     return true;
 }
 
-}  // namespace gbts_detail
+}  // namespace detail
 
-TRACCC_HOST_DEVICE
-inline void gbts_fit_segments(const global_index_t globalIndex,
-                              const gbts_fit_segments_payload& payload) {
+template <concepts::thread_id1 thread_id_t>
+TRACCC_HOST_DEVICE inline void gbts_fit_segments(
+    const thread_id_t& thread_id, const gbts_fit_segments_payload& payload) {
 
     const vecmem::device_vector<const float4> d_sp_reduced(payload.reducedSP);
     const vecmem::device_vector<const unsigned int> d_output_graph(
@@ -266,62 +266,69 @@ inline void gbts_fit_segments(const global_index_t globalIndex,
         payload.gbts_fit_segments_params;
     const float max_z0 = payload.max_z0;
 
-    const unsigned int path_idx = globalIndex + payload.nTerminusEdges;
     // Row-major output graph: each edge owns a contiguous block of
     // edge_size = 2 + 1 + max_num_neighbours ints.
     const unsigned int edge_size = 2u + 1u + payload.max_num_neighbours;
 
-    unsigned char length = 1;
-    bool toggle = false;
-    gbts_detail::edgeState state1;
-    gbts_detail::edgeState state2;
+    const unsigned int store_size = *payload.nPathStoreSize;
 
-    int2 path = d_path_store[path_idx];
+    for (unsigned int globalIndex = thread_id.getGlobalThreadIdX();
+         globalIndex + payload.nTerminusEdges < store_size;
+         globalIndex += thread_id.getBlockDimX() * thread_id.getGridDimX()) {
 
-    const unsigned int nodeidx1 =
-        d_output_graph[edge_size * static_cast<unsigned int>(path.x) +
-                       gbts_consts::node1];
-    traccc::float4 node1 = d_sp_reduced[nodeidx1];
-    const unsigned int nodeidx2 =
-        d_output_graph[edge_size * static_cast<unsigned int>(path.x) +
-                       gbts_consts::node2];
-    traccc::float4 node2 = d_sp_reduced[nodeidx2];
+        const unsigned int path_idx = globalIndex + payload.nTerminusEdges;
 
-    state1.initialize(node2, node1);
-    while (path.y >= 0) {
-        path = d_path_store[static_cast<unsigned int>(path.y)];
-        node2 =
-            d_sp_reduced[d_output_graph[edge_size *
-                                            static_cast<unsigned int>(path.x) +
-                                        gbts_consts::node2]];
-        if (toggle) {
-            if (!gbts_detail::gbts_kalman_update(&state1, &state2, node2,
-                                                 fit_params, max_z0)) {
-                state1 = state2;
+        unsigned char length = 1;
+        bool toggle = false;
+        detail::edgeState state1;
+        detail::edgeState state2;
+
+        int2 path = d_path_store[path_idx];
+
+        const unsigned int nodeidx1 =
+            d_output_graph[edge_size * static_cast<unsigned int>(path.x) +
+                           gbts_consts::node1];
+        traccc::float4 node1 = d_sp_reduced[nodeidx1];
+        const unsigned int nodeidx2 =
+            d_output_graph[edge_size * static_cast<unsigned int>(path.x) +
+                           gbts_consts::node2];
+        traccc::float4 node2 = d_sp_reduced[nodeidx2];
+
+        state1.initialize(node2, node1);
+        while (path.y >= 0) {
+            path = d_path_store[static_cast<unsigned int>(path.y)];
+            node2 = d_sp_reduced
+                [d_output_graph[edge_size * static_cast<unsigned int>(path.x) +
+                                gbts_consts::node2]];
+            if (toggle) {
+                if (!detail::gbts_kalman_update(&state1, &state2, node2,
+                                                fit_params, max_z0)) {
+                    state1 = state2;
+                    break;
+                }
+            } else if (!detail::gbts_kalman_update(&state2, &state1, node2,
+                                                   fit_params, max_z0)) {
                 break;
             }
-        } else if (!gbts_detail::gbts_kalman_update(&state2, &state1, node2,
-                                                    fit_params, max_z0)) {
-            break;
+            toggle = !toggle;
+            length++;
         }
-        toggle = !toggle;
-        length++;
+        if (length < payload.minLevel) {
+            continue;
+        }
+        int qual = 0;
+        if (toggle) {
+            qual = static_cast<int>(fit_params.qual_scale * state2.m_J);
+        } else {
+            qual = static_cast<int>(fit_params.qual_scale * state1.m_J);
+        }
+        const unsigned int prop_idx =
+            vecmem::device_atomic_ref<unsigned int>(*payload.nPropsCounter)
+                .fetch_add(1u);
+        detail::gbts_create_seed_candidate(
+            qual, static_cast<int>(path_idx), prop_idx, payload.seed_ambiguity,
+            payload.seed_proposals, payload.edge_bids, payload.path_store, 1);
     }
-    if (length < payload.minLevel) {
-        return;
-    }
-    int qual = 0;
-    if (toggle) {
-        qual = static_cast<int>(fit_params.qual_scale * state2.m_J);
-    } else {
-        qual = static_cast<int>(fit_params.qual_scale * state1.m_J);
-    }
-    const unsigned int prop_idx =
-        vecmem::device_atomic_ref<unsigned int>(*payload.nPropsCounter)
-            .fetch_add(1u);
-    gbts_create_seed_candidate(qual, static_cast<int>(path_idx), prop_idx,
-                               payload.seed_ambiguity, payload.seed_proposals,
-                               payload.edge_bids, payload.path_store, 1);
 }
 
 }  // namespace traccc::device

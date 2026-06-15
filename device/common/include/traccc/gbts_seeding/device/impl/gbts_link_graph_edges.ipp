@@ -9,7 +9,7 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/device/global_index.hpp"
+#include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/gbts_seeding/gbts_types.hpp"
 
 // VecMem include(s).
@@ -18,9 +18,9 @@
 
 namespace traccc::device {
 
-TRACCC_HOST_DEVICE
-inline void gbts_link_graph_edges(
-    const global_index_t globalIndex,
+template <concepts::thread_id1 thread_id_t>
+TRACCC_HOST_DEVICE inline void gbts_link_graph_edges(
+    const thread_id_t& thread_id,
     const gbts_link_graph_edges_payload& payload) {
 
     const vecmem::device_vector<const uint2> d_edge_nodes(payload.edge_nodes);
@@ -28,11 +28,16 @@ inline void gbts_link_graph_edges(
     vecmem::device_vector<unsigned int> d_num_outgoing_edges(
         payload.num_outgoing_edges);
 
-    const unsigned int sharedNode = d_edge_nodes[globalIndex].y;
-    const unsigned int pos = vecmem::device_atomic_ref<unsigned int>(
-                                 d_num_outgoing_edges[sharedNode])
-                                 .fetch_sub(1u);
-    d_edge_links[pos - 1u] = static_cast<unsigned int>(globalIndex);
+    for (unsigned int globalIndex = thread_id.getGlobalThreadIdX();
+         globalIndex < payload.nEdges;
+         globalIndex += thread_id.getBlockDimX() * thread_id.getGridDimX()) {
+
+        const unsigned int sharedNode = d_edge_nodes[globalIndex].y;
+        const unsigned int pos = vecmem::device_atomic_ref<unsigned int>(
+                                     d_num_outgoing_edges[sharedNode])
+                                     .fetch_sub(1u);
+        d_edge_links[pos - 1u] = static_cast<unsigned int>(globalIndex);
+    }
 }
 
 }  // namespace traccc::device

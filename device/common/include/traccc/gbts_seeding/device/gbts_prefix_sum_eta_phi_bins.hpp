@@ -7,11 +7,9 @@
 
 #pragma once
 
-// Local include(s).
-#include "traccc/device/global_index.hpp"
-
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
+#include "traccc/device/concepts/thread_id.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
@@ -37,12 +35,12 @@ struct gbts_prefix_sum_eta_phi_bins_payload {
 /// cumulative sum starting from the per-eta global offset, yielding a flat
 /// write-cursor table for gbts_sort_nodes.
 ///
-/// @param[in] globalIndex Current thread index
-/// @param[in] payload     The global memory payload
+/// @param[in] thread_id Thread identifier for the kernel launch
+/// @param[in] payload   The global memory payload
 ///
-TRACCC_HOST_DEVICE
-inline void gbts_prefix_sum_eta_phi_bins(
-    const global_index_t globalIndex,
+template <concepts::thread_id1 thread_id_t>
+TRACCC_HOST_DEVICE inline void gbts_prefix_sum_eta_phi_bins(
+    const thread_id_t& thread_id,
     const gbts_prefix_sum_eta_phi_bins_payload& payload);
 
 }  // namespace traccc::device

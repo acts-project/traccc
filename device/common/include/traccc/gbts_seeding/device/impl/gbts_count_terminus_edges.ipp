@@ -9,6 +9,7 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
+#include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/gbts_seeding/gbts_types.hpp"
 
 // VecMem include(s).
@@ -20,21 +21,26 @@
 
 namespace traccc::device {
 
+template <concepts::thread_id1 thread_id_t>
 TRACCC_HOST_DEVICE inline void gbts_count_terminus_edges(
-    const global_index_t globalIndex,
+    const thread_id_t& thread_id,
     const gbts_count_terminus_edges_payload& payload) {
 
     vecmem::device_vector<short2> d_outgoing_paths(payload.outgoing_paths);
 
-    // One edge per call; the grid-stride loop lives in the kernel wrapper.
-    const short2 out_paths = d_outgoing_paths[globalIndex];
-    if (out_paths.y != -1) {
-        d_outgoing_paths[globalIndex].y =
-            static_cast<short>(vecmem::device_atomic_ref<unsigned int>(
-                                   *payload.nPathStoreSizeCounter)
-                                   .fetch_add(1u));
-        vecmem::device_atomic_ref<unsigned int>(*payload.nPathsCounter)
-            .fetch_add(static_cast<unsigned int>(out_paths.x));
+    for (unsigned int globalIndex = thread_id.getGlobalThreadIdX();
+         globalIndex < payload.nConnectedEdges;
+         globalIndex += thread_id.getBlockDimX() * thread_id.getGridDimX()) {
+
+        const short2 out_paths = d_outgoing_paths[globalIndex];
+        if (out_paths.y != -1) {
+            d_outgoing_paths[globalIndex].y =
+                static_cast<short>(vecmem::device_atomic_ref<unsigned int>(
+                                       *payload.nPathStoreSizeCounter)
+                                       .fetch_add(1u));
+            vecmem::device_atomic_ref<unsigned int>(*payload.nPathsCounter)
+                .fetch_add(static_cast<unsigned int>(out_paths.x));
+        }
     }
 }
 

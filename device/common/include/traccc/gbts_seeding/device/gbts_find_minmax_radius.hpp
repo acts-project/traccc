@@ -7,11 +7,9 @@
 
 #pragma once
 
-// Local include(s).
-#include "traccc/device/global_index.hpp"
-
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
+#include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/gbts_seeding/gbts_types.hpp"
 
 // VecMem include(s).
@@ -38,12 +36,12 @@ struct gbts_find_minmax_radius_payload {
 /// rmax) pair into the output; the host uses these to estimate the maximum
 /// delta-R for each bin pair.
 ///
-/// @param[in] globalIndex Current thread index
-/// @param[in] payload     The global memory payload
+/// @param[in] thread_id Thread identifier for the kernel launch
+/// @param[in] payload   The global memory payload
 ///
-TRACCC_HOST_DEVICE
-inline void gbts_find_minmax_radius(
-    const global_index_t globalIndex,
+template <concepts::thread_id1 thread_id_t>
+TRACCC_HOST_DEVICE inline void gbts_find_minmax_radius(
+    const thread_id_t& thread_id,
     const gbts_find_minmax_radius_payload& payload);
 
 }  // namespace traccc::device

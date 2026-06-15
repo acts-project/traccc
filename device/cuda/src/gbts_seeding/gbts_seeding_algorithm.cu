@@ -8,7 +8,6 @@
 // Local include(s).
 #include "../utils/barrier.hpp"
 #include "../utils/cuda_error_handling.hpp"
-#include "../utils/global_index.hpp"
 #include "../utils/thread_id.hpp"
 #include "../utils/utils.hpp"
 #include "traccc/cuda/gbts_seeding/gbts_seeding_algorithm.hpp"
@@ -44,11 +43,11 @@
 
 namespace traccc::cuda {
 
+namespace kernels {
+
 using float4 = traccc::float4;
 using uint2 = traccc::uint2;
 using int2 = traccc::int2;
-
-namespace kernels {
 
 // ---------------------------------------------------------------------------
 // Stage 1 — nodes-making kernels
@@ -58,62 +57,47 @@ namespace kernels {
 __global__ void gbts_count_spacepoints_by_layer(
     const device::gbts_count_spacepoints_by_layer_payload payload) {
 
-    for (unsigned int sp_idx = details::global_index1(); sp_idx < payload.nSp;
-         sp_idx += blockDim.x * gridDim.x) {
-        device::gbts_count_spacepoints_by_layer(sp_idx, payload);
-    }
+    const details::thread_id1 thread_id;
+    device::gbts_count_spacepoints_by_layer(thread_id, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_bin_spacepoints
 __global__ void gbts_bin_spacepoints(
     const device::gbts_bin_spacepoints_payload payload) {
 
-    for (unsigned int sp_idx = details::global_index1(); sp_idx < payload.nSp;
-         sp_idx += blockDim.x * gridDim.x) {
-        device::gbts_bin_spacepoints(sp_idx, payload);
-    }
+    const details::thread_id1 thread_id;
+    device::gbts_bin_spacepoints(thread_id, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_count_eta_phi_bins
 __global__ void gbts_count_eta_phi_bins(
     const device::gbts_count_eta_phi_bins_payload payload) {
 
-    for (unsigned int eta_bin_idx = details::global_index1();
-         eta_bin_idx < payload.nEtaBins;
-         eta_bin_idx += blockDim.x * gridDim.x) {
-        device::gbts_count_eta_phi_bins(eta_bin_idx, payload);
-    }
+    const details::thread_id1 thread_id;
+    device::gbts_count_eta_phi_bins(thread_id, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_prefix_sum_eta_phi_bins
 __global__ void gbts_prefix_sum_eta_phi_bins(
     const device::gbts_prefix_sum_eta_phi_bins_payload payload) {
 
-    for (unsigned int eta_bin_idx = details::global_index1();
-         eta_bin_idx < payload.nEtaBins;
-         eta_bin_idx += blockDim.x * gridDim.x) {
-        device::gbts_prefix_sum_eta_phi_bins(eta_bin_idx, payload);
-    }
+    const details::thread_id1 thread_id;
+    device::gbts_prefix_sum_eta_phi_bins(thread_id, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_sort_nodes
 __global__ void gbts_sort_nodes(const device::gbts_sort_nodes_payload payload) {
 
-    for (unsigned int node_idx = details::global_index1();
-         node_idx < payload.nNodes; node_idx += blockDim.x * gridDim.x) {
-        device::gbts_sort_nodes(node_idx, payload);
-    }
+    const details::thread_id1 thread_id;
+    device::gbts_sort_nodes(thread_id, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_find_minmax_radius
 __global__ void gbts_find_minmax_radius(
     const device::gbts_find_minmax_radius_payload payload) {
 
-    for (unsigned int eta_bin_idx = details::global_index1();
-         eta_bin_idx < payload.nEtaBins;
-         eta_bin_idx += blockDim.x * gridDim.x) {
-        device::gbts_find_minmax_radius(eta_bin_idx, payload);
-    }
+    const details::thread_id1 thread_id;
+    device::gbts_find_minmax_radius(thread_id, payload);
 }
 
 // ---------------------------------------------------------------------------
@@ -142,40 +126,32 @@ __global__ void gbts_make_graph_edges(
 __global__ void gbts_link_graph_edges(
     const device::gbts_link_graph_edges_payload payload) {
 
-    for (unsigned int edge_idx = details::global_index1();
-         edge_idx < payload.nEdges; edge_idx += blockDim.x * gridDim.x) {
-        device::gbts_link_graph_edges(edge_idx, payload);
-    }
+    const details::thread_id1 thread_id;
+    device::gbts_link_graph_edges(thread_id, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_match_graph_edges
 __global__ void gbts_match_graph_edges(
     const device::gbts_match_graph_edges_payload payload) {
 
-    for (unsigned int edge_idx = details::global_index1();
-         edge_idx < payload.nEdges; edge_idx += blockDim.x * gridDim.x) {
-        device::gbts_match_graph_edges(edge_idx, payload);
-    }
+    const details::thread_id1 thread_id;
+    device::gbts_match_graph_edges(thread_id, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_reindex_edges
 __global__ void gbts_reindex_edges(
     const device::gbts_reindex_edges_payload payload) {
 
-    for (unsigned int edge_idx = details::global_index1();
-         edge_idx < payload.nEdges; edge_idx += blockDim.x * gridDim.x) {
-        device::gbts_reindex_edges(edge_idx, payload);
-    }
+    const details::thread_id1 thread_id;
+    device::gbts_reindex_edges(thread_id, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_compress_graph
 __global__ void gbts_compress_graph(
     const device::gbts_compress_graph_payload payload) {
 
-    for (unsigned int edge_idx = details::global_index1();
-         edge_idx < payload.nEdges; edge_idx += blockDim.x * gridDim.x) {
-        device::gbts_compress_graph(edge_idx, payload);
-    }
+    const details::thread_id1 thread_id;
+    device::gbts_compress_graph(thread_id, payload);
 }
 
 // ---------------------------------------------------------------------------
@@ -186,33 +162,24 @@ __global__ void gbts_compress_graph(
 __global__ void gbts_run_cca_iteration(
     const device::gbts_run_cca_iteration_payload payload) {
 
-    for (unsigned int edge_idx = details::global_index1();
-         edge_idx < payload.nConnectedEdges;
-         edge_idx += blockDim.x * gridDim.x) {
-        device::gbts_run_cca_iteration(edge_idx, payload);
-    }
+    const details::thread_id1 thread_id;
+    device::gbts_run_cca_iteration(thread_id, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_count_terminus_edges
 __global__ void gbts_count_terminus_edges(
     const device::gbts_count_terminus_edges_payload payload) {
 
-    for (unsigned int edge_idx = details::global_index1();
-         edge_idx < payload.nConnectedEdges;
-         edge_idx += blockDim.x * gridDim.x) {
-        device::gbts_count_terminus_edges(edge_idx, payload);
-    }
+    const details::thread_id1 thread_id;
+    device::gbts_count_terminus_edges(thread_id, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_add_terminus_to_path_store
 __global__ void gbts_add_terminus_to_path_store(
     const device::gbts_add_terminus_to_path_store_payload payload) {
 
-    for (unsigned int edge_idx = details::global_index1();
-         edge_idx < payload.nConnectedEdges;
-         edge_idx += blockDim.x * gridDim.x) {
-        device::gbts_add_terminus_to_path_store(edge_idx, payload);
-    }
+    const details::thread_id1 thread_id;
+    device::gbts_add_terminus_to_path_store(thread_id, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_fill_path_store
@@ -236,52 +203,40 @@ __global__ void gbts_fill_path_store(
 __global__ void gbts_fit_segments(
     const device::gbts_fit_segments_payload payload) {
 
-    const unsigned int store_size = *payload.nPathStoreSize;
-    for (unsigned int path_idx = details::global_index1();
-         path_idx + payload.nTerminusEdges < store_size;
-         path_idx += blockDim.x * gridDim.x) {
-        device::gbts_fit_segments(path_idx, payload);
-    }
+    const details::thread_id1 thread_id;
+    device::gbts_fit_segments(thread_id, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_reset_edge_bids
 __global__ void gbts_reset_edge_bids(
     const device::gbts_reset_edge_bids_payload payload) {
 
-    for (unsigned int prop_idx = details::global_index1();
-         prop_idx < payload.nProps; prop_idx += blockDim.x * gridDim.x) {
-        device::gbts_reset_edge_bids(prop_idx, payload);
-    }
+    const details::thread_id1 thread_id;
+    device::gbts_reset_edge_bids(thread_id, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_rebid_seeds_for_edges
 __global__ void gbts_rebid_seeds_for_edges(
     const device::gbts_rebid_seeds_for_edges_payload payload) {
 
-    for (unsigned int prop_idx = details::global_index1();
-         prop_idx < payload.nProps; prop_idx += blockDim.x * gridDim.x) {
-        device::gbts_rebid_seeds_for_edges(prop_idx, payload);
-    }
+    const details::thread_id1 thread_id;
+    device::gbts_rebid_seeds_for_edges(thread_id, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_bid_seeds_for_hits
 __global__ void gbts_bid_seeds_for_hits(
     const device::gbts_bid_seeds_for_hits_payload payload) {
 
-    for (unsigned int prop_idx = details::global_index1();
-         prop_idx < payload.nProps; prop_idx += blockDim.x * gridDim.x) {
-        device::gbts_bid_seeds_for_hits(prop_idx, payload);
-    }
+    const details::thread_id1 thread_id;
+    device::gbts_bid_seeds_for_hits(thread_id, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_convert_seeds
 __global__ void gbts_convert_seeds(
     const device::gbts_convert_seeds_payload payload) {
 
-    for (unsigned int prop_idx = details::global_index1();
-         prop_idx < payload.nProps; prop_idx += blockDim.x * gridDim.x) {
-        device::gbts_convert_seeds(prop_idx, payload);
-    }
+    const details::thread_id1 thread_id;
+    device::gbts_convert_seeds(thread_id, payload);
 }
 
 }  // namespace kernels

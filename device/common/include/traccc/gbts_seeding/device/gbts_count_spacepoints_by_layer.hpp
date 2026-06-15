@@ -7,11 +7,9 @@
 
 #pragma once
 
-// Local include(s).
-#include "traccc/device/global_index.hpp"
-
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
+#include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/edm/measurement_collection.hpp"
 #include "traccc/edm/spacepoint_collection.hpp"
 #include "traccc/gbts_seeding/gbts_types.hpp"
@@ -64,12 +62,12 @@ struct gbts_count_spacepoints_by_layer_payload {
 /// acceptance atomically increments the per-layer count and writes the
 /// reduced (x, y, z, r) tuple plus the assigned layer index.
 ///
-/// @param[in] globalIndex Current thread index
-/// @param[in] payload     The global memory payload
+/// @param[in] thread_id Thread identifier for the kernel launch
+/// @param[in] payload   The global memory payload
 ///
-TRACCC_HOST_DEVICE
-inline void gbts_count_spacepoints_by_layer(
-    const global_index_t globalIndex,
+template <concepts::thread_id1 thread_id_t>
+TRACCC_HOST_DEVICE inline void gbts_count_spacepoints_by_layer(
+    const thread_id_t& thread_id,
     const gbts_count_spacepoints_by_layer_payload& payload);
 
 }  // namespace traccc::device

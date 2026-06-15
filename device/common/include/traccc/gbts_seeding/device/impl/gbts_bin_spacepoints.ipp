@@ -9,7 +9,7 @@
 
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
-#include "traccc/device/global_index.hpp"
+#include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/gbts_seeding/gbts_types.hpp"
 
 // VecMem include(s).
@@ -24,9 +24,9 @@
 
 namespace traccc::device {
 
-TRACCC_HOST_DEVICE
-inline void gbts_bin_spacepoints(const global_index_t globalIndex,
-                                 const gbts_bin_spacepoints_payload& payload) {
+template <concepts::thread_id1 thread_id_t>
+TRACCC_HOST_DEVICE inline void gbts_bin_spacepoints(
+    const thread_id_t& thread_id, const gbts_bin_spacepoints_payload& payload) {
 
     const vecmem::device_vector<const float4> reducedSP(payload.reducedSP);
     const vecmem::device_vector<const unsigned short> spacepointsLayer(
@@ -45,57 +45,63 @@ inline void gbts_bin_spacepoints(const global_index_t globalIndex,
         payload.node_phi_index);
     vecmem::device_vector<unsigned int> d_eta_phi_histo(payload.eta_phi_histo);
 
-    // --- Stage 1: bin_sp_by_layer ------------------------------------------
-    const float4 sp = reducedSP[globalIndex];
-    if (sp.w < -CHAR_MAX) {
-        return;
-    }
-    const unsigned short layerIdx = spacepointsLayer[globalIndex];
-    const unsigned int binedIdx =
-        vecmem::device_atomic_ref<unsigned int>(layerCounts[layerIdx])
-            .fetch_sub(1) -
-        1u;
-    original_sp_idx[binedIdx] = globalIndex;
-    sp_params[binedIdx] = sp;
+    for (unsigned int globalIndex = thread_id.getGlobalThreadIdX();
+         globalIndex < payload.nSp;
+         globalIndex += thread_id.getBlockDimX() * thread_id.getGridDimX()) {
 
-    // --- Stage 2: node_eta_binning -----------
-    const unsigned int layerIdx_u = static_cast<unsigned int>(layerIdx);
-    const std::pair<unsigned int, unsigned int> layerInfo =
-        d_layer_info[layerIdx_u];
-    const unsigned int bin0 = layerInfo.first;
-    const unsigned int num_eta_bins = layerInfo.second;
-    unsigned int eta_index;
-    if (num_eta_bins == 1u) {
-        eta_index = bin0;
-    } else {
-        const std::pair<float, float> layerGeo = d_layer_geo[layerIdx_u];
-        const float min_eta = layerGeo.first;
-        const float eta_bin_width = layerGeo.second;
-        const float r = sqrtf(sp.x * sp.x + sp.y * sp.y);
-        const float t1 = sp.z / r;
-        const float eta = -logf(sqrtf(1.0f + t1 * t1) - t1);
-        const unsigned int binIdx = static_cast<unsigned int>(
-            fmaxf(0.0f, fminf((eta - min_eta) / eta_bin_width,
-                              static_cast<float>(num_eta_bins - 1u))));
-        eta_index = bin0 + binIdx;
-    }
-    d_node_eta_index[binedIdx] = eta_index;
+        // --- Stage 1: bin_sp_by_layer
+        // ------------------------------------------
+        const float4 sp = reducedSP[globalIndex];
+        if (sp.w < -CHAR_MAX) {
+            continue;
+        }
+        const unsigned short layerIdx = spacepointsLayer[globalIndex];
+        const unsigned int binedIdx =
+            vecmem::device_atomic_ref<unsigned int>(layerCounts[layerIdx])
+                .fetch_sub(1) -
+            1u;
+        original_sp_idx[binedIdx] = globalIndex;
+        sp_params[binedIdx] = sp;
 
-    // --- Stage 3: eta_phi_histo --------------
-    const float inv_phiSliceWidth =
-        1.0f /
-        (traccc::device::TWO_PI_F / static_cast<float>(payload.nPhiBins));
-    const float Phi = atan2f(sp.y, sp.x);
-    unsigned int phiIdx = static_cast<unsigned int>(
-        (Phi + traccc::device::PI_F) * inv_phiSliceWidth);
-    if (phiIdx >= payload.nPhiBins) {
-        phiIdx -= payload.nPhiBins;
-    }
-    d_node_phi_index[binedIdx] = phiIdx;
+        // --- Stage 2: node_eta_binning -----------
+        const unsigned int layerIdx_u = static_cast<unsigned int>(layerIdx);
+        const std::pair<unsigned int, unsigned int> layerInfo =
+            d_layer_info[layerIdx_u];
+        const unsigned int bin0 = layerInfo.first;
+        const unsigned int num_eta_bins = layerInfo.second;
+        unsigned int eta_index;
+        if (num_eta_bins == 1u) {
+            eta_index = bin0;
+        } else {
+            const std::pair<float, float> layerGeo = d_layer_geo[layerIdx_u];
+            const float min_eta = layerGeo.first;
+            const float eta_bin_width = layerGeo.second;
+            const float r = sqrtf(sp.x * sp.x + sp.y * sp.y);
+            const float t1 = sp.z / r;
+            const float eta = -logf(sqrtf(1.0f + t1 * t1) - t1);
+            const unsigned int binIdx = static_cast<unsigned int>(
+                fmaxf(0.0f, fminf((eta - min_eta) / eta_bin_width,
+                                  static_cast<float>(num_eta_bins - 1u))));
+            eta_index = bin0 + binIdx;
+        }
+        d_node_eta_index[binedIdx] = eta_index;
 
-    const unsigned int histo_bin = phiIdx + payload.nPhiBins * eta_index;
-    vecmem::device_atomic_ref<unsigned int>(d_eta_phi_histo[histo_bin])
-        .fetch_add(1u);
+        // --- Stage 3: eta_phi_histo --------------
+        const float inv_phiSliceWidth =
+            1.0f /
+            (traccc::device::TWO_PI_F / static_cast<float>(payload.nPhiBins));
+        const float Phi = atan2f(sp.y, sp.x);
+        unsigned int phiIdx = static_cast<unsigned int>(
+            (Phi + traccc::device::PI_F) * inv_phiSliceWidth);
+        if (phiIdx >= payload.nPhiBins) {
+            phiIdx -= payload.nPhiBins;
+        }
+        d_node_phi_index[binedIdx] = phiIdx;
+
+        const unsigned int histo_bin = phiIdx + payload.nPhiBins * eta_index;
+        vecmem::device_atomic_ref<unsigned int>(d_eta_phi_histo[histo_bin])
+            .fetch_add(1u);
+    }
 }
 
 }  // namespace traccc::device

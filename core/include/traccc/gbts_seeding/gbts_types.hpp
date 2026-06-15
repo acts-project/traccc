@@ -40,14 +40,6 @@ namespace device {
 inline constexpr float PI_F = traccc::constant<float>::pi;
 inline constexpr float TWO_PI_F = 2.0f * traccc::constant<float>::pi;
 
-// Wrap an angle into (-pi, pi], matching the reference (round-to-nearest).
-// This can be generalised using if and floor which is in
-// trigonometric helper functions.
-// TODO: Test whether this is faster than the trigometric helper function.
-TRACCC_HOST_DEVICE inline float phi_wrap(const float phi) {
-    return phi - TWO_PI_F * rintf(phi * (1.0f / TWO_PI_F));
-}
-
 }  // namespace device
 
 }  // namespace traccc

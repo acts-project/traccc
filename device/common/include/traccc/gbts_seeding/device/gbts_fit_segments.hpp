@@ -7,11 +7,9 @@
 
 #pragma once
 
-// Local include(s).
-#include "traccc/device/global_index.hpp"
-
 // Project include(s).
 #include "traccc/definitions/qualifiers.hpp"
+#include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 #include "traccc/gbts_seeding/gbts_types.hpp"
 
@@ -65,12 +63,12 @@ struct gbts_fit_segments_payload {
 /// atomically claims a seed-proposal slot, bids for its leaf edge, and tags
 /// ambiguity.
 ///
-/// @param[in] globalIndex Current thread index
+/// @param[in] thread_id Thread identifier for the kernel launch
 /// @param[in] payload     The global memory payload
 ///
-TRACCC_HOST_DEVICE
-inline void gbts_fit_segments(const global_index_t globalIndex,
-                              const gbts_fit_segments_payload& payload);
+template <concepts::thread_id1 thread_id_t>
+TRACCC_HOST_DEVICE inline void gbts_fit_segments(
+    const thread_id_t& thread_id, const gbts_fit_segments_payload& payload);
 
 }  // namespace traccc::device
 

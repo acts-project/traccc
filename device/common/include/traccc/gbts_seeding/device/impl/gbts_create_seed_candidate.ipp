@@ -16,7 +16,7 @@
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/memory/device_atomic_ref.hpp>
 
-namespace traccc::device {
+namespace traccc::device::detail {
 
 TRACCC_HOST_DEVICE
 inline void gbts_create_seed_candidate(
@@ -57,4 +57,4 @@ inline void gbts_create_seed_candidate(
     }
 }
 
-}  // namespace traccc::device
+}  // namespace traccc::device::detail

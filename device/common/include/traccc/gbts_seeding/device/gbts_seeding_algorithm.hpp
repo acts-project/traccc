@@ -255,7 +255,7 @@ class gbts_seeding_algorithm
 
     /// Outputs of the node-making stage that are consumed downstream.
     struct node_making_output {
-        /// Reduced (x, y, z, r) per original spacepoint (used by seed
+        /// Reduced (x, y, z, w) per original spacepoint (used by seed
         /// extraction)
         vecmem::data::vector_buffer<float4> reducedSP;
         /// Per-node (tau_min, tau_max, r, z) (used by graph making)
@@ -281,13 +281,13 @@ class gbts_seeding_algorithm
     };
 
     /// Stage 1: count, bin, sort and characterise nodes.
-    node_making_output gbts_make_nodes(
+    node_making_output bin_and_create_gbts_nodes(
         const edm::spacepoint_collection::const_view& spacepoints,
         const edm::measurement_collection::const_view& measurements) const;
 
     /// Stage 2: build, link, match and compress the edge graph. The per-node
     /// buffers are taken by value so they are released when this stage returns.
-    graph_making_output gbts_make_graphs(
+    graph_making_output create_gbts_edges_from_nodes(
         vecmem::data::vector_buffer<float4> node_params,
         vecmem::data::vector_buffer<float> node_phi,
         vecmem::data::vector_buffer<unsigned int> node_index,
@@ -298,7 +298,7 @@ class gbts_seeding_algorithm
         vecmem::vector<unsigned int>& h_counters) const;
 
     /// Stage 3: run the CCA, extract paths, fit and disambiguate into seeds.
-    edm::seed_collection::buffer gbts_extract_seeds(
+    edm::seed_collection::buffer convert_gbts_edges_to_seeds(
         vecmem::data::vector_buffer<unsigned int>& output_graph,
         vecmem::data::vector_buffer<float4>& reducedSP,
         const unsigned int nConnectedEdges, const unsigned int nSp,
