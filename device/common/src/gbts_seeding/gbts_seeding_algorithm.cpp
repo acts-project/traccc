@@ -175,7 +175,7 @@ auto gbts_seeding_algorithm::bin_and_create_gbts_nodes(
     vecmem::data::vector_buffer<unsigned int> eta_bin_views_buf(
         2 * cfg.n_eta_bins, mr().main);
     copy().setup(eta_bin_views_buf)->ignore();
-    copy()(vecmem::get_data(eta_bin_views), eta_bin_views_buf)->wait();
+    copy()(vecmem::get_data(eta_bin_views), eta_bin_views_buf)->ignore();
 
     vecmem::data::vector_buffer<float> bin_rads_buf(2 * cfg.n_eta_bins,
                                                     mr().main);
@@ -517,12 +517,12 @@ auto gbts_seeding_algorithm::convert_gbts_edges_to_seeds(
     // 8. Convert to 3sp seeds and make output buffer.
     edm::seed_collection::buffer output_seeds(
         2 * nSeeds, mr().main, vecmem::data::buffer_type::resizable);
-    copy().setup(output_seeds)->wait();
+    copy().setup(output_seeds)->ignore();
 
     vecmem::data::vector_buffer<unsigned long long int> hit_bids_buf(nSp,
                                                                      mr().main);
     copy().setup(hit_bids_buf)->ignore();
-    copy().memset(hit_bids_buf, 0)->wait();
+    copy().memset(hit_bids_buf, 0)->ignore();
 
     const unsigned int edge_size = 1u + 2u + cfg.max_num_neighbours;
     gbts_bid_seeds_for_hits_kernel({nProps, nSeeds, edge_size, output_graph,
