@@ -38,9 +38,13 @@ TRACCC_HOST_DEVICE inline void gbts_run_cca_iteration(
     const unsigned int levelLoad = toggle * payload.nConnectedEdges;
     const unsigned int levelStore = (1 - toggle) * payload.nConnectedEdges;
 
-    for (unsigned int globalIndex = thread_id.getGlobalThreadIdX();
+    const unsigned int globalIdx = thread_id.getGlobalThreadIdX();
+    const unsigned int blockDimX = thread_id.getBlockDimX();
+    const unsigned int gridDimX = thread_id.getGridDimX();
+
+    for (unsigned int globalIndex = globalIdx;
          globalIndex < payload.nConnectedEdges;
-         globalIndex += thread_id.getBlockDimX() * thread_id.getGridDimX()) {
+         globalIndex += blockDimX * gridDimX) {
 
         if (iter != 0) {
             if (d_active_edges[globalIndex] != iter) {

@@ -26,9 +26,12 @@ TRACCC_HOST_DEVICE inline void gbts_reindex_edges(
 
     vecmem::device_vector<int> d_reIndexer(payload.reIndexer);
 
-    for (unsigned int globalIndex = thread_id.getGlobalThreadIdX();
-         globalIndex < payload.nEdges;
-         globalIndex += thread_id.getBlockDimX() * thread_id.getGridDimX()) {
+    const unsigned int globalIdx = thread_id.getGlobalThreadIdX();
+    const unsigned int blockDimX = thread_id.getBlockDimX();
+    const unsigned int gridDimX = thread_id.getGridDimX();
+
+    for (unsigned int globalIndex = globalIdx; globalIndex < payload.nEdges;
+         globalIndex += blockDimX * gridDimX) {
 
         if (d_reIndexer[globalIndex] == -1) {
             continue;

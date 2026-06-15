@@ -28,9 +28,12 @@ TRACCC_HOST_DEVICE inline void gbts_find_minmax_radius(
         payload.node_params);
     vecmem::device_vector<float> d_bin_rads(payload.bin_rads);
 
-    for (unsigned int globalIndex = thread_id.getGlobalThreadIdX();
-         globalIndex < payload.nEtaBins;
-         globalIndex += thread_id.getBlockDimX() * thread_id.getGridDimX()) {
+    const unsigned int globalIdx = thread_id.getGlobalThreadIdX();
+    const unsigned int blockDimX = thread_id.getBlockDimX();
+    const unsigned int gridDimX = thread_id.getGridDimX();
+
+    for (unsigned int globalIndex = globalIdx; globalIndex < payload.nEtaBins;
+         globalIndex += blockDimX * gridDimX) {
 
         const unsigned int node_start = d_eta_bin_views[2u * globalIndex];
         const unsigned int node_end = d_eta_bin_views[2u * globalIndex + 1u];

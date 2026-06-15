@@ -27,9 +27,12 @@ TRACCC_HOST_DEVICE inline void gbts_count_eta_phi_bins(
         payload.eta_node_counter);
     vecmem::device_vector<unsigned int> d_phi_cusums(payload.phi_cusums);
 
-    for (unsigned int globalIndex = thread_id.getGlobalThreadIdX();
-         globalIndex < payload.nEtaBins;
-         globalIndex += thread_id.getBlockDimX() * thread_id.getGridDimX()) {
+    const unsigned int globalIdx = thread_id.getGlobalThreadIdX();
+    const unsigned int blockDimX = thread_id.getBlockDimX();
+    const unsigned int gridDimX = thread_id.getGridDimX();
+
+    for (unsigned int globalIndex = globalIdx; globalIndex < payload.nEtaBins;
+         globalIndex += blockDimX * gridDimX) {
 
         const unsigned int offset = payload.nPhiBins * globalIndex;
 

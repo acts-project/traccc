@@ -27,13 +27,12 @@ TRACCC_HOST_DEVICE inline void gbts_rebid_seeds_for_edges(
     vecmem::device_vector<char> d_seed_ambiguity(payload.seed_ambiguity);
     vecmem::device_vector<int2> d_seed_proposals(payload.seed_proposals);
 
-    for (unsigned int globalIndex = thread_id.getGlobalThreadIdX();
-         globalIndex < payload.nProps;
-         globalIndex += thread_id.getBlockDimX() * thread_id.getGridDimX()) {
+    const unsigned int globalIdx = thread_id.getGlobalThreadIdX();
+    const unsigned int blockDimX = thread_id.getBlockDimX();
+    const unsigned int gridDimX = thread_id.getGridDimX();
 
-        // One proposal per call; the grid-stride loop lives in the kernel
-        // wrapper.
-        const unsigned int prop_idx = globalIndex;
+    for (unsigned int prop_idx = globalIdx; prop_idx < payload.nProps;
+         prop_idx += blockDimX * gridDimX) {
 
         const char ambi = d_seed_ambiguity[prop_idx];
 

@@ -42,9 +42,12 @@ TRACCC_HOST_DEVICE inline void gbts_sort_nodes(
 
     const gbts_sort_nodes_params& ap = payload.gbts_sort_nodes_params;
 
-    for (unsigned int globalIndex = thread_id.getGlobalThreadIdX();
-         globalIndex < payload.nNodes;
-         globalIndex += thread_id.getBlockDimX() * thread_id.getGridDimX()) {
+    const unsigned int globalIdx = thread_id.getGlobalThreadIdX();
+    const unsigned int blockDimX = thread_id.getBlockDimX();
+    const unsigned int gridDimX = thread_id.getGridDimX();
+
+    for (unsigned int globalIndex = globalIdx; globalIndex < payload.nNodes;
+         globalIndex += blockDimX * gridDimX) {
 
         const float4 sp = d_sp_params[globalIndex];
 

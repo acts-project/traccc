@@ -272,9 +272,13 @@ TRACCC_HOST_DEVICE inline void gbts_fit_segments(
 
     const unsigned int store_size = *payload.nPathStoreSize;
 
-    for (unsigned int globalIndex = thread_id.getGlobalThreadIdX();
+    const unsigned int globalIdx = thread_id.getGlobalThreadIdX();
+    const unsigned int blockDimX = thread_id.getBlockDimX();
+    const unsigned int gridDimX = thread_id.getGridDimX();
+
+    for (unsigned int globalIndex = globalIdx;
          globalIndex + payload.nTerminusEdges < store_size;
-         globalIndex += thread_id.getBlockDimX() * thread_id.getGridDimX()) {
+         globalIndex += blockDimX * gridDimX) {
 
         const unsigned int path_idx = globalIndex + payload.nTerminusEdges;
 

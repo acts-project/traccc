@@ -51,9 +51,12 @@ TRACCC_HOST_DEVICE inline void gbts_match_graph_edges(
     const float cut_tau_ratio_max =
         payload.gbts_match_graph_edges_params.cut_tau_ratio_max;
 
-    for (unsigned int globalIndex = thread_id.getGlobalThreadIdX();
-         globalIndex < payload.nEdges;
-         globalIndex += thread_id.getBlockDimX() * thread_id.getGridDimX()) {
+    const unsigned int globalIdx = thread_id.getGlobalThreadIdX();
+    const unsigned int blockDimX = thread_id.getBlockDimX();
+    const unsigned int gridDimX = thread_id.getGridDimX();
+
+    for (unsigned int globalIndex = globalIdx; globalIndex < payload.nEdges;
+         globalIndex += blockDimX * gridDimX) {
 
         const unsigned int sharedNode = d_edge_nodes[globalIndex].x;
 

@@ -45,9 +45,12 @@ TRACCC_HOST_DEVICE inline void gbts_bin_spacepoints(
         payload.node_phi_index);
     vecmem::device_vector<unsigned int> d_eta_phi_histo(payload.eta_phi_histo);
 
-    for (unsigned int globalIndex = thread_id.getGlobalThreadIdX();
-         globalIndex < payload.nSp;
-         globalIndex += thread_id.getBlockDimX() * thread_id.getGridDimX()) {
+    const unsigned int globalIdx = thread_id.getGlobalThreadIdX();
+    const unsigned int blockDimX = thread_id.getBlockDimX();
+    const unsigned int gridDimX = thread_id.getGridDimX();
+
+    for (unsigned int globalIndex = globalIdx; globalIndex < payload.nSp;
+         globalIndex += blockDimX * gridDimX) {
 
         // --- Stage 1: bin_sp_by_layer
         // ------------------------------------------

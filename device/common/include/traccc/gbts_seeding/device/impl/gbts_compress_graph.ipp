@@ -32,9 +32,12 @@ TRACCC_HOST_DEVICE inline void gbts_compress_graph(
     const vecmem::device_vector<const int> d_reIndexer(payload.reIndexer);
     vecmem::device_vector<unsigned int> d_output_graph(payload.output_graph);
 
-    for (unsigned int globalIndex = thread_id.getGlobalThreadIdX();
-         globalIndex < payload.nEdges;
-         globalIndex += thread_id.getBlockDimX() * thread_id.getGridDimX()) {
+    const unsigned int globalIdx = thread_id.getGlobalThreadIdX();
+    const unsigned int blockDimX = thread_id.getBlockDimX();
+    const unsigned int gridDimX = thread_id.getGridDimX();
+
+    for (unsigned int globalIndex = globalIdx; globalIndex < payload.nEdges;
+         globalIndex += blockDimX * gridDimX) {
 
         const int newIdx = d_reIndexer[globalIndex];
         if (newIdx == -1) {

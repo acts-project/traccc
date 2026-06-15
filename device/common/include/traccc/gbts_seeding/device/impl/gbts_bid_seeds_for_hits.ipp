@@ -33,13 +33,13 @@ TRACCC_HOST_DEVICE inline void gbts_bid_seeds_for_hits(
         payload.seed_proposals);
     vecmem::device_vector<unsigned long long int> d_hit_bids(payload.hit_bids);
 
-    for (unsigned int globalIndex = thread_id.getGlobalThreadIdX();
-         globalIndex < payload.nProps;
-         globalIndex += thread_id.getBlockDimX() * thread_id.getGridDimX()) {
+    const unsigned int globalIdx = thread_id.getGlobalThreadIdX();
+    const unsigned int blockDimX = thread_id.getBlockDimX();
+    const unsigned int gridDimX = thread_id.getGridDimX();
 
-        // One proposal per call; the grid-stride loop lives in the kernel
-        // wrapper.
-        const unsigned int prop_idx = globalIndex;
+    for (unsigned int prop_idx = globalIdx; prop_idx < payload.nProps;
+         prop_idx += blockDimX * gridDimX) {
+
         if (d_seed_ambiguity[prop_idx] == -2) {
             continue;
         }
