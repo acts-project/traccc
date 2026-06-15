@@ -25,7 +25,7 @@
 
 namespace traccc::device {
 
-namespace detail {
+namespace details {
 
 // ===========================================================================
 // edgeState -- Kalman-filter state for a track-segment fit.
@@ -284,8 +284,8 @@ TRACCC_HOST_DEVICE inline void gbts_fit_segments(
 
         unsigned char length = 1;
         bool toggle = false;
-        detail::edgeState state1;
-        detail::edgeState state2;
+        details::edgeState state1;
+        details::edgeState state2;
 
         int2 path = d_path_store[path_idx];
 
@@ -305,12 +305,12 @@ TRACCC_HOST_DEVICE inline void gbts_fit_segments(
                 [d_output_graph[edge_size * static_cast<unsigned int>(path.x) +
                                 gbts_consts::node2]];
             if (toggle) {
-                if (!detail::gbts_kalman_update(&state1, &state2, node2,
+                if (!details::gbts_kalman_update(&state1, &state2, node2,
                                                 fit_params, max_z0)) {
                     state1 = state2;
                     break;
                 }
-            } else if (!detail::gbts_kalman_update(&state2, &state1, node2,
+            } else if (!details::gbts_kalman_update(&state2, &state1, node2,
                                                    fit_params, max_z0)) {
                 break;
             }
@@ -329,7 +329,7 @@ TRACCC_HOST_DEVICE inline void gbts_fit_segments(
         const unsigned int prop_idx =
             vecmem::device_atomic_ref<unsigned int>(*payload.nPropsCounter)
                 .fetch_add(1u);
-        detail::gbts_create_seed_candidate(
+        details::gbts_create_seed_candidate(
             qual, static_cast<int>(path_idx), prop_idx, payload.seed_ambiguity,
             payload.seed_proposals, payload.edge_bids, payload.path_store, 1);
     }

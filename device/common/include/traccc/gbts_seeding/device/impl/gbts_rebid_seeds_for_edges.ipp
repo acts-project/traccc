@@ -55,7 +55,7 @@ TRACCC_HOST_DEVICE inline void gbts_rebid_seeds_for_edges(
         }
         const int2 prop = d_seed_proposals[prop_idx];
 
-        detail::gbts_create_seed_candidate(
+        details::gbts_create_seed_candidate(
             prop.x, prop.y, prop_idx, payload.seed_ambiguity,
             payload.seed_proposals, payload.edge_bids, payload.path_store, -1);
     }
