@@ -73,14 +73,8 @@ auto gbts_seeding_algorithm::bin_and_create_gbts_nodes(
          cfg.surfaceToLayerMap.size(),
          cfg.gbts_count_spacepoints_by_layer_params});
 
-    // CPU: prefix-sum the per-layer counts on the host (turns counts into the
-    // layer-ordered write offsets used by gbts_bin_spacepoints).
     vecmem::vector<unsigned int> layerCounts(cfg.nLayers + 1, mr().host);
     copy()(vecmem::get_data(layerCounts_buf), layerCounts)->wait();
-    for (unsigned int layer = 0; layer < cfg.nLayers; layer++) {
-        layerCounts[layer + 1] += layerCounts[layer];
-    }
-    copy()(vecmem::get_data(layerCounts), layerCounts_buf)->wait();
 
     const unsigned int nNodes =
         static_cast<unsigned int>(layerCounts[cfg.nLayers]);
@@ -140,14 +134,8 @@ auto gbts_seeding_algorithm::bin_and_create_gbts_nodes(
                                     eta_phi_histo_buf, eta_node_counter_buf,
                                     phi_cusums_buf});
 
-    // CPU: prefix-sum the per-eta counts and build the (begin, end) node range
-    // per eta bin on the host.
     vecmem::vector<unsigned int> eta_sums(cfg.n_eta_bins, mr().host);
     copy()(vecmem::get_data(eta_node_counter_buf), eta_sums)->wait();
-    for (unsigned int k = 0; k < cfg.n_eta_bins; k++) {
-        eta_sums[k + 1] += eta_sums[k];
-    }
-    copy()(vecmem::get_data(eta_sums), eta_node_counter_buf)->wait();
 
     vecmem::vector<unsigned int> eta_bin_views(2 * cfg.n_eta_bins, mr().host);
     for (unsigned int view_idx = 0; view_idx < cfg.n_eta_bins; view_idx++) {
@@ -343,15 +331,6 @@ auto gbts_seeding_algorithm::create_gbts_edges_from_nodes(
         TRACCC_WARNING("No edges were found");
         return graph_making_output{};
     }
-
-    // CPU: prefix-sum the per-node incoming-edge counts on the host into the
-    // write cursors used by gbts_link_graph_edges.
-    vecmem::vector<unsigned int> cusum(nNodes + 1, mr().host);
-    copy()(vecmem::get_data(num_incoming_edges_buf), cusum)->wait();
-    for (unsigned int k = 0; k < nNodes; k++) {
-        cusum[k + 1] += cusum[k];
-    }
-    copy()(vecmem::get_data(cusum), num_incoming_edges_buf)->wait();
 
     // 3. Link edges and nodes.
     vecmem::data::vector_buffer<unsigned int> edge_links_buf(nEdges, mr().main);

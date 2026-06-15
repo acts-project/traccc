@@ -40,6 +40,11 @@
 
 // System include(s).
 #include <algorithm>
+#include <memory_resource>
+
+// Thrust include(s).
+#include <thrust/execution_policy.h>
+#include <thrust/scan.h>
 
 namespace traccc::cuda {
 
@@ -260,6 +265,11 @@ void gbts_seeding_algorithm::gbts_count_spacepoints_by_layer_kernel(
                                                details::get_stream(stream())>>>(
         payload);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());  //
+    vecmem::device_vector<unsigned int> d_layer_sums(payload.layerCounts);
+    thrust::inclusive_scan(
+        thrust::cuda::par_nosync(std::pmr::polymorphic_allocator(&(mr().main)))
+            .on(details::get_stream(stream())),
+        d_layer_sums.begin(), d_layer_sums.end(), d_layer_sums.begin());
 }
 
 void gbts_seeding_algorithm::gbts_bin_spacepoints_kernel(
@@ -281,6 +291,11 @@ void gbts_seeding_algorithm::gbts_count_eta_phi_bins_kernel(
                                        details::get_stream(stream())>>>(
         payload);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());  //
+    vecmem::device_vector<unsigned int> d_eta_sums(payload.eta_node_counter);
+    thrust::inclusive_scan(
+        thrust::cuda::par_nosync(std::pmr::polymorphic_allocator(&(mr().main)))
+            .on(details::get_stream(stream())),
+        d_eta_sums.begin(), d_eta_sums.end(), d_eta_sums.begin());
 }
 
 void gbts_seeding_algorithm::gbts_prefix_sum_eta_phi_bins_kernel(
@@ -323,6 +338,13 @@ void gbts_seeding_algorithm::gbts_make_graph_edges_kernel(
     kernels::gbts_make_graph_edges<<<n_blocks, n_threads, 0,
                                      details::get_stream(stream())>>>(payload);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());  //
+    vecmem::device_vector<unsigned int> d_num_outgoing_edges(
+        payload.num_outgoing_edges);
+    thrust::inclusive_scan(
+        thrust::cuda::par_nosync(std::pmr::polymorphic_allocator(&(mr().main)))
+            .on(details::get_stream(stream())),
+        d_num_outgoing_edges.begin(), d_num_outgoing_edges.end(),
+        d_num_outgoing_edges.begin());
 }
 
 void gbts_seeding_algorithm::gbts_link_graph_edges_kernel(
