@@ -8,6 +8,7 @@
 // Project include(s).
 #include "traccc/alpaka/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/alpaka/fitting/kalman_fitting_algorithm.hpp"
+#include "traccc/alpaka/gbts_seeding/gbts_seeding_algorithm.hpp"
 #include "traccc/alpaka/seeding/seed_parameter_estimation_algorithm.hpp"
 #include "traccc/alpaka/seeding/triplet_seeding_algorithm.hpp"
 #include "traccc/alpaka/utils/queue.hpp"
@@ -23,6 +24,7 @@
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/fitting/kalman_filter/kalman_fitter.hpp"
 #include "traccc/fitting/kalman_fitting_algorithm.hpp"
+#include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/io/read_detector.hpp"
 #include "traccc/io/read_detector_description.hpp"
@@ -37,6 +39,7 @@
 #include "traccc/options/seed_matching.hpp"
 #include "traccc/options/track_finding.hpp"
 #include "traccc/options/track_fitting.hpp"
+#include "traccc/options/track_gbts_seeding.hpp"
 #include "traccc/options/track_matching.hpp"
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/options/track_seeding.hpp"
@@ -59,6 +62,7 @@
 using namespace traccc;
 
 int seq_run(const traccc::opts::track_seeding& seeding_opts,
+            const traccc::opts::track_gbts_seeding& seeding_gbts_opts,
             const traccc::opts::track_finding& finding_opts,
             const traccc::opts::track_propagation& propagation_opts,
             const traccc::opts::track_fitting& fitting_opts,
@@ -70,7 +74,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             const traccc::opts::truth_finding& truth_finding_opts,
             const traccc::opts::seed_matching& seed_matching_opts,
             const traccc::opts::track_matching& track_matching_opts,
-            [[maybe_unused]] std::unique_ptr<const traccc::Logger> ilogger) {
+            [[maybe_unused]] std::unique_ptr<const traccc::Logger> ilogger,
+            bool usingGBTS) {
     TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
     // Memory resources used by the application.
@@ -138,6 +143,9 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     const traccc::detector_buffer detector_buffer =
         traccc::buffer_from_host_detector(host_det, mng_mr, copy);
 
+    // GBTS seeding configuration
+    const traccc::gbts_seedfinder_config gbts_config(seeding_gbts_opts);
+
     // Seeding algorithms
     const traccc::seedfinder_config seedfinder_config(seeding_opts);
     const traccc::seedfilter_config seedfilter_config(seeding_opts);
@@ -159,6 +167,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         async_copy,
         queue,
         logger().clone("AlpakaSeedingAlg")};
+    traccc::alpaka::gbts_seeding_algorithm gbts_sa_alpaka(
+        gbts_config, mr, copy, queue, logger().clone("AlpakaGbtsSeedingAlg"));
     traccc::alpaka::seed_parameter_estimation_algorithm tp_alpaka{
         track_params_estimation_config, mr, async_copy, queue,
         logger().clone("AlpakaTrackParEstAlg")};
@@ -258,8 +268,14 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
             {
                 traccc::performance::timer t("Seeding (alpaka)", elapsedTimes);
                 // Reconstruct the spacepoints into seeds.
-                seeds_alpaka_buffer =
-                    sa_alpaka(vecmem::get_data(spacepoints_alpaka_buffer));
+                if (usingGBTS) {
+                    seeds_alpaka_buffer = gbts_sa_alpaka(
+                        vecmem::get_data(spacepoints_alpaka_buffer),
+                        vecmem::get_data(measurements_alpaka_buffer));
+                } else {
+                    seeds_alpaka_buffer =
+                        sa_alpaka(vecmem::get_data(spacepoints_alpaka_buffer));
+                }
                 queue.synchronize();
             }
 
@@ -467,6 +483,7 @@ int main(int argc, char* argv[]) {
     traccc::opts::magnetic_field bfield_opts;
     traccc::opts::input_data input_opts;
     traccc::opts::track_seeding seeding_opts;
+    traccc::opts::track_gbts_seeding seeding_gbts_opts;
     traccc::opts::track_finding finding_opts;
     traccc::opts::track_propagation propagation_opts;
     traccc::opts::track_fitting fitting_opts;
@@ -477,16 +494,18 @@ int main(int argc, char* argv[]) {
     traccc::opts::track_matching track_matching_opts;
     traccc::opts::program_options program_opts{
         "Full Tracking Chain Using Alpaka (without clusterization)",
-        {detector_opts, bfield_opts, input_opts, seeding_opts, finding_opts,
-         propagation_opts, fitting_opts, performance_opts, accelerator_opts,
-         truth_finding_opts, seed_matching_opts, track_matching_opts},
+        {detector_opts, bfield_opts, input_opts, seeding_opts,
+         seeding_gbts_opts, finding_opts, propagation_opts, fitting_opts,
+         performance_opts, accelerator_opts, truth_finding_opts,
+         seed_matching_opts, track_matching_opts},
         argc,
         argv,
         logger->cloneWithSuffix("Options")};
 
     // Run the application.
-    return seq_run(seeding_opts, finding_opts, propagation_opts, fitting_opts,
-                   input_opts, detector_opts, bfield_opts, performance_opts,
-                   accelerator_opts, truth_finding_opts, seed_matching_opts,
-                   track_matching_opts, logger->clone());
+    return seq_run(seeding_opts, seeding_gbts_opts, finding_opts,
+                   propagation_opts, fitting_opts, input_opts, detector_opts,
+                   bfield_opts, performance_opts, accelerator_opts,
+                   truth_finding_opts, seed_matching_opts, track_matching_opts,
+                   logger->clone(), seeding_gbts_opts.useGBTS);
 }
