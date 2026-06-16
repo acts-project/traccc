@@ -62,47 +62,41 @@ using int2 = traccc::int2;
 __global__ void gbts_count_spacepoints_by_layer(
     const device::gbts_count_spacepoints_by_layer_payload payload) {
 
-    const details::thread_id1 thread_id;
-    device::gbts_count_spacepoints_by_layer(thread_id, payload);
+    device::gbts_count_spacepoints_by_layer(details::thread_id1{}, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_bin_spacepoints
 __global__ void gbts_bin_spacepoints(
     const device::gbts_bin_spacepoints_payload payload) {
 
-    const details::thread_id1 thread_id;
-    device::gbts_bin_spacepoints(thread_id, payload);
+    device::gbts_bin_spacepoints(details::thread_id1{}, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_count_eta_phi_bins
 __global__ void gbts_count_eta_phi_bins(
     const device::gbts_count_eta_phi_bins_payload payload) {
 
-    const details::thread_id1 thread_id;
-    device::gbts_count_eta_phi_bins(thread_id, payload);
+    device::gbts_count_eta_phi_bins(details::thread_id1{}, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_prefix_sum_eta_phi_bins
 __global__ void gbts_prefix_sum_eta_phi_bins(
     const device::gbts_prefix_sum_eta_phi_bins_payload payload) {
 
-    const details::thread_id1 thread_id;
-    device::gbts_prefix_sum_eta_phi_bins(thread_id, payload);
+    device::gbts_prefix_sum_eta_phi_bins(details::thread_id1{}, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_sort_nodes
 __global__ void gbts_sort_nodes(const device::gbts_sort_nodes_payload payload) {
 
-    const details::thread_id1 thread_id;
-    device::gbts_sort_nodes(thread_id, payload);
+    device::gbts_sort_nodes(details::thread_id1{}, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_find_minmax_radius
 __global__ void gbts_find_minmax_radius(
     const device::gbts_find_minmax_radius_payload payload) {
 
-    const details::thread_id1 thread_id;
-    device::gbts_find_minmax_radius(thread_id, payload);
+    device::gbts_find_minmax_radius(details::thread_id1{}, payload);
 }
 
 // ---------------------------------------------------------------------------
@@ -117,10 +111,9 @@ __global__ void gbts_make_graph_edges(
     __shared__ float4
         node_pack[traccc::device::gbts_consts::node_buffer_length];
     const traccc::cuda::barrier barrier;
-    const details::thread_id1 thread_id;
 
     device::gbts_make_graph_edges(
-        thread_id, barrier, payload,
+        details::thread_id1{}, barrier, payload,
         {vecmem::data::vector_view<float>(
              traccc::device::gbts_consts::node_buffer_length, phi),
          vecmem::data::vector_view<float4>(
@@ -131,32 +124,28 @@ __global__ void gbts_make_graph_edges(
 __global__ void gbts_link_graph_edges(
     const device::gbts_link_graph_edges_payload payload) {
 
-    const details::thread_id1 thread_id;
-    device::gbts_link_graph_edges(thread_id, payload);
+    device::gbts_link_graph_edges(details::thread_id1{}, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_match_graph_edges
 __global__ void gbts_match_graph_edges(
     const device::gbts_match_graph_edges_payload payload) {
 
-    const details::thread_id1 thread_id;
-    device::gbts_match_graph_edges(thread_id, payload);
+    device::gbts_match_graph_edges(details::thread_id1{}, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_reindex_edges
 __global__ void gbts_reindex_edges(
     const device::gbts_reindex_edges_payload payload) {
 
-    const details::thread_id1 thread_id;
-    device::gbts_reindex_edges(thread_id, payload);
+    device::gbts_reindex_edges(details::thread_id1{}, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_compress_graph
 __global__ void gbts_compress_graph(
     const device::gbts_compress_graph_payload payload) {
 
-    const details::thread_id1 thread_id;
-    device::gbts_compress_graph(thread_id, payload);
+    device::gbts_compress_graph(details::thread_id1{}, payload);
 }
 
 // ---------------------------------------------------------------------------
@@ -167,24 +156,21 @@ __global__ void gbts_compress_graph(
 __global__ void gbts_run_cca_iteration(
     const device::gbts_run_cca_iteration_payload payload) {
 
-    const details::thread_id1 thread_id;
-    device::gbts_run_cca_iteration(thread_id, payload);
+    device::gbts_run_cca_iteration(details::thread_id1{}, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_count_terminus_edges
 __global__ void gbts_count_terminus_edges(
     const device::gbts_count_terminus_edges_payload payload) {
 
-    const details::thread_id1 thread_id;
-    device::gbts_count_terminus_edges(thread_id, payload);
+    device::gbts_count_terminus_edges(details::thread_id1{}, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_add_terminus_to_path_store
 __global__ void gbts_add_terminus_to_path_store(
     const device::gbts_add_terminus_to_path_store_payload payload) {
 
-    const details::thread_id1 thread_id;
-    device::gbts_add_terminus_to_path_store(thread_id, payload);
+    device::gbts_add_terminus_to_path_store(details::thread_id1{}, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_fill_path_store
@@ -195,10 +181,9 @@ __global__ void gbts_fill_path_store(
         live_paths[traccc::device::gbts_consts::live_path_buffer];
     __shared__ int n_live_paths;
     const traccc::cuda::barrier barrier;
-    const details::thread_id1 thread_id;
 
     device::gbts_fill_path_store(
-        thread_id, barrier, payload,
+        details::thread_id1{}, barrier, payload,
         {vecmem::data::vector_view<traccc::uint2>(
              traccc::device::gbts_consts::live_path_buffer, live_paths),
          n_live_paths});
@@ -208,40 +193,35 @@ __global__ void gbts_fill_path_store(
 __global__ void gbts_fit_segments(
     const device::gbts_fit_segments_payload payload) {
 
-    const details::thread_id1 thread_id;
-    device::gbts_fit_segments(thread_id, payload);
+    device::gbts_fit_segments(details::thread_id1{}, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_reset_edge_bids
 __global__ void gbts_reset_edge_bids(
     const device::gbts_reset_edge_bids_payload payload) {
 
-    const details::thread_id1 thread_id;
-    device::gbts_reset_edge_bids(thread_id, payload);
+    device::gbts_reset_edge_bids(details::thread_id1{}, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_rebid_seeds_for_edges
 __global__ void gbts_rebid_seeds_for_edges(
     const device::gbts_rebid_seeds_for_edges_payload payload) {
 
-    const details::thread_id1 thread_id;
-    device::gbts_rebid_seeds_for_edges(thread_id, payload);
+    device::gbts_rebid_seeds_for_edges(details::thread_id1{}, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_bid_seeds_for_hits
 __global__ void gbts_bid_seeds_for_hits(
     const device::gbts_bid_seeds_for_hits_payload payload) {
 
-    const details::thread_id1 thread_id;
-    device::gbts_bid_seeds_for_hits(thread_id, payload);
+    device::gbts_bid_seeds_for_hits(details::thread_id1{}, payload);
 }
 
 /// CUDA kernel for running @c traccc::device::gbts_convert_seeds
 __global__ void gbts_convert_seeds(
     const device::gbts_convert_seeds_payload payload) {
 
-    const details::thread_id1 thread_id;
-    device::gbts_convert_seeds(thread_id, payload);
+    device::gbts_convert_seeds(details::thread_id1{}, payload);
 }
 
 }  // namespace kernels
