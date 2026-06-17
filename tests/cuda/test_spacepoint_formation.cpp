@@ -18,6 +18,7 @@
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
+#include <vecmem/utils/cuda/stream_wrapper.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>
@@ -32,7 +33,8 @@ TEST(CUDASpacepointFormation, cuda) {
     traccc::memory_resource mr{mng_mr, &host_mr};
 
     // Cuda stream
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
