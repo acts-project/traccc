@@ -198,3 +198,18 @@ if( ( "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA" ) AND
   set_target_properties( traccc_cuda PROPERTIES
     CUDA_SEPARABLE_COMPILATION ON )
 endif()
+
+# Control whether to enable register spilling into shared memory. Also allowing
+# users to override our chosen default.
+set(TRACCC_CUDA_ENABLE_SPILL_TO_SHARED_MEMORY_DEFAULT OFF)
+if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL 13.0)
+  set(TRACCC_CUDA_ENABLE_SPILL_TO_SHARED_MEMORY_DEFAULT ON)
+endif()
+option(TRACCC_CUDA_ENABLE_SPILL_TO_SHARED_MEMORY
+  "Enable spilling of registers to shared memory in CUDA kernels"
+  ${TRACCC_CUDA_ENABLE_SPILL_TO_SHARED_MEMORY_DEFAULT})
+mark_as_advanced(TRACCC_CUDA_ENABLE_SPILL_TO_SHARED_MEMORY)
+if(TRACCC_CUDA_ENABLE_SPILL_TO_SHARED_MEMORY)
+  target_compile_definitions(traccc_cuda
+    PRIVATE TRACCC_CUDA_ENABLE_SPILL_TO_SHARED_MEMORY)
+endif()
