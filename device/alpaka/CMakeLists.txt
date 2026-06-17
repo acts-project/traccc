@@ -51,6 +51,9 @@ traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   "src/seeding/triplet_seeding_algorithm.cpp"
   "include/traccc/alpaka/seeding/seed_parameter_estimation_algorithm.hpp"
   "src/seeding/seed_parameter_estimation_algorithm.cpp"
+  # GBTS seeding code
+  "include/traccc/alpaka/gbts_seeding/gbts_seeding_algorithm.hpp"
+  "src/gbts_seeding/gbts_seeding_algorithm.cpp"
   # Track finding algorithm(s).
   "include/traccc/alpaka/finding/combinatorial_kalman_filter_algorithm.hpp"
   "src/finding/combinatorial_kalman_filter_algorithm.cpp"
