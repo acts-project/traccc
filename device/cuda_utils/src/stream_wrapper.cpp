@@ -19,9 +19,21 @@ stream_wrapper::stream_wrapper(void* stream) : m_stream{stream} {}
 
 int stream_wrapper::device() const {
 
+    // The device ID.
     int device = -1;
+
+#ifdef TRACCC_HAVE_CUDA_STREAM_GET_DEVICE
+    // Somewhere around CUDA 12.8 this became available.
     TRACCC_CUDA_ERROR_CHECK(
         cudaStreamGetDevice(static_cast<cudaStream_t>(m_stream), &device));
+
+#else
+    // If the CUDA version is too old to support cudaStreamGetDevice, we return
+    // the current device instead. This is not ideal, but should be good enough.
+    TRACCC_CUDA_ERROR_CHECK(cudaGetDevice(&device));
+#endif
+
+    // Return the device ID.
     return device;
 }
 
