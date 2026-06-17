@@ -20,9 +20,9 @@ unsigned int get_warp_size(int device) {
     return static_cast<unsigned int>(warp_size);
 }
 
-cudaStream_t get_stream(const stream& stream) {
+cudaStream_t get_stream(const stream_wrapper& stream) {
 
-    return reinterpret_cast<cudaStream_t>(stream.cudaStream());
+    return static_cast<cudaStream_t>(stream.cudaStream());
 }
 
 }  // namespace traccc::cuda::details

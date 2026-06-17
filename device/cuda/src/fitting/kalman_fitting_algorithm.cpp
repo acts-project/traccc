@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -14,7 +14,8 @@ namespace traccc::cuda {
 
 kalman_fitting_algorithm::kalman_fitting_algorithm(
     const config_type& config, const traccc::memory_resource& mr,
-    const vecmem::copy& copy, stream& str, std::unique_ptr<const Logger> logger)
+    const vecmem::copy& copy, const stream_wrapper& str,
+    std::unique_ptr<const Logger> logger)
     : messaging(std::move(logger)),
       m_config{config},
       m_mr{mr},

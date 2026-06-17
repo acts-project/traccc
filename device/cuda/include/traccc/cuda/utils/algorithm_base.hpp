@@ -8,10 +8,7 @@
 #pragma once
 
 // Local include(s).
-#include "traccc/cuda/utils/stream.hpp"
-
-// System include(s).
-#include <functional>
+#include "traccc/cuda/utils/stream_wrapper.hpp"
 
 namespace traccc::cuda {
 
@@ -26,16 +23,16 @@ class algorithm_base {
     ///
     /// @param str The CUDA stream to perform all operations on
     ///
-    explicit algorithm_base(cuda::stream& str);
+    explicit algorithm_base(const stream_wrapper& str);
 
     /// Get the CUDA stream of the algorithm
-    cuda::stream& stream() const;
+    const stream_wrapper& stream() const;
     /// Get the warp size of the GPU being used
     unsigned int warp_size() const;
 
     private:
     /// The CUDA stream to use
-    std::reference_wrapper<cuda::stream> m_stream;
+    stream_wrapper m_stream;
     /// Warp size of the GPU being used
     unsigned int m_warp_size;
 
