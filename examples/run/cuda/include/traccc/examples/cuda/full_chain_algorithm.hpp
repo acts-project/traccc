@@ -116,6 +116,14 @@ class full_chain_algorithm
     bound_track_parameters_collection_types::host seeding(
         const edm::silicon_cell_collection::host& cells) const;
 
+    /// Reconstruct cluster measurements in the entire detector
+    ///
+    /// @param cells The cells for every detector module in the event
+    /// @return The reconstruted measurements
+    ///
+    edm::measurement_collection<default_algebra>::host clustering(
+        const edm::silicon_cell_collection::host& cells) const;
+
     private:
     /// Host memory resource
     vecmem::memory_resource& m_host_mr;

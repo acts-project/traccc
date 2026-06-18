@@ -98,9 +98,10 @@ full_chain_algorithm::full_chain_algorithm(
       usingGBTS(useGBTS) {
 
     if (usingGBTS) {
-        std::cout << "GBTS not implemented for alpaka, this will run with "
-                     "triplet seeding"
-                  << std::endl;
+        TRACCC_LOCAL_LOGGER(std::move(logger));
+        TRACCC_ERROR(
+            "GBTS not implemented for alpaka, this will run with "
+            "triplet seeding");
     }
     std::cout << traccc::alpaka::get_device_info() << std::endl;
 
@@ -309,6 +310,28 @@ bound_track_parameters_collection_types::host full_chain_algorithm::seeding(
         // Return an empty object.
         return {};
     }
+}
+
+edm::measurement_collection<default_algebra>::host
+full_chain_algorithm::clustering(
+    const edm::silicon_cell_collection::host& cells) const {
+
+    // Create device copy of input collections
+    edm::silicon_cell_collection::buffer cells_buffer(
+        static_cast<unsigned int>(cells.size()), m_cached_device_mr);
+    m_vecmem_objects.async_copy()(::vecmem::get_data(cells), cells_buffer)
+        ->ignore();
+
+    // Run the clusterization (asynchronously).
+    const auto unsorted_measurements =
+        m_clusterization(cells_buffer, m_device_det_descr, m_device_det_cond);
+    const measurement_sorting_algorithm::output_type measurements =
+        m_measurement_sorting(unsorted_measurements);
+
+    edm::measurement_collection<default_algebra>::host measurements_host(
+        m_host_mr);
+    m_vecmem_objects.async_copy()(measurements, measurements_host)->wait();
+    return measurements_host;
 }
 
 }  // namespace traccc::alpaka
