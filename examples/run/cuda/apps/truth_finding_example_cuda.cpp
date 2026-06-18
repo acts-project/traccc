@@ -9,7 +9,7 @@
 #include "traccc/cuda/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/cuda/utils/make_magnetic_field.hpp"
-#include "traccc/cuda/utils/stream.hpp"
+#include "traccc/cuda/utils/stream_wrapper.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
@@ -49,6 +49,7 @@
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
+#include <vecmem/utils/cuda/stream_wrapper.hpp>
 
 // System include(s).
 #include <exception>
@@ -112,7 +113,8 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
      *****************************/
 
     // Stream object
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     // Copy object
     vecmem::copy host_copy;

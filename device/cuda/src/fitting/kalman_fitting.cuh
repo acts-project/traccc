@@ -59,7 +59,8 @@ kalman_fitting(
     const typename edm::track_container<
         typename detector_t::algebra_type>::const_view& track_candidates_view,
     const fitting_config& config, const memory_resource& mr,
-    const vecmem::copy& copy, stream& str, unsigned int warp_size) {
+    const vecmem::copy& copy, const stream_wrapper& str,
+    unsigned int warp_size) {
 
     // Get a convenience variable for the stream that we'll be using.
     cudaStream_t stream = details::get_stream(str);

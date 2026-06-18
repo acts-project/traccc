@@ -11,12 +11,13 @@
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
+#include <vecmem/utils/cuda/stream_wrapper.hpp>
 
 #include "tests/cca_test.hpp"
 #include "traccc/clusterization/clustering_config.hpp"
 #include "traccc/clusterization/device/tags.hpp"
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
-#include "traccc/cuda/utils/stream.hpp"
+#include "traccc/cuda/utils/stream_wrapper.hpp"
 #include "traccc/geometry/detector_design_description.hpp"
 
 namespace {
@@ -32,7 +33,8 @@ cca_function_t get_f_with(traccc::clustering_config cfg) {
         std::map<traccc::geometry_id, traccc::edm::measurement_collection::host>
             geom_to_meas_map;
 
-        traccc::cuda::stream stream;
+        vecmem::cuda::stream_wrapper vecmem_stream;
+        traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
         vecmem::cuda::device_memory_resource device_mr;
         vecmem::cuda::async_copy copy{stream.cudaStream()};
 

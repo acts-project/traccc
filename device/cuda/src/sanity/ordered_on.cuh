@@ -12,7 +12,7 @@
 #include "../utils/cuda_error_handling.hpp"
 #include "../utils/global_index.hpp"
 #include "../utils/utils.hpp"
-#include "traccc/cuda/utils/stream.hpp"
+#include "traccc/cuda/utils/stream_wrapper.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/memory_resource.hpp>
@@ -75,7 +75,8 @@ template <typename CONTAINER, std::semiregular R, typename VIEW>
                                     decltype(std::declval<CONTAINER>().at(0)),
                                     decltype(std::declval<CONTAINER>().at(0))>
 bool is_ordered_on(R&& relation, vecmem::memory_resource& mr,
-                   const vecmem::copy& copy, stream& stream, const VIEW& view) {
+                   const vecmem::copy& copy, const stream_wrapper& stream,
+                   const VIEW& view) {
 
     // This should never be a performance-critical step, so we can keep the
     // block size fixed.

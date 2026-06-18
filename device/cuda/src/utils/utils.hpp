@@ -8,7 +8,7 @@
 #pragma once
 
 // Local include(s).
-#include "traccc/cuda/utils/stream.hpp"
+#include "traccc/cuda/utils/stream_wrapper.hpp"
 
 // CUDA include(s).
 #include <cuda_runtime_api.h>
@@ -24,6 +24,6 @@ namespace traccc::cuda::details {
 unsigned int get_warp_size(int device);
 
 /// Get concrete @c cudaStream_t object out of our wrapper
-cudaStream_t get_stream(const stream& str);
+cudaStream_t get_stream(const stream_wrapper& str);
 
 }  // namespace traccc::cuda::details
