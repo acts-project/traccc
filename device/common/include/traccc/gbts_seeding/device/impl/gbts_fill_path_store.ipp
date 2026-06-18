@@ -18,9 +18,6 @@
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/memory/device_atomic_ref.hpp>
 
-// System include(s).
-#include <cstdint>
-
 namespace traccc::device {
 
 template <concepts::thread_id1 thread_id_t, concepts::barrier barrier_t>
@@ -82,7 +79,9 @@ TRACCC_HOST_DEVICE inline void gbts_fill_path_store(
                 continue;
             }
             const unsigned int live_idx = static_cast<unsigned int>(
-                vecmem::device_atomic_ref<int>(shared.n_live_paths)
+                vecmem::device_atomic_ref<int,
+                                          vecmem::device_address_space::local>(
+                    shared.n_live_paths)
                     .fetch_add(1));
             if (live_idx >=
                 static_cast<unsigned int>(
@@ -144,7 +143,9 @@ TRACCC_HOST_DEVICE inline void gbts_fill_path_store(
                     break;
                 }
                 const int live_idx =
-                    vecmem::device_atomic_ref<int>(shared.n_live_paths)
+                    vecmem::device_atomic_ref<
+                        int, vecmem::device_address_space::local>(
+                        shared.n_live_paths)
                         .fetch_add(1);
                 if (live_idx >=
                     static_cast<int>(

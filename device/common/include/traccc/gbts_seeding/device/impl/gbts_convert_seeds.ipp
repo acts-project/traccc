@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/definitions/math.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/edm/seed_collection.hpp"
@@ -19,8 +20,6 @@
 
 // System include(s).
 #include <array>
-#include <cmath>
-#include <cstdint>
 
 namespace traccc::device {
 
@@ -38,7 +37,7 @@ TRACCC_HOST_DEVICE inline traccc::float2 gbts_estimate_seed_params(
 
     const float x0 = sps[1].x;
     const float y0 = sps[1].y;
-    const float r0 = sqrtf(x0 * x0 + y0 * y0);
+    const float r0 = math::sqrt(x0 * x0 + y0 * y0);
     const float cosA = x0 / r0;
     const float sinA = y0 / r0;
 
@@ -60,9 +59,10 @@ TRACCC_HOST_DEVICE inline traccc::float2 gbts_estimate_seed_params(
     const float A = (v[0] - v[1]) / du;
     const float B = v[1] - A * u[1];
     const float curv =
-        1000.0f * B / sqrtf(1 + A * A);  // Curvature from mm^-1 to m^-1
-    const float cot_t = (sps[2].z - sps[1].z) /
-                        (sqrtf(sps[2].x * sps[2].x + sps[2].y * sps[2].y) - r0);
+        1000.0f * B / math::sqrt(1 + A * A);  // Curvature from mm^-1 to m^-1
+    const float cot_t =
+        (sps[2].z - sps[1].z) /
+        (math::sqrt(sps[2].x * sps[2].x + sps[2].y * sps[2].y) - r0);
     return float2{curv, cot_t};
 }
 

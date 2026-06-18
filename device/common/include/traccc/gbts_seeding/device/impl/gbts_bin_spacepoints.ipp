@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/definitions/math.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/gbts_seeding/gbts_types.hpp"
@@ -18,8 +19,6 @@
 
 // System include(s).
 #include <climits>
-#include <cmath>
-#include <cstdint>
 #include <utility>
 
 namespace traccc::device {
@@ -79,12 +78,12 @@ TRACCC_HOST_DEVICE inline void gbts_bin_spacepoints(
             const std::pair<float, float> layerGeo = d_layer_geo[layerIdx_u];
             const float min_eta = layerGeo.first;
             const float eta_bin_width = layerGeo.second;
-            const float r = sqrtf(sp.x * sp.x + sp.y * sp.y);
+            const float r = math::sqrt(sp.x * sp.x + sp.y * sp.y);
             const float t1 = sp.z / r;
-            const float eta = -logf(sqrtf(1.0f + t1 * t1) - t1);
-            const unsigned int binIdx = static_cast<unsigned int>(
-                fmaxf(0.0f, fminf((eta - min_eta) / eta_bin_width,
-                                  static_cast<float>(num_eta_bins - 1u))));
+            const float eta = -math::log(math::sqrt(1.0f + t1 * t1) - t1);
+            const unsigned int binIdx = static_cast<unsigned int>(math::max(
+                0.0f, math::min((eta - min_eta) / eta_bin_width,
+                                static_cast<float>(num_eta_bins - 1u))));
             eta_index = bin0 + binIdx;
         }
         d_node_eta_index[binedIdx] = eta_index;
@@ -93,7 +92,7 @@ TRACCC_HOST_DEVICE inline void gbts_bin_spacepoints(
         const float inv_phiSliceWidth =
             1.0f /
             (traccc::device::TWO_PI_F / static_cast<float>(payload.nPhiBins));
-        const float Phi = atan2f(sp.y, sp.x);
+        const float Phi = math::atan2(sp.y, sp.x);
         unsigned int phiIdx = static_cast<unsigned int>(
             (Phi + traccc::device::PI_F) * inv_phiSliceWidth);
         if (phiIdx >= payload.nPhiBins) {

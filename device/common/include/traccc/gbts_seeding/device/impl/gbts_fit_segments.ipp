@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/definitions/math.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/gbts_seeding/device/details/gbts_create_seed_candidate.hpp"
@@ -19,8 +20,6 @@
 #include <vecmem/memory/device_atomic_ref.hpp>
 
 // System include(s).
-#include <cmath>
-#include <cstdint>
 #include <cstring>
 
 namespace traccc::device {
@@ -63,13 +62,13 @@ struct edgeState {
         // differenc in x-y and its length L.
         const float dx = node1_params.x - node2_params.x;
         const float dy = node1_params.y - node2_params.y;
-        const float L = sqrtf(dx * dx + dy * dy);
+        const float L = math::sqrt(dx * dx + dy * dy);
 
         // Radius of the two seed nodes.
-        const float r1 = sqrtf(node1_params.x * node1_params.x +
-                               node1_params.y * node1_params.y);
-        const float r2 = sqrtf(node2_params.x * node2_params.x +
-                               node2_params.y * node2_params.y);
+        const float r1 = math::sqrt(node1_params.x * node1_params.x +
+                                    node1_params.y * node1_params.y);
+        const float r2 = math::sqrt(node2_params.x * node2_params.x +
+                                    node2_params.y * node2_params.y);
 
         m_s = dy / L;
         m_c = dx / L;
@@ -129,8 +128,8 @@ TRACCC_HOST_DEVICE inline bool gbts_kalman_update(
     const float m_Cy11 = ts->m_Cy(1, 1) + sigma2;
 
     float mx, my;
-    const float r = sqrtf(node1_params.x * node1_params.x +
-                          node1_params.y * node1_params.y);
+    const float r = math::sqrt(node1_params.x * node1_params.x +
+                               node1_params.y * node1_params.y);
 
     new_ts->m_refX = node1_params.x * ts->m_c + node1_params.y * ts->m_s;
     mx = -node1_params.x * ts->m_s + node1_params.y * ts->m_c;
@@ -208,7 +207,7 @@ TRACCC_HOST_DEVICE inline bool gbts_kalman_update(
     }
 
     // pT cut: reject once the updated curvature exceeds curv_max.
-    if (fabsf(new_ts->m_X[2]) * KF_params.inv_max_curvature > 1.0f) {
+    if (math::fabs(new_ts->m_X[2]) * KF_params.inv_max_curvature > 1.0f) {
         return false;
     }
 
@@ -219,7 +218,7 @@ TRACCC_HOST_DEVICE inline bool gbts_kalman_update(
 
     // z0 cut: extrapolate the line back to r = 0 and reject large |z0|.
     const float z0 = new_ts->m_Y[0] - new_ts->m_refY * ts->m_Y[1];
-    if (fabsf(z0) > max_z0) {
+    if (math::fabs(z0) > max_z0) {
         return false;
     }
 

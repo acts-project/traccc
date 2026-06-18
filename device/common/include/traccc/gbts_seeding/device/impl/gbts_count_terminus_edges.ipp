@@ -16,9 +16,6 @@
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/memory/device_atomic_ref.hpp>
 
-// System include(s).
-#include <cstdint>
-
 namespace traccc::device {
 
 template <concepts::thread_id1 thread_id_t>

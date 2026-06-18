@@ -12,8 +12,10 @@
 #include "traccc/utils/propagation.hpp"
 
 // algorithms
+#include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
+#include "traccc/sycl/gbts_seeding/gbts_seeding_algorithm.hpp"
 #include "traccc/sycl/seeding/seed_parameter_estimation_algorithm.hpp"
 #include "traccc/sycl/seeding/triplet_seeding_algorithm.hpp"
 #include "traccc/sycl/utils/make_magnetic_field.hpp"
@@ -36,6 +38,7 @@
 #include "traccc/options/magnetic_field.hpp"
 #include "traccc/options/performance.hpp"
 #include "traccc/options/program_options.hpp"
+#include "traccc/options/track_gbts_seeding.hpp"
 #include "traccc/options/track_seeding.hpp"
 
 // examples
@@ -56,10 +59,11 @@
 int seq_run(const traccc::opts::detector& detector_opts,
             const traccc::opts::magnetic_field& bfield_opts,
             const traccc::opts::track_seeding& seeding_opts,
+            const traccc::opts::track_gbts_seeding& seeding_gbts_opts,
             const traccc::opts::input_data& input_opts,
             const traccc::opts::performance& performance_opts,
             const traccc::opts::accelerator& accelerator_opts,
-            std::unique_ptr<const traccc::Logger> ilogger) {
+            std::unique_ptr<const traccc::Logger> ilogger, bool usingGBTS) {
     TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
     // Creating sycl queue object
@@ -106,6 +110,9 @@ int seq_run(const traccc::opts::detector& detector_opts,
     const auto device_field =
         traccc::sycl::make_magnetic_field(host_field, traccc_queue);
 
+    // GBTS seeding configuration
+    const traccc::gbts_seedfinder_config gbts_config(seeding_gbts_opts);
+
     // Seeding algorithm
     const traccc::seedfinder_config seedfinder_config(seeding_opts);
     const traccc::seedfilter_config seedfilter_config(seeding_opts);
@@ -126,6 +133,9 @@ int seq_run(const traccc::opts::detector& detector_opts,
         copy,
         traccc_queue,
         logger().clone("SyclSeedingAlg")};
+    traccc::sycl::gbts_seeding_algorithm gbts_sa_sycl(
+        gbts_config, mr, copy, traccc_queue,
+        logger().clone("SyclGbtsSeedingAlg"));
     traccc::sycl::seed_parameter_estimation_algorithm tp_sycl{
         track_params_estimation_config, mr, copy, traccc_queue,
         logger().clone("SyclTrackParEstAlg")};
@@ -192,7 +202,13 @@ int seq_run(const traccc::opts::detector& detector_opts,
             {
                 traccc::performance::timer t("Seeding (sycl)", elapsedTimes);
                 // Reconstruct the spacepoints into seeds.
-                seeds_sycl_buffer = sa_sycl(spacepoints_sycl_buffer);
+                if (usingGBTS) {
+                    seeds_sycl_buffer = gbts_sa_sycl(spacepoints_sycl_buffer,
+                                                     measurements_sycl_buffer);
+                } else {
+                    seeds_sycl_buffer = sa_sycl(spacepoints_sycl_buffer);
+                }
+                vecmem_queue.synchronize();
             }  // stop measuring seeding sycl timer
 
             // CPU
@@ -308,17 +324,19 @@ int main(int argc, char* argv[]) {
     traccc::opts::magnetic_field bfield_opts;
     traccc::opts::input_data input_opts;
     traccc::opts::track_seeding seeding_opts;
+    traccc::opts::track_gbts_seeding seeding_gbts_opts;
     traccc::opts::performance performance_opts;
     traccc::opts::accelerator accelerator_opts;
     traccc::opts::program_options program_opts{
         "Full Tracking Chain Using SYCL (without clusterization)",
-        {detector_opts, bfield_opts, input_opts, seeding_opts, performance_opts,
-         accelerator_opts},
+        {detector_opts, bfield_opts, input_opts, seeding_opts,
+         seeding_gbts_opts, performance_opts, accelerator_opts},
         argc,
         argv,
         logger->cloneWithSuffix("Options")};
 
     // Run the application.
-    return seq_run(detector_opts, bfield_opts, seeding_opts, input_opts,
-                   performance_opts, accelerator_opts, logger->clone());
+    return seq_run(detector_opts, bfield_opts, seeding_opts, seeding_gbts_opts,
+                   input_opts, performance_opts, accelerator_opts,
+                   logger->clone(), seeding_gbts_opts.useGBTS);
 }

@@ -8,6 +8,7 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/definitions/math.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/gbts_seeding/gbts_seeding_config.hpp"
@@ -16,10 +17,6 @@
 // VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/memory/device_atomic_ref.hpp>
-
-// System include(s).
-#include <cmath>
-#include <cstdint>
 
 namespace traccc::device {
 
@@ -51,8 +48,8 @@ TRACCC_HOST_DEVICE inline void gbts_sort_nodes(
 
         const float4 sp = d_sp_params[globalIndex];
 
-        const float Phi = atan2f(sp.y, sp.x);
-        const float r = sqrtf(sp.x * sp.x + sp.y * sp.y);
+        const float Phi = math::atan2(sp.y, sp.x);
+        const float r = math::sqrt(sp.x * sp.x + sp.y * sp.y);
         const float z = sp.z;
 
         // Default to the full |tau| acceptance for nodes that carry no usable
@@ -66,8 +63,8 @@ TRACCC_HOST_DEVICE inline void gbts_sort_nodes(
                 // LUT is laid out as [w_bin_edge, min_tau_0, max_tau_0,
                 // min_tau_1, max_tau_1] per bin.
                 const int tau_bin =
-                    5 *
-                    static_cast<int>(floorf(ap.tau_lut_inv_bin * sp.w) - 1.0f);
+                    5 * static_cast<int>(
+                            math::floor(ap.tau_lut_inv_bin * sp.w) - 1.0f);
                 if (tau_bin > -1 && tau_bin < static_cast<int>(ap.tauLutSize)) {
                     min_tau =
                         d_tau_lut[static_cast<unsigned int>(tau_bin) + 1u];
