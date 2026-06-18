@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2022-2025 CERN for the benefit of the ACTS project
+ * (c) 2022-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -8,7 +8,7 @@
 #pragma once
 
 // Library include(s).
-#include "traccc/cuda/utils/stream.hpp"
+#include "traccc/cuda/utils/stream_wrapper.hpp"
 
 // Project include(s).
 #include "traccc/bfield/magnetic_field.hpp"
@@ -49,7 +49,7 @@ class kalman_fitting_algorithm
     ///
     kalman_fitting_algorithm(
         const config_type& config, const traccc::memory_resource& mr,
-        const vecmem::copy& copy, stream& str,
+        const vecmem::copy& copy, const stream_wrapper& str,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Execute the algorithm
@@ -73,7 +73,7 @@ class kalman_fitting_algorithm
     /// Copy object used by the algorithm
     std::reference_wrapper<const vecmem::copy> m_copy;
     /// The CUDA stream to use
-    std::reference_wrapper<stream> m_stream;
+    stream_wrapper m_stream;
     /// Warp size of the GPU being used
     unsigned int m_warp_size;
 

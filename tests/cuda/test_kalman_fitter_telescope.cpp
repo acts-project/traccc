@@ -30,6 +30,7 @@
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
 #include <vecmem/utils/cuda/copy.hpp>
+#include <vecmem/utils/cuda/stream_wrapper.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>
@@ -128,7 +129,8 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
      ***************/
 
     // Stream object
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     // Copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};

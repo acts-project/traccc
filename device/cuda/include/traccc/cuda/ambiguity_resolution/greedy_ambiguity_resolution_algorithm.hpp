@@ -8,7 +8,7 @@
 #pragma once
 
 // Local include(s).
-#include "traccc/cuda/utils/stream.hpp"
+#include "traccc/cuda/utils/stream_wrapper.hpp"
 
 // Project include(s).
 #include "traccc/ambiguity_resolution/ambiguity_resolution_config.hpp"
@@ -43,7 +43,7 @@ class greedy_ambiguity_resolution_algorithm
     ///
     greedy_ambiguity_resolution_algorithm(
         const config_type& cfg, const traccc::memory_resource& mr,
-        const vecmem::copy& copy, stream& str,
+        const vecmem::copy& copy, const stream_wrapper& str,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Run the algorithm
@@ -65,7 +65,7 @@ class greedy_ambiguity_resolution_algorithm
     /// The copy object to use
     std::reference_wrapper<const vecmem::copy> m_copy;
     /// The CUDA stream to use
-    std::reference_wrapper<stream> m_stream;
+    stream_wrapper m_stream;
     /// Warp size of the GPU being used
     unsigned int m_warp_size;
 };

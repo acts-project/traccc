@@ -18,6 +18,7 @@
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
+#include <vecmem/utils/cuda/stream_wrapper.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>
@@ -105,7 +106,8 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest0) {
     vecmem::cuda::managed_memory_resource mng_mr;
 
     // Cuda stream
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
@@ -157,7 +159,8 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest1) {
     vecmem::cuda::managed_memory_resource mng_mr;
 
     // Cuda stream
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
@@ -197,7 +200,8 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest2) {
     vecmem::cuda::managed_memory_resource mng_mr;
 
     // Cuda stream
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
@@ -233,7 +237,8 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest3) {
     vecmem::cuda::managed_memory_resource mng_mr;
 
     // Cuda stream
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
@@ -272,7 +277,8 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest5) {
     vecmem::cuda::managed_memory_resource mng_mr;
 
     // Cuda stream
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
@@ -309,7 +315,8 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest6) {
     vecmem::cuda::managed_memory_resource mng_mr;
 
     // Cuda stream
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
@@ -347,7 +354,8 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest7) {
     vecmem::cuda::managed_memory_resource mng_mr;
 
     // Cuda stream
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
@@ -382,7 +390,8 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest8) {
     vecmem::cuda::managed_memory_resource mng_mr;
 
     // Cuda stream
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
@@ -421,7 +430,8 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest9) {
     vecmem::cuda::managed_memory_resource mng_mr;
 
     // Cuda stream
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
@@ -456,7 +466,8 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest10) {
     vecmem::cuda::managed_memory_resource mng_mr;
 
     // Cuda stream
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
@@ -495,7 +506,8 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest11) {
     vecmem::cuda::managed_memory_resource mng_mr;
 
     // Cuda stream
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
@@ -530,7 +542,8 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest12) {
     vecmem::cuda::managed_memory_resource mng_mr;
 
     // Cuda stream
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
@@ -568,7 +581,8 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest13) {
     vecmem::cuda::managed_memory_resource mng_mr;
 
     // Cuda stream
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
@@ -610,7 +624,8 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest14) {
     vecmem::cuda::managed_memory_resource mng_mr;
 
     // Cuda stream
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
@@ -647,7 +662,8 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest15) {
     vecmem::cuda::managed_memory_resource mng_mr;
 
     // Cuda stream
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
@@ -684,7 +700,8 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest16) {
     vecmem::cuda::managed_memory_resource mng_mr;
 
     // Cuda stream
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
@@ -724,7 +741,8 @@ TEST(CUDAAmbiguitySolverTests, GreedyResolverTest17) {
     vecmem::cuda::managed_memory_resource mng_mr;
 
     // Cuda stream
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
@@ -777,7 +795,8 @@ TEST_P(CUDAGreedyResolutionCompareToCPU, Comparison) {
     traccc::memory_resource mr{device_mr, &host_mr};
 
     // Cuda stream
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};

@@ -12,12 +12,12 @@
 
 namespace traccc::cuda {
 
-algorithm_base::algorithm_base(cuda::stream& str)
+algorithm_base::algorithm_base(const stream_wrapper& str)
     : m_stream(str), m_warp_size(details::get_warp_size(str.device())) {}
 
-cuda::stream& algorithm_base::stream() const {
+const stream_wrapper& algorithm_base::stream() const {
 
-    return m_stream.get();
+    return m_stream;
 }
 
 unsigned int algorithm_base::warp_size() const {

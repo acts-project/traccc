@@ -1,7 +1,7 @@
 /*
  * traccc library, part of the ACTS project (R&D line)
  *
- * (c) 2024 CERN for the benefit of the ACTS project
+ * (c) 2024-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -10,6 +10,7 @@
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/memory/cuda/device_memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
+#include <vecmem/utils/cuda/stream_wrapper.hpp>
 
 // traccc includes
 #include <traccc/definitions/qualifiers.hpp>
@@ -32,7 +33,8 @@ struct int_leq_relation {
 class CUDASanityOrderedOn : public testing::Test {
     protected:
     vecmem::cuda::device_memory_resource mr;
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 };
 
