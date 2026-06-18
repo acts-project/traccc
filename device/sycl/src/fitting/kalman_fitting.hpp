@@ -72,8 +72,8 @@ kalman_fitting(
     const bfield_t& field_view,
     const typename edm::track_container<
         typename detector_t::algebra_type>::const_view& track_candidates_view,
-    const fitting_config& config, const memory_resource& mr, vecmem::copy& copy,
-    ::sycl::queue& queue) {
+    const fitting_config& config, const memory_resource& mr,
+    const vecmem::copy& copy, ::sycl::queue& queue) {
 
     // Get the number of tracks.
     const unsigned int n_tracks = copy.get_size(track_candidates_view.tracks);

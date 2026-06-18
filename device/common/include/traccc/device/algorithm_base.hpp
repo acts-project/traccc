@@ -30,15 +30,11 @@ class algorithm_base {
     /// @param mr     The memory resource(s) to use
     /// @param copy   The copy object to use
     ///
-    algorithm_base(const memory_resource& mr, vecmem::copy& copy);
+    algorithm_base(const memory_resource& mr, const vecmem::copy& copy);
 
-    /// The memory resource(s) to use in the algorithm (non-const)
-    memory_resource& mr();
     /// The memory resource(s) to use in the algorithm (const)
     const memory_resource& mr() const;
 
-    /// The copy object to use in the algorithm (non-const)
-    vecmem::copy& copy();
     /// The copy object to use in the algorithm (const)
     const vecmem::copy& copy() const;
 
@@ -46,7 +42,7 @@ class algorithm_base {
     /// Memory resource(s) to use in the algorithm
     memory_resource m_mr;
     /// Copy object to use in the algorithm
-    std::reference_wrapper<vecmem::copy> m_copy;
+    std::reference_wrapper<const vecmem::copy> m_copy;
 
 };  // class algorithm_base
 

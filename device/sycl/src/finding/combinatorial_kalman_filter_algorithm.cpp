@@ -12,7 +12,7 @@ namespace traccc::sycl {
 
 combinatorial_kalman_filter_algorithm::combinatorial_kalman_filter_algorithm(
     const config_type& config, const traccc::memory_resource& mr,
-    vecmem::copy& copy, queue_wrapper& queue,
+    const vecmem::copy& copy, queue_wrapper& queue,
     std::unique_ptr<const Logger> logger)
     : device::combinatorial_kalman_filter_algorithm(config, mr, copy,
                                                     std::move(logger)),

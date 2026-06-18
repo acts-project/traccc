@@ -12,7 +12,7 @@ namespace traccc::device {
 
 silicon_pixel_spacepoint_formation_algorithm::
     silicon_pixel_spacepoint_formation_algorithm(
-        const traccc::memory_resource& mr, vecmem::copy& copy,
+        const traccc::memory_resource& mr, const vecmem::copy& copy,
         std::unique_ptr<const Logger> logger)
     : messaging(std::move(logger)), algorithm_base(mr, copy) {}
 

@@ -47,7 +47,7 @@ struct seed_parameter_estimation_algorithm
     ///
     seed_parameter_estimation_algorithm(
         const track_params_estimation_config& config,
-        const traccc::memory_resource& mr, vecmem::copy& copy,
+        const traccc::memory_resource& mr, const vecmem::copy& copy,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
     /// Destructor
     ~seed_parameter_estimation_algorithm();

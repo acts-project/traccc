@@ -73,7 +73,7 @@ class clusterization_algorithm
     /// partition
     ///
     clusterization_algorithm(
-        const traccc::memory_resource& mr, vecmem::copy& copy,
+        const traccc::memory_resource& mr, const vecmem::copy& copy,
         const config_type& config,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
