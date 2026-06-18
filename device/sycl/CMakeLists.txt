@@ -27,6 +27,9 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "src/seeding/triplet_seeding_algorithm.sycl"
   "include/traccc/sycl/seeding/seed_parameter_estimation_algorithm.hpp"
   "src/seeding/seed_parameter_estimation_algorithm.sycl"
+  # GBTS seeding algorithm(s).
+  "include/traccc/sycl/gbts_seeding/gbts_seeding_algorithm.hpp"
+  "src/gbts_seeding/gbts_seeding_algorithm.sycl"
   # Track finding algorithm(s).
   "include/traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
   "src/finding/combinatorial_kalman_filter_algorithm.cpp"
