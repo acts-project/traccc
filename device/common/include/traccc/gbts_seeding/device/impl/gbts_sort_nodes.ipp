@@ -8,11 +8,11 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/definitions/math.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 #include "traccc/gbts_seeding/gbts_types.hpp"
-#include "traccc/definitions/math.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>
@@ -63,8 +63,8 @@ TRACCC_HOST_DEVICE inline void gbts_sort_nodes(
                 // LUT is laid out as [w_bin_edge, min_tau_0, max_tau_0,
                 // min_tau_1, max_tau_1] per bin.
                 const int tau_bin =
-                    5 *
-                    static_cast<int>(math::floor(ap.tau_lut_inv_bin * sp.w) - 1.0f);
+                    5 * static_cast<int>(
+                            math::floor(ap.tau_lut_inv_bin * sp.w) - 1.0f);
                 if (tau_bin > -1 && tau_bin < static_cast<int>(ap.tauLutSize)) {
                     min_tau =
                         d_tau_lut[static_cast<unsigned int>(tau_bin) + 1u];

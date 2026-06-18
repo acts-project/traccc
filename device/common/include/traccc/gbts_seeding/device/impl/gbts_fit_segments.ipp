@@ -8,12 +8,12 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/definitions/math.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/gbts_seeding/device/details/gbts_create_seed_candidate.hpp"
 #include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 #include "traccc/gbts_seeding/gbts_types.hpp"
-#include "traccc/definitions/math.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>
@@ -68,7 +68,7 @@ struct edgeState {
         const float r1 = math::sqrt(node1_params.x * node1_params.x +
                                     node1_params.y * node1_params.y);
         const float r2 = math::sqrt(node2_params.x * node2_params.x +
-                              node2_params.y * node2_params.y);
+                                    node2_params.y * node2_params.y);
 
         m_s = dy / L;
         m_c = dx / L;
@@ -129,7 +129,7 @@ TRACCC_HOST_DEVICE inline bool gbts_kalman_update(
 
     float mx, my;
     const float r = math::sqrt(node1_params.x * node1_params.x +
-                          node1_params.y * node1_params.y);
+                               node1_params.y * node1_params.y);
 
     new_ts->m_refX = node1_params.x * ts->m_c + node1_params.y * ts->m_s;
     mx = -node1_params.x * ts->m_s + node1_params.y * ts->m_c;

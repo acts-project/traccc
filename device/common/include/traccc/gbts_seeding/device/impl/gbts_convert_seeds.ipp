@@ -8,12 +8,12 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/definitions/math.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/edm/seed_collection.hpp"
 #include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 #include "traccc/gbts_seeding/gbts_types.hpp"
-#include "traccc/definitions/math.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>
@@ -60,8 +60,9 @@ TRACCC_HOST_DEVICE inline traccc::float2 gbts_estimate_seed_params(
     const float B = v[1] - A * u[1];
     const float curv =
         1000.0f * B / math::sqrt(1 + A * A);  // Curvature from mm^-1 to m^-1
-    const float cot_t = (sps[2].z - sps[1].z) /
-                        (math::sqrt(sps[2].x * sps[2].x + sps[2].y * sps[2].y) - r0);
+    const float cot_t =
+        (sps[2].z - sps[1].z) /
+        (math::sqrt(sps[2].x * sps[2].x + sps[2].y * sps[2].y) - r0);
     return float2{curv, cot_t};
 }
 

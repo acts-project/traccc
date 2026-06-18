@@ -8,10 +8,10 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/definitions/math.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/gbts_seeding/gbts_types.hpp"
-#include "traccc/definitions/math.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>
@@ -81,9 +81,9 @@ TRACCC_HOST_DEVICE inline void gbts_bin_spacepoints(
             const float r = math::sqrt(sp.x * sp.x + sp.y * sp.y);
             const float t1 = sp.z / r;
             const float eta = -math::log(math::sqrt(1.0f + t1 * t1) - t1);
-            const unsigned int binIdx = static_cast<unsigned int>(
-                math::max(0.0f, math::min((eta - min_eta) / eta_bin_width,
-                                  static_cast<float>(num_eta_bins - 1u))));
+            const unsigned int binIdx = static_cast<unsigned int>(math::max(
+                0.0f, math::min((eta - min_eta) / eta_bin_width,
+                                static_cast<float>(num_eta_bins - 1u))));
             eta_index = bin0 + binIdx;
         }
         d_node_eta_index[binedIdx] = eta_index;

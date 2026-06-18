@@ -8,18 +8,17 @@
 #pragma once
 
 // Project include(s).
+#include "traccc/definitions/math.hpp"
 #include "traccc/definitions/qualifiers.hpp"
 #include "traccc/device/concepts/barrier.hpp"
 #include "traccc/device/concepts/thread_id.hpp"
 #include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 #include "traccc/gbts_seeding/gbts_types.hpp"
 #include "traccc/utils/trigonometric_helpers.hpp"
-#include "traccc/definitions/math.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/memory/device_atomic_ref.hpp>
-
 
 namespace traccc::device {
 
