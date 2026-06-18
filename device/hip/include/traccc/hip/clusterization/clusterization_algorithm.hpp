@@ -37,8 +37,8 @@ class clusterization_algorithm : public device::clusterization_algorithm,
     /// @param logger The logger instance to use for messaging
     ///
     clusterization_algorithm(
-        const traccc::memory_resource& mr, vecmem::copy& copy, hip::stream& str,
-        const config_type& config,
+        const traccc::memory_resource& mr, const vecmem::copy& copy,
+        hip::stream& str, const config_type& config,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     private:
