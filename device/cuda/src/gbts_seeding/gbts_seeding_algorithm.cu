@@ -232,7 +232,8 @@ __global__ void gbts_convert_seeds(
 
 gbts_seeding_algorithm::gbts_seeding_algorithm(
     const gbts_seedfinder_config& cfg, const memory_resource& mr,
-    vecmem::copy& copy, cuda::stream& str, std::unique_ptr<const Logger> logger)
+    const vecmem::copy& copy, cuda::stream& str,
+    std::unique_ptr<const Logger> logger)
     : device::gbts_seeding_algorithm(cfg, mr, copy, std::move(logger)),
       cuda::algorithm_base{str} {}
 

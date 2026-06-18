@@ -49,7 +49,7 @@ class kalman_fitting_algorithm
     ///
     kalman_fitting_algorithm(
         const config_type& config, const traccc::memory_resource& mr,
-        vecmem::copy& copy, stream& str,
+        const vecmem::copy& copy, stream& str,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Execute the algorithm
@@ -71,7 +71,7 @@ class kalman_fitting_algorithm
     /// Memory resource used by the algorithm
     traccc::memory_resource m_mr;
     /// Copy object used by the algorithm
-    std::reference_wrapper<vecmem::copy> m_copy;
+    std::reference_wrapper<const vecmem::copy> m_copy;
     /// The CUDA stream to use
     std::reference_wrapper<stream> m_stream;
     /// Warp size of the GPU being used

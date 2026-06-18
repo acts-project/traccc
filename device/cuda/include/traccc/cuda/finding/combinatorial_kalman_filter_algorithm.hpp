@@ -24,7 +24,7 @@ class combinatorial_kalman_filter_algorithm
     /// Constructor with the algorithm's configuration
     combinatorial_kalman_filter_algorithm(
         const finding_config& config, const traccc::memory_resource& mr,
-        vecmem::copy& copy, cuda::stream& str,
+        const vecmem::copy& copy, cuda::stream& str,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     private:

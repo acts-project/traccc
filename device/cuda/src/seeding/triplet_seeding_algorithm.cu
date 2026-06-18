@@ -165,7 +165,8 @@ triplet_seeding_algorithm::triplet_seeding_algorithm(
     const seedfinder_config& finder_config,
     const spacepoint_grid_config& grid_config,
     const seedfilter_config& filter_config, const traccc::memory_resource& mr,
-    vecmem::copy& copy, cuda::stream& str, std::unique_ptr<const Logger> logger)
+    const vecmem::copy& copy, cuda::stream& str,
+    std::unique_ptr<const Logger> logger)
     : device::triplet_seeding_algorithm(finder_config, grid_config,
                                         filter_config, mr, copy,
                                         std::move(logger)),

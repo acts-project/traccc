@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2025 CERN for the benefit of the ACTS project
+ * (c) 2025-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -43,7 +43,7 @@ class greedy_ambiguity_resolution_algorithm
     ///
     greedy_ambiguity_resolution_algorithm(
         const config_type& cfg, const traccc::memory_resource& mr,
-        vecmem::copy& copy, stream& str,
+        const vecmem::copy& copy, stream& str,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Run the algorithm
@@ -63,7 +63,7 @@ class greedy_ambiguity_resolution_algorithm
     /// The memory resource to use
     traccc::memory_resource m_mr;
     /// The copy object to use
-    std::reference_wrapper<vecmem::copy> m_copy;
+    std::reference_wrapper<const vecmem::copy> m_copy;
     /// The CUDA stream to use
     std::reference_wrapper<stream> m_stream;
     /// Warp size of the GPU being used
