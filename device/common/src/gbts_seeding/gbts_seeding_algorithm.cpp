@@ -541,7 +541,7 @@ auto gbts_seeding_algorithm::extract_seeds(
 
 gbts_seeding_algorithm::gbts_seeding_algorithm(
     const gbts_seedfinder_config& cfg, const memory_resource& mr,
-    vecmem::copy& copy, std::unique_ptr<const Logger> logger)
+    const vecmem::copy& copy, std::unique_ptr<const Logger> logger)
     : messaging(std::move(logger)), algorithm_base{mr, copy}, m_config{cfg} {}
 
 auto gbts_seeding_algorithm::operator()(

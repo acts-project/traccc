@@ -44,7 +44,7 @@ triplet_seeding_algorithm::triplet_seeding_algorithm(
     const seedfinder_config& finder_config,
     const spacepoint_grid_config& grid_config,
     const seedfilter_config& filter_config, const memory_resource& mr,
-    vecmem::copy& copy, std::unique_ptr<const Logger> logger)
+    const vecmem::copy& copy, std::unique_ptr<const Logger> logger)
     : messaging(std::move(logger)),
       algorithm_base{mr, copy},
       m_data{std::make_unique<data>(
