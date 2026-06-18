@@ -22,7 +22,7 @@ class stream_wrapper {
 
     public:
     /// Wrap an existing @c cudaStream_t object, without taking ownership
-    stream_wrapper(void* stream);
+    explicit stream_wrapper(void* stream);
 
     /// Copy constructor
     stream_wrapper(const stream_wrapper& parent) = default;
