@@ -14,13 +14,12 @@
 #include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 #include "traccc/gbts_seeding/gbts_types.hpp"
 #include "traccc/utils/trigonometric_helpers.hpp"
+#include "traccc/definitions/math.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/memory/device_atomic_ref.hpp>
 
-// System include(s).
-#include <cmath>
 
 namespace traccc::device {
 
@@ -55,7 +54,7 @@ TRACCC_HOST_DEVICE inline void gbts_check_edge_candidate(
     }
     const float dz = z2 - z1;
     const float tau = dz / dr;
-    const float ftau = fabsf(tau);
+    const float ftau = math::fabs(tau);
 
     if ((ftau < tau_min2) || (ftau > tau_max2)) {
         return;
@@ -74,11 +73,11 @@ TRACCC_HOST_DEVICE inline void gbts_check_edge_candidate(
     }
 
     const float dphi = traccc::detail::wrap_phi(phi2 - phi1);
-    if (fabsf(dphi) > deltaPhi) {
+    if (math::fabs(dphi) > deltaPhi) {
         return;
     }
     const float curv = dphi / dr;
-    const float d0_for_max_curv = r1 * r2 * (fabsf(curv) - ap.max_Kappa);
+    const float d0_for_max_curv = r1 * r2 * (math::fabs(curv) - ap.max_Kappa);
     const float d0_max = (ftau < 4.0f) ? ap.low_Kappa_d0 : ap.high_Kappa_d0;
     if (d0_for_max_curv > d0_max) {
         return;
@@ -87,7 +86,7 @@ TRACCC_HOST_DEVICE inline void gbts_check_edge_candidate(
     const unsigned int nEdges =
         vecmem::device_atomic_ref<unsigned int>(nEdgesCounter).fetch_add(1u);
     if (nEdges < nMaxEdges) {
-        const float exp_eta = sqrtf(1.0f + tau * tau) - tau;
+        const float exp_eta = math::sqrt(1.0f + tau * tau) - tau;
         // edge linking order is inside->out
         vecmem::device_atomic_ref<unsigned int>(
             d_num_outgoing_edges[begin_bin1 + n1Idx])

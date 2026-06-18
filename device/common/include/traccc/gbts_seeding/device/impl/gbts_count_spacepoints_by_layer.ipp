@@ -24,7 +24,6 @@
 // System include(s).
 #include <array>
 #include <climits>
-#include <cstdint>
 #include <utility>
 
 namespace traccc::device {

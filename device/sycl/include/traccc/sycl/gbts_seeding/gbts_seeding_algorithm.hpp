@@ -35,7 +35,7 @@ class gbts_seeding_algorithm : public device::gbts_seeding_algorithm,
     ///
     gbts_seeding_algorithm(
         const gbts_seedfinder_config& cfg, const memory_resource& mr,
-        vecmem::copy& copy, queue_wrapper& queue,
+        const vecmem::copy& copy, queue_wrapper& queue,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     private:

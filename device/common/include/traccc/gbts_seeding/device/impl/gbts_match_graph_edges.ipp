@@ -13,13 +13,12 @@
 #include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 #include "traccc/gbts_seeding/gbts_types.hpp"
 #include "traccc/utils/trigonometric_helpers.hpp"
+#include "traccc/definitions/math.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/device_vector.hpp>
 #include <vecmem/memory/device_atomic_ref.hpp>
 
-// System include(s).
-#include <cmath>
 
 namespace traccc::device {
 
@@ -89,17 +88,17 @@ TRACCC_HOST_DEVICE inline void gbts_match_graph_edges(
             const float4 params2 = d_edge_params[edge2_idx];
 
             const float tau_ratio = params2.x * uat_2 - 1.0f;
-            if (fabsf(tau_ratio) > cut_tau_ratio_max) {  // bad match
+            if (math::fabs(tau_ratio) > cut_tau_ratio_max) {  // bad match
                 continue;
             }
 
             const float dPhi = traccc::detail::wrap_phi(Phi2 - params2.w);
-            if (fabsf(dPhi) > cut_dphi_max) {
+            if (math::fabs(dPhi) > cut_dphi_max) {
                 continue;
             }
 
             const float dcurv = curv2 - params2.y;
-            if (fabsf(dcurv) > cut_dcurv_max) {
+            if (math::fabs(dcurv) > cut_dcurv_max) {
                 continue;
             }
 
