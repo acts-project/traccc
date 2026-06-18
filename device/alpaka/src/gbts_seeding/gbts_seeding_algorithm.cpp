@@ -313,7 +313,8 @@ struct gbts_convert_seeds {
 
 gbts_seeding_algorithm::gbts_seeding_algorithm(
     const gbts_seedfinder_config& cfg, const memory_resource& mr,
-    vecmem::copy& copy, alpaka::queue& q, std::unique_ptr<const Logger> logger)
+    const vecmem::copy& copy, alpaka::queue& q,
+    std::unique_ptr<const Logger> logger)
     : device::gbts_seeding_algorithm(cfg, mr, copy, std::move(logger)),
       alpaka::algorithm_base{q} {}
 

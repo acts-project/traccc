@@ -1,6 +1,6 @@
 /** TRACCC library, part of the ACTS project (R&D line)
  *
- * (c) 2025 CERN for the benefit of the ACTS project
+ * (c) 2025-2026 CERN for the benefit of the ACTS project
  *
  * Mozilla Public License Version 2.0
  */
@@ -116,8 +116,8 @@ kalman_fitting(
     const bfield_t& field_view,
     const typename edm::track_container<
         typename detector_t::algebra_type>::const_view& track_candidates_view,
-    const fitting_config& config, const memory_resource& mr, vecmem::copy& copy,
-    Queue& queue) {
+    const fitting_config& config, const memory_resource& mr,
+    const vecmem::copy& copy, Queue& queue) {
 
     // Number of threads per block to use.
     const Idx threadsPerBlock = getWarpSize<Acc>() * 2;

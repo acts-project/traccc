@@ -57,7 +57,7 @@ struct fill_sorted_measurements {
 }  // namespace kernels
 
 measurement_sorting_algorithm::measurement_sorting_algorithm(
-    const traccc::memory_resource& mr, vecmem::copy& copy, queue& q,
+    const traccc::memory_resource& mr, const vecmem::copy& copy, queue& q,
     std::unique_ptr<const Logger> logger)
     : messaging(std::move(logger)), m_mr{mr}, m_copy{copy}, m_queue{q} {}
 

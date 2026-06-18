@@ -40,8 +40,8 @@ struct estimate_track_params {
 
 seed_parameter_estimation_algorithm::seed_parameter_estimation_algorithm(
     const track_params_estimation_config& config,
-    const traccc::memory_resource& mr, vecmem::copy& copy, alpaka::queue& q,
-    std::unique_ptr<const Logger> logger)
+    const traccc::memory_resource& mr, const vecmem::copy& copy,
+    alpaka::queue& q, std::unique_ptr<const Logger> logger)
     : device::seed_parameter_estimation_algorithm(config, mr, copy,
                                                   std::move(logger)),
       alpaka::algorithm_base(q) {}

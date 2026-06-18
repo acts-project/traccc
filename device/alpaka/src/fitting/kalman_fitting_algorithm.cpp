@@ -19,7 +19,7 @@ namespace traccc::alpaka {
 
 kalman_fitting_algorithm::kalman_fitting_algorithm(
     const config_type& config, const traccc::memory_resource& mr,
-    vecmem::copy& copy, queue& q, std::unique_ptr<const Logger> logger)
+    const vecmem::copy& copy, queue& q, std::unique_ptr<const Logger> logger)
     : messaging(std::move(logger)),
       m_config{config},
       m_mr{mr},
