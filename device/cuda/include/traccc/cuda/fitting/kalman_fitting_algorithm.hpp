@@ -51,16 +51,10 @@ class kalman_fitting_algorithm : public device::kalman_fitting_algorithm,
 
     /// Kernel to prepare the fitting payloads
     ///
-    /// @param[in] track_indices The fitting order of the tracks
-    /// @param[in] input_tracks The input tracks
-    /// @param[out] output_tracks The output (fitted) tracks
-    /// @param[out] track_liveness The buffer to write the track liveness into
+    /// @param payload The payload for the kernel(s)
     ///
     void fit_prelude_kernel(
-        const vecmem::data::vector_view<const unsigned int>& track_indices,
-        const edm::track_container<default_algebra>::const_view& input_tracks,
-        edm::track_container<default_algebra>::view output_tracks,
-        vecmem::data::vector_view<unsigned int>& track_liveness) const override;
+        const device::fit_prelude_payload& payload) const override;
 
     /// Function preparing the fitting payload
     ///

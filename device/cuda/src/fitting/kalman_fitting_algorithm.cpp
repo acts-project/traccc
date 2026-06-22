@@ -29,25 +29,21 @@ kalman_fitting_algorithm::kalman_fitting_algorithm(
       cuda::algorithm_base{str} {}
 
 void kalman_fitting_algorithm::fit_prelude_kernel(
-    const vecmem::data::vector_view<const unsigned int>& track_indices,
-    const edm::track_container<default_algebra>::const_view& input_tracks,
-    edm::track_container<default_algebra>::view output_tracks,
-    vecmem::data::vector_view<unsigned int>& track_liveness) const {
+    const device::fit_prelude_payload& payload) const {
 
     // Get the number of tracks.
-    const unsigned int n_tracks = input_tracks.tracks.capacity();
-    assert(n_tracks == copy().get_size(input_tracks.tracks));
-    assert(n_tracks == track_indices.capacity());
-    assert(track_indices.size_ptr() == nullptr);
-    assert(n_tracks == copy().get_size(output_tracks.tracks));
+    const unsigned int n_tracks = payload.input_tracks.tracks.capacity();
+    assert(n_tracks == copy().get_size(payload.input_tracks.tracks));
+    assert(n_tracks == payload.track_indices.capacity());
+    assert(payload.track_indices.size_ptr() == nullptr);
+    assert(n_tracks == copy().get_size(payload.output_tracks.tracks));
 
     // Launch parameters for the kernel.
     const unsigned int nThreads = warp_size() * 4;
     const unsigned int nBlocks = (n_tracks + nThreads - 1) / nThreads;
 
     // Run the fitting, using the sorted parameter IDs.
-    fit_prelude(nBlocks, nThreads, 0, details::get_stream(stream()),
-                track_indices, input_tracks, output_tracks, track_liveness);
+    fit_prelude(nBlocks, nThreads, 0, details::get_stream(stream()), payload);
 }
 
 auto kalman_fitting_algorithm::prepare_fit_payload(

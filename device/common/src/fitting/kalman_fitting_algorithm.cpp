@@ -99,8 +99,8 @@ kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
                                                              mr().main);
 
     // Run "fitting prelude" kernel.
-    fit_prelude_kernel(track_indices, input_tracks, output_tracks,
-                       track_liveness);
+    fit_prelude_kernel(
+        {track_indices, input_tracks, output_tracks, track_liveness});
 
     // Calculate the number of surfaces to use during the fit for each track.
     // Then create the concrete buffer such that it could be passed to the

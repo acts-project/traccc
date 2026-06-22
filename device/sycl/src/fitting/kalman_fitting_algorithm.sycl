@@ -74,17 +74,14 @@ void kalman_fitting_algorithm::prepare_track_fit_order(
 }
 
 void kalman_fitting_algorithm::fit_prelude_kernel(
-    const vecmem::data::vector_view<const unsigned int>& track_indices,
-    const edm::track_container<default_algebra>::const_view& input_tracks,
-    edm::track_container<default_algebra>::view output_tracks,
-    vecmem::data::vector_view<unsigned int>& track_liveness) const {
+    const device::fit_prelude_payload& payload) const {
 
     // Get the number of tracks.
-    const unsigned int n_tracks = input_tracks.tracks.capacity();
-    assert(n_tracks == copy().get_size(input_tracks.tracks));
-    assert(n_tracks == track_indices.capacity());
-    assert(track_indices.size_ptr() == nullptr);
-    assert(n_tracks == copy().get_size(output_tracks.tracks));
+    const unsigned int n_tracks = payload.input_tracks.tracks.capacity();
+    assert(n_tracks == copy().get_size(payload.input_tracks.tracks));
+    assert(n_tracks == payload.track_indices.capacity());
+    assert(payload.track_indices.size_ptr() == nullptr);
+    assert(n_tracks == copy().get_size(payload.output_tracks.tracks));
 
     // Launch parameters for the kernel.
     static constexpr unsigned int localSize = 64;
@@ -94,11 +91,8 @@ void kalman_fitting_algorithm::fit_prelude_kernel(
     // Run the fitting, using the sorted parameter IDs.
     details::get_queue(queue()).submit([&](::sycl::handler& h) {
         h.parallel_for<kernels::fit_prelude>(
-            range, [track_indices, input_tracks, output_tracks,
-                    track_liveness](::sycl::nd_item<1> item) {
-                device::fit_prelude<default_algebra>(
-                    details::global_index(item), track_indices, input_tracks,
-                    output_tracks, track_liveness);
+            range, [payload](::sycl::nd_item<1> item) {
+                device::fit_prelude(details::global_index(item), payload);
             });
     });
 }

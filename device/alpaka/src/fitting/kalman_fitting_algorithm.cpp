@@ -45,18 +45,12 @@ struct fill_fitting_sort_keys {
 /// Alpaka kernel functor for @c traccc::device::fit_prelude
 struct fit_prelude {
     template <typename TAcc>
-    ALPAKA_FN_ACC void operator()(
-        TAcc const& acc,
-        vecmem::data::vector_view<const unsigned int> param_ids_view,
-        edm::track_container<default_algebra>::const_view track_candidates_view,
-        edm::track_container<default_algebra>::view track_states_view,
-        vecmem::data::vector_view<unsigned int> param_liveness_view) const {
+    ALPAKA_FN_ACC void operator()(TAcc const& acc,
+                                  device::fit_prelude_payload payload) const {
 
         const device::global_index_t globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
-        device::fit_prelude<default_algebra>(
-            globalThreadIdx, param_ids_view, track_candidates_view,
-            track_states_view, param_liveness_view);
+        device::fit_prelude(globalThreadIdx, payload);
     }
 };
 
@@ -126,17 +120,14 @@ void kalman_fitting_algorithm::prepare_track_fit_order(
 }
 
 void kalman_fitting_algorithm::fit_prelude_kernel(
-    const vecmem::data::vector_view<const unsigned int>& track_indices,
-    const edm::track_container<default_algebra>::const_view& input_tracks,
-    edm::track_container<default_algebra>::view output_tracks,
-    vecmem::data::vector_view<unsigned int>& track_liveness) const {
+    const device::fit_prelude_payload& payload) const {
 
     // Get the number of tracks.
-    const unsigned int n_tracks = input_tracks.tracks.capacity();
-    assert(n_tracks == copy().get_size(input_tracks.tracks));
-    assert(n_tracks == track_indices.capacity());
-    assert(track_indices.size_ptr() == nullptr);
-    assert(n_tracks == copy().get_size(output_tracks.tracks));
+    const unsigned int n_tracks = payload.input_tracks.tracks.capacity();
+    assert(n_tracks == copy().get_size(payload.input_tracks.tracks));
+    assert(n_tracks == payload.track_indices.capacity());
+    assert(payload.track_indices.size_ptr() == nullptr);
+    assert(n_tracks == copy().get_size(payload.output_tracks.tracks));
 
     // Launch parameters for the kernel.
     const unsigned int nThreads = warp_size() * 4;
@@ -145,8 +136,7 @@ void kalman_fitting_algorithm::fit_prelude_kernel(
 
     // Run the fitting, using the sorted parameter IDs.
     ::alpaka::exec<Acc>(details::get_queue(queue()), workDiv,
-                        kernels::fit_prelude{}, track_indices, input_tracks,
-                        output_tracks, track_liveness);
+                        kernels::fit_prelude{}, payload);
 }
 
 auto kalman_fitting_algorithm::prepare_fit_payload(

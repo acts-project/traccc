@@ -16,6 +16,7 @@
 #include "traccc/edm/device/sort_key.hpp"
 #include "traccc/edm/track_container.hpp"
 #include "traccc/fitting/details/kalman_fitting_types.hpp"
+#include "traccc/fitting/device/fit_prelude.hpp"
 #include "traccc/fitting/fitting_config.hpp"
 #include "traccc/geometry/detector_buffer.hpp"
 #include "traccc/utils/algorithm.hpp"
@@ -159,16 +160,10 @@ class kalman_fitting_algorithm
 
     /// Kernel to prepare the fitting payloads
     ///
-    /// @param[in] track_indices The fitting order of the tracks
-    /// @param[in] input_tracks The input tracks
-    /// @param[out] output_tracks The output (fitted) tracks
-    /// @param[out] track_liveness The buffer to write the track liveness into
+    /// @param payload The payload for the kernel(s)
     ///
     virtual void fit_prelude_kernel(
-        const vecmem::data::vector_view<const unsigned int>& track_indices,
-        const edm::track_container<default_algebra>::const_view& input_tracks,
-        edm::track_container<default_algebra>::view output_tracks,
-        vecmem::data::vector_view<unsigned int>& track_liveness) const = 0;
+        const fit_prelude_payload& payload) const = 0;
 
     /// Function preparing the fitting payload
     ///
