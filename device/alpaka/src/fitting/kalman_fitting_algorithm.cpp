@@ -16,7 +16,6 @@
 // Project include(s).
 #include "traccc/fitting/details/kalman_fitting_types.hpp"
 #include "traccc/fitting/device/fill_fitting_sort_keys.hpp"
-#include "traccc/fitting/device/fit.hpp"
 #include "traccc/fitting/device/fit_backward.hpp"
 #include "traccc/fitting/device/fit_forward.hpp"
 #include "traccc/fitting/device/fit_prelude.hpp"
@@ -60,11 +59,15 @@ struct fit_forward {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, const typename fitter_t::config_type cfg,
-        const device::fit_payload<fitter_t>* payload) const {
+        const device::fit_payload payload,
+        const device::fit_tpayload<
+            typename fitter_t::detector_type::const_view_type,
+            typename fitter_t::bfield_type, typename fitter_t::surface_type>*
+            tpayload) const {
 
         const device::global_index_t globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
-        device::fit_forward<fitter_t>(globalThreadIdx, cfg, *payload);
+        device::fit_forward<fitter_t>(globalThreadIdx, cfg, payload, *tpayload);
     }
 };
 
@@ -74,11 +77,16 @@ struct fit_backward {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc, const typename fitter_t::config_type cfg,
-        const device::fit_payload<fitter_t>* payload) const {
+        const device::fit_payload payload,
+        const device::fit_tpayload<
+            typename fitter_t::detector_type::const_view_type,
+            typename fitter_t::bfield_type, typename fitter_t::surface_type>*
+            tpayload) const {
 
         const device::global_index_t globalThreadIdx =
             ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
-        device::fit_backward<fitter_t>(globalThreadIdx, cfg, *payload);
+        device::fit_backward<fitter_t>(globalThreadIdx, cfg, payload,
+                                       *tpayload);
     }
 };
 
@@ -142,36 +150,25 @@ void kalman_fitting_algorithm::fit_prelude_kernel(
 auto kalman_fitting_algorithm::prepare_fit_payload(
     const detector_buffer& det, const magnetic_field& field,
     const std::vector<unsigned int>& n_surfaces,
-    const vecmem::data::vector_view<const unsigned int>& track_indices,
-    vecmem::data::vector_view<unsigned int>& track_liveness,
-    edm::track_container<default_algebra>::view tracks) const
-    -> std::unique_ptr<fit_payload_base> {
+    const device::fit_payload& payload) const -> fit_payload {
 
     return prepare_fit_payload_helper<detector_type_list,
                                       alpaka::bfield_type_list<scalar>>(
-        det, field, n_surfaces, track_indices, track_liveness, tracks);
+        det, field, n_surfaces, payload);
 }
 
 void kalman_fitting_algorithm::fit_forward_kernel(
-    const fitting_config& config, const fit_payload_base& payload) const {
+    const fitting_config& config, const fit_payload& payload) const {
 
     return detector_buffer_magnetic_field_visitor<
         detector_type_list, alpaka::bfield_type_list<scalar>>(
         payload.detector, payload.field,
         [&]<typename detector_traits_t, typename bfield_view_t>(
             const typename detector_traits_t::view&, const bfield_view_t&) {
-            // Cast the payload to the correct type.
-            const fit_payload<typename detector_traits_t::device,
-                              bfield_view_t>& fit_payload =
-                cast_fit_payload<typename detector_traits_t::device,
-                                 bfield_view_t>(payload);
-
             // Get the number of tracks.
             const unsigned int n_tracks =
-                fit_payload.host_payload.tracks_view.tracks.capacity();
-            assert(
-                n_tracks ==
-                copy().get_size(fit_payload.host_payload.tracks_view.tracks));
+                payload.payload.tracks.tracks.capacity();
+            assert(n_tracks == copy().get_size(payload.payload.tracks.tracks));
 
             // Launch parameters for the kernel.
             const unsigned int nThreads = warp_size() * 4;
@@ -185,30 +182,23 @@ void kalman_fitting_algorithm::fit_forward_kernel(
             // Run the track fitting
             ::alpaka::exec<Acc>(details::get_queue(queue()), workDiv,
                                 kernels::fit_forward<fitter_t>{}, config,
-                                fit_payload.device_payload.ptr());
+                                payload.payload,
+                                payload.get_tpayload<fitter_t>());
         });
 }
 
 void kalman_fitting_algorithm::fit_backward_kernel(
-    const fitting_config& config, const fit_payload_base& payload) const {
+    const fitting_config& config, const fit_payload& payload) const {
 
     return detector_buffer_magnetic_field_visitor<
         detector_type_list, alpaka::bfield_type_list<scalar>>(
         payload.detector, payload.field,
         [&]<typename detector_traits_t, typename bfield_view_t>(
             const typename detector_traits_t::view&, const bfield_view_t&) {
-            // Cast the payload to the correct type.
-            const fit_payload<typename detector_traits_t::device,
-                              bfield_view_t>& fit_payload =
-                cast_fit_payload<typename detector_traits_t::device,
-                                 bfield_view_t>(payload);
-
             // Get the number of tracks.
             const unsigned int n_tracks =
-                fit_payload.host_payload.tracks_view.tracks.capacity();
-            assert(
-                n_tracks ==
-                copy().get_size(fit_payload.host_payload.tracks_view.tracks));
+                payload.payload.tracks.tracks.capacity();
+            assert(n_tracks == copy().get_size(payload.payload.tracks.tracks));
 
             // Launch parameters for the kernel.
             const unsigned int nThreads = warp_size() * 4;
@@ -222,7 +212,8 @@ void kalman_fitting_algorithm::fit_backward_kernel(
             // Run the track fitting
             ::alpaka::exec<Acc>(details::get_queue(queue()), workDiv,
                                 kernels::fit_backward<fitter_t>{}, config,
-                                fit_payload.device_payload.ptr());
+                                payload.payload,
+                                payload.get_tpayload<fitter_t>());
         });
 }
 
