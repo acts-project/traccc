@@ -29,11 +29,9 @@ struct kalman_fitting_algorithm::data {
 
 };  // struct kalman_fitting_algorithm::data
 
-kalman_fitting_algorithm::fit_payload_base::fit_payload_base(
-    const detector_buffer& det, const magnetic_field& f)
+kalman_fitting_algorithm::fit_payload::fit_payload(const detector_buffer& det,
+                                                   const magnetic_field& f)
     : detector(det), field(f) {}
-
-kalman_fitting_algorithm::fit_payload_base::~fit_payload_base() = default;
 
 kalman_fitting_algorithm::kalman_fitting_algorithm(
     const config_type& config, const traccc::memory_resource& mr,
@@ -114,13 +112,13 @@ kalman_fitting_algorithm::output_type kalman_fitting_algorithm::operator()(
                    });
 
     // Prepare the payload for the fitting kernel(s).
-    auto payload = prepare_fit_payload(det, field, n_surfaces, track_indices,
-                                       track_liveness, output_tracks);
+    const fit_payload payload = prepare_fit_payload(
+        det, field, n_surfaces, {track_indices, track_liveness, output_tracks});
 
     // Run the iterative track fitting.
     for (std::size_t i = 0; i < m_data->m_config.n_iterations; ++i) {
-        fit_forward_kernel(m_data->m_config, *payload);
-        fit_backward_kernel(m_data->m_config, *payload);
+        fit_forward_kernel(m_data->m_config, payload);
+        fit_backward_kernel(m_data->m_config, payload);
     }
 
     // Return the fitted tracks.
