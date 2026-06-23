@@ -62,18 +62,14 @@ class kalman_fitting_algorithm : public device::kalman_fitting_algorithm,
     /// @param field           The magnetic field to prepare the payload for
     /// @param n_surfaces      The number of surfaces for each track to be
     ///                        fitted
-    /// @param track_indices   The fitting order of the tracks
-    /// @param track_liveness  The buffer to write the track liveness into
-    /// @param tracks          The tracks to be fitted
+    /// @param payload         The (non-templated) payload for the kernel(s)
     ///
     /// @return The prepared payload for the fitting kernel(s)
     ///
-    std::unique_ptr<fit_payload_base> prepare_fit_payload(
+    fit_payload prepare_fit_payload(
         const detector_buffer& det, const magnetic_field& field,
         const std::vector<unsigned int>& n_surfaces,
-        const vecmem::data::vector_view<const unsigned int>& track_indices,
-        vecmem::data::vector_view<unsigned int>& track_liveness,
-        edm::track_container<default_algebra>::view tracks) const override;
+        const device::fit_payload& payload) const override;
 
     /// Function launching the "forward fitting" kernel(s)
     ///
@@ -81,7 +77,7 @@ class kalman_fitting_algorithm : public device::kalman_fitting_algorithm,
     /// @param payload The payload for the fitting kernel(s)
     ///
     void fit_forward_kernel(const fitting_config& config,
-                            const fit_payload_base& payload) const override;
+                            const fit_payload& payload) const override;
 
     /// Function launching the "backward fitting" kernel(s)
     ///
@@ -89,7 +85,7 @@ class kalman_fitting_algorithm : public device::kalman_fitting_algorithm,
     /// @param payload The payload for the fitting kernel(s)
     ///
     void fit_backward_kernel(const fitting_config& config,
-                             const fit_payload_base& payload) const override;
+                             const fit_payload& payload) const override;
 
     /// @}
 
