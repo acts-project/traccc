@@ -111,18 +111,6 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/fitting/kernels/fit_prelude.cu"
 )
 
-# Suppress a GCC false-positive (-Wmaybe-uninitialized) in CCCL (CUB/Thrust)
-# Unfortunately, the warning remains, but the error is suppressed.
-if( "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" )
-  set_source_files_properties(
-     "src/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.cu"
-     "src/finding/combinatorial_kalman_filter_algorithm.cu"
-     "src/fitting/kalman_fitting_algorithm.cu"
-     PROPERTIES
-     COMPILE_FLAGS "-Xcompiler=-Wno-maybe-uninitialized"
-  )
-endif()
-
 function(traccc_add_cuda_specialization TEMPLATE_FILE)
   cmake_parse_arguments(ARG "" "DETECTOR_NAME;BFIELD_NAME" "" ${ARGN})
 

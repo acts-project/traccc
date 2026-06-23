@@ -27,7 +27,11 @@
 
 // Thrust include(s).
 #include <thrust/execution_policy.h>
+// Suppress warning (error at -Werror) from CUB/Thrust.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #include <thrust/extrema.h>
+#pragma GCC diagnostic pop
 #include <thrust/fill.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/constant_iterator.h>
