@@ -17,6 +17,7 @@
 #include "traccc/finding/device/find_tracks_payload.hpp"
 #include "traccc/finding/device/gather_best_tips_per_measurement.hpp"
 #include "traccc/finding/device/gather_measurement_votes.hpp"
+#include "traccc/finding/device/progressive_kalman_filter.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
 #include "traccc/finding/device/remove_duplicates.hpp"
 #include "traccc/finding/device/update_tip_length_buffer.hpp"
@@ -28,7 +29,7 @@
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/finding_config.hpp"
-#include "traccc/fitting/kalman_filter/measurement_selector.hpp"
+#include "traccc/finding/measurement_selector.hpp"
 #include "traccc/geometry/detector_buffer.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/memory_resource.hpp"
@@ -38,6 +39,7 @@
 #include <vecmem/containers/data/vector_buffer.hpp>
 
 // System include(s).
+#include <any>
 #include <memory>
 
 namespace traccc::device {
@@ -111,9 +113,22 @@ class combinatorial_kalman_filter_algorithm
         const edm::measurement_collection::const_view::size_type n_measurements,
         const edm::measurement_collection::const_view& measurements) const = 0;
 
-    /// Track finding kernel launcher
+    /// Launch the @c progressive_kalman_filter kernel
     ///
     /// @param n_threads The number of threads to launch the kernel with
+    /// @param config The track finding configuration
+    /// @param det The detector object
+    /// @param bfield The magnetic field object
+    /// @param payload The payload for the kernel
+    ///
+    virtual std::any progressive_kalman_filter_kernel(
+        unsigned int n_seeds, const finding_config& config,
+        const detector_buffer& det, const magnetic_field& bfield,
+        const device::progressive_kalman_filter_payload& payload) const = 0;
+
+    /// Track finding kernel launcher
+    ///
+    /// @param n_seeds The number of input seeds (same as the number of threads)
     /// @param config The track finding configuration
     /// @param det The detector object
     /// @param payload The payload for the kernel
@@ -240,6 +255,16 @@ class combinatorial_kalman_filter_algorithm
         unsigned int n_threads, bool run_mbf_smoother,
         const measurement_selector::config& calib_cfg,
         const device::build_tracks_payload& payload) const = 0;
+
+    /// Launch the @c kalman_smoother kernel
+    ///
+    /// @param n_threads The number of threads to launch the kernel with
+    /// @param seqs_buffer The surface descriptor sequence buffer
+    /// @param payload The payload for the kernel
+    ///
+    virtual void kalman_smoother_kernel(
+        unsigned int n_threads, std::any seqs_buffer,
+        const device::kalman_smoother_payload& payload) const = 0;
 
     /// @}
 

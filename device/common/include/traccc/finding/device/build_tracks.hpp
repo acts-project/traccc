@@ -16,7 +16,7 @@
 #include "traccc/edm/track_parameters.hpp"
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/finding_config.hpp"
-#include "traccc/fitting/kalman_filter/measurement_selector.hpp"
+#include "traccc/finding/measurement_selector.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/jagged_vector_view.hpp>

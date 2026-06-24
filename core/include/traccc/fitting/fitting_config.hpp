@@ -10,7 +10,7 @@
 // Local include(s).
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
-#include "traccc/fitting/kalman_filter/measurement_selector.hpp"
+#include "traccc/finding/measurement_selector.hpp"
 #include "traccc/utils/particle.hpp"
 
 // detray include(s).
@@ -38,8 +38,8 @@ struct fitting_config {
 
     /// Smoothing with backward filter
     traccc::scalar covariance_inflation_factor = 1e3f;
-    std::size_t surface_sequence_size_factor = 5;
-    std::size_t min_surface_sequence_capacity = 100;
+    unsigned int surface_sequence_size_factor = 5u;
+    unsigned int min_surface_sequence_capacity = 100u;
 };
 
 }  // namespace traccc

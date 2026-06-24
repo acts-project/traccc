@@ -94,7 +94,7 @@ struct measurement_selector {
         const edm::measurement<measurement_backend_t>& measurement,
         const config& /*cfg*/) {
 
-        // Measurement data on surface
+        // Measurement local position on surface
         detray::dmatrix<algebra_t, D, 1> meas_local;
         edm::get_measurement_local<algebra_t>(measurement, meas_local);
 
@@ -251,7 +251,7 @@ struct measurement_selector {
                 measurements.at(meas_idx), bound_params, cfg, is_line);
 
             // Check predicted chi2 cut
-            if (chi2 < cand.chi2) {
+            if (chi2 < cand.chi2 && chi2 >= 0.f) {
                 cand = {meas_idx, static_cast<float>(chi2)};
                 // Found optimal
                 if (cand.chi2 <= std::numeric_limits<scalar_t>::epsilon()) {

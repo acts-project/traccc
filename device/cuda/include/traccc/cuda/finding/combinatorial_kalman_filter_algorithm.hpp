@@ -55,6 +55,22 @@ class combinatorial_kalman_filter_algorithm
         const edm::measurement_collection::const_view& measurements)
         const override;
 
+    /// Launch the @c progressive_kalman_filter kernel
+    ///
+    /// @param n_threads The number of threads to launch the kernel with
+    /// @param config The track finding configuration
+    /// @param det The detector object
+    /// @param bfield The magnetic field object
+    /// @param payload The payload for the kernel
+    ///
+    /// @returns the type-erased surface sequence buffer
+    ///
+    std::any progressive_kalman_filter_kernel(
+        unsigned int n_threads, const finding_config& config,
+        const detector_buffer& det, const magnetic_field& bfield,
+        const device::progressive_kalman_filter_payload& payload)
+        const override;
+
     /// Track finding kernel launcher
     ///
     /// @param n_threads The number of threads to launch the kernel with
@@ -185,6 +201,16 @@ class combinatorial_kalman_filter_algorithm
         unsigned int n_threads, bool run_mbf_smoother,
         const measurement_selector::config& calib_cfg,
         const device::build_tracks_payload& payload) const override;
+
+    /// Launch the @c kalman_smoother kernel
+    ///
+    /// @param n_threads The number of threads to launch the kernel with
+    /// @param seqs_buffer The surface descriptor sequence buffer
+    /// @param payload The payload for the kernel
+    ///
+    virtual void kalman_smoother_kernel(
+        unsigned int n_threads, std::any seqs_buffer,
+        const device::kalman_smoother_payload& payload) const override;
 
     /// @}
 

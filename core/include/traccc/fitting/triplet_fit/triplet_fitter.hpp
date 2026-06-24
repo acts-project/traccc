@@ -208,7 +208,7 @@ class triplet_fitter {
         // Measurements for getting position uncertainties (hit shifts)
         // and surface orientation (scattering estimation)
         // std::array<typename
-        // edm::measurement_collection<algebra_type>::host::proxy_type, 3u>
+        // edm::measurement_collection::host::proxy_type, 3u>
         // m_meas;
 
         // No default construction for measurement proxies
