@@ -166,7 +166,7 @@ if(TRACCC_ENABLE_NVTX_PROFILING)
 
     target_link_libraries(
         nvtx_instrumentation
-        PRIVATE CUDA::nvToolsExt ${CMAKE_DL_LIBS}
+        PRIVATE CUDA::nvtx3 ${CMAKE_DL_LIBS}
     )
 
     target_compile_options(
