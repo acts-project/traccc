@@ -102,6 +102,8 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
         traccc::measurement_smearer<traccc::default_algebra>>;
 
     typename writer_type::config smearer_writer_cfg{meas_smearer};
+    traccc::seed_generator<host_detector_type>::config seed_cfg{};
+    seed_cfg.initial_sigmas = stddevs;
 
     // Run simulator
     const std::string full_path = io::data_directory() + path;
@@ -122,7 +124,7 @@ TEST_P(KalmanFittingWireChamberTests, Run) {
 
     // Seed generator
     seed_generator<host_detector_type> sg(detector.as<detector_traits>(),
-                                          stddevs);
+                                          seed_cfg);
 
     // Fitting algorithm object
     traccc::fitting_config fit_cfg;
