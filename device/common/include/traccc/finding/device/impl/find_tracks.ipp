@@ -653,7 +653,7 @@ TRACCC_HOST_DEVICE inline void find_tracks(
                 tip_lengths.at(tip_pos) = n_cands;
             }
         }
-    } else {
+    } else if (in_param_id < payload.n_in_params) {
         out_params_per_in_param.at(in_param_id) = 0;
     }
 
