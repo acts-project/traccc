@@ -135,11 +135,8 @@ traccc_add_library( traccc_device_common device_common
    # Track fitting code.
    "include/traccc/fitting/device/fit_payload.hpp"
    "include/traccc/fitting/device/fit_prelude.hpp"
-   "include/traccc/fitting/device/impl/fit_prelude.ipp"
    "include/traccc/fitting/device/fit_forward.hpp"
-   "include/traccc/fitting/device/impl/fit_forward.ipp"
    "include/traccc/fitting/device/fit_backward.hpp"
-   "include/traccc/fitting/device/impl/fit_backward.ipp"
    "include/traccc/fitting/device/fill_fitting_sort_keys.hpp"
    "include/traccc/fitting/device/impl/fill_fitting_sort_keys.ipp"
    "include/traccc/fitting/device/kalman_fitting_algorithm.hpp"

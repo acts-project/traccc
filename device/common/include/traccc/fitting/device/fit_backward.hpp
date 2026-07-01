@@ -10,6 +10,7 @@
 // Local include(s).
 #include "traccc/device/global_index.hpp"
 #include "traccc/fitting/device/fit_payload.hpp"
+#include "traccc/fitting/status_codes.hpp"
 
 namespace traccc::device {
 
@@ -20,9 +21,48 @@ TRACCC_HOST_DEVICE inline void fit_backward(
     const fit_payload& payload,
     const fit_tpayload<typename fitter_t::detector_type::const_view_type,
                        typename fitter_t::bfield_type,
-                       typename fitter_t::surface_type>& tpayload);
+                       typename fitter_t::surface_type>& tpayload) {
 
+    typename fitter_t::detector_type det(tpayload.det);
+
+    vecmem::device_vector<const unsigned int> param_ids(payload.track_indices);
+    vecmem::device_vector<unsigned int> param_liveness(payload.track_liveness);
+    typename edm::track_container<
+        typename fitter_t::detector_type::algebra_type>::device
+        tracks(payload.tracks);
+
+    if (globalIndex >= tracks.tracks.size()) {
+        return;
+    }
+
+    const unsigned int param_id = param_ids.at(globalIndex);
+    edm::track track = tracks.tracks.at(param_id);
+
+    // Run fitting
+    fitter_t fitter(det, tpayload.field, cfg);
+
+    if (param_liveness.at(param_id) > 0u) {
+        typename fitter_t::state fitter_state(
+            track, tracks.states, tracks.measurements,
+            *(tpayload.surfaces.ptr() + param_id), fitter.config().propagation,
+            fitter.config().meas_calibration);
+
+        kalman_fitter_status fit_status = fitter.smooth(fitter_state);
+
+        fitter.update_statistics(fitter_state);
+
+        // Assume that this branch is only called if the forward fit was
+        // successfull (track param are alive)
+        fitter.check_fitting_result(fitter_state, kalman_fitter_status::SUCCESS,
+                                    fit_status);
+
+        if (fit_status == kalman_fitter_status::SUCCESS) {
+            track = fitter_state.m_fit_res;
+        } else {
+            param_liveness.at(param_id) = 0u;
+        }
+
+        // TODO: Grab the smoothed state for next it
+    }
+}
 }  // namespace traccc::device
-
-// Include the implementation.
-#include "traccc/fitting/device/impl/fit_backward.ipp"
