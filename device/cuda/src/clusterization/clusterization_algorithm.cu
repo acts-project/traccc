@@ -29,11 +29,13 @@ __global__ __launch_bounds__(SORT_THREADS_PER_BLOCK) void sort_cells(
     const unsigned int cells_per_thread, const unsigned int num_cells,
     const edm::silicon_cell_collection::const_view cells,
     edm::silicon_cell_collection::view new_cells) {
-    using index_t = std::uint64_t;
-    static_assert(sizeof(index_t) == 8);
+    using key_t = std::uint32_t;
+    using value_t = std::uint64_t;
+    static_assert(sizeof(key_t) == 4);
+    static_assert(sizeof(value_t) == 8);
     const unsigned int PER_THREAD_MAX = 32;
-    using sort_t =
-        cub::BlockRadixSort<index_t, SORT_THREADS_PER_BLOCK, PER_THREAD_MAX>;
+    using sort_t = cub::BlockRadixSort<key_t, SORT_THREADS_PER_BLOCK,
+                                       PER_THREAD_MAX, value_t>;
 
     unsigned int partition_target_size = cells_per_thread * blockDim.x;
     __shared__ typename sort_t::TempStorage tmp;
@@ -65,32 +67,34 @@ __global__ __launch_bounds__(SORT_THREADS_PER_BLOCK) void sort_cells(
 
     const unsigned int partition_size = partition_end - partition_start;
 
-    index_t keys[PER_THREAD_MAX];
+    key_t keys[PER_THREAD_MAX];
+    value_t values[PER_THREAD_MAX];
 
     for (unsigned int i = 0; i < PER_THREAD_MAX; ++i) {
         unsigned int eff = i * blockDim.x + threadIdx.x;
-        keys[i] =
-            eff < partition_size
-                ? (static_cast<index_t>(
-                       cells_device.at(partition_start + eff).module_index())
-                       << 35 |
-                   static_cast<index_t>(
-                       cells_device.at(partition_start + eff).channel1())
-                       << 24 |
-                   static_cast<index_t>(
-                       cells_device.at(partition_start + eff).channel0())
-                       << 13 |
-                   static_cast<index_t>(eff))
-                : std::numeric_limits<index_t>::max();
+        if (eff < partition_size) {
+            values[i] =
+                static_cast<value_t>(
+                    cells_device.at(partition_start + eff).module_index())
+                    << 32 |
+                static_cast<value_t>(
+                    cells_device.at(partition_start + eff).channel1())
+                    << 16 |
+                static_cast<value_t>(
+                    cells_device.at(partition_start + eff).channel0());
+        } else {
+            values[i] = std::numeric_limits<value_t>::max();
+        }
+        keys[i] = eff;
     }
 
-    sort_t(tmp).SortBlockedToStriped(keys);
+    sort_t(tmp).SortBlockedToStriped(keys, values);
 
     for (unsigned int i = 0; i < PER_THREAD_MAX; ++i) {
         unsigned int eff = i * blockDim.x + threadIdx.x;
         if (eff < partition_size) {
             new_cells_device.at(partition_start + eff) =
-                cells_device.at(partition_start + (keys[i] & 0b1111111111111));
+                cells_device.at(partition_start + keys[i]);
         }
     }
 }
