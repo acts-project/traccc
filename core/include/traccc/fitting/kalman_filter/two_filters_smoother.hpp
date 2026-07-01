@@ -54,6 +54,7 @@ struct two_filters_smoother {
 
         assert(!bound_params.is_invalid());
         assert(!bound_params.surface_link().is_invalid());
+        assert(!trk_state.filtered_params().surface_link().is_invalid());
         assert(trk_state.filtered_params().surface_link() ==
                bound_params.surface_link());
 
