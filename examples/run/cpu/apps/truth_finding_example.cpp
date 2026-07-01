@@ -91,13 +91,13 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
      *****************************/
 
     // Standard deviations for seed track parameters
-    static constexpr std::array<traccc::scalar, traccc::e_bound_size> stddevs =
-        {1e-4f * traccc::unit<traccc::scalar>::mm,
-         1e-4f * traccc::unit<traccc::scalar>::mm,
-         1e-3f,
-         1e-3f,
-         1e-4f / traccc::unit<traccc::scalar>::GeV,
-         1e-4f * traccc::unit<traccc::scalar>::ns};
+    static constexpr std::array<double, traccc::e_bound_size> stddevs = {
+        1e-4 * traccc::unit<double>::mm,
+        1e-4 * traccc::unit<double>::mm,
+        1e-3,
+        1e-3,
+        1e-4 / traccc::unit<double>::GeV,
+        1e-4 * traccc::unit<double>::ns};
 
     // Propagation configuration
     detray::propagation::config propagation_config(propagation_opts);
@@ -136,8 +136,11 @@ int seq_run(const traccc::opts::track_finding& finding_opts,
             polymorphic_detector,
             [&]<typename detector_traits_t>(
                 const typename detector_traits_t::host& det) {
+                typename traccc::seed_generator<
+                    typename detector_traits_t::host>::config seed_cfg{};
+                seed_cfg.initial_sigmas = stddevs;
                 traccc::seed_generator<typename detector_traits_t::host> sg(
-                    det, stddevs);
+                    det, seed_cfg);
                 evt_data.generate_truth_candidates(
                     truth_track_candidates, truth_measurements, sg, host_mr,
                     truth_finding_opts.m_pT_min);
