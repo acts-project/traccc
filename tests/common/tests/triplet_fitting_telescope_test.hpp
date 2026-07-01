@@ -60,13 +60,13 @@ class TripletFittingTelescopeTests
         50 * traccc::unit<scalar>::um, 50 * traccc::unit<scalar>::um};
 
     /// Standard deviations for seed track parameters
-    static constexpr std::array<scalar, e_bound_size> stddevs = {
-        0.1f * traccc::unit<scalar>::mm,
-        0.1f * traccc::unit<scalar>::mm,
-        0.017f,
-        0.017f,
-        0.05f / traccc::unit<scalar>::GeV,
-        1.f * traccc::unit<scalar>::ns};
+    static constexpr std::array<double, e_bound_size> stddevs = {
+        0.1 * traccc::unit<double>::mm,
+        0.1 * traccc::unit<double>::mm,
+        0.017,
+        0.017,
+        0.05 / traccc::unit<double>::GeV,
+        1. * traccc::unit<double>::ns};
 
     void consistency_tests(
         const edm::track_collection<default_algebra>::host::const_proxy_type&

@@ -62,13 +62,13 @@ class KalmanFittingToyDetectorTests
     static const inline std::array<detray::dindex, 2> search_window{3u, 3u};
 
     /// Standard deviations for seed track parameters
-    static constexpr std::array<scalar, e_bound_size> stddevs = {
-        0.01f * traccc::unit<scalar>::mm,
-        0.01f * traccc::unit<scalar>::mm,
-        0.001f,
-        0.001f,
-        0.001f / traccc::unit<scalar>::GeV,
-        0.01f * traccc::unit<scalar>::ns};
+    static constexpr std::array<double, e_bound_size> stddevs = {
+        0.01 * traccc::unit<double>::mm,
+        0.01 * traccc::unit<double>::mm,
+        0.001,
+        0.001,
+        0.001 / traccc::unit<double>::GeV,
+        0.01 * traccc::unit<double>::ns};
 
     protected:
     virtual void SetUp() override {
