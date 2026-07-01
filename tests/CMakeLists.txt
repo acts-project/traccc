@@ -9,7 +9,6 @@ include( traccc-compiler-options-cpp )
 
 # Set up a common library, shared by all of the tests.
 add_library( traccc_tests_common STATIC
-    "common/tests/atlas_cuts.hpp"
     "common/tests/cca_test.hpp"
     "common/tests/ckf_telescope_test.hpp"
     "common/tests/data_test.hpp"

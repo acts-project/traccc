@@ -179,11 +179,11 @@ jobs:
       - name: Build ACTS
         run: |
           export CMAKE_PREFIX_PATH=/json_install/:/vecmem_install/:/covfie_install/:${CMAKE_PREFIX_PATH}
-          wget https://github.com/acts-project/acts/archive/refs/tags/v46.7.0.tar.gz
-          tar -xvf v46.7.0.tar.gz
+          git clone https://github.com/acts-project/acts.git acts-46.8.1-dirty
+          (cd acts-46.8.1-dirty; git checkout cda8b940cedfaa413931184587d6ac200e6198d0)
           export CXX=g++
           cmake \
-            -S acts-46.7.0 \
+            -S acts-46.8.1-dirty \
             -B /acts_build/ \
             -DACTS_BUILD_PLUGIN_JSON=ON \
             -DACTS_SETUP_COVFIE=OFF \
