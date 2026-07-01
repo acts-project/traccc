@@ -60,7 +60,6 @@ traccc_add_alpaka_library( traccc_alpaka alpaka TYPE SHARED
   # Track fitting algorithm(s).
   "include/traccc/alpaka/fitting/kalman_fitting_algorithm.hpp"
   "src/fitting/kalman_fitting_algorithm.cpp"
-  "src/fitting/kalman_fitting.hpp"
 )
 
 # Set up Thrust specifically for the traccc::alpaka library.
