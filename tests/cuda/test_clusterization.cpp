@@ -23,10 +23,12 @@
 
 using namespace traccc;
 
-TEST(CUDAClustering, SingleModule) {
-
-    // Memory resource used by the EDM.
-    vecmem::cuda::managed_memory_resource mng_mr;
+namespace {
+void run_clustering_test(
+    const traccc::edm::silicon_cell_collection::host& cells,
+    const edm::measurement_collection::host& references,
+    const std::vector<std::vector<unsigned int>>& reference_disjoint_set,
+    auto& mng_mr, const auto& cfg) {
     traccc::memory_resource mr{mng_mr};
 
     // Cuda stream
@@ -35,18 +37,6 @@ TEST(CUDAClustering, SingleModule) {
 
     // Cuda copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
-
-    // Create cell collection
-    traccc::edm::silicon_cell_collection::host cells{mng_mr};
-    cells.reserve(8u);
-    cells.push_back({1u, 2u, 1.f, 0.f, 0u});
-    cells.push_back({2u, 2u, 1.f, 0.f, 0u});
-    cells.push_back({3u, 2u, 1.f, 0.f, 0u});
-    cells.push_back({6u, 4u, 1.f, 0.f, 0u});
-    cells.push_back({5u, 5u, 1.f, 0.f, 0u});
-    cells.push_back({6u, 5u, 1.f, 0.f, 0u});
-    cells.push_back({7u, 5u, 1.f, 0.f, 0u});
-    cells.push_back({6u, 6u, 1.f, 0.f, 0u});
 
     // Create a dummy detector description.
     traccc::detector_design_description::host det_desc{mng_mr};
@@ -60,16 +50,104 @@ TEST(CUDAClustering, SingleModule) {
     det_cond.measurement_translation()[0] = {0.f, 0.f};
 
     // Run Clusterization
-    traccc::cuda::clusterization_algorithm ca_cuda(mr, copy, stream,
-                                                   default_ccl_test_config());
+    traccc::cuda::clusterization_algorithm ca_cuda(mr, copy, stream, cfg);
 
     auto measurements_buffer =
         ca_cuda(vecmem::get_data(cells), vecmem::get_data(det_desc),
                 vecmem::get_data(det_cond));
+    auto [measurements_buffer_wdjs, disjoint_set] = ca_cuda(
+        vecmem::get_data(cells), vecmem::get_data(det_desc),
+        vecmem::get_data(det_cond), device::clustering_keep_disjoint_set{});
     edm::measurement_collection::const_device measurements(measurements_buffer);
+    edm::measurement_collection::const_device measurements_wdjs(
+        measurements_buffer_wdjs);
 
     // Check the results
-    ASSERT_EQ(copy.get_size(measurements_buffer), 2u);
+    ASSERT_EQ(copy.get_size(measurements_buffer), references.size());
+    ASSERT_EQ(copy.get_size(measurements_buffer_wdjs), references.size());
+
+    for (unsigned int i = 0; i < measurements.size(); ++i) {
+        {
+            const auto test = measurements.at(i);
+            // 0.01 % uncertainty
+            auto iso = traccc::details::is_same_object<
+                edm::measurement_collection::const_device::object_type>(
+                test, 0.0001f);
+            bool matched = false;
+
+            for (std::size_t j = 0; j < references.size(); ++j) {
+                const auto ref = references.at(j);
+                if (iso(ref)) {
+                    matched = true;
+                    break;
+                }
+            }
+
+            ASSERT_TRUE(matched);
+        }
+
+        {
+            const auto test = measurements_wdjs.at(i);
+            // 0.01 % uncertainty
+            auto iso = traccc::details::is_same_object<
+                edm::measurement_collection::const_device::object_type>(
+                test, 0.0001f);
+            bool matched = false;
+
+            for (std::size_t j = 0; j < references.size(); ++j) {
+                const auto ref = references.at(j);
+                if (iso(ref)) {
+                    matched = true;
+                    break;
+                }
+            }
+
+            ASSERT_TRUE(matched);
+        }
+    }
+
+    edm::silicon_cluster_collection::const_view disjoint_set_view{disjoint_set};
+    edm::silicon_cluster_collection::const_device disjoint_set_device{
+        disjoint_set_view};
+
+    ASSERT_EQ(reference_disjoint_set.size(), disjoint_set_device.size());
+
+    for (unsigned int i = 0; i < reference_disjoint_set.size(); ++i) {
+        std::vector<unsigned int> reference_set = reference_disjoint_set.at(i);
+        std::sort(reference_set.begin(), reference_set.end());
+
+        std::vector<unsigned int> found_set;
+        for (unsigned int j = 0;
+             j < disjoint_set_device.cell_indices().at(i).size(); ++j) {
+            found_set.push_back(disjoint_set_device.cell_indices().at(i).at(j));
+        }
+        std::sort(found_set.begin(), found_set.end());
+
+        ASSERT_EQ(reference_set.size(), found_set.size());
+
+        for (unsigned int j = 0; j < reference_disjoint_set.at(i).size(); ++j) {
+            ASSERT_EQ(reference_set.at(j), found_set.at(j));
+        }
+    }
+}
+}  // namespace
+
+TEST(CUDAClustering, SingleModule) {
+
+    // Memory resource used by the EDM.
+    vecmem::cuda::managed_memory_resource mng_mr;
+
+    // Create cell collection
+    traccc::edm::silicon_cell_collection::host cells{mng_mr};
+    cells.reserve(8u);
+    cells.push_back({1u, 2u, 1.f, 0.f, 0u});
+    cells.push_back({2u, 2u, 1.f, 0.f, 0u});
+    cells.push_back({3u, 2u, 1.f, 0.f, 0u});
+    cells.push_back({6u, 4u, 1.f, 0.f, 0u});
+    cells.push_back({5u, 5u, 1.f, 0.f, 0u});
+    cells.push_back({6u, 5u, 1.f, 0.f, 0u});
+    cells.push_back({7u, 5u, 1.f, 0.f, 0u});
+    cells.push_back({6u, 6u, 1.f, 0.f, 0u});
 
     edm::measurement_collection::host references{mng_mr};
     references.push_back({{2.5f, 2.5f},
@@ -91,22 +169,11 @@ TEST(CUDAClustering, SingleModule) {
                           {1u, 1u},
                           1u});
 
-    for (unsigned int i = 0; i < measurements.size(); ++i) {
-        const auto test = measurements.at(i);
-        // 0.01 % uncertainty
-        auto iso = traccc::details::is_same_object<
-            edm::measurement_collection::const_device::object_type>(test,
-                                                                    0.0001f);
-        bool matched = false;
+    std::vector<std::vector<unsigned int>> reference_disjoint_set{
+        {0, 1, 2}, {3, 4, 5, 6, 7}};
 
-        for (std::size_t j = 0; j < references.size(); ++j) {
-            const auto ref = references.at(j);
-            if (iso(ref)) {
-                matched = true;
-                break;
-            }
-        }
+    auto cfg = default_ccl_test_config();
+    cfg.sort_cells = false;
 
-        ASSERT_TRUE(matched);
-    }
+    run_clustering_test(cells, references, reference_disjoint_set, mng_mr, cfg);
 }
