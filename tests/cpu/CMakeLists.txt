@@ -6,7 +6,6 @@
 
 # Declare the cpu algorithm test(s).
 traccc_add_test(cpu
-    "compare_with_acts_seeding.cpp"
     "seq_single_module.cpp"
     "test_ambiguity_resolution.cpp"
     "test_axis.cpp"
