@@ -64,7 +64,8 @@ bool clusterization_algorithm::input_is_sorted(
 
 void clusterization_algorithm::sort_cells(
     const unsigned int, const edm::silicon_cell_collection::const_view&,
-    edm::silicon_cell_collection::view&) const {
+    edm::silicon_cell_collection::view&,
+    vecmem::data::vector_view<unsigned int>&) const {
 
     throw std::runtime_error(
         "Cell sorting is not yet implemented for the SYCL backend.");
@@ -142,17 +143,20 @@ void clusterization_algorithm::ccl_kernel(
 void clusterization_algorithm::cluster_maker_kernel(
     unsigned int num_cells,
     const vecmem::data::vector_view<unsigned int>& disjoint_set,
-    edm::silicon_cluster_collection::view& cluster_data) const {
+    edm::silicon_cluster_collection::view& cluster_data,
+    const vecmem::data::vector_view<const unsigned int>& permutation_map_view)
+    const {
 
     const ::sycl::nd_range range =
         details::calculate1DimNdRange(num_cells, warp_size() * 8u);
     details::get_queue(queue())
         .submit([&](::sycl::handler& h) {
             h.parallel_for<kernels::reify_cluster_data>(
-                range, [disjoint_set, cluster_data](::sycl::nd_item<1> item) {
+                range, [disjoint_set, cluster_data,
+                        permutation_map_view](::sycl::nd_item<1> item) {
                     device::reify_cluster_data(
                         static_cast<unsigned int>(item.get_global_linear_id()),
-                        disjoint_set, cluster_data);
+                        disjoint_set, cluster_data, permutation_map_view);
                 });
         })
         .wait_and_throw();

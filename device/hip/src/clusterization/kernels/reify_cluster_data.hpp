@@ -19,9 +19,11 @@ namespace traccc::hip::kernels {
 ///
 /// @param disjoint_set_view The cluster/measurement index of each cell
 /// @param cluster_view The collection to fill
+/// @param permutation_map_view Maps sorted cell positions back to input indices
 ///
 __global__ void reify_cluster_data(
     vecmem::data::vector_view<const unsigned int> disjoint_set_view,
-    traccc::edm::silicon_cluster_collection::view cluster_view);
+    traccc::edm::silicon_cluster_collection::view cluster_view,
+    vecmem::data::vector_view<const unsigned int> permutation_map_view);
 
 }  // namespace traccc::hip::kernels

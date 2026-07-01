@@ -21,6 +21,7 @@ namespace traccc::cuda::kernels {
 ///
 __global__ void reify_cluster_data(
     vecmem::data::vector_view<const unsigned int> disjoint_set_view,
-    traccc::edm::silicon_cluster_collection::view cluster_view);
+    traccc::edm::silicon_cluster_collection::view cluster_view,
+    vecmem::data::vector_view<const unsigned int> permutation_map_view);
 
 }  // namespace traccc::cuda::kernels

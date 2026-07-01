@@ -19,6 +19,7 @@
 // Vecmem include(s).
 #include <cstring>
 #include <cub/cub.cuh>
+#include <vecmem/containers/device_vector.hpp>
 #include <vecmem/utils/copy.hpp>
 
 #define SORT_THREADS_PER_BLOCK 128
@@ -28,14 +29,17 @@ namespace kernels {
 __global__ __launch_bounds__(SORT_THREADS_PER_BLOCK) void sort_cells(
     const unsigned int cells_per_thread, const unsigned int num_cells,
     const edm::silicon_cell_collection::const_view cells,
-    edm::silicon_cell_collection::view new_cells) {
-    using key_t = std::uint32_t;
-    using value_t = std::uint64_t;
-    static_assert(sizeof(key_t) == 4);
-    static_assert(sizeof(value_t) == 8);
+    edm::silicon_cell_collection::view new_cells,
+    vecmem::data::vector_view<unsigned int> permutation_map_view) {
+    using key_t = std::uint64_t;
+    using value_t = std::uint32_t;
+    static_assert(sizeof(key_t) == 8);
+    static_assert(sizeof(value_t) == 4);
     const unsigned int PER_THREAD_MAX = 32;
     using sort_t = cub::BlockRadixSort<key_t, SORT_THREADS_PER_BLOCK,
                                        PER_THREAD_MAX, value_t>;
+
+    vecmem::device_vector<unsigned int> permutation_map(permutation_map_view);
 
     unsigned int partition_target_size = cells_per_thread * blockDim.x;
     __shared__ typename sort_t::TempStorage tmp;
@@ -73,19 +77,19 @@ __global__ __launch_bounds__(SORT_THREADS_PER_BLOCK) void sort_cells(
     for (unsigned int i = 0; i < PER_THREAD_MAX; ++i) {
         unsigned int eff = i * blockDim.x + threadIdx.x;
         if (eff < partition_size) {
-            values[i] =
-                static_cast<value_t>(
-                    cells_device.at(partition_start + eff).module_index())
-                    << 32 |
-                static_cast<value_t>(
-                    cells_device.at(partition_start + eff).channel1())
-                    << 16 |
-                static_cast<value_t>(
-                    cells_device.at(partition_start + eff).channel0());
+            keys[i] = static_cast<key_t>(
+                          cells_device.at(partition_start + eff).module_index())
+                          << 32 |
+                      static_cast<key_t>(
+                          cells_device.at(partition_start + eff).channel1())
+                          << 16 |
+                      static_cast<key_t>(
+                          cells_device.at(partition_start + eff).channel0());
+            values[i] = eff;
         } else {
+            keys[i] = std::numeric_limits<key_t>::max();
             values[i] = std::numeric_limits<value_t>::max();
         }
-        keys[i] = eff;
     }
 
     sort_t(tmp).SortBlockedToStriped(keys, values);
@@ -94,7 +98,9 @@ __global__ __launch_bounds__(SORT_THREADS_PER_BLOCK) void sort_cells(
         unsigned int eff = i * blockDim.x + threadIdx.x;
         if (eff < partition_size) {
             new_cells_device.at(partition_start + eff) =
-                cells_device.at(partition_start + keys[i]);
+                cells_device.at(partition_start + values[i]);
+            permutation_map.at(partition_start + eff) =
+                partition_start + values[i];
         }
     }
 }
@@ -125,7 +131,8 @@ bool clusterization_algorithm::input_is_sorted(
 void clusterization_algorithm::sort_cells(
     const unsigned int num_cells,
     const edm::silicon_cell_collection::const_view& cells,
-    edm::silicon_cell_collection::view& new_cells) const {
+    edm::silicon_cell_collection::view& new_cells,
+    vecmem::data::vector_view<unsigned int>& permutation_map_view) const {
 
     const unsigned blockSize = SORT_THREADS_PER_BLOCK;
     const unsigned int cellsPerThread = 16;
@@ -135,7 +142,7 @@ void clusterization_algorithm::sort_cells(
 
     kernels::
         sort_cells<<<numBlocks, blockSize, 0, details::get_stream(stream())>>>(
-            cellsPerThread, num_cells, cells, new_cells);
+            cellsPerThread, num_cells, cells, new_cells, permutation_map_view);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 }
 
@@ -159,13 +166,15 @@ void clusterization_algorithm::ccl_kernel(
 void clusterization_algorithm::cluster_maker_kernel(
     unsigned int num_cells,
     const vecmem::data::vector_view<unsigned int>& disjoint_set,
-    edm::silicon_cluster_collection::view& cluster_data) const {
+    edm::silicon_cluster_collection::view& cluster_data,
+    const vecmem::data::vector_view<const unsigned int>& permutation_map_view)
+    const {
 
     const unsigned int num_threads = warp_size() * 16u;
     const unsigned int num_blocks = (num_cells + num_threads - 1) / num_threads;
     kernels::reify_cluster_data<<<num_blocks, num_threads, 0,
                                   details::get_stream(stream())>>>(
-        disjoint_set, cluster_data);
+        disjoint_set, cluster_data, permutation_map_view);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 }
 

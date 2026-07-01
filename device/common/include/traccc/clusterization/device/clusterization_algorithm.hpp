@@ -127,7 +127,9 @@ class clusterization_algorithm
     virtual void sort_cells(
         const unsigned int num_cells,
         const edm::silicon_cell_collection::const_view& cells,
-        edm::silicon_cell_collection::view& new_cells) const = 0;
+        edm::silicon_cell_collection::view& new_cells,
+        vecmem::data::vector_view<unsigned int>& permutation_map_view)
+        const = 0;
 
     /// Payload for the @c ccl_kernel function
     struct ccl_kernel_payload {
@@ -174,7 +176,9 @@ class clusterization_algorithm
     virtual void cluster_maker_kernel(
         unsigned int num_cells,
         const vecmem::data::vector_view<unsigned int>& disjoint_set,
-        edm::silicon_cluster_collection::view& cluster_data) const = 0;
+        edm::silicon_cluster_collection::view& cluster_data,
+        const vecmem::data::vector_view<const unsigned int>&
+            permutation_map_view) const = 0;
 
     /// @}
 

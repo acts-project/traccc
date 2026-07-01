@@ -177,3 +177,49 @@ TEST(CUDAClustering, SingleModule) {
 
     run_clustering_test(cells, references, reference_disjoint_set, mng_mr, cfg);
 }
+
+TEST(CUDAClustering, SingleModuleUnsorted) {
+
+    // Memory resource used by the EDM.
+    vecmem::cuda::managed_memory_resource mng_mr;
+
+    // Create cell collection
+    traccc::edm::silicon_cell_collection::host cells{mng_mr};
+    cells.reserve(8u);
+    cells.push_back({7u, 5u, 1.f, 0.f, 0u});
+    cells.push_back({3u, 2u, 1.f, 0.f, 0u});
+    cells.push_back({5u, 5u, 1.f, 0.f, 0u});
+    cells.push_back({6u, 5u, 1.f, 0.f, 0u});
+    cells.push_back({2u, 2u, 1.f, 0.f, 0u});
+    cells.push_back({1u, 2u, 1.f, 0.f, 0u});
+    cells.push_back({6u, 6u, 1.f, 0.f, 0u});
+    cells.push_back({6u, 4u, 1.f, 0.f, 0u});
+
+    edm::measurement_collection::host references{mng_mr};
+    references.push_back({{2.5f, 2.5f},
+                          {0.75f, 0.0833333f},
+                          2u,
+                          0.f,
+                          0.f,
+                          0u,
+                          detray::geometry::identifier{0u},
+                          {1u, 1u},
+                          0u});
+    references.push_back({{6.5f, 5.5f},
+                          {0.483333f, 0.483333f},
+                          2u,
+                          0.f,
+                          0.f,
+                          0u,
+                          detray::geometry::identifier{0u},
+                          {1u, 1u},
+                          1u});
+
+    std::vector<std::vector<unsigned int>> reference_disjoint_set{
+        {5, 4, 1}, {7, 2, 3, 0, 6}};
+
+    auto cfg = default_ccl_test_config();
+    cfg.sort_cells = true;
+
+    run_clustering_test(cells, references, reference_disjoint_set, mng_mr, cfg);
+}
