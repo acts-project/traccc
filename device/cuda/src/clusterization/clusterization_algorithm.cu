@@ -18,9 +18,93 @@
 
 // Vecmem include(s).
 #include <cstring>
+#include <cub/cub.cuh>
+#include <vecmem/containers/device_vector.hpp>
 #include <vecmem/utils/copy.hpp>
 
+#define SORT_THREADS_PER_BLOCK 128
+
 namespace traccc::cuda {
+namespace kernels {
+__global__ __launch_bounds__(SORT_THREADS_PER_BLOCK) void sort_cells(
+    const unsigned int cells_per_thread, const unsigned int num_cells,
+    const edm::silicon_cell_collection::const_view cells,
+    edm::silicon_cell_collection::view new_cells,
+    vecmem::data::vector_view<unsigned int> permutation_map_view) {
+    using key_t = std::uint64_t;
+    using value_t = std::uint32_t;
+    static_assert(sizeof(key_t) == 8);
+    static_assert(sizeof(value_t) == 4);
+    const unsigned int PER_THREAD_MAX = 32;
+    using sort_t = cub::BlockRadixSort<key_t, SORT_THREADS_PER_BLOCK,
+                                       PER_THREAD_MAX, value_t>;
+
+    vecmem::device_vector<unsigned int> permutation_map(permutation_map_view);
+
+    unsigned int partition_target_size = cells_per_thread * blockDim.x;
+    __shared__ typename sort_t::TempStorage tmp;
+    __shared__ unsigned int partition_start, partition_end;
+
+    const edm::silicon_cell_collection::const_device cells_device(cells);
+    edm::silicon_cell_collection::device new_cells_device(new_cells);
+
+    if (threadIdx.x == 0) {
+        unsigned int start = blockIdx.x * partition_target_size;
+        unsigned int end = std::min(num_cells, start + partition_target_size);
+
+        while (start != 0 && start < num_cells &&
+               cells_device.module_index().at(start - 1) ==
+                   cells_device.module_index().at(start)) {
+            ++start;
+        }
+
+        while (end < num_cells && cells_device.module_index().at(end - 1) ==
+                                      cells_device.module_index().at(end)) {
+            ++end;
+        }
+        partition_start = start;
+        partition_end = end;
+        assert(partition_start <= partition_end);
+    }
+
+    __syncthreads();
+
+    const unsigned int partition_size = partition_end - partition_start;
+
+    key_t keys[PER_THREAD_MAX];
+    value_t values[PER_THREAD_MAX];
+
+    for (unsigned int i = 0; i < PER_THREAD_MAX; ++i) {
+        unsigned int eff = i * blockDim.x + threadIdx.x;
+        if (eff < partition_size) {
+            keys[i] = static_cast<key_t>(
+                          cells_device.at(partition_start + eff).module_index())
+                          << 32 |
+                      static_cast<key_t>(
+                          cells_device.at(partition_start + eff).channel1())
+                          << 16 |
+                      static_cast<key_t>(
+                          cells_device.at(partition_start + eff).channel0());
+            values[i] = eff;
+        } else {
+            keys[i] = std::numeric_limits<key_t>::max();
+            values[i] = std::numeric_limits<value_t>::max();
+        }
+    }
+
+    sort_t(tmp).SortBlockedToStriped(keys, values);
+
+    for (unsigned int i = 0; i < PER_THREAD_MAX; ++i) {
+        unsigned int eff = i * blockDim.x + threadIdx.x;
+        if (eff < partition_size) {
+            new_cells_device.at(partition_start + eff) =
+                cells_device.at(partition_start + values[i]);
+            permutation_map.at(partition_start + eff) =
+                partition_start + values[i];
+        }
+    }
+}
+}  // namespace kernels
 
 clusterization_algorithm::clusterization_algorithm(
     const traccc::memory_resource& mr, const vecmem::copy& copy,
@@ -29,14 +113,37 @@ clusterization_algorithm::clusterization_algorithm(
     : device::clusterization_algorithm(mr, copy, config, std::move(logger)),
       cuda::algorithm_base(str) {}
 
-bool clusterization_algorithm::input_is_valid(
+bool clusterization_algorithm::input_is_contiguous(
     const edm::silicon_cell_collection::const_view& cells) const {
 
-    return (is_contiguous_on<edm::silicon_cell_collection::const_device>(
-                cell_module_projection(), mr().main, copy(), stream(), cells) &&
-            is_ordered_on<edm::silicon_cell_collection::const_device>(
-                channel0_major_cell_order_relation(), mr().main, copy(),
-                stream(), cells));
+    return is_contiguous_on<edm::silicon_cell_collection::const_device>(
+        cell_module_projection(), mr().main, copy(), stream(), cells);
+}
+
+bool clusterization_algorithm::input_is_sorted(
+    const edm::silicon_cell_collection::const_view& cells) const {
+
+    return is_ordered_on<edm::silicon_cell_collection::const_device>(
+        channel0_major_cell_order_relation(), mr().main, copy(), stream(),
+        cells);
+}
+
+void clusterization_algorithm::sort_cells(
+    const unsigned int num_cells,
+    const edm::silicon_cell_collection::const_view& cells,
+    edm::silicon_cell_collection::view& new_cells,
+    vecmem::data::vector_view<unsigned int>& permutation_map_view) const {
+
+    const unsigned blockSize = SORT_THREADS_PER_BLOCK;
+    const unsigned int cellsPerThread = 16;
+    const unsigned int numBlocks =
+        (num_cells + (blockSize * cellsPerThread) - 1) /
+        (blockSize * cellsPerThread);
+
+    kernels::
+        sort_cells<<<numBlocks, blockSize, 0, details::get_stream(stream())>>>(
+            cellsPerThread, num_cells, cells, new_cells, permutation_map_view);
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 }
 
 void clusterization_algorithm::ccl_kernel(
@@ -59,13 +166,15 @@ void clusterization_algorithm::ccl_kernel(
 void clusterization_algorithm::cluster_maker_kernel(
     unsigned int num_cells,
     const vecmem::data::vector_view<unsigned int>& disjoint_set,
-    edm::silicon_cluster_collection::view& cluster_data) const {
+    edm::silicon_cluster_collection::view& cluster_data,
+    const vecmem::data::vector_view<const unsigned int>& permutation_map_view)
+    const {
 
     const unsigned int num_threads = warp_size() * 16u;
     const unsigned int num_blocks = (num_cells + num_threads - 1) / num_threads;
     kernels::reify_cluster_data<<<num_blocks, num_threads, 0,
                                   details::get_stream(stream())>>>(
-        disjoint_set, cluster_data);
+        disjoint_set, cluster_data, permutation_map_view);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 }
 

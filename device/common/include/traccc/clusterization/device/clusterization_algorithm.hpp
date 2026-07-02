@@ -109,13 +109,27 @@ class clusterization_algorithm
     /// @name Function(s) to be implemented by derived classes
     /// @{
 
-    /// Function meant to perform sanity checks on the input data
+    /// Function meant to perform sanity checks on the input data, namely to
+    /// assert that the input is contiguous.
     ///
     /// @param cells     All cells in an event
     /// @return @c true if the input data is valid, @c false otherwise
     ///
-    virtual bool input_is_valid(
+    virtual bool input_is_contiguous(
         const edm::silicon_cell_collection::const_view& cells) const = 0;
+
+    /// Function to assert that the input is sorted, which it might only be
+    /// after the sorting step has been completed.
+    virtual bool input_is_sorted(
+        const edm::silicon_cell_collection::const_view& cells) const = 0;
+
+    /// Sort cells before running the CCL kernel.
+    virtual void sort_cells(
+        const unsigned int num_cells,
+        const edm::silicon_cell_collection::const_view& cells,
+        edm::silicon_cell_collection::view& new_cells,
+        vecmem::data::vector_view<unsigned int>& permutation_map_view)
+        const = 0;
 
     /// Payload for the @c ccl_kernel function
     struct ccl_kernel_payload {
@@ -162,7 +176,9 @@ class clusterization_algorithm
     virtual void cluster_maker_kernel(
         unsigned int num_cells,
         const vecmem::data::vector_view<unsigned int>& disjoint_set,
-        edm::silicon_cluster_collection::view& cluster_data) const = 0;
+        edm::silicon_cluster_collection::view& cluster_data,
+        const vecmem::data::vector_view<const unsigned int>&
+            permutation_map_view) const = 0;
 
     /// @}
 

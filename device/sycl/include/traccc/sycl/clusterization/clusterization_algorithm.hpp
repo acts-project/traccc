@@ -49,8 +49,19 @@ class clusterization_algorithm : public device::clusterization_algorithm,
     /// @param cells     All cells in an event
     /// @return @c true if the input data is valid, @c false otherwise
     ///
-    bool input_is_valid(
+    bool input_is_contiguous(
         const edm::silicon_cell_collection::const_view& cells) const override;
+
+    /// Function that asserts the inputs are sorted.
+    bool input_is_sorted(
+        const edm::silicon_cell_collection::const_view& cells) const override;
+
+    /// Cell sorting algorithm
+    void sort_cells(const unsigned int num_cells,
+                    const edm::silicon_cell_collection::const_view& cells,
+                    edm::silicon_cell_collection::view& new_cells,
+                    vecmem::data::vector_view<unsigned int>&
+                        permutation_map_view) const override;
 
     /// Main CCL kernel launcher
     void ccl_kernel(const ccl_kernel_payload& payload) const override;
@@ -64,7 +75,9 @@ class clusterization_algorithm : public device::clusterization_algorithm,
     void cluster_maker_kernel(
         unsigned int num_cells,
         const vecmem::data::vector_view<unsigned int>& disjoint_set,
-        edm::silicon_cluster_collection::view& cluster_data) const override;
+        edm::silicon_cluster_collection::view& cluster_data,
+        const vecmem::data::vector_view<const unsigned int>&
+            permutation_map_view) const override;
 
     /// @}
 

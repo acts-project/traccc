@@ -28,7 +28,8 @@ namespace traccc::device {
 TRACCC_HOST_DEVICE inline void reify_cluster_data(
     global_index_t thread_id,
     vecmem::data::vector_view<const unsigned int> disjoint_set_view,
-    traccc::edm::silicon_cluster_collection::view cluster_view);
+    traccc::edm::silicon_cluster_collection::view cluster_view,
+    vecmem::data::vector_view<const unsigned int> permutation_map_view);
 
 }  // namespace traccc::device
 

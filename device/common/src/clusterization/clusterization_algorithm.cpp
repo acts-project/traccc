@@ -9,6 +9,7 @@
 #include "traccc/clusterization/device/clusterization_algorithm.hpp"
 
 #include <limits>
+#include <stdexcept>
 
 namespace traccc::device {
 
@@ -86,8 +87,13 @@ clusterization_algorithm::execute_impl(
     const detector_conditions_description::const_view& det_cond,
     bool keep_disjoint_set) const {
 
+    // Sorting the cells permutes them into an internal buffer, so the cell
+    // indices in the disjoint set / cluster output would no longer refer to the
+    // caller's input collection. Until the permutation is propagated, reject
+    // this combination instead of returning silently wrong cluster indices.
+
     // Check the input data in debug mode.
-    assert(input_is_valid(cells));
+    assert(input_is_contiguous(cells));
 
     // Get the number of cells, in an asynchronous way if possible.
     edm::silicon_cell_collection::const_view::size_type num_cells = 0u;
@@ -128,10 +134,31 @@ clusterization_algorithm::execute_impl(
         cluster_sizes = {num_cells, mr().main};
     }
 
+    std::optional<edm::silicon_cell_collection::buffer> sorted_cells;
+    vecmem::data::vector_buffer<unsigned int> permutation_map_buffer;
+    edm::silicon_cell_collection::const_view sorted_cells_view;
+
+    if (m_config.sort_cells) {
+        sorted_cells =
+            edm::silicon_cell_collection::buffer(num_cells, mr().main);
+        permutation_map_buffer =
+            vecmem::data::vector_buffer<unsigned int>(num_cells, mr().main);
+        copy().setup(*sorted_cells)->ignore();
+
+        sort_cells(num_cells, cells, *sorted_cells, permutation_map_buffer);
+        sorted_cells_view =
+            edm::silicon_cell_collection::const_view(*sorted_cells);
+    } else {
+        sorted_cells_view = edm::silicon_cell_collection::const_view(cells);
+    }
+
+    assert(input_is_sorted(sorted_cells_view));
+
     // Launch the CCL kernel.
-    ccl_kernel({num_cells, m_config, cells, det_descr, det_cond, measurements,
-                m_f_backup, m_gf_backup, m_adjc_backup, m_adjv_backup,
-                m_backup_mutex.get(), disjoint_set, cluster_sizes});
+    ccl_kernel({num_cells, m_config, sorted_cells_view, det_descr, det_cond,
+                measurements, m_f_backup, m_gf_backup, m_adjc_backup,
+                m_adjv_backup, m_backup_mutex.get(), disjoint_set,
+                cluster_sizes});
 
     std::optional<edm::silicon_cluster_collection::buffer> cluster_data =
         std::nullopt;
@@ -167,7 +194,8 @@ clusterization_algorithm::execute_impl(
         copy().setup(*cluster_data)->ignore();
 
         // Run the cluster data reification kernel.
-        cluster_maker_kernel(num_cells, disjoint_set, *cluster_data);
+        cluster_maker_kernel(num_cells, disjoint_set, *cluster_data,
+                             permutation_map_buffer);
     }
 
     // Return the reconstructed measurements.
