@@ -45,3 +45,7 @@ traccc_add_executable( truth_fitting_example "apps/truth_fitting_example.cpp"
 traccc_add_executable( misaligned_truth_fitting_example "apps/misaligned_truth_fitting_example.cpp"
    LINK_LIBRARIES vecmem::core detray::io detray::detectors traccc::core
    traccc::io traccc::performance traccc::options traccc::examples_common )
+
+traccc_add_executable( kalman_filter_validation "apps/kalman_filter_validation.cpp"
+   LINK_LIBRARIES vecmem::core detray::io detray::detectors traccc::core
+   traccc::io traccc::simulation traccc::performance traccc::options traccc_examples_common )
