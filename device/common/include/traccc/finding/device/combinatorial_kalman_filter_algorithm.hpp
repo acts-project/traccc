@@ -65,7 +65,7 @@ class combinatorial_kalman_filter_algorithm
     ///
     combinatorial_kalman_filter_algorithm(
         const finding_config& config, const traccc::memory_resource& mr,
-        vecmem::copy& copy,
+        const vecmem::copy& copy,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
     /// Destructor
     virtual ~combinatorial_kalman_filter_algorithm();

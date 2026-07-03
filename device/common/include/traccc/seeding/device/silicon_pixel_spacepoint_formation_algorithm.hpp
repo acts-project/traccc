@@ -41,7 +41,7 @@ class silicon_pixel_spacepoint_formation_algorithm
     /// @param logger The logger instance to use
     ///
     silicon_pixel_spacepoint_formation_algorithm(
-        const traccc::memory_resource& mr, vecmem::copy& copy,
+        const traccc::memory_resource& mr, const vecmem::copy& copy,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     /// Construct spacepoints from 2D silicon pixel measurements

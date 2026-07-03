@@ -6,7 +6,7 @@
 
 # Set up the project.
 cmake_minimum_required( VERSION 3.25 )
-project( traccc VERSION 1.3.1 LANGUAGES CXX )
+project( traccc VERSION 1.5.1 LANGUAGES CXX )
 
 # Set up the used C++ standard(s).
 set( CMAKE_CXX_STANDARD 20 CACHE STRING "The (host) C++ standard to use" )
@@ -153,16 +153,13 @@ option( TRACCC_USE_SYSTEM_VECMEM
    ${TRACCC_USE_SYSTEM_LIBS} )
 if( TRACCC_SETUP_VECMEM )
    if( TRACCC_USE_SYSTEM_VECMEM )
-      find_package( vecmem 1.9.0 REQUIRED )
+      find_package( vecmem 1.25.0 REQUIRED )
    else()
       add_subdirectory( extern/vecmem )
-      # Make the "VecMem language code" available for the whole project.
-      list( PREPEND CMAKE_MODULE_PATH "${VECMEM_LANGUAGE_DIR}" )
    endif()
+   # Make the "VecMem language code" available for the whole project.
+   list( PREPEND CMAKE_MODULE_PATH "${VECMEM_LANGUAGE_DIR}" )
 endif()
-# Including vecmem-check-language makes sure that the HIP and SYCL languages
-# would be picked up from VecMem.
-include( vecmem-check-language )
 
 # Set up TBB.
 option( TRACCC_SETUP_TBB

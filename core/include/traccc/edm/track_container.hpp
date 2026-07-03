@@ -74,6 +74,8 @@ struct track_container {
     };
 
     struct view {
+        /// Default constructor
+        view() = default;
         /// Constructor from a buffer
         TRACCC_HOST_DEVICE
         view(const buffer& b)
@@ -95,6 +97,8 @@ struct track_container {
     };
 
     struct const_view {
+        /// Default constructor
+        const_view() = default;
         /// Constructor from a buffer
         TRACCC_HOST_DEVICE
         const_view(const buffer& b)

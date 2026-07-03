@@ -40,8 +40,8 @@ struct form_spacepoints {
 
 silicon_pixel_spacepoint_formation_algorithm::
     silicon_pixel_spacepoint_formation_algorithm(
-        const traccc::memory_resource& mr, vecmem::copy& copy, alpaka::queue& q,
-        std::unique_ptr<const Logger> logger)
+        const traccc::memory_resource& mr, const vecmem::copy& copy,
+        alpaka::queue& q, std::unique_ptr<const Logger> logger)
     : device::silicon_pixel_spacepoint_formation_algorithm(mr, copy,
                                                            std::move(logger)),
       alpaka::algorithm_base(q) {}

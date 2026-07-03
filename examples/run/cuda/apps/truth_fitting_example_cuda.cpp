@@ -8,7 +8,7 @@
 // Project include(s).
 #include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/cuda/utils/make_magnetic_field.hpp"
-#include "traccc/cuda/utils/stream.hpp"
+#include "traccc/cuda/utils/stream_wrapper.hpp"
 #include "traccc/definitions/common.hpp"
 #include "traccc/definitions/primitives.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
@@ -40,6 +40,7 @@
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
+#include <vecmem/utils/cuda/stream_wrapper.hpp>
 
 // System include(s).
 #include <cstdlib>
@@ -107,7 +108,8 @@ int main(int argc, char* argv[]) {
      *****************************/
 
     // Stream object
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     // Copy object
     vecmem::copy host_copy;
@@ -118,13 +120,13 @@ int main(int argc, char* argv[]) {
                                           async_copy);
 
     /// Standard deviations for seed track parameters
-    static constexpr std::array<scalar, e_bound_size> stddevs = {
-        0.03f * traccc::unit<scalar>::mm,
-        0.03f * traccc::unit<scalar>::mm,
-        0.017f,
-        0.017f,
-        0.001f / traccc::unit<scalar>::GeV,
-        1.f * traccc::unit<scalar>::ns};
+    static constexpr std::array<double, e_bound_size> stddevs = {
+        0.03 * traccc::unit<double>::mm,
+        0.03 * traccc::unit<double>::mm,
+        0.017,
+        0.017,
+        0.001 / traccc::unit<double>::GeV,
+        1. * traccc::unit<double>::ns};
 
     // Fitting algorithm object
     traccc::fitting_config fit_cfg(fitting_opts);
@@ -155,9 +157,12 @@ int main(int argc, char* argv[]) {
             polymorphic_detector,
             [&]<typename detector_traits_t>(
                 const typename detector_traits_t::host& det) {
+                typename traccc::seed_generator<
+                    typename detector_traits_t::host>::config seed_cfg{};
+                seed_cfg.initial_sigmas = stddevs;
                 // Seed generator
                 traccc::seed_generator<typename detector_traits_t::host> sg(
-                    det, stddevs);
+                    det, seed_cfg);
                 evt_data.generate_truth_candidates(
                     truth_track_candidates, truth_measurements, sg, host_mr);
             });

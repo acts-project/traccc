@@ -18,8 +18,9 @@
 namespace traccc::hip {
 
 clusterization_algorithm::clusterization_algorithm(
-    const traccc::memory_resource& mr, vecmem::copy& copy, hip::stream& str,
-    const config_type& config, std::unique_ptr<const Logger> logger)
+    const traccc::memory_resource& mr, const vecmem::copy& copy,
+    hip::stream& str, const config_type& config,
+    std::unique_ptr<const Logger> logger)
     : device::clusterization_algorithm(mr, copy, config, std::move(logger)),
       hip::algorithm_base(str) {}
 

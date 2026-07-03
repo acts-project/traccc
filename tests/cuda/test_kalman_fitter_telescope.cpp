@@ -30,6 +30,7 @@
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
 #include <vecmem/utils/cuda/copy.hpp>
+#include <vecmem/utils/cuda/stream_wrapper.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>
@@ -112,6 +113,8 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
         traccc::measurement_smearer<traccc::default_algebra>>;
 
     typename writer_type::config smearer_writer_cfg{meas_smearer};
+    traccc::seed_generator<host_detector_type>::config seed_cfg{};
+    seed_cfg.initial_sigmas = stddevs;
 
     // Run simulator
     const std::string full_path = io::data_directory() + path;
@@ -128,7 +131,8 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
      ***************/
 
     // Stream object
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     // Copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
@@ -139,7 +143,7 @@ TEST_P(KalmanFittingTelescopeTests, Run) {
 
     // Seed generator
     seed_generator<host_detector_type> sg(
-        polymorphic_detector.as<detector_traits>(), stddevs);
+        polymorphic_detector.as<detector_traits>(), seed_cfg);
 
     // Fitting algorithm object
     traccc::cuda::kalman_fitting_algorithm::config_type fit_cfg;

@@ -9,61 +9,72 @@
 
 // Local include(s).
 #include "traccc/device/global_index.hpp"
+#include "traccc/fitting/device/fit_payload.hpp"
+#include "traccc/fitting/status_codes.hpp"
 
 // Project include(s).
 #include "traccc/edm/track_container.hpp"
 #include "traccc/edm/track_state_helpers.hpp"
-#include "traccc/fitting/status_codes.hpp"
 
 // VecMem include(s).
 #include <vecmem/containers/data/vector_view.hpp>
 
 namespace traccc::device {
 
-template <typename algebra_t>
-TRACCC_HOST_DEVICE inline void fit_prelude(
-    const global_index_t globalIndex,
-    vecmem::data::vector_view<const unsigned int> param_ids_view,
-    typename edm::track_container<algebra_t>::const_view track_candidates_view,
-    typename edm::track_container<algebra_t>::view tracks_view,
-    vecmem::data::vector_view<unsigned int> param_liveness_view) {
+/// Payload for the @c traccc::device::fit_prelude function
+struct fit_prelude_payload {
 
-    typename edm::track_collection<algebra_t>::device tracks(
-        tracks_view.tracks);
+    /// Input track parameter IDs
+    vecmem::data::vector_view<const unsigned int> track_indices;
+    /// Input tracks
+    edm::track_container<default_algebra>::const_view input_tracks;
+    /// Output tracks
+    edm::track_container<default_algebra>::view output_tracks;
+    /// Output track liveness
+    vecmem::data::vector_view<unsigned int> track_liveness;
+
+};  // struct fit_prelude_payload
+
+/// Function to prepare the fitting payloads for the fitting algorithm
+TRACCC_HOST_DEVICE inline void fit_prelude(const global_index_t globalIndex,
+                                           const fit_prelude_payload& payload) {
+
+    edm::track_collection<default_algebra>::device tracks(
+        payload.output_tracks.tracks);
 
     if (globalIndex >= tracks.size()) {
         return;
     }
 
-    typename edm::track_state_collection<algebra_t>::device track_states(
-        tracks_view.states);
+    edm::track_state_collection<default_algebra>::device track_states(
+        payload.output_tracks.states);
 
-    vecmem::device_vector<const unsigned int> param_ids(param_ids_view);
-    vecmem::device_vector<unsigned int> param_liveness(param_liveness_view);
+    vecmem::device_vector<const unsigned int> track_indices(
+        payload.track_indices);
+    vecmem::device_vector<unsigned int> track_liveness(payload.track_liveness);
 
-    const unsigned int param_id = param_ids.at(globalIndex);
+    const unsigned int param_id = track_indices.at(globalIndex);
 
     edm::track track = tracks.at(param_id);
 
-    const typename edm::track_collection<algebra_t>::const_device
-        track_candidates{track_candidates_view.tracks};
+    const edm::track_collection<default_algebra>::const_device track_candidates{
+        payload.input_tracks.tracks};
     const edm::track track_candidate = track_candidates.at(param_id);
     const auto track_candidate_constituent_links =
         track_candidate.constituent_links();
     const edm::measurement_collection::const_device measurements{
-        track_candidates_view.measurements};
+        payload.input_tracks.measurements};
     for (const edm::track_constituent_link& link :
          track_candidate_constituent_links) {
         assert(link.type == edm::track_constituent_link::measurement);
         const unsigned int track_state_index = track_states.push_back(
-            edm::make_track_state<algebra_t>(measurements, link.index));
+            edm::make_track_state<default_algebra>(measurements, link.index));
         track.constituent_links().push_back(
             {edm::track_constituent_link::track_state, track_state_index});
     }
 
     // TODO: Set other stuff in the header?
     track.params() = track_candidate.params();
-    param_liveness.at(param_id) = 1u;
+    track_liveness.at(param_id) = 1u;
 }
-
 }  // namespace traccc::device

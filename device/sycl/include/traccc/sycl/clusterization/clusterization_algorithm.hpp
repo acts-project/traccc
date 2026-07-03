@@ -36,7 +36,7 @@ class clusterization_algorithm : public device::clusterization_algorithm,
     ///              invocation
     /// @param config the clustering configuration
     clusterization_algorithm(
-        const traccc::memory_resource& mr, vecmem::copy& copy,
+        const traccc::memory_resource& mr, const vecmem::copy& copy,
         queue_wrapper& queue, const config_type& config,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 

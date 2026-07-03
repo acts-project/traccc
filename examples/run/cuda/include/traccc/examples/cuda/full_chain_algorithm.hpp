@@ -17,7 +17,7 @@
 #include "traccc/cuda/seeding/seed_parameter_estimation_algorithm.hpp"
 #include "traccc/cuda/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/cuda/seeding/triplet_seeding_algorithm.hpp"
-#include "traccc/cuda/utils/stream.hpp"
+#include "traccc/cuda/utils/stream_wrapper.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/track_collection.hpp"
 #include "traccc/edm/track_parameters.hpp"
@@ -36,6 +36,7 @@
 #include <vecmem/memory/cuda/host_memory_resource.hpp>
 #include <vecmem/memory/memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
+#include <vecmem/utils/cuda/stream_wrapper.hpp>
 
 // System include(s).
 #include <memory>
@@ -123,8 +124,10 @@ class full_chain_algorithm
     vecmem::cuda::host_memory_resource m_pinned_host_mr;
     /// Cached pinned host memory resource
     mutable vecmem::binary_page_memory_resource m_cached_pinned_host_mr;
-    /// CUDA stream to use
-    stream m_stream;
+    /// (vecmem) CUDA stream to use
+    vecmem::cuda::stream_wrapper m_vecmem_stream;
+    /// (traccc) CUDA stream to use
+    stream_wrapper m_stream;
     /// Device memory resource
     vecmem::cuda::device_memory_resource m_device_mr;
     /// Device caching memory resource

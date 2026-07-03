@@ -56,10 +56,10 @@ struct simulator {
     };
 
     using actor_chain_type = detray::actor_chain<
-        detray::actor::momentum_aborter<scalar_type>,
         detray::actor::parameter_updater<
             algebra_type, detray::actor::random_scatterer<algebra_type>,
-            writer_t>>;
+            writer_t>,
+        detray::actor::momentum_aborter<scalar_type>>;
 
     using navigator_type = detray::caching_navigator<detector_t>;
     using stepper_type = detray::rk_stepper<
@@ -120,8 +120,8 @@ struct simulator {
             m_scatterer.set_seed(event_id);
             writer_state.set_seed(event_id);
 
-            auto actor_states = detray::tie(m_aborter_state, m_updater_state,
-                                            m_scatterer, writer_state);
+            auto actor_states = detray::tie(m_updater_state, m_scatterer,
+                                            m_aborter_state, writer_state);
 
             for (auto track : *m_track_generator.get()) {
 

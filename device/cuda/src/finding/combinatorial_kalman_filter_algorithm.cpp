@@ -12,7 +12,8 @@ namespace traccc::cuda {
 
 combinatorial_kalman_filter_algorithm::combinatorial_kalman_filter_algorithm(
     const finding_config& config, const traccc::memory_resource& mr,
-    vecmem::copy& copy, cuda::stream& str, std::unique_ptr<const Logger> logger)
+    const vecmem::copy& copy, const stream_wrapper& str,
+    std::unique_ptr<const Logger> logger)
     : device::combinatorial_kalman_filter_algorithm(config, mr, copy,
                                                     std::move(logger)),
       cuda::algorithm_base(str) {}

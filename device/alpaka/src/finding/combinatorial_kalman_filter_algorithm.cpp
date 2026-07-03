@@ -197,7 +197,8 @@ struct build_tracks {
 
 combinatorial_kalman_filter_algorithm::combinatorial_kalman_filter_algorithm(
     const config_type& config, const traccc::memory_resource& mr,
-    vecmem::copy& copy, alpaka::queue& q, std::unique_ptr<const Logger> logger)
+    const vecmem::copy& copy, alpaka::queue& q,
+    std::unique_ptr<const Logger> logger)
     : device::combinatorial_kalman_filter_algorithm(config, mr, copy,
                                                     std::move(logger)),
       alpaka::algorithm_base(q) {}

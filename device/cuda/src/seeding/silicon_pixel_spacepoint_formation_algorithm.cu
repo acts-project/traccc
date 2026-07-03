@@ -34,8 +34,8 @@ __global__ void __launch_bounds__(1024, 1)
 
 silicon_pixel_spacepoint_formation_algorithm::
     silicon_pixel_spacepoint_formation_algorithm(
-        const traccc::memory_resource& mr, vecmem::copy& copy,
-        cuda::stream& str, std::unique_ptr<const Logger> logger)
+        const traccc::memory_resource& mr, const vecmem::copy& copy,
+        const stream_wrapper& str, std::unique_ptr<const Logger> logger)
     : device::silicon_pixel_spacepoint_formation_algorithm(mr, copy,
                                                            std::move(logger)),
       cuda::algorithm_base(str) {}

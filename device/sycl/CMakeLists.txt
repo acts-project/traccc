@@ -4,12 +4,14 @@
 #
 # Mozilla Public License Version 2.0
 
+# We need the SYCL language in this directory.
+include( vecmem-check-language )
+vecmem_check_language( SYCL )
+enable_language( SYCL )
+
 # Project include(s).
 include( traccc-compiler-options-cpp )
 include( traccc-compiler-options-sycl )
-
-# We need the SYCL language in this directory.
-enable_language( SYCL )
 
 # Set up the build of the traccc::sycl library.
 traccc_add_library( traccc_sycl sycl TYPE SHARED
@@ -25,6 +27,9 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "src/seeding/triplet_seeding_algorithm.sycl"
   "include/traccc/sycl/seeding/seed_parameter_estimation_algorithm.hpp"
   "src/seeding/seed_parameter_estimation_algorithm.sycl"
+  # GBTS seeding algorithm(s).
+  "include/traccc/sycl/gbts_seeding/gbts_seeding_algorithm.hpp"
+  "src/gbts_seeding/gbts_seeding_algorithm.sycl"
   # Track finding algorithm(s).
   "include/traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
   "src/finding/combinatorial_kalman_filter_algorithm.cpp"
@@ -33,7 +38,6 @@ traccc_add_library( traccc_sycl sycl TYPE SHARED
   "include/traccc/sycl/fitting/kalman_fitting_algorithm.hpp"
   "src/fitting/kalman_fitting_algorithm.cpp"
   "src/fitting/kalman_fitting_algorithm.sycl"
-  "src/fitting/kalman_fitting.hpp"
   # Utilities.
   "include/traccc/sycl/utils/algorithm_base.hpp"
   "src/utils/algorithm_base.sycl"

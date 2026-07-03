@@ -10,6 +10,7 @@
 // Project include(s).
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/track_parameters.hpp"
+#include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 #include "traccc/geometry/detector.hpp"
 #include "traccc/geometry/detector_buffer.hpp"
 #include "traccc/geometry/detector_conditions_description.hpp"
@@ -19,13 +20,12 @@
 #include "traccc/sycl/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
 #include "traccc/sycl/fitting/kalman_fitting_algorithm.hpp"
+#include "traccc/sycl/gbts_seeding/gbts_seeding_algorithm.hpp"
 #include "traccc/sycl/seeding/seed_parameter_estimation_algorithm.hpp"
 #include "traccc/sycl/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/sycl/seeding/triplet_seeding_algorithm.hpp"
 #include "traccc/utils/algorithm.hpp"
 #include "traccc/utils/propagation.hpp"
-// GBTS include for placeholder input (not implemented)
-#include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 
 // VecMem include(s).
 #include <vecmem/memory/binary_page_memory_resource.hpp>
@@ -163,6 +163,8 @@ class full_chain_algorithm
     spacepoint_formation_algorithm m_spacepoint_formation;
     /// Seeding algorithm
     triplet_seeding_algorithm m_seeding;
+    /// Seeding with GBTS algorithm
+    gbts_seeding_algorithm m_gbts_seeding;
     /// Track parameter estimation algorithm
     seed_parameter_estimation_algorithm m_track_parameter_estimation;
     /// Track finding algorithm
@@ -185,8 +187,8 @@ class full_chain_algorithm
     spacepoint_grid_config m_grid_config;
     /// Configuration for the seed filtering
     seedfilter_config m_filter_config;
-    /// placeholder GBTS config
-    [[maybe_unused]] gbts_seedfinder_config m_gbts_config;
+    /// Configuration for the GBTS seed finding
+    gbts_seedfinder_config m_gbts_config;
     /// Configuration for track parameter estimation
     track_params_estimation_config m_track_params_estimation_config;
 

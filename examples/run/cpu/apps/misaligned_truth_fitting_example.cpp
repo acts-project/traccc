@@ -108,13 +108,13 @@ int main(int argc, char* argv[]) {
      *****************************/
 
     /// Standard deviations for seed track parameters
-    static constexpr std::array<scalar, e_bound_size> stddevs = {
-        0.03f * traccc::unit<scalar>::mm,
-        0.03f * traccc::unit<scalar>::mm,
-        0.017f,
-        0.017f,
-        0.001f / traccc::unit<scalar>::GeV,
-        1.f * traccc::unit<scalar>::ns};
+    static constexpr std::array<double, e_bound_size> stddevs = {
+        0.03 * traccc::unit<double>::mm,
+        0.03 * traccc::unit<double>::mm,
+        0.017,
+        0.017,
+        0.001 / traccc::unit<double>::GeV,
+        1. * traccc::unit<double>::ns};
 
     // Fitting algorithm objects
     // Alg0
@@ -131,10 +131,12 @@ int main(int argc, char* argv[]) {
         fit_cfg1, host_mr, copy, logger().clone("FittingAlg1"));
 
     // Seed generators
+    traccc::seed_generator<host_detector_type>::config seed_cfg{};
+    seed_cfg.initial_sigmas = stddevs;
     traccc::seed_generator<host_detector_type> sg0(
-        host_det, stddevs, 0, fit_cfg0.propagation.context);
+        host_det, seed_cfg, 0, fit_cfg0.propagation.context);
     traccc::seed_generator<host_detector_type> sg1(
-        host_det, stddevs, 0, fit_cfg1.propagation.context);
+        host_det, seed_cfg, 0, fit_cfg1.propagation.context);
 
     // Iterate over events
     for (auto event = input_opts.skip;

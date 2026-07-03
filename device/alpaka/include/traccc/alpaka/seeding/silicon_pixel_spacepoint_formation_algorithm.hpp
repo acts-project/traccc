@@ -34,7 +34,8 @@ class silicon_pixel_spacepoint_formation_algorithm
     /// @param logger The logger instance to use
     ///
     silicon_pixel_spacepoint_formation_algorithm(
-        const traccc::memory_resource& mr, vecmem::copy& copy, alpaka::queue& q,
+        const traccc::memory_resource& mr, const vecmem::copy& copy,
+        alpaka::queue& q,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     private:

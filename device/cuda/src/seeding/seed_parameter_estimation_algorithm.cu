@@ -36,8 +36,8 @@ __global__ void estimate_track_params(
 
 seed_parameter_estimation_algorithm::seed_parameter_estimation_algorithm(
     const track_params_estimation_config& config,
-    const traccc::memory_resource& mr, vecmem::copy& copy, cuda::stream& str,
-    std::unique_ptr<const Logger> logger)
+    const traccc::memory_resource& mr, const vecmem::copy& copy,
+    const stream_wrapper& str, std::unique_ptr<const Logger> logger)
     : device::seed_parameter_estimation_algorithm(config, mr, copy,
                                                   std::move(logger)),
       cuda::algorithm_base(str) {}

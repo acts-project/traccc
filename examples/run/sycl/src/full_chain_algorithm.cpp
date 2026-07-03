@@ -91,6 +91,11 @@ full_chain_algorithm::full_chain_algorithm(
                 m_copy,
                 m_data->m_queue_wrapper,
                 log->clone("SeedingAlg")},
+      m_gbts_seeding{gbts_config,
+                     {m_cached_device_mr, &m_cached_pinned_host_mr},
+                     m_copy,
+                     m_data->m_queue_wrapper,
+                     log->clone("GbtsAlg")},
       m_track_parameter_estimation{
           track_params_estimation_config,
           {m_cached_device_mr, &m_cached_pinned_host_mr},
@@ -117,11 +122,6 @@ full_chain_algorithm::full_chain_algorithm(
       m_fitting_config(fitting_config),
       usingGBTS(useGBTS) {
 
-    if (usingGBTS) {
-        TRACCC_ERROR(
-            "GBTS not implemented for sycl, this will run with "
-            "triplet seeding");
-    }
     // Tell the user what device is being used.
     TRACCC_INFO("Using SYCL device: " << m_data->m_queue.device_name());
 
@@ -191,6 +191,11 @@ full_chain_algorithm::full_chain_algorithm(const full_chain_algorithm& parent)
                 m_copy,
                 m_data->m_queue_wrapper,
                 parent.logger().clone("SeedingAlg")},
+      m_gbts_seeding{parent.m_gbts_config,
+                     {m_cached_device_mr, &m_cached_pinned_host_mr},
+                     m_copy,
+                     m_data->m_queue_wrapper,
+                     parent.logger().clone("GbtsAlg")},
       m_track_parameter_estimation{
           parent.m_track_params_estimation_config,
           {m_cached_device_mr, &m_cached_pinned_host_mr},
@@ -250,9 +255,15 @@ full_chain_algorithm::output_type full_chain_algorithm::operator()(
         // Run the seed-finding.
         const spacepoint_formation_algorithm::output_type spacepoints =
             m_spacepoint_formation(m_device_detector, measurements);
+        triplet_seeding_algorithm::output_type seeds;
+        if (usingGBTS) {
+            seeds = m_gbts_seeding(spacepoints, measurements);
+        } else {
+            seeds = m_seeding(spacepoints);
+        }
         const seed_parameter_estimation_algorithm::output_type track_params =
             m_track_parameter_estimation(m_field, measurements, spacepoints,
-                                         m_seeding(spacepoints));
+                                         seeds);
 
         // Run the track finding.
         const finding_algorithm::output_type track_candidates =
@@ -305,9 +316,15 @@ bound_track_parameters_collection_types::host full_chain_algorithm::seeding(
         // Run the seed-finding.
         const spacepoint_formation_algorithm::output_type spacepoints =
             m_spacepoint_formation(m_device_detector, measurements);
+        triplet_seeding_algorithm::output_type seeds;
+        if (usingGBTS) {
+            seeds = m_gbts_seeding(spacepoints, measurements);
+        } else {
+            seeds = m_seeding(spacepoints);
+        }
         const seed_parameter_estimation_algorithm::output_type track_params =
             m_track_parameter_estimation(m_field, measurements, spacepoints,
-                                         m_seeding(spacepoints));
+                                         seeds);
 
         // Copy a limited amount of result data back to the host.
         const auto host_seeds = m_copy.to(track_params, m_cached_pinned_host_mr,

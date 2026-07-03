@@ -23,7 +23,7 @@ struct combinatorial_kalman_filter_algorithm::data {
 
 combinatorial_kalman_filter_algorithm::combinatorial_kalman_filter_algorithm(
     const finding_config& config, const traccc::memory_resource& mr,
-    vecmem::copy& copy, std::unique_ptr<const Logger> logger)
+    const vecmem::copy& copy, std::unique_ptr<const Logger> logger)
     : messaging(std::move(logger)),
       algorithm_base{mr, copy},
       m_data{std::make_unique<data>(config)} {

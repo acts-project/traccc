@@ -36,7 +36,7 @@ class triplet_seeding_algorithm : public device::triplet_seeding_algorithm,
         const seedfinder_config& finder_config,
         const spacepoint_grid_config& grid_config,
         const seedfilter_config& filter_config, const memory_resource& mr,
-        vecmem::copy& copy, cuda::stream& str,
+        const vecmem::copy& copy, const stream_wrapper& str,
         std::unique_ptr<const Logger> logger = getDummyLogger().clone());
 
     private:

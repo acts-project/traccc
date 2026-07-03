@@ -116,6 +116,8 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
         traccc::measurement_smearer<traccc::default_algebra>>;
 
     typename writer_type::config smearer_writer_cfg{meas_smearer};
+    traccc::seed_generator<host_detector_type>::config seed_cfg{};
+    seed_cfg.initial_sigmas = stddevs;
 
     // Run simulator
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
@@ -131,7 +133,7 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
 
     // Seed generator
     seed_generator<host_detector_type> sg(host_detector.as<detector_traits>(),
-                                          stddevs);
+                                          seed_cfg);
 
     // Finding algorithm configuration
     traccc::alpaka::combinatorial_kalman_filter_algorithm::config_type

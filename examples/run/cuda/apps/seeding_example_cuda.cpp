@@ -175,7 +175,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         track_params_estimation_config, host_mr,
         logger().clone("HostTrackParEstAlg"));
 
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     vecmem::cuda::async_copy async_copy{stream.cudaStream()};
 

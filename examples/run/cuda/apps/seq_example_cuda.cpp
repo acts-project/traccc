@@ -18,7 +18,7 @@
 #include "traccc/cuda/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/cuda/seeding/triplet_seeding_algorithm.hpp"
 #include "traccc/cuda/utils/make_magnetic_field.hpp"
-#include "traccc/cuda/utils/stream.hpp"
+#include "traccc/cuda/utils/stream_wrapper.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/efficiency/seeding_performance_writer.hpp"
 #include "traccc/examples/make_magnetic_field.hpp"
@@ -59,6 +59,7 @@
 #include <vecmem/memory/cuda/host_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
+#include <vecmem/utils/cuda/stream_wrapper.hpp>
 
 // System include(s).
 #include <exception>
@@ -91,7 +92,8 @@ int seq_run(const traccc::opts::detector& detector_opts,
     vecmem::copy host_copy;
 
     // CUDA types used.
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
     // Construct the detector description object.

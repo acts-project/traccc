@@ -91,8 +91,9 @@ struct reify_cluster_data {
 }  // namespace kernels
 
 clusterization_algorithm::clusterization_algorithm(
-    const traccc::memory_resource& mr, vecmem::copy& copy, alpaka::queue& q,
-    const config_type& config, std::unique_ptr<const Logger> logger)
+    const traccc::memory_resource& mr, const vecmem::copy& copy,
+    alpaka::queue& q, const config_type& config,
+    std::unique_ptr<const Logger> logger)
     : device::clusterization_algorithm(mr, copy, config, std::move(logger)),
       alpaka::algorithm_base(q) {}
 

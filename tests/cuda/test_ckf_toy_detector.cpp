@@ -28,6 +28,7 @@
 #include <vecmem/memory/cuda/managed_memory_resource.hpp>
 #include <vecmem/memory/host_memory_resource.hpp>
 #include <vecmem/utils/cuda/async_copy.hpp>
+#include <vecmem/utils/cuda/stream_wrapper.hpp>
 
 // GTest include(s).
 #include <gtest/gtest.h>
@@ -107,6 +108,8 @@ TEST_P(CkfToyDetectorTests, Run) {
         traccc::measurement_smearer<traccc::default_algebra>>;
 
     typename writer_type::config smearer_writer_cfg{meas_smearer};
+    traccc::seed_generator<host_detector_type>::config seed_cfg{};
+    seed_cfg.initial_sigmas = stddevs;
 
     // Run simulator
     const std::string full_path = io::data_directory() + path;
@@ -124,14 +127,15 @@ TEST_P(CkfToyDetectorTests, Run) {
      *****************************/
 
     // Stream object
-    traccc::cuda::stream stream;
+    vecmem::cuda::stream_wrapper vecmem_stream;
+    traccc::cuda::stream_wrapper stream{vecmem_stream.stream()};
 
     // Copy objects
     vecmem::cuda::async_copy copy{stream.cudaStream()};
 
     // Seed generator
     seed_generator<host_detector_type> sg(detector.as<detector_traits>(),
-                                          stddevs);
+                                          seed_cfg);
 
     // Finding algorithm configuration
     typename traccc::cuda::combinatorial_kalman_filter_algorithm::config_type

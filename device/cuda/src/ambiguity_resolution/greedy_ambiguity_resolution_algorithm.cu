@@ -76,7 +76,8 @@ struct track_comparator {
 
 greedy_ambiguity_resolution_algorithm::greedy_ambiguity_resolution_algorithm(
     const config_type& cfg, const traccc::memory_resource& mr,
-    vecmem::copy& copy, stream& str, std::unique_ptr<const Logger> logger)
+    const vecmem::copy& copy, const stream_wrapper& str,
+    std::unique_ptr<const Logger> logger)
     : messaging(std::move(logger)),
       m_config(cfg),
       m_mr(mr),
@@ -181,7 +182,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                           .status_view = status_buffer});
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-        m_stream.get().synchronize();
+        m_stream.synchronize();
     }
 
     // Count the number of pre-accepted tracks
@@ -194,7 +195,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                                             &n_accepted, sizeof(unsigned int),
                                             cudaMemcpyHostToDevice, stream));
 
-    m_stream.get().synchronize();
+    m_stream.synchronize();
 
     if (n_accepted == 0) {
         return {};
@@ -261,7 +262,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .meas_id_to_unique_id_view = meas_id_to_unique_id_buffer});
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-        m_stream.get().synchronize();
+        m_stream.synchronize();
     }
 
     // Retreive the counting vector to host for the size allocation of
@@ -316,7 +317,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                     n_accepted_tracks_per_measurement_buffer});
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-        m_stream.get().synchronize();
+        m_stream.synchronize();
     }
 
     // Sort tracks per measurement vector
@@ -332,7 +333,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
             });
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-        m_stream.get().synchronize();
+        m_stream.synchronize();
     }
 
     // Make vector buffer for the number of shared measurements for each track
@@ -357,7 +358,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .n_shared_view = n_shared_buffer});
         TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-        m_stream.get().synchronize();
+        m_stream.synchronize();
     }
 
     // Make relative number of shared measurements vector
@@ -406,7 +407,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
     thrust::copy(thrust_policy, pre_accepted_ids_buffer.ptr(),
                  pre_accepted_ids_buffer.ptr() + n_accepted,
                  sorted_ids_buffer.ptr());
-    m_stream.get().synchronize();
+    m_stream.synchronize();
 
     track_comparator trk_comp(rel_shared_buffer.ptr(), pvals_buffer.ptr());
 
@@ -672,7 +673,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                         cudaMemcpyDeviceToHost, stream);
         cudaMemcpyAsync(&n_accepted, n_accepted_device.get(),
                         sizeof(unsigned int), cudaMemcpyDeviceToHost, stream);
-        m_stream.get().synchronize();
+        m_stream.synchronize();
     }
 
     cudaMemcpyAsync(&n_accepted, n_accepted_device.get(), sizeof(unsigned int),
@@ -702,7 +703,7 @@ greedy_ambiguity_resolution_algorithm::operator()(
                 .res_tracks_view = res_track_candidates_buffer});
             TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 
-            m_stream.get().synchronize();
+            m_stream.synchronize();
         }
     }
 

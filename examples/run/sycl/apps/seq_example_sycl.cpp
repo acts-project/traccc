@@ -18,12 +18,14 @@
 #include "traccc/clusterization/clusterization_algorithm.hpp"
 #include "traccc/device/container_d2h_copy_alg.hpp"
 #include "traccc/finding/combinatorial_kalman_filter_algorithm.hpp"
+#include "traccc/gbts_seeding/gbts_seeding_config.hpp"
 #include "traccc/seeding/seeding_algorithm.hpp"
 #include "traccc/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/seeding/track_params_estimation.hpp"
 #include "traccc/sycl/clusterization/clusterization_algorithm.hpp"
 #include "traccc/sycl/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/sycl/finding/combinatorial_kalman_filter_algorithm.hpp"
+#include "traccc/sycl/gbts_seeding/gbts_seeding_algorithm.hpp"
 #include "traccc/sycl/seeding/seed_parameter_estimation_algorithm.hpp"
 #include "traccc/sycl/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
 #include "traccc/sycl/seeding/triplet_seeding_algorithm.hpp"
@@ -45,6 +47,7 @@
 #include "traccc/options/program_options.hpp"
 #include "traccc/options/track_finding.hpp"
 #include "traccc/options/track_fitting.hpp"
+#include "traccc/options/track_gbts_seeding.hpp"
 #include "traccc/options/track_propagation.hpp"
 #include "traccc/options/track_seeding.hpp"
 
@@ -72,12 +75,13 @@ int seq_run(const traccc::opts::detector& detector_opts,
             const traccc::opts::input_data& input_opts,
             const traccc::opts::clusterization& clusterization_opts,
             const traccc::opts::track_seeding& seeding_opts,
+            const traccc::opts::track_gbts_seeding& seeding_gbts_opts,
             const traccc::opts::track_finding& finding_opts,
             const traccc::opts::track_propagation& propagation_opts,
             const traccc::opts::track_fitting& /*fitting_opts*/,
             const traccc::opts::performance& performance_opts,
             const traccc::opts::accelerator& accelerator_opts,
-            std::unique_ptr<const traccc::Logger> ilogger) {
+            std::unique_ptr<const traccc::Logger> ilogger, bool usingGBTS) {
     TRACCC_LOCAL_LOGGER(std::move(ilogger));
 
     // Creating SYCL queue object
@@ -162,6 +166,9 @@ int seq_run(const traccc::opts::detector& detector_opts,
     const traccc::seedfilter_config seedfilter_config(seeding_opts);
     const traccc::spacepoint_grid_config spacepoint_grid_config(seeding_opts);
 
+    // GBTS seeding configuration
+    const traccc::gbts_seedfinder_config gbts_config(seeding_gbts_opts);
+
     detray::propagation::config propagation_config(propagation_opts);
 
     traccc::finding_config finding_cfg(finding_opts);
@@ -192,6 +199,9 @@ int seq_run(const traccc::opts::detector& detector_opts,
     traccc::sycl::triplet_seeding_algorithm sa_sycl(
         seedfinder_config, spacepoint_grid_config, seedfilter_config, mr, copy,
         traccc_queue, logger().clone("SyclSeedingAlg"));
+    traccc::sycl::gbts_seeding_algorithm gbts_sa_sycl(
+        gbts_config, mr, copy, traccc_queue,
+        logger().clone("SyclGbtsSeedingAlg"));
     traccc::sycl::seed_parameter_estimation_algorithm tp_sycl(
         track_params_estimation_config, mr, copy, traccc_queue,
         logger().clone("SyclTrackParEstAlg"));
@@ -294,7 +304,12 @@ int seq_run(const traccc::opts::detector& detector_opts,
             // SYCL
             {
                 traccc::performance::timer t("Seeding (sycl)", elapsedTimes);
-                seeds_sycl_buffer = sa_sycl(spacepoints_sycl_buffer);
+                if (usingGBTS) {
+                    seeds_sycl_buffer = gbts_sa_sycl(spacepoints_sycl_buffer,
+                                                     measurements_sycl_buffer);
+                } else {
+                    seeds_sycl_buffer = sa_sycl(spacepoints_sycl_buffer);
+                }
                 vecmem_queue.synchronize();
             }  // stop measuring seeding sycl timer
 
@@ -469,6 +484,7 @@ int main(int argc, char* argv[]) {
     traccc::opts::input_data input_opts;
     traccc::opts::clusterization clusterization_opts;
     traccc::opts::track_seeding seeding_opts;
+    traccc::opts::track_gbts_seeding seeding_gbts_opts;
     traccc::opts::track_finding finding_opts;
     traccc::opts::track_propagation propagation_opts;
     traccc::opts::track_fitting fitting_opts;
@@ -477,14 +493,16 @@ int main(int argc, char* argv[]) {
     traccc::opts::program_options program_opts{
         "Full Tracking Chain Using SYCL",
         {detector_opts, bfield_opts, input_opts, clusterization_opts,
-         seeding_opts, finding_opts, propagation_opts, fitting_opts,
-         performance_opts, accelerator_opts},
+         seeding_opts, seeding_gbts_opts, finding_opts, propagation_opts,
+         fitting_opts, performance_opts, accelerator_opts},
         argc,
         argv,
         logger->cloneWithSuffix("Options")};
 
     // Run the application.
     return seq_run(detector_opts, bfield_opts, input_opts, clusterization_opts,
-                   seeding_opts, finding_opts, propagation_opts, fitting_opts,
-                   performance_opts, accelerator_opts, logger->clone());
+                   seeding_opts, seeding_gbts_opts, finding_opts,
+                   propagation_opts, fitting_opts, performance_opts,
+                   accelerator_opts, logger->clone(),
+                   seeding_gbts_opts.useGBTS);
 }

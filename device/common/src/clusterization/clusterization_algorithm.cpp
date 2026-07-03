@@ -13,7 +13,7 @@
 namespace traccc::device {
 
 clusterization_algorithm::clusterization_algorithm(
-    const traccc::memory_resource& mr, vecmem::copy& cp,
+    const traccc::memory_resource& mr, const vecmem::copy& cp,
     const config_type& config, std::unique_ptr<const Logger> logger)
     : messaging(std::move(logger)),
       algorithm_base{mr, cp},
