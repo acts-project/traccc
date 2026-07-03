@@ -162,13 +162,13 @@ if(TRACCC_ENABLE_NVTX_PROFILING)
 
     target_link_libraries(
         nvtx_instrumentation
-        PRIVATE CUDA::nvToolsExt ${CMAKE_DL_LIBS}
+        PRIVATE CUDA::nvtx3 ${CMAKE_DL_LIBS}
     )
 
     target_compile_options(
         traccc_cuda
-        PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-finstrument-functions>
-        $<$<COMPILE_LANGUAGE:CXX>:-finstrument-functions>)
+        PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-finstrument-functions;-Xcompiler=-finstrument-functions-exclude-file-list=nvtx3/>
+        $<$<COMPILE_LANGUAGE:CXX>:-finstrument-functions;-finstrument-functions-exclude-file-list=nvtx3/>)
 
     target_link_libraries(
         traccc_cuda
