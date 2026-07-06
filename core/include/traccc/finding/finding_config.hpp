@@ -94,9 +94,9 @@ struct finding_config {
 
     /// Run the progressive Kalman filter (PKF) for track finding if branching
     /// is turned off
-    bool run_pkf = false;
+    bool run_pkf = true;
     /// The type of smoother to be run in track finding
-    smoother_type run_smoother = smoother_type::e_mbf;
+    smoother_type run_smoother = smoother_type::e_kalman;
 
     /// Minimum step length that track should make to reach the next surface. It
     /// should be set higher than the overstep tolerance not to make it stay on

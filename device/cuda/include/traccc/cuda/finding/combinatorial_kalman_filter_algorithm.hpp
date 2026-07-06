@@ -11,8 +11,8 @@
 #include "traccc/cuda/utils/algorithm_base.hpp"
 
 // Project include(s).
+#include "traccc/cuda/fitting/kalman_fitting_algorithm.hpp"
 #include "traccc/finding/device/combinatorial_kalman_filter_algorithm.hpp"
-#include "traccc/fitting/device/kalman_fitting_algorithm.hpp"
 
 namespace traccc::cuda {
 
@@ -26,7 +26,9 @@ class combinatorial_kalman_filter_algorithm
     combinatorial_kalman_filter_algorithm(
         const finding_config& config, const traccc::memory_resource& mr,
         const vecmem::copy& copy, const stream_wrapper& str,
-        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone(),
+        std::unique_ptr<traccc::cuda::kalman_fitting_algorithm> kf_fitter =
+            nullptr);
 
     private:
     /// @name Function(s) inherited from
@@ -203,16 +205,6 @@ class combinatorial_kalman_filter_algorithm
         unsigned int n_threads, bool run_mbf_smoother,
         const measurement_selector::config& calib_cfg,
         const device::build_tracks_payload& payload) const override;
-
-    /// Launch the @c kalman_smoother kernel
-    ///
-    /// @param n_threads The number of threads to launch the kernel with
-    /// @param seqs_buffer The surface descriptor sequence buffer
-    /// @param payload The payload for the kernel
-    ///
-    /*virtual void kalman_smoother_kernel(
-        unsigned int n_threads, std::any seqs_buffer,
-        const device::kalman_smoother_payload& payload) const override;*/
 
     /// @}
 

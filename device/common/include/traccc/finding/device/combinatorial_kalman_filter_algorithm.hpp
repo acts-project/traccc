@@ -41,7 +41,6 @@
 #include <vecmem/containers/data/vector_buffer.hpp>
 
 // System include(s).
-#include <any>
 #include <memory>
 
 namespace traccc::device {
@@ -260,39 +259,6 @@ class combinatorial_kalman_filter_algorithm
         unsigned int n_threads, bool run_mbf_smoother,
         const measurement_selector::config& calib_cfg,
         const device::build_tracks_payload& payload) const = 0;
-
-    /// Prepare a detector+bfield specific payload for the fitting kernel(s)
-    ///
-    /// Function to be used by the specific @c prepare_fit_payload functions
-    /// for preparing the payload. Since apart from different template types,
-    /// they all work the same way.
-    ///
-    /// @tparam detector_list_t The list of supported detector types to use for
-    ///                        the visitor
-    /// @tparam bfield_list_t  The list of supported b-field types to use for
-    ///                        the visitor
-    ///
-    /// @param det             The detector buffer to prepare the payload for
-    /// @param field           The magnetic field to prepare the payload for
-    /// @param n_surfaces      The number of surfaces for each track to be
-    ///                        fitted
-    /// @param payload         The (non-templated) payload for the kernel(s)
-    ///
-    /// @return The prepared payload for the fitting kernel(s)
-    ///
-    /*template <typename detector_list_t, typename bfield_list_t>
-    fit_payload prepare_fit_payload_helper(
-        const detector_buffer& det, const magnetic_field& field,
-        const std::vector<unsigned int>& n_surfaces,
-        const device::fit_payload& payload) const;*/
-
-    /// Launch the @c kalman_smoother kernel
-    ///
-    /// @param config The fitting configuration
-    /// @param payload The payload for the fitting kernel(s)
-    ///
-    /*virtual void kalman_smoother_kernel(const fitting_config& config,
-                                        const fit_payload& payload) const = 0;*/
 
     /// @}
 

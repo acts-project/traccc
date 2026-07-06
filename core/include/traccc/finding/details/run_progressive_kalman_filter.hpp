@@ -94,9 +94,8 @@ run_progressive_kalman_filter(
             continue;
         }
 
-        auto up = std::upper_bound(measurements.surface_link().begin(),
-                                   measurements.surface_link().end(),
-                                   sf_desc.identifier());
+        auto up = std::ranges::upper_bound(measurements.surface_link(),
+                                           sf_desc.identifier());
         meas_ranges.push_back(static_cast<unsigned int>(
             std::distance(measurements.surface_link().begin(), up)));
     }

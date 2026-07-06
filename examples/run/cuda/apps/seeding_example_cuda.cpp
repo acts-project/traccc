@@ -205,8 +205,14 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     // Finding algorithm object
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(
         cfg, host_mr, logger().clone("HostFindingAlg"));
+
+    auto device_fitting =
+        std::make_unique<traccc::cuda::kalman_fitting_algorithm>(
+            cfg.kalman_smoother, mr, async_copy, stream,
+            logger().clone("CudaFittingAlg"));
     traccc::cuda::combinatorial_kalman_filter_algorithm device_finding(
-        cfg, mr, async_copy, stream, logger().clone("CudaFindingAlg"));
+        cfg, mr, async_copy, stream, logger().clone("CudaFindingAlg"),
+        std::move(device_fitting));
 
     traccc::performance::timing_info elapsedTimes;
 

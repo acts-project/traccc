@@ -12,6 +12,7 @@
 
 // Project include(s).
 #include "traccc/finding/device/combinatorial_kalman_filter_algorithm.hpp"
+#include "traccc/sycl/fitting/kalman_fitting_algorithm.hpp"
 
 // System include(s).
 #include <memory>
@@ -28,7 +29,9 @@ class combinatorial_kalman_filter_algorithm
     combinatorial_kalman_filter_algorithm(
         const finding_config& config, const traccc::memory_resource& mr,
         const vecmem::copy& copy, queue_wrapper& queue,
-        std::unique_ptr<const Logger> logger = getDummyLogger().clone());
+        std::unique_ptr<const Logger> logger = getDummyLogger().clone(),
+        std::unique_ptr<traccc::sycl::kalman_fitting_algorithm> kf_fitter =
+            nullptr);
 
     private:
     /// @name Function(s) inherited from
@@ -60,7 +63,7 @@ class combinatorial_kalman_filter_algorithm
 
     /// Launch the @c progressive_kalman_filter kernel
     ///
-    /// @param n_seeds The number of input seeds (same as the number of threads)
+    /// @param n_threads The number of threads to launch the kernel with
     /// @param config The track finding configuration
     /// @param det The detector object
     /// @param bfield The magnetic field object
@@ -68,10 +71,11 @@ class combinatorial_kalman_filter_algorithm
     ///
     /// @returns the type-erased surface sequence buffer
     ///
-    std::any progressive_kalman_filter_kernel(
-        unsigned int n_seeds, const finding_config& config,
+    void progressive_kalman_filter_kernel(
+        unsigned int n_threads, const finding_config& config,
         const detector_buffer& det, const magnetic_field& bfield,
-        const device::progressive_kalman_filter_payload& payload)
+        const device::progressive_kalman_filter_payload& payload,
+        const device::kalman_fitting_algorithm::fit_payload& smoothing_payload)
         const override;
 
     /// Track finding kernel launcher

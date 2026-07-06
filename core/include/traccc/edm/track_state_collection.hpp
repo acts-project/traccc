@@ -197,8 +197,8 @@ class track_state : public BASE {
     /// @returns a string stream that prints the track state details
     TRACCC_HOST
     friend std::ostream& operator<<(std::ostream& os, const track_state& s) {
-        os << "hole: " << std::boolalpha << s.is_hole() << std::noboolalpha
-           << std::endl;
+        os << "hole: " << std::boolalpha << s.is_hole() << std::endl;
+        os << "smoothed: " << s.is_smoothed() << std::noboolalpha << std::endl;
         if (!s.is_hole()) {
             os << "measurement index: " << s.measurement_index() << std::endl;
         }

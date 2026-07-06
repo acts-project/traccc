@@ -266,7 +266,6 @@ void finding_performance_writer::write_common(
             total_duplicate_tracks += n_matched_seeds_for_particle - 1;
         } else {
             TRACCC_DEBUG("Not matched: " << pid);
-            std::cout << pid << std::endl;
         }
 
         // Finds how many (fake) tracks were made with at least one hit from the
@@ -315,7 +314,6 @@ void finding_performance_writer::write(
         track_view};
 
     const unsigned int n_tracks = tracks.tracks.size();
-
     for (unsigned int i = 0; i < n_tracks; i++) {
         if (m_cfg.require_fit &&
             tracks.tracks.at(i).fit_outcome() != track_fit_outcome::SUCCESS) {

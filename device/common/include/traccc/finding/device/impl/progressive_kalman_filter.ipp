@@ -58,8 +58,8 @@ TRACCC_HOST_DEVICE inline void progressive_kalman_filter(
         payload.measurements_view);
 
     // Set the data pointer to the beginning of the range of the track
-    const auto cand_offset{
-        static_cast<int>(globalIndex * cfg.max_track_candidates_per_track)};
+    const auto cand_offset{static_cast<unsigned int>(
+        globalIndex * cfg.max_track_candidates_per_track)};
 
     track_state_candidate_data<algebra_t> candidate_data(
         cfg.run_smoother, cand_offset, payload.track_cand_view,

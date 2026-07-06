@@ -106,31 +106,35 @@ auto combinatorial_kalman_filter_algorithm::operator()(
             {0u, mr().main, vecmem::data::buffer_type::resizable},
             measurements_view};
 
-    // Setup the surface sequence buffer
-    const unsigned int n_surfaces_per_track{
-        std::max(cfg.max_track_candidates_per_track *
-                     cfg.kalman_smoother.surface_sequence_size_factor,
-                 cfg.kalman_smoother.min_surface_sequence_capacity)};
-    std::vector<unsigned int> seqs_sizes(
-        n_seeds, cfg.run_smoother == smoother_type::e_kalman
-                     ? n_surfaces_per_track
-                     : 0u);
-
-    // Not needed
-    vecmem::data::vector_buffer<unsigned int> param_ids_buffer(0u, mr().main);
-    vecmem::data::vector_buffer<unsigned int> param_liveness_buffer(0u,
-                                                                    mr().main);
-
-    // Prepare the payload for the fitting kernel.
+    // Prepare the payload for the fitting kernel (only for valid fitting alg.)
     kalman_fitting_algorithm::fit_payload smoothing_payload{det, bfield};
-    if (m_kf_fitter != nullptr) {
-        auto bla = m_kf_fitter->prepare_fit_payload(
-            det, bfield, seqs_sizes,
-            {param_ids_buffer, param_liveness_buffer, track_candidates_buffer});
-        smoothing_payload.payload = bla.payload;
-        smoothing_payload.surfaces = std::move(bla.surfaces);
-        smoothing_payload.host_tpayload = bla.host_tpayload;
-        smoothing_payload.device_tpayload = std::move(bla.device_tpayload);
+
+    if (cfg.run_smoother == smoother_type::e_kalman) {
+        assert(m_kf_fitter != nullptr);
+
+        // Setup the surface sequence buffer
+        const unsigned int n_surfaces_per_track{
+            std::max(cfg.max_track_candidates_per_track *
+                         cfg.kalman_smoother.surface_sequence_size_factor,
+                     cfg.kalman_smoother.min_surface_sequence_capacity)};
+        std::vector<unsigned int> seqs_sizes(n_seeds, n_surfaces_per_track);
+
+        // Not needed for PKF
+        vecmem::data::vector_view<unsigned int> param_ids_view{};
+        vecmem::data::vector_view<unsigned int> param_liveness_view{};
+
+        kalman_fitting_algorithm::fit_payload tmp =
+            m_kf_fitter->prepare_fit_payload(
+                det, bfield, seqs_sizes,
+                {param_ids_view, param_liveness_view, track_candidates_buffer});
+
+        // Save the (non-templated) host payload.
+        smoothing_payload.payload = tmp.payload;
+
+        // Save all the type erased payloads into it.
+        smoothing_payload.surfaces = std::move(tmp.surfaces);
+        smoothing_payload.host_tpayload = tmp.host_tpayload;
+        smoothing_payload.device_tpayload = std::move(tmp.device_tpayload);
     }
 
     /*****************************************************************
@@ -155,6 +159,8 @@ auto combinatorial_kalman_filter_algorithm::operator()(
                 measurements_view);
         copy().setup(track_candidates_buffer.tracks)->ignore();
         copy().setup(track_candidates_buffer.states)->ignore();
+
+        smoothing_payload.payload.tracks = track_candidates_buffer;
 
         // Get output track statistics
         vecmem::data::vector_buffer<track_stats<scalar_t>> track_stats_buffer{
@@ -207,7 +213,7 @@ auto combinatorial_kalman_filter_algorithm::operator()(
 
     else {
 
-        param_liveness_buffer =
+        vecmem::data::vector_buffer<unsigned int> param_liveness_buffer =
             vecmem::data::vector_buffer<unsigned int>(n_seeds, mr().main);
         copy().setup(param_liveness_buffer)->ignore();
         copy().memset(param_liveness_buffer, 1)->ignore();
@@ -428,8 +434,9 @@ auto combinatorial_kalman_filter_algorithm::operator()(
             }
 
             // Set up the buffer used in the next few steps
-            param_ids_buffer = vecmem::data::vector_buffer<unsigned int>(
-                n_candidates, mr().main);
+            vecmem::data::vector_buffer<unsigned int> param_ids_buffer =
+                vecmem::data::vector_buffer<unsigned int>(n_candidates,
+                                                          mr().main);
             copy().setup(param_ids_buffer)->ignore();
 
             /*
@@ -651,6 +658,8 @@ auto combinatorial_kalman_filter_algorithm::operator()(
         copy().setup(track_candidates_buffer.tracks)->ignore();
         copy().setup(track_candidates_buffer.states)->ignore();
 
+        smoothing_payload.payload.tracks = track_candidates_buffer;
+
         // @Note: nBlocks can be zero in case there is no tip. This happens when
         // chi2_max cfg is set tightly and no tips are found
         if (n_tips_total > 0) {
@@ -677,27 +686,12 @@ auto combinatorial_kalman_filter_algorithm::operator()(
     /// Run a Kalman filter in back propagation mode to smoothe the tracks
     if (cfg.run_smoother == smoother_type::e_kalman) {
 
-        /*kalman_smoother_kernel(seqs_buffer,
-                               {.param_ids_view = param_ids_buffer,
-                                .param_liveness_view = param_liveness_buffer,
-                                .tracks_view = track_candidates_buffer});*/
+        assert(m_kf_fitter != nullptr);
 
-        // Allocate the fitting kernels's payload in host memory.
-        /*using fitter_t =
-            traccc::details::kalman_fitter_t<detector_t, bfield_t>;
-        device::fit_payload<fitter_t> host_payload{
-            .det_data = det,
-            .field_data = field,
-            .param_ids_view = param_ids_buffer,
-            .param_liveness_view = param_liveness_buffer,
-            .tracks_view = track_candidates_buffer,
-            .surfaces_view = seqs_buffer};
+        m_kf_fitter->fit_backward_kernel(cfg.kalman_smoother,
+                                         smoothing_payload);
 
-        // Run the track fitting
-        fit_backward<fitter_t>(nBlocks, nThreads, 0, stream,
-                                cfg.kalman_smoother, host_payload);
-        TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());*/
-    } else if (cfg.run_smoother == smoother_type::e_mbf) {
+    } else if (cfg.run_pkf && cfg.run_smoother == smoother_type::e_mbf) {
         std::cout << "FATAL: MBF smoother not implemented for "
                      "progressive filter!"
                   << std::endl;
