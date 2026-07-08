@@ -91,6 +91,11 @@ struct clustering_config {
         clustering_diameter_strategy::CHANNEL1;
 
     /**
+     * @brief Sort the cells before running
+     */
+    bool sort_cells = false;
+
+    /**
      * @brief The maximum number of cells per partition.
      */
     TRACCC_HOST_DEVICE constexpr unsigned int max_partition_size() const {

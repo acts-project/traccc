@@ -15,6 +15,9 @@
 // HIP include(s).
 #include <hip/hip_runtime.h>
 
+// System include(s).
+#include <stdexcept>
+
 namespace traccc::hip {
 
 clusterization_algorithm::clusterization_algorithm(
@@ -24,11 +27,27 @@ clusterization_algorithm::clusterization_algorithm(
     : device::clusterization_algorithm(mr, copy, config, std::move(logger)),
       hip::algorithm_base(str) {}
 
-bool clusterization_algorithm::input_is_valid(
+bool clusterization_algorithm::input_is_contiguous(
     const edm::silicon_cell_collection::const_view& /*cells*/) const {
 
     /// TODO: implement input checks
     return true;
+}
+
+bool clusterization_algorithm::input_is_sorted(
+    const edm::silicon_cell_collection::const_view& /*cells*/) const {
+
+    /// TODO: implement input checks
+    return true;
+}
+
+void clusterization_algorithm::sort_cells_kernel(
+    const unsigned int, const edm::silicon_cell_collection::const_view&,
+    edm::silicon_cell_collection::view&,
+    vecmem::data::vector_view<unsigned int>&, const bool) const {
+
+    throw std::runtime_error(
+        "Cell sorting is not yet implemented for the HIP backend.");
 }
 
 void clusterization_algorithm::ccl_kernel(
@@ -53,14 +72,19 @@ void clusterization_algorithm::ccl_kernel(
 void clusterization_algorithm::cluster_maker_kernel(
     unsigned int num_cells,
     const vecmem::data::vector_view<unsigned int>& disjoint_set,
-    edm::silicon_cluster_collection::view& cluster_data) const {
+    edm::silicon_cluster_collection::view& cluster_data,
+    const vecmem::data::vector_view<const unsigned int>& permutation_map_view)
+    const {
 
     const unsigned int num_threads = warp_size() * 16u;
     const unsigned int num_blocks = (num_cells + num_threads - 1) / num_threads;
     hipLaunchKernelGGL(kernels::reify_cluster_data, num_blocks, num_threads, 0,
                        details::get_stream(stream()), disjoint_set,
-                       cluster_data);
+                       permutation_map_view, cluster_data);
     TRACCC_HIP_ERROR_CHECK(hipGetLastError());
+    // The base class destroys the input buffers right after this call, so
+    // the kernel must finish before returning.
+    stream().synchronize();
 }
 
 }  // namespace traccc::hip
