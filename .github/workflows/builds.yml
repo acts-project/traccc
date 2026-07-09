@@ -180,8 +180,8 @@ jobs:
         run: |
           export CMAKE_PREFIX_PATH=/json_install/:/vecmem_install/:/covfie_install/:${CMAKE_PREFIX_PATH}
           wget https://github.com/acts-project/acts/archive/refs/tags/v46.7.0.tar.gz
-          git clone https://github.com/acts-project/acts.git acts-46.8.1-dirty
-          (cd acts-46.8.1-dirty; git checkout acc4063c91b8858ecd969c6c1a81a46b7da29eb1)
+          git clone https://github.com/stephenswat/acts.git acts-46.8.1-dirty
+          (cd acts-46.8.1-dirty; git checkout f753eaf49d21d7cd61e6df92f320b00af458a9fe)
           export CXX=g++
           cmake \
             -S acts-46.8.1-dirty \

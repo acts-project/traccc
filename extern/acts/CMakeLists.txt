@@ -13,8 +13,8 @@ message( STATUS "Building Acts (including Detray) as part of the TRACCC project"
 
 # Declare where to get Acts from.
 set( TRACCC_ACTS_SOURCE
-   GIT_REPOSITORY https://github.com/acts-project/acts.git
-   GIT_TAG acc4063c91b8858ecd969c6c1a81a46b7da29eb1
+   GIT_REPOSITORY https://github.com/stephenswat/acts.git
+   GIT_TAG f753eaf49d21d7cd61e6df92f320b00af458a9fe
    CACHE STRING "Source for Acts, when built as part of this project" )
 mark_as_advanced( TRACCC_ACTS_SOURCE )
 FetchContent_Declare( Acts SYSTEM ${TRACCC_ACTS_SOURCE} )
