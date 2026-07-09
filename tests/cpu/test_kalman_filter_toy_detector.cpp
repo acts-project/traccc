@@ -39,13 +39,13 @@ constexpr scalar min_p{50.f * traccc::unit<traccc::scalar>::MeV};
 constexpr scalar max_r{75.f * traccc::unit<traccc::scalar>::mm};
 
 /// Test suite for navigation tests for the CKF
-class KF_intergration_test_toy_detector
+class KF_integration_test_toy_detector
     : public ToyDetectorFixture,
       public ::testing::WithParamInterface<
           std::tuple<float, float, bool, bool, bool, float, float>> {};
 
 /// Test the detray navigation on simulated tracks
-TEST_P(KF_intergration_test_toy_detector, toy_detector) {
+TEST_P(KF_integration_test_toy_detector, toy_detector) {
 
     using detector_t = traccc::default_detector::host;
     using algebra_t = typename detector_t::algebra_type;
@@ -61,7 +61,7 @@ TEST_P(KF_intergration_test_toy_detector, toy_detector) {
     vecmem::host_memory_resource host_mr;
 
     std::unique_ptr<const traccc::Logger> logger = traccc::getDefaultLogger(
-        "KF_intergration_test_toy_detector_toy_detector",
+        "KF_integration_test_toy_detector_toy_detector",
         traccc::Logging::Level::INFO);
 
     detray::io::detector_reader_config reader_cfg{};
@@ -204,36 +204,36 @@ TEST_P(KF_intergration_test_toy_detector, toy_detector) {
 
 // No material - navigation should work
 INSTANTIATE_TEST_SUITE_P(
-    pT_05GeV_no_mat, KF_intergration_test_toy_detector,
+    pT_05GeV_no_mat, KF_integration_test_toy_detector,
     ::testing::Values(std::make_tuple(0.5f * traccc::unit<scalar>::GeV,
                                       1e-5f * traccc::unit<float>::mm, false,
                                       false, false, 0.8f, 0.6f)));
 
 // No scattering - navigation should work (material interactor models e-loss)
 INSTANTIATE_TEST_SUITE_P(
-    pT_05GeV_only_eloss, KF_intergration_test_toy_detector,
+    pT_05GeV_only_eloss, KF_integration_test_toy_detector,
     ::testing::Values(std::make_tuple(0.5f * traccc::unit<scalar>::GeV,
                                       0.1f * traccc::unit<float>::mm, true,
                                       false, true, 0.5f, 6.7f)));
 
 // Nominal (e-loss + scattering)
 INSTANTIATE_TEST_SUITE_P(
-    pT_05GeV_nominal, KF_intergration_test_toy_detector,
+    pT_05GeV_nominal, KF_integration_test_toy_detector,
     ::testing::Values(std::make_tuple(0.5f * traccc::unit<scalar>::GeV,
                                       1.f * traccc::unit<float>::mm, true, true,
                                       true, 1.7f, 53.f)));
 INSTANTIATE_TEST_SUITE_P(
-    pT_100GeV_nominal, KF_intergration_test_toy_detector,
+    pT_100GeV_nominal, KF_integration_test_toy_detector,
     ::testing::Values(std::make_tuple(100.f * traccc::unit<scalar>::GeV,
                                       0.1f * traccc::unit<float>::mm, true,
                                       true, true, 0.2f, 7.9f)));
 INSTANTIATE_TEST_SUITE_P(
-    pT_5GeV_nominal, KF_intergration_test_toy_detector,
+    pT_5GeV_nominal, KF_integration_test_toy_detector,
     ::testing::Values(std::make_tuple(5.f * traccc::unit<scalar>::GeV,
                                       0.1f * traccc::unit<float>::mm, true,
                                       true, true, 0.1f, 8.3f)));
 INSTANTIATE_TEST_SUITE_P(
-    pT_1GeV_nominal, KF_intergration_test_toy_detector,
+    pT_1GeV_nominal, KF_integration_test_toy_detector,
     ::testing::Values(std::make_tuple(1.f * traccc::unit<scalar>::GeV,
                                       0.15f * traccc::unit<float>::mm, true,
                                       true, true, 0.8f, 11.5f)));
