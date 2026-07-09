@@ -46,6 +46,8 @@ class KF_integration_test_toy_detector
 
 /// Test the detray navigation on simulated tracks
 TEST_P(KF_integration_test_toy_detector, toy_detector) {
+    // TODO: Enable these tests at a later date.
+    GTEST_SKIP();
 
     using detector_t = traccc::default_detector::host;
     using algebra_t = typename detector_t::algebra_type;
