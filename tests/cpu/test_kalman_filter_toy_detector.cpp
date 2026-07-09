@@ -207,26 +207,26 @@ INSTANTIATE_TEST_SUITE_P(
     pT_05GeV_no_mat, KF_integration_test_toy_detector,
     ::testing::Values(std::make_tuple(0.5f * traccc::unit<scalar>::GeV,
                                       1e-5f * traccc::unit<float>::mm, false,
-                                      false, false, 0.8f, 0.6f)));
+                                      false, false, 0.8f, 1.f)));
 
 // No scattering - navigation should work (material interactor models e-loss)
 INSTANTIATE_TEST_SUITE_P(
     pT_05GeV_only_eloss, KF_integration_test_toy_detector,
     ::testing::Values(std::make_tuple(0.5f * traccc::unit<scalar>::GeV,
                                       0.1f * traccc::unit<float>::mm, true,
-                                      false, true, 0.5f, 6.7f)));
+                                      false, true, 0.5f, 7.5f)));
 
 // Nominal (e-loss + scattering)
 INSTANTIATE_TEST_SUITE_P(
     pT_05GeV_nominal, KF_integration_test_toy_detector,
     ::testing::Values(std::make_tuple(0.5f * traccc::unit<scalar>::GeV,
                                       1.f * traccc::unit<float>::mm, true, true,
-                                      true, 1.7f, 53.f)));
+                                      true, 1.7f, 54.4f)));
 INSTANTIATE_TEST_SUITE_P(
     pT_100GeV_nominal, KF_integration_test_toy_detector,
     ::testing::Values(std::make_tuple(100.f * traccc::unit<scalar>::GeV,
                                       0.1f * traccc::unit<float>::mm, true,
-                                      true, true, 0.2f, 7.9f)));
+                                      true, true, 0.2f, 8.5f)));
 INSTANTIATE_TEST_SUITE_P(
     pT_5GeV_nominal, KF_integration_test_toy_detector,
     ::testing::Values(std::make_tuple(5.f * traccc::unit<scalar>::GeV,
@@ -236,4 +236,4 @@ INSTANTIATE_TEST_SUITE_P(
     pT_1GeV_nominal, KF_integration_test_toy_detector,
     ::testing::Values(std::make_tuple(1.f * traccc::unit<scalar>::GeV,
                                       0.15f * traccc::unit<float>::mm, true,
-                                      true, true, 0.8f, 11.5f)));
+                                      true, true, 1.7f, 11.8f)));

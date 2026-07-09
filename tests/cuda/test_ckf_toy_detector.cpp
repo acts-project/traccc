@@ -41,6 +41,9 @@ using namespace traccc;
 
 TEST_P(CkfToyDetectorTests, Run) {
 
+    constexpr bool use_material_maps = false;
+    WriteDetector(use_material_maps);
+
     // Get the parameters
     const std::string name = std::get<0>(GetParam());
     const traccc::pdg_particle<scalar> ptc = std::get<6>(GetParam());
@@ -61,23 +64,22 @@ TEST_P(CkfToyDetectorTests, Run) {
 
     // Read back detector file
     const std::string path = name + "/";
-    traccc::host_detector detector;
-    traccc::io::read_detector(
-        detector, mng_mr,
-        std::filesystem::absolute(
-            std::filesystem::path(path + "toy_detector_geometry.json"))
-            .native(),
-        std::filesystem::absolute(
-            std::filesystem::path(path +
-                                  "toy_detector_homogeneous_material.json"))
-            .native(),
-        std::filesystem::absolute(
-            std::filesystem::path(path + "toy_detector_surface_grids.json"))
-            .native());
+    detray::io::detector_reader_config reader_cfg{};
+    reader_cfg.add_file("toy_detector_geometry.json")
+        .add_file("toy_detector_surface_grids.json")
+        .add_file("toy_detector_homogeneous_material.json")
+        .do_check(true);
+
+    auto [io_det, names] =
+        detray::io::read_detector<traccc::default_detector::host>(host_mr,
+                                                                  reader_cfg);
+    traccc::host_detector detector{};
+    detector.template set<
+        traccc::detector_traits<traccc::default_detector::host::metadata>>(
+        std::move(io_det));
 
     traccc::detector_buffer detector_buffer =
         traccc::buffer_from_host_detector(detector, mng_mr, host_copy);
-    ;
 
     const auto field = traccc::construct_const_bfield(B);
 

@@ -54,15 +54,14 @@ class ToyDetectorFixture : public testing::Test {
         0.01 / traccc::unit<double>::GeV,
         1000. * traccc::unit<double>::ns};
 
-    protected:
-    void SetUp() override {
+    void WriteDetector(const bool toggle_material_map) {
         vecmem::host_memory_resource host_mr;
 
         detray::toy_det_config<scalar> toy_cfg{};
         toy_cfg.n_brl_layers(n_barrels)
             .n_edc_layers(n_endcaps)
             .envelope(2.f * traccc::unit<scalar>::mm)
-            .use_material_maps(true)
+            .use_material_maps(toggle_material_map)
             .do_check(false);
 
         // Create the toy geometry
@@ -79,6 +78,9 @@ class ToyDetectorFixture : public testing::Test {
                               .path("./");
         detray::io::write_detector(det, name_map, writer_cfg);
     }
+
+    protected:
+    void SetUp() override { WriteDetector(true); }
 };
 
 }  // namespace traccc
