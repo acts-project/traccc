@@ -79,7 +79,7 @@ TEST_P(CkfToyDetectorTests, Run) {
     detray::io::detector_reader_config reader_cfg{};
     reader_cfg.add_file("toy_detector_geometry.json")
         .add_file("toy_detector_surface_grids.json")
-        .add_file("toy_detector_material_maps.json")
+        .add_file("toy_detector_homogeneous_material.json")
         .do_check(true);
 
     auto [io_det, names] =
@@ -127,6 +127,7 @@ TEST_P(CkfToyDetectorTests, Run) {
     seed_cfg.initial_sigmas = stddevs;
 
     // Run simulator
+    std::filesystem::create_directories(path);
     auto sim = traccc::simulator<host_detector_type, b_field_t, generator_type,
                                  writer_type>(
         ptc, n_events, host_detector.as<detector_traits>(),
