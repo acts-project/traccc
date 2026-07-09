@@ -137,9 +137,9 @@ TEST_P(KF_intergration_test_toy_detector, toy_detector) {
     test_cfg.propagation.navigation.intersection.min_mask_tolerance =
         std::get<1>(GetParam());
     test_cfg.propagation.navigation.intersection.max_mask_tolerance =
-        5. * traccc::unit<scalar>::mm;
+        5.f * traccc::unit<float>::mm;
     test_cfg.propagation.navigation.estimate_scattering_noise = false;
-    test_cfg.propagation.stepping.path_limit = 2. * traccc::unit<scalar>::m;
+    test_cfg.propagation.stepping.path_limit = 2.f * traccc::unit<float>::m;
 
     // Configure the material interaction
     test_cfg.particle = ptc_type;
