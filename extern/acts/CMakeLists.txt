@@ -31,11 +31,13 @@ set( ACTS_SETUP_DETRAY TRUE CACHE BOOL
 
 # Set the detray log level
 set( DETRAY_SET_LOGGING "${TRACCC_DEVICE_LOG_LVL}" CACHE STRING
-     "Log level to use in device code" FORCE)
+   "Log level to use in device code" FORCE)
 message( STATUS "Setting DETRAY and TRACCC device log level to ${DETRAY_SET_LOGGING}" )
 
+# Test utils and validation tools are needed for traccc unittests/ACTS detray plugin
+set(DETRAY_BUILD_VALIDATION_TOOLS TRUE CACHE BOOL "")
 set(DETRAY_BUILD_TEST_UTILS TRUE CACHE BOOL "")
-# HACK: Make sure that ACTS builds ACTSVG, which is required by Detray.
+# HACK: Make sure that ACTS builds ACTSVG, which is required by Detray validation tools.
 set( ACTS_BUILD_PLUGIN_ACTSVG TRUE CACHE BOOL "" )
 
 # The ITk metadata is required, so explicitly request that it be built.

@@ -31,7 +31,7 @@
 
 namespace traccc {
 
-class KalmanFittingTests : public testing::Test {
+class KalmanFittingTests {
     public:
     /// Type declarations
     using detector_traits = traccc::default_detector;
