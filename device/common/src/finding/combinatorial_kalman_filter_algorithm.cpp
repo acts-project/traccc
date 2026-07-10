@@ -30,9 +30,12 @@ combinatorial_kalman_filter_algorithm::combinatorial_kalman_filter_algorithm(
       m_data{std::make_unique<data>(config)},
       m_kf_fitter{std::move(kf_fitter)} {
 
-    assert(config.run_smoother != smoother_type::e_kalman ||
-           (config.run_smoother == smoother_type::e_kalman &&
-            m_kf_fitter != nullptr));
+    if (config.run_smoother == smoother_type::e_kalman &&
+        m_kf_fitter == nullptr) {
+        throw std::invalid_argument(
+            "A Kalman fitting algorithm must be provided when the Kalman "
+            "smoother is enabled");
+    }
 
     if (config.min_step_length_for_next_surface <=
         math::fabs(
