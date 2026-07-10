@@ -103,7 +103,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
         traccc::finding_performance_writer::config{
             .truth_config = truth_finding_opts,
             .track_truth_config = track_matching_opts,
-            .require_fit = true},
+            .require_fit = (traccc::finding_config(finding_opts).run_smoother !=
+                            smoother_type::e_none)},
         logger().clone("FindingPerformanceWriter"));
     traccc::fitting_performance_writer fit_performance_writer(
         traccc::fitting_performance_writer::config{},
@@ -204,8 +205,14 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     // Finding algorithm object
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(
         cfg, host_mr, logger().clone("HostFindingAlg"));
+
+    auto device_fitting =
+        std::make_unique<traccc::cuda::kalman_fitting_algorithm>(
+            cfg.kalman_smoother, mr, async_copy, stream,
+            logger().clone("CudaFittingAlg"));
     traccc::cuda::combinatorial_kalman_filter_algorithm device_finding(
-        cfg, mr, async_copy, stream, logger().clone("CudaFindingAlg"));
+        cfg, mr, async_copy, stream, logger().clone("CudaFindingAlg"),
+        std::move(device_fitting));
 
     traccc::performance::timing_info elapsedTimes;
 

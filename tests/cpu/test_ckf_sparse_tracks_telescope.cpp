@@ -134,6 +134,8 @@ TEST_P(CkfSparseTrackTelescopeTests, Run) {
     cfg.chi2_max = 200.f;
     cfg.min_p = 0;
     cfg.min_pT = 10.f * unit<float>::MeV;
+    // The fitting/smoothing is run as a dedicated step
+    cfg.run_smoother = smoother_type::e_none;
 
     // Finding algorithm object
     traccc::host::combinatorial_kalman_filter_algorithm host_finding(cfg,

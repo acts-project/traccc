@@ -14,9 +14,9 @@
 #include "traccc/finding/candidate_link.hpp"
 #include "traccc/finding/details/combinatorial_kalman_filter_types.hpp"
 #include "traccc/finding/finding_config.hpp"
+#include "traccc/finding/measurement_selector.hpp"
 #include "traccc/fitting/kalman_filter/gain_matrix_updater.hpp"
 #include "traccc/fitting/kalman_filter/is_line_visitor.hpp"
-#include "traccc/fitting/kalman_filter/measurement_selector.hpp"
 #include "traccc/fitting/status_codes.hpp"
 #include "traccc/sanity/contiguous_on.hpp"
 #include "traccc/utils/logging.hpp"
@@ -570,8 +570,7 @@ combinatorial_kalman_filter(
                             momentum_aborter_state, ckf_aborter_state));
             TRACCC_DEBUG_HOST("Finished propagation");
 
-            // If a surface found, add the parameter for the next
-            // step
+            // If a surface found, add the parameter for the next step
             bool valid_track{ckf_aborter_state.success};
             if (valid_track) {
                 assert(propagation.navigation().is_on_sensitive());

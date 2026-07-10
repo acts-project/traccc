@@ -31,6 +31,7 @@
 #include "traccc/finding/device/gather_best_tips_per_measurement.hpp"
 #include "traccc/finding/device/gather_measurement_votes.hpp"
 #include "traccc/finding/device/geo_id_surface_comparator.hpp"
+#include "traccc/finding/device/progressive_kalman_filter.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
 #include "traccc/finding/device/remove_duplicates.hpp"
 #include "traccc/finding/device/update_tip_length_buffer.hpp"
@@ -54,6 +55,9 @@ struct fill_finding_duplicate_removal_sort_keys {};
 struct remove_duplicates {};
 
 struct fill_finding_propagation_sort_keys {};
+
+template <typename detector_t, typename bfield_t>
+struct progressive_kalman_filter {};
 
 template <typename detector_t, typename bfield_t>
 struct propagate_to_next_surface {};
@@ -114,6 +118,58 @@ combinatorial_kalman_filter_algorithm::build_measurement_ranges_buffer(
 
             // Return the filled buffer.
             return result;
+        });
+}
+
+void combinatorial_kalman_filter_algorithm::progressive_kalman_filter_kernel(
+    unsigned int n_seeds, const finding_config& config,
+    const detector_buffer& detector, const magnetic_field& field,
+    const device::progressive_kalman_filter_payload& payload,
+    const device::kalman_fitting_algorithm::fit_payload& smoothing_payload)
+    const {
+
+    ::sycl::queue& squeue = details::get_queue(queue());
+    squeue.throw_asynchronous();
+
+    detector_buffer_magnetic_field_visitor<detector_type_list,
+                                           sycl::bfield_type_list<scalar>>(
+        detector, field,
+        [&]<typename detector_traits_t, typename bfield_view_t>(
+            const typename detector_traits_t::view& det,
+            const bfield_view_t& bfield) {
+            using detector_t = typename detector_traits_t::device;
+            using surface_t = typename detector_t::surface_type;
+
+            // Copy the detector data to device memory.
+            vecmem::data::vector_buffer<typename detector_traits_t::view>
+                device_det(1u, mr().main);
+            copy().setup(device_det)->ignore();
+            copy()({1u, &det}, device_det)->ignore();
+
+            // If the Kalman smoother should be run, obtain the real allocation
+            vecmem::data::jagged_vector_view<surface_t> sf_sequences;
+            if (config.run_smoother == smoother_type::e_kalman) {
+                sf_sequences =
+                    smoothing_payload.surfaces
+                        .as<vecmem::data::jagged_vector_buffer<surface_t>>();
+            }
+
+            // Launch the kernel to propagate all active tracks to the next
+            // surface.
+            squeue.submit([&](::sycl::handler& h) {
+                h.parallel_for<kernels::progressive_kalman_filter<
+                    detector_tag_selector_t<detector_traits_t>,
+                    bfield_tag_selector_t<typename bfield_view_t::backend_t>>>(
+                    details::calculate1DimNdRange(n_seeds, warp_size() * 4),
+                    [config, det = device_det.ptr(), bfield, sf_sequences,
+                     payload](::sycl::nd_item<1> item) {
+                        device::progressive_kalman_filter<
+                            traccc::details::pkf_propagator_t<detector_t,
+                                                              bfield_view_t>>(
+                            details::global_index(item), config, *det, bfield,
+                            sf_sequences, payload);
+                    });
+            });
         });
 }
 

@@ -5,6 +5,10 @@
  * Mozilla Public License Version 2.0
  */
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic warning "-Wmaybe-uninitialized"
+#endif
+
 // Local include(s).
 #include "traccc/alpaka/finding/combinatorial_kalman_filter_algorithm.hpp"
 
@@ -23,6 +27,7 @@
 #include "traccc/finding/device/fill_finding_propagation_sort_keys.hpp"
 #include "traccc/finding/device/find_tracks.hpp"
 #include "traccc/finding/device/geo_id_surface_comparator.hpp"
+#include "traccc/finding/device/progressive_kalman_filter.hpp"
 #include "traccc/finding/device/propagate_to_next_surface.hpp"
 #include "traccc/finding/device/remove_duplicates.hpp"
 #include "traccc/utils/detector_buffer_bfield_visitor.hpp"
@@ -120,6 +125,27 @@ struct fill_finding_propagation_sort_keys {
     }
 };
 
+/// Alpaka kernel functor for @c traccc::device::progressive_kalman_filter
+template <typename propagator_t>
+struct progressive_kalman_filter {
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(
+        TAcc const& acc, const finding_config& cfg,
+        const typename propagator_t::detector_type::const_view_type* det_data,
+        const typename propagator_t::stepper_type::magnetic_field_type&
+            field_data,
+        vecmem::data::jagged_vector_view<
+            typename propagator_t::detector_type::surface_type>
+            sf_sequences,
+        const device::progressive_kalman_filter_payload& payload) const {
+
+        device::global_index_t globalThreadIdx =
+            ::alpaka::getIdx<::alpaka::Grid, ::alpaka::Threads>(acc)[0];
+        device::progressive_kalman_filter<propagator_t>(
+            globalThreadIdx, cfg, *det_data, field_data, sf_sequences, payload);
+    }
+};
+
 /// Alpaka kernel functor for @c traccc::device::propagate_to_next_surface
 template <typename propagator_t, typename bfield_t>
 struct propagate_to_next_surface {
@@ -198,9 +224,10 @@ struct build_tracks {
 combinatorial_kalman_filter_algorithm::combinatorial_kalman_filter_algorithm(
     const config_type& config, const traccc::memory_resource& mr,
     const vecmem::copy& copy, alpaka::queue& q,
-    std::unique_ptr<const Logger> logger)
-    : device::combinatorial_kalman_filter_algorithm(config, mr, copy,
-                                                    std::move(logger)),
+    std::unique_ptr<const Logger> logger,
+    std::unique_ptr<traccc::alpaka::kalman_fitting_algorithm> kf_fitter)
+    : device::combinatorial_kalman_filter_algorithm(
+          config, mr, copy, std::move(logger), std::move(kf_fitter)),
       alpaka::algorithm_base(q) {}
 
 bool combinatorial_kalman_filter_algorithm::input_is_valid(
@@ -245,6 +272,54 @@ combinatorial_kalman_filter_algorithm::build_measurement_ranges_buffer(
 
             // Return the filled buffer.
             return result;
+        });
+}
+
+void combinatorial_kalman_filter_algorithm::progressive_kalman_filter_kernel(
+    unsigned int n_seeds, const finding_config& config,
+    const detector_buffer& detector, const magnetic_field& field,
+    const device::progressive_kalman_filter_payload& payload,
+    const device::kalman_fitting_algorithm::fit_payload& smoothing_payload)
+    const {
+
+    // Establish the kernel launch parameters.
+    const unsigned int deviceThreads = warp_size() * 4;
+    const unsigned int deviceBlocks =
+        (n_seeds + deviceThreads - 1) / deviceThreads;
+
+    // Launch the kernel for the appropriate detector and magnetic field type.
+    detector_buffer_magnetic_field_visitor<detector_type_list,
+                                           alpaka::bfield_type_list<scalar>>(
+        detector, field,
+        [&]<typename detector_traits_t, typename bfield_view_t>(
+            const typename detector_traits_t::view& det,
+            const bfield_view_t& bfield) {
+            using detector_t = typename detector_traits_t::device;
+            using surface_t = typename detector_t::surface_type;
+
+            // Copy the detector data to device memory.
+            vecmem::data::vector_buffer<typename detector_traits_t::view>
+                device_det(1u, mr().main);
+            copy().setup(device_det)->ignore();
+            copy()({1u, &det}, device_det)->ignore();
+
+            // If the Kalman smoother should be run, obtain the real allocation
+            vecmem::data::jagged_vector_view<surface_t> sf_sequences;
+            if (config.run_smoother == smoother_type::e_kalman) {
+                sf_sequences =
+                    smoothing_payload.surfaces
+                        .as<vecmem::data::jagged_vector_buffer<surface_t>>();
+            }
+
+            // Launch the kernel to propagate all active tracks to the next
+            // surface.
+            ::alpaka::exec<Acc>(
+                details::get_queue(queue()),
+                makeWorkDiv<Acc>(deviceBlocks, deviceThreads),
+                kernels::progressive_kalman_filter<
+                    traccc::details::ckf_propagator_t<detector_t,
+                                                      bfield_view_t>>{},
+                config, device_det.ptr(), bfield, sf_sequences, payload);
         });
 }
 

@@ -170,6 +170,12 @@ void finding_performance_writer::write_common(
                 found_measurements, evt_data.m_meas_to_ptc_map);
         }
 
+        if (particle_hit_counts.empty()) {
+            TRACCC_VERBOSE(
+                "No contributing particles found for track: " << n_tracks);
+            continue;
+        }
+
         const auto major_ptc = particle_hit_counts.at(0).ptc;
         const auto n_major_hits = particle_hit_counts.at(0).hit_counts;
 

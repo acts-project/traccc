@@ -162,6 +162,8 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
     for (std::size_t event = input_opts.skip;
          event < input_opts.events + input_opts.skip; ++event) {
 
+        TRACCC_INFO("EVENT: " << event);
+
         // Read the hits from the relevant event file
         traccc::edm::measurement_collection::host measurements_per_event{
             host_mr};
@@ -211,17 +213,17 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
            Track Fitting with KF
           ------------------------*/
 
-        auto track_states = host_fitting(
+        /*auto track_states = host_fitting(
             detector, field,
             traccc::edm::track_container<default_algebra>::const_data(
                 track_candidates));
-        n_fitted_tracks += track_states.tracks.size();
+        n_fitted_tracks += track_states.tracks.size();*/
 
         /*------------
            Statistics
           ------------*/
 
-        details::print_fitted_tracks_statistics(track_states, logger());
+        details::print_fitted_tracks_statistics(track_candidates, logger());
         n_spacepoints += spacepoints_per_event.size();
         n_seeds += seeds.size();
 
@@ -250,13 +252,14 @@ int seq_run(const traccc::opts::track_seeding& seeding_opts,
                     traccc::default_algebra>::const_data(track_candidates_ar),
                 evt_data);*/
 
-            for (unsigned int i = 0; i < track_states.tracks.size(); i++) {
+            for (unsigned int i = 0; i < track_candidates.tracks.size(); i++) {
                 host_detector_visitor<detector_type_list>(
                     detector, [&]<typename detector_traits_t>(
                                   const typename detector_traits_t::host& det) {
                         fit_performance_writer.write(
-                            track_states.tracks.at(i), track_states.states,
-                            measurements_per_event, det, evt_data);
+                            track_candidates.tracks.at(i),
+                            track_candidates.states, measurements_per_event,
+                            det, evt_data);
                     });
             }
         }

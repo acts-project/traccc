@@ -67,6 +67,7 @@ traccc_add_library( traccc_cuda cuda TYPE SHARED
   "src/finding/kernels/gather_best_tips_per_measurement.cu"
   "src/finding/kernels/gather_measurement_votes.cu"
   "src/finding/kernels/update_tip_length_buffer.cu"
+  "src/finding/kernels/progressive_kalman_filter.hpp"
   "src/finding/kernels/propagate_to_next_surface.hpp"
   # Ambiguity resolution
   "include/traccc/cuda/ambiguity_resolution/greedy_ambiguity_resolution_algorithm.hpp"
@@ -135,6 +136,9 @@ foreach(DETECTOR_NAME ${TRACCC_SUPPORTED_DETECTORS})
   foreach(BFIELD_NAME "const_bfield_backend_t<scalar>"
                       "inhom_global_bfield_backend_t<scalar>"
                       "inhom_texture_bfield_backend_t")
+    traccc_add_cuda_specialization(
+      "src/finding/kernels/specializations/progressive_kalman_filter.cu.in"
+      DETECTOR_NAME "${DETECTOR_NAME}" BFIELD_NAME "${BFIELD_NAME}")
     traccc_add_cuda_specialization(
       "src/finding/kernels/specializations/propagate_to_next_surface.cu.in"
       DETECTOR_NAME "${DETECTOR_NAME}" BFIELD_NAME "${BFIELD_NAME}")
