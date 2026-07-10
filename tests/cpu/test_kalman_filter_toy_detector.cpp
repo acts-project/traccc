@@ -24,8 +24,10 @@
 #include <gtest/gtest.h>
 
 // System include(s)
+#include <algorithm>
 #include <filesystem>
 #include <optional>
+#include <string>
 
 using namespace traccc;
 
@@ -66,12 +68,22 @@ TEST_P(KF_integration_test_toy_detector, toy_detector) {
         "KF_integration_test_toy_detector_toy_detector",
         traccc::Logging::Level::INFO);
 
+    const ::testing::TestInfo& test_info =
+        *::testing::UnitTest::GetInstance()->current_test_info();
+    std::string name =
+        std::string{test_info.test_suite_name()} + "_" + test_info.name();
+    std::replace(name.begin(), name.end(), '/', '_');
+    const std::filesystem::path det_dir{name};
+
+    WriteDetector(true, name);
+
     detray::io::detector_reader_config reader_cfg{};
-    reader_cfg.add_file("toy_detector_geometry.json")
-        .add_file("toy_detector_surface_grids.json")
+    reader_cfg.add_file((det_dir / "toy_detector_geometry.json").native())
+        .add_file((det_dir / "toy_detector_surface_grids.json").native())
         .do_check(true);
     if (std::get<2>(GetParam())) {
-        reader_cfg.add_file("toy_detector_material_maps.json");
+        reader_cfg.add_file(
+            (det_dir / "toy_detector_material_maps.json").native());
     }
 
     auto [io_det, names] =
@@ -95,8 +107,8 @@ TEST_P(KF_integration_test_toy_detector, toy_detector) {
 
     // Create data directory
     std::filesystem::path data_dir{traccc::io::data_directory()};
-    std::filesystem::path outdir{"fast_track_simulation/toy_detector_pT_" +
-                                 std::to_string(pT) + "_GeV"};
+    std::filesystem::path outdir{
+        std::filesystem::path{"fast_track_simulation"} / name};
 
     std::filesystem::path full_path = data_dir / outdir;
     if (!std::filesystem::exists(full_path)) {

@@ -41,15 +41,15 @@ using namespace traccc;
 
 TEST_P(CkfToyDetectorTests, Run) {
 
-    constexpr bool use_material_maps = false;
-    WriteDetector(use_material_maps);
-
     // Get the parameters
     const std::string name = std::get<0>(GetParam());
     const traccc::pdg_particle<scalar> ptc = std::get<6>(GetParam());
     const unsigned int n_truth_tracks = std::get<7>(GetParam());
     const unsigned int n_events = std::get<8>(GetParam());
     const bool random_charge = std::get<9>(GetParam());
+
+    constexpr bool use_material_maps = false;
+    WriteDetector(use_material_maps, name);
 
     /*****************************
      * Build a toy detector
@@ -65,9 +65,9 @@ TEST_P(CkfToyDetectorTests, Run) {
     // Read back detector file
     const std::string path = name + "/";
     detray::io::detector_reader_config reader_cfg{};
-    reader_cfg.add_file("toy_detector_geometry.json")
-        .add_file("toy_detector_surface_grids.json")
-        .add_file("toy_detector_homogeneous_material.json")
+    reader_cfg.add_file(path + "toy_detector_geometry.json")
+        .add_file(path + "toy_detector_surface_grids.json")
+        .add_file(path + "toy_detector_homogeneous_material.json")
         .do_check(true);
 
     auto [io_det, names] =

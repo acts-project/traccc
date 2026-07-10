@@ -19,6 +19,7 @@
 
 // System include(s)
 #include <array>
+#include <string>
 
 namespace traccc {
 
@@ -54,7 +55,8 @@ class ToyDetectorFixture : public testing::Test {
         0.01 / traccc::unit<double>::GeV,
         1000. * traccc::unit<double>::ns};
 
-    void WriteDetector(const bool toggle_material_map) {
+    void WriteDetector(const bool toggle_material_map,
+                       const std::string& path = "./") {
         vecmem::host_memory_resource host_mr;
 
         detray::toy_det_config<scalar> toy_cfg{};
@@ -75,12 +77,9 @@ class ToyDetectorFixture : public testing::Test {
                               .replace_files(true)
                               .write_grids(true)
                               .write_material(true)
-                              .path("./");
+                              .path(path);
         detray::io::write_detector(det, name_map, writer_cfg);
     }
-
-    protected:
-    void SetUp() override { WriteDetector(true); }
 };
 
 }  // namespace traccc
