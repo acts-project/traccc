@@ -145,7 +145,7 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
     cfg_no_limit.chi2_max = 30.f;
     cfg_no_limit.max_num_branches_per_surface = 10;
     cfg_no_limit.duplicate_removal_minimum_length = 100u;
-    cfg_no_limit.run_smoother = smoother_type::e_kalman;
+    cfg_no_limit.run_smoother = smoother_type::e_none;
 
     traccc::sycl::combinatorial_kalman_filter_algorithm::config_type cfg_limit;
     cfg_limit.ptc_hypothesis = ptc;
@@ -153,7 +153,7 @@ TEST_P(CkfCombinatoricsTelescopeTests, Run) {
     cfg_limit.chi2_max = 30.f;
     cfg_limit.max_num_branches_per_surface = 10;
     cfg_limit.duplicate_removal_minimum_length = 100u;
-    cfg_limit.run_smoother = smoother_type::e_kalman;
+    cfg_limit.run_smoother = smoother_type::e_none;
 
     // Finding algorithm object
     traccc::sycl::combinatorial_kalman_filter_algorithm device_finding{
