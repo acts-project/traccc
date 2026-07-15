@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This repository is archived, and development of the traccc project has moved to [the ACTS repository](https://github.com/acts-project/acts). Please open any new issues and pull requests on the main ACTS repository rather than here.
+
 # traccc
 
 Demonstrator tracking chain for accelerators.
